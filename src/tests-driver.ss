@@ -34,25 +34,15 @@
 (define show-compiler-output (make-parameter #f))
 
 (define (run-compile expr)
-  (let ([p (open-output-file "stst.s" 'replace)])
+  (let ([p (open-output-file "stst.fasl" 'replace)])
     (parameterize ([compile-port p])
        (compile-program expr))
-    (close-output-port p))
-  (when (show-compiler-output)
-    (system (format "less stst.s"))))
+    (close-output-port p)))
 
-(define (build)
-  (unless (fxzero? (system (format "gcc -o stst ~a stst.s" (runtime-file))))
-    (error 'make "could not build target")))
 
 (define (execute)
-  (unless (fxzero? (system "./stst > stst.out"))
-    (error 'make "produced program exited abnormally")))
-
-
-(define (build-program expr)
-   (run-compile expr)
-   (build))
+  (unless (fxzero? (system "runtime/ikarus ikarus.fasl stst.fasl > stst.out"))
+    (error 'execute "produced program exited abnormally")))
 
 (define (get-string)
   (with-output-to-string
@@ -67,7 +57,6 @@
 
 (define (test-with-string-output test-id expr expected-output)
    (run-compile expr)
-   (build)
    (execute)
    (unless (string=? expected-output (get-string))
      (error 'test "output mismatch for test ~s, expected ~s, got ~s"

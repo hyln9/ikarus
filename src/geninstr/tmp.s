@@ -1,9 +1,9 @@
 .text
-sete %al
-sete %cl
-sete %dl
-sete %bl
-sete %ah
-sete %ch
-sete %dh
-sete %bh
+movb $0, 4(%eax)
+movb $0, 4(%ecx)
+movb $0, 4(%edx)
+movb $0, 4(%ebx)
+movb $0, 4(%esp)
+movb $0, 4(%ebp)
+movb $0, 4(%esi)
+movb $0, 4(%edi)

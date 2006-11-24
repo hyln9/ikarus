@@ -1,6 +1,77 @@
 
+(load "chez-compat.ss")
+
+(load "libintelasm-5.8.ss")
+(load "libfasl-6.0.ss")
+
+(define-record code (code-size reloc-size closure-size code-vec reloc-vec))
+(define make-code
+  (let ([make-code make-code])
+    (lambda (code-size reloc-size closure-size)
+      (printf "reloc=~s\n" reloc-size)
+      (let ([code-size (fxsll (fxsra (fx+ code-size 3) 2) 2)]) 
+        (make-code 
+          (fxsra code-size 2)
+          (fxsra reloc-size 2)
+          closure-size
+          (make-vector code-size (cons 'byte 0))
+          (make-vector (fxsra reloc-size 2)))))))
+
+(define set-code-byte! 
+  (lambda (code idx byte)
+    (vector-set! (code-code-vec code) idx (cons 'byte byte))))
+
+
+(define set-code-word!
+  (lambda (code idx x)
+    (cond
+      [(fixnum? x) 
+       (set-code-byte! code (fx+ idx 0) (fxsll (fxlogand x #x3F) 2))
+       (set-code-byte! code (fx+ idx 1) (fxlogand (fxsra x 6) #xFF))
+       (set-code-byte! code (fx+ idx 2) (fxlogand (fxsra x 14) #xFF))
+       (set-code-byte! code (fx+ idx 3) (fxlogand (fxsra x 22) #xFF))]
+      [else (error 'set-code-word! "unhandled ~s" x)])))
+
+(define set-code-object!
+  (lambda (code obj code-idx reloc-idx)
+    (let ([v (code-reloc-vec code)])
+      (vector-set! v reloc-idx (list 'object code-idx obj)))))
+
+(define set-code-object+offset/rel! 
+  (lambda (code obj code-idx obj-idx reloc-idx)
+    (let ([v (code-reloc-vec code)])
+      (vector-set! v reloc-idx 
+        (list 'object+off/rel code-idx obj obj-idx))
+      (vector-set! v (fxadd1 reloc-idx) '(skip)))))
+
+(define set-code-object+offset!
+  (lambda (code obj code-idx obj-idx reloc-idx)
+    (let ([v (code-reloc-vec code)])
+      (vector-set! v reloc-idx 
+        (list 'object+off code-idx obj obj-idx))
+      (vector-set! v (fxadd1 reloc-idx) '(skip)))))
+
+(define make-code-executable!
+  (lambda (x) (void)))
+
+
+
+(define eval-code
+  (lambda (code)
+    (with-output-to-file "stst.fasl"
+       (lambda ()
+         (fasl-write code))
+       'replace)
+    (let ([rv (system "runtime/ikarus stst.fasl > stst.tmp")])
+      (unless (zero? rv)
+        (error 'eval-code "Failed to run: ~s" rv)))
+    (with-input-from-file "stst.tmp" read)))
+
+
+
+
 (let ()
-  (define verbose #f)
+  (define verbose #t)
   (define passed-tests 0)
 
   (define all-tests 0)
@@ -9,9 +80,8 @@
     (lambda (code-ls val)
       (set! all-tests (fxadd1 all-tests))
       (when verbose (printf "Evaluating\n~s\n" code-ls))
-      (let* ([code (car (#%list*->code* (list code-ls)))]
-             [proc (code->closure code)]
-             [v (proc)])
+      (let* ([code (car (list*->code* (list code-ls)))]
+             [v (eval-code code)])
         (when verbose (printf "evaluated\n"))
         (cond
           [(equal? v val) 
@@ -21,9 +91,40 @@
            (error 'test-code
                   "expected ~s, got ~s" val v)]))))
 
+  (printf "testing ... \n")
+
   (test-code
-    '([ret])
+    '([movl (int 0) %eax]
+      [ret])
     0)
+
+
+  (let ([L1 (gensym)])
+    (test-code
+      `([movl (obj 10) %eax]
+        [jmp (label ,L1)]
+        [byte 0]
+        [byte 1]
+        [byte 2]
+        [byte 3]
+        [byte 4]
+        [byte 5]
+        [byte 6]
+        [byte 7]
+        [byte 8]
+        [byte 9]
+        [label ,L1]
+        [ret])
+      10))
+
+  (test-code
+    '([movl (obj+ (1 2 3) 3) %eax]
+      [movl (disp (int 0) %eax) %eax]
+      [ret])
+    '(2 3))
+
+
+
 
   (test-code 
     '([movl (int 40) %eax]
@@ -282,31 +383,31 @@
       [ret])
     'list)
 
-  (test-code
-    '([movl (obj list) %eax]
-      [movl (disp (int 6) %eax) %eax] ; symbol value
-      [ret])
-    list)
+;;  (test-code
+;;    '([movl (obj list) %eax]
+;;      [movl (disp (int 6) %eax) %eax] ; symbol value
+;;      [ret])
+;;    list)
 
-  (test-code
-    '([movl (obj 10) (disp (int -4) %esp)]
-      [movl (obj list) %eax]
-      [movl (disp (int 6) %eax) %edi] ; symbol value
-      [movl (obj -1) %eax] ; argc
-      [jmp (disp (int -3) %edi)])
-    '(10))
+;;  (test-code
+;;    '([movl (obj 10) (disp (int -4) %esp)]
+;;      [movl (obj list) %eax]
+;;      [movl (disp (int 6) %eax) %edi] ; symbol value
+;;      [movl (obj -1) %eax] ; argc
+;;      [jmp (disp (int -3) %edi)])
+;;    '(10))
 
-  (test-code
-    '([movl (obj 10) (disp (int -4) %esp)]
-      [movl (obj 20) %eax]
-      [movl %eax (disp (int -8) %esp)]
-      [movl (disp (int -8) %esp) %ebx]
-      [movl %ebx (disp (int -12) %esp)]
-      [movl (obj list) %eax]
-      [movl (disp (int 6) %eax) %edi] ; symbol value
-      [movl (obj -3) %eax] ; argc
-      [jmp (disp (int -3) %edi)])
-    '(10 20 20))
+;;  (test-code
+;;    '([movl (obj 10) (disp (int -4) %esp)]
+;;      [movl (obj 20) %eax]
+;;      [movl %eax (disp (int -8) %esp)]
+;;      [movl (disp (int -8) %esp) %ebx]
+;;      [movl %ebx (disp (int -12) %esp)]
+;;      [movl (obj list) %eax]
+;;      [movl (disp (int 6) %eax) %edi] ; symbol value
+;;      [movl (obj -3) %eax] ; argc
+;;      [jmp (disp (int -3) %edi)])
+;;    '(10 20 20))
 
   (test-code
     '([movl (obj 10) %eax]
@@ -362,24 +463,24 @@
       `([movl (int 10) %eax]
         [cmpl (int 8) %eax]
         [jne (label ,L1)]
-        [movl (obj #f) %eax]
+        [movl (obj 0) %eax]
         [ret]
         [label ,L1]
-        [movl (obj #t) %eax]
+        [movl (obj 1) %eax]
         [ret])
-      #t))
+      1))
 
   (let ([L1 (gensym)])
     (test-code
       `([movl (int 40) %eax]
         [cmpl (obj 10) %eax]
         [je (label ,L1)]
-        [movl (obj #f) %eax]
+        [movl (obj 0) %eax]
         [ret]
         [label ,L1]
-        [movl (obj #t) %eax]
+        [movl (obj 1) %eax]
         [ret])
-      #t))
+      1))
 
   (let ([L1 (gensym)])
     (test-code
@@ -387,24 +488,24 @@
         [movl (int 30) %ebx]
         [cmpl %ebx %eax]
         [jge (label ,L1)]
-        [movl (obj #f) %eax]
+        [movl (obj 0) %eax]
         [ret]
         [label ,L1]
-        [movl (obj #t) %eax]
+        [movl (obj 1) %eax]
         [ret])
-      #t))
+      1))
 
   (let ([L1 (gensym)])
     (test-code
       `([movl (int 40) (disp (int -4) %esp)]
         [cmpl (int 70) (disp (int -4) %esp)]
         [jle (label ,L1)]
-        [movl (obj #f) %eax]
+        [movl (obj 0) %eax]
         [ret]
         [label ,L1]
-        [movl (obj #t) %eax]
+        [movl (obj 1) %eax]
         [ret])
-      #t))
+      1))
 
   (test-code
     '([movl (int 40) (disp (int -4) %esp)]
@@ -429,13 +530,13 @@
         [cmpl (int 70) (disp (int -1004) %esp)]
         [jle (label ,L1)]
         [addl (int -1000) %esp]
-        [movl (obj #f) %eax]
+        [movl (obj 0) %eax]
         [ret]
         [label ,L1]
         [addl (int -1000) %esp]
-        [movl (obj #t) %eax]
+        [movl (obj 1) %eax]
         [ret])
-      #t))
+      1))
 
   (let ([L1 (gensym)])
     (test-code
@@ -444,13 +545,13 @@
         [cmpl (int 7000) (disp (int -1004) %esp)]
         [jle (label ,L1)]
         [addl (int -1000) %esp]
-        [movl (obj #f) %eax]
+        [movl (obj 0) %eax]
         [ret]
         [label ,L1]
         [addl (int -1000) %esp]
-        [movl (obj #t) %eax]
+        [movl (obj 1) %eax]
         [ret])
-      #t))
+      1))
 
   (let ([L1 (gensym)])
     (test-code
@@ -458,12 +559,12 @@
         [movl (int 70) %ebx]
         [cmpl (disp (int -4) %esp) %ebx]
         [jge (label ,L1)]
-        [movl (obj #f) %eax]
+        [movl (obj 0) %eax]
         [ret]
         [label ,L1]
-        [movl (obj #t) %eax]
+        [movl (obj 1) %eax]
         [ret])
-      #t))
+      1))
 
 
   (let ([L_fact (gensym)] [L1 (gensym)])

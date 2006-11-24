@@ -5,11 +5,12 @@
 
 (add-tests-with-string-output "S_error"
  [(let ([error (lambda args
-                 (foreign-call "S_error" args))])
+                 (foreign-call "ik_error" args))])
    (error #f "died")
    12) => ""]
+
  [(let ([error (lambda args
-                 (foreign-call "S_error" args))])
+                 (foreign-call "ik_error" args))])
    (error 'car "died")
    12) => ""]
 )

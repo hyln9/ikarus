@@ -3,6 +3,9 @@
 my @regs = 
   ('%eax', '%ecx', '%edx', '%ebx', '%esp', '%ebp', '%esi', '%edi');
 
+my @regs_no_esp = 
+  ('%eax', '%ecx', '%edx', '%ebx', '%ebp', '%esi', '%edi');
+
 print ".text\n";
 
 
@@ -30,14 +33,37 @@ sub gen2{
   }
 }
 
-print "sete %al\n";
-print "sete %cl\n";
-print "sete %dl\n";
-print "sete %bl\n";
-print "sete %ah\n";
-print "sete %ch\n";
-print "sete %dh\n";
-print "sete %bh\n";
+sub gen3{
+  my $tmpl = shift;
+  foreach my $r1 (@regs){
+      foreach my $r3 (@regs_no_esp){
+    foreach my $r2 (@regs){
+        my $x = $tmpl;
+        $x =~ s/r1/$r1/g;
+        $x =~ s/r2/$r2/g;
+        $x =~ s/r3/$r3/g;
+        print $x;
+      }
+    }
+  }
+}
+
+gen1 "movb \$0, 4(r1)\n";
+#gen1 "movb -2(r1), %ah\n";
+
+#gen2 "xorl r1,r2\n";
+
+#gen3 "movl (r2,r3), r1\n";
+
+
+#print "sete %al\n";
+#print "sete %cl\n";
+#print "sete %dl\n";
+#print "sete %bl\n";
+#print "sete %ah\n";
+#print "sete %ch\n";
+#print "sete %dh\n";
+#print "sete %bh\n";
 
 #gen1 "pop r1\n";
 #gen1 "pop 12(r1)\n";

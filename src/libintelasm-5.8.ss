@@ -1,132 +1,8 @@
 
-($pcb-set! make-code
-  (lambda (code-size reloc-size closure-size)
-    (unless (and (fixnum? code-size) (fx> code-size 0))
-      (error 'make-code "invalid code size ~s" code-size))
-    (unless (and (fixnum? reloc-size) (fx>= reloc-size 0))
-      (error 'make-code "invalid relocation table size ~s" reloc-size))
-    (unless (and (fixnum? closure-size) (fx>= closure-size 0))
-      (error 'make-code "invalid closure size ~s" closure-size))
-    (foreign-call "S_make_code" code-size reloc-size closure-size)))
-
-($pcb-set! make-code-executable!
-   (lambda (x)
-     (unless (code? x) (error 'make-code-executable! "~s is not a code" x))
-     (unless (foreign-call "S_make_code_executable" x)
-       (error 'make-code-executable "Failed!"))))
-
-($pcb-set! code-instr-size
-   (lambda (x)
-     (unless (code? x)
-       (error 'code-instr-size "~s is not a code" x))
-     ($code-instr-size x)))
-
-($pcb-set! code-reloc-size
-   (lambda (x)
-     (unless (code? x)
-       (error 'code-reloc-size "~s is not a code" x))
-     ($code-reloc-size x)))
-
-($pcb-set! code-closure-size
-   (lambda (x)
-     (unless (code? x)
-       (error 'code-closure-size "~s is not a code" x))
-     ($code-closure-size x)))
-
-($pcb-set! code?
-   (lambda (x)
-     (code? x)))
-
-($pcb-set! code->closure
-   (lambda (x)
-     (unless (code? x) (error 'code->closure "~s is not a code"))
-     (unless ($fx= ($code-closure-size x) 1) 
-       (error 'code->closure "code contains free variables"))
-     ($code->closure x)))
-
-
-($pcb-set! set-code-byte!
-   (lambda (x i b)
-     (unless (code? x) (error 'set-code-byte! "~s is not a code" x))
-     (unless (and (fixnum? i) ($fx>= i 0))
-       (error 'set-code-byte! "~s is not a valid index" i))
-     (unless (and (fixnum? b) ($fx>= b 0) ($fx<= b 255))
-       (error 'set-code-byte! "~s is not a valid byte" b))
-     (unless ($fx< i ($code-instr-size x))
-       (error 'set-code-byte! "~s is out of range for a code of size ~s"
-              i
-              ($code-instr-size x)))
-     ($set-code-byte! x i b)))
-
-($pcb-set! set-code-word!
-   (lambda (x i w)
-     (unless (code? x) (error 'set-code-word! "~s is not a code" x))
-     (unless (and (fixnum? i) ($fx>= i 0))
-       (error 'set-code-word! "~s is not a valid index" i))
-     (unless (and ($fx< i ($code-instr-size x))
-                  ($fx< ($fx+ i 3) ($code-instr-size x)))
-       (error 'set-code-word! "~s is out of range for a code of size ~s"
-              i
-              ($code-instr-size x)))
-     ($set-code-word! x i w)))
-
-
-($pcb-set! set-code-object!
-   (lambda (code object code-offset reloc-index)
-     (unless (code? code)
-       (error 'set-code-object! "~s is not a code" code))
-     (unless (and (fixnum? code-offset)
-                  ($fx> code-offset 0)
-                  ($fx< code-offset ($code-instr-size code))
-                  ($fx< ($fx+ code-offset 3) ($code-instr-size code)))
-       (error 'set-code-object! "~s is not a valid code offset" code-offset))
-     (unless (and (fixnum? reloc-index)
-                  ($fx>= reloc-index 0)
-                  ($fx< reloc-index ($code-reloc-size code)))
-       (error 'set-code-object! "~s is not a valid reloc index" reloc-index))
-     ($set-code-object! code object code-offset reloc-index)))
-
-($pcb-set! set-code-object+offset!
-   (lambda (code object code-offset object-offset reloc-index)
-     (unless (code? code)
-       (error 'set-code-object+offset! "~s is not a code" code))
-     (unless (and (fixnum? code-offset)
-                  ($fx> code-offset 0)
-                  ($fx< code-offset ($code-instr-size code))
-                  ($fx< ($fx+ code-offset 3) ($code-instr-size code)))
-       (error 'set-code-object+offset!
-              "~s is not a valid code offset" code-offset))
-     (unless (and (fixnum? reloc-index)
-                  ($fx>= reloc-index 0)
-                  ($fx< reloc-index ($fx- ($code-reloc-size code) 1)))
-       (error 'set-code-object+offset!
-              "~s is not a valid reloc index" reloc-index))
-     ($set-code-object+offset! code object 
-        code-offset object-offset reloc-index)))
-
-
-($pcb-set! set-code-object+offset/rel!
-   (lambda (code object code-offset object-offset reloc-index)
-     (unless (code? code)
-       (error 'set-code-object+offset/rel! "~s is not a code" code))
-     (unless (and (fixnum? code-offset)
-                  ($fx> code-offset 0)
-                  ($fx< code-offset ($code-instr-size code))
-                  ($fx< ($fx+ code-offset 3) ($code-instr-size code)))
-       (error 'set-code-object+offset/rel!
-              "~s is not a valid code offset" code-offset))
-     (unless (and (fixnum? reloc-index)
-                  ($fx>= reloc-index 0)
-                  ($fx< reloc-index ($fx- ($code-reloc-size code) 1)))
-       (error 'set-code-object+offset/rel!
-              "~s is not a valid reloc index" reloc-index))
-     ($set-code-object+offset/rel! code object 
-        code-offset object-offset reloc-index)))
-
-
-($pcb-set! set-code-object/reloc/relative!
-   (lambda args (error 'set-code-object/reloc/relative! "not yet")))
-
+;;; 
+;;; assuming the existence of a code manager, this file defines an assember
+;;; that takes lists of assembly code and produces a list of code objects
+;;;
 
    ;;;      add     
    ;;;      and
@@ -229,7 +105,9 @@
     (define instr-len
       '([ret]
         [movl s d]
+        [movb s d]
         [addl s d]
+        [subl s d]
         [sall s d]
         [sarl s d]
         [andl s d]
@@ -281,14 +159,18 @@
         [setnle d]
         [cltd]
         [byte x]
+        [byte-vector x]
+        [int x]
         [label x]
+        [label-address x]
+        [current-frame-offset]
         ))
     (cond
       [(assq (car x) instr-len) =>
        (lambda (p) 
          (unless (fx= (length x) (length p))
-           (error 'check-len "invalid instruction format ~s" x)))]
-      [else (error 'check-len "unknown instruction ~s" x)])))
+           (error 'assembler "invalid instruction format ~s" x)))]
+      [else (error 'assembler "unknown instruction ~s" x)])))
 
 (define with-args
   (lambda (ls f)
@@ -332,8 +214,10 @@
     (and (list? x)
          (fx= (length x) 3)
          (eq? (car x) 'disp)
-         (imm? (cadr x))
-         (reg? (caddr x)))))
+         (or (imm? (cadr x))
+             (reg? (cadr x)))
+         (or (imm? (caddr x))
+             (reg? (caddr x))))))
 
 (define small-disp?
   (lambda (x)
@@ -378,6 +262,10 @@
       [(obj+? n)
        (let ([v (cadr n)] [d (caddr n)])
          (cons (reloc-word+ v d) ac))]
+      [(label-address? n)
+       (cons (cons 'label-addr (label-name n)) ac)]
+      [(foreign? n)
+       (cons (cons 'foreign-label (label-name n)) ac)]
       [else (error 'IMM32 "invalid ~s" n)])))
 
 
@@ -392,7 +280,16 @@
 
 (define imm?
   (lambda (x)
-    (or (int? x) (obj? x) (obj+? x))))
+    (or (int? x)
+        (obj? x)
+        (obj+? x) 
+        (label-address? x)
+        (foreign? x))))
+
+(define foreign?
+  (lambda (x)
+    (and (pair? x) (eq? (car x) 'foreign-label))))
+
 
 (define imm8?
   (lambda (x)
@@ -405,7 +302,19 @@
        (let ([d (cdr x)])
          (unless (and (null? (cdr d))
                       (symbol? (car d)))
-           (error #f "invalid label ~s" x)))
+           (error 'assemble "invalid label ~s" x)))
+       #t]
+      [else #f])))
+
+(define label-address?
+  (lambda (x)
+    (cond
+      [(and (pair? x) (eq? (car x) 'label-address))
+       (let ([d (cdr x)])
+         (unless (and (null? (cdr d))
+                      (or (symbol? (car d))
+                          (string? (car d))))
+           (error 'assemble "invalid label-address ~s" x)))
        #t]
       [else #f])))
 
@@ -429,6 +338,8 @@
     (cond
       [(imm8? i)
        (CODE c (ModRM 1 d s (IMM8 i ac)))]
+      [(reg? i) 
+       (CODE c (ModRM i d s ac))]
       [else
        (CODE c (ModRM 2 d s (IMM32 i ac)))])))
 
@@ -440,11 +351,52 @@
   (lambda (c d i ac)
     (CODE+r c d (IMM32 i ac))))
 
+
+(define RegReg
+  (lambda (r1 r2 r3 ac)
+    (cond
+      [(eq? r3 '%esp) (error 'assembler "BUG: invalid src %esp")]
+      [(eq? r1 '%ebp) (error 'assembler "BUG: invalid src %ebp")]
+      [else 
+       (list*
+         (byte (fxlogor 4 (fxsll (register-index r1) 3)))
+         (byte (fxlogor (register-index r2) 
+                        (fxsll (register-index r3) 4)))
+         ac)])))
+
+
+#;(define CODErd
+  (lambda (c r1 disp ac)
+    (with-args disp
+      (lambda (i/r r2)
+        (if (reg? i/r)
+            (CODE c (RegReg r1 i/r r2 ac))
+            (CODErri c r1 r2 i/r ac))))))
+
+
+(define IMM32*2
+  (lambda (i1 i2 ac)
+    (cond
+      [(and (int? i1) (obj? i2))
+       (let ([d (cadr i1)] [v (cadr i2)])
+         (cons (reloc-word+ v d) ac))]
+      [else (error 'assemble "IMM32*2 ~s ~s" i1 i2)])))
+
+
 (define CODErd
   (lambda (c r1 disp ac)
     (with-args disp
-      (lambda (i r2)
-        (CODErri c r1 r2 i ac)))))
+      (lambda (a1 a2)
+        (cond
+          [(and (reg? a1) (reg? a2))
+           (CODE c (RegReg r1 a1 a2 ac))]
+          [(and (imm? a1) (reg? a2))
+           (CODErri c r1 a2 a1 ac)]
+          [(and (imm? a1) (imm? a2))
+           (CODE c 
+             (ModRM 0 r1 '/5 
+               (IMM32*2 a1 a2 ac)))]
+          [else (error 'CODErd "unhandled ~s" disp)])))))
 
 (define CODEdi
   (lambda (c disp n ac)
@@ -499,6 +451,26 @@
              ;;; add imm -> mem (not needed)
              ;;; add reg -> mem (not needed)
              [else (error who "invalid ~s" a)])))]
+      [(subl)
+       (with-args a
+         (lambda (src dst)
+           (cond   
+             ;;; imm -> reg
+             [(and (imm8? src) (reg? dst)) 
+              (CODE #x83 (ModRM 3 '/5 dst (IMM8 src ac)))]
+             [(and (imm? src) (eq? dst '%eax)) 
+              (CODE #x2D (IMM32 src ac))]
+             [(and (imm? src) (reg? dst))
+              (CODE #x81 (ModRM 3 '/5 dst (IMM32 src ac)))]
+             ;;; reg -> reg
+             [(and (reg? src) (reg? dst))
+              (CODE #x29 (ModRM 3 src dst ac))]
+             ;;; mem -> reg
+             [(and (mem? src) (reg? dst))
+              (CODErd #x2B dst src ac)]
+             ;;; imm -> mem (not needed)
+             ;;; reg -> mem (not needed)
+             [else (error who "invalid ~s" a)])))] 
       [(sall)
        (with-args a
          (lambda (src dst)
@@ -655,6 +627,8 @@
               (CODE #xE8 (cons (cons 'relative (label-name dst)) ac))]
              [(mem? dst)
               (CODErd #xFF '/2 dst ac)]
+             [(reg? dst)
+              (CODE #xFF (ModRM 3 '/2 dst ac))]
              [else (error who "invalid jmp in ~s" a)])))]
       [(seta  setae  setb  setbe  sete  setg  setge  setl  setle
         setna setnae setnb setnbe setne setng setnge setnl setnle)
@@ -713,11 +687,22 @@
          (lambda (x)
            (unless (byte? x) (error who "invalid instruction ~s" a))
            (cons (byte x) ac)))]
+      [(byte-vector)
+       (with-args a
+         (lambda (x) (append (map byte (vector->list x)) ac)))]
+      [(int) (IMM32 a ac)] 
       [(label)
        (with-args a 
          (lambda (L)
            (unless (symbol? L) (error who "invalid instruction ~s" a))
            (cons (cons 'label L) ac)))]
+      [(label-address)
+       (with-args a 
+         (lambda (L)
+           (unless (symbol? L) (error who "invalid instruction ~s" a))
+           (cons (cons 'label-addr L) ac)))]
+      [(current-frame-offset)
+       (cons '(current-frame-offset) ac)]
       [else
        (error who "unknown instruction ~s" a)])))
 
@@ -758,8 +743,9 @@
     (fold (lambda (x ac)
             (case (car x)
               [(byte) (fx+ ac 1)]
-              [(word reloc-word reloc-word+) (fx+ ac 4)]
-              [(relative) (fx+ ac 4)]
+              [(word reloc-word reloc-word+ label-addr foreign-label 
+                relative current-frame-offset)
+               (fx+ ac 4)]
               [(label) ac]
               [else (error 'compute-code-size "unknown instr ~s" x)]))
           0 
@@ -770,10 +756,10 @@
   (lambda (ls)
     (fold (lambda (x ac)
             (case (car x)
-              [(reloc-word)       (fx+ ac 4)]
-              [(reloc-word+) (fx+ ac 8)]
-              [(relative)         (fx+ ac 4)]
-              [(word byte label) ac]
+              [(reloc-word foreign-label)       (fx+ ac 4)]
+              [(reloc-word+)      (fx+ ac 8)]
+              [(relative label-addr)         (fx+ ac 8)]
+              [(word byte label current-frame-offset)   ac]
               [else (error 'compute-reloc-size "unknown instr ~s" x)]))
           0 
           ls)))
@@ -808,14 +794,16 @@
                 (set-code-byte! x idx (cdr a))
                 (f (cdr ls) (fx+ idx 1) reloc)]
                [(reloc-word reloc-word+)
-                (let ([v (cdr a)])
-                  (f (cdr ls) (fx+ idx 4) (cons (cons idx a) reloc)))]
-               [(relative) 
+                (f (cdr ls) (fx+ idx 4) (cons (cons idx a) reloc))]
+               [(relative label-addr foreign-label) 
                 (f (cdr ls) (fx+ idx 4) (cons (cons idx a) reloc))]
                [(word)
                 (let ([v (cdr a)])
                    (set-code-word! x idx v)
                    (f (cdr ls) (fx+ idx 4) reloc))]
+               [(current-frame-offset)
+                (set-code-word! x idx idx)
+                (f (cdr ls) (fx+ idx 4) reloc)]
                [(label)
                 (set-label-loc! (cdr a) (cons x idx))
                 (f (cdr ls) idx reloc)]
@@ -834,10 +822,19 @@
           [(reloc-word)
            (set-code-object! code v idx reloc-idx)
            (set! reloc-idx (fxadd1 reloc-idx))]
+          [(foreign-label)
+           (set-code-foreign-object! code v idx reloc-idx)
+           (set! reloc-idx (fxadd1 reloc-idx))]
           [(reloc-word+)
            (let ([obj (car v)] [disp (cdr v)])
              (set-code-object+offset! code obj idx disp reloc-idx)
              (set! reloc-idx (fx+ reloc-idx 2)))]
+          [(label-addr)
+           (let ([loc (label-loc v)])
+             (let ([obj (car loc)] [off (cdr loc)])
+               (set-code-object+offset! 
+                 code obj idx (fx+ off 11) reloc-idx)))
+           (set! reloc-idx (fx+ reloc-idx 2))]
           [(relative)
            (let ([loc (label-loc v)])
              (let ([obj (car loc)] [off (cdr loc)])
@@ -861,17 +858,22 @@
 
 (define list*->code*
   (lambda (ls*)
-    (let ([ls* (map convert-instructions ls*)])
-      (let ([n* (map compute-code-size ls*)]
-            [m* (map compute-reloc-size ls*)])
-        (let ([code* (map (lambda (n m) (make-code n m 1)) n* m*)])
-          (let ([reloc** (map whack-instructions code* ls*)])
-            (for-each
-              (lambda (code reloc*)
-                (for-each (whack-reloc code) reloc*))
-              code* reloc**)
-            (for-each make-code-executable! code*)
-            code*))))))
+    (let ([closure-size* (map car ls*)]
+          [ls* (map cdr ls*)])
+      (let ([ls* (map convert-instructions ls*)])
+        (let ([n* (map compute-code-size ls*)]
+              [m* (map compute-reloc-size ls*)])
+          (let ([code* (map (lambda (n m c) (make-code n m c))
+                            n* 
+                            m*
+                            closure-size*)])
+            (let ([reloc** (map whack-instructions code* ls*)])
+              (for-each
+                (lambda (code reloc*)
+                  (for-each (whack-reloc code) reloc*))
+                code* reloc**)
+              (for-each make-code-executable! code*)
+              code*)))))))
 
 (define list->code
   (lambda (ls)

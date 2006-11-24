@@ -1,0 +1,10 @@
+Script started on Sat 22 Jul 2006 03:35:23 PM EDT
+[01;32maghuloum@titus[00m:[01;34m~/compiler-1/runtime[00m$ rlwrap runtime/ikarus ikarus.fasl petite-ikaarus.fasl  [A[01;32maghuloum@titus[00m:[01;34m~/compiler-1/runtime[00m$ [25Pgdb runtime/ikarus
+[K[A[01;32maghuloum@titus[00m:[01;34m~/compiler-1/runtime[00m$ gdb runtime/ikarus                  ./ikarus ../ikarus.fasl ../petite-ikarus.fassl 
+Petite Ikarus Scheme (Build 2006-07-22)
+Copyright (c) 2006 Abdulaziz Ghuloum
+
+> (load 
+[01;32maghuloum@titus[00m:[01;34m~/compiler-1/runtime[00m$ [Kexit
+
+Script done on Sat 22 Jul 2006 03:35:46 PM EDT

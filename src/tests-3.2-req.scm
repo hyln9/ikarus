@@ -73,11 +73,11 @@
 ) 
 
 
-(add-tests-with-string-output "arg-check for primitives" 
-  [(cons 1 2 3) => ""]
-  [(cons 1) => ""]
-  [(vector-ref '#() 1 2 3 4) => ""]
-  [(vector-ref) => ""]
-  [(vector) => "#()\n"]
-  [(string) => "\"\"\n"]
-)
+;;; (add-tests-with-string-output "arg-check for primitives" 
+;;;   [(cons 1 2 3) => ""]
+;;;   [(cons 1) => ""]
+;;;   [(vector-ref '#() 1 2 3 4) => ""]
+;;;   [(vector-ref) => ""]
+;;;   [(vector) => "#()\n"]
+;;;   [(string) => "\"\"\n"]
+;;; )

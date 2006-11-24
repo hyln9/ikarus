@@ -861,7 +861,7 @@
       (let ([sym (car d)])
         (unless (symbol? sym) (syntax-error x))
         (cond
-          [(primitive sym) (build-primref sym)]
+          [(primitive? sym) (build-primref sym)]
           [else (syntax-error x)]))))
   ;;;
   (define E-apply

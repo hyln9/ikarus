@@ -1,5 +1,6 @@
 
 (add-tests-with-string-output "cons"
+  [(fxadd1 0) => "1\n"]
   [(pair? (cons 1 2)) => "#t\n"]
   [(pair? 12) => "#f\n"]
   [(pair? #t) => "#f\n"]

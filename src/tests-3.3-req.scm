@@ -22,22 +22,22 @@
   [(fx<= 1 2) => "#t\n"]
   [(fx<= 10 10) => "#t\n"]
   [(fx<= 10 2) => "#f\n"]
-  [(let ([f
+  #;[(let ([f
       (lambda (s i c) 
-    ;(unless (string? s) 
-    ;  (error 'string-set!1 "not a string ~s" s))
-    ;(unless (fixnum? i)
-    ;  (error 'string-set!2 "invalid index ~s" i))
+    (unless (string? s) 
+      (error 'string-set!1 "not a string ~s" s))
+    (unless (fixnum? i)
+      (error 'string-set!2 "invalid index ~s" i))
     (if (fx< i ($string-length s))
         #f
         (error 's1 ""))
-    ;(unless (fx>= i 0) 
-    ;  (error 'string-set!3 "index ~s is out of range for ~s" i s))
-    ;(unless (and (fx< i (string-length s))
-    ;             (fx>= i 0))
-    ;  (error 'string-set!3 "index ~s is out of range for ~s" i s))
-    ;(unless (char? c)
-    ;  (error 'string-set!4 "not a char ~s" c))
+    (unless (fx>= i 0) 
+      (error 'string-set!3 "index ~s is out of range for ~s" i s))
+    (unless (and (fx< i (string-length s))
+                 (fx>= i 0))
+      (error 'string-set!3 "index ~s is out of range for ~s" i s))
+    (unless (char? c)
+      (error 'string-set!4 "not a char ~s" c))
     ($string-set! s i c) 12)])
    (let ([x ($string #\a #\b #\c)]
          [y #\a])

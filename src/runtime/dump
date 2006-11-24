@@ -1,0 +1,133 @@
+SYM 0x080492fc
+SYM 0x080492fc
+SYM 0x080492fc
+SYM 0x080492fc
+SYM 0x0804b03d
+SYM 0x0804b03d
+SYM 0x0804935d
+SYM 0x080492fc
+SYM 0xa7e4b3d0
+SYM 0xa7e4b3d0
+SYM 0x0804ad75
+SYM 0x0804acdf
+SYM 0x08049394
+SYM 0x080494c4
+SYM 0x08049460
+SYM 0x080495f2
+SYM 0x08049460
+SYM 0x080494c4
+SYM 0x080495f2
+SYM 0x080493fd
+SYM 0x080493fd
+ik_collect entry 16384 (pcb=0x0804e008)
+current heap is 0xa7a1e000 + 4194304 = 0xa7e1e000
+add_code_entry 0xa7508018 (pre=0xa7508000)
+add_code_entry 0xa727e018 (pre=0xa727e000)
+add_code_entry 0xa70e5018 (pre=0xa70e5000)
+add_code_entry 0xa70e2018 (pre=0xa70e2000)
+add_code_entry 0xa70f3018 (pre=0xa70f3000)
+add_code_entry 0xa761b018 (pre=0xa761b000)
+collect loop entering
+scan_code 0xa761b008
+add_code_entry 0xa761a018 (pre=0xa761a000)
+add_code_entry 0xa7619018 (pre=0xa7619000)
+add_code_entry 0xa7618018 (pre=0xa7618000)
+scan_code done
+scan_code 0xa7618008
+scan_code done
+scan_code 0xa7619008
+scan_code done
+scan_code 0xa761a008
+scan_code done
+scan_code 0xa70f3008
+add_code_entry 0xa70fb018 (pre=0xa70fb000)
+add_code_entry 0xa70f9018 (pre=0xa70f9000)
+add_code_entry 0xa70f8018 (pre=0xa70f8000)
+scan_code done
+scan_code 0xa70f8008
+scan_code done
+scan_code 0xa70f9008
+scan_code done
+scan_code 0xa70fb008
+scan_code done
+scan_code 0xa70e2008
+add_code_entry 0xa70fa018 (pre=0xa70fa000)
+scan_code done
+scan_code 0xa70fa008
+scan_code done
+scan_code 0xa70e5008
+add_code_entry 0xa70e4018 (pre=0xa70e4000)
+add_code_entry 0xa70e3018 (pre=0xa70e3000)
+add_code_entry 0xa70e1018 (pre=0xa70e1000)
+add_code_entry 0xa70e0018 (pre=0xa70e0000)
+add_code_entry 0xa70df018 (pre=0xa70df000)
+add_code_entry 0xa70de018 (pre=0xa70de000)
+add_code_entry 0xa70dd018 (pre=0xa70dd000)
+add_code_entry 0xa70dc018 (pre=0xa70dc000)
+add_code_entry 0xa70db018 (pre=0xa70db000)
+add_code_entry 0xa70da018 (pre=0xa70da000)
+add_code_entry 0xa70d8018 (pre=0xa70d8000)
+add_code_entry 0xa70d6018 (pre=0xa70d6000)
+add_code_entry 0xa70d5018 (pre=0xa70d5000)
+add_code_entry 0xa70d4018 (pre=0xa70d4000)
+add_code_entry 0xa70d3018 (pre=0xa70d3000)
+scan_code done
+scan_code 0xa70d3008
+scan_code done
+scan_code 0xa70d4008
+scan_code done
+scan_code 0xa70d5008
+scan_code done
+scan_code 0xa70d6008
+scan_code done
+scan_code 0xa70d8008
+add_code_entry 0xa70d7018 (pre=0xa70d7000)
+scan_code done
+scan_code 0xa70d7008
+scan_code done
+scan_code 0xa70da008
+add_code_entry 0xa70d9018 (pre=0xa70d9000)
+scan_code done
+scan_code 0xa70d9008
+scan_code done
+scan_code 0xa70db008
+scan_code done
+scan_code 0xa70dc008
+scan_code done
+scan_code 0xa70dd008
+scan_code done
+scan_code 0xa70de008
+scan_code done
+scan_code 0xa70df008
+scan_code done
+scan_code 0xa70e0008
+scan_code done
+scan_code 0xa70e1008
+scan_code done
+scan_code 0xa70e3008
+scan_code done
+scan_code 0xa70e4008
+scan_code done
+scan_code 0xa727e008
+add_code_entry 0xa7282018 (pre=0xa7282000)
+add_code_entry 0xa7280018 (pre=0xa7280000)
+add_code_entry 0xa727f018 (pre=0xa727f000)
+scan_code done
+scan_code 0xa727f008
+scan_code done
+scan_code 0xa7280008
+scan_code done
+scan_code 0xa7282008
+scan_code done
+scan_code 0xa7508008
+add_code_entry 0xa7507018 (pre=0xa7507000)
+add_code_entry 0xa7506018 (pre=0xa7506000)
+add_code_entry 0xa7505018 (pre=0xa7505000)
+scan_code done
+scan_code 0xa7505008
+scan_code done
+scan_code 0xa7506008
+scan_code done
+scan_code 0xa7507008
+scan_code done
+collect loop exiting
