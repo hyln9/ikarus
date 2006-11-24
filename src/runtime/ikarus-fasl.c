@@ -91,40 +91,18 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
 }
 
 
-static void
-ik_link_dl(ikdl* x, ikdl* target){
-  ikdl* next = target->next;
-  x->next = next;
-  x->prev = target;
-  target->next = x;
-  next->prev = x;
-}
-
-static ikp
-ik_allocate_code(int size, ikpcb* pcb){
-  int memreq = align_to_next_page(size + sizeof(ikcode_preheader));
-  ikp mem = ik_mmap(memreq);
-  ikcodes* p = ik_malloc(sizeof(ikcodes));
-  p->code_object = mem + sizeof(ikcode_preheader);
-  p->attr = ikcode_live;
-  p->base = mem;
-  p->size = memreq;
-  ik_link_dl(&(p->dl), &pcb->codes);
-  ref(mem, 0) = (ikp) p;
-  return mem + sizeof(ikcode_preheader);
-}
 
 static ikp 
 ik_make_code(int code_size, int reloc_size, ikp closure_size, ikpcb* pcb){
   int required_memory = 
-    align(code_size + reloc_size + disp_code_data);
-
-  ikp mem = ik_allocate_code(required_memory, pcb);
-  REF(mem, 0) = IK_CODE_SEC_TAG;
-  REF(mem, IK_DISP_CODE_CODE_SIZE) = (ikp) code_size;
-  REF(mem, IK_DISP_CODE_RELOC_SIZE) = (ikp) reloc_size;
-  REF(mem, IK_DISP_CODE_CLOSURE_SIZE) = closure_size;
-  return (ikp)(mem+IK_CODE_PRI_TAG);
+    align_to_next_page(code_size + reloc_size + disp_code_data);
+  ikp mem = ik_mmap_code(required_memory, 0, pcb);
+  ref(mem, 0) = code_tag;
+  ref(mem, disp_code_code_size) = (ikp) code_size;
+  ref(mem, disp_code_reloc_size) = (ikp) reloc_size;
+  ref(mem, disp_code_closure_size) = closure_size;
+  ref(mem,disp_code_data+code_size+reloc_size) = 0;
+  return (ikp)(mem+vector_tag);
 }
 
 static char fasl_read_byte(fasl_port* p){
@@ -147,26 +125,13 @@ static void fasl_read_buf(fasl_port* p, void* buf, int n){
     exit(-1);
   }
 }
-
-static void
-ik_set_car(ikp x, ikp v){
-  REF(x, IK_OFF_CAR) = v;
-}
-
-static void
-ik_set_cdr(ikp x, ikp v){
-  REF(x, IK_OFF_CDR) = v;
-}
-
-
-
 typedef struct{
   int code_size;
   int reloc_size;
   ikp closure_size;
 } code_header;
 
-#define wordsize 4
+
 
 static ikp do_read(ikpcb* pcb, fasl_port* p){
   char c = fasl_read_byte(p);
@@ -277,8 +242,8 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     if(put_mark_index){
       p->marks[put_mark_index] = pair;
     }
-    ik_set_car(pair, do_read(pcb, p));
-    ik_set_cdr(pair, do_read(pcb, p));
+    ref(pair, off_car) = do_read(pcb, p);
+    ref(pair, off_cdr) = do_read(pcb, p);
     return pair;
   }
   else if(c == 'M'){

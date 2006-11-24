@@ -189,22 +189,22 @@
                         [else (error 'fasl-write "unrecognized reloc ~s" b)]
                         )))))]
              [else (error 'fasl-write "~s is not fasl-writable" x)])]))))
+  (define do-fasl-write 
+    (lambda (x port)
+      (let ([h (make-hash-table)])
+         (make-graph x h)
+         (write-char #\# port)
+         (write-char #\@ port)
+         (write-char #\I port)
+         (write-char #\K port)
+         (write-char #\0 port)
+         (write-char #\1 port)
+         (fasl-write x port h 1))))
   (primitive-set! 'fasl-write
-     (lambda (x . rest)
-       (let ([port 
-              (if (null? rest)
-                  (current-output-port)
-                  (let ([a (car rest)])
-                    (unless (output-port? a)
-                      (error 'fasl-write "~s is not an output port" a))
-                    a))])
-         (let ([h (make-hash-table)])
-           (make-graph x h)
-           (write-char #\# port)
-           (write-char #\@ port)
-           (write-char #\I port)
-           (write-char #\K port)
-           (write-char #\0 port)
-           (write-char #\1 port)
-           (fasl-write x port h 1))))))
+     (case-lambda 
+       [(x) (do-fasl-write x (current-output-port))]
+       [(x port)
+        (unless (output-port? port)
+          (error 'fasl-write "~s is not an output port" port))
+        (do-fasl-write x port)])))
 

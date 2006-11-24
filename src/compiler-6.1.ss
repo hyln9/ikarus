@@ -61,7 +61,7 @@
 (define scheme-library-files
   '(["libhandlers-6.0.ss"    "libhandlers.fasl"]
     ["libcontrol-6.1.ss"     "libcontrol.fasl"]
-    ["libcollect-6.0.ss"     "libcollect.fasl"]
+    ["libcollect-6.1.ss"     "libcollect.fasl"]
     ["librecord-6.1.ss"      "librecord.fasl"]
     ["libcxr-6.0.ss"         "libcxr.fasl"]
     ["libcore-6.1.ss"        "libcore.fasl"]

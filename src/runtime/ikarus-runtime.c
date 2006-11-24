@@ -15,6 +15,111 @@
 
 int total_allocated_pages = 0;
 
+#define segment_size  (pagesize*pagesize/wordsize)
+#define segment_shift (pageshift+pageshift-wordshift)
+#define segment_index(x) (((unsigned int)(x)) >> segment_shift)
+
+static void
+extend_table_maybe(unsigned char*p,  int size, ikpcb* pcb){
+  assert(size == align_to_next_page(size));
+  unsigned char* q = p + size;
+  if(p < pcb->memory_base){
+    int new_lo = segment_index(p);
+    int old_lo = segment_index(pcb->memory_base);
+    int hi = segment_index(pcb->memory_end);
+    int new_vec_size = (hi - new_lo) * pagesize;
+    int old_vec_size = (hi - old_lo) * pagesize;
+    unsigned char* v = ik_mmap(new_vec_size);
+    bzero(v, new_vec_size - old_vec_size);
+    memcpy(v+new_vec_size-old_vec_size, pcb->dirty_vector_base, old_vec_size);
+    ik_munmap(pcb->dirty_vector_base, old_vec_size);
+    pcb->dirty_vector_base = (unsigned int*) v;
+    pcb->dirty_vector = (unsigned int*)(v - new_lo * pagesize);
+    unsigned char* s = ik_mmap(new_vec_size);
+    bzero(s, new_vec_size - old_vec_size);
+    memcpy(s+new_vec_size-old_vec_size, pcb->segment_vector_base, old_vec_size);
+    ik_munmap(pcb->segment_vector_base, old_vec_size);
+    pcb->segment_vector_base = (unsigned int*) s;
+    pcb->segment_vector = (unsigned int*)(s - new_lo * pagesize);
+    pcb->memory_base = (unsigned char*)(new_lo * segment_size);
+  } 
+  else if (q > pcb->memory_end){
+    fprintf(stderr, "must extend segment table upwards!\n");
+    fprintf(stderr, "mem: 0x%08x ... 0x%08x\n", 
+        (int)pcb->memory_base, (int)pcb->memory_end-1);
+    fprintf(stderr, "new: 0x%08x ... 0x%08x\n",
+        (int)p, (int)q-1);
+    exit(-1);
+  }
+}
+
+
+static void
+set_segment_type(unsigned char* base, int size, unsigned int type, ikpcb* pcb){
+  assert(base >= pcb->memory_base);
+  assert((base+size) <= pcb->memory_end);
+  assert(size == align_to_next_page(size));
+  unsigned int* p = pcb->segment_vector + page_index(base);
+  unsigned int* q = p + page_index(size);
+  while(p < q){
+    *p = type;
+    p++;
+  }
+}
+
+void
+ik_munmap_from_segment(unsigned char* base, int size, ikpcb* pcb){
+  assert(base >= pcb->memory_base);
+  assert((base+size) <= pcb->memory_end);
+  assert(size == align_to_next_page(size));
+  unsigned int* p = pcb->segment_vector + page_index(base);
+  unsigned int* s = pcb->dirty_vector + page_index(base);
+  unsigned int* q = p + page_index(size);
+  while(p < q){
+    assert(*p != hole_mt);
+    *p = hole_mt; /* holes */
+    *s = 0;  
+    p++; s++;
+  }
+  ik_munmap(base, size);
+}
+
+
+
+void* 
+ik_mmap_typed(int size, unsigned int type, ikpcb* pcb){
+  unsigned char* p = ik_mmap(size);
+  extend_table_maybe(p, size, pcb);
+  set_segment_type(p, size, type, pcb);
+  return p;
+}
+
+void* 
+ik_mmap_ptr(int size, int gen, ikpcb* pcb){
+  return ik_mmap_typed(size, pointers_mt | gen, pcb);
+}
+
+void* 
+ik_mmap_data(int size, int gen, ikpcb* pcb){
+  return ik_mmap_typed(size, data_mt | gen, pcb);
+}
+
+void* 
+ik_mmap_code(int size, int gen, ikpcb* pcb){
+  return ik_mmap_typed(size, code_mt | gen, pcb);
+}
+
+
+void* 
+ik_mmap_mixed(int size, ikpcb* pcb){
+  assert(0);
+  return 0;
+}
+
+
+
+
+
 void* 
 ik_mmap(int size){
   int pages = (size + pagesize - 1) / pagesize;
@@ -117,6 +222,40 @@ ikpcb* ik_make_pcb(){
   codes->next = codes;
   codes->prev = codes;
 
+  {
+    /* compute extent of heap and stack */
+    unsigned char* lo_mem;
+    unsigned char* hi_mem;
+    if(pcb->heap_base < pcb->stack_base){
+      lo_mem = pcb->heap_base - pagesize;
+      hi_mem = pcb->stack_base + pcb->stack_size + pagesize;
+    } else {
+      lo_mem = pcb->stack_base - pagesize;
+      hi_mem = pcb->heap_base + pcb->heap_size + pagesize;
+    }
+
+    int lo_seg = segment_index(lo_mem);
+    int hi_seg = segment_index(hi_mem+segment_size-1);
+    int vec_size = (hi_seg - lo_seg) * pagesize;
+    char* dvec = ik_mmap(vec_size);
+    bzero(dvec, vec_size);
+    pcb->dirty_vector_base = (unsigned int*) (dvec);
+    pcb->dirty_vector = (unsigned int*) (dvec - lo_seg * pagesize);
+    char* svec = ik_mmap(vec_size);
+    bzero(svec, vec_size);
+    pcb->segment_vector_base = (unsigned int*) (svec);
+    pcb->segment_vector = (unsigned int*) (svec - lo_seg * pagesize);
+    pcb->memory_base = (unsigned char*)(lo_seg * segment_size);
+    pcb->memory_end = (unsigned char*)(hi_seg * segment_size);
+    set_segment_type(pcb->heap_base-pagesize, 
+        pcb->heap_size+2*pagesize, 
+        mainheap_mt,
+        pcb);
+    set_segment_type(pcb->stack_base-pagesize, 
+        pcb->stack_size+2*pagesize, 
+        mainstack_mt,
+        pcb);
+  }
   /* initialize base rtd */
   {
     ikp s = ik_cstring_to_symbol("$base-rtd", pcb);
@@ -133,6 +272,7 @@ ikpcb* ik_make_pcb(){
 }
 
 void ik_delete_pcb(ikpcb* pcb){
+  assert(0);
   free(pcb);
 }
 
@@ -159,7 +299,7 @@ ik_alloc(ikpcb* pcb, int size){
     int new_size = (size > IK_HEAP_EXT_SIZE) ? size : IK_HEAP_EXT_SIZE;
     new_size += 2 * 4096;
     new_size = align_to_next_page(new_size);
-    ap = ik_mmap(new_size);
+    ap = ik_mmap_mixed(new_size, pcb);
     pcb->heap_base = ap;
     pcb->heap_size = new_size;
     pcb->allocation_redline = ap + new_size - 2 * 4096;
@@ -168,6 +308,8 @@ ik_alloc(ikpcb* pcb, int size){
     return ap;
   }
 }
+
+
 
 void ik_error(ikp args){
   fprintf(stderr, "Error: ");
@@ -275,3 +417,59 @@ ikp
 ik_system(ikp str){
   return fix(system(string_data(str)));
 }
+
+static char*
+mtname(unsigned int n){
+  if(n == mainheap_type)  { return "HEAP_T"; }
+  if(n == mainstack_type) { return "STAK_T"; }
+  if(n == pointers_type)  { return "PTER_T"; }
+  if(n == data_type)      { return "DATA_T"; }
+  if(n == code_type)      { return "CODE_T"; }
+  if(n == hole_type)      { return "      "; }
+  return "WHAT_T";
+}
+
+ikp
+ik_dump_metatable(ikpcb* pcb){
+  unsigned int* s = pcb->segment_vector_base;
+  unsigned char* p = pcb->memory_base;
+  unsigned char* hi = pcb->memory_end;
+  while(p < hi){
+    unsigned int t = *s & type_mask;
+    unsigned char* start = p;
+    p += pagesize;
+    s++;
+    while((p < hi) && ((*s & type_mask) == t)){
+      p += pagesize;
+      s++;
+    }
+    fprintf(stderr, "0x%08x + %5d pages = %s\n", 
+        (int) start,
+        ((int)p-(int)start)/pagesize,
+        mtname(t));
+  }
+  return void_object;
+}
+
+ikp
+ik_dump_dirty_vector(ikpcb* pcb){
+  unsigned int* s = pcb->dirty_vector_base;
+  unsigned char* p = pcb->memory_base;
+  unsigned char* hi = pcb->memory_end;
+  while(p < hi){
+    unsigned int t = *s;
+    unsigned char* start = p;
+    p += pagesize;
+    s++;
+    while((p < hi) && (*s == t)){
+      p += pagesize;
+      s++;
+    }
+    fprintf(stderr, "0x%08x + %5d pages = 0x%08x\n", 
+        (int) start,
+        ((int)p-(int)start)/pagesize,
+        t);
+  }
+  return void_object;
+}
+

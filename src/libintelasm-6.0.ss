@@ -32,6 +32,7 @@
    ;;;      ret
    ;;;      sall
    ;;;      sarl
+   ;;;      shrl
    ;;;      sete
    ;;;      setg
 
@@ -110,6 +111,7 @@
         [subl s d]
         [sall s d]
         [sarl s d]
+        [shrl s d]
         [andl s d]
         [xorl s d]
         [orl s d]
@@ -498,6 +500,17 @@
               (CODE #xC1 (ModRM 3 '/4 dst (IMM8 src ac)))]
              [(and (eq? src '%cl) (reg? dst))
               (CODE #xD3 (ModRM 3 '/4 dst ac))]
+             [else (error who "invalid ~s" a)])))]
+      [(shrl)
+       (with-args a
+         (lambda (src dst)
+           (cond
+             [(and (equal? '(int 1) src) (reg? dst))
+              (CODE #xD1 (ModRM 3 '/5 dst ac))]
+             [(and (imm8? src) (reg? dst))
+              (CODE #xC1 (ModRM 3 '/5 dst (IMM8 src ac)))]
+             [(and (eq? src '%cl) (reg? dst))
+              (CODE #xD3 (ModRM 3 '/5 dst ac))]
              [else (error who "invalid ~s" a)])))]
       [(sarl)
        (with-args a

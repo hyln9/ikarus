@@ -1,37 +1,40 @@
 
+#CFLAGS = -Wall -DNDEBUG -O3
+CFLAGS = -Wall -g
+LDFLAGS = -g -ldl -luuid -rdynamic
 all: ikarus
 
 ikarus: ikarus-collect.o ikarus-runtime.o ikarus-main.o ikarus-fasl.o \
   ikarus-exec.o ikarus-print.o ikarus-enter.s ikarus-symbol-table.o  \
-  ikarus-hash-tables.o
-	gcc -g -Wall -ldl -luuid -rdynamic -o ikarus \
+  ikarus-weak-pairs.o
+	gcc  $(LDFLAGS) -o ikarus \
 	ikarus-main.o ikarus-runtime.o \
 	ikarus-fasl.o ikarus-exec.o ikarus-print.o ikarus-enter.s \
-	ikarus-symbol-table.o ikarus-collect.o ikarus-hash-tables.o
+	ikarus-symbol-table.o ikarus-collect.o ikarus-weak-pairs.o
 
 ikarus-main.o: ikarus-main.c ikarus.h
-	gcc -Wall -g -c ikarus-main.c
+	gcc $(CFLAGS) -c ikarus-main.c
 
 ikarus-runtime.o: ikarus-runtime.c ikarus.h
-	gcc -Wall -g -c ikarus-runtime.c
+	gcc $(CFLAGS) -c ikarus-runtime.c
 
 ikarus-fasl.o: ikarus-fasl.c ikarus.h
-	gcc -Wall -g -c ikarus-fasl.c
+	gcc $(CFLAGS) -c ikarus-fasl.c
 
 ikarus-exec.o: ikarus-exec.c ikarus.h
-	gcc -Wall -g -c ikarus-exec.c
+	gcc $(CFLAGS) -c ikarus-exec.c
 
 ikarus-print.o: ikarus-print.c ikarus.h
-	gcc -Wall -g -c ikarus-print.c
+	gcc $(CFLAGS) -c ikarus-print.c
 
 ikarus-collect.o: ikarus-collect.c ikarus.h
-	gcc -Wall -g -c ikarus-collect.c
+	gcc $(CFLAGS) -c ikarus-collect.c
+
+ikarus-weak-pairs.o: ikarus-weak-pairs.c ikarus.h
+	gcc $(CFLAGS) -c ikarus-weak-pairs.c
 
 ikarus-symbol-table.o: ikarus-symbol-table.c ikarus.h
-	gcc -Wall -g -c ikarus-symbol-table.c
-
-ikarus-hash-tables.o: ikarus-hash-tables.c ikarus.h
-	gcc -Wall -g -c ikarus-hash-tables.c
+	gcc $(CFLAGS) -c ikarus-symbol-table.c
 
 ikarus.h: ikarus-data.h
 	touch ikarus.h

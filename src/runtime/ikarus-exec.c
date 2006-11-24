@@ -32,6 +32,9 @@ ikp ik_exec_code(ikpcb* pcb, ikp code_ptr){
       nk->size = k->size - framesize;
       k->size = framesize;
       k->next = vector_tag + (ikp)nk;
+      /* record side effect */
+      unsigned int idx = ((unsigned int)(&k->next)) >> pageshift;
+      pcb->dirty_vector[idx] = -1;
     }
     pcb->next_k = k->next;
     ikp fbase = pcb->frame_base - wordsize;

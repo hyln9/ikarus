@@ -73,6 +73,8 @@
 
 #define null_object       ((ikp)0x4F)
 #define void_object       ((ikp)0x7F)
+#define bwp_object        ((ikp)0x8F)
+
 #define unbound_object    ((ikp)0x6F)
 #define IK_CHAR_TAG       0x0F
 #define IK_CHAR_MASK      0xFF
@@ -183,5 +185,16 @@
 #define off_htable_count (disp_htable_count - vector_tag) 
 #define off_htable_size  (disp_htable_size  - vector_tag) 
 #define off_htable_mem   (disp_htable_mem   - vector_tag) 
+
+#define disp_tcbucket_tconc  0
+#define disp_tcbucket_key    4
+#define disp_tcbucket_val    8
+#define disp_tcbucket_next  12
+#define tcbucket_size 16
+#define off_tcbucket_tconc (disp_tcbucket_tconc - vector_tag)
+#define off_tcbucket_key   (disp_tcbucket_key   - vector_tag)
+#define off_tcbucket_val   (disp_tcbucket_val   - vector_tag)
+#define off_tcbucket_next  (disp_tcbucket_next  - vector_tag)
+
 
 #endif

@@ -7,7 +7,7 @@
       (let ([code-size (fxsll (fxsra (fx+ code-size 3) 2) 2)]) 
         (make-code 
           closure-size
-          (make-string code-size)
+          (make-string code-size (integer->char 0))
           (make-vector (fxsra reloc-size 2)))))))
 
 (define set-code-byte! 
