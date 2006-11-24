@@ -2,7 +2,8 @@
 all: ikarus.boot
 
 ikarus.boot: *.ss
-	echo '(load "makefile.ss")' | ../runtime/ikarus ikarus.boot
+	cp ikarus.boot ikarus.boot.back
+	echo '(load "makefile.ss")' | time ../runtime/ikarus ikarus.boot
 
 clean:
 	rm -f *.fasl
