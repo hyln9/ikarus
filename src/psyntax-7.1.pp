@@ -5,7 +5,7 @@
 
 (let ()
 (define + fx+)
-(define - fx-)
+;(define - fx-)
 (define * fx*)
 (define quotient fxquotient)
 (define modulo fxmodulo)
@@ -970,7 +970,7 @@
                                                        (cons
                                                          (car m12278)
                                                          (f2277
-                                                           (- n12279 '1)
+                                                           (fx- n12279 '1)
                                                            (cdr m12278)))
                                                        (if (equal?
                                                              m12278
@@ -3084,7 +3084,7 @@
                                                                                                                 (if t1893
                                                                                                                     t1893
                                                                                                                     (lp1891
-                                                                                                                      (- i1892
+                                                                                                                      (fx- i1892
                                                                                                                          '1))))
                                                                                                                ((lambda (id1894)
                                                                                                                   (help-bound-id=?432
@@ -3125,7 +3125,7 @@
                                                                                                                    i1892)))
                                                                                                              '#f))))
                                                                                         lp1891)
-                                                                                       (- (vector-length
+                                                                                       (fx- (vector-length
                                                                                             v1890)
                                                                                           '1)))
                                                                                     (interface-exports449
@@ -4080,7 +4080,7 @@
                                            (if (< i1704 '0)
                                                ls1703
                                                (do1702
-                                                 (- i1704 '1)
+                                                 (fx- i1704 '1)
                                                  (cons
                                                    (fn1701
                                                      (vector-ref
@@ -4088,7 +4088,7 @@
                                                        i1704))
                                                    ls1703))))))
                           do1702)
-                         (- (vector-length v1700) '1)
+                         (fx- (vector-length v1700) '1)
                          '())))
             (vfor-each483 (lambda (fn1696 v1695)
                             ((lambda (len1697)
@@ -6559,7 +6559,7 @@
                                                 (gen-ref1032
                                                   src1082
                                                   var1081
-                                                  (- level1080 '1)
+                                                  (fx- level1080 '1)
                                                   (cdr maps1079)))
                                               (lambda (outer-var1084
                                                        outer-maps1083)
@@ -9693,7 +9693,7 @@
                                                              '#(syntax-object (quote unquote) ((top) #(ribcage #(p) #((top)) #("i")) #(ribcage #(p q) #((top) (top)) #("i" "i")) #(ribcage () () ()) #(ribcage #(p lev) #((top) (top)) #("i" "i")) #(ribcage #(isquote? islist? iscons? quote-nil? quasilist* quasicons quasiappend quasivector vquasi quasi) #((top) (top) (top) (top) (top) (top) (top) (top) (top) (top)) #("i" "i" "i" "i" "i" "i" "i" "i" "i" "i")) #(top-ribcage *top* #t)))
                                                              (quasi2757
                                                                p2804
-                                                               (- lev2796
+                                                               (fx- lev2796
                                                                   '1)))
                                                            (vquasi2758
                                                              q2800
@@ -9715,7 +9715,7 @@
                                                                     '#(syntax-object (quote unquote-splicing) ((top) #(ribcage #(p) #((top)) #("i")) #(ribcage #(p q) #((top) (top)) #("i" "i")) #(ribcage () () ()) #(ribcage #(p lev) #((top) (top)) #("i" "i")) #(ribcage #(isquote? islist? iscons? quote-nil? quasilist* quasicons quasiappend quasivector vquasi quasi) #((top) (top) (top) (top) (top) (top) (top) (top) (top) (top)) #("i" "i" "i" "i" "i" "i" "i" "i" "i" "i")) #(top-ribcage *top* #t)))
                                                                     (quasi2757
                                                                       p2808
-                                                                      (- lev2796
+                                                                      (fx- lev2796
                                                                          '1)))
                                                                   (vquasi2758
                                                                     q2800
@@ -9766,7 +9766,7 @@
                                             '#(syntax-object (quote unquote) ((top) #(ribcage #(p) #((top)) #("i")) #(ribcage () () ()) #(ribcage #(p lev) #((top) (top)) #("i" "i")) #(ribcage #(isquote? islist? iscons? quote-nil? quasilist* quasicons quasiappend quasivector vquasi quasi) #((top) (top) (top) (top) (top) (top) (top) (top) (top) (top)) #("i" "i" "i" "i" "i" "i" "i" "i" "i" "i")) #(top-ribcage *top* #t)))
                                             (quasi2757
                                               (list p2776)
-                                              (- lev2772 '1)))))
+                                              (fx- lev2772 '1)))))
                                     tmp2775)
                                   ((lambda (tmp2777)
                                      (if tmp2777
@@ -9783,7 +9783,7 @@
                                                      '#(syntax-object (quote unquote) ((top) #(ribcage #(p q) #((top) (top)) #("i" "i")) #(ribcage () () ()) #(ribcage #(p lev) #((top) (top)) #("i" "i")) #(ribcage #(isquote? islist? iscons? quote-nil? quasilist* quasicons quasiappend quasivector vquasi quasi) #((top) (top) (top) (top) (top) (top) (top) (top) (top) (top)) #("i" "i" "i" "i" "i" "i" "i" "i" "i" "i")) #(top-ribcage *top* #t)))
                                                      (quasi2757
                                                        p2779
-                                                       (- lev2772 '1)))
+                                                       (fx- lev2772 '1)))
                                                    (quasi2757
                                                      q2778
                                                      lev2772))))
@@ -9803,7 +9803,7 @@
                                                             '#(syntax-object (quote unquote-splicing) ((top) #(ribcage #(p q) #((top) (top)) #("i" "i")) #(ribcage () () ()) #(ribcage #(p lev) #((top) (top)) #("i" "i")) #(ribcage #(isquote? islist? iscons? quote-nil? quasilist* quasicons quasiappend quasivector vquasi quasi) #((top) (top) (top) (top) (top) (top) (top) (top) (top) (top)) #("i" "i" "i" "i" "i" "i" "i" "i" "i" "i")) #(top-ribcage *top* #t)))
                                                             (quasi2757
                                                               p2784
-                                                              (- lev2772
+                                                              (fx- lev2772
                                                                  '1)))
                                                           (quasi2757
                                                             q2783
@@ -9935,7 +9935,7 @@
                                           (lambda (d2960)
                                             (qs2899
                                               d2960
-                                              (- n2949 '1)
+                                              (fx- n2949 '1)
                                               b*2948
                                               (lambda (b*2962 dnew2961)
                                                 (k2947
@@ -9961,7 +9961,7 @@
                                                  (lambda (d2967)
                                                    (qs2899
                                                      d2967
-                                                     (- n2949 '1)
+                                                     (fx- n2949 '1)
                                                      b*2948
                                                      (lambda (b*2969
                                                               dnew2968)

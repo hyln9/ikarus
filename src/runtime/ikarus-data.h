@@ -5,21 +5,15 @@
 #define IK_FASL_HEADER_LEN (strlen(IK_FASL_HEADER))
 #define IK_FASL_CODE_HEADER_SIZE 12
 
-#define IK_CODE_PRI_TAG              5
 #define code_pri_tag vector_tag
-#define IK_CODE_SEC_TAG           ((ikp)0x2F)
 #define code_tag                  ((ikp)0x2F)
-#define IK_DISP_CODE_CODE_SIZE       4
 #define disp_code_code_size 4
-#define IK_DISP_CODE_RELOC_SIZE      8
-#define disp_code_reloc_size 8
-#define IK_DISP_CODE_CLOSURE_SIZE   12
-#define disp_code_closure_size 12
-#define IK_DISP_CODE_DATA           16
+#define disp_code_reloc_vector 8
+#define disp_code_freevars 12
 #define disp_code_data 16
 #define off_code_data (disp_code_data - code_pri_tag)
+#define off_code_reloc_vector (disp_code_reloc_vector - code_pri_tag)
 
-#define IK_OFF_CODE_DATA (IK_DISP_CODE_DATA - IK_CODE_PRI_TAG)
 
 #define IK_ALIGN_SHIFT 3
 #define align_shift 3
@@ -150,13 +144,15 @@
 #define disp_rtd_length   8
 #define disp_rtd_fields  12
 #define disp_rtd_printer 16
-#define rtd_size 20
+#define disp_rtd_symbol  20
+#define rtd_size 24
 
 #define off_rtd_rtd     (disp_rtd_rtd     - rtd_tag) 
 #define off_rtd_name    (disp_rtd_name    - rtd_tag) 
 #define off_rtd_length  (disp_rtd_length  - rtd_tag) 
 #define off_rtd_fields  (disp_rtd_fields  - rtd_tag) 
 #define off_rtd_printer (disp_rtd_printer - rtd_tag) 
+#define off_rtd_symbol  (disp_rtd_symbol  - rtd_tag) 
 
 #define continuation_tag      ((ikp)0x1F)
 #define disp_continuation_top   4

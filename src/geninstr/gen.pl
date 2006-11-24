@@ -48,7 +48,12 @@ sub gen3{
   }
 }
 
-gen1 "movb \$0, 4(r1)\n";
+gen1 "movl \$0x1234, r1\n";
+
+#gen1 "movl \$27, 4(r1)\n";
+#gen1 "movl \$27, 4000(r1)\n";
+
+#gen1 "movb \$0, 4(r1)\n";
 #gen1 "movb -2(r1), %ah\n";
 
 #gen2 "xorl r1,r2\n";

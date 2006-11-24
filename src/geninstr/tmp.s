@@ -1,9 +1,9 @@
 .text
-movb $0, 4(%eax)
-movb $0, 4(%ecx)
-movb $0, 4(%edx)
-movb $0, 4(%ebx)
-movb $0, 4(%esp)
-movb $0, 4(%ebp)
-movb $0, 4(%esi)
-movb $0, 4(%edi)
+movl $0x1234, %eax
+movl $0x1234, %ecx
+movl $0x1234, %edx
+movl $0x1234, %ebx
+movl $0x1234, %esp
+movl $0x1234, %ebp
+movl $0x1234, %esi
+movl $0x1234, %edi

@@ -375,13 +375,13 @@
          ac)])))
 
 
-#;(define CODErd
-  (lambda (c r1 disp ac)
-    (with-args disp
-      (lambda (i/r r2)
-        (if (reg? i/r)
-            (CODE c (RegReg r1 i/r r2 ac))
-            (CODErri c r1 r2 i/r ac))))))
+;;(define CODErd
+;;  (lambda (c r1 disp ac)
+;;    (with-args disp
+;;      (lambda (i/r r2)
+;;        (if (reg? i/r)
+;;            (CODE c (RegReg r1 i/r r2 ac))
+;;            (CODErri c r1 r2 i/r ac))))))
 
 
 (define IMM32*2

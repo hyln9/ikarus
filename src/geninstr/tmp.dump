@@ -4,11 +4,11 @@ tmp.o:     file format elf32-i386
 Disassembly of section .text:
 
 00000000 <.text>:
-   0:	c6 40 04 00          	movb   $0x0,0x4(%eax)
-   4:	c6 41 04 00          	movb   $0x0,0x4(%ecx)
-   8:	c6 42 04 00          	movb   $0x0,0x4(%edx)
-   c:	c6 43 04 00          	movb   $0x0,0x4(%ebx)
-  10:	c6 44 24 04 00       	movb   $0x0,0x4(%esp)
-  15:	c6 45 04 00          	movb   $0x0,0x4(%ebp)
-  19:	c6 46 04 00          	movb   $0x0,0x4(%esi)
-  1d:	c6 47 04 00          	movb   $0x0,0x4(%edi)
+   0:	b8 34 12 00 00       	mov    $0x1234,%eax
+   5:	b9 34 12 00 00       	mov    $0x1234,%ecx
+   a:	ba 34 12 00 00       	mov    $0x1234,%edx
+   f:	bb 34 12 00 00       	mov    $0x1234,%ebx
+  14:	bc 34 12 00 00       	mov    $0x1234,%esp
+  19:	bd 34 12 00 00       	mov    $0x1234,%ebp
+  1e:	be 34 12 00 00       	mov    $0x1234,%esi
+  23:	bf 34 12 00 00       	mov    $0x1234,%edi

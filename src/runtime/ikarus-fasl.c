@@ -15,6 +15,7 @@
 
 
 typedef struct {
+  char* membase;
   char* memp;
   char* memq;
   ikp* marks;
@@ -56,6 +57,7 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
   }
 
   fasl_port p;
+  p.membase = mem;
   p.memp = mem;
   p.memq = mem + filesize;
   p.marks = NULL;
@@ -65,7 +67,7 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
   while(p.memp < p.memq){
     ikp v = ik_fasl_read(pcb, &p);
     if(p.marks){
-      bzero(p.marks, p.marks_size);
+      bzero(p.marks, p.marks_size * sizeof(ikp*));
     }
     ikp val = ik_exec_code(pcb, v);
     if(val != void_object){
@@ -93,17 +95,73 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
 
 
 static ikp 
-ik_make_code(int code_size, int reloc_size, ikp closure_size, ikpcb* pcb){
-  int required_memory = 
-    align_to_next_page(code_size + reloc_size + disp_code_data);
+alloc_code(int size, ikpcb* pcb){
+  int required_memory = align_to_next_page(size);
   ikp mem = ik_mmap_code(required_memory, 0, pcb);
-  ref(mem, 0) = code_tag;
-  ref(mem, disp_code_code_size) = (ikp) code_size;
-  ref(mem, disp_code_reloc_size) = (ikp) reloc_size;
-  ref(mem, disp_code_closure_size) = closure_size;
-  ref(mem,disp_code_data+code_size+reloc_size) = 0;
-  return (ikp)(mem+vector_tag);
+  return (ikp)mem;
 }
+
+
+void
+ik_relocate_code(ikp code){
+  ikp vec = ref(code, disp_code_reloc_vector);
+  ikp size = ref(vec, off_vector_length);
+  ikp data = code + disp_code_data;
+  ikp p = vec + off_vector_data;
+  ikp q = p + (int)size;
+  while(p < q){
+    int r = unfix(ref(p, 0));
+    if(r == 0){
+      fprintf(stderr, "unset reloc!\n");
+      exit(-1);
+    }
+    int tag = r & 3;
+    int code_off = r >> 2;
+//    fprintf(stderr, "data=0x%08x, off=0x%08x, data+off=0x%08x, r=0x%08x\n",
+//        (int)data, code_off, (int)data+code_off, r);
+//    fprintf(stderr, "setting 0x%08x from r=0x%08x\n", (int)(data+code_off), r);
+    if(tag == 0){
+      /* vanilla object */
+      ref(data, code_off) = ref(p, wordsize);
+      p += (2*wordsize);
+    } 
+    else if(tag == 2){
+      /* displaced object */
+      int obj_off = unfix(ref(p, wordsize));
+      ikp obj = ref(p, 2*wordsize);
+      ref(data, code_off) = obj + obj_off;
+      p += (3*wordsize);
+    }
+    else if(tag == 3){
+      /* jump label */
+      int obj_off = unfix(ref(p, wordsize));
+      ikp obj = ref(p, 2*wordsize);
+      ikp displaced_object = obj + obj_off;
+      ikp next_word = data + code_off + wordsize;
+      ikp relative_distance = displaced_object - (int)next_word;
+      ref(next_word, -wordsize) = relative_distance;
+      p += (3*wordsize);
+    }
+    else if(tag == 1){
+      /* foreign object */
+      ikp str = ref(p, wordsize);
+      char* name = string_data(str);
+      void* sym = dlsym(NULL, name);
+      char* err = dlerror();
+      if(err){
+        fprintf(stderr, "failed to find foreign name %s: %s\n", name, err);
+        exit(-1);
+      }
+      ref(data,code_off) = sym;
+      p += (2*wordsize);
+    }
+    else {
+      fprintf(stderr, "invalid reloc 0x%08x (tag=%d)\n", r, tag);
+      exit(-1);
+    }
+  }
+}
+
 
 static char fasl_read_byte(fasl_port* p){
   if(p->memp < p->memq){
@@ -151,7 +209,10 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     }
     if(idx < p->marks_size){
       if(p->marks[idx] != 0){
-        fprintf(stderr, "mark %d already set\n", idx);
+        fprintf(stderr, "mark %d already set (fileoff=%d)\n", 
+            idx,
+            (int)p->memp - (int)p->membase - 6);
+        ik_print(p->marks[idx]);
         exit(-1);
       }
     } 
@@ -168,7 +229,26 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
       }
     }
   }
+  if(c == 'x'){
+    int code_size;
+    ikp freevars;
+    fasl_read_buf(p, &code_size, sizeof(int));
+    fasl_read_buf(p, &freevars, sizeof(ikp));
+    ikp code = alloc_code(align(code_size+disp_code_data), pcb);
+    ref(code, 0) = code_tag;
+    ref(code, disp_code_code_size) = fix(code_size);
+    ref(code, disp_code_freevars) = freevars;
+    fasl_read_buf(p, code+disp_code_data, code_size);
+    if(put_mark_index){
+      p->marks[put_mark_index] = code+vector_tag;
+    }
+    ref(code, disp_code_reloc_vector) = do_read(pcb, p);
+    ik_relocate_code(code);
+    return code+vector_tag;
+  }
   if(c == 'X'){
+    assert(0);
+#if 0
     code_header ch;
     fasl_read_buf(p, &ch, sizeof(ch));
     ikp code = ik_make_code(ch.code_size, ch.reloc_size, ch.closure_size, pcb);
@@ -185,8 +265,8 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
         int offset;
         fasl_read_buf(p, &offset, sizeof(int));
         ikp object = do_read(pcb, p);
-        REF(code_data,offset) = object;
-        REF(reloc_table, i) = (ikp)(offset << 2);
+        ref(code_data,offset) = object;
+        ref(reloc_table, i) = (ikp)(offset << 2);
         i += wordsize;
       }
       else if(t == 'F'){ /* foreign call */
@@ -211,9 +291,9 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
         fasl_read_buf(p, &code_offset, sizeof(int));
         fasl_read_buf(p, &object_offset, sizeof(int));
         ikp object = do_read(pcb, p);
-        REF(reloc_table, i) = (ikp)((code_offset << 2) | 1);
-        REF(reloc_table, i+wordsize) = (ikp)object_offset;
-        REF(code_data, code_offset) = object + object_offset;
+        ref(reloc_table, i) = (ikp)((code_offset << 2) | 1);
+        ref(reloc_table, i+wordsize) = (ikp)object_offset;
+        ref(code_data, code_offset) = object + object_offset;
         i += (2*wordsize);
       }
       else if(t == 'J'){ /* jump reloc */
@@ -222,11 +302,11 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
         fasl_read_buf(p, &code_offset, sizeof(int));
         fasl_read_buf(p, &object_offset, sizeof(int));
         ikp object = do_read(pcb, p);
-        REF(reloc_table, i) = (ikp)((code_offset << 2) | 2);
-        REF(reloc_table, i+wordsize) = (ikp)object_offset;
+        ref(reloc_table, i) = (ikp)((code_offset << 2) | 2);
+        ref(reloc_table, i+wordsize) = (ikp)object_offset;
         ikp next_word = code_data + code_offset + wordsize;
         ikp displaced_object = object + object_offset;
-        REF(next_word, -wordsize) = displaced_object - (int) next_word;
+        ref(next_word, -wordsize) = displaced_object - (int) next_word;
         i += (2*wordsize);
       }
       else {
@@ -236,6 +316,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     }
     assert(i==ch.reloc_size);
     return code;
+#endif
   }
   else if(c == 'P'){
     ikp pair = ik_alloc(pcb, pair_size) + pair_tag;
@@ -302,6 +383,54 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     char x = fasl_read_byte(p);
     return byte_to_scheme_char(x);
   }
+  else if(c == 'G'){ /* G is for gensym */
+    ikp pretty = do_read(pcb, p);
+    ikp unique = do_read(pcb, p);
+    ikp sym = ik_alloc(pcb, align(symbol_size)) + symbol_tag;
+    ref(sym, off_symbol_string) = pretty;
+    ref(sym, off_symbol_ustring) = unique;
+    ref(sym, off_symbol_value) = unbound_object;
+    ref(sym, off_symbol_system_value) = unbound_object;
+    ref(sym, off_symbol_plist) = null_object;
+    ref(sym, off_symbol_system_plist) = null_object;
+    if(put_mark_index){
+      p->marks[put_mark_index] = sym;
+    }
+    return sym;
+  }
+  else if(c == 'R'){ /* R is for RTD */
+    ikp name = do_read(pcb, p);
+    ikp symb = do_read(pcb, p);
+    int i, n;
+    fasl_read_buf(p, &n, sizeof(int));
+    ikp fields;
+    if(n == 0){
+      fields = null_object;
+    } else {
+      fields = ik_alloc(pcb, n * align(pair_size)) + pair_tag;
+      ikp ptr = fields;
+      for(i=0; i<n; i++){
+        ref(ptr, off_car) = do_read(pcb, p);
+        ref(ptr, off_cdr) = ptr + align(pair_size);
+        ptr += align(pair_size);
+      }
+      ptr -= pair_size;
+      ref(ptr, off_cdr) = null_object;
+    }
+    ikp rtd = ik_alloc(pcb, align(rtd_size)) + vector_tag;
+    ikp base_sym = ik_cstring_to_symbol("$base-rtd", pcb);
+    ikp base_rtd = ref(base_sym, off_symbol_system_value);
+    ref(rtd, off_rtd_rtd) = base_rtd;
+    ref(rtd, off_rtd_name) = name;
+    ref(rtd, off_rtd_length) = fix(n);
+    ref(rtd, off_rtd_fields) = fields;
+    ref(rtd, off_rtd_printer) = false_object;
+    ref(rtd, off_rtd_symbol) = symb;
+    if(put_mark_index){
+      p->marks[put_mark_index] = rtd;
+    }
+    return rtd;
+  }
   else if(c == '<'){
     int idx;
     fasl_read_buf(p, &idx, sizeof(int));
@@ -322,7 +451,10 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     }
   }
   else {
-    fprintf(stderr, "invalid type '%c' found in fasl file\n", c);
+    fprintf(stderr, 
+        "invalid type '%c' (0x%02x) found in fasl file at byte 0x%08x\n", 
+        c, c,
+        (int) p->memp - (int) p->membase - 1);
     exit(-1);
   }
 }

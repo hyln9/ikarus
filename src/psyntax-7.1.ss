@@ -569,6 +569,10 @@
 ;(define-syntax fx>= (identifier-syntax >=))
 
 (define annotation? (lambda (x) #f))
+(define annotation-expression 
+  (lambda (x) (error 'annotation-expression "not yet")))
+(define annotation-stripped 
+  (lambda (x) (error 'annotation-stripped "not yet")))
 
 ; top-level-eval-hook is used to create "permanent" code (e.g., top-level
 ; transformers), so it might be a good idea to compile it
@@ -651,7 +655,7 @@
 ;        (lambda (name) ; name is #f or a symbol
 ;          (set! n (+ n 1))
 ;          (string->symbol (string-append session-key (fmt n))))))))
-
+;;; AZIZ
 (define generate-id
   (lambda (name)
     (if name (gensym (symbol->string name)) (gensym))))
@@ -740,6 +744,10 @@
     [(_ ae vars exp)
      `(case-lambda [,vars ,exp])]))
 
+(define build-case-lambda
+  (lambda (ae vars* exp*)
+    `(case-lambda . ,(map list vars* exp*))))
+
 ;;; AZIZ
 ;;; (define built-lambda?
 ;;;   (lambda (x)
@@ -757,6 +765,15 @@
   (syntax-rules ()
     [(_ ae name)       `(|#primitive| ,name)]
     [(_ ae level name) `(|#primitive| ,name)]))
+
+
+;;; AZIZ
+(define-syntax build-foreign-call
+  (syntax-rules ()
+    [(_ ae name arg*) `(foreign-call ,name . ,arg*)]))
+(define-syntax build-$apply
+  (syntax-rules ()
+    [(_ ae proc arg*) `($apply ,proc . ,arg*)]))
 
 (define-syntax build-data
   (syntax-rules ()
@@ -929,15 +946,16 @@
       ((procedure? b) (make-binding 'macro b))
       ((binding? b)
        (and (case (binding-type b)
-              ((core macro macro! deferred) (and (procedure? (binding-value b))))
+              ((core macro macro! deferred)
+               (and (procedure? (binding-value b))))
               (($module) (interface? (binding-value b)))
               ((lexical) (lexical-var? (binding-value b)))
-             ((global meta-variable) (symbol? (binding-value b)))
+              ((global meta-variable) (symbol? (binding-value b)))
               ((syntax) (let ((x (binding-value b)))
                           (and (pair? x)
                                (lexical-var? (car x))
                                (let ((n (cdr x)))
-                                 (and (integer? n) (exact? n) (fx>= n 0))))))
+                                 (and (fixnum? n) (fx>= n 0))))))
               ((begin define define-syntax set! $module-key $import eval-when meta) (null? (binding-value b)))
               ((local-syntax) (boolean? (binding-value b)))
               ((displaced-lexical) (eq? (binding-value b) #f))
@@ -949,6 +967,7 @@
   (syntax-rules (quote)
     ((_ 'type #f) '(type . #f))
     ((_ type value) (cons type value))))
+
 (define binding-type car)
 (define binding-value cdr)
 (define set-binding-type! set-car!)
@@ -2408,6 +2427,7 @@
           (unless t (set! t (thunk)))
           (top-level-eval-hook t))
         (lambda () (or t (thunk)))))))
+
 (define ct-eval/residualize3
   (lambda (ctem eval-thunk residualize-thunk)
     (if (memq 'E ctem)
@@ -2544,6 +2564,9 @@
                         (else (syntax-error (source-wrap e w ae)))))))
                 e w ae))))))
       (_ (syntax-error (source-wrap e w ae))))))
+
+
+
 
 (define chi-macro
   (lambda (p e r w ae rib)
@@ -3203,7 +3226,7 @@
                    ,@(map (let ((r (map cons formals actuals)))
                             (lambda (x) (cdr (assq (cadr x) r))))
                           (cdr e))))
-            (else `(map (lambda ,formals ,e) ,@actuals))))))
+            (else `(map (case-lambda [,formals ,e]) ,@actuals))))))
 
    ; 12/12/00: semantic change: we now return original syntax object (e)
    ; if no pattern variables were found within, to avoid dropping
@@ -3240,7 +3263,13 @@
           ((ref) (build-lexical-reference 'value no-source (cadr x)))
           ((primitive) (build-primref no-source (cadr x)))
           ((quote) (build-data no-source (cadr x)))
-          ((lambda) (build-lambda no-source (cadr x) (regen (caddr x))))
+          ((lambda) 
+           (build-lambda no-source (cadr x) (regen (caddr x))))
+          ((case-lambda)
+           (let ([d (cdr x)])
+             (build-case-lambda no-source
+              (map car d)
+              (map (lambda (x) (regen (cadr x))) d))))
           ((map) (let ((ls (map regen (cdr x))))
                    (build-application no-source
                      (if (fx= (length ls) 2)
@@ -3270,6 +3299,28 @@
                        (source-wrap e w ae) 
                        (syntax c) r mr w m?)))
          (build-lambda ae vars body))))))
+
+;;; AZIZ
+(global-extend 'core 'case-lambda
+   (lambda (e r mr w ae m?)
+     (syntax-case e ()
+       [(_ c* ...)
+        (let-values ([(vars* body*)
+                      (let f ([c* #'(c* ...)])
+                        (syntax-case c* ()
+                          [() (values '() '())]
+                          [(c . c*) 
+                           (let-values ([(vars body)
+                                         (chi-lambda-clause
+                                           (source-wrap e w ae)
+                                           #'c r mr w m?)])
+                             (let-values ([(vars* body*) (f #'c*)])
+                               (values 
+                                 (cons vars vars*)
+                                 (cons body body*))))]))])
+           (build-case-lambda ae vars* body*))])))
+
+
 
 
 (global-extend 'core 'letrec
@@ -3306,6 +3357,47 @@
              (chi (syntax else) r mr w m?)))
          (_ (syntax-error (source-wrap e w ae))))))
 
+;;; AZIZ
+(global-extend 'core 'foreign-call
+  (lambda (e r mr w ae m?)
+    (syntax-case e ()
+      [(_ proc arg* ...)
+       (build-foreign-call ae
+         (chi #'proc r mr w m?)
+         (let f ([arg* #'(arg* ...)])
+           (syntax-case arg* ()
+             [() '()]
+             [(a . arg*)
+              (cons (chi #'a r mr w m?)
+                    (f #'arg*))])))]
+      [_ (syntax-error (source-wrap e w ae))])))
+(global-extend 'core '$apply
+  (lambda (e r mr w ae m?)
+    (syntax-case e ()
+      [(_ proc arg* ...)
+       (build-$apply ae
+         (chi #'proc r mr w m?)
+         (let f ([arg* #'(arg* ...)])
+           (syntax-case arg* ()
+             [() '()]
+             [(a . arg*)
+              (cons (chi #'a r mr w m?)
+                    (f #'arg*))])))]
+      [_ (syntax-error (source-wrap e w ae))])))
+
+;;; AZIZ
+(global-extend 'core 'type-descriptor
+  (lambda (e r mr w ae m?)
+    (syntax-case e ()
+      ((_ id)
+       (id? (syntax id))
+       (let ((n (id-var-name (syntax id) w)))
+         (let ((b (lookup n r)))
+           (case (binding-type b)
+             (($rtd) 
+              (build-data ae (binding-value b)))
+             (else (syntax-error (source-wrap e w ae)))))))
+      (_ (syntax-error (source-wrap e w ae))))))
 
 
 (global-extend 'set! 'set! '())
@@ -3755,8 +3847,17 @@
                 ctem rtem #f
                 (env-top-ribcage env))))))))
 
+(primitive-set! 'current-expand
+  (make-parameter
+    sc-expand
+    (lambda (x)
+      (unless (procedure? x)
+        (error 'current-expand "~s is not a procedure" x))
+      x)))
 
-
+(primitive-set! 'expand
+  (lambda (x)
+    ((current-expand) x)))
 
 (primitive-set! '$make-environment
   (lambda (token mutable?)
@@ -3977,7 +4078,7 @@
          r))
       (else (match* (unannotate e) p w r)))))
 
-(set! $syntax-dispatch
+(primitive-set! '$syntax-dispatch
   (lambda (e p)
     (cond
       ((eq? p 'any) (list e))
@@ -4418,7 +4519,90 @@
                 (lambda () b b* ...)
                 swap))))])))
 
+(define-syntax when
+  (syntax-rules ()
+    [(_ test b b* ...)
+     (if test 
+         (begin b b* ...)
+         (void))]))
+
+(define-syntax unless
+  (syntax-rules ()
+    [(_ test b b* ...)
+     (if test 
+         (void)
+         (begin b b* ...))]))
+
+(define-syntax let-values
+  (lambda (x)
+    (define (bindem n** v**)
+      (syntax-case n** ()
+        [() #'()]
+        [((n* ...) . n**)
+         (syntax-case v** ()
+          [((v* ...) . v**)
+           (with-syntax ([rest (bindem #'n** #'v**)])
+             #'([n* v*] ... . rest))])]))
+    (syntax-case x ()
+      [(_ ([(name** ...) v*] ...) b b* ...)
+       (let ([n**
+              (let f ([n** #'((name** ...) ...)])
+                (syntax-case n** ()
+                  [() #'()]
+                  [(n* . n**)
+                   (with-syntax ([n* (generate-temporaries #'n*)]
+                                 [n** (f #'n**)])
+                     #'(n* . n**))]))])
+         (let f ([t** n**] [v* #'(v* ...)])
+           (syntax-case t** ()
+             [((t* ...) . t**) 
+              (syntax-case v* ()
+                [(v . v*)
+                 (with-syntax ([body (f #'t** #'v*)])
+                   #'(call-with-values
+                       (lambda () v)
+                       (lambda (t* ...) body)))])]
+             [() 
+              (with-syntax ([bind* (bindem #'((name** ...) ...) n**)])
+                #'(let bind* b b* ...))])))])))
 
 
 
+
+(define-syntax define-record
+  (lambda (x)
+    (syntax-case x ()
+      [(_ name (field* ...)) 
+       (let* ([namestr (symbol->string (syntax-object->datum #'name))]
+              [fields (syntax-object->datum #'(field* ...))]
+              [fieldstr* (map symbol->string fields)]
+              [rtd (make-record-type namestr fields)])
+         (with-syntax ([constr 
+                        (datum->syntax-object #'name
+                          (string->symbol
+                            (string-append "make-" namestr)))]
+                       [pred 
+                        (datum->syntax-object #'name
+                          (string->symbol
+                            (string-append namestr "?")))]
+                       [(getters ...)
+                        (datum->syntax-object #'name
+                          (map (lambda (x)
+                                 (string->symbol 
+                                   (string-append namestr "-" x)))
+                               fieldstr*))]
+                       [(setters ...)
+                        (datum->syntax-object #'name
+                          (map (lambda (x) 
+                                 (string->symbol
+                                   (string-append "set-" namestr "-" x "!")))
+                               fieldstr*))]
+                       [rtd rtd])
+            #'(begin
+                (define-syntax name (cons '$rtd 'rtd))
+                (define constr (record-constructor 'rtd))
+                (define pred (record-predicate 'rtd))
+                (define getters (record-field-accessor 'rtd 'field*)) ...
+                (define setters (record-field-mutator 'rtd 'field*)) ...
+                )))])))
 

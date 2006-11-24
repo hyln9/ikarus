@@ -21,6 +21,12 @@ int main(int argc, char** argv){
     char* fasl_file = argv[i];
     ik_fasl_load(pcb, fasl_file);
   }
+  fprintf(stderr, "collect time: %d.%03d utime, %d.%03d stime (%d collections)\n", 
+   pcb->collect_utime.tv_sec, 
+   pcb->collect_utime.tv_usec/1000, 
+   pcb->collect_stime.tv_sec, 
+   pcb->collect_stime.tv_usec/1000,
+   pcb->collection_id );
   ik_delete_pcb(pcb);
   return 0;
 }

@@ -1,4 +1,5 @@
 #include "ikarus.h"
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -106,7 +107,16 @@ ik_mmap_data(int size, int gen, ikpcb* pcb){
 
 void* 
 ik_mmap_code(int size, int gen, ikpcb* pcb){
-  return ik_mmap_typed(size, code_mt | gen, pcb);
+  ikp p = ik_mmap_typed(size, code_mt | gen, pcb);
+  if(size > pagesize){
+    set_segment_type(p+pagesize, size-pagesize, data_mt|gen, pcb);
+  }
+  int err = mprotect(p, size, PROT_READ | PROT_WRITE | PROT_EXEC);
+  if(err){
+    fprintf(stderr, "cannot mprotect code: %s\n", strerror(errno));
+    exit(-1);
+  }
+  return p;
 }
 
 
@@ -200,27 +210,21 @@ ikp ik_mmap_protected(int size){
 
 
 ikpcb* ik_make_pcb(){
-  ikpcb* pcb = malloc(sizeof(ikpcb));
-  if(pcb == NULL){
-    fprintf(stderr, "Failed to allocate pcb\n");
-    exit(-1);
-  }
+  ikpcb* pcb = ik_malloc(sizeof(ikpcb));
   bzero(pcb, sizeof(ikpcb));
   #define HEAPSIZE (1024 * 4096)
   #define STAKSIZE (1024 * 4096)
+  //#define STAKSIZE (256 * 4096)
   pcb->heap_base = ik_mmap_protected(HEAPSIZE);
   pcb->heap_size = HEAPSIZE;
   pcb->allocation_pointer = pcb->heap_base;
   pcb->allocation_redline = pcb->heap_base + HEAPSIZE - 2 * 4096;
 
-  pcb->stack_base = ik_mmap_protected(STAKSIZE);
+  pcb->stack_base = ik_mmap(STAKSIZE);
   pcb->stack_size = STAKSIZE;
   pcb->frame_pointer = pcb->stack_base + pcb->stack_size;
   pcb->frame_base = pcb->frame_pointer;
   pcb->frame_redline = pcb->stack_base + 2 * 4096;
-  ikdl* codes = &(pcb->codes);
-  codes->next = codes;
-  codes->prev = codes;
 
   {
     /* compute extent of heap and stack */
@@ -251,8 +255,8 @@ ikpcb* ik_make_pcb(){
         pcb->heap_size+2*pagesize, 
         mainheap_mt,
         pcb);
-    set_segment_type(pcb->stack_base-pagesize, 
-        pcb->stack_size+2*pagesize, 
+    set_segment_type(pcb->stack_base, 
+        pcb->stack_size, 
         mainstack_mt,
         pcb);
   }
@@ -265,6 +269,7 @@ ikpcb* ik_make_pcb(){
     ref(r, off_rtd_name) = 0;
     ref(r, off_rtd_fields) = 0;
     ref(r, off_rtd_printer) = 0;
+    ref(r, off_rtd_symbol) = 0;
     ref(s, off_symbol_system_value) = r;
     ref(s, off_symbol_value) = r;
   }
@@ -272,8 +277,22 @@ ikpcb* ik_make_pcb(){
 }
 
 void ik_delete_pcb(ikpcb* pcb){
-  assert(0);
-  free(pcb);
+  unsigned char* base = pcb->memory_base;
+  unsigned char* end = pcb->memory_end;
+  unsigned int* segment_vec = pcb->segment_vector;
+  int i = page_index(base);
+  int j = page_index(end);
+  while(i < j){
+    unsigned int t = segment_vec[i];
+    if(t != hole_mt){
+      ik_munmap((ikp)(i<<pageshift), pagesize);
+    }
+    i++;
+  }
+  int vecsize = (segment_index(end) - segment_index(base)) * pagesize;
+  ik_munmap(pcb->dirty_vector_base, vecsize);
+  ik_munmap(pcb->segment_vector_base, vecsize);
+  ik_free(pcb, sizeof(ikpcb));
 }
 
 
@@ -289,6 +308,8 @@ ik_alloc(ikpcb* pcb, int size){
   } 
   else {
     fprintf(stderr, "EXT\n");
+    assert(0);
+#if 0
     if(ap){
       ikpages* p = ik_malloc(sizeof(ikpages));
       p->base = pcb->heap_base;
@@ -306,6 +327,7 @@ ik_alloc(ikpcb* pcb, int size){
     nap = ap + size;
     pcb->allocation_pointer = nap;
     return ap;
+#endif
   }
 }
 
@@ -319,17 +341,66 @@ void ik_error(ikp args){
 }
 
 
-void ik_stack_overflow(){
-  fprintf(stderr, "entered ik_stack_overflow\n");
-  exit(-1);
+void ik_stack_overflow(ikpcb* pcb){
+  fprintf(stderr, "entered ik_stack_overflow pcb=0x%08x\n", (int)pcb);
+
+  set_segment_type(pcb->stack_base, pcb->stack_size, data_mt, pcb);
+  
+  ikp frame_base = pcb->frame_base;
+  ikp underflow_handler = ref(frame_base, -wordsize);
+  fprintf(stderr, "underflow_handler = 0x%08x\n", (int)underflow_handler);
+  /* capture continuation and set it as next_k */
+  ikp k = ik_alloc(pcb, align(continuation_size)) + vector_tag;
+  ref(k, -vector_tag) = continuation_tag;
+  ref(k, off_continuation_top) = pcb->frame_pointer;
+  ref(k, off_continuation_size) = 
+    pcb->frame_base - (int)pcb->frame_pointer - wordsize;
+  ref(k, off_continuation_next) = pcb->next_k;
+  pcb->next_k = k;
+
+  pcb->stack_base = ik_mmap_typed(STAKSIZE, mainstack_mt, pcb);
+  pcb->stack_size = STAKSIZE;
+  pcb->frame_base = pcb->stack_base + pcb->stack_size;
+  pcb->frame_pointer = pcb->frame_base - wordsize;
+  pcb->frame_redline = pcb->stack_base + 2 * 4096;
+  ref(pcb->frame_pointer, 0) = underflow_handler;
+  return;
 }
 
+/*
 char* ik_uuid(char* str){
   assert((36 << fx_shift) == (int) ref(str, disp_string_length - string_tag));
   uuid_t u;
   uuid_clear(u); 
   uuid_generate(u);
   uuid_unparse_upper(u, str + disp_string_data - string_tag);
+  return str;
+}
+*/
+
+
+static const char* uuid_chars = 
+"!$%&/0123456789<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+static int uuid_strlen = 1;
+
+ikp ik_uuid(ikp str){
+  static int fd = -1;
+  if(fd == -1){
+    fd = open("/dev/urandom", O_RDONLY);
+    if(fd == -1){
+      return false_object;
+    }
+    uuid_strlen = strlen(uuid_chars);
+  }
+  int n = unfix(ref(str, off_string_length));
+  unsigned char* data = str+off_string_data;
+  read(fd, data, n);
+  unsigned char* p = data;
+  unsigned char* q = data + n;
+  while(p < q){
+    *p = uuid_chars[*p % uuid_strlen];
+    p++;
+  }
   return str;
 }
 
@@ -376,7 +447,7 @@ ikp ik_open_file(ikp str, ikp flagptr){
   int f = unfix(flagptr);
   char* path = (char*)(str + disp_string_data - string_tag);
   if(f == 0){
-    flags = O_WRONLY;
+    flags = O_WRONLY | O_CREAT;
   } else if(f == 1){
     flags = O_WRONLY | O_APPEND;
   } else if(f == 2){
@@ -473,3 +544,118 @@ ik_dump_dirty_vector(ikpcb* pcb){
   return void_object;
 }
 
+ikp 
+ikrt_make_code(ikp codesizeptr, ikp freevars, ikp rvec, ikpcb* pcb){
+  int code_size = unfix(codesizeptr);
+  int memreq = align_to_next_page(code_size + disp_code_data);
+  ikp mem = ik_mmap_code(memreq, 0, pcb);
+  ref(mem, 0) = code_tag;
+  ref(mem, disp_code_code_size) = codesizeptr;
+  ref(mem, disp_code_freevars) = freevars;
+  ref(mem, disp_code_reloc_vector) = rvec;
+  ik_relocate_code(mem);
+  return mem+vector_tag;
+}
+
+ikp
+ikrt_set_code_reloc_vector(ikp code, ikp vec, ikpcb* pcb){
+  ref(code, off_code_reloc_vector) = vec;
+  ik_relocate_code(code-vector_tag);
+  pcb->dirty_vector[page_index(code)] = -1;
+  return void_object;
+}
+
+ikp
+ikrt_strftime(ikp outstr, ikp fmtstr){
+  time_t t;
+  struct tm* tmp;
+  t = time(NULL);
+  tmp = localtime(&t);
+  if(tmp == NULL){
+    fprintf(stderr, "Error in time: %s\n", strerror(errno));
+  }
+  int rv = 
+    strftime((char*)outstr+off_string_data,
+             unfix(ref(outstr, off_string_length)) + 1,
+             (char*)fmtstr+off_string_data,
+             tmp);
+  if(rv == 0){
+    fprintf(stderr, "Error in strftime: %s\n", strerror(errno));
+  }
+  return fix(rv);
+}
+
+ikp
+ikrt_close_file(ikp fd, ikpcb* pcb){
+  int err = close(unfix(fd));
+  if(err == -1){
+    return false_object;
+  } else {
+    return true_object;
+  }
+}
+
+ikp
+ikrt_read(ikp fd, ikp buff, ikpcb* pcb){
+  int bytes = read(unfix(fd), string_data(buff), unfix(ref(buff, off_string_length)));
+  if(bytes == -1){
+    return false_object;
+  } else {
+    return fix(bytes);
+  }
+}
+
+ikp
+ikrt_open_input_file(ikp fname, ikpcb* pcb){
+  int fd = open(string_data(fname), O_RDONLY);
+  if(fd == -1){
+    return false_object;
+  } else {
+    return fix(fd);
+  }
+}
+
+ikp
+ikrt_open_output_file(ikp fname, ikp flagptr, ikpcb* pcb){
+  /* [(error)    0] */ 
+  /* [(replace)  1] */
+  /* [(truncate) 2] */
+  /* [(append)   3] */
+  int flags;
+  int f = unfix(flagptr);
+  if(f == 0){
+    flags = O_WRONLY;
+  } else if(f == 1){
+    unlink(string_data(fname));
+    flags = O_WRONLY | O_CREAT;
+  } else if(f == 2){
+    flags = O_WRONLY | O_TRUNC;
+  } else if(f == 3){
+    flags = O_WRONLY | O_APPEND;
+  } else {
+    fprintf(stderr, "Error in S_open_file: invalid mode 0x%08x\n", 
+                  (int)flagptr);
+    exit(-10);
+  }
+  int fd = open(string_data(fname), flags,
+                S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  if(fd == -1){
+    fprintf(stderr, "openfile failed!\n");
+    return false_object;
+  } else {
+    return fix(fd);
+  }
+}
+
+
+ikp
+ikrt_write_file(ikp fd, ikp buff, ikp idx, ikpcb* pcb){
+  int bytes = write(unfix(fd), string_data(buff), unfix(idx));
+  return fix(bytes);
+}
+
+ikp 
+ikrt_write_char(){
+  fprintf(stderr, "ikrt_write_char\n");
+  return void_object;
+}

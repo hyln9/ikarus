@@ -3,6 +3,7 @@
 #define IKARUS_H
 
 #include <stdio.h>
+#include <sys/resource.h>
 
 extern int total_allocated_pages;
 extern int total_malloced;
@@ -72,21 +73,6 @@ typedef struct ikdl{ /* double-link */
   struct ikdl* next;
 } ikdl;
 
-typedef struct ikhashtables{
-  ikp ht;
-  struct ikhashtables* next;
-} ikhashtables;
-
-typedef struct ikbucket{
-  ikp key;
-  ikp val;
-  struct ikbucket* next;
-} ikbucket;
-
-typedef struct{
-  int number_of_buckets;
-  ikbucket** buckets;
-} ikoblist;
 
 typedef struct {
   /* the first locations may be accessed by some     */
@@ -109,15 +95,15 @@ typedef struct {
   int   heap_size;
   ikp   stack_base;
   int   stack_size;
-  ikpages* heap_pages;
-  ikdl codes;
-  ikhashtables* hash_tables;
-  ikoblist*   oblist;
+  ikp   oblist;
   unsigned int* dirty_vector_base;
   unsigned int* segment_vector_base;
   unsigned char* memory_base;
   unsigned char* memory_end;
   int collection_id;
+  struct timeval collect_utime;
+  struct timeval collect_stime;
+  
 } ikpcb;
 
 
@@ -135,8 +121,10 @@ void ik_munmap(void*, int);
 void ik_munmap_from_segment(unsigned char*, int, ikpcb*);
 ikpcb* ik_make_pcb();
 void ik_delete_pcb(ikpcb*);
+void ik_free_symbol_table(ikpcb* pcb);
 
 void ik_fasl_load(ikpcb* pcb, char* filename);
+void ik_relocate_code(ikp);
 
 ikp ik_exec_code(ikpcb* pcb, ikp code_ptr);
 void ik_print(ikp x);

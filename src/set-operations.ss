@@ -1,11 +1,11 @@
 
-(define list*
-  (lambda (fst . rest)
-    (let f ([fst fst] [rest rest])
-      (cond
-        [(null? rest) fst]
-        [else 
-         (cons fst (f (car rest) (cdr rest)))]))))
+;; (define list*
+;;   (lambda (fst . rest)
+;;     (let f ([fst fst] [rest rest])
+;;       (cond
+;;         [(null? rest) fst]
+;;         [else 
+;;          (cons fst (f (car rest) (cdr rest)))]))))
 
 (define (remq x ls)
   (cond

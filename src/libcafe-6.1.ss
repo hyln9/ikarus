@@ -30,7 +30,6 @@
           (with-error-handler
             (lambda args
               (reset-input-port! (console-input-port))
-              (display "repl catch\n" (console-output-port))
               (apply print-error args)
               (k (void)))
             (lambda ()
@@ -64,7 +63,7 @@
 
   (primitive-set! 'new-cafe
     (case-lambda
-      [() (new-cafe (current-eval))]
+      [() (new-cafe eval)]
       [(p)
        (unless (procedure? p) 
          (error 'new-cafe "~s is not a procedure" p))

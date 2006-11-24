@@ -1,4 +1,3 @@
-;;; not finished yet 
 
 ;;; FASL 
 ;;;
@@ -20,7 +19,10 @@
 ;;;   "V" + 4-bytes(n) + object ... : a vector of length n followed by n
 ;;;                                   objects
 ;;;   "S" + 4-bytes(n) + char ... : a string
-;;;   "M" + object + object : a symbol with name field and a unique-name field
+;;;   "M" + symbol-name : a symbol
+;;;   "G" + pretty-name + unique-name : a gensym
+;;;   "R" + rtd-name + rtd-symbol + field-count + field-names
+;;;   "{" + field-count + rtd + fields
 ;;;   ">" + 4-bytes(i) : mark the next object with index i
 ;;;   "<" + 4-bytes(i) : dereference the object marked with index i
 ;;;
@@ -41,7 +43,6 @@
       (write-char (integer->char (fxlogand (fxsra x 8) #xFF)) p)
       (write-char (integer->char (fxlogand (fxsra x 16) #xFF)) p)
       (write-char (integer->char (fxlogand (fxsra x 24) #xFF)) p)))
- 
 
   (define fasl-write-immediate
     (lambda (x p)
@@ -86,11 +87,11 @@
               (f x (fxadd1 i) n)]))]
         [(gensym? x)
          (write-char #\G p)
-         (do-write (gensym->unique-name x) p h
-           (do-write (symbol->string x) p h m))]
+         (fasl-write (gensym->unique-string x) p h
+           (fasl-write (symbol->string x) p h m))]
         [(symbol? x) 
          (write-char #\M p)
-         (do-write (symbol->string x) p h m)]
+         (fasl-write (symbol->string x) p h m)]
         [(code? x)
          (write-char #\X p)
          (let ([code-vec (code-code-vec x)]
@@ -132,6 +133,36 @@
                         (let ([m (fasl-write object p h m)])
                           (f (fx+ i 2) n m)))]
                      [else (error 'fasl-write "invalid reloc byte ~s" b)])))))]
+        [(record? x)
+         (let ([rtd (record-type-descriptor x)])
+           (cond
+             [(eq? rtd #%$base-rtd)
+              ;;; rtd record
+              (write-char #\R p)
+              (let ([names (record-type-field-names x)]
+                    [m 
+                     (fasl-write (record-type-symbol x) p h
+                       (fasl-write (record-type-name x) p h m))])
+                (write-int (length names) p)
+                (let f ([names names] [m m])
+                  (cond
+                    [(null? names) m]
+                    [else
+                     (f (cdr names)
+                        (fasl-write (car names) p h m))])))]
+             [else
+              ;;; non-rtd record
+              (write-char #\{ p)
+              (write-int (length (record-type-field-names rtd)) p)
+              (let f ([names (record-type-field-names rtd)] 
+                      [m (fasl-write rtd p h m)])
+                (cond
+                  [(null? names) m]
+                  [else
+                   (f (cdr names) 
+                      (fasl-write 
+                         ((record-field-accessor rtd (car names)) x)
+                         p h m))]))]))]
         [else (error 'fasl-write "~s is not fasl-writable" x)])))
   (define fasl-write 
     (lambda (x p h m)
@@ -153,7 +184,7 @@
               (write-char #\< p)
               (write-int (fx- 0 mark) p)
               m]))]
-        [else (error 'fasl-write "BUG: not in hash table")]))) 
+        [else (error 'fasl-write "BUG: not in hash table ~s" x)]))) 
   (define make-graph
     (lambda (x h)
       (unless (immediate? x)
@@ -172,7 +203,9 @@
                 (unless (fx= i n) 
                   (make-graph (vector-ref x i) h)
                   (f x (fxadd1 i) n)))]
-             [(symbol? x) (void)]
+             [(symbol? x) 
+              (make-graph (symbol->string x) h)
+              (when (gensym? x) (make-graph (gensym->unique-string x) h))]
              [(string? x) (void)]
              [(code? x) 
               (let ([x (code-reloc-vec x)])
@@ -188,6 +221,24 @@
                          (f (fx+ i 2) n)]
                         [else (error 'fasl-write "unrecognized reloc ~s" b)]
                         )))))]
+             [(record? x)
+              (when (eq? x #%$base-rtd) 
+                (error 'fasl-write "$base-rtd is not writable"))
+              (let ([rtd (record-type-descriptor x)])
+                (cond
+                  [(eq? rtd #%$base-rtd)
+                   ;;; this is an rtd
+                   (make-graph (record-type-name x) h)
+                   (make-graph (record-type-symbol x) h)
+                   (for-each (lambda (x) (make-graph x h))
+                     (record-type-field-names x))]
+                  [else
+                   ;;; this is a record
+                   (make-graph rtd h)
+                   (for-each 
+                     (lambda (name) 
+                       (make-graph ((record-field-accessor rtd name) x) h))
+                     (record-type-field-names rtd))]))]
              [else (error 'fasl-write "~s is not fasl-writable" x)])]))))
   (define do-fasl-write 
     (lambda (x port)

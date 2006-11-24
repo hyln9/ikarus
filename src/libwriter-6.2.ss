@@ -308,13 +308,15 @@
         (error 'fprintf "~s is not an output port" port))
       (unless (string? fmt)
         (error 'fprintf "~s is not a string" fmt))
-      (formatter 'fprintf port fmt args)))
+      (formatter 'fprintf port fmt args)
+      (flush-output-port port)))
 
   (define printf
     (lambda (fmt . args)
       (unless (string? fmt)
         (error 'printf "~s is not a string" fmt))
-      (formatter 'printf (current-output-port) fmt args)))
+      (formatter 'printf (current-output-port) fmt args)
+      (flush-output-port (current-output-port))))
 
   (define format
     (lambda (fmt . args)
@@ -369,5 +371,6 @@
             (error 'current-error-handler "~s is not a procedure" x)))))
   (primitive-set! 'error
     (lambda args
-      (apply (current-error-handler) args)))) 
+      (apply (current-error-handler) args)))
+  ) 
 

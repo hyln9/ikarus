@@ -91,6 +91,8 @@
                ($vector-set! vec idx next)]
               [else 
                (replace! fst b next)])))
+        ;;; reset the tcbucket-tconc FIRST
+        ($set-tcbucket-tconc! b (get-tc h))
         ;;; then add it to the new place
         (let ([k ($tcbucket-key b)])
           (let ([ih (inthash (pointer-value k))])
@@ -98,7 +100,6 @@
               (let ([n ($vector-ref vec idx)])
                 ($set-tcbucket-next! b n)
                 ($vector-set! vec idx b)
-                ($set-tcbucket-tconc! b (get-tc h))
                 (void))))))))
 
   (define get-hash
@@ -129,9 +130,15 @@
                    ($set-tcbucket-val! b v)
                    (void))]
                 [else 
-                 ($vector-set! vec idx
-                   ($make-tcbucket (get-tc h) x v 
-                     ($vector-ref vec idx)))
+                 (let ([bucket
+                        ($make-tcbucket (get-tc h) x v ($vector-ref vec idx))])
+                   (if ($fx= (pointer-value x) pv)
+                       ($vector-set! vec idx bucket)
+                       (let* ([ih (inthash (pointer-value x))]
+                              [idx 
+                               ($fxlogand ih ($fx- ($vector-length vec) 1))])
+                         ($set-tcbucket-next! bucket ($vector-ref vec idx))
+                         ($vector-set! vec idx bucket))))
                  (let ([ct (get-count h)])
                    (set-count! h ($fxadd1 ct))
                    (when ($fx> ct ($vector-length vec))

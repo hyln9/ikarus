@@ -13,7 +13,7 @@ typedef struct {
 
 
 ikp ik_exec_code(ikpcb* pcb, ikp code_ptr){
-  ikp argc = ik_asm_enter(pcb, code_ptr+IK_DISP_CODE_DATA-IK_CODE_PRI_TAG,0);
+  ikp argc = ik_asm_enter(pcb, code_ptr+off_code_data,0);
   ikp next_k =  pcb->next_k;
   while(next_k){
     cont* k = (cont*)(next_k - vector_tag);

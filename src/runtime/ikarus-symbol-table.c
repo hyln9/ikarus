@@ -2,19 +2,18 @@
 #include "ikarus.h"
 #include <strings.h>
 #include <string.h>
+#include <stdlib.h>
 
-static ikoblist*
+static ikp
 initialize_symbol_table(ikpcb* pcb){
   #define NUM_OF_BUCKETS 4096 /* power of 2 */
-  ikoblist* st = ik_malloc(sizeof(ikoblist));
-  st->number_of_buckets = NUM_OF_BUCKETS;
-  int size = NUM_OF_BUCKETS * sizeof(ikbucket*);
-  st->buckets = ik_mmap(size);
-  bzero(st->buckets, size);
+  int size = align_to_next_page(disp_vector_data + NUM_OF_BUCKETS * wordsize);
+  ikp st = ik_mmap_ptr(size, 0, pcb) + vector_tag;
+  bzero(st-vector_tag, size);
+  ref(st, off_vector_length) = fix(NUM_OF_BUCKETS);
   pcb->oblist = st;
   return st;
 }
-
 
 static int 
 compute_hash(ikp str){
@@ -56,51 +55,33 @@ static ikp ik_make_symbol(ikp str, ikpcb* pcb){
 }
 
 ikp ik_oblist(ikpcb* pcb){
-  ikoblist* st = pcb->oblist;
-  int n = st->number_of_buckets;
-  ikbucket** bs = st->buckets;
-  ikp ac = null_object;
-  int i;
-  for(i=0; i<n; i++){
-    ikbucket* b = bs[i];
-    while(b){
-      ikp p = ik_alloc(pcb, pair_size) + pair_tag;
-      ref(p, off_car) = b->val;
-      ref(p, off_cdr) = ac;
-      ac = p;
-      b = b->next;
-    }
-  }
-  return ac;
+  fprintf(stderr, "oblist dead!\n");
+  exit(-1);
 }
 
 ikp ik_intern_string(ikp str, ikpcb* pcb){
-  //fprintf(stderr, "0x%08x: intern %s => ", (int)pcb, string_data(str));
-  ikoblist* st = pcb->oblist;
+  ikp st = pcb->oblist;
   if(st == 0){
     st = initialize_symbol_table(pcb);
   }
   int h = compute_hash(str);
-  int idx = h & (st->number_of_buckets - 1);
-  ikbucket* b = st->buckets[idx];
+  int idx = h & (unfix(ref(st, off_vector_length)) - 1);
+  ikp bckt = ref(st, off_vector_data + idx*wordsize);
+  ikp b = bckt;
   while(b){
-//    if(b->key == (ikp) h){
-      ikp sym = b->val;
-      ikp sym_str = ref(sym, off_symbol_string);
-      if(strings_eqp(sym_str, str)){
-        //fprintf(stderr, "SAME %s\n", string_data(str));
-        return sym;
-      }
-//    }
-    b = b->next;
+    ikp sym = ref(b, off_car);
+    ikp sym_str = ref(sym, off_symbol_string);
+    if(strings_eqp(sym_str, str)){
+      return sym;
+    }
+    b = ref(b, off_cdr);
   }
   ikp sym = ik_make_symbol(str, pcb);
-  b = ik_malloc(sizeof(ikbucket));
-  b->key = (ikp)h;
-  b->val = sym;
-  b->next = st->buckets[idx];
-  st->buckets[idx] = b;
-  //fprintf(stderr, "NEW\n");
+  b = ik_alloc(pcb, pair_size) + pair_tag;
+  ref(b, off_car) = sym;
+  ref(b, off_cdr) = bckt;
+  ref(st, off_vector_data + idx*wordsize) = b;
+  pcb->dirty_vector[page_index(st+off_vector_data+idx*wordsize)] = -1;
   return sym;
 }
 
