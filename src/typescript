@@ -1,0 +1,143 @@
+Script started on Wed 19 Jul 2006 12:42:03 PM EDT
+[01;32maghuloum@titus[00m:[01;34m~/compiler-0[00m$ strace petite
+execve("/usr/bin/petite", ["petite"], [/* 15 vars */]) = 0
+uname({sys="Linux", node="titus", ...}) = 0
+brk(0)                                  = 0x809f000
+access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
+mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xa7f3f000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xa7f3e000
+open("/etc/ld.so.cache", O_RDONLY)      = 3
+fstat64(3, {st_mode=S_IFREG|0644, st_size=21107, ...}) = 0
+mmap2(NULL, 21107, PROT_READ, MAP_PRIVATE, 3, 0) = 0xa7f38000
+close(3)                                = 0
+access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
+open("/lib/tls/i686/cmov/libm.so.6", O_RDONLY) = -1 ENOENT (No such file or directory)
+open("/lib/tls/i686/cmov/libm.so.6", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/tls/i686/cmov", 0xafc806c4) = -1 ENOENT (No such file or directory)
+open("/lib/tls/i686/libm.so.6", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/tls/i686", 0xafc806c4)     = -1 ENOENT (No such file or directory)
+open("/lib/tls/cmov/libm.so.6", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/lib/tls/cmov", 0xafc806c4)     = -1 ENOENT (No such file or directory)
+open("/lib/tls/libm.so.6", O_RDONLY)    = 3
+read(3, "\177ELF\1\1\1\0\0\0\0\0\0\0\0\0\3\0\3\0\1\0\0\0`3\0\000"..., 512) = 512
+fstat64(3, {st_mode=S_IFREG|0644, st_size=149264, ...}) = 0
+mmap2(NULL, 151712, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0xa7f12000
+mmap2(0xa7f36000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x23) = 0xa7f36000
+close(3)                                = 0
+access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
+open("/lib/tls/i686/cmov/libdl.so.2", O_RDONLY) = -1 ENOENT (No such file or directory)
+open("/lib/tls/libdl.so.2", O_RDONLY)   = 3
+read(3, "\177ELF\1\1\1\0\0\0\0\0\0\0\0\0\3\0\3\0\1\0\0\0\20\f\0"..., 512) = 512
+fstat64(3, {st_mode=S_IFREG|0644, st_size=9592, ...}) = 0
+mmap2(NULL, 12404, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0xa7f0e000
+mmap2(0xa7f10000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1) = 0xa7f10000
+close(3)                                = 0
+access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
+open("/lib/libncurses.so.5", O_RDONLY)  = 3
+read(3, "\177ELF\1\1\1\0\0\0\0\0\0\0\0\0\3\0\3\0\1\0\0\0\220\345"..., 512) = 512
+fstat64(3, {st_mode=S_IFREG|0644, st_size=267104, ...}) = 0
+mmap2(NULL, 268396, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0xa7ecc000
+mmap2(0xa7f05000, 32768, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x39) = 0xa7f05000
+mmap2(0xa7f0d000, 2156, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0xa7f0d000
+close(3)                                = 0
+access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
+open("/lib/tls/i686/cmov/libc.so.6", O_RDONLY) = -1 ENOENT (No such file or directory)
+open("/lib/tls/libc.so.6", O_RDONLY)    = 3
+read(3, "\177ELF\1\1\1\0\0\0\0\0\0\0\0\0\3\0\3\0\1\0\0\0\260O\1"..., 512) = 512
+fstat64(3, {st_mode=S_IFREG|0755, st_size=1270928, ...}) = 0
+mmap2(NULL, 1276892, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0xa7d94000
+mmap2(0xa7ec2000, 32768, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x12e) = 0xa7ec2000
+mmap2(0xa7eca000, 7132, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0xa7eca000
+close(3)                                = 0
+mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xa7d93000
+mprotect(0xa7ec2000, 20480, PROT_READ)  = 0
+set_thread_area({entry_number:-1 -> 6, base_addr:0xa7d93aa0, limit:1048575, seg_32bit:1, contents:0, read_exec_only:0, limit_in_pages:1, seg_not_present:0, useable:1}) = 0
+munmap(0xa7f38000, 21107)               = 0
+open("/usr/lib/csv7.0a/i3le/petite.heap", O_RDONLY) = -1 ENOENT (No such file or directory)
+open("/usr/local/lib/csv7.0a/i3le/petite.heap", O_RDONLY) = -1 ENOENT (No such file or directory)
+brk(0)                                  = 0x809f000
+brk(0x80c0000)                          = 0x80c0000
+open("/usr/lib/csv7.0a/i3le/petite.boot", O_RDONLY) = 3
+fstat64(3, {st_mode=S_IFREG|0444, st_size=588786, ...}) = 0
+mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xa7f3d000
+read(3, "\37\213\10\0\0\0\0\0\0\3S\256Q0\3273HT\3104\316IU\250Q"..., 16384) = 16384
+_llseek(3, 0, [16384], SEEK_CUR)        = 0
+mmap2(NULL, 1060864, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xa7c90000
+rt_sigaction(SIGINT, {SIG_IGN}, NULL, 8) = 0
+rt_sigaction(SIGPIPE, {SIG_IGN}, NULL, 8) = 0
+rt_sigaction(SIGINT, {0x8057b4d, [], SA_INTERRUPT}, NULL, 8) = 0
+rt_sigaction(SIGQUIT, {0x8057b4d, [], SA_RESTART}, NULL, 8) = 0
+rt_sigaction(SIGILL, {0x8057b4d, [], SA_RESTART}, NULL, 8) = 0
+rt_sigaction(SIGFPE, {0x8057b4d, [], SA_RESTART}, NULL, 8) = 0
+rt_sigaction(SIGBUS, {0x8057b4d, [], SA_RESTART}, NULL, 8) = 0
+rt_sigaction(SIGSEGV, {0x8057b4d, [], SA_RESTART}, NULL, 8) = 0
+rt_sigaction(SIGCHLD, {0x8057b4d, [], SA_RESTART}, NULL, 8) = 0
+gettimeofday({1153327327, 729700}, {240, 0}) = 0
+read(3, "\f\31s<\235\340\'\301\10Z\2014\237C\206W\227\256$\341\237"..., 16384) = 16384
+read(3, "yc\200\216\313\266x\234fXVi\221fE: \245\6%\343(\23\233"..., 16384) = 16384
+read(3, "F+#\242}\31i\205\274\306-\322\361\332xd\230\357\361\246"..., 16384) = 16384
+read(3, "\16m\352\t\304\266\374\251=\316n\266\321p\301\363\362B"..., 16384) = 16384
+read(3, "\310\330S\333p\210\277xz\234x\302\303Im\360\206\227e\346"..., 16384) = 16384
+read(3, "Qu?\233B\357\353\t$\204\302|\271g\206g=3\233\334\0036\31"..., 16384) = 16384
+read(3, "\321U\330)5S\350\"\2x\272d`-v\204p;M\304\212\221y[U\352"..., 16384) = 16384
+mmap2(NULL, 1060864, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xa7b8d000
+read(3, "\240G\36E\216da\217\324\244n\16\365W\nT\207\227\203Se\25"..., 16384) = 16384
+read(3, "\303\10\251\303P\360\363I\201\237O\216\32\211\371\37OY"..., 16384) = 16384
+read(3, "?\333r\360\326y3\340\373\263\313\335\f0b\352^\214\254R"..., 16384) = 16384
+read(3, ";\255.\361\323\332\0!8\224\217\304z{=;\332\367xZ\373w\306"..., 16384) = 16384
+read(3, "`\252\243]\36~T\203*\2(]\275\272\257k\304\276\256\36M\\"..., 16384) = 16384
+read(3, "V\202\276\227\226\275\215\v\\\366(\366RV`$}\352)/\326\252"..., 16384) = 16384
+read(3, "\242\311\245\16\374\231C\377\304\345\273zQr\rE/D\251i7"..., 16384) = 16384
+read(3, "&6+\360\271\320C\315\366\376\304:tp\36\271\363-0\226\225"..., 16384) = 16384
+read(3, "\2\207rc\243d/}\3\v[\37\314\350\353\272\317i\375\304\267"..., 16384) = 16384
+read(3, "N+)C\1I.\310\327J\250\0064\331`\317[\3736\200ts\230PQ\306"..., 16384) = 16384
+read(3, "\344\315\204\355\227\t\313\272\374g\216~\304f\31[*&n\252"..., 16384) = 16384
+read(3, "\351\317\327\210Ew\4\305\221W\26\371>\355\311oDe\332\313"..., 16384) = 16384
+read(3, "\226\325\267\6\200\232\331\5\302^\204!\2305K^.\317M:\273"..., 16384) = 16384
+mmap2(NULL, 1060864, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xa7a8a000
+read(3, "ou\321l\342\367f\343)\262\t\276x\31\33`\275i(t\361V\341"..., 16384) = 16384
+read(3, "r\304\337h&\235\304\305\206\343\317?\36\316O|t8Fl\25&G"..., 16384) = 16384
+read(3, "\337^\334\375o/\260\377\355%\330\377\366V\354\177{\343"..., 16384) = 16384
+read(3, "\22\333\2639\222\257\21,\221@#=\26\25\376\26\2447.\356"..., 16384) = 16384
+read(3, "A\244\344\177\10\f\210\240(}\362\20\245\364\t\355\315)"..., 16384) = 16384
+read(3, "#\33\322[s\351\201\\zx$\237\316\300\363\276l\177a,\333"..., 16384) = 16384
+read(3, "\312\360\350\30--F\320;\246\301\24`\325<\265\26\3445\7"..., 16384) = 16384
+read(3, "7\302B\0\25754=\2J\21\36\324G\334\310^\363\216iQ\200\251"..., 16384) = 16384
+mmap2(NULL, 1060864, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xa7987000
+read(3, "MU\324\2417\20X@\232\241\223L\310|Z\3\2\214H\2642\361l"..., 16384) = 16384
+read(3, "\270\252k\v&\275\252\273\v\246\270\252\277+\230\332\252"..., 16384) = 16384
+read(3, "\352\255K\363\201^\3%\204\350\310\255q\v\v\265\306\312"..., 16384) = 16384
+read(3, "o1\263\240N\310K\177vQ\320\245\2179\177\277K\257\\\346"..., 16384) = 16384
+read(3, "\222\1x\204\0275\10\217\331W\231\360\261/\215r\234\373"..., 16384) = 16384
+read(3, "\222\3347\210\31K\330/v1\224\206-2-K\37[\34J\7\211Xo\214"..., 16384) = 16384
+read(3, "A\312{\320F\330IOO|]h]8z\352\345\257\353\302spJ_\326\331"..., 16384) = 15346
+read(3, "", 4096)                       = 0
+read(3, "", 16384)                      = 0
+close(3)                                = 0
+munmap(0xa7f3d000, 4096)                = 0
+mmap2(NULL, 1060864, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xa7884000
+mmap2(NULL, 1060864, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xa7781000
+mmap2(NULL, 1060864, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xa767e000
+munmap(0xa7b8d000, 1060864)             = 0
+munmap(0xa7c90000, 1060864)             = 0
+getrusage(RUSAGE_SELF, {ru_utime={0, 936058}, ru_stime={0, 184011}, ...}) = 0
+gettimeofday({1153327329, 270122}, {240, 0}) = 0
+getrusage(RUSAGE_SELF, {ru_utime={0, 940058}, ru_stime={0, 184011}, ...}) = 0
+gettimeofday({1153327329, 280719}, {240, 0}) = 0
+write(1, "Petite Chez Scheme Version 7.0a\n", 32Petite Chez Scheme Version 7.0a
+) = 32
+write(1, "Copyright (c) 1985-2005 Cadence "..., 49Copyright (c) 1985-2005 Cadence Research Systems
+) = 49
+write(1, "\n", 1
+)                       = 1
+write(1, "> ", 2> )                       = 2
+lseek(0, 0, SEEK_CUR)                   = -1 ESPIPE (Illegal seek)
+read(0, "", 1024)                       = 0
+write(1, "\n", 1
+)                       = 1
+exit_group(0)                           = ?
+Process 4573 detached
+[01;32maghuloum@titus[00m:[01;34m~/compiler-0[00m$ vi  exit
+
+Script done on Wed 19 Jul 2006 12:42:13 PM EDT

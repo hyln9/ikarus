@@ -1,0 +1,84 @@
+
+(let ([winders '()])
+
+  (define call-with-current-frame
+    (lambda (f)
+      (if ($fp-at-base)
+          (f ($current-frame))
+          ($seal-frame-and-call f))))
+  
+  (define primitive-call/cc
+    (lambda (f)
+      (call-with-current-frame
+        (lambda (frm)
+          (f ($frame->continuation frm))))))
+
+  (define len
+    (lambda (ls n)
+      (if (null? ls)
+          n
+          (len (cdr ls) (fxadd1 n)))))
+
+  (define list-tail
+    (lambda (ls n)
+      (if (fxzero? n)
+          ls
+          (list-tail (cdr ls) (fxsub1 n)))))
+
+  (define drop-uncommon-heads 
+    (lambda (x y)
+      (if (eq? x y)
+          x
+          (drop-uncommon-heads (cdr x) (cdr y)))))
+
+  (define common-tail
+    (lambda (x y)
+      (let ([lx (len x 0)] [ly (len y 0)])
+        (let ([x (if (fx> lx ly) (list-tail x (fx- lx ly)) x)]
+              [y (if (fx> ly lx) (list-tail y (fx- ly lx)) y)])
+          (if (eq? x y)
+              x
+              (drop-uncommon-heads (cdr x) (cdr y)))))))
+
+  (define unwind*
+    (lambda (ls tail)
+      (unless (eq? ls tail)
+        (set! winders (cdr ls))
+        ((cdar ls))
+        (unwind* (cdr ls) tail))))
+
+  (define rewind*
+    (lambda (ls tail)
+      (unless (eq? ls tail)
+        (rewind* (cdr ls) tail)
+        ((caar ls))
+        (set! winders ls))))
+
+  (define do-wind
+    (lambda (new)
+      (let ([tail (common-tail new winders)])
+        (unwind* winders tail)
+        (rewind* new tail))))
+
+  (define call/cc
+    (lambda (f)
+      (primitive-call/cc
+        (lambda (k)
+          (let ([save winders])
+            (f (lambda v*
+                 (unless (eq? save winders) (do-wind save))
+                 (apply k v*))))))))
+
+  (define dynamic-wind
+    (lambda (in body out)
+      (in)
+      (set! winders (cons (cons in out) winders))
+      (let ([v (body)])
+        (set! winders (cdr winders))
+        (out)
+        v)))
+
+  ($pcb-set! call/cf call-with-current-frame)
+  ($pcb-set! call/cc call/cc)
+  ($pcb-set! dynamic-wind dynamic-wind))
+
