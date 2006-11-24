@@ -252,7 +252,7 @@
     ["libhash-9.2.ss"       #t  "libhash.fasl"]
     ["libwriter-9.1.ss"     #t  "libwriter.fasl"]
     ["libtokenizer-9.1.ss"  #t  "libtokenizer.fasl"]
-    ["libassembler-6.7.ss"  #t  "libassembler.ss"]
+    ["libassembler-6.7.ss"  #t  "libassembler.fasl"]
     ["libintelasm-6.9.ss"   #t  "libintelasm.fasl"]
     ["libfasl-6.7.ss"       #t  "libfasl.fasl"]
     ["libcompile-9.1.ss"    #t  "libcompile.fasl"]
