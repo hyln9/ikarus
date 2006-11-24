@@ -297,5 +297,5 @@
    
 
 (system
-  (format "cat ~a > ikarus.fasl"
+  (format "cat ~a > ikarus.boot"
           (join " " (map caddr scheme-library-files))))

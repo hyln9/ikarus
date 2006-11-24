@@ -1,8 +1,8 @@
 
-all: ikarus.fasl
+all: ikarus.boot
 
-ikarus.fasl: 
-	echo '(load "compiler-6.9.ss")' | petite
+ikarus.boot: *.ss
+	echo '(load "makefile.ss")' | ../runtime/ikarus ikarus.boot
 
 clean:
 	rm -f *.fasl
