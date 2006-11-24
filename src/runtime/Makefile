@@ -1,21 +1,25 @@
 
 CFLAGS = -Wall -DNDEBUG -O3
 #CFLAGS = -Wall -g
-LDFLAGS = -g -ldl -lgmp -rdynamic
+LDFLAGS = -g -ldl -lgmp -dynamic
 CC = gcc
 all: ikarus
 
 ikarus: ikarus-collect.o ikarus-runtime.o ikarus-main.o ikarus-fasl.o \
-  ikarus-exec.o ikarus-print.o ikarus-enter.s ikarus-symbol-table.o  \
+  ikarus-exec.o ikarus-print.o ikarus-enter.o ikarus-symbol-table.o  \
   ikarus-weak-pairs.o ikarus-numerics.o
 	$(CC)  $(LDFLAGS) -o ikarus \
 	ikarus-main.o ikarus-runtime.o \
-	ikarus-fasl.o ikarus-exec.o ikarus-print.o ikarus-enter.s \
+	ikarus-fasl.o ikarus-exec.o ikarus-print.o ikarus-enter.o \
 	ikarus-symbol-table.o ikarus-collect.o ikarus-weak-pairs.o \
 	ikarus-numerics.o
 
 ikarus-main.o: ikarus-main.c ikarus.h
 	$(CC) $(CFLAGS) -c ikarus-main.c
+
+ikarus-enter.o: ikarus-enter.s ikarus.h
+	$(CC) $(CFLAGS) -c ikarus-enter.s
+
 
 ikarus-runtime.o: ikarus-runtime.c ikarus.h
 	$(CC) $(CFLAGS) -c ikarus-runtime.c

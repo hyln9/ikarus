@@ -45,12 +45,24 @@ extend_table_maybe(unsigned char*p,  int size, ikpcb* pcb){
     pcb->memory_base = (unsigned char*)(new_lo * segment_size);
   } 
   else if (q > pcb->memory_end){
-    fprintf(stderr, "must extend segment table upwards!\n");
-    fprintf(stderr, "mem: 0x%08x ... 0x%08x\n", 
-        (int)pcb->memory_base, (int)pcb->memory_end-1);
-    fprintf(stderr, "new: 0x%08x ... 0x%08x\n",
-        (int)p, (int)q-1);
-    exit(-1);
+    int lo = segment_index(pcb->memory_base);
+    int old_hi = segment_index(pcb->memory_end);
+    int new_hi = segment_index(q+segment_size-1);
+    int new_vec_size = (new_hi - lo) * pagesize;
+    int old_vec_size = (old_hi - lo) * pagesize;
+    unsigned char* v = ik_mmap(new_vec_size);
+    memcpy(v, pcb->dirty_vector_base, old_vec_size);
+    bzero(v+old_vec_size, new_vec_size - old_vec_size);
+    ik_munmap(pcb->dirty_vector_base, old_vec_size);
+    pcb->dirty_vector_base = (unsigned int*) v;
+    pcb->dirty_vector = (unsigned int*)(v - lo * pagesize);
+    unsigned char* s = ik_mmap(new_vec_size);
+    memcpy(s, pcb->segment_vector_base, old_vec_size);
+    bzero(s+old_vec_size, new_vec_size - old_vec_size);
+    ik_munmap(pcb->segment_vector_base, old_vec_size);
+    pcb->segment_vector_base = (unsigned int*) s;
+    pcb->segment_vector = (unsigned int*)(s - lo * pagesize);
+    pcb->memory_end = (unsigned char*)(new_hi * segment_size);
   }
 }
 
@@ -139,7 +151,7 @@ ik_mmap(int size){
       0,
       mapsize,
       PROT_READ | PROT_WRITE,
-      MAP_PRIVATE | MAP_ANONYMOUS,
+      MAP_PRIVATE | MAP_ANON,
       -1,
       0);
   if(mem == MAP_FAILED){
@@ -419,6 +431,7 @@ ikp ik_read(ikp fdptr, ikp bufptr, ikp lenptr){
 
 
 ikp ik_write(ikp fdptr, ikp idx, ikp str){
+  fprintf(stderr, "IK_WRITE\n");
   int fd = unfix(fdptr);
   int len = unfix(idx);
   char* buf = (char*)(str+disp_string_data-string_tag);

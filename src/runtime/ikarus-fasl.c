@@ -146,7 +146,7 @@ ik_relocate_code(ikp code){
       /* foreign object */
       ikp str = ref(p, wordsize);
       char* name = string_data(str);
-      void* sym = dlsym(NULL, name);
+      void* sym = dlsym(RTLD_DEFAULT, name);
       char* err = dlerror();
       if(err){
         fprintf(stderr, "failed to find foreign name %s: %s\n", name, err);
@@ -241,78 +241,6 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     ref(code, disp_code_reloc_vector) = do_read(pcb, p);
     ik_relocate_code(code);
     return code+vector_tag;
-  }
-  if(c == 'X'){
-    assert(0);
-#if 0
-    code_header ch;
-    fasl_read_buf(p, &ch, sizeof(ch));
-    ikp code = ik_make_code(ch.code_size, ch.reloc_size, ch.closure_size, pcb);
-    if(put_mark_index){
-      p->marks[put_mark_index] = code;
-    }
-    ikp code_data = code + IK_OFF_CODE_DATA;
-    fasl_read_buf(p, code_data, ch.code_size);
-    ikp reloc_table = code_data + ch.code_size;
-    int i = 0;
-    while(i < ch.reloc_size){
-      char t = fasl_read_byte(p);
-      if(t == 'O'){
-        int offset;
-        fasl_read_buf(p, &offset, sizeof(int));
-        ikp object = do_read(pcb, p);
-        ref(code_data,offset) = object;
-        ref(reloc_table, i) = (ikp)(offset << 2);
-        i += wordsize;
-      }
-      else if(t == 'F'){ /* foreign call */
-        int offset;
-        fasl_read_buf(p, &offset, sizeof(int));
-        ikp str = do_read(pcb, p);
-        char* name = string_data(str);
-        void* sym = dlsym(NULL, name);
-        char* err = dlerror();
-        if(err){
-          fprintf(stderr, "failed to find foreign name %s: %s\n", name, err);
-          exit(-1);
-        }
-        ref(code_data,offset) = sym;
-        ref(reloc_table, i) = (ikp)((offset << 2) | 3);
-        ref(reloc_table, i+wordsize) = str;
-        i += 2*wordsize;
-      }
-      else if(t == 'D'){ /* displaced reloc */
-        int code_offset;
-        int object_offset;
-        fasl_read_buf(p, &code_offset, sizeof(int));
-        fasl_read_buf(p, &object_offset, sizeof(int));
-        ikp object = do_read(pcb, p);
-        ref(reloc_table, i) = (ikp)((code_offset << 2) | 1);
-        ref(reloc_table, i+wordsize) = (ikp)object_offset;
-        ref(code_data, code_offset) = object + object_offset;
-        i += (2*wordsize);
-      }
-      else if(t == 'J'){ /* jump reloc */
-        int code_offset;
-        int object_offset;
-        fasl_read_buf(p, &code_offset, sizeof(int));
-        fasl_read_buf(p, &object_offset, sizeof(int));
-        ikp object = do_read(pcb, p);
-        ref(reloc_table, i) = (ikp)((code_offset << 2) | 2);
-        ref(reloc_table, i+wordsize) = (ikp)object_offset;
-        ikp next_word = code_data + code_offset + wordsize;
-        ikp displaced_object = object + object_offset;
-        ref(next_word, -wordsize) = displaced_object - (int) next_word;
-        i += (2*wordsize);
-      }
-      else {
-        fprintf(stderr, "invalid reloc type '%c'\n", t);
-        exit(-1);
-      }
-    }
-    assert(i==ch.reloc_size);
-    return code;
-#endif
   }
   else if(c == 'P'){
     ikp pair = ik_alloc(pcb, pair_size) + pair_tag;
