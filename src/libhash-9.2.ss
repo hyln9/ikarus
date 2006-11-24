@@ -1,11 +1,12 @@
 
-(let ([hash-rtd (make-record-type '"hash-table" '(hash-vec count tc))])
+(let ([hash-rtd (make-record-type '"hash-table" '(hash-vec count tc dlink))])
   ;;; accessors
   (define get-vec (record-field-accessor hash-rtd 0))
   (define set-vec! (record-field-mutator hash-rtd 0))
   (define get-count (record-field-accessor hash-rtd 1))
   (define set-count! (record-field-mutator hash-rtd 1))
   (define get-tc (record-field-accessor hash-rtd 2))
+  (define get-dlink (record-field-accessor hash-rtd 3))
   ;;; implementation
 
   ;;; directly from Dybvig's paper
@@ -53,10 +54,13 @@
       (cond
         [(tc-pop tc) =>
          (lambda (b)
-           (re-add! h b)
-           (if (eq? x ($tcbucket-key b))
-               b
-               (rehash-lookup h tc x)))]
+           (if (eq? ($tcbucket-next b) #f)
+               (rehash-lookup h tc x)
+               (begin
+                 (re-add! h b)
+                 (if (eq? x ($tcbucket-key b))
+                     b
+                     (rehash-lookup h tc x)))))]
         [else #f])))
 
   (define get-bucket-index
@@ -102,6 +106,28 @@
                 ($vector-set! vec idx b)
                 (void))))))))
 
+  
+  ;(define hash-remove! 
+  ;  (lambda (h x)
+  ;    (let ([vec (get-vec h)]
+  ;          [next ($tcbucket-next b)])
+  ;      ;;; first remove it from its old place
+  ;      (let ([idx 
+  ;             (if (fixnum? next)
+  ;                 next
+  ;                 (get-bucket-index next))])
+  ;        (let ([fst ($vector-ref vec idx)])
+  ;          (cond
+  ;            [(eq? fst b) 
+  ;             ($vector-set! vec idx next)]
+  ;            [else 
+  ;             (replace! fst b next)]))))
+  ;    (let ([b1 ($tcbucket-dlink-next b)]
+  ;          [b2 ($tcbucket-dlink-prev b)])
+  ;      ($set-tcbucket-dlink-next! b2 b1)
+  ;      ($set-tcbucket-dlink-prev! b1 b2)
+  ;      (void))))
+
   (define get-hash
     (lambda (h x v)
       (let ([pv (pointer-value x)]
@@ -112,9 +138,10 @@
               (cond
                 [(or (direct-lookup x b) (rehash-lookup h (get-tc h) x))
                  =>
-                 (lambda (b) 
+                 (lambda (b)
                    ($tcbucket-val b))]
                 [else v])))))))
+   
   
   (define put-hash!
     (lambda (h x v)
@@ -138,7 +165,13 @@
                               [idx 
                                ($fxlogand ih ($fx- ($vector-length vec) 1))])
                          ($set-tcbucket-next! bucket ($vector-ref vec idx))
-                         ($vector-set! vec idx bucket))))
+                         ($vector-set! vec idx bucket)))
+                   (let ([b1 (get-dlink h)])
+                     (let ([b2 ($tcbucket-dlink-next b1)])
+                       ($set-tcbucket-dlink-next! bucket b2)
+                       ($set-tcbucket-dlink-prev! bucket b1)
+                       ($set-tcbucket-dlink-next! b1 bucket)
+                       ($set-tcbucket-dlink-prev! b2 bucket))))
                  (let ([ct (get-count h)])
                    (set-count! h ($fxadd1 ct))
                    (when ($fx> ct ($vector-length vec))
@@ -194,7 +227,11 @@
       (lambda ()
         (let ([x (cons #f #f)])
           (let ([tc (cons x x)])
-            (make (make-base-vec 32) 0 tc))))))
+            (make (make-base-vec 32) 0 tc
+                  (let ([b ($make-tcbucket tc #f #f #f)])
+                    ($set-tcbucket-dlink-next! b b)
+                    ($set-tcbucket-dlink-prev! b b)
+                    b)))))))
   (primitive-set! 'get-hash-table
     (lambda (h x v)
       (if (hash-table? h)

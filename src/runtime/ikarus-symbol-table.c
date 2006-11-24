@@ -47,7 +47,7 @@ static ikp ik_make_symbol(ikp str, ikpcb* pcb){
   ikp sym = ik_alloc(pcb, symbol_size) + symbol_tag;
   ref(sym, off_symbol_string)  = str;
   ref(sym, off_symbol_ustring) = false_object;
-  ref(sym, off_symbol_value)   = unbound_object;
+  ref(sym, off_symbol_value)   = str; //unbound_object;
   ref(sym, off_symbol_plist)   = null_object;
   ref(sym, off_symbol_system_value) = str;
   ref(sym, off_symbol_system_plist) = null_object;

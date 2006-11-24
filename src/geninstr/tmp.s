@@ -1,9 +1,17 @@
 .text
-movl $0x1234, %eax
-movl $0x1234, %ecx
-movl $0x1234, %edx
-movl $0x1234, %ebx
-movl $0x1234, %esp
-movl $0x1234, %ebp
-movl $0x1234, %esi
-movl $0x1234, %edi
+movl $27, 4(%eax)
+movl $27, 4(%ecx)
+movl $27, 4(%edx)
+movl $27, 4(%ebx)
+movl $27, 4(%esp)
+movl $27, 4(%ebp)
+movl $27, 4(%esi)
+movl $27, 4(%edi)
+movl $27, 4000(%eax)
+movl $27, 4000(%ecx)
+movl $27, 4000(%edx)
+movl $27, 4000(%ebx)
+movl $27, 4000(%esp)
+movl $27, 4000(%ebp)
+movl $27, 4000(%esi)
+movl $27, 4000(%edi)

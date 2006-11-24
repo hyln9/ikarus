@@ -1,3 +1,7 @@
+
+;;; 9.1: bignum reader
+;;; 9.0: graph marks/refs
+;;;
 (let ()
   (define char-whitespace?
     (lambda (c)
@@ -44,7 +48,7 @@
         (cond
          [(eof-object? c) n]
          [(digit? c)
-          (tokenize-number (fx+ (fx* n 10) (char->num c)) p)]
+          (tokenize-number (+ (* n 10) (char->num c)) p)]
          [(delimiter? c)
           (unread-char c p)
           n]
@@ -57,9 +61,9 @@
         (cond
          [(eof-object? c) n]
          [(digit? c)
-          (tokenize-hex (fx+ (fx* n 16) (char->num c)) p)]
+          (tokenize-hex (+ (* n 16) (char->num c)) p)]
          [(af? c)
-          (tokenize-hex (fx+ (fx* n 16) (af->num c)) p)]
+          (tokenize-hex (+ (* n 16) (af->num c)) p)]
          [(delimiter? c)
           (unread-char c p)
           n]
@@ -78,7 +82,7 @@
          [(af? c)
           (cons 'datum (tokenize-hex (af->num c) p))]
          [($char= c #\-)
-          (cons 'datum (fx- 0 (tokenize-hex 0 p)))]
+          (cons 'datum (* -1 (tokenize-hex 0 p)))]
          [($char= c #\+)
           (cons 'datum (tokenize-hex 0 p))]
          [else
@@ -140,7 +144,7 @@
           [(delimiter? c)  '(datum . -)]
           [(digit? c) 
            (read-char p)
-           (cons 'datum (fx- 0 (tokenize-number (char->num c) p)))]
+           (cons 'datum (* -1 (tokenize-number (char->num c) p)))]
           [else (error 'tokenize "invalid sequence -~a" c)]))))
   (define tokenize-dot
     (lambda (p)
@@ -247,8 +251,8 @@
       (let ([c (read-char p)])
         (cond
           [(eof-object? c) ac]
-          [($char= #\0 c) (read-binary (fxsll ac 1) (cons c chars) p)]
-          [($char= #\1 c) (read-binary (fx+ (fxsll ac 1) 1) (cons c chars) p)]
+          [($char= #\0 c) (read-binary (* ac 2) (cons c chars) p)]
+          [($char= #\1 c) (read-binary (+ (* ac 2) 1) (cons c chars) p)]
           [(delimiter? c) (unread-char c p) ac]
           [else 
            (unread-char c)
@@ -290,10 +294,10 @@
                      (error 'tokenize "invalid eof while reading #b-")]
                     [($char= #\0 c)
                      (cons 'datum
-                       (fx- 0 (read-binary 0 '(#\0 #\-) p)))]
+                       (* -1 (read-binary 0 '(#\0 #\-) p)))]
                     [($char= #\1 c)
                      (cons 'datum
-                       (fx- 0 (read-binary 1 '(#\1 #\-) p)))]
+                       (* -1 (read-binary 1 '(#\1 #\-) p)))]
                     [else 
                      (unread-char c p)
                      (error 'tokenize "invalid binary syntax #b-~a" c)]))]
@@ -322,9 +326,23 @@
                  (unless ($char= #\f f)
                    (error 'tokenize "invalid syntax near #!eo~a" f))
                  (cons 'datum (eof-object)))))]
+          [(digit? c) 
+           (tokenize-hashnum p (char->num c))]
           [else 
            (unread-char c p)
            (error 'tokenize "invalid syntax #~a" c)]))))
+  (define (tokenize-hashnum p n)
+    (let ([c (read-char p)])
+      (cond
+        [(eof-object? c) 
+         (error 'tokenize "invalid eof inside #n mark/ref")]
+        [($char= #\= c) (cons 'mark n)]
+        [($char= #\# c) (cons 'ref n)]
+        [(digit? c)
+         (tokenize-hashnum p (fx+ (fx* n 10) (char->num c)))]
+        [else
+         (unread-char c p)
+         (error 'tokenize "invalid char ~a while inside a #n mark/ref" c)])))
   (define tokenize-bar
     (lambda (p ac)
       (let ([c (read-char p)])
@@ -388,96 +406,195 @@
   ;;;--------------------------------------------------------------* READ *---
   ;;;
   (define read-list-rest
-    (lambda (p end mis)
+    (lambda (p locs k end mis)
       (let ([t (read-token p)])
         (cond
          [(eof-object? t)
           (error 'read "end of file encountered while reading list")]
-         [(eq? t end) '()]
+         [(eq? t end) (values '() locs k)]
          [(eq? t mis) 
           (error 'read "paren mismatch")]
          [(eq? t 'dot)
-          (let ([d (read p)])
+          (let-values ([(d locs k) (read-expr p locs k)])
             (let ([t (read-token p)])
               (cond
-               [(eq? t end) d]
-               [(eq? t mis) 
+               [(eq? t end) (values d locs k)]
+               [(eq? t mis)
                 (error 'read "paren mismatch")]
                [(eq? t 'dot)
                 (error 'read "cannot have two dots in a list")]
                [else
                 (error 'read "expecting ~a, got ~a" end t)])))]
          [(eq? t 'hash-semi)
-          (read p)
-          (read-list-rest p end mis)]
+          (let-values ([(ignored locs k) (read-expr p locs k)])
+            (read-list-rest p locs k end mis))]
          [else
-          (let ([a (parse-token p t)])
-            (let ([d (read-list-rest p end mis)])
-              (cons a d)))]))))
+          (let-values ([(a locs k) (parse-token p locs k t)])
+            (let-values ([(d locs k) (read-list-rest p locs k end mis)])
+               (let ([x (cons a d)])
+                 (values x locs 
+                         (if (or (loc? a) (loc? d))
+                             (extend-k-pair x k)
+                             k)))))]))))
   (define read-list-init
-    (lambda (p end mis)
+    (lambda (p locs k end mis)
       (let ([t (read-token p)])
        (cond
          [(eof-object? t)
           (error 'read "end of file encountered while reading list")]
-         [(eq? t end) '()]
+         [(eq? t end) (values '() locs k)]
          [(eq? t mis) 
           (error 'read "paren mismatch")]
          [(eq? t 'dot)
           (error 'read "invalid dot while reading list")]
          [(eq? t 'hash-semi)
-          (read p)
-          (read-list-init p end mis)]
+          (let-values ([(ignored locs k) (read-expr p locs k)])
+            (read-list-init p locs k end mis))]
          [else
-          (let ([a (parse-token p t)])
-            (cons a (read-list-rest p end mis)))]))))
-  (define vector-put!
-    (lambda (v i ls)
+          (let-values ([(a locs k) (parse-token p locs k t)])
+            (let-values ([(d locs k) (read-list-rest p locs k end mis)])
+              (let ([x (cons a d)])
+                 (values x locs 
+                    (if (or (loc? a) (loc? d))
+                        (extend-k-pair x k)
+                        k)))))]))))
+  (define extend-k-pair
+    (lambda (x k)
+      (lambda ()
+        (let ([a (car x)])
+          (when (loc? a)
+            (set-car! x (loc-value a))))
+        (let ([d (cdr x)])
+          (when (loc? d)
+            (set-cdr! x (loc-value d))))
+        (k))))
+  (define vector-put
+    (lambda (v k i ls)
       (cond
-        [(null? ls) v]
+        [(null? ls) k]
         [else
-         (vector-set! v i (car ls))
-         (vector-put! v (fxsub1 i) (cdr ls))])))
+         (let ([a (car ls)])
+           (vector-set! v i a)
+           (vector-put v  
+              (if (loc? a)
+                  (lambda ()
+                    (vector-set! v i (loc-value (vector-ref v i)))
+                    (k))
+                  k)
+              (fxsub1 i) (cdr ls)))])))
   (define read-vector
-    (lambda (p count ls)
+    (lambda (p locs k count ls)
       (let ([t (read-token p)])
         (cond
-         [(eof-object? t) 
-          (error 'read "end of file encountered while reading a vector")]
-         [(eq? t 'rparen) 
-          (let ([v (make-vector count)])
-            (vector-put! v (fxsub1 count) ls))]
-         [(eq? t 'rbrack)
-          (error 'read "unexpected ] while reading a vector")]
-         [(eq? t 'dot)
-          (error 'read "unexpected . while reading a vector")]
-         [(eq? t 'hash-semi)
-          (read p)
-          (read-vector p count ls)]
-         [else
-          (let ([a (parse-token p t)])
-            (read-vector p (fxadd1 count) (cons a ls)))]))))
+          [(eof-object? t) 
+           (error 'read "end of file encountered while reading a vector")]
+          [(eq? t 'rparen) 
+           (let ([v (make-vector count)])
+             (let ([k (vector-put v k (fxsub1 count) ls)])
+               (values v locs k)))]
+          [(eq? t 'rbrack)
+           (error 'read "unexpected ] while reading a vector")]
+          [(eq? t 'dot)
+           (error 'read "unexpected . while reading a vector")]
+          [(eq? t 'hash-semi)
+           (let-values ([(ignored locs k) (read-expr p locs k)])
+             (read-vector p locs k count ls))]
+          [else
+           (let-values ([(a locs k) (parse-token p locs k t)])
+              (read-vector p locs k (fxadd1 count) (cons a ls)))]))))
+  (define-record loc (value set?))
   (define parse-token
-    (lambda (p t)
+    (lambda (p locs k t)
       (cond
-        [(eof-object? t) (eof-object)]
-        [(eq? t 'lparen) (read-list-init p 'rparen 'rbrack)]
-        [(eq? t 'lbrack) (read-list-init p 'rbrack 'rparen)]
-        [(eq? t 'vparen) (read-vector p 0 '())]
-        [(eq? t 'hash-semi) 
-         (read p) ; ignored expression
-         (read p)]
+        [(eof-object? t) (values (eof-object) locs k)]
+        [(eq? t 'lparen) (read-list-init p locs k 'rparen 'rbrack)]
+        [(eq? t 'lbrack) (read-list-init p locs k 'rbrack 'rparen)]
+        [(eq? t 'vparen) (read-vector p locs k 0 '())]
+        [(eq? t 'hash-semi)
+         (let-values ([(ignored locs k) (read-expr p locs k)])
+           (read-expr p locs k))]
         [(pair? t)
          (cond
-           [(eq? (car t) 'datum) (cdr t)]
+           [(eq? (car t) 'datum) (values (cdr t) locs k)]
            [(eq? (car t) 'macro)
-            (cons (cdr t) (cons (read p) '()))]
+            (let-values ([(expr locs k) (read-expr p locs k)])
+              (let ([x (list expr)])
+                (values (cons (cdr t) x) locs
+                        (if (loc? expr)
+                            (lambda ()
+                              (set-car! x (loc-value expr))
+                              (k))
+                            k))))]
+           [(eq? (car t) 'mark) 
+            (let ([n (cdr t)])
+              (let-values ([(expr locs k) (read-expr p locs k)])
+                (cond
+                  [(assq n locs) =>
+                   (lambda (x)
+                     (let ([loc (cdr x)])
+                       (when (loc-set? loc)
+                         (error 'read "duplicate mark ~s" n))
+                       (set-loc-value! loc expr)
+                       (set-loc-set?! loc #t)
+                       (values expr locs k)))]
+                  [else
+                   (let ([loc (make-loc expr #t)])
+                     (let ([locs (cons (cons n loc) locs)])
+                       (values expr locs k)))])))]
+           [(eq? (car t) 'ref)
+            (let ([n (cdr t)])
+              (cond
+                [(assq n locs) =>
+                 (lambda (x)
+                   (values (cdr x) locs k))]
+                [else
+                 (let ([loc (make-loc #f #f)])
+                   (let ([locs (cons (cons n loc) locs)])
+                     (values loc locs k)))]))]
            [else (error 'read "invalid token! ~s" t)])]
         [else
          (error 'read "unexpected ~s found" t)])))
-  (define read
-    (lambda (p) (parse-token p (read-token p))))
+  (define read-expr
+    (lambda (p locs k)
+      (parse-token p locs k (read-token p))))
           
+  (define reduce-loc!
+    (lambda (x)
+       (let ([loc (cdr x)])
+         (unless (loc-set? loc)
+           (error 'read "referenced mark ~s not set" (car x)))
+         (when (loc? (loc-value loc))
+           (let f ([h loc] [t loc])
+             (if (loc? h)
+                 (let ([h1 (loc-value h)])
+                   (if (loc? h1)
+                       (begin
+                         (when (eq? h1 t)
+                           (error 'read "circular marks"))
+                         (let ([v (f (loc-value h1) (loc-value t))])
+                           (set-loc-value! h1 v)
+                           (set-loc-value! h v)
+                           v))
+                       (begin
+                         (set-loc-value! h h1)
+                         h1)))
+                 h))))))
+       
+  (define read
+    (lambda (p)
+      (let-values ([(expr locs k) (read-expr p '() void)])
+        (cond
+          [(null? locs) expr]
+          [else
+           (for-each reduce-loc! locs)
+           (k)
+           (if (loc? expr)
+               (loc-value expr)
+               expr)]))))
+
+
+
+
   ;;;      
   ;;;--------------------------------------------------------------* INIT *---
   ;;; 

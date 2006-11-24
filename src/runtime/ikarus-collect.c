@@ -758,6 +758,8 @@ add_object(gc_t* gc, ikp x){
       ref(y,off_tcbucket_key) = key;
       ref(y,off_tcbucket_val) = ref(x, off_tcbucket_val);
       ref(y,off_tcbucket_next) = ref(x, off_tcbucket_next);
+      ref(y,off_tcbucket_dlink_next) = ref(x, off_tcbucket_dlink_next);
+      ref(y,off_tcbucket_dlink_prev) = ref(x, off_tcbucket_dlink_prev);
       if((! is_fixnum(key)) && (tagof(key) != immediate_tag)){
         unsigned int kt = gc->segment_vector[page_index(key)];
         if((kt & gen_mask) <= gc->collect_gen){
@@ -768,6 +770,26 @@ add_object(gc_t* gc, ikp x){
       ref(x, -vector_tag) = forward_ptr;
       ref(x, wordsize-vector_tag) = y;
       return y;
+    }
+    else if((((int)fst) & port_mask) == port_tag){
+      ikp y = gc_alloc_new_ptr(port_size, gen, gc) + vector_tag;
+      ref(y, -vector_tag) = fst;
+      int i;
+      for(i=wordsize; i<port_size; i+=wordsize){
+        ref(y, i-vector_tag) = ref(x, i-vector_tag);
+      }
+      ref(x, -vector_tag) = forward_ptr;
+      ref(x, wordsize-vector_tag) = y;
+      return y;
+    }
+    else if((((int)fst) & bignum_mask) == bignum_tag){
+      int len = ((unsigned int)fst) >> bignum_length_shift;
+      int memreq = align(disp_bignum_data + len*wordsize);
+      ikp new = gc_alloc_new_data(memreq, gen, gc) + vector_tag;
+      memcpy(new-vector_tag, x, memreq);
+      ref(x, 0) = forward_ptr;
+      ref(x, wordsize) = new;
+      return new;
     }
     else {
       fprintf(stderr, "unhandled vector with fst=0x%08x\n", (int)fst);

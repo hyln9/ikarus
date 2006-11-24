@@ -63,7 +63,7 @@
     gensym->unique-string
     call-with-values values
     make-parameter dynamic-wind
-    display write fasl-write printf format print-error
+    display write print-graph fasl-write printf format print-error
     read-token read
     error exit call/cc
     current-error-handler
@@ -238,18 +238,18 @@
     ["libcxr-6.0.ss"        #t  "libcxr.fasl"]
     ["libcore-6.9.ss"       #t  "libcore.fasl"]
     ["libchezio-8.1.ss"     #t  "libchezio.fasl"]
-    ["libwriter-6.2.ss"     #t  "libwriter.fasl"]
-    ["libtokenizer-6.1.ss"  #t  "libtokenizer.fasl"]
+    ["libhash-6.2.ss"       #t  "libhash.fasl"]
+    ["libwriter-9.0.ss"     #t  "libwriter.fasl"]
+    ["libtokenizer-9.0.ss"  #t  "libtokenizer.fasl"]
     ["libassembler-6.7.ss"  #t  "libassembler.ss"]
     ["libintelasm-6.9.ss"   #t  "libintelasm.fasl"]
     ["libfasl-6.7.ss"       #t  "libfasl.fasl"]
-    ["libcompile-8.1.ss"    #t  "libcompile.fasl"]
-    ["psyntax-7.1-6.9.ss"   #t  "psyntax.fasl"]
+    ["libcompile-9.0.ss"    #t  "libcompile.fasl"]
+    ["psyntax-7.1-9.0.ss"   #t  "psyntax.fasl"]
     ["libinterpret-6.5.ss"  #t  "libinterpret.fasl"]
     ["libcafe-6.1.ss"       #t  "libcafe.fasl"]
     ["libtrace-6.9.ss"      #t  "libtrace.fasl"]
     ["libposix-6.0.ss"      #t  "libposix.fasl"]
-    ["libhash-6.2.ss"       #t  "libhash.fasl"]
     ["libtoplevel-6.9.ss"   #t  "libtoplevel.fasl"]
     ))
 

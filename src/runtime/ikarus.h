@@ -93,6 +93,7 @@ typedef struct {
   ikp weak_pairs_ep;
   ikp   heap_base; 
   int   heap_size;
+  ikpages* heap_pages;
   ikp   stack_base;
   int   stack_size;
   ikp   oblist;

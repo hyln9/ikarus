@@ -122,8 +122,7 @@ ik_mmap_code(int size, int gen, ikpcb* pcb){
 
 void* 
 ik_mmap_mixed(int size, ikpcb* pcb){
-  assert(0);
-  return 0;
+  return ik_mmap_typed(size, mainheap_mt, pcb);
 }
 
 
@@ -307,9 +306,11 @@ ik_alloc(ikpcb* pcb, int size){
     return ap;
   } 
   else {
-    fprintf(stderr, "EXT\n");
-    assert(0);
-#if 0
+    static int did_warn = 0;
+    if(! did_warn){
+      fprintf(stderr, "Extension causes leak? %d bytes\n", size);
+      did_warn = 1;
+    }
     if(ap){
       ikpages* p = ik_malloc(sizeof(ikpages));
       p->base = pcb->heap_base;
@@ -327,7 +328,6 @@ ik_alloc(ikpcb* pcb, int size){
     nap = ap + size;
     pcb->allocation_pointer = nap;
     return ap;
-#endif
   }
 }
 

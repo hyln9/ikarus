@@ -80,7 +80,7 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
     exit(-10);
   }
   if(p.marks){
-    ik_munmap(p.marks, pagesize);
+    ik_munmap(p.marks, p.marks_size*sizeof(ikp*));
   }
   {
     int err = munmap(mem, mapsize);
@@ -203,30 +203,26 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
       fprintf(stderr, "fasl_read: invalid index %d\n", idx);
       exit(-1);
     }
-    if(idx >= 1024){
-      fprintf(stderr, "BUG: mark too big: %d\n", idx);
-      exit(-1);
-    }
-    if(idx < p->marks_size){
-      if(p->marks[idx] != 0){
-        fprintf(stderr, "mark %d already set (fileoff=%d)\n", 
-            idx,
-            (int)p->memp - (int)p->membase - 6);
-        ik_print(p->marks[idx]);
+    if(p->marks){
+      if(idx >= p->marks_size){
+        fprintf(stderr, "BUG: mark too big: %d\n", idx);
         exit(-1);
       }
-    } 
+      if(idx < p->marks_size){
+        if(p->marks[idx] != 0){
+          fprintf(stderr, "mark %d already set (fileoff=%d)\n", 
+              idx,
+              (int)p->memp - (int)p->membase - 6);
+          ik_print(p->marks[idx]);
+          exit(-1);
+        }
+      } 
+    }
     else {
       /* allocate marks */
-      if(p->marks){
-        fprintf(stderr, "BUG: extension to marks not implemented\n");
-        exit(-1);
-      } 
-      else {
-        p->marks = ik_mmap(pagesize);
-        bzero(p->marks, pagesize);
-        p->marks_size = 1024;
-      }
+      p->marks = ik_mmap(pagesize*sizeof(ikp*));
+      bzero(p->marks, pagesize*sizeof(ikp*));
+      p->marks_size = pagesize;
     }
   }
   if(c == 'x'){

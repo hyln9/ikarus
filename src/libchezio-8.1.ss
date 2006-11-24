@@ -26,27 +26,30 @@
   ;;;   (port-output-size port)
   ;;;
   ;;; * Mutators:
+  ;;;   (set-port-handler! port proc)
+  ;;;   (set-port-input-buffer! port string)
   ;;;   (set-port-input-index! port fixnum)
   ;;;   (set-port-input-size! port fixnum)
+  ;;;   (set-port-output-buffer! port string)
   ;;;   (set-port-output-index! port fixnum)
   ;;;   (set-port-output-size! port fixnum)
   ;;;
-  ;;; (begin
-  ;;;   ;;; uncomment this form to use the compiler's definition
-  ;;;   ;;; of ports; otherwise, ports are represented as vanilla
-  ;;;   ;;; records.
-  ;;;   ($define-record-syntax port 
-  ;;;       (handler input-buffer input-index input-size
-  ;;;                output-buffer output-index output-size))
-  ;;;   (define-syntax port? (identifier-syntax $port?))
-  ;;;   (define-syntax input-port? 
-  ;;;     (syntax-rules ()
-  ;;;       [(_ x) (identifier? #'x)
-  ;;;        (and ($port? x) (string? ($port-input-buffer x)))]))
-  ;;;   (define-syntax output-port? 
-  ;;;     (syntax-rules ()
-  ;;;       [(_ x)  (identifier? #'x)
-  ;;;        (and ($port? x) (string? ($port-output-buffer x)))])))
+  #;(begin
+    ;;; uncomment this form to use the compiler's definition
+    ;;; of ports; otherwise, ports are represented as vanilla
+    ;;; records.
+    ($define-record-syntax port 
+        (handler input-buffer input-index input-size
+                 output-buffer output-index output-size))
+    (define-syntax port? (identifier-syntax $port?))
+    (define-syntax input-port? 
+      (syntax-rules ()
+        [(_ x) (identifier? #'x)
+         (and ($port? x) (string? ($port-input-buffer x)))]))
+    (define-syntax output-port? 
+      (syntax-rules ()
+        [(_ x)  (identifier? #'x)
+         (and ($port? x) (string? ($port-output-buffer x)))])))
   ;;;
   (primitive-set! 'port?
     (lambda (x) (port? x)))
@@ -59,7 +62,7 @@
   ;;;
   (primitive-set! '$make-input-port
     (lambda (handler buffer)
-      ($make-port handler buffer 0 ($string-length buffer) #f 0 0)))
+      ($make-port/input handler buffer 0 ($string-length buffer) #f 0 0)))
   ;;;
   (primitive-set! 'make-input-port
     (lambda (handler buffer)
@@ -71,7 +74,7 @@
   ;;;
   (primitive-set! '$make-output-port
     (lambda (handler buffer)
-      ($make-port handler #f 0 0 buffer 0 ($string-length buffer))))
+      ($make-port/output handler #f 0 0 buffer 0 ($string-length buffer))))
   ;;;
   (primitive-set! 'make-output-port
     (lambda (handler buffer)
@@ -83,7 +86,7 @@
   ;;;
   (primitive-set! '$make-input/output-port
     (lambda (handler input-buffer output-buffer)
-       ($make-port handler
+       ($make-port/both handler
                   input-buffer 0 ($string-length input-buffer)
                   output-buffer 0 ($string-length output-buffer))))
   (primitive-set! 'make-input/output-port
@@ -235,7 +238,7 @@
   ;;;
   (primitive-set! '$write-char
     (lambda (c p)
-      (let ([idx ($port-output-index p)])
+      (let ([idx (port-output-index p)])
         (if ($fx< idx ($port-output-size p))
             (begin
               ($string-set! ($port-output-buffer p) idx c)
@@ -286,7 +289,7 @@
   ;;;
   (primitive-set! 'read-char
     (case-lambda
-      [() ($read-char (current-input-port))]
+      [() ($read-char *current-input-port*)]
       [(p)
        (if (input-port? p)
            ($read-char p)

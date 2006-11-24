@@ -126,7 +126,9 @@
     [port?                    1 pred]
     [input-port?              1 pred]
     [output-port?             1 pred]
-    [$make-port               7 value]
+    [$make-port/input         7 value]
+    [$make-port/output        7 value]
+    [$make-port/both          7 value]
     [$port-handler            1 value]
     [$port-input-buffer       1 value]
     [$port-input-index        1 value]
@@ -362,8 +364,8 @@
          [(top-level-value)
           (let ([var (quoted-sym (cadr x))])
             (if (eq? (expand-mode) 'bootstrap)
-                ;(error 'compile "reference to ~s in bootstrap mode" var)
-                (make-primref var)
+                (error 'compile "reference to ~s in bootstrap mode" var)
+                ;(make-primref var)
                 (make-funcall
                   (make-primref 'top-level-value)
                   (list (make-constant var)))))]
@@ -1096,7 +1098,14 @@
       [(fixnum? immediate? boolean? char? vector? string? procedure?
         null? pair? not cons eq? vector symbol? error eof-object eof-object? 
         void $unbound-object? $code? $forward-ptr? bwp-object?
-        pointer-value top-level-value car cdr list* list $record)
+        pointer-value top-level-value car cdr list* list $record
+        port? input-port? output-port?
+        $make-port/input $make-port/output $make-port/both
+        $port-handler 
+        $port-input-buffer $port-input-index $port-input-size
+        $port-output-buffer $port-output-index $port-output-size 
+        $set-port-input-index! $set-port-input-size! 
+        $set-port-output-index! $set-port-output-size! ) 
        '#t]
       [($fxadd1 $fxsub1 $fxzero? $fxlognot $fxlogor $fxlogand $fx+ $fx- $fx* 
         $fx= $fx< $fx<= $fx> $fx>= $fxquotient $fxmodulo $fxsll $fxsra $fxlogxor $exit) 
@@ -1468,6 +1477,8 @@
                (check-bytes (fxadd1 disp-string-data) (car arg*) x)])]
            [($string)
             (check-const (fx+ (length arg*) (fx+ disp-string-data 1)) x)]
+           [($make-port/input $make-port/output $make-port/both)
+            (check-const port-size x)]
            [($make-vector) 
             (record-case (car arg*)
               [(constant i)
@@ -1551,7 +1562,7 @@
       s))
   (define (check? x)
     (cond
-      [(primref? x) #t]  ;;;; PRIMREF CHECK
+      [(primref? x) #f]  ;;;; PRIMREF CHECK
       [else         #t]))
   (define (do-new-frame op rand* si r call-convention rp-convention orig-live)
     (make-new-frame (fxadd1 si) (fx+ (length rand*) 2)
@@ -1967,6 +1978,19 @@
   (define disp-code-relocsize      8)
   (define disp-code-freevars      12)
   (define disp-code-data          16)
+  (define port-tag              #x3F)
+  (define input-port-tag        #x7F)
+  (define output-port-tag       #xBF)
+  (define input/output-port-tag #xFF)
+  (define port-mask             #x3F)
+  (define disp-port-handler        4)
+  (define disp-port-input-buffer   8)
+  (define disp-port-input-index   12)
+  (define disp-port-input-size    16)
+  (define disp-port-output-buffer 20)
+  (define disp-port-output-index  24)
+  (define disp-port-output-size   28)
+  (define port-size               32)
   (define disp-tcbucket-tconc 0)
   (define disp-tcbucket-key   4)
   (define disp-tcbucket-val   8)
@@ -2220,6 +2244,15 @@
      [($record?) 
       (indirect-type-pred record-pmask record-ptag record-pmask record-ptag
          rand* Lt Lf ac)]
+     [(output-port?)
+      (indirect-type-pred 
+        vector-mask vector-tag #f output-port-tag rand* Lt Lf ac)] 
+     [(input-port?)
+      (indirect-type-pred 
+        vector-mask vector-tag #f input-port-tag rand* Lt Lf ac)] 
+     [(port?)
+      (indirect-type-pred 
+        vector-mask vector-tag port-mask port-tag rand* Lt Lf ac)] 
      [($record/rtd?)
       (cond
         [Lf
@@ -2352,6 +2385,23 @@
       (movl (Simple (car arg*)) eax)
       (movl (mem off eax) eax)
       ac))
+  (define (do-make-port tag args ac)
+    (let f ([args args] [idx disp-vector-data])
+      (cond
+        [(null? args)
+         (if (fx= idx port-size)
+             (list*
+               (movl (int tag) (mem 0 apr))
+               (movl apr eax)
+               (addl (int port-size) apr)
+               (addl (int vector-tag) eax)
+               ac)
+             (error 'do-make-port "BUG"))]
+         [else
+          (list* 
+            (movl (Simple (car args)) eax)
+            (movl eax (mem idx apr))
+            (f (cdr args) (fx+ idx wordsize)))])))
   (define (do-value-prim op arg* ac)
     (case op
       [(eof-object) (cons (movl (int eof) eax) ac)]
@@ -2489,6 +2539,20 @@
        (indirect-ref arg* (fx- disp-tcbucket-val vector-tag) ac)]
       [($tcbucket-next) 
        (indirect-ref arg* (fx- disp-tcbucket-next vector-tag) ac)]
+      [($port-handler) 
+       (indirect-ref arg* (fx- disp-port-handler vector-tag) ac)]
+      [($port-input-buffer) 
+       (indirect-ref arg* (fx- disp-port-input-buffer vector-tag) ac)]
+      [($port-input-index) 
+       (indirect-ref arg* (fx- disp-port-input-index vector-tag) ac)]
+      [($port-input-size) 
+       (indirect-ref arg* (fx- disp-port-input-size vector-tag) ac)]
+      [($port-output-buffer) 
+       (indirect-ref arg* (fx- disp-port-output-buffer vector-tag) ac)]
+      [($port-output-index) 
+       (indirect-ref arg* (fx- disp-port-output-index vector-tag) ac)]
+      [($port-output-size) 
+       (indirect-ref arg* (fx- disp-port-output-size vector-tag) ac)]
       [(pointer-value)
        (list*
          (movl (Simple (car arg*)) eax)
@@ -2668,6 +2732,9 @@
               (addl (int symbol-tag) eax)
               (addl (int (align symbol-size)) apr)
               ac)]
+      [($make-port/input)  (do-make-port input-port-tag arg* ac)]
+      [($make-port/output) (do-make-port output-port-tag arg* ac)]
+      [($make-port/both)   (do-make-port input/output-port-tag arg* ac)]
       [($make-tcbucket)
        (list* (movl (Simple (car arg*)) eax)
               (movl eax (mem disp-tcbucket-tconc apr))
@@ -2781,13 +2848,15 @@
        $set-symbol-value! $set-symbol-plist! 
        $code-set!  primitive-set! 
        $set-code-object! $set-code-object+offset! $set-code-object+offset/rel!
-       $record-set!) 
+       $record-set!
+       $set-port-input-index! $set-port-input-size!
+       $set-port-output-index! $set-port-output-size!) 
       (do-effect-prim op arg*
         (cons (movl (int void-object) eax) ac))]
      [(fixnum? immediate? $fxzero? boolean? char? pair? vector? string? symbol?
        procedure? null? not eof-object? $fx= $fx< $fx<= $fx> $fx>= eq?
        $char= $char< $char<= $char> $char>= $unbound-object? $code? 
-       $record? $record/rtd? bwp-object?) 
+       $record? $record/rtd? bwp-object? port? input-port? output-port?) 
       (do-pred->value-prim op arg* ac)]
      [($code->closure)
       (list* 
@@ -2881,7 +2950,32 @@
        (indirect-assignment arg* (fx- disp-tcbucket-next vector-tag) ac)]
       [($set-tcbucket-tconc!)
        (indirect-assignment arg* (fx- disp-tcbucket-tconc vector-tag) ac)]
-       
+      [($set-port-input-index!)
+       (list*
+         (movl (Simple (car arg*)) eax)
+         (movl (Simple (cadr arg*)) ebx)
+         (movl ebx (mem (fx- disp-port-input-index vector-tag) eax))
+         ac)]
+      [($set-port-input-size!)
+       (list*
+         (movl (Simple (car arg*)) eax)
+         (movl (Simple (cadr arg*)) ebx)
+         (movl (int 0) (mem (fx- disp-port-input-index vector-tag) eax))
+         (movl ebx (mem (fx- disp-port-input-size vector-tag) eax))
+         ac)]
+      [($set-port-output-index!)
+       (list*
+         (movl (Simple (car arg*)) eax)
+         (movl (Simple (cadr arg*)) ebx)
+         (movl ebx (mem (fx- disp-port-output-index vector-tag) eax))
+         ac)]
+      [($set-port-output-size!)
+       (list*
+         (movl (Simple (car arg*)) eax)
+         (movl (Simple (cadr arg*)) ebx)
+         (movl (int 0) (mem (fx- disp-port-output-index vector-tag) eax))
+         (movl ebx (mem (fx- disp-port-output-size vector-tag) eax))
+         ac)]
       [($set-symbol-value!) 
        (list* (movl (Simple (car arg*)) eax)
               (movl (Simple (cadr arg*)) ebx)

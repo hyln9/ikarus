@@ -30,6 +30,7 @@
           (with-error-handler
             (lambda args
               (reset-input-port! (console-input-port))
+              ;(display "repl catch\n" (console-output-port))
               (apply print-error args)
               (k (void)))
             (lambda ()

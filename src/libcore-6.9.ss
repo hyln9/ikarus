@@ -1036,7 +1036,9 @@
     [(s) 
      (if (string? s)
          ($make-symbol s)
-         (error 'gensym "~s is not a string" s))]))
+         (if (symbol? s)
+             ($make-symbol ($symbol-string s))
+             (error 'gensym "~s is neither a string nor a symbol" s)))]))
 
 (primitive-set! 'putprop
   (lambda (x k v)

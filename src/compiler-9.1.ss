@@ -1,6 +1,9 @@
 
 
-;;; 
+;;; 9.1: * starting with libnumerics
+;;; 9.0: * graph marks for both reader and writer 
+;;;      * circularity detection during read 
+;;; 8.1: * using chez-style io ports
 ;;; 6.9: * creating a *system* environment
 ;;; 6.8: * creating a core-primitive form in the expander
 ;;; 6.2: * side-effects now modify the dirty-vector
@@ -63,16 +66,7 @@
     gensym->unique-string
     call-with-values values
     make-parameter dynamic-wind
-    output-port? current-output-port standard-output-port console-output-port
-    open-output-file close-output-port flush-output-port output-port-name
-    with-output-to-file with-input-from-file
-    input-port? current-input-port standard-input-port console-input-port
-    reset-input-port!
-    open-input-file close-input-port input-port-name
-    standard-error-port
-    open-output-string get-output-string 
-    newline write-char peek-char read-char unread-char
-    display write fasl-write printf format print-error
+    display write print-graph fasl-write printf format print-error
     read-token read
     error exit call/cc
     current-error-handler
@@ -93,6 +87,31 @@
     assembler-output
     $make-environment
     features
+
+    port? input-port? output-port? 
+    make-input-port make-output-port make-input/output-port
+    port-handler
+    port-input-buffer port-input-index port-input-size 
+    port-output-buffer port-output-index port-output-size 
+    set-port-input-index! set-port-input-size! 
+    set-port-output-index! set-port-output-size!
+    port-name input-port-name output-port-name
+    write-char read-char unread-char peek-char
+    newline 
+    reset-input-port!  flush-output-port
+    close-input-port close-output-port
+    console-input-port current-input-port
+    standard-output-port standard-error-port
+    console-output-port current-output-port
+    open-output-file open-input-file
+    open-output-string get-output-string
+    with-output-to-file call-with-output-file
+    with-input-from-file call-with-input-file
+    date-string
+
+    + - add1 sub1 * expt number? positive? negative? zero? number->string
+    logand
+    = < > <= >=
     ))
 
 (define system-primitives
@@ -124,13 +143,28 @@
     $make-tcbucket $tcbucket-next $tcbucket-key $tcbucket-val
     $set-tcbucket-next! $set-tcbucket-val! $set-tcbucket-tconc!
     call/cf trace-symbol! untrace-symbol! make-traced-procedure
-    fixnum->string date-string
+    fixnum->string 
     vector-memq vector-memv
 
+    ;;; must open-code
+    $make-port/input
+    $make-port/output
+    $make-port/both
+    $make-input-port $make-output-port $make-input/output-port
+    $port-handler
+    $port-input-buffer $port-input-index $port-input-size 
+    $port-output-buffer $port-output-index $port-output-size 
+    $set-port-input-index! $set-port-input-size!
+    $set-port-output-index! $set-port-output-size!
 
+    ;;; better open-code
+    $write-char $read-char $peek-char $unread-char
 
-port?  input-port?  output-port?  $make-input-port make-input-port $make-output-port make-output-port $make-input/output-port make-input/output-port $port-handler port-handler $port-input-buffer port-input-buffer $port-input-index port-input-index $port-input-size port-input-size $port-output-buffer port-output-buffer $port-output-index port-output-index $port-output-size port-output-size $set-port-input-index!  set-port-input-index!  $set-port-input-size!  set-port-input-size!  $set-port-output-index!  set-port-output-index!  $set-port-output-size!  set-port-output-size!  $write-char write-char newline port-name input-port-name output-port-name $read-char read-char $unread-char unread-char $peek-char peek-char $unread-char $reset-input-port!  reset-input-port!  $close-input-port  close-input-port  $close-output-port close-output-port $flush-output-port flush-output-port *standard-input-port* console-input-port *current-input-port* current-input-port *standard-output-port* *current-output-port* *standard-error-port* standard-output-port standard-error-port console-output-port current-output-port *current-output-port* open-output-file open-output-string get-output-string with-output-to-file call-with-output-file with-input-from-file call-with-input-file
-
+    ;;; never open-code 
+    $reset-input-port! $close-input-port
+    $close-output-port $flush-output-port
+    *standard-output-port* *standard-error-port* *current-output-port*
+    *standard-input-port* *current-input-port*
     ))
  
 
@@ -153,7 +187,7 @@ port?  input-port?  output-port?  $make-input-port make-input-port $make-output-
       `(begin
          (define-syntax compile-time-date-string
            (lambda (x)
-             #'(quote ,(#%date-string))))
+             #'(quote ,(date-string))))
          (define-syntax public-primitives
            (lambda (x)
              #'(quote ,public-primitives)))
@@ -194,35 +228,36 @@ port?  input-port?  output-port?  $make-input-port make-input-port $make-output-
   (whack-system-env #t)
   (printf "ok\n")
   (load "libassembler-compat-6.7.ss") ; defines make-code etc.
-  (load "libintelasm-6.6.ss") ; uses make-code, etc.
+  (load "libintelasm-6.9.ss") ; uses make-code, etc.
   (load "libfasl-6.7.ss") ; uses code? etc.
-  (load "libcompile-6.7.ss") ; uses fasl-write
+  (load "libcompile-8.1.ss") ; uses fasl-write
 )
 
 
 (whack-system-env #t)
 
 (define scheme-library-files
-  '(["libhandlers-6.9.ss"    "libhandlers.fasl"]
-    ["libcontrol-6.1.ss"     "libcontrol.fasl"]
-    ["libcollect-6.1.ss"     "libcollect.fasl"]
-    ["librecord-6.4.ss"      "librecord.fasl"]
-    ["libcxr-6.0.ss"         "libcxr.fasl"]
-    ["libcore-6.9.ss"        "libcore.fasl"]
-    ["libio-6.9.ss"          "libio.fasl"]
-    ["libwriter-6.2.ss"      "libwriter.fasl"]
-    ["libtokenizer-6.1.ss"   "libtokenizer.fasl"]
-    ["libassembler-6.7.ss"   "libassembler.ss"]
-    ["libintelasm-6.9.ss"    "libintelasm.fasl"]
-    ["libfasl-6.7.ss"        "libfasl.fasl"]
-    ["libcompile-6.7.ss"     "libcompile.fasl"]
-    ["psyntax-7.1-6.9.ss"    "psyntax.fasl"]
-    ["libinterpret-6.5.ss"   "libinterpret.fasl"]
-    ["libcafe-6.1.ss"        "libcafe.fasl"]
-    ["libtrace-6.9.ss"       "libtrace.fasl"]
-    ["libposix-6.0.ss"       "libposix.fasl"]
-    ["libhash-6.2.ss"        "libhash.fasl"]
-    ["libtoplevel-6.9.ss"    "libtoplevel.fasl"]
+  '(["libhandlers-6.9.ss"   #t  "libhandlers.fasl"]
+    ["libcontrol-6.1.ss"    #t  "libcontrol.fasl"]
+    ["libcollect-6.1.ss"    #t  "libcollect.fasl"]
+    ["librecord-6.4.ss"     #t  "librecord.fasl"]
+    ["libcxr-6.0.ss"        #t  "libcxr.fasl"]
+    ["libnumerics-9.1.ss"   #t  "libnumerics.fasl"]
+    ["libcore-6.9.ss"       #t  "libcore.fasl"]
+    ["libchezio-8.1.ss"     #t  "libchezio.fasl"]
+    ["libhash-6.2.ss"       #t  "libhash.fasl"]
+    ["libwriter-9.1.ss"     #t  "libwriter.fasl"]
+    ["libtokenizer-9.1.ss"  #t  "libtokenizer.fasl"]
+    ["libassembler-6.7.ss"  #t  "libassembler.ss"]
+    ["libintelasm-6.9.ss"   #t  "libintelasm.fasl"]
+    ["libfasl-6.7.ss"       #t  "libfasl.fasl"]
+    ["libcompile-9.1.ss"    #t  "libcompile.fasl"]
+    ["psyntax-7.1-9.1.ss"   #t  "psyntax.fasl"]
+    ["libinterpret-6.5.ss"  #t  "libinterpret.fasl"]
+    ["libcafe-6.1.ss"       #t  "libcafe.fasl"]
+    ["libtrace-6.9.ss"      #t  "libtrace.fasl"]
+    ["libposix-6.0.ss"      #t  "libposix.fasl"]
+    ["libtoplevel-6.9.ss"   #t  "libtoplevel.fasl"]
     ))
 
 
@@ -236,7 +271,8 @@ port?  input-port?  output-port?  $make-input-port make-input-port $make-output-
 
 (for-each 
   (lambda (x)
-    (compile-library (car x) (cadr x)))
+    (when (cadr x)
+      (compile-library (car x) (caddr x))))
   scheme-library-files)
 
 
@@ -258,4 +294,4 @@ port?  input-port?  output-port?  $make-input-port make-input-port $make-output-
 
 (system
   (format "cat ~a > ikarus.fasl"
-          (join " " (map cadr scheme-library-files))))
+          (join " " (map caddr scheme-library-files))))

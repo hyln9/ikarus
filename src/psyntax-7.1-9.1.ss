@@ -663,7 +663,7 @@
 ;;; AZIZ
 (define generate-id
   (lambda (name)
-    (if name (gensym (symbol->string name)) (gensym))))
+    (if name (gensym name) (gensym))))
 )
 
 
@@ -768,8 +768,9 @@
 ;;;     ((_ ae level name) name)))
 (define-syntax build-primref
   (syntax-rules ()
-    [(_ ae name)       `(|#primitive| ,name)]
-    [(_ ae level name) `(|#primitive| ,name)]))
+    [(_ ae name)   (build-primref ae 1 name)]
+    [(_ ae level name)
+     `(|#primitive| ,name)]))
 
 
 ;;; AZIZ
@@ -846,7 +847,7 @@
   (syntax-rules ()
     ((_ e)
      (let ((x e))
-       (or (boolean? x) (fixnum? x) (string? x) (char? x) (null? x))))))
+       (or (boolean? x) (fixnum? x) (string? x) (char? x) (null? x) (number? x))))))
 )
 
 (define-syntax unannotate
@@ -3110,8 +3111,12 @@
 (global-extend 'core '|#primitive|
    (lambda (e r mr w ae m?)
       (syntax-case e ()
-         ((_ e) (id? #'e)
-          (build-primref ae (strip (syntax e) w)))
+         ((_ name) (id? #'name)
+          (let ([name (strip (syntax name) w)])
+            (if (or (memq name (public-primitives))
+                    (memq name (system-primitives)))
+                (build-primref ae name)
+                (syntax-error (source-wrap e w ae)))))
          (_ (syntax-error (source-wrap e w ae))))))
 
 (global-extend 'core 'syntax
@@ -4576,7 +4581,6 @@
 
 
 
-
 (define-syntax define-record
   (lambda (x)
     (syntax-case x ()
@@ -4593,6 +4597,12 @@
                         (datum->syntax-object #'name
                           (string->symbol
                             (string-append namestr "?")))]
+                       [(i ...)
+                        (datum->syntax-object #'name
+                          (let f ([i 0] [f* fieldstr*])
+                            (cond
+                              [(null? f*) '()]
+                              [else (cons i (f (fxadd1 i) (cdr f*)))])))]
                        [(getters ...)
                         (datum->syntax-object #'name
                           (map (lambda (x)
@@ -4608,9 +4618,94 @@
                        [rtd rtd])
             #'(begin
                 (define-syntax name (cons '$rtd 'rtd))
-                (define constr (record-constructor 'rtd))
-                (define pred (record-predicate 'rtd))
-                (define getters (record-field-accessor 'rtd 'field*)) ...
-                (define setters (record-field-mutator 'rtd 'field*)) ...
+                (define constr 
+                  (lambda (field* ...)
+                    ($record 'rtd field* ...)))
+                (define pred
+                  (lambda (x) ($record/rtd? x 'rtd)))
+                (define getters 
+                  (lambda (x)
+                    (if ($record/rtd? x 'rtd) 
+                        ($record-ref x i)
+                        (error 'getters
+                               "~s is not a record of type ~s" x 'rtd)))) ...
+                (define setters 
+                  (lambda (x v)
+                    (if ($record/rtd? x 'rtd) 
+                        ($record-set! x i v)
+                        (error 'setters
+                               "~s is not a record of type ~s" x 'rtd)))) ...
                 )))])))
+
+
+(define-syntax $define-record-syntax
+  (lambda (x)
+    (syntax-case x ()
+      [(_ name (field* ...)) 
+       (let* ([namestr (symbol->string (syntax-object->datum #'name))]
+              [fields (syntax-object->datum #'(field* ...))]
+              [fieldstr* (map symbol->string fields)]
+              [rtd (make-record-type namestr fields)])
+         (with-syntax ([constr 
+                        (datum->syntax-object #'name
+                          (string->symbol
+                            (string-append "make-" namestr)))]
+                       [pred 
+                        (datum->syntax-object #'name
+                          (string->symbol
+                            (string-append namestr "?")))]
+                       [(i ...)
+                        (datum->syntax-object #'name
+                          (let f ([i 0] [f* fieldstr*])
+                            (cond
+                              [(null? f*) '()]
+                              [else (cons i (f (fxadd1 i) (cdr f*)))])))]
+                       [(getters ...)
+                        (datum->syntax-object #'name
+                          (map (lambda (x)
+                                 (string->symbol 
+                                   (string-append namestr "-" x)))
+                               fieldstr*))]
+                       [(setters ...)
+                        (datum->syntax-object #'name
+                          (map (lambda (x) 
+                                 (string->symbol
+                                   (string-append "set-" namestr "-" x "!")))
+                               fieldstr*))]
+                       [rtd rtd])
+            #'(begin
+                (define-syntax name (cons '$rtd 'rtd))
+                (define-syntax constr
+                  (syntax-rules ()
+                    [(_ field* ...) ($record 'rtd field* ...)]))
+                (define-syntax pred
+                  (syntax-rules ()
+                    [(_ x) ($record/rtd? x 'rtd)]))
+                (define-syntax getters 
+                  (syntax-rules ()
+                    [(_ x) ($record-ref x i)])) ...
+                (define-syntax setters 
+                  (syntax-rules ()
+                    [(_ x v) ($record-set! x i v)])) ...
+                )))])))
+
+(define-syntax trace
+  (lambda (x)
+    (syntax-case x ()
+      [(_ id) (identifier? #'id)
+       #'(trace-symbol! 'id)])))
+
+
+(define-syntax untrace
+  (lambda (x)
+    (syntax-case x ()
+      [(_ id) (identifier? #'id)
+       #'(untrace-symbol! 'id)])))
+
+
+(define-syntax trace-lambda
+  (lambda (x)
+    (syntax-case x ()
+      [(_ name args body body* ...)
+       #'(make-traced-procedure 'name (lambda args body body* ...))])))
 

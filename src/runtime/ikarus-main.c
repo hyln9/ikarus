@@ -8,12 +8,18 @@
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
-
+#include <gmp.h>
 
 int main(int argc, char** argv){
   if(argc < 2){
     fprintf(stderr, "insufficient arguments\n");
     exit(-1);
+  }
+  if(sizeof(mp_limb_t) != sizeof(int)){
+    fprintf(stderr, "ERROR: limb size\n");
+  }
+  if(mp_bits_per_limb != (8*sizeof(int))){
+    fprintf(stderr, "ERROR: bits_per_limb=%d\n", mp_bits_per_limb);
   }
   ikpcb* pcb = ik_make_pcb();
   int i;

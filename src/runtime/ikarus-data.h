@@ -87,7 +87,7 @@
 #define IK_DISP_CDR      4
 #define IK_OFF_CAR    (IK_DISP_CAR - IK_PAIR_TAG)
 #define IK_OFF_CDR    (IK_DISP_CDR - IK_PAIR_TAG)
-#define IK_HEAP_EXT_SIZE  (16 * 4096)
+#define IK_HEAP_EXT_SIZE  (32 * 4096)
 #define IK_PAIRP(x)   (IK_PTAG(x) == IK_PAIR_TAG)
 #define IK_CHARP(x)   (IK_MASK(x,IK_CHAR_MASK) == IK_CHAR_TAG)
 #define IK_STRING_TAG     6
@@ -173,24 +173,30 @@
 
 #define disp_frame_size -17
 
-#define htable_tag  ((ikp) 0x3F)
-#define disp_htable_count  4
-#define disp_htable_size   8
-#define disp_htable_mem   12
-#define htable_size       16
-#define off_htable_count (disp_htable_count - vector_tag) 
-#define off_htable_size  (disp_htable_size  - vector_tag) 
-#define off_htable_mem   (disp_htable_mem   - vector_tag) 
+#define port_tag      0x3F
+#define port_mask     0x3F
+#define port_size       32
 
-#define disp_tcbucket_tconc  0
-#define disp_tcbucket_key    4
-#define disp_tcbucket_val    8
-#define disp_tcbucket_next  12
-#define tcbucket_size 16
-#define off_tcbucket_tconc (disp_tcbucket_tconc - vector_tag)
-#define off_tcbucket_key   (disp_tcbucket_key   - vector_tag)
-#define off_tcbucket_val   (disp_tcbucket_val   - vector_tag)
-#define off_tcbucket_next  (disp_tcbucket_next  - vector_tag)
+#define disp_tcbucket_tconc        0
+#define disp_tcbucket_key          4
+#define disp_tcbucket_val          8
+#define disp_tcbucket_next        12
+#define disp_tcbucket_dlink_prev  16
+#define disp_tcbucket_dlink_next  20
+#define tcbucket_size 24
+#define off_tcbucket_tconc       (disp_tcbucket_tconc - vector_tag)
+#define off_tcbucket_key         (disp_tcbucket_key   - vector_tag)
+#define off_tcbucket_val         (disp_tcbucket_val   - vector_tag)
+#define off_tcbucket_next        (disp_tcbucket_next  - vector_tag)
+#define off_tcbucket_dlink_next  (disp_tcbucket_dlink_next  - vector_tag)
+#define off_tcbucket_dlink_prev  (disp_tcbucket_dlink_prev  - vector_tag)
 
+
+#define bignum_mask       0x7
+#define bignum_tag        0x2
+#define bignum_sign_mask  0x8
+#define bignum_sign_shift   3
+#define bignum_length_shift 4
+#define disp_bignum_data wordsize
 
 #endif

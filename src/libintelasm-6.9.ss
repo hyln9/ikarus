@@ -558,6 +558,8 @@
        (CODE #x83 (ModRM 3 '/7 dst (IMM8 src ac)))]
       [(and (imm? src) (eq? dst '%eax)) 
        (CODE #x3D (IMM32 src ac))]
+      [(and (imm? src) (reg? dst))
+       (CODE #x81 (ModRM 3 '/7 dst (IMM32 src ac)))]
       [(and (reg? src) (reg? dst))
        (CODE #x39 (ModRM 3 src dst ac))]
       [(and (mem? src) (reg? dst))

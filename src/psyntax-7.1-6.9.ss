@@ -4637,6 +4637,7 @@
                                "~s is not a record of type ~s" x 'rtd)))) ...
                 )))])))
 
+
 (define-syntax $define-record-syntax
   (lambda (x)
     (syntax-case x ()
@@ -4687,7 +4688,6 @@
                   (syntax-rules ()
                     [(_ x v) ($record-set! x i v)])) ...
                 )))])))
-
 
 (define-syntax trace
   (lambda (x)
