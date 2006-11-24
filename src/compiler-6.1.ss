@@ -1,8 +1,11 @@
 
+;;; 6.1: added case-lambda, dropped lambda
+;;; 6.0: basic compiler
+;;;
 (when (eq? "" "")
   (load "chez-compat.ss")
   (set! primitive-ref top-level-value)
-  (load "libexpand-6.0.ss")
+  (load "libexpand-6.1.ss")
   ;(load "libinterpret-6.0.ss")
   (load "record-case.ss")
   ;(#%current-eval eval)
@@ -22,8 +25,6 @@
 
 
 (define assembler-output (make-parameter #t))
-
-(define signal-error-on-undefined-pcb (make-parameter #t))
 
 (load "set-operations.ss")
 ;(load "tests-5.6-req.scm")
@@ -58,23 +59,21 @@
 
 
 (define scheme-library-files
-  '(
-;    ["libsymboltable-6.0.ss" "libsymboltable.fasl"]
-    ["libhandlers-6.0.ss"    "libhandlers.fasl"]
-    ["libcontrol-6.0.ss"     "libcontrol.fasl"]
+  '(["libhandlers-6.0.ss"    "libhandlers.fasl"]
+    ["libcontrol-6.1.ss"     "libcontrol.fasl"]
     ["libcollect-6.0.ss"     "libcollect.fasl"]
-    ["librecord-6.0.ss"      "librecord.fasl"]
+    ["librecord-6.1.ss"      "librecord.fasl"]
     ["libcxr-6.0.ss"         "libcxr.fasl"]
-    ["libcore-6.0.ss"        "libcore.fasl"]
-    ["libio-6.0.ss"          "libio.fasl"]
-    ["libwriter-6.0.ss"      "libwriter.fasl"]
-    ["libtokenizer-6.0.ss"   "libtokenizer.fasl"]
-    ["libexpand-6.0.ss"      "libexpand.fasl"]
-    ["libinterpret-6.0.ss"   "libinterpret.fasl"]
+    ["libcore-6.1.ss"        "libcore.fasl"]
+    ["libio-6.1.ss"          "libio.fasl"]
+    ["libwriter-6.1.ss"      "libwriter.fasl"]
+    ["libtokenizer-6.1.ss"   "libtokenizer.fasl"]
+    ["libexpand-6.1.ss"      "libexpand.fasl"]
+    ["libinterpret-6.1.ss"   "libinterpret.fasl"]
     ;["libintelasm-6.0.ss"    "libintelasm.fasl"]
-    ["libcafe-6.0.ss"        "libcafe.fasl"]
+    ["libcafe-6.1.ss"        "libcafe.fasl"]
 ;    ["libtrace-5.3.ss"       "libtrace-5.3.s"       "libtrace"      ]
-;    ["libposix-5.7.ss"       "libposix-5.3.s"       "libposix"      ]
+    ["libposix-6.0.ss"       "libposix.fasl"]
     ["libtoplevel-6.0.ss"    "libtoplevel.fasl"]
     ))
 
@@ -217,38 +216,16 @@
     [(assq x open-coded-primitives) => caddr]
     [else (error 'primitive-context "unknown prim ~s" x)]))
 
-;;; pcb table section
-(define pcb-table
+
+;;; primitives table section
+(define primitives-table
  '(;;; system locations used by the C/Scheme interface
-   [$system-stack       system       "system_stack"]
-   [$stack-top          system          "stack_top"] ; top of stack
-   [$stack-size         system         "stack_size"] ; its size
-   [$frame-base         system         "frame_base"] ; base of the frame
-   [$frame-redline      system      "frame_redline"] ; top + 2 pages
-   [$frame-pointer      system      "frame_pointer"] ;
-   [$heap-base          system          "heap_base"]   
-   [$heap-size          system          "heap_size"]   
-   [$allocation-redline system "allocation_redline"]
-   [$allocation-pointer system "allocation_pointer"] 
-   [$roots              system              "roots"]
-   [$string-base        system        "string_base"]
-   [$string-ap          system          "string_ap"]
-   [$string-eap         system         "string_eap"]
-   [$string-pages       system       "string_pages"]
-   [$allocated-megs     system     "allocated_megs"]
-   [$allocated-bytes    system    "allocated_bytes"]
-   [$reclaimed-megs     system     "reclaimed_megs"]
-   [$reclaimed-bytes    system    "reclaimed_bytes"]
-   ;;; scheme_objects comes before all scheme objects
-   [$scheme-objects     system     "scheme_objects"]
-   [$next-continuation  system  "next_continuation"]
-   ;;; error handling procedures used by the codegen
    [$apply-nonprocedure-error-handler library]
    [$incorrect-args-error-handler     library]
    [$multiple-values-error            library]
    [$intern                           library]
    [do-overflow                       library]
-   [do-vararg-overflow                       library]
+   [do-vararg-overflow                library]
    [do-stack-overflow                 library]
    ;;; type predicates
    [fixnum?                 public]
@@ -288,13 +265,13 @@
    [fx>                     public]
    [fx>=                    public]
    ;;; characters
-   [char=                   public]
-   [char<                   public]
-   [char<=                  public]
-   [char>                   public]
-   [char>=                  public]
-   [integer->char            public]
-   [char->integer            public]
+   [char=?                  public]
+   [char<?                  public]
+   [char<=?                 public]
+   [char>?                  public]
+   [char>=?                 public]
+   [integer->char           public]
+   [char->integer           public]
    ;;; lists
    [cons                    public]
    [car                     public]
@@ -450,6 +427,7 @@
    [trace-symbol!           library]
    [untrace-symbol!         library]
    ;;; record
+   [$base-rtd               library]
    [record?                 public]
    [record-rtd              public]
    [record-name             public]
@@ -485,77 +463,20 @@
    [fork                    public]
    [posix-fork              public]
    [system                  public]
-
    [$debug                      public]
    [$underflow-misaligned-error public]
-   ;;;
-   [$scheme-objects-end     system     "scheme_objects_end"]
    ))
-
-(define (public-primitives)
-  (let f ([ls pcb-table])
-    (cond
-      [(null? ls) '()]
-      [(eq? (cadar ls) 'public) 
-       (cons (caar ls) (f (cdr ls)))]
-      [else (f (cdr ls))])))
-
-(define (library-primitives)
-  (let f ([ls pcb-table])
-    (cond
-      [(null? ls) '()]
-      [(eq? (cadar ls) 'library) 
-       (cons (caar ls) (f (cdr ls)))]
-      [else (f (cdr ls))])))
-
-
-
-
-(define (pcb-system-loc? x)
-  (cond
-    [(assq x pcb-table) =>
-     (lambda (x) (eq? (cadr x) 'system))]
-    [else (error 'pcb-system-loc? "not in table ~s" x)]))
-
-(define *pcb-set-marker* (gensym))
-
-(define *pcb-ref-marker* (gensym))
-
-(define (mark-pcb-set-found x)
-  (putprop x *pcb-set-marker* #t))
-  
-(define (mark-pcb-ref-found x)
-  (putprop x *pcb-ref-marker* #t))
-  
-(define (pcb-referenced? x)
-  (getprop x *pcb-ref-marker*))
-  
-(define (pcb-assigned? x)
-  (getprop x *pcb-set-marker*))
-  
-(define (pcb-index x)
-  (error 'pcb-index "dead on ~s" x)
-  (mark-pcb-ref-found x)
-  (let f ([i 0] [ls pcb-table])
-    (cond
-      [(null? ls) 
-       (error 'pcb-index "not in table ~s" x)]
-      [(eq? x (caar ls)) i]
-      [else (f (fxadd1 i) (cdr ls))])))
-
-(define (pcb-offset x)
-  (fx* (pcb-index x) wordsize))
 
 (define (primitive? x)
   (cond
-    [(assq x pcb-table) #t]
+    [(assq x primitives-table) #t]
     [(assq x open-coded-primitives) #t]
     [else #f]))
 
 (define (open-codeable? x)
   (cond
     [(assq x open-coded-primitives) #t]
-    [(assq x pcb-table) #f]
+    [(assq x primitives-table) #f]
     [else (error 'open-codeable "invalid primitive ~s" x)]))
 
 (define (open-coded-primitive-args x)
@@ -563,29 +484,7 @@
     [(assq x open-coded-primitives) => cadr]
     [else (error 'open-coded-primitive-args "invalid ~s" x)]))
 
-(define (pcb-cname x)
-  (define (cname x i)
-    (cond
-      [(eq? (cadr x) 'system) (caddr x)]
-      [else (format "prim_~a" i)]))
-  (let f ([ls pcb-table] [i 0])
-    (cond
-      [(null? ls) (error 'pcb-cname "invalid name ~s" x)]
-      [(eq? (caar ls) x) (cname (car ls) i)]
-      [else (f (cdr ls) (fxadd1 i))])))
-
-(define (pcb-cnames)
-  (define (cname x i)
-    (cond
-      [(eq? (cadr x) 'system) (caddr x)]
-      [else (format "prim_~a" i)]))
-  (let f ([ls pcb-table] [i 0])
-    (cond
-      [(null? ls) '()]
-      [else
-       (cons (cname (car ls) i) (f (cdr ls) (fxadd1 i)))])))
-
-;;; end of pcb table section
+;;; end of primitives table section
 
   
 (define-record constant (value))
@@ -606,12 +505,17 @@
 (define-record bind (lhs* rhs* body))
 (define-record seq (e0 e1))
 (define-record function (arg* proper body))
+(define-record clambda-case (arg* proper body))
+(define-record clambda (cases))
+(define-record clambda-code (label cases free))
+
 (define-record closure (code free*))
 (define-record funcall (op rand*))
 (define-record appcall (op rand*))
 (define-record forcall (op rand*))
 (define-record code-rec (arg* proper free* body))
-(define-record codes (lhs* rhs* body))
+
+(define-record codes (list body))
 (define-record assign (lhs rhs))
 
 (define unique-var
@@ -695,21 +599,19 @@
                (make-seq 
                  (E a env)
                  (f (car d) (cdr d)))]))]
-         [(lambda)
-          (unless (fx= (length x) 3)
-            (error 'recordize "invalid ~s" x))
-          (let ([fml* (cadr x)] [body (caddr x)])
-            (let ([nfml* (gen-fml* fml*)])
-              (make-function 
-                (properize nfml*)
-                (list? fml*)
-                (E body (extend-env fml* nfml* env)))))]
-         [($pcb-set!) 
-          (let ([var (quoted-sym (cadr x))] [val (caddr x)])
-              (mark-pcb-set-found var)
-              (make-primcall '$pcb-set! 
-                (list (make-constant (pcb-index var))
-                      (E val env))))]
+         [(case-lambda)
+          (let ([cls*
+                 (map
+                   (lambda (cls)
+                     (let ([fml* (car cls)] [body (cadr cls)])
+                       (let ([nfml* (gen-fml* fml*)])
+                         (let ([body (E body (extend-env fml* nfml* env))])
+                           (make-clambda-case 
+                             (properize nfml*) 
+                             (list? fml*) 
+                             body)))))
+                   (cdr x))])
+            (make-clambda cls*))]
          [(foreign-call)
           (let ([name (quoted-string (cadr x))] [arg* (cddr x)])
             (make-forcall name
@@ -769,21 +671,26 @@
       [(seq e0 e1) `(begin ,(E e0) ,(E e1))]
       [(function args proper body)
        `(lambda ,(E-args proper args) ,(E body))]
+      [(clambda-case args proper body)
+       `(clambda-case ,(E-args proper args) ,(E body))]
+      [(clambda cls*)
+       `(case-lambda . ,(map E cls*))]
+      [(clambda-code label clauses free)
+       `(code ,label . ,(map E clauses))]
       [(closure code free*)
        `(closure ,(E code) ,(map E free*))]
       [(code-rec arg* proper free* body) 
        `(code-rec [arg: ,(E-args proper arg*)]
               [free: ,(map E free*)]
           ,(E body))]
-      [(codes lhs* rhs* body)
-       `(codes ,(map (lambda (lhs rhs) (list (E lhs) (E rhs))) lhs* rhs*)
+      [(codes list body)
+       `(codes ,(map E list)
           ,(E body))]
       [(funcall rator rand*) `(funcall ,(E rator) . ,(map E rand*))]
       [(appcall rator rand*) `(appcall ,(E rator) . ,(map E rand*))]
       [(forcall rator rand*) `(foreign-call ,rator . ,(map E rand*))]
       [(assign lhs rhs) `(set! ,(E lhs) ,(E rhs))]
       [(return x) `(return ,(E x))]
-      ;;; (define-record new-frame (base-idx size body))
       [(new-frame base-idx size body)
        `(new-frame [base: ,base-idx]
                    [size: ,size]
@@ -802,6 +709,7 @@
                  [base-idx: ,base-idx]
                  [arg-count: ,arg-count]
                  [live-mask: ,live-mask])]
+      [(foreign-label x) `(foreign-label ,x)]
       [else (error 'unparse "invalid record ~s" x)]))
   (E x))
 
@@ -819,24 +727,40 @@
       [(null? (cdr lhs*)) 
        (list (make-conses rhs*))]
       [else (cons (car rhs*) (properize (cdr lhs*) (cdr rhs*)))]))
+  (define (inline-case cls rand*)
+    (record-case cls
+      [(clambda-case fml* proper body)
+       (if proper
+           (and (fx= (length fml*) (length rand*))
+                (make-bind fml* rand* body))
+           (and (fx<= (length fml*) (length rand*))
+                (make-bind fml* (properize fml* rand*) body)))]))
+  (define (try-inline cls* rand* default)
+    (cond
+      [(null? cls*) default]
+      [(inline-case (car cls*) rand*)]
+      [else (try-inline (cdr cls*) rand* default)]))
   (define (inline rator rand*)
     (record-case rator
-      [(function fml* proper body)
-       (cond
-         [proper 
-          (if (fx= (length fml*) (length rand*))
-              (make-bind fml* rand* body)
-              (begin
-                (warning 'compile "possible application error in ~s"
-                         (unparse (make-funcall rator rand*)))
-                (make-funcall rator rand*)))]
-         [else
-          (if (fx<= (length fml*) (length rand*))
-              (make-bind fml* (properize fml* rand*) body)
-              (begin
-                (warning 'compile "possible application error in ~s"
-                         (unparse (make-funcall rator rand*)))
-                (make-funcall rator rand*)))])]
+      [(clambda cls*)
+       (try-inline cls* rand*
+           (make-funcall rator rand*))]
+;      [(function fml* proper body)
+;       (cond
+;         [proper 
+;          (if (fx= (length fml*) (length rand*))
+;              (make-bind fml* rand* body)
+;              (begin
+;                (warning 'compile "possible application error in ~s"
+;                         (unparse (make-funcall rator rand*)))
+;                (make-funcall rator rand*)))]
+;         [else
+;          (if (fx<= (length fml*) (length rand*))
+;              (make-bind fml* (properize fml* rand*) body)
+;              (begin
+;                (warning 'compile "possible application error in ~s"
+;                         (unparse (make-funcall rator rand*)))
+;                (make-funcall rator rand*)))])]
       [else (make-funcall rator rand*)]))
   (define (Expr x)
     (record-case x
@@ -854,6 +778,13 @@
        (make-seq (Expr e0) (Expr e1))]
       [(function fml* proper body) 
        (make-function fml* proper (Expr body))]
+      [(clambda cls*)
+       (make-clambda
+         (map (lambda (x)
+                (record-case x
+                  [(clambda-case fml* proper body)
+                   (make-clambda-case fml* proper (Expr body))]))
+              cls*))]
       [(primcall rator rand*) 
        (make-primcall rator (map Expr rand*))]
       [(funcall rator rand*)
@@ -885,6 +816,8 @@
       [(conditional test conseq altern)
        (union (Expr test) (union (Expr conseq) (Expr altern)))]
       [(seq e0 e1) (union (Expr e0) (Expr e1))]
+      [(clambda cls*)
+       (Expr* (map clambda-case-body cls*))]
       [(function fml* proper body) (Expr body)]
       [(primcall rator rand*) (Expr* rand*)]
       [(funcall rator rand*)
@@ -938,6 +871,15 @@
        (let-values ([(fml* a-lhs* a-rhs*) (fix fml*)]) 
          (make-function fml* proper 
            (bind-assigned a-lhs* a-rhs* (Expr body))))]
+      [(clambda cls*) 
+       (make-clambda
+         (map (lambda (cls)
+                (record-case cls
+                  [(clambda-case fml* proper body)
+                   (let-values ([(fml* a-lhs* a-rhs*) (fix fml*)])
+                     (make-clambda-case fml* proper 
+                       (bind-assigned a-lhs* a-rhs* (Expr body))))]))
+              cls*))]
       [(primcall op rand*)
        (make-primcall op (map Expr rand*))]
       [(forcall op rand*)
@@ -952,7 +894,8 @@
        (make-primcall '$vector-set! (list lhs (make-constant 0) (Expr rhs)))]
       [else (error who "invalid expression ~s" (unparse x))]))
   (Expr x))
-  
+ 
+
 (define (remove-assignments x)
   (let ([assigned (uncover-assigned x)])
     (rewrite-assignments assigned x)))
@@ -992,6 +935,23 @@
          (let ([free (difference body-free fml*)])
            (values (make-closure (make-code-rec fml* proper free body) free)
                    free)))]
+      [(clambda cls*)
+       (let-values ([(cls* free) 
+                     (let f ([cls* cls*])
+                       (cond
+                         [(null? cls*) (values '() '())]
+                         [else
+                          (record-case (car cls*)
+                            [(clambda-case fml* proper body)
+                             (let-values ([(body body-free) (Expr body)]
+                                          [(cls* cls*-free) (f (cdr cls*))])
+                               (values
+                                 (cons (make-clambda-case fml* proper body)
+                                       cls*)
+                                 (union (difference body-free fml*) 
+                                        cls*-free)))])]))])
+          (values (make-closure (make-clambda-code (gensym) cls* free) free)
+                  free))]
       [(primcall op rand*)
        (let-values ([(rand* rand*-free) (Expr* rand*)])
          (values (make-primcall op rand*)  rand*-free))]
@@ -1018,66 +978,39 @@
 
 (define (lift-codes x)
   (define who 'lift-codes)
-  (define (Expr* x*)
-    (cond
-     [(null? x*) (values '() '())]
-     [else
-      (let-values ([(a a-free) (Expr (car x*))]
-                   [(d d-free) (Expr* (cdr x*))])
-       (values (cons a d) (append a-free d-free)))]))
-  (define (Expr x)
+  (define all-codes '())
+  (define (do-code x)
     (record-case x
-      [(constant) (values x '())]
-      [(var) (values x '())]
-      [(primref) (values x '())]
+      [(clambda-code label cls* free) 
+       (let ([cls* (map 
+                     (lambda (x)
+                       (record-case x
+                         [(clambda-case fml* proper body)
+                          (make-clambda-case fml* proper (E body))]))
+                     cls*)])
+         (let ([g (make-code-loc label)])
+           (set! all-codes
+             (cons (make-clambda-code label cls* free) all-codes))
+           g))]))
+  (define (E x)
+    (record-case x
+      [(constant) x]
+      [(var)      x]
+      [(primref)  x]
       [(bind lhs* rhs* body)
-       (let-values ([(rhs* rhs-codes) (Expr* rhs*)] 
-                    [(body body-codes) (Expr body)])
-         (values (make-bind lhs* rhs* body)
-                 (append rhs-codes body-codes)))]
+       (make-bind lhs* (map E rhs*) (E body))]
       [(conditional test conseq altern)
-       (let-values ([(test test-codes) (Expr test)]
-                    [(conseq conseq-codes) (Expr conseq)]
-                    [(altern altern-codes) (Expr altern)])
-         (values (make-conditional test conseq altern)
-                 (append test-codes conseq-codes altern-codes)))]
-      [(seq e0 e1) 
-       (let-values ([(e0 e0-codes) (Expr e0)]
-                    [(e1 e1-codes) (Expr e1)])
-         (values (make-seq e0 e1) (append e0-codes e1-codes)))]
-      [(closure c free) 
-       (let-values ([(c codes) 
-                     (record-case c
-                       [(code-rec arg* proper free* body)
-                        (let-values ([(body body-codes) (Expr body)])
-                          (let ([g (make-code-loc 'code)])
-                            (values g 
-                              (cons 
-                                (cons g (make-code-rec arg* proper free* body))
-                                body-codes))))]
-                       [else (error #f "invalid code ~s" c)])])
-         (values (make-closure c free) codes))]
-      [(primcall op rand*)
-       (let-values ([(rand* rand*-codes) (Expr* rand*)])
-         (values (make-primcall op rand*) rand*-codes))]
-      [(forcall op rand*)
-       (let-values ([(rand* rand*-codes) (Expr* rand*)])
-         (values (make-forcall op rand*) rand*-codes))]
-      [(funcall rator rand*)
-       (let-values ([(rator rat-codes) (Expr rator)]
-                    [(rand* rand*-codes) (Expr* rand*)])
-         (values
-           (make-funcall rator rand*) 
-           (append rat-codes rand*-codes)))]
-      [(appcall rator rand*)
-       (let-values ([(rator rat-codes) (Expr rator)]
-                    [(rand* rand*-codes) (Expr* rand*)])
-         (values
-           (make-appcall rator rand*) 
-           (append rat-codes rand*-codes)))]
+       (make-conditional (E test) (E conseq) (E altern))]
+      [(seq e0 e1)           (make-seq (E e0) (E e1))]
+      [(closure c free)      (make-closure (do-code c) free)]
+      [(primcall op rand*)   (make-primcall op (map E rand*))]
+      [(forcall op rand*)    (make-forcall op (map E rand*))]
+      [(funcall rator rand*) (make-funcall (E rator) (map E rand*))]
+      [(appcall rator rand*) (make-appcall (E rator) (map E rand*))]
       [else (error who "invalid expression ~s" (unparse x))]))
-  (let-values ([(x codes) (Expr x)])
-    (make-codes (map car codes) (map cdr codes) x)))
+  (let ([x (E x)])
+    (make-codes all-codes x)))
+
 
 
             
@@ -1243,14 +1176,18 @@
       [(appcall op arg*)
        (make-appcall (Expr op) (map Expr arg*))]
       [else (error who "invalid expression ~s" (unparse x))]))
+  (define (CaseExpr x)
+    (record-case x
+      [(clambda-case fml* proper body)
+       (make-clambda-case fml* proper (Tail body))]))
   (define (CodeExpr x)
-    (record-case x 
-      [(code-rec fml* proper free* body)
-       (make-code-rec fml* proper free* (Tail body))]))
+    (record-case x
+      [(clambda-code L cases free) 
+       (make-clambda-code L (map CaseExpr cases) free)]))
   (define (CodesExpr x)
     (record-case x 
-      [(codes lhs* rhs* body)
-       (make-codes lhs* (map CodeExpr rhs*) (Tail body))]))
+      [(codes list body)
+       (make-codes (map CodeExpr list) (Tail body))]))
   (CodesExpr x))
 
 
@@ -1308,14 +1245,18 @@
       [(appcall op arg*)
        (make-appcall (Expr op) (map Expr arg*))]
       [else (error who "invalid expression ~s" (unparse x))]))
-  (define (CodeExpr x)
+  (define (CaseExpr x)
     (record-case x 
-      [(code-rec fml* proper free* body)
-       (make-code-rec fml* proper free* (Tail body))]))
+      [(clambda-case fml* proper body)
+       (make-clambda-case fml* proper (Tail body))]))
+  (define (CodeExpr x)
+    (record-case x
+      [(clambda-code L clauses free)
+       (make-clambda-code L (map CaseExpr clauses) free)]))
   (define (CodesExpr x)
     (record-case x 
-      [(codes lhs* rhs* body)
-       (make-codes lhs* (map CodeExpr rhs*) (Tail body))]))
+      [(codes list body)
+       (make-codes (map CodeExpr list) (Tail body))]))
   (CodesExpr x))
 
 
@@ -1355,17 +1296,20 @@
       [(funcall rator arg*) (or (Expr rator) (ormap Expr arg*))] 
       [(appcall rator arg*) (or (Expr rator) (ormap Expr arg*))]
       [else (error who "invalid tail expression ~s" (unparse x))]))
-  (define (CodeExpr x)
+  (define (CaseExpr x)
     (record-case x 
-      [(code-rec fml* proper free* body)
+      [(clambda-case fml* proper body)
        (if (Tail body)
-           (make-code-rec fml* proper free* 
-             (insert-check body))
+           (make-clambda-case fml* proper (insert-check body))
            x)]))
+  (define (CodeExpr x)
+    (record-case x
+      [(clambda-code L cases free)
+       (make-clambda-code L (map CaseExpr cases) free)]))
   (define (CodesExpr x)
     (record-case x 
-      [(codes lhs* rhs* body)
-       (make-codes lhs* (map CodeExpr rhs*)
+      [(codes list body)
+       (make-codes (map CodeExpr list)
                    (if (Tail body)
                        (insert-check body)
                        body))]))
@@ -1468,14 +1412,18 @@
       [(appcall op arg*)
        (make-appcall (Expr op) (map Expr arg*))]
       [else (error who "invalid expression ~s" (unparse x))]))
-  (define (CodeExpr x)
+  (define (CaseExpr x)
     (record-case x 
-      [(code-rec fml* proper free* body)
-       (make-code-rec fml* proper free* (Tail body))]))
+      [(clambda-case fml* proper body)
+       (make-clambda-case fml* proper (Tail body))]))
+  (define (CodeExpr x)
+    (record-case x
+      [(clambda-code L cases free)
+       (make-clambda-code L (map CaseExpr cases) free)]))
   (define (CodesExpr x)
     (record-case x 
-      [(codes lhs* rhs* body)
-       (make-codes lhs* (map CodeExpr rhs*) (Tail body))]))
+      [(codes list body)
+       (make-codes (map CodeExpr list) (Tail body))]))
   (CodesExpr x))
 
 
@@ -1624,16 +1572,22 @@
         [else
           (f (cdr free*) (fxadd1 idx)
              (cons (cons (car free*) (make-cp-var idx)) r))])))
+  (define CaseExpr 
+    (lambda (r)
+      (lambda (x)
+        (record-case x 
+          [(clambda-case fml* proper body)
+           (let-values ([(fml* si r live) (bind-fml* fml* r)])
+             (make-clambda-case fml* proper (Tail body si r live)))]))))
   (define (CodeExpr x)
-    (record-case x 
-      [(code-rec fml* proper free* body)
-       (let-values ([(fml* si r live) (bind-fml* fml* (bind-free* free*))])
-         (make-code-rec fml* proper free* (Tail body si r live)))]))
+    (record-case x
+      [(clambda-code L cases free)
+       (let ([r (bind-free* free)])
+         (make-clambda-code L (map (CaseExpr r) cases) free))]))
   (define (CodesExpr x)
     (record-case x 
-      [(codes lhs* rhs* body)
-       (make-codes lhs* 
-                   (map CodeExpr rhs*) 
+      [(codes list body)
+       (make-codes (map CodeExpr list) 
                    (Tail body 1 '() '()))]))
   (CodesExpr x))
          
@@ -1670,8 +1624,6 @@
   (define disp-symbol-system-value  16)
   (define disp-symbol-system-plist  20)
   (define symbol-size 24)
-
-  
   (define vector-tag 5)
   (define vector-mask 7)
   (define disp-vector-length 0)
@@ -1694,26 +1646,21 @@
   (define disp-code-relocsize      8)
   (define disp-code-closuresize   12)
   (define disp-code-data          16)
-
   (define record-ptag vector-tag)
   (define record-pmask vector-mask)
   (define disp-record-rtd     0)
   (define disp-record-data    4)
-
-
   (define hash-table-tag #x3F)
   (define disp-htable-count 4)
   (define disp-htable-size  8)
   (define disp-htable-mem  12)
   (define hash-table-size  16)
-
   (define disp-frame-size -17)
   (define disp-frame-offset -13)
   (define disp-multivalue-rp -9)
   (define object-alignment 8)
   (define align-shift 3)
   (define pagesize 4096))
-
 
 (begin
   (define (mem off val)
@@ -1764,7 +1711,6 @@
   (define (jb label) (list 'jb label))
   (define (ja label) (list 'ja label))
   (define (jmp label) (list 'jmp label))
-
   (define edi '%edx) ; closure pointer
   (define esi '%esi) ; pcb
   (define ebp '%ebp) ; allocation pointer
@@ -1782,11 +1728,8 @@
   (define cpr '%edi)
   (define pcr '%esi)
   (define register? symbol?)
-
-
   (define (argc-convention n)
-    (fx- 0 (fxsll n fx-shift)))
-  )
+    (fx- 0 (fxsll n fx-shift))))
 
 
 (define pcb-ref
@@ -1826,20 +1769,6 @@
       [(char? x) (int (fx+ (fxsll (char->integer x) char-shift) char-tag))]
       [(eq? x (void)) (int void-object)]
       [else (obj x)]))
-;    (mem (fx* (pcb-index op) wordsize) pcr))
-;;;  (define (immediate-rep x)
-;;;    (cond
-;;;      [(fixnum? x) (fxsll x fx-shift)]
-;;;      [(boolean? x) (if x bool-t bool-f)]
-;;;      [(null? x) nil]
-;;;      [(char? x) (fx+ (fxsll (char->integer x) char-shift) char-tag)]
-;;;      [else (error 'immediate-rep "invalid immediate ~s" x)]))
-;;;  (define (bool-bit-to-boolean ac)
-;;;    (list* 
-;;;      (movzbl al eax)
-;;;      (shll (int bool-shift) eax)
-;;;      (orl (int bool-tag) eax)
-;;;      ac))
   (define (cond-branch op Lt Lf ac)
     (define (opposite x)
       (cadr (assq x '([je jne] [jl jge] [jle jg] [jg jle] [jge jl]))))
@@ -2374,7 +2303,7 @@
        (indirect-ref arg* (fx- disp-code-relocsize vector-tag) ac)]
      [($code-closure-size) 
        (indirect-ref arg* (fx- disp-code-closuresize vector-tag) ac)]
-     [($pcb-set! $set-car! $set-cdr! $vector-set! $string-set! $exit
+     [($set-car! $set-cdr! $vector-set! $string-set! $exit
        $set-symbol-value! $set-symbol-plist! 
        $set-code-byte! $set-code-word!  primitive-set! 
        $set-code-object! $set-code-object+offset! $set-code-object+offset/rel!
@@ -2397,15 +2326,15 @@
         ac)]
      [($frame->continuation)
       (NonTail 
-        (make-closure (make-code-loc (label SL_continuation_code)) arg*)
+        (make-closure (make-code-loc SL_continuation_code) arg*)
         ac)]
      [($make-call-with-values-procedure)
       (NonTail 
-        (make-closure (make-code-loc (label SL_call_with_values)) arg*)
+        (make-closure (make-code-loc SL_call_with_values) arg*)
         ac)]
      [($make-values-procedure)
       (NonTail 
-        (make-closure (make-code-loc (label SL_values)) arg*)
+        (make-closure (make-code-loc SL_values) arg*)
         ac)]
      [else
       (error 'value-prim "unhandled ~s" op)]))
@@ -2424,18 +2353,9 @@
              (movl (Simple (caddr arg*)) ebx)
              (movb bh (mem (fx- disp-string-data string-tag) eax))
              ac)]
-     [($set-constant!) 
-      (NonTail (cadr arg*) 
-        (list* (movl eax (Simple (car arg*))) ac))]
-;;;     [($pcb-set!)
-;;;      (let ([loc (car arg*)] [val (cadr arg*)])
-;;;        (record-case loc
-;;;          [(constant i) 
-;;;           (unless (fixnum? i) (error who "invalid loc ~s" loc))
-;;;           (list* (movl (Simple val) eax)
-;;;                  (movl eax (mem (fx* i wordsize) pcr))
-;;;                  ac)]
-;;;         [else (error who "invalid loc ~s" loc)]))]
+;    [($set-constant!) 
+;      (NonTail (cadr arg*) 
+;        (list* (movl eax (Simple (car arg*))) ac))]
     [($set-car!) 
      (list* (movl (Simple (car arg*)) eax)
             (movl (Simple (cadr arg*)) ebx)
@@ -2477,13 +2397,6 @@
             (movl (Simple (caddr arg*)) eax)
             (movl eax (mem (fx- disp-record-data record-ptag) ebx))
             ac)]
-    [($exit)
-     (list*
-       (movl (Simple (car arg*)) eax)
-       (movl (pcb-ref 'frame-base) fpr)
-       (movl (int 0) (pcb-ref 'next-continuation))
-       (jmp (label SL_scheme_exit))
-       ac)]
     [($set-code-byte!) 
       (list* (movl (Simple (cadr arg*)) eax)
              (sarl (int fx-shift) eax)
@@ -2559,13 +2472,6 @@
          (subl ecx ebx)             ; ebx is relative offset
          (movl ebx (mem (fx- 0 wordsize) ecx))
          ac))]
-    [($install-underflow-handler)
-     (list* 
-       (movl (pcb-ref 'frame-base) eax)
-       (movl (label-address SL_underflow_handler) ebx)
-       (movl ebx (mem 0 eax))
-       (movl ebx (pcb-ref 'underflow-handler))
-       ac)]
     [(cons void $fxadd1 $fxsub1)
      (let f ([arg* arg*])
        (cond
@@ -2590,7 +2496,7 @@
        (mem (fx+ (fx* i wordsize) (fx- disp-closure-data closure-tag)) cpr)]
       [(frame-var i) (mem (fx* i (fx- 0 wordsize)) fpr)]
       [(constant c) (constant-val c)]
-      [(code-loc label) (label-address (label-name label))]
+      [(code-loc label) (label-address label)]
       [(primref op) (primref-loc op)]
       [else (error 'Simple "what ~s" x)]))
   (define (frame-adjustment offset)
@@ -2855,34 +2761,61 @@
            DONE_LABEL
            (movl ebx (mem (fx- 0 (fxsll fml-count fx-shift)) fpr))
            ac))
-  (define (handle-procedure-entry proper fml-count ac)
-    (cond
-      [proper 
-       (list* (cmpl (int (argc-convention fml-count)) eax)
-              (jne (label SL_invalid_args))
-              ac)]
-      [else (handle-vararg fml-count ac)]))
-  (define emit-code
-    (lambda (label x)
-      (record-case x 
-        [(code-rec fml* proper free* body)
-         (list*
-           (fx+ disp-closure-data (fx* wordsize (length free*)))
-           label
-           (handle-procedure-entry proper (length fml*)
-              (Tail body '())))])))
-  (define (emit-codes prog)
-    (record-case prog
-      [(codes lhs* rhs* body)
-       (let ([label* (map (lambda (x) (unique-label)) lhs*)]
-             [main (unique-label)])
-         (for-each set-code-loc-label! lhs* label*)
-         (let ([procs (map emit-code label* rhs*)]
-               [main-proc (cons 0 (Tail body '()))])
-           (cons main-proc procs)))]))
-  (define label-name cadr)
-  (emit-codes x))
- 
+  (define (Entry check? x ac)
+    (record-case x
+      [(clambda-case fml* proper body)
+       (let ([ac (Tail body ac)])
+         (cond
+           [(and proper check?)
+            (list* (cmpl (int (argc-convention (length fml*))) eax)
+                   (jne (label SL_invalid_args))
+                   ac)]
+           [proper ac]
+           [else
+            (handle-vararg (length fml*) ac)]))]))
+  (define make-dispatcher
+    (lambda (j? L L* x x* ac)
+      (cond
+        [(null? L*) (if j? (cons (jmp (label L)) ac) ac)]
+        [else
+         (record-case x
+           [(clambda-case fml* proper _)
+            (cond
+              [proper
+               (list* (cmpl (int (argc-convention (length fml*))) eax)
+                      (je (label L))
+                      (make-dispatcher #t 
+                        (car L*) (cdr L*) (car x*) (cdr x*) ac))]
+              [else
+               (list* (cmpl (int (argc-convention (fxsub1 (length fml*)))) eax)
+                      (jle (label L))
+                      (make-dispatcher #t
+                        (car L*) (cdr L*) (car x*) (cdr x*) ac))])])])))
+  (define (handle-cases x x*)
+    (let ([L* (map (lambda (_) (gensym)) x*)]
+          [L (gensym)])
+      (make-dispatcher #f L L* x x*
+        (let f ([x x] [x* x*] [L L] [L* L*])
+          (cond
+            [(null? x*) 
+             (cons (label L) (Entry 'check x '()))]
+            [else
+             (cons (label L)
+               (Entry #f x
+                 (f (car x*) (cdr x*) (car L*) (cdr L*))))])))))
+  (define (CodeExpr x)
+    (record-case x
+      [(clambda-code L cases free)
+       (list*
+         (fx+ disp-closure-data (fx* wordsize (length free)))
+         (label L)
+         (handle-cases (car cases) (cdr cases)))]))
+  (record-case x
+    [(codes list body)
+     (cons (cons 0 (Tail body '()))
+           (map CodeExpr list))]))
+
+
 (define SL_nonprocedure (gensym "SL_nonprocedure"))
 (define SL_invalid_args (gensym "SL_invalid_args"))
 (define SL_foreign_call (gensym "SL_foreign_call"))
@@ -2959,7 +2892,6 @@
           (jne (label SL_nonprocedure))
           (tail-indirect-cpr-call)))
 
-    
     (let ([L_values_one_value (gensym)]
           [L_values_many_values (gensym)])
       (list disp-closure-data
@@ -2972,145 +2904,6 @@
           (label L_values_one_value)
           (movl (mem (fx- 0 wordsize) fpr) eax)
           (ret)))
-
-;;;    (list 'public-function
-;;;          "SL_scheme_exit"
-;;;          0
-;;;          (movl apr (mem (pcb-offset '$allocation-pointer) pcr))
-;;;          (cmpl (pcb-ref 'frame-base) fpr)
-;;;          (jne (label "L_scheme_exit_fp_mismatch"))
-;;;          (movl (mem (pcb-offset '$system-stack) pcr) esp)
-;;;          (pop ebp)
-;;;          (pop edi)
-;;;          (pop esi)
-;;;          (pop ebx)
-;;;          (ret)
-;;;          (label "L_scheme_exit_fp_mismatch")
-;;;          (movl (int 0) eax)
-;;;          (movl (mem 0 eax) eax))
-
-
- ;;;;   (let ([L_umv_last_continuation (gensym)]
- ;;;;         [L_umv_stack_overflow (gensym)]
- ;;;;         [L_umv_heap_overflow (gensym)]
- ;;;;         [L_umv_bad_rp (gensym)]
- ;;;;         [L_umv_bad_fpr (gensym)]
- ;;;;         [L_umv_copy_frame_done (gensym)]
- ;;;;         [L_umv_copy_frame_loop (gensym)]
- ;;;;         [L_umv_copy_values_done (gensym)]
- ;;;;         [L_umv_copy_values_loop (gensym)]
- ;;;;         [L_umv_no_stack_overflow (gensym)]
- ;;;;         [L_umv_single_frame (gensym)]
- ;;;;         [L_umv_split_continuation (gensym)]
- ;;;;         [L_umv_framesz_ok (gensym)]
- ;;;;         )
- ;;;;     (list 0
- ;;;;         (label SL_underflow_multiple_values)
- ;;;;         ;;; So, we are underflowing with multiple values
- ;;;;         ;;; the index of the last value is in %eax
- ;;;;         ;;; so, the last value is in 0(%fpr,%eax)
- ;;;;         ;;; What we need to do is shift the values up by the
- ;;;;         ;;; size of the next frame, copy the frame over, 
- ;;;;         ;;; adjust the frame pointer, then mv-return to the
- ;;;;         ;;; next frame.
- ;;;;         ;;; Caveats:
- ;;;;         ;;; * may need to split the next-k if it's more than
- ;;;;         ;;;   one frame
- ;;;;         ;;; * splitting the continuation may heap-overflow
- ;;;;         ;;; * the required stack size (to hold the values and
- ;;;;         ;;;   the previous frame) may actually cause a stack
- ;;;;         ;;;   overflow!
- ;;;;         ;;;
- ;;;;         ; First, do some assertions
- ;;;;         (cmpl (pcb-ref 'frame-base) fpr)
- ;;;;         (jne (label L_umv_bad_fpr))
- ;;;;         (cmpl (label-address SL_underflow_handler) (mem 0 fpr))
- ;;;;         (jne (label L_umv_bad_rp))
- ;;;;         (movl (pcb-ref 'next-continuation) ebx)
- ;;;;         (cmpl (int 0) ebx)
- ;;;;         (je (label L_umv_last_continuation))
- ;;;;         ; all is good, now check that we have one frame
- ;;;;         (movl (mem (fx- disp-continuation-top vector-tag) ebx) ecx) ; top
- ;;;;         (movl (mem 0 ecx) edx) ; return-point
- ;;;;         (movl (mem disp-frame-size edx) edx) ; framesize
- ;;;;         (cmpl (int 0) edx)
- ;;;;         (jne (label L_umv_framesz_ok))
- ;;;;         (movl (mem wordsize ecx) edx) ; load framesize from top[1]
- ;;;;         ; argc=%eax, next_k=%ebx, frametop=%ecx, framesize=%edx
- ;;;;         (label L_umv_framesz_ok)
- ;;;;         (cmpl (mem (fx- disp-continuation-size vector-tag) ebx) edx)
- ;;;;         (je (label L_umv_single_frame))
-;;;;;;;
- ;;;;         (cmpl (pcb-ref 'allocation-redline) apr)
- ;;;;         (jge (label L_umv_heap_overflow))
- ;;;;         (label L_umv_split_continuation)
- ;;;;         ; ebx=cc, ecx=cont_top, edx=top_frame_size
- ;;;;         (movl (int continuation-tag) (mem 0 apr))
- ;;;;         (addl edx ecx)
- ;;;;         (movl ecx (mem disp-continuation-top apr))
- ;;;;         (movl (mem (fx- disp-continuation-size vector-tag) ebx) ecx)
- ;;;;         (subl edx ecx)
- ;;;;         (movl ecx (mem disp-continuation-size apr))
- ;;;;         (movl edx (mem (fx- disp-continuation-size vector-tag) ebx))
- ;;;;         (movl (mem (fx- disp-continuation-next vector-tag) ebx) ecx)
- ;;;;         (movl ecx (mem disp-continuation-next apr))
- ;;;;         (movl apr ecx)
- ;;;;         (addl (int vector-tag) ecx)
- ;;;;         (movl ecx (mem (fx- disp-continuation-next vector-tag) ebx))
- ;;;;         (addl (int continuation-size) apr)
- ;;;;         (movl (mem (fx- disp-continuation-top vector-tag) ebx) ecx)
-;;;;;;;
- ;;;;         (label L_umv_single_frame)
- ;;;;         ; argc=%eax, next_k=%ebx, frametop=%ecx, framesize=%edx
- ;;;;         (negl edx)      
- ;;;;         (addl eax edx) ; %edx is the offset to the last req cell
- ;;;;         (addl fpr edx) ; %edx is the address of the last req cell
- ;;;;         (cmpl (pcb-ref 'frame-redline) edx)
- ;;;;         (jle (label L_umv_stack_overflow))
- ;;;;         (label L_umv_no_stack_overflow)
- ;;;;         (movl (mem (fx- disp-continuation-size vector-tag) ebx) edx)
- ;;;;         (cmpl (int 0) eax)
- ;;;;         (je (label L_umv_copy_values_done))
- ;;;;         ; make ecx point to the last arg, edx is the shift amount
- ;;;;         (negl edx)
- ;;;;         (movl fpr ecx)
- ;;;;         (addl eax ecx)
- ;;;;         (label L_umv_copy_values_loop)
- ;;;;         (movl (mem 0 ecx) ebx)
- ;;;;         (movl ebx (mem edx ecx))
- ;;;;         (addl (int wordsize) ecx)
- ;;;;         (cmpl ecx fpr)
- ;;;;         (jne (label L_umv_copy_values_loop))
- ;;;;         (negl edx)
- ;;;;         (label L_umv_copy_values_done)
- ;;;;         ; now all the values were copied to their new locations
- ;;;;         ; so, now, we copy the next frame
- ;;;;         (movl (pcb-ref 'next-continuation) ebx)
- ;;;;         (movl (mem (fx- disp-continuation-top vector-tag) ebx) ecx)
- ;;;;         ; %ebx=next_k, %ecx=frame_top, %edx=framesize, %eax=argc
- ;;;;         (label L_umv_copy_frame_loop)
- ;;;;         (subl (int wordsize) edx)
- ;;;;         (pushl (mem edx ecx))
- ;;;;         (cmpl (int 0) edx)
- ;;;;         (jne (label L_umv_copy_frame_loop))
- ;;;;         (label L_umv_copy_frame_done)
- ;;;;         ;;; okay, almost done
- ;;;;         ;;; set next k appropriately
- ;;;;         (movl (mem (fx- disp-continuation-next vector-tag) ebx) ebx)
- ;;;;         (movl ebx (pcb-ref 'next-continuation))
- ;;;;         (movl (mem 0 fpr) ebx)
- ;;;;         (jmp (mem disp-multivalue-rp ebx))     ; go
- ;;;;         ;;;
- ;;;;         (label L_umv_bad_fpr)
- ;;;;            (movl (int 0) eax) (movl (mem 0 eax) eax)
- ;;;;         (label L_umv_bad_rp) 
- ;;;;            (movl (int 0) eax) (movl (mem 0 eax) eax)
- ;;;;         (label L_umv_heap_overflow)
- ;;;;            (movl (int 0) eax) (movl (mem 0 eax) eax)
- ;;;;         (label L_umv_stack_overflow) 
- ;;;;            (movl (int 0) eax) (movl (mem 0 eax) eax)
- ;;;;         (label L_umv_last_continuation) 
- ;;;;            (ret)))
 
     (let ([L_apply_done (gensym)]
           [L_apply_loop (gensym)])
@@ -3130,150 +2923,6 @@
           (addl (int wordsize) eax)
           (tail-indirect-cpr-call)))
 
-
-;;;    (list 0
-;;;          (label SL_scheme_exit)
-;;;          (jmp (pcb-ref 'return-point)))
-
-;;;    (let ([L_underflow_overflow_call    (gensym)]
-;;;          [L_underflow_heap_overflow (gensym)]
-;;;          [L_underflow_misaligned (gensym)]
-;;;          [L_underflow_no_rp (gensym)]
-;;;          [L_underflow_copy_loop (gensym)]
-;;;          [L_underflow_single_frame (gensym)]
-;;;          [L_underflow_multiple_frames (gensym)]
-;;;          [L_underflow_normal_frame (gensym)]
-;;;          [L_underflow_special_frame (gensym)]
-;;;          [L_underflow_frame_ok (gensym)])
-;;;        (list 0
-;;;          ;(gensym) ; L_underflow
-;;;          (label-address SL_underflow_multiple_values)
-;;;          (byte-vector 
-;;;            (make-vector (fx- 0 (fx+ wordsize disp-multivalue-rp)) 0))
-;;;          (label SL_underflow_handler)
-;;;          ; since we underflow with a call to (ret), the current fp
-;;;          ; is below the valid stack, so we advance it up to point
-;;;          ; to the underflow handler that caused the ret
-;;;          (subl (int wordsize) fpr)
-;;;          ; load next continuation into ebx, and if ebx=0, exit
-;;;          ; since the computation is complete
-;;;          (movl (pcb-ref 'next-continuation) ebx)
-;;;          (cmpl (int 0) ebx)
-;;;          (je (label SL_scheme_exit))
-;;;          ; sanity check that fpr *is* where it should be
-;;;          (cmpl (pcb-ref 'frame-base) fpr)
-;;;          (jne (label L_underflow_misaligned))
-;;;          (label L_underflow_frame_ok)
-;;;         ; sanity check that 0(fpr) does contain underflow hander
-;;;          (cmpl (label-address SL_underflow_handler) (mem 0 fpr))
-;;;          (jne (label L_underflow_no_rp))
-;;;          ; save the value of eax
-;;;          (pushl eax)
-;;;          ; now ebx=next_cont
-;;;          (movl (mem (fx- disp-continuation-top vector-tag) ebx) ecx)
-;;;          ; ebx=cc, ecx=cont_top
-;;;          (movl (mem (fx- disp-continuation-size vector-tag) ebx) eax)
-;;;          ; ebx=cc, ecx=cont_top, eax=cont_size
-;;;          (movl (mem 0 ecx) edx) ; return point is in edx
-;;;          ; ebx=cc, ecx=cont_top, eax=cont_size, edx=rp
-;;;          (movl (mem disp-frame-size edx) edx) ; size
-;;;          ; ebx=cc, ecx=cont_top, eax=cont_size, edx=top_frame_size
-;;;          (cmpl (int 0) edx)
-;;;          (jne (label L_underflow_normal_frame))
-;;;          (label L_underflow_special_frame)
-;;;
-;;;
-;;;          (movl (primref-loc '$debug) cpr)
-;;;          (movl (obj "BUG:SPECIAL") eax)
-;;;          (movl eax (mem (fx- 0 wordsize) fpr))
-;;;          (movl (int (fx- 0 wordsize)) eax)
-;;;          (tail-indirect-cpr-call)
-;;;
-;;;
-;;;
-;;;          (movl (int 0) eax)
-;;;          (movl (mem 0 eax) eax)
-;;;          (label L_underflow_normal_frame) 
-;;;
-;;;
-;;;
-;;;          ; ebx=cc, ecx=cont_top, eax=cont_size, edx=top_frame_size
-;;;          (cmpl eax edx)
-;;;          (je (label L_underflow_single_frame))
-;;;          (label L_underflow_multiple_frames) 
-;;;
-;;;          (cmpl (pcb-ref 'allocation-redline) apr)
-;;;          (jge (label L_underflow_heap_overflow))
-;;;
-;;;          ; ebx=cc, ecx=cont_top, eax=cont_size, edx=top_frame_size
-;;;          (movl (int continuation-tag) (mem 0 apr))
-;;;          (subl edx eax) 
-;;;          ; ebx=cc, ecx=cont_top, eax=remaining_size, edx=top_frame_size
-;;;          (movl eax (mem disp-continuation-size apr))
-;;;          (movl edx (mem (fx- disp-continuation-size vector-tag) ebx))
-;;;          (addl edx ecx) 
-;;;          ; ebx=cc, ecx=next_cont_top, eax=remaining_size, edx=top_frame_size
-;;;          (movl ecx (mem disp-continuation-top apr))
-;;;          (subl edx ecx) 
-;;;          ; ebx=cc, ecx=cont_top, eax=next_cont, edx=top_frame_size
-;;;          (movl (mem (fx- disp-continuation-next vector-tag) ebx) eax)
-;;;          (movl eax (mem disp-continuation-next apr))
-;;;          (movl apr eax)
-;;;          (addl (int vector-tag) eax)
-;;;          (addl (int continuation-size) apr)
-;;;          (movl eax (mem (fx- disp-continuation-next vector-tag) ebx))
-;;;          ; framesize=edx, top=ecx, cc=ebx
-;;;          (label L_underflow_single_frame)
-;;;
-;;;          ;;; HERE
-;;;
-;;;          ; advance cc
-;;;          (movl (mem (fx- disp-continuation-next vector-tag) ebx) eax)
-;;;          (movl eax (pcb-ref 'next-continuation))
-;;;          (popl eax) ; pop the return value
-;;;          (label L_underflow_copy_loop)
-;;;          (subl (int wordsize) edx)
-;;;          (movl (mem ecx edx) ebx)
-;;;          (pushl ebx)
-;;;          (cmpl (int 0) edx)
-;;;          (jg (label L_underflow_copy_loop))
-;;;
-;;;;;;           (movl (primref-loc '$debug) cpr)
-;;;;;;          ;;; (movl (obj "SINGLE FRAME LOOP DONE") eax)
-;;;;;;           (movl eax (mem (fx- 0 wordsize) fpr))
-;;;;;;           (movl (int (fx- 0 wordsize)) eax)
-;;;;;;           (tail-indirect-cpr-call)
-;;;
-;;;          (ret)
-;;;          (label L_underflow_no_rp)
-;;;          (movl (int 0) eax)
-;;;          (movl (mem 0 eax) eax)
-;;;          (label L_underflow_misaligned)
-;;;          (movl (pcb-ref 'frame-base) fpr)
-;;;          (movl (int 0) eax)
-;;;          (movl (int 0) eax)
-;;;          (movl (mem 0 eax) eax)
-;;;          (movl (primref-loc '$underflow-misaligned-error) cpr)
-;;;          (tail-indirect-cpr-call) 
-;;;          (label L_underflow_heap_overflow)
-;;;          ; the return value that was in %eax was pushed previously
-;;;          ; so, we push the frame size next
-;;;          (pushl (int (fx* 3 wordsize)))
-;;;          (movl (primref-loc 'do-overflow) cpr)
-;;;          (movl (int (argc-convention 0)) eax)
-;;;          (jmp (label L_underflow_overflow_call))
-;;;          ; NEW FRAME
-;;;          (int 0)
-;;;           '(current-frame-offset)
-;;;          (int 0)
-;;;          (byte 0)
-;;;          (byte 0)
-;;;          (label L_underflow_overflow_call)
-;;;          (indirect-cpr-call)
-;;;          (popl eax) ; pop framesize
-;;;          (popl eax) ; actual return value and underflow again
-;;;          (ret)))
-;;;
     (list 0
           (label SL_nonprocedure)
           (movl cpr (mem (fx- 0 wordsize) fpr)) ; first arg
@@ -3331,7 +2980,6 @@
       (list 
           (fx+ disp-closure-data wordsize)
           (label SL_continuation_code)
-
           (movl (mem (fx- disp-closure-data closure-tag) cpr) ebx) ; captured-k
           (movl ebx (pcb-ref 'next-continuation)) ; set
           (movl (pcb-ref 'frame-base) ebx)
@@ -3344,27 +2992,16 @@
           (subl (int wordsize) fpr)
           (ret)
           (label L_cont_zero_args)
-
           (subl (int wordsize) ebx)
           (movl ebx fpr)
           (movl (mem 0 ebx) ebx) ; return point
           (jmp (mem disp-multivalue-rp ebx))  ; go
-
           (label L_cont_mult_args)
-
-;;;          (movl (primref-loc '$debug) cpr)
-;;;          (movl (obj "CALLCC MULTI") eax)
-;;;          (movl eax (mem (fx- 0 wordsize) fpr))
-;;;          (movl (int (fx- 0 wordsize)) eax)
-;;;          (tail-indirect-cpr-call)))
-
-
           (subl (int wordsize) ebx)
           (cmpl ebx fpr)
           (jne (label L_cont_mult_move_args))
           (movl (mem 0 ebx) ebx)
           (jmp (mem disp-multivalue-rp ebx))
-
           (label L_cont_mult_move_args)
           ; move args from fpr to ebx
           (movl (int 0) ecx)
@@ -3386,6 +3023,7 @@
   (let* (;;;
          [p (expand original-program)]
          [p (recordize p)]
+         ;[f (pretty-print (unparse p))]
          [p (optimize-direct-calls p)]
          [p (remove-assignments p)]
          [p (convert-closures p)]
@@ -3397,6 +3035,7 @@
          [p (insert-stack-overflow-checks p)]
          [p (insert-allocation-checks p)]
          [p (remove-local-variables p)]
+         ;[f (pretty-print (unparse p))]
          [ls* (generate-code p)]
          [f (when (assembler-output)
               (for-each 
@@ -3433,12 +3072,7 @@
     (lambda (x)
       (printf "compiling ~a ...\n" x)
       (compile-file (car x) (cadr x)))
-    scheme-library-files)
-  )
-
-
-
-
+    scheme-library-files))
 
 (system "rm -f ikarus.fasl")
 
@@ -3496,395 +3130,3 @@
      (display "Copyright (c) 2006 Abdulaziz Ghuloum\n\n")
      (new-cafe))
   "petite-ikarus.fasl")
-
-#!eof
-
-
-(define (emit-linear-code obj*)
-  (define who 'emit-linear-code)
-  (define (arg x)
-    (cond
-      [(not (pair? x)) (error who "invalid arg ~s" x)]
-      [else
-       (case (car x)
-         [(register) (cadr x)]
-         [(label) (cadr x)]
-         [(label-address) (format "$~a" (cadr x))]
-         [(integer) (format "$~a" (cadr x))]
-         [(biginteger)  ;;; ARGHHHH
-          (format "$(~a<<~a)" (cadr x) fx-shift)] 
-         [(mem)
-          (cond
-            [(fixnum? (cadr x))
-             (format "~a(~a)" (cadr x) (arg (caddr x)))]
-            [else
-             (format "(~a,~a)" (arg (cadr x)) (arg (caddr x)))])]
-         [(indirect) (format "*~a" (arg (cadr x)))]
-         [else (error who "invalid arg ~s" x)])]))
-  (define (emit-generic x)
-    (case (length x)
-      [(1) (emit "   ~a" (car x))]
-      [(2) (emit "   ~a ~a" (car x) (arg (cadr x)))]
-      [(3) (emit "   ~a ~a, ~a" (car x) (arg (cadr x)) (arg (caddr x)))]
-      [else (error 'emit-generic "invalid format ~s" x)]))
-  (define (emit-instruction x)
-    (case (car x)
-      [(pop movl movb push call ret cltd
-        cmpl je jne jl jle jg jge jb jbe ja jae
-        jmp sete setl setle setg setge movzbl pushl popl
-        addl subl orl xorl andl notl sall shrl sarl imull idivl negl)
-       (emit-generic x)]
-      [(nop) (void)]
-      [(label) (emit "~a:" (cadr x))]
-      [(comment) (emit "/* ~s */" (cadr x))]
-      [(integer) 
-       (emit ".long ~s" (cadr x))]
-      [(byte) 
-       (emit ".byte ~s" (cadr x))]
-      [(byte-vector)
-       (let f ([v (cadr x)] [i 0])
-         (unless (fx= i (vector-length v))
-           (emit ".byte ~s" (vector-ref v i))
-           (f v (fxadd1 i))))]
-      [(label-address)
-       (emit ".long ~a" (cadr x))]
-      [(global)
-       (emit ".globl ~a" (cadr x))]
-      [(current-frame-offset)
-       (emit ".long 0 # FRAME OFFSET")]
-      [else (error 'emit-instruction "unsupported instruction ~s" (car x))]))
-  (define (emit-function-header x)
-    (let ([t (car x)] [label (cadr x)] [closure-size (caddr x)])
-      (emit ".text")
-      (when (eq? t 'public-function)
-        (emit ".globl ~a" label))
-      (emit ".type ~a @function" label)
-      (emit ".align 8")
-      (emit ".long ~a" code-tag) ; tag
-      (emit ".long 0") ; instr size
-      (emit ".long 0") ; reloc size
-      (emit ".long ~s" closure-size)
-      (emit "~a:" label)))
-  (define (emit-function x)
-    (emit-function-header x)
-    (for-each emit-instruction (cdddr x)))
-  (define (emit-data x)
-    (let ([t (car x)] [label (cadr x)] [value (caddr x)])
-      (emit ".data")
-      (emit ".align 4")        
-      (when (eq? t 'global-data)
-        (emit ".globl ~a" label))
-      (emit ".type ~a, @object" label)
-      (emit ".size ~a, 4" label)       
-      (emit "~a:" label)                 
-      (emit ".long ~s" value)))
-  (define (emit-object x)
-    (case (car x)
-      [(public-function local-function) (emit-function x)]
-      [(data global-data) (emit-data x)]
-      [else (error who "invalid object ~s" (car x))]))
-  (for-each emit-object obj*))
-
-(define (compile-program x)
-  (compile-program-with-entry x "scheme"))
-
-
-
-(define (file-content x)
-  (let ([p (open-input-file x)])
-    (let f ()
-      (let ([x (read p)])
-        (cond
-          [(eof-object? x)
-           (close-input-port p)
-           '()]
-          [else 
-           (cons x (f))])))))
-       
-
-(define (generate-library x)
-  (let ([input-file-name (car x)]
-        [output-file-name (cadr x)]
-        [entry-name (caddr x)])
-   (printf "compiling ~s\n" input-file-name)
-   (let ([prog (cons 'begin (file-content input-file-name))])
-     (let ([op (open-output-file output-file-name 'replace)])
-       (parameterize ([compile-port op]
-                      [signal-error-on-undefined-pcb #f])
-         (compile-program-with-entry prog entry-name))
-       (close-output-port op)))))
-
-
-
-
- 
-(define generate-top-level
-  (lambda ()
-    `(let ([g (gensym "*scheme*")])
-       ($pcb-set! primitive
-          (lambda (x)
-            (unless (symbol? x)
-              (error 'primitive "~s is not a symbol" x))
-           (getprop x g)))
-       ,@(map (lambda (x) 
-                `(begin
-                   ($set-symbol-value! ',x ,x)
-                   (putprop ',x g ,x)))
-              (public-primitives))
-       ,@(map (lambda (x) 
-                `(begin
-                   (putprop ',x g ,x)))
-              (library-primitives))
-       )))
-
-
-(define (build-autogenerated-prog prog-name prog asm-file libname)
-  (printf "compiling ~s\n" prog-name)
-  (let ([op (open-output-file asm-file 'replace)])
-    (parameterize ([compile-port op])
-      (compile-program-with-entry prog libname))
-    (close-output-port op)))
-
-(define (generate-scheme-h)
-  (let ([p (open-output-file "scheme.h" 'replace)])
-    (define (def name val) 
-      (fprintf p "#define ~a ~a\n" name val))
-    (define (defp name val) 
-      (fprintf p "#define ~a ((ptr)~a)\n" name val))
-    (fprintf p "/* automatically generated, do not edit */\n")
-    (fprintf p "#ifndef SCHEME_H\n")
-    (fprintf p "#define  SCHEME_H\n")
-    (fprintf p "typedef char* ptr;\n")
-    (def "fx_shift" fx-shift)
-    (def "fx_mask" fx-mask)
-    (def "fx_tag" fx-tag)
-    (defp "bool_f" bool-f)
-    (defp "bool_t" bool-t)
-    (def "bool_mask" bool-mask)
-    (def "bool_tag" bool-tag)
-    (def "bool_shift" bool-shift)
-    (defp "empty_list" nil)
-    (def "wordsize" wordsize)
-    (def "char_shift" char-shift)
-    (def "char_tag" char-tag)
-    (def "char_mask" char-mask)
-    (def "pair_mask" pair-mask)
-    (def "pair_tag" pair-tag)
-    (def "disp_car" disp-car)
-    (def "disp_cdr" disp-cdr)
-    (def "pair_size" pair-size)
-    (def "symbol_mask" symbol-mask)
-    (def "symbol_tag" symbol-tag)
-    (def "disp_symbol_string" disp-symbol-string)
-    (def "disp_symbol_value" disp-symbol-value)
-    (def "symbol_size" symbol-size)
-    (def "vector_tag" vector-tag)
-    (def "vector_mask" vector-mask)
-    (def "disp_vector_length" disp-vector-length)
-    (def "disp_vector_data" disp-vector-data)
-    (def "string_mask" string-mask)
-    (def "string_tag" string-tag)
-    (def "disp_string_length" disp-string-length) 
-    (def "disp_string_data" disp-string-data)
-    (def "closure_mask" closure-mask)
-    (def "closure_tag" closure-tag)
-    (def "disp_closure_data" disp-closure-data)
-    (def "disp_closure_code" disp-closure-code)
-    (def "record_pmask" record-pmask)
-    (def "record_ptag" record-ptag)
-    (def "disp_record_data" disp-record-data)
-    (def "disp_record_rtd" disp-record-rtd)
-
-    (def "continuation_tag" continuation-tag)
-    (def "disp_continuation_top" disp-continuation-top)
-    (def "disp_continuation_size" disp-continuation-size)
-    (def "disp_continuation_next" disp-continuation-next)
-    (def "continuation_size" continuation-size)
-
-    (def "code_tag"              code-tag)
-    (def "disp_code_instrsize"   disp-code-instrsize)
-    (def "disp_code_relocsize"   disp-code-relocsize)
-    (def "disp_code_closuresize" disp-code-closuresize)
-    (def "disp_code_data"        disp-code-data)
-
-    (def "disp_frame_offset"  disp-frame-offset)
-    (def "disp_frame_size" disp-frame-size)
-    (def "object_alignment" object-alignment)
-    (def "align_shift" align-shift)
-
-    (fprintf p "typedef struct {\n")
-    (for-each 
-       (lambda (x) (fprintf p "   ptr ~a;\n" x))
-       (pcb-cnames))
-    (fprintf p "} pcb_t;\n")
-    (fprintf p "ptr scheme_entry(pcb_t* pcb);\n")
-    (fprintf p "extern ptr scheme_main(pcb_t* pcb);\n")
-    (fprintf p "#endif /* SCHEME_H */\n")
-    (close-output-port p)))
-
-(define (generate-scheme-c)
-  (let ([p (open-output-file "scheme.c" 'replace)])
-    (fprintf p "/* automatically generated, do not edit */\n")
-    (fprintf p "#include \"scheme.h\"\n")
-    (fprintf p "#include <stdio.h>\n")
-    (fprintf p "ptr scheme_main(pcb_t* pcb){\n")
-    (fprintf p "extern void S_add_roots(pcb_t*,int*);\n")
-    (fprintf p "extern void S_check_roots(pcb_t*,int*);\n")
-    (fprintf p "extern void SL_values();\n")
-    (fprintf p "extern void SL_call_with_values();\n")
-    (for-each (lambda (x)
-                (let ([name (caddr x)])
-                  (fprintf p "extern void ~a_entry(pcb_t*);\n" name)
-                  (fprintf p "extern int ~a_constant_count;\n" name)))
-              scheme-library-files)
-    (fprintf p "extern void ~a_entry(pcb_t*);\n" "libtoplevel")
-    (fprintf p "extern void ~a_entry(pcb_t*);\n" "libcxr")
-    (fprintf p "char** ap = (char**) pcb->allocation_pointer;\n")
-    (fprintf p "ap[0] = (char*) SL_values;\n")
-    (fprintf p "ap[1] = 0;\n")
-    (fprintf p "pcb->~a = ((char*)ap) + closure_tag;\n"
-             (pcb-cname 'values))
-    (fprintf p "ap += 2;\n")
-    (fprintf p "ap[0] = (char*) SL_call_with_values;\n")
-    (fprintf p "ap[1] = 0;\n")
-    (fprintf p "pcb->~a = ((char*)ap) + closure_tag;\n"
-             (pcb-cname 'call-with-values))
-    (fprintf p "ap += 2;\n")
-    (fprintf p "pcb->allocation_pointer = (char*)ap;\n")
-    (mark-pcb-set-found 'values)
-    (mark-pcb-set-found 'call-with-values)
-    (for-each 
-       (lambda (x)
-         (let ([name (caddr x)])
-          (fprintf p "   S_add_roots(pcb, &~a_constant_count);\n" name)
-          (fprintf p "   ~a_entry(pcb);\n" name)
-          (fprintf p "   S_check_roots(pcb, &~a_constant_count);\n" name)))
-       scheme-library-files)
-    (fprintf p "   libcxr_entry(pcb);\n");
-    (fprintf p "   libtoplevel_entry(pcb);\n");
-    (fprintf p "   return scheme_entry(pcb);\n");
-    (fprintf p "}\n")
-    (close-output-port p)))
-
-(define (generate-scheme-asm)
-  (let ([p (open-output-file "scheme_asm.s" 'replace)])
-    (parameterize ([compile-port p])
-      (emit "# AUTOMATICALLY GENERATED, DO NOT EDIT")
-      (emit-linear-code (asm-helper-code)))
-    (close-output-port p)))
-
-(define (generate-scheme-runtime-helpers)
-  (generate-scheme-h)
-  (generate-scheme-c)
-  (generate-scheme-asm))
-
-
-
-(define (string-join sep str*)
-  (cond
-    [(null? str*) ""]
-    [(null? (cdr str*)) (car str*)]
-    [else (string-append (car str*) sep (string-join sep (cdr str*)))]))
-
-(printf "Generating C Helpers\n")
-(generate-scheme-runtime-helpers)
-(printf "Generating libraries\n")
-(for-each generate-library scheme-library-files)
-
-(build-autogenerated-prog 
-  'top-level (generate-top-level) "libtoplevel.s"  "libtoplevel")
-(build-autogenerated-prog 
-  'cxr (generate-cxr-definitions) "libcxr.s"  "libcxr")
-
-;;; ensure that we did not emit a reference to an unset pcb cell.
-(printf "Checking PCB\n")
-
-(let ([undefined '()])
-  (for-each 
-    (lambda (x)
-      (when (and (pcb-referenced? (car x))
-                 (not (pcb-assigned? (car x)))
-                 (not (pcb-system-loc? (car x))))
-        (set! undefined (cons (car x) undefined))))
-    pcb-table)
-  (unless (null? undefined)
-    ((if (signal-error-on-undefined-pcb)
-         error
-         warning)
-     'compile "undefined primitives found ~s" undefined)))
-
-  
-(runtime-file 
-  (string-join " " 
-    (list* "scheme.c" "scheme_asm.s" "runtime-5.4.c" "collect-5.7.c" 
-           "libtoplevel.s" "libcxr.s"
-           "-luuid"
-       (map cadr scheme-library-files))))
-
-(with-output-to-file "Makefile"
-  (lambda ()
-    (printf "stst: stst.s ~a\n" (runtime-file))
-    (printf "\tgcc -Wall -o stst stst.s ~a\n" (runtime-file)))
-  'replace)
-
-(printf "Testing ...\n")
-
-;(test-all)
-;(parameterize ([inline-primitives #f]) (test-all))
-;(parameterize ([inline-primitives #t]) (test-all))
-;(parameterize ([input-filter 
-;                (lambda (x)
-;                  `(begin
-;                     (write ,x)
-;                     (newline)
-;                     (exit)
-;                     ))])
-;  (test-all))
-
-;  (parameterize ([inline-primitives #t]
-;                 [input-filter 
-;                  (lambda (x)
-;                    `(let ([expr ',x])
-;                       (let ([p (open-output-file "stst.tmp" 'replace)])
-;                         (write expr p)
-;                         (close-output-port p))
-;                       (let ([p (open-input-file "stst.tmp")])
-;                         (let ([t (read p)])
-;                           (unless (equal? t expr)
-;                             (error 'test
-;                                    "not equal: got ~s, should be ~s"
-;                                    t expr)))
-;                         (close-input-port p))
-;                       (write ,x) ; as usual
-;                       (newline)
-;                       (exit)))])
-;    (test-all))
-
-;(parameterize ([inline-primitives #t]
-;               [input-filter 
-;                (lambda (x)
-;                  `(begin 
-;                     (write (eval ',x))
-;                     (newline)
-;                     (exit 0)
-;                     ))])
-;  (test-all))
-;
-(define (get-date)
-  (system "date +\"%F\" > build-date.tmp")
-  (let ([ip (open-input-file "build-date.tmp")])
-    (list->string
-      (let f ()
-        (let ([x (read-char ip)])
-          (if (char= x #\newline)
-              '()
-              (cons x (f))))))))
-  
-(build-program
-  `(begin
-     (display ,(format "Petite Ikarus Scheme (Build ~a)\n" (get-date)))
-     (display "Copyright (c) 2006 Abdulaziz Ghuloum\n\n")
-     (new-cafe)))
-
-(system "cp stst petite-ikarus-fresh")
-

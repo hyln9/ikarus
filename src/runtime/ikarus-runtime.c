@@ -116,9 +116,19 @@ ikpcb* ik_make_pcb(){
   ikdl* codes = &(pcb->codes);
   codes->next = codes;
   codes->prev = codes;
- // pcb->underflow_handler = ik_underflow_handler;
- // pcb->return_point = ik_return_point;
-  
+
+  /* initialize base rtd */
+  {
+    ikp s = ik_cstring_to_symbol("$base-rtd", pcb);
+    ikp r = ik_alloc(pcb, align(rtd_size)) + rtd_tag;
+    ref(r, off_rtd_rtd) = r;
+    ref(r, off_rtd_length) = (ikp) (rtd_size-wordsize);
+    ref(r, off_rtd_name) = 0;
+    ref(r, off_rtd_fields) = 0;
+    ref(r, off_rtd_printer) = 0;
+    ref(s, off_symbol_system_value) = r;
+    ref(s, off_symbol_value) = r;
+  }
   return pcb;
 }
 
@@ -261,3 +271,7 @@ ikp ik_close(ikp fd){
   return true_object;
 }
 
+ikp 
+ik_system(ikp str){
+  return fix(system(string_data(str)));
+}

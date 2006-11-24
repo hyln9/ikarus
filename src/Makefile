@@ -1,2 +1,8 @@
-stst: stst.s scheme.c scheme_asm.s runtime-5.4.c collect-5.7.c libtoplevel.s libcxr.s -luuid libsymboltable-5.6.s libhandlers-5.5.s libcontrol-5.8.s libintelasm-5.8.s libcollect-5.3.s librecord-5.6.s libcore-5.7.s libio-5.8.s libwriter-5.7.s libtokenizer-5.7.s libexpand-5.8.s libinterpret-5.8.s libcafe-5.8.s libtrace-5.3.s libposix-5.3.s
-	gcc -Wall -o stst stst.s scheme.c scheme_asm.s runtime-5.4.c collect-5.7.c libtoplevel.s libcxr.s -luuid libsymboltable-5.6.s libhandlers-5.5.s libcontrol-5.8.s libintelasm-5.8.s libcollect-5.3.s librecord-5.6.s libcore-5.7.s libio-5.8.s libwriter-5.7.s libtokenizer-5.7.s libexpand-5.8.s libinterpret-5.8.s libcafe-5.8.s libtrace-5.3.s libposix-5.3.s
+
+all: ikarus.fasl
+
+ikarus.fasl: 
+	echo '(load "compiler-6.1.ss")' | petite
+
+clean:
+	rm -f *.fasl

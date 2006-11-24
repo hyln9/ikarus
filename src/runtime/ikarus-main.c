@@ -16,7 +16,6 @@ int main(int argc, char** argv){
     exit(-1);
   }
   ikpcb* pcb = ik_make_pcb();
-  fprintf(stderr, "MAIN PCB=0x%08x\n", (int)pcb);
   int i;
   for(i=1; i<argc; i++){
     char* fasl_file = argv[i];

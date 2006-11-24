@@ -762,17 +762,6 @@
        (display " ")]
       [else (write x)])))
 
-(define convert-instruction**
-  (let ([convert-instruction convert-instruction])
-    (lambda (x ac)
-      (display "Convert ")
-      (write x)
-      (newline)
-      (let ([nc (convert-instruction x ac)])
-        (for-each write/x (diff nc ac))
-        (newline)
-        nc))))
-
 
 (define compute-code-size 
   (lambda (ls)

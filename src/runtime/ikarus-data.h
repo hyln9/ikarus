@@ -143,16 +143,18 @@
 #define off_record_data (disp_record_data - record_tag)
 
 #define rtd_tag record_tag
-#define disp_rtd_rtd     0
-#define disp_rtd_name    4
-#define disp_rtd_length  8
-#define disp_rtd_field  12
-#define rtd_size 16
+#define disp_rtd_rtd      0
+#define disp_rtd_name     4
+#define disp_rtd_length   8
+#define disp_rtd_fields  12
+#define disp_rtd_printer 16
+#define rtd_size 20
 
-#define off_rtd_rtd    (disp_rtd_rtd    - rtd_tag) 
-#define off_rtd_name   (disp_rtd_name   - rtd_tag) 
-#define off_rtd_length (disp_rtd_length - rtd_tag) 
-#define off_rtd_field  (disp_rtd_field  - rtd_tag) 
+#define off_rtd_rtd     (disp_rtd_rtd     - rtd_tag) 
+#define off_rtd_name    (disp_rtd_name    - rtd_tag) 
+#define off_rtd_length  (disp_rtd_length  - rtd_tag) 
+#define off_rtd_fields  (disp_rtd_fields  - rtd_tag) 
+#define off_rtd_printer (disp_rtd_printer - rtd_tag) 
 
 #define continuation_tag      ((ikp)0x1F)
 #define disp_continuation_top   4

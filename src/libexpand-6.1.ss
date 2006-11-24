@@ -1,4 +1,6 @@
 
+;;; 6.1: case-lambda
+;;;
 ;;; Extended: cond case  
 
 ;;;
@@ -19,11 +21,11 @@
 ;;;         | <gensym>
 ;;;         | (<gensym> . <FML>)
 ;;; <prim> ::= void | memv | top-level-value | set-top-level-value! 
-;;;          | $pcb-set! | foreign-call | $apply
+;;;          | primitive-set! '| foreign-call | $apply
 ;;; 
 ;;;
 ;;; Handled keywords:
-;;; Core:     lambda set! if quote begin define 
+;;; Core:     case-lambda lambda set! if quote begin define 
 ;;; Extended: let let* letrec letrec* when unless or and cond case  
 ;;;           define-record record-case
 
@@ -40,9 +42,6 @@
     (lambda (x val)
       (list 'set-top-level-value!
             (build-constant x) val)))
-  (define build-pcb-set!
-    (lambda (x val)
-      (list '$pcb-set! x val)))
   (define build-foreign-call
     (lambda (name rand*)
       (cons 'foreign-call
@@ -92,7 +91,10 @@
       (list 'if test conseq altern)))
   (define build-function
     (lambda (fml* body)
-      (list 'lambda fml* body)))
+      (build-case-lambda (list (list fml* body)))))
+  (define build-case-lambda
+    (lambda (cases)
+      (cons 'case-lambda cases)))
   (define build-assignments
     (lambda (lhs* rhs* body)
       (cond
@@ -372,14 +374,21 @@
   ;;;
   (define E-lambda
     (lambda (d env x)
-      (unless (fx>= (length d) 2) (syntax-error x))
+      (build-case-lambda
+        (list ((lambda-clause env x) d)))))
+  (define (lambda-clause env x)
+    (lambda (d)
+      (unless (and (list? d) (fx>= (length d) 2)) (syntax-error x))
       (let ([fml* (car d)] [body* (cdr d)])
         (verify-fml* fml* x)
         (let ([nfml* (gen-fml* fml*)])
           (let ([env (extend-env-fml* fml* nfml* env)])
-            (build-function 
-              nfml*
-              (E-internal body* env x)))))))
+            (list nfml* (E-internal body* env x)))))))
+  (define E-case-lambda
+    (lambda (d env x)
+      (unless (fx>= (length d) 1) (syntax-error x))
+      (build-case-lambda 
+        (map (lambda-clause env x) d))))
   (define verify-fml*
     (lambda (fml* x)
       (let ([g (gensym)])
@@ -841,13 +850,6 @@
                  (build-lexical-reference v)
                  (build-constant x))))]))))
   ;;;
-  (define E-pcb-set!
-    (lambda (d env x)
-      (unless (fx= (length d) 2)  (syntax-error x))
-      (let ([name (car d)] [val (cadr d)])
-        (unless (symbol? name) (syntax-error x))
-        (build-pcb-set! (build-constant name) (E val env)))))
-  ;;;
   (define E-foreign-call
     (lambda (d env x)
       (unless (fx>= (length d) 1) (syntax-error x))
@@ -902,6 +904,7 @@
                    [(eq? a 'set!)         (E-set! d env x)]
                    [(eq? a 'begin)        (E-begin d env x)]
                    [(eq? a 'lambda)       (E-lambda d env x)]
+                   [(eq? a 'case-lambda)  (E-case-lambda d env x)]
                    [(eq? a 'let)          (E-let d env x)]
                    [(eq? a 'letrec)       (E-letrec d env x)]
                    [(eq? a 'let*)         (E-let* d env x)]
@@ -918,7 +921,6 @@
                    [(eq? a 'record-case)  (E-record-case d env x)]
                    [(eq? a 'foreign-call) (E-foreign-call d env x)]
                    [(eq? a '|#primitive|) (E-primref d env x)]
-                   [(eq? a '$pcb-set!)    (E-pcb-set! d env x)]
                    [(eq? a '$apply)       (E-apply d env x)]
                    [else (syntax-error x)])]
                 [else
@@ -1047,9 +1049,9 @@
                 (E* d empty-env))]))]
         [else (syntax-error x)])))
   ;;;
-  ($pcb-set! core-expand E-top)
+  (primitive-set! 'core-expand E-top)
   ;;;
-  ($pcb-set! current-expand
+  (primitive-set! 'current-expand
      (make-parameter
        core-expand
        (lambda (x)
@@ -1057,7 +1059,7 @@
            (error 'current-expand "~s is not a procedure" x))
          x)))
   ;;;
-  ($pcb-set! expand
+  (primitive-set! 'expand
      (lambda (x)
        ((current-expand) x)))
   ;;;
@@ -1065,7 +1067,7 @@
     (lambda (x)
       (putprop x *keyword* x))
     '(lambda set! let let* letrec letrec* if quote when unless set! begin 
-      define or and cond case $pcb-set! foreign-call $apply |#primitive| 
+      case-lambda define or and cond case foreign-call $apply |#primitive| 
       define-record record-case
       quasiquote unquote unquote-splicing let-values parameterize
       )))

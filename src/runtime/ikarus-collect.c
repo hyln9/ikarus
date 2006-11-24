@@ -16,6 +16,17 @@
 #define maximum_heap_size (pagesize * 1024 * 8)
 #define minimum_stack_size (pagesize * 128)
 
+#define accounting 1
+
+static int pair_count = 0;
+static int symbol_count = 0;
+static int closure_count = 0;
+static int vector_count = 0;
+static int record_count = 0;
+static int continuation_count = 0;
+static int string_count = 0;
+static int htable_count = 0;
+
 typedef struct qupages_t{
   ikp p;    /* pointer to the scan start */
   ikp q;    /* pointer to the scan end */
@@ -162,7 +173,6 @@ init_gc(gc_t* gc){
 
 ikpcb* ik_collect(int req, ikpcb* pcb);
 ikpcb* ik_collect_vararg(int req, ikpcb* pcb){
-  fprintf(stderr, "VARARG COLLECT req=%d\n", req);
   return ik_collect(req, pcb);
 }
 
@@ -223,12 +233,35 @@ ik_collect(int req, ikpcb* pcb){
 //  fprintf(stderr, "heap  base=0x%08x end=0x%08x\n", 
 //      (int)pcb->heap_base,
 //      (int)pcb->heap_base + pcb->heap_size);
-  bzero(pcb->heap_base, pcb->heap_size);
+//  bzero(pcb->heap_base, pcb->heap_size);
 //  memset(pcb->heap_base, -1, pcb->heap_size);
-  fprintf(stderr, "allocated %d pages and %d bytes (heap=0x%08x .. 0x%08x) (ht=%d)\n", 
-      total_allocated_pages, total_malloced,
-      (int)pcb->heap_base, (int)pcb->heap_base+pcb->heap_size,
-      hash_table_count);
+//  fprintf(stderr, "allocated %d pages and %d bytes (heap=0x%08x .. 0x%08x) (ht=%d)\n", 
+//      total_allocated_pages, total_malloced,
+//      (int)pcb->heap_base, (int)pcb->heap_base+pcb->heap_size,
+//      hash_table_count);
+
+  if(accounting){
+    fprintf(stderr, 
+        "[%d cons|%d sym|%d cls|%d vec|%d rec|%d cck|%d str|%d htb]\n",
+        pair_count,
+        symbol_count,
+        closure_count,
+        vector_count,
+        record_count,
+        continuation_count,
+        string_count,
+        htable_count);
+    pair_count = 0;
+    symbol_count = 0;
+    closure_count = 0;
+    vector_count = 0;
+    record_count = 0;
+    continuation_count = 0;
+    string_count = 0;
+    htable_count = 0;
+  }
+
+
   return pcb;
 }
 
@@ -438,20 +471,14 @@ static void collect_stack(gc_t* gc, ikp top, ikp end){
     } 
     else if(framesize == 0){
       framesize = (int)ref(top, wordsize);
-      fprintf(stderr, "special frame of size %d\n", framesize);
       if(framesize <= 0){
         fprintf(stderr, "invalid redirected framesize=%d\n", framesize);
         exit(-1);
       }
       ikp base = top + framesize - wordsize;
       while(base > top){
-        fprintf(stderr, "obj at 0x%08x = 0x%08x\n",
-            (int)base, (int)ref(base,0));
         ikp new_obj = add_object(gc,ref(base,0));
         ref(base,0) = new_obj;
-        if(tagof(new_obj) == string_tag){
-          fprintf(stderr, "STRING %s\n", string_data(new_obj));
-        }
         base -= wordsize;
       }
     } else {
@@ -510,6 +537,9 @@ add_object(gc_t* gc, ikp x){
     ref(y,off_cdr) = snd;
     ref(x,off_car) = forward_ptr;
     ref(x,off_cdr) = y;
+    if(accounting){
+      pair_count++;
+    }
     return y;
   }
   else if(tag == symbol_tag){
@@ -522,6 +552,9 @@ add_object(gc_t* gc, ikp x){
     ref(y, off_symbol_system_plist) = ref(x, off_symbol_system_plist);
     ref(x, -symbol_tag) = forward_ptr;
     ref(x, wordsize-symbol_tag) = y;
+    if(accounting){
+      symbol_count++;
+    }
     return y;
   }
   else if(tag == closure_tag){
@@ -540,6 +573,9 @@ add_object(gc_t* gc, ikp x){
     ref(y,-closure_tag) = add_code_entry(gc, ref(y,-closure_tag));
     ref(x,-closure_tag) = forward_ptr;
     ref(x,wordsize-closure_tag) = y;
+    if(accounting){
+      closure_count++;
+    }
     return y;
   }
   else if(tag == vector_tag){
@@ -555,6 +591,9 @@ add_object(gc_t* gc, ikp x){
       memcpy(y-vector_tag, x-vector_tag, size + disp_vector_data);
       ref(x,-vector_tag) = forward_ptr;
       ref(x,wordsize-vector_tag) = y;
+      if(accounting){
+        vector_count++;
+      }
       return y;
     } 
     else if(tagof(fst) == rtd_tag){
@@ -569,6 +608,9 @@ add_object(gc_t* gc, ikp x){
       memcpy(y-vector_tag, x-vector_tag, size+wordsize);
       ref(x,-vector_tag) = forward_ptr;
       ref(x,wordsize-vector_tag) = y;
+      if(accounting){
+        record_count++;
+      }
       return y;
     }
     else if(fst == code_tag){
@@ -594,6 +636,9 @@ add_object(gc_t* gc, ikp x){
       ref(y, off_continuation_top) = new_top;
       ref(y, off_continuation_size) = (ikp) size;
       ref(y, off_continuation_next) = next;
+      if(accounting){
+        continuation_count++;
+      }
       return y;
     }
     else if(fst == htable_tag){
@@ -613,6 +658,9 @@ add_object(gc_t* gc, ikp x){
         p->size = (int)size;
         p->next = gc->htables_queue;
         gc->htables_queue = p;
+      }
+      if(accounting){
+        htable_count++;
       }
       return y;
     }
@@ -635,10 +683,14 @@ add_object(gc_t* gc, ikp x){
              strlen + 1);
       ref(x, -string_tag) = forward_ptr;
       ref(x, wordsize-string_tag) = new_str;
+      if(accounting){
+        string_count++;
+      }
       return new_str;
     }
     else {
-      fprintf(stderr, "unhandled string with fst=0x%08x\n", (int)fst);
+      fprintf(stderr, "unhandled string 0x%08x with fst=0x%08x\n",
+          (int)x, (int)fst);
       exit(-1);
     }
   }
@@ -742,7 +794,7 @@ rehash_hash_table(gc_t* gc, ikbucket** table, int size){
     ikp new_val = add_object(gc, q->val);
     q->key = new_key;
     q->val = new_val;
-    int idx = inthash(new_key) & (size-1);
+    int idx = inthash((int)new_key) & (size-1);
     q->next = table[idx];
     table[idx] = q;
     q = next;
@@ -759,7 +811,6 @@ collect_loop(gc_t* gc){
     { /* scan the pending pointer pages */
       qupages_t* qu = gc->ptr_queue;
       if(qu){
-        fprintf(stderr, "PTRQUEUE\n");
         done = 0;
         gc->ptr_queue = 0;
         do{

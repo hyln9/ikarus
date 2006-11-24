@@ -1,4 +1,9 @@
 
+;;; Changes:
+;;; 6.1: adding case-lambda, dropping lambda
+;;; 6.0: basic version working
+;;;
+
 ;;; Expand : Scheme -> Core Scheme 
 ;;;
 ;;; <CS> ::= (quote datum)
@@ -6,7 +11,7 @@
 ;;;        | (if <CS> <CS> <CS>)
 ;;;        | (set! <gensym> <CS>)
 ;;;        | (begin <CS> <CS> ...)
-;;;        | (lambda <FMLS> <CS> <CS> ...)
+;;;        | (case-lambda (<FML> <CS>) (<FML> <CS>) ...)
 ;;;        | (<prim> <CS> <CS> ...)
 ;;;        | (primref <primname>)
 ;;;        | (<CS> <CS> ...)
@@ -64,9 +69,9 @@
         [(null? ls) 
          (if (fx= i j)
              v
-             (error 'apply "incorrect number of arguments to procedure"))]
+             (error 'apply1 "incorrect number of arguments to procedure"))]
         [(fx= i j)
-         (error 'apply "incorrect number of arguments to procedure")]
+         (error 'apply2 "incorrect number of arguments to procedure")]
         [else
          (vector-set! v i (car ls))
          (whack-proper v (cdr ls) (fxadd1 i) j)])))
@@ -76,7 +81,7 @@
       (cond
         [(fx= i j) (vector-set! v i ls) v]
         [(null? ls) 
-         (error 'apply "incorrect number of arguments to procedure")]
+         (error 'apply3 "incorrect number of arguments to procedure")]
         [else
          (vector-set! v i (car ls))
          (whack-improper v (cdr ls) (fxadd1 i) j)])))
@@ -143,7 +148,49 @@
              [(eq? a 'begin)
               (unless (fx>= (length d) 1) (syntax-error x))
               (C*->last (car d) (cdr d) env)]
+             [(eq? a 'case-lambda)
+              (unless (fx>= (length d) 1) (syntax-error x))
+              (let ()
+                (define generate
+                  (lambda (d)
+                    (cond
+                      [(null? d) 
+                       (lambda (n args renv)
+                         (error 'apply 
+                                "incorrect number of arguments ~s to procedure"
+                                n))]
+                      [else
+                       (let ([k (generate (cdr d))]
+                             [a (car d)])
+                         (let ([fml (car a)] [body* (cdr a)])
+                           (let ([env (extend-env fml env)]
+                                 [n (fml-length fml x)])
+                             (let ([body*
+                                    (C*->last (car body*) (cdr body*) env)])
+                               (if (list? fml)
+                                   (lambda (m args renv)
+                                     (if (fx= n m)
+                                         (body* (cons (list->vector args) renv))
+                                         (k m args renv)))
+                                   (let ([q (fxsub1 n)])
+                                     (lambda (m args renv)
+                                       (if (fx>= m q)
+                                         (let ([v (make-vector n)])
+                                           (let f ([i 0] [args args])
+                                             (cond
+                                               [(fx= i q)
+                                                (vector-set! v q args)]
+                                               [else
+                                                (vector-set! v i (car args))
+                                                (f (fxadd1 i) (cdr args))]))
+                                           (body* (cons v renv)))
+                                         (k m args renv)))))))))])))
+                (let ([dispatch (generate d)])
+                  (lambda (renv)
+                    (lambda args
+                      (dispatch (length args) args renv)))))]
              [(eq? a 'lambda)
+              (syntax-error x)
               (unless (fx>= (length d) 2) (syntax-error x))
               (let ([fml* (car d)] [body* (cdr d)])
                 (let ([env (extend-env fml* env)]
@@ -186,7 +233,7 @@
                         (if (top-level-bound? sym)
                             (top-level-value sym)
                             (error #f "~s is unbound" sym))))))]
-             [(memq a '(set-top-level-value! $pcb-set!))
+             [(memq a '(set-top-level-value!))
               (unless (fx= (length d) 2) (syntax-error x))
               (let ([qsym (car d)] [val (C (cadr d) env)])
                 (unless (and (pair? qsym)
@@ -206,40 +253,64 @@
              [(eq? a '|#primitive|)
               (unless (fx= (length d) 1) (syntax-error x))
               (let ([sym (car d)])
-                (let ([prim (primitive sym)])
+                (let ([prim (primitive-ref sym)])
                   (if (procedure? prim)
                       (lambda (renv) prim)
                       (syntax-error x))))]
              [(memq a '(foreign-call $apply))
               (error 'interpret "~a form is not supported" a)]
+         ;;; [else
+         ;;;  (let ([rator (C a env)] [n (length d)])
+         ;;;    (cond 
+         ;;;      [(fx= n 0) 
+         ;;;       (lambda (renv)
+         ;;;         (let ([p (rator renv)])
+         ;;;           (p)))]
+         ;;;      [(fx= n 1) 
+         ;;;       (let ([arg1 (C (car d) env)])
+         ;;;         (lambda (renv)
+         ;;;           (let ([p (rator renv)])
+         ;;;             (p (arg1 renv)))))]
+         ;;;      [(fx= n 2)
+         ;;;       (let ([arg1 (C (car d) env)]
+         ;;;             [arg2 (C (cadr d) env)])
+         ;;;         (lambda (renv)
+         ;;;           (let ([p (rator renv)])
+         ;;;             (p (arg1 renv) (arg2 renv)))))]
+         ;;;      [else
+         ;;;       (let ([arg* (C*->list (car d) (cdr d) env)])
+         ;;;         (lambda (renv)
+         ;;;           (apply (rator renv) (arg* renv))))]))]
              [else
               (let ([rator (C a env)] [n (length d)])
                 (cond 
                   [(fx= n 0) 
                    (lambda (renv)
-                     ((rator renv)))]
-                  [(fx= n 1) 
-                   (let ([arg1 (C (car d) env)])
-                     (lambda (renv)
-                       ((rator renv) (arg1 renv))))]
-                  [(fx= n 2)
-                   (let ([arg1 (C (car d) env)]
-                         [arg2 (C (cadr d) env)])
-                     (lambda (renv)
-                       ((rator renv) (arg1 renv) (arg2 renv))))]
+                     (apply (rator renv) '()))]
+                  ;[(fx= n 1) 
+                  ; (let ([arg1 (C (car d) env)])
+                  ;   (lambda (renv)
+                  ;     ((rator renv) (arg1 renv))))]
+                  ;[(fx= n 2)
+                  ; (let ([arg1 (C (car d) env)]
+                  ;       [arg2 (C (cadr d) env)])
+                  ;   (lambda (renv)
+                  ;     ((rator renv) (arg1 renv) (arg2 renv))))]
                   [else
                    (let ([arg* (C*->list (car d) (cdr d) env)])
                      (lambda (renv)
-                       (apply (rator renv) (arg* renv))))]))]))]
+                       (apply (rator renv) (arg* renv))))]))]
+             
+             ))]
         [else (syntax-error x)])))
   ;;;
-  ($pcb-set! interpret
+  (primitive-set! 'interpret
     (lambda (x)
       (let ([x (expand x)])
         (let ([p (C x '())])
           (p '())))))
   ;;;
-  ($pcb-set! current-eval
+  (primitive-set! 'current-eval
     (make-parameter 
       interpret
       (lambda (f)
@@ -247,7 +318,7 @@
           (error 'current-eval "~s is not a procedure" f))
         f)))
   ;;;
-  ($pcb-set! eval
+  (primitive-set! 'eval
     (lambda (x)
       ((current-eval) x))))
 

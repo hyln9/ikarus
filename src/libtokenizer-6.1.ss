@@ -1,7 +1,7 @@
 (let ()
   (define char-whitespace?
     (lambda (c)
-      (or (char= #\space c)
+      (or ($char= #\space c)
           (memq ($char->fixnum c) '(9 10 11 12 13))))) 
   (define delimiter?
     (lambda (c)
@@ -9,7 +9,7 @@
           (memq c '(#\( #\) #\[ #\] #\' #\` #\, #\")))))
   (define digit?
     (lambda (c)
-      (and (char<= #\0 c) (char<= c #\9))))
+      (and ($char<= #\0 c) ($char<= c #\9))))
   (define char->num
     (lambda (c)
       (fx- ($char->fixnum c) ($char->fixnum #\0))))
@@ -18,15 +18,15 @@
       (or (letter? c) (special-initial? c))))
   (define letter? 
     (lambda (c)
-      (or (and (char<= #\a c) (char<= c #\z))
-          (and (char<= #\A c) (char<= c #\Z)))))
+      (or (and ($char<= #\a c) ($char<= c #\z))
+          (and ($char<= #\A c) ($char<= c #\Z)))))
   (define af? 
     (lambda (c)
-      (or (and (char<= #\a c) (char<= c #\f))
-          (and (char<= #\A c) (char<= c #\F)))))
+      (or (and ($char<= #\a c) ($char<= c #\f))
+          (and ($char<= #\A c) ($char<= c #\F)))))
   (define af->num
     (lambda (c)
-      (if (and (char<= #\a c) (char<= c #\f))
+      (if (and ($char<= #\a c) ($char<= c #\f))
           (fx+ 10 (fx- ($char->fixnum c) ($char->fixnum #\a)))
           (fx+ 10 (fx- ($char->fixnum c) ($char->fixnum #\A))))))
   (define special-initial?
@@ -77,9 +77,9 @@
           (cons 'datum (tokenize-hex (char->num c) p))]
          [(af? c)
           (cons 'datum (tokenize-hex (af->num c) p))]
-         [(char= c #\-)
+         [($char= c #\-)
           (cons 'datum (fx- 0 (tokenize-hex 0 p)))]
-         [(char= c #\+)
+         [($char= c #\+)
           (cons 'datum (tokenize-hex 0 p))]
          [else
           (unread-char c p)
@@ -104,14 +104,14 @@
         (cond
          [(eof-object? c) 
           (error 'tokenize "end-of-file while inside a string")]
-         [(char= #\" c)  ls]
-         [(char= #\\ c) 
+         [($char= #\" c)  ls]
+         [($char= #\\ c) 
           (let ([c (read-char p)])
             (cond
-              [(char= #\" c) (tokenize-string (cons #\" ls) p)]
-              [(char= #\\ c) (tokenize-string (cons #\\ ls) p)]
-              [(char= #\n c) (tokenize-string (cons #\newline ls) p)]
-              [(char= #\t c) (tokenize-string (cons #\tab ls) p)]
+              [($char= #\" c) (tokenize-string (cons #\" ls) p)]
+              [($char= #\\ c) (tokenize-string (cons #\\ ls) p)]
+              [($char= #\n c) (tokenize-string (cons #\newline ls) p)]
+              [($char= #\t c) (tokenize-string (cons #\tab ls) p)]
               [else (error 'tokenize "invalid string escape \\~a" c)]))]
          [else
           (tokenize-string (cons c ls) p)]))))
@@ -148,13 +148,13 @@
         (cond
           [(eof-object? c) 'dot]
           [(delimiter? c)  'dot]
-          [(char= c #\.)  ; this is second dot
+          [($char= c #\.)  ; this is second dot
            (read-char p)
            (let ([c (read-char p)])
              (cond
                [(eof-object? c) 
                 (error 'tokenize "invalid syntax .. near end of file")]
-               [(char= c #\.) ; this is the third
+               [($char= c #\.) ; this is the third
                 (let ([c (peek-char p)])
                   (cond
                    [(eof-object? c) '(datum . ...)]
@@ -180,7 +180,7 @@
           (cond
             [(eof-object? c) 
              (error 'tokenize "invalid eof in the middle of #\\~a" str)]
-            [(char= c (string-ref str i))
+            [($char= c (string-ref str i))
              (tokenize-char* (fxadd1 i) str p d)]
             [else 
              (error 'tokenize
@@ -191,7 +191,7 @@
         (cond
           [(eof-object? c) (cons 'datum (string-ref str 0))]
           [(delimiter? c)  (cons 'datum (string-ref str 0))]
-          [(char= (string-ref str 1) c) 
+          [($char= (string-ref str 1) c) 
            (read-char p)
            (tokenize-char*  2 str p d)]
           [else (error 'tokenize "invalid syntax near #\\~a~a" 
@@ -202,13 +202,13 @@
         (cond
           [(eof-object? c)
            (error 'tokenize "invalid #\\ near end of file")]
-          [(char= #\s c) 
+          [($char= #\s c) 
            (tokenize-char-seq p "space" '(datum . #\space))]
-          [(char= #\n c) 
+          [($char= #\n c) 
            (tokenize-char-seq p "newline" '(datum . #\newline))]
-          [(char= #\t c) 
+          [($char= #\t c) 
            (tokenize-char-seq p "tab" '(datum . #\tab))]
-          [(char= #\r c) 
+          [($char= #\r c) 
            (tokenize-char-seq p "return" '(datum . #\return))]
           [else
            (let ([n (peek-char p)])
@@ -226,17 +226,17 @@
       (let ([c (read-char p)])
         (cond
           [(eof-object? c) (multiline-error)]
-          [(char= #\| c) 
+          [($char= #\| c) 
            (let ([c (read-char p)])
              (cond
                [(eof-object? c) (multiline-error)]
-               [(char= #\# c)   (void)]
+               [($char= #\# c)   (void)]
                [else (multiline-comment p)]))]
-          [(char= #\# c)
+          [($char= #\# c)
            (let ([c (read-char p)])
              (cond
                [(eof-object? c) (multiline-error)]
-               [(char= #\| c) 
+               [($char= #\| c) 
                 (multiline-comment p)
                 (multiline-comment p)]
                [else 
@@ -247,8 +247,8 @@
       (let ([c (read-char p)])
         (cond
           [(eof-object? c) ac]
-          [(char= #\0 c) (read-binary (fxsll ac 1) (cons c chars) p)]
-          [(char= #\1 c) (read-binary (fx+ (fxsll ac 1) 1) (cons c chars) p)]
+          [($char= #\0 c) (read-binary (fxsll ac 1) (cons c chars) p)]
+          [($char= #\1 c) (read-binary (fx+ (fxsll ac 1) 1) (cons c chars) p)]
           [(delimiter? c) (unread-char c p) ac]
           [else 
            (unread-char c)
@@ -259,67 +259,67 @@
       (let ([c (read-char p)])
         (cond
           [(eof-object? c) (error 'tokenize "invalid # near end of file")]
-          [(char= c #\t) 
+          [($char= c #\t) 
            (let ([c (peek-char p)])
              (cond
                [(eof-object? c) '(datum . #t)]
                [(delimiter? c)  '(datum . #t)]
                [else (error 'tokenize "invalid syntax near #t")]))]
-          [(char= c #\f) 
+          [($char= c #\f) 
            (let ([c (peek-char p)])
              (cond
                [(eof-object? c) '(datum . #f)]
                [(delimiter? c)  '(datum . #f)]
                [else (error 'tokenize "invalid syntax near #f")]))]
-          [(char= #\\ c) (tokenize-char p)]
-          [(char= #\( c) 'vparen]
-          [(char= #\x c) (tokenize-hex-init p)]
-          [(char= #\' c) '(macro . syntax)]
-          [(char= #\; c) 'hash-semi]
-          [(char= #\% c) '(macro . |#primitive|)]
-          [(char= #\| c) (multiline-comment p) (tokenize p)]
-          [(char= #\b c) 
+          [($char= #\\ c) (tokenize-char p)]
+          [($char= #\( c) 'vparen]
+          [($char= #\x c) (tokenize-hex-init p)]
+          [($char= #\' c) '(macro . syntax)]
+          [($char= #\; c) 'hash-semi]
+          [($char= #\% c) '(macro . |#primitive|)]
+          [($char= #\| c) (multiline-comment p) (tokenize p)]
+          [($char= #\b c) 
            (let ([c (read-char p)])
              (cond
                [(eof-object? c) 
                 (error 'tokenize "invalid eof while reading #b")]
-               [(char= #\- c)
+               [($char= #\- c)
                 (let ([c (read-char p)])
                   (cond
                     [(eof-object? c)
                      (error 'tokenize "invalid eof while reading #b-")]
-                    [(char= #\0 c)
+                    [($char= #\0 c)
                      (cons 'datum
                        (fx- 0 (read-binary 0 '(#\0 #\-) p)))]
-                    [(char= #\1 c)
+                    [($char= #\1 c)
                      (cons 'datum
                        (fx- 0 (read-binary 1 '(#\1 #\-) p)))]
                     [else 
                      (unread-char c p)
                      (error 'tokenize "invalid binary syntax #b-~a" c)]))]
-               [(char= #\0 c)
+               [($char= #\0 c)
                 (cons 'datum (read-binary 0 '(#\0) p))]
-               [(char= #\1 c)
+               [($char= #\1 c)
                 (cons 'datum (read-binary 1 '(#\1) p))]
                [else 
                 (unread-char c p)
                 (error 'tokenize "invalid syntax #b~a" c)]
                ))]
-          [(char= #\! c) 
+          [($char= #\! c) 
            (let ([e (read-char p)])
              (when (eof-object? e)
                (error 'tokenize "invalid eof near #!"))
-             (unless (char= #\e e)
+             (unless ($char= #\e e)
                (error 'tokenize "invalid syntax near #!~a" e))
              (let ([o (read-char p)])
                (when (eof-object? o)
                  (error 'tokenize "invalid eof near #!e"))
-               (unless (char= #\o o)
+               (unless ($char= #\o o)
                  (error 'tokenize "invalid syntax near #!e~a" o))
                (let ([f (read-char p)])
                  (when (eof-object? f)
                    (error 'tokenize "invalid syntax near #!eo"))
-                 (unless (char= #\f f)
+                 (unless ($char= #\f f)
                    (error 'tokenize "invalid syntax near #!eo~a" f))
                  (cons 'datum (eof-object)))))]
           [else 
@@ -331,13 +331,13 @@
         (cond
           [(eof-object? c) 
            (error 'tokenize "unexpected eof while reading symbol")]
-          [(char= #\\ c)
+          [($char= #\\ c)
            (let ([c (read-char p)])
              (cond
                [(eof-object? c) 
                 (error 'tokenize "unexpected eof while reading symbol")]
                [else (tokenize-bar p (cons c ac))]))]
-          [(char= #\| c) ac]
+          [($char= #\| c) ac]
           [else (tokenize-bar p (cons c ac))]))))
   (define tokenize
     (lambda (p)
@@ -345,39 +345,39 @@
         (cond
           [(eof-object? c) (eof-object)]
           [(char-whitespace? c) (tokenize p)]
-          [(char= #\( c)   'lparen]
-          [(char= #\) c)   'rparen]
-          [(char= #\[ c)   'lbrack]
-          [(char= #\] c)   'rbrack]
-          [(char= #\' c)   '(macro . quote)]
-          [(char= #\` c)   '(macro . quasiquote)]
-          [(char= #\, c) 
+          [($char= #\( c)   'lparen]
+          [($char= #\) c)   'rparen]
+          [($char= #\[ c)   'lbrack]
+          [($char= #\] c)   'rbrack]
+          [($char= #\' c)   '(macro . quote)]
+          [($char= #\` c)   '(macro . quasiquote)]
+          [($char= #\, c) 
            (let ([c (peek-char p)])
              (cond
               [(eof-object? c) '(macro . unquote)]
-              [(char= c #\@) 
+              [($char= c #\@) 
                (read-char p)
                '(macro . unquote-splicing)]
               [else '(macro . unquote)]))]
-          [(char= #\# c)   (tokenize-hash p)]
+          [($char= #\# c)   (tokenize-hash p)]
           [(digit? c) 
            (cons 'datum (tokenize-number (char->num c) p))]
           [(initial? c) 
            (let ([ls (reverse (tokenize-identifier (cons c '()) p))])
              (cons 'datum (string->symbol (list->string ls))))]
-          [(char= #\" c) 
+          [($char= #\" c) 
            (let ([ls (tokenize-string '() p)])
              (cons 'datum (list->string (reverse ls))))]
-          [(char= #\; c)
+          [($char= #\; c)
            (skip-comment p)
            (tokenize p)]
-          [(char= #\+ c)
+          [($char= #\+ c)
            (tokenize-plus p)]
-          [(char= #\- c)
+          [($char= #\- c)
            (tokenize-minus p)]
-          [(char= #\. c)
+          [($char= #\. c)
            (tokenize-dot p)]
-          [(char= #\| c)
+          [($char= #\| c)
            (let ([ls (reverse (tokenize-bar p '()))])
              (cons 'datum (string->symbol (list->string ls))))]
           [else
@@ -481,29 +481,20 @@
   ;;;      
   ;;;--------------------------------------------------------------* INIT *---
   ;;; 
-  ($pcb-set! read-token
-    (lambda p
-      (if (null? p)
-          (tokenize (current-input-port))
-          (if (null? (cdr p))
-              (let ([a (car p)])
-                (if (input-port? a)
-                    (tokenize a)
-                    (error 'read-token
-                      "not an input port: ~s ~s ~s"
-                      (vector? a) (vector-length a) a)))
-              (error 'read-token "too many arguments")))))
-  ($pcb-set! read
-    (lambda p
-      (if (null? p)
-          (read (current-input-port))
-          (if (null? (cdr p))
-              (let ([a (car p)])
-                (if (input-port? a)
-                    (read a)
-                    (error 'read "not an input port: ~s" a)))
-              (error 'read "too many arguments")))))
-  
+  (primitive-set! 'read-token
+    (case-lambda
+      [() (tokenize (current-input-port))]
+      [(p)
+       (if (input-port? p)
+           (tokenize p)
+           (error 'read-token "~s is not an input port" p))]))
+  (primitive-set! 'read
+    (case-lambda
+      [() (read (current-input-port))]
+      [(p)
+       (if (input-port? p)
+           (read p)
+           (error 'read "~s is not an input port" p))]))
   (let ()
     (define read-and-eval
       (lambda (p)
@@ -511,7 +502,7 @@
           (unless (eof-object? x)
             (eval x)
             (read-and-eval p)))))
-    ($pcb-set! load
+    (primitive-set! 'load
       (lambda (x)
         (unless (string? x)
           (error 'load "~s is not a string" x))

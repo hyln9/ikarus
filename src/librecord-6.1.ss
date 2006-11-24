@@ -2,25 +2,17 @@
 
 
 (let ()
-  (define record-type-rtd 
-    (let ([rtd ($make-record #f 4)])
-      ($record-set! rtd -1 rtd)
-      ($record-set! rtd 0 4)
-      ($record-set! rtd 1 "record-type")
-      ($record-set! rtd 2 '(length name fields printer))
-      ($record-set! rtd 3 #f)
-      rtd))
 
   (define rtd?
     (lambda (x)
       (and ($record? x)
-           (eq? ($record-rtd x) record-type-rtd))))
+           (eq? ($record-rtd x) $base-rtd))))
 
-  (define rtd-length
+  (define rtd-name
     (lambda (rtd)
       ($record-ref rtd 0)))
 
-  (define rtd-name
+  (define rtd-length
     (lambda (rtd)
       ($record-ref rtd 1)))
 
@@ -32,14 +24,14 @@
     (lambda (rtd)
       ($record-ref rtd 3)))
 
-  (define set-rtd-length!
-    (lambda (rtd n)
-      ($record-set! rtd 0 n)))
-
   (define set-rtd-name!
     (lambda (rtd name)
-      ($record-set! rtd 1 name)))
+      ($record-set! rtd 0 name)))
  
+  (define set-rtd-length!
+    (lambda (rtd n)
+      ($record-set! rtd 1 n)))
+
   (define set-rtd-fields!
     (lambda (rtd fields)
       ($record-set! rtd 2 fields)))
@@ -50,9 +42,9 @@
 
   (define make-rtd
     (lambda (name fields printer)
-      (let ([rtd ($make-record record-type-rtd 4)])
-         ($record-set! rtd 0 (length fields))
-         ($record-set! rtd 1 name)
+      (let ([rtd ($make-record $base-rtd 4)])
+         ($record-set! rtd 0 name)
+         ($record-set! rtd 1 (length fields))
          ($record-set! rtd 2 fields)
          ($record-set! rtd 3 printer)
          rtd)))
@@ -202,21 +194,23 @@
           (error 'record-set! "index ~s is out of range for ~s" i x))
         ($record-set! x i v))))
 
-  ($pcb-set! make-record-type make-record-type)
-  ($pcb-set! record-constructor record-constructor)
-  ($pcb-set! record-predicate record-predicate)
-  ($pcb-set! record-field-accessor record-field-accessor)
-  ($pcb-set! record-field-mutator record-field-mutator)
+  (primitive-set! 'make-record-type make-record-type)
+  (primitive-set! 'record-constructor record-constructor)
+  (primitive-set! 'record-predicate record-predicate)
+  (primitive-set! 'record-field-accessor record-field-accessor)
+  (primitive-set! 'record-field-mutator record-field-mutator)
    
-  ($pcb-set! record? record?)
-  ($pcb-set! record-rtd record-rtd)
-  ($pcb-set! record-name record-name)
-  ($pcb-set! record-printer record-printer)
-  ($pcb-set! record-length record-length)
-  ($pcb-set! record-ref record-ref)
-  ($pcb-set! record-set! record-set!)
+  (primitive-set! 'record? record?)
+  (primitive-set! 'record-rtd record-rtd)
+  (primitive-set! 'record-name record-name)
+  (primitive-set! 'record-printer record-printer)
+  (primitive-set! 'record-length record-length)
+  (primitive-set! 'record-ref record-ref)
+  (primitive-set! 'record-set! record-set!)
 
-  (set-rtd-printer! record-type-rtd
+  (set-rtd-fields! $base-rtd '(name fields length printer))
+  (set-rtd-name! $base-rtd "base-rtd")
+  (set-rtd-printer! $base-rtd
     (lambda (x p)
       (unless (rtd? x)
         (error 'record-type-printer "not an rtd"))

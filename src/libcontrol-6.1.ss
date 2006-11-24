@@ -60,14 +60,28 @@
         (unwind* winders tail)
         (rewind* new tail))))
 
+;;;  (define call/cc
+;;;    (lambda (f)
+;;;      (primitive-call/cc
+;;;        (lambda (k)
+;;;          (let ([save winders])
+;;;            (f (lambda v*
+;;;                 (unless (eq? save winders) (do-wind save))
+;;;                 (apply k v*))))))))
+
   (define call/cc
     (lambda (f)
       (primitive-call/cc
         (lambda (k)
           (let ([save winders])
-            (f (lambda v*
-                 (unless (eq? save winders) (do-wind save))
-                 (apply k v*))))))))
+            (f (case-lambda
+                 [(v) (unless (eq? save winders) (do-wind save)) (k v)]
+                 [()  (unless (eq? save winders) (do-wind save)) (k)]
+                 [(v1 v2 . v*)
+                  (unless (eq? save winders) (do-wind save))
+                  (apply k v1 v2 v*)])))))))
+                  
+
 
 ;;;  (define dynamic-wind
 ;;;    (lambda (in body out)
@@ -78,18 +92,36 @@
 ;;;        (out)
 ;;;        v)))
 
+;;;  (define dynamic-wind
+;;;    (lambda (in body out)
+;;;      (in)
+;;;      (set! winders (cons (cons in out) winders))
+;;;      (call-with-values
+;;;        body
+;;;        (lambda v*
+;;;          (set! winders (cdr winders))
+;;;          (out)
+;;;          (apply values v*)))))
+
   (define dynamic-wind
     (lambda (in body out)
       (in)
       (set! winders (cons (cons in out) winders))
       (call-with-values
         body
-        (lambda v*
-          (set! winders (cdr winders))
-          (out)
-          (apply values v*)))))
+        (case-lambda
+          [(v) (set! winders (cdr winders)) (out) v]
+          [()  (set! winders (cdr winders)) (out) (values)]
+          [(v1 v2 . v*)
+           (set! winders (cdr winders))
+           (out)
+           (apply values v1 v2 v*)]))))
 
-  ($pcb-set! call/cf call-with-current-frame)
-  ($pcb-set! call/cc call/cc)
-  ($pcb-set! dynamic-wind dynamic-wind))
+
+
+  (primitive-set! 'call/cf call-with-current-frame)
+  (primitive-set! 'call/cc call/cc)
+  (primitive-set! 'dynamic-wind dynamic-wind)
+  ;($install-underflow-handler)
+  (void))
 

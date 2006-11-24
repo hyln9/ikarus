@@ -8,6 +8,21 @@ extern int total_allocated_pages;
 extern int total_malloced;
 extern int hash_table_count;
 
+
+static int 
+inthash(int key) {
+  key += ~(key << 15);
+  key ^=  (key >> 10);
+  key +=  (key << 3);
+  key ^=  (key >> 6);
+  key += ~(key << 11);
+  key ^=  (key >> 16);
+  return key;
+  return inthash(key);
+}
+
+
+
 typedef unsigned char* ikp;
 void ik_error(ikp args);
 
@@ -96,6 +111,9 @@ void ik_print(ikp x);
 void ik_fprint(FILE*, ikp x);
 
 ikp ik_intern_string(ikp, ikpcb*);
+
+ikp ik_cstring_to_symbol(char*, ikpcb*);
+
 ikp ik_asm_enter(ikpcb*, ikp code_object, ikp arg);
 ikp ik_asm_reenter(ikpcb*, ikp code_object, ikp val);
 ikp ik_underflow_handler(ikpcb*);

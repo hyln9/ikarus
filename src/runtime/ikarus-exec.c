@@ -25,7 +25,6 @@ ikp ik_exec_code(ikpcb* pcb, ikp code_ptr){
       exit(-1);
     }
     if(framesize < k->size){
-      fprintf(stderr, "SPLIT ");
       cont* nk = (cont*) ik_alloc(pcb, sizeof(cont));
       nk->tag = k->tag;
       nk->next = k->next;
@@ -34,7 +33,6 @@ ikp ik_exec_code(ikpcb* pcb, ikp code_ptr){
       k->size = framesize;
       k->next = vector_tag + (ikp)nk;
     }
-    fprintf(stderr, "UF\n");
     pcb->next_k = k->next;
     ikp fbase = pcb->frame_base - wordsize;
     ikp new_fbase = fbase - framesize;

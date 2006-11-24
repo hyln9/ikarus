@@ -72,6 +72,7 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
       ik_print(val);
     }
   }
+
   if(p.memp != p.memq){
     fprintf(stderr, "fasl-read did not reach eof!\n");
     exit(-10);

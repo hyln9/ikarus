@@ -35,3 +35,6 @@ ikarus-hash-tables.o: ikarus-hash-tables.c ikarus.h
 
 ikarus.h: ikarus-data.h
 	touch ikarus.h
+
+clean:
+	rm -f *.o ikarus

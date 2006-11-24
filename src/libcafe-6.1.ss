@@ -30,6 +30,7 @@
           (with-error-handler
             (lambda args
               (reset-input-port! (console-input-port))
+              (display "repl catch\n" (console-output-port))
               (apply print-error args)
               (k (void)))
             (lambda ()
@@ -51,22 +52,22 @@
                            v*))))]))))))
       (wait eval escape-k)))
 
-  ($pcb-set! new-cafe
-    (lambda args
-      (let ([eval
-             (if (null? args)
-                 (current-eval)
-                 (if (null? (cdr args))
-                     (let ([f (car args)])
-                       (if (procedure? f)
-                           f
-                           (error 'new-cafe "not a procedure ~s" f)))
-                     (error 'new-cafe "too many arguments")))])
-        (dynamic-wind
-          (lambda () (set! eval-depth (fxadd1 eval-depth)))
-          (lambda ()
-            (call/cc 
-              (lambda (k)
-                (wait eval k))))
-          (lambda () (set! eval-depth (fxsub1 eval-depth))))))))
+  (define new-cafe
+    (lambda (eval)
+      (dynamic-wind
+        (lambda () (set! eval-depth (fxadd1 eval-depth)))
+        (lambda ()
+          (call/cc 
+            (lambda (k)
+              (wait eval k))))
+        (lambda () (set! eval-depth (fxsub1 eval-depth))))))
+
+  (primitive-set! 'new-cafe
+    (case-lambda
+      [() (new-cafe (current-eval))]
+      [(p)
+       (unless (procedure? p) 
+         (error 'new-cafe "~s is not a procedure" p))
+       (new-cafe p)]))
+  )
 

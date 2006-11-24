@@ -104,3 +104,13 @@ ikp ik_intern_string(ikp str, ikpcb* pcb){
   return sym;
 }
 
+ikp
+ik_cstring_to_symbol(char* str, ikpcb* pcb){
+  int n = strlen(str);
+  int size = n + disp_string_data + 1;
+  ikp s = ik_alloc(pcb, align(size)) + string_tag;
+  ref(s, off_string_length) = fix(n);
+  memcpy(s+off_string_data, str, n+1);
+  ikp sym = ik_intern_string(s, pcb);
+  return sym;
+}

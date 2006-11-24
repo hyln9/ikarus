@@ -11,16 +11,19 @@
       (if m 
           (let ([i ($char->fixnum x)])
             (write-char #\# p)
-            (write-char #\\ p)
             (cond
              [(fx< i (vector-length char-table))
+              (write-char #\\ p)
               (write-char* (vector-ref char-table i) p)]
              [(fx< i 127)
+              (write-char #\\ p)
               (write-char x p)]
              [(fx= i 127) 
+              (write-char #\\ p)
               (write-char* "del" p)]
              [else
-              (error 'writer "invalid character index ~s" i)]))
+              (write-char #\+ p)
+              (write-fixnum i p)]))
           (write-char x p))))
   (define write-list
     (lambda (x p m)
@@ -140,10 +143,10 @@
          (unless (fx= i n)
            (let ([c (string-ref x i)])
              (cond
-               [(or (char= #\" c) (char= #\\ c))
+               [(or ($char= #\" c) ($char= #\\ c))
                 (write-char #\\ p)
                 (write-char c p)]
-               [(char= #\tab c)
+               [($char= #\tab c)
                 (write-char #\\ p)
                 (write-char #\t p)]
                [else
@@ -246,24 +249,23 @@
            (if (procedure? printer)
                (printer x p)
                (write-record x p m)))]
-        [(code? x)
-         (write-char* "#<code>" p)]
+        ;[(code? x)
+        ; (write-char* "#<code>" p)]
+        [(hash-table? x)
+         (write-char* "#<hash-table>" p)]
+        [($unbound-object? x)
+         (write-char* "#<unbound-object>" p)]
+        [($forward-ptr? x)
+         (write-char* "#<forward-ptr>" p)]
         [else 
          (write-char* "#<unknown>" p)])))
-  (define generic-writer
-    (lambda (who)
-      (lambda (x . p)
-        (let ([port
-               (if (null? p)
-                   (current-output-port)
-                   (if (null? (cdr p))
-                       (let ([p (car p)])
-                          (if (output-port? p)
-                              p
-                              (error who "not an output port ~s" p)))
-                       (error who "too many arguments")))])
-          (writer x port (eq? who 'write))
-          (flush-output-port port)))))
+
+  (define (write x p)
+    (writer x p #t)
+    (flush-output-port p))
+  (define (display x p)
+    (writer x p #f)
+    (flush-output-port p))
   ;;;
   (define formatter
     (lambda (who p fmt args)
@@ -271,21 +273,21 @@
         (unless (fx= i (string-length fmt))
           (let ([c (string-ref fmt i)])
             (cond
-              [(char= c #\~)
+              [($char= c #\~)
                (let ([i (fxadd1 i)])
                  (when (fx= i (string-length fmt))
                    (error who "invalid ~~ at end of format string ~s" fmt))
                  (let ([c (string-ref fmt i)])
                   (cond
-                    [(char= c #\~) 
+                    [($char= c #\~) 
                      (write-char #\~ p)
                      (f (fxadd1 i) args)]
-                    [(char= c #\a)
+                    [($char= c #\a)
                      (when (null? args)
                        (error who "insufficient arguments"))
                      (display (car args) p)
                      (f (fxadd1 i) (cdr args))]
-                    [(char= c #\s)
+                    [($char= c #\s)
                      (when (null? args)
                        (error who "insufficient arguments"))
                      (write (car args) p)
@@ -318,7 +320,6 @@
         (formatter 'format p fmt args)
         (get-output-string p))))
 
-
   (define print-error
     (lambda (who fmt . args)
       (unless (string? fmt)
@@ -333,24 +334,36 @@
 
   
   ;;;
-  ($pcb-set! format format)
-  ($pcb-set! printf printf)
-  ($pcb-set! fprintf fprintf)
-  ($pcb-set! display (generic-writer 'display))
-  ($pcb-set! write (generic-writer 'write))
-  ($pcb-set! print-error print-error)
-  ($pcb-set! current-error-handler
+  (primitive-set! 'format format)
+  (primitive-set! 'printf printf)
+  (primitive-set! 'fprintf fprintf)
+  (primitive-set! 'write 
+    (case-lambda
+      [(x) (write x (current-output-port))]
+      [(x p)
+       (unless (output-port? p) 
+         (error 'write "~s is not an output port" p))
+       (write x p)]))
+  (primitive-set! 'display 
+    (case-lambda
+      [(x) (display x (current-output-port))]
+      [(x p)
+       (unless (output-port? p) 
+         (error 'display "~s is not an output port" p))
+       (display x p)]))
+  (primitive-set! 'print-error print-error)
+  (primitive-set! 'current-error-handler
     (make-parameter
       (lambda args
         (apply print-error args)
-        (display "exiting\n")
-        (flush-output-port)
+        (display "exiting\n" (console-output-port))
+        (flush-output-port (console-output-port))
         (exit -100))
       (lambda (x)
         (if (procedure? x)
             x
             (error 'current-error-handler "~s is not a procedure" x)))))
-  ($pcb-set! error
+  (primitive-set! 'error
     (lambda args
       (apply (current-error-handler) args)))) 
 
