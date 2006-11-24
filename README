@@ -1,0 +1,10 @@
+
+Ikarus Scheme Source Directory
+
+Simplified Contents:
+  runtime: Contains the C files making the ikarus executable.  The C
+    files implement the GC, initial FASL loader, transport
+    guardians, weak pairs, the symbol table, etc.
+  src: Contains the Scheme source files for the compiler and the
+    rest of the development environment.
+  
