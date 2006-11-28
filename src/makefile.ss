@@ -57,7 +57,7 @@
     remprop putprop getprop property-list
     apply
     map for-each andmap ormap
-    memq memv assq 
+    memq memv assq assoc
     eq? equal?
     reverse
     string->symbol symbol->string oblist 

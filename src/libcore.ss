@@ -1020,6 +1020,35 @@
      (lambda (x ls) 
        (race x ls ls ls))))
 
+(primitive-set! 'assoc
+  (letrec ([race
+            (lambda (x h t ls)
+              (if (pair? h)
+                  (let ([a ($car h)] [h ($cdr h)])
+                     (if (pair? a)
+                         (if (equal? ($car a) x)
+                             a
+                             (if (pair? h)
+                                 (if (not (eq? h t))
+                                     (let ([a ($car h)])
+                                        (if (pair? a)
+                                            (if (equal? ($car a) x)
+                                                a
+                                                (race x ($cdr h) ($cdr t) ls))
+                                            (error 'assoc "malformed alist ~s"
+                                                   ls)))
+                                     (error 'assoc "circular list ~s" ls))
+                                 (if (null? h)
+                                     #f
+                                     (error 'assoc "~s is not a proper list" ls))))
+                         (error 'assoc "malformed alist ~s" ls)))
+                  (if (null? h)
+                      #f
+                      (error 'assoc "~s is not a proper list" ls))))])
+     (lambda (x ls) 
+       (race x ls ls ls))))
+
+
 (primitive-set! 'string->symbol
   (lambda (x)
     (unless (string? x) 
