@@ -108,6 +108,7 @@
     with-output-to-file call-with-output-file
     with-input-from-file call-with-input-file
     date-string
+    file-exists? delete-file
 
     + - add1 sub1 * expt number? positive? negative? zero? number->string
     logand

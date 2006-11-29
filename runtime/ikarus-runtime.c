@@ -488,6 +488,115 @@ ikp ik_open_file(ikp str, ikp flagptr){
   return fix(fd);
 }
  
+
+/*
+     #include <sys/types.h>
+     #include <sys/stat.h>
+     int
+     stat(const char *path, struct stat *sb);
+ERRORS
+     Stat() and lstat() will fail if:
+     [ENOTDIR]          A component of the path prefix is not a directory.
+     [ENAMETOOLONG]     A component of a pathname exceeded {NAME_MAX} charac-
+                        ters, or an entire path name exceeded {PATH_MAX} char-
+                        acters.
+     [ENOENT]           The named file does not exist.
+     [EACCES]           Search permission is denied for a component of the
+                        path prefix.
+     [ELOOP]            Too many symbolic links were encountered in translat-
+                        ing the pathname.
+     [EFAULT]           Sb or name points to an invalid address.
+     [EIO]              An I/O error occurred while reading from or writing to
+                        the file system.
+*/
+ikp 
+ikrt_file_exists(ikp filename){
+  char* str = string_data(filename);
+  struct stat sb;
+  int st = stat(str, &sb);
+  if(st == 0){
+    /* success */
+    return true_object;
+  } else {
+    int err = errno;
+    if(err == ENOENT){
+      return false_object;
+    } 
+    else if(err == ENOTDIR){
+      return fix(1);
+    } 
+    else if(err == ENAMETOOLONG){
+      return fix(2);
+    } 
+    else if(err == EACCES){
+      return fix(3);
+    } 
+    else if(err == ELOOP){
+      return fix(4);
+    } 
+    else if(err == EFAULT){
+      return fix(5);
+    } 
+    else if(err == EIO){
+      return fix(6);
+    } 
+    else {
+      return fix(-1);
+    }
+  }
+}
+
+
+/*
+     [ENOTDIR]          A component of the path prefix is not a directory.
+     [ENAMETOOLONG]     A component of a pathname exceeded {NAME_MAX} charac-
+                        ters, or an entire path name exceeded {PATH_MAX} char-
+                        acters.
+     [ENOENT]           The named file does not exist.
+     [EACCES]           Search permission is denied for a component of the
+                        path prefix.
+     [EACCES]           Write permission is denied on the directory containing
+                        the link to be removed.
+     [ELOOP]            Too many symbolic links were encountered in translat-
+                        ing the pathname.
+     [EPERM]            The named file is a directory and the effective user
+                        ID of the process is not the super-user.
+     [EPERM]            The directory containing the file is marked sticky,
+                        and neither the containing directory nor the file to
+                        be removed are owned by the effective user ID.
+     [EBUSY]            The entry to be unlinked is the mount point for a
+                        mounted file system.
+     [EIO]              An I/O error occurred while deleting the directory
+                        entry or deallocating the inode.
+     [EROFS]            The named file resides on a read-only file system.
+     [EFAULT]           Path points outside the process's allocated address
+                        space.
+*/
+
+
+ikp
+ikrt_delete_file(ikp filename){
+  char* str = string_data(filename);
+  int err = unlink(str);
+  if(err == 0){
+    return 0;
+  } 
+  switch (err){
+    case ENOTDIR:  return fix(1);    
+    case ENAMETOOLONG: return fix(2);
+    case ENOENT: return fix(3);     
+    case EACCES: return fix(4);     
+    case ELOOP: return fix(5);      
+    case EPERM: return fix(6);      
+    case EBUSY: return fix(7);      
+    case EIO: return fix(8);        
+    case EROFS: return fix(9);      
+    case EFAULT: return fix(10);     
+  }
+  return fix(-1);
+}
+
+
 ikp ik_close(ikp fd){
   int err = close(unfix(fd));
   if(err != 0){

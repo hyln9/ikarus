@@ -11,7 +11,7 @@
 #include <errno.h>
 
 #define forward_ptr ((ikp)-1)
-#define DEBUG_STACK 0
+//#define DEBUG_STACK 0
 #define minimum_heap_size (pagesize * 1024 * 4)
 #define maximum_heap_size (pagesize * 1024 * 8)
 #define minimum_stack_size (pagesize * 128)
@@ -231,7 +231,7 @@ gc_tconc_push(gc_t* gc, ikp tcbucket){
   }
 }
 
-static ikp add_object(gc_t* gc, ikp x);
+static ikp add_object(gc_t* gc, ikp x, char* caller);
 static void collect_stack(gc_t*, ikp top, ikp base);
 static void collect_loop(gc_t*);
 static void fix_weak_pointers(gc_t*);
@@ -306,8 +306,8 @@ ik_collect(int req, ikpcb* pcb){
    */
   scan_dirty_pages(&gc);
   collect_stack(&gc, pcb->frame_pointer, pcb->frame_base - wordsize);
-  pcb->next_k = add_object(&gc, pcb->next_k); 
-  pcb->oblist = add_object(&gc, pcb->oblist); 
+  pcb->next_k = add_object(&gc, pcb->next_k, "main"); 
+  pcb->oblist = add_object(&gc, pcb->oblist, "main"); 
   /* now we trace all live objects */
   collect_loop(&gc);
 
@@ -539,7 +539,7 @@ static void collect_stack(gc_t* gc, ikp top, ikp end){
       }
       ikp base = top + framesize - wordsize;
       while(base > top){
-        ikp new_obj = add_object(gc,ref(base,0));
+        ikp new_obj = add_object(gc,ref(base,0), "frame");
         ref(base,0) = new_obj;
         base -= wordsize;
       }
@@ -552,14 +552,17 @@ static void collect_stack(gc_t* gc, ikp top, ikp end){
       int i;
       for(i=0; i<bytes_in_mask; i++, fp-=8){
         unsigned char m = mask[i];
-        if(m & 0x01) { fp[-0] = add_object(gc, fp[-0]); }
-        if(m & 0x02) { fp[-1] = add_object(gc, fp[-1]); }
-        if(m & 0x04) { fp[-2] = add_object(gc, fp[-2]); }
-        if(m & 0x08) { fp[-3] = add_object(gc, fp[-3]); }
-        if(m & 0x10) { fp[-4] = add_object(gc, fp[-4]); }
-        if(m & 0x20) { fp[-5] = add_object(gc, fp[-5]); }
-        if(m & 0x40) { fp[-6] = add_object(gc, fp[-6]); }
-        if(m & 0x80) { fp[-7] = add_object(gc, fp[-7]); }
+#if DEBUG_STACK
+        fprintf(stderr, "m=0x%x\n", m);
+#endif
+        if(m & 0x01) { fp[-0] = add_object(gc, fp[-0], "frame2"); }
+        if(m & 0x02) { fp[-1] = add_object(gc, fp[-1], "frame3"); }
+        if(m & 0x04) { fp[-2] = add_object(gc, fp[-2], "frame4"); }
+        if(m & 0x08) { fp[-3] = add_object(gc, fp[-3], "frame5"); }
+        if(m & 0x10) { fp[-4] = add_object(gc, fp[-4], "frame6"); }
+        if(m & 0x20) { fp[-5] = add_object(gc, fp[-5], "frame7"); }
+        if(m & 0x40) { fp[-6] = add_object(gc, fp[-6], "framea"); }
+        if(m & 0x80) { fp[-7] = add_object(gc, fp[-7], "frameb"); }
       }
     }
     top += framesize;
@@ -621,7 +624,7 @@ add_list(gc_t* gc, unsigned int t, int gen, ikp x, ikp* loc){
       return;
     }
     else {
-      ref(y, off_cdr) = add_object(gc, snd);
+      ref(y, off_cdr) = add_object(gc, snd, "add_list");
       return;
     }
   }
@@ -629,7 +632,7 @@ add_list(gc_t* gc, unsigned int t, int gen, ikp x, ikp* loc){
 
 
 static ikp 
-add_object(gc_t* gc, ikp x){
+add_object(gc_t* gc, ikp x, char* caller){
   if(is_fixnum(x)){ 
     return x;
   } 
@@ -825,7 +828,7 @@ add_object(gc_t* gc, ikp x){
 static void
 relocate_new_code(ikp x, gc_t* gc){
   ikp relocvector = ref(x, disp_code_reloc_vector);
-  relocvector = add_object(gc, relocvector);
+  relocvector = add_object(gc, relocvector, "reloc");
   ref(x, disp_code_reloc_vector) = relocvector;
   int relocsize = (int)ref(relocvector, off_vector_length);
   ikp p = relocvector + off_vector_data;
@@ -838,7 +841,7 @@ relocate_new_code(ikp x, gc_t* gc){
     if(tag == 0){
       /* undisplaced pointer */
       ikp old_object = ref(p, wordsize);
-      ikp new_object = add_object(gc, old_object);
+      ikp new_object = add_object(gc, old_object, "reloc");
       ref(code, code_off) = new_object;
       p += (2*wordsize);
     }
@@ -846,14 +849,14 @@ relocate_new_code(ikp x, gc_t* gc){
       /* displaced pointer */
       int obj_off = unfix(ref(p, wordsize));
       ikp old_object = ref(p, 2*wordsize);
-      ikp new_object = add_object(gc, old_object);
+      ikp new_object = add_object(gc, old_object, "reloc");
       ref(code, code_off) = new_object + obj_off;
       p += (3 * wordsize);
     } 
     else if(tag == 3){
       /* displaced relative pointer */
       int obj_off = unfix(ref(p, wordsize));
-      ikp obj = add_object(gc, ref(p, 2*wordsize));
+      ikp obj = add_object(gc, ref(p, 2*wordsize), "reloc");
       ikp displaced_object = obj + obj_off;
       ikp next_word = code + code_off + wordsize;
       ikp relative_distance = displaced_object - (int)next_word;
@@ -876,7 +879,6 @@ relocate_new_code(ikp x, gc_t* gc){
 static void 
 collect_loop(gc_t* gc){
   int done;
-  int scan_ptr_count = 0;
   do{
     done = 1;
     { /* scan the pending pairs pages */
@@ -888,7 +890,7 @@ collect_loop(gc_t* gc){
           ikp p = qu->p;
           ikp q = qu->q;
           while(p < q){
-            ref(p,0) = add_object(gc, ref(p,0));
+            ref(p,0) = add_object(gc, ref(p,0), "loop");
             p += (2*wordsize);
           }
           qupages_t* next = qu->next;
@@ -907,7 +909,7 @@ collect_loop(gc_t* gc){
           ikp p = qu->p;
           ikp q = qu->q;
           while(p < q){
-            ref(p,0) = add_object(gc, ref(p,0));
+            ref(p,0) = add_object(gc, ref(p,0), "pending");
             p += wordsize;
           }
           qupages_t* next = qu->next;
@@ -946,7 +948,7 @@ collect_loop(gc_t* gc){
           do{
             meta->aq = q;
             while(p < q){
-              ref(p,0) = add_object(gc, ref(p,0));
+              ref(p,0) = add_object(gc, ref(p,0), "rem");
               p += (2*wordsize);
             }
             p = meta->aq;
@@ -963,7 +965,7 @@ collect_loop(gc_t* gc){
           do{
             meta->aq = q;
             while(p < q){
-              ref(p,0) = add_object(gc, ref(p,0));
+              ref(p,0) = add_object(gc, ref(p,0), "rem2");
               p += wordsize;
             }
             p = meta->aq;
@@ -1102,7 +1104,7 @@ scan_dirty_pointers_page(gc_t* gc, int page_idx, int mask){
         if(is_fixnum(x) || (tagof(x) == immediate_tag)){
           /* do nothing */
         } else {
-          ikp y = add_object(gc, x);
+          ikp y = add_object(gc, x, "nothing");
           segment_vec = gc->segment_vector;
           ref(p, 0) = y;
           card_d = card_d | segment_vec[page_index(y)];
@@ -1151,7 +1153,7 @@ scan_dirty_code_page(gc_t* gc, int page_idx, unsigned int mask){
         if(is_fixnum(r) || (tagof(r) == immediate_tag)){
           /* do nothing */
         } else {
-          r = add_object(gc, r);
+          r = add_object(gc, r, "nothing2");
           segment_vec = gc->segment_vector;
           code_d = code_d | segment_vec[page_index(r)];
         }
@@ -1186,7 +1188,7 @@ scan_dirty_weak_pointers_page(gc_t* gc, int page_idx, int mask){
         if(is_fixnum(x) || tagof(x) == immediate_tag){
           /* do nothing */
         } else {
-          ikp y = add_object(gc, x);
+          ikp y = add_object(gc, x, "nothing3");
           ref(p, wordsize) = y;
         }
         p += (2*wordsize);
