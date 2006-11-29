@@ -746,7 +746,7 @@ ikrt_open_output_file(ikp fname, ikp flagptr, ikpcb* pcb){
   int flags;
   int f = unfix(flagptr);
   if(f == 0){
-    flags = O_WRONLY;
+    flags = O_WRONLY | O_CREAT;
   } else if(f == 1){
     unlink(string_data(fname));
     flags = O_WRONLY | O_CREAT;
@@ -762,7 +762,7 @@ ikrt_open_output_file(ikp fname, ikp flagptr, ikpcb* pcb){
   int fd = open(string_data(fname), flags,
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if(fd == -1){
-    fprintf(stderr, "openfile failed!\n");
+    fprintf(stderr, "openfile failed: %s\n", strerror(errno));
     return false_object;
   } else {
     return fix(fd);

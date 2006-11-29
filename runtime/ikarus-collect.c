@@ -11,7 +11,6 @@
 #include <errno.h>
 
 #define forward_ptr ((ikp)-1)
-//#define DEBUG_STACK 0
 #define minimum_heap_size (pagesize * 1024 * 4)
 #define maximum_heap_size (pagesize * 1024 * 8)
 #define minimum_stack_size (pagesize * 128)
@@ -553,16 +552,16 @@ static void collect_stack(gc_t* gc, ikp top, ikp end){
       for(i=0; i<bytes_in_mask; i++, fp-=8){
         unsigned char m = mask[i];
 #if DEBUG_STACK
-        fprintf(stderr, "m=0x%x\n", m);
+        fprintf(stderr, "m[%d]=0x%x\n", i, m);
 #endif
-        if(m & 0x01) { fp[-0] = add_object(gc, fp[-0], "frame2"); }
-        if(m & 0x02) { fp[-1] = add_object(gc, fp[-1], "frame3"); }
-        if(m & 0x04) { fp[-2] = add_object(gc, fp[-2], "frame4"); }
-        if(m & 0x08) { fp[-3] = add_object(gc, fp[-3], "frame5"); }
-        if(m & 0x10) { fp[-4] = add_object(gc, fp[-4], "frame6"); }
-        if(m & 0x20) { fp[-5] = add_object(gc, fp[-5], "frame7"); }
-        if(m & 0x40) { fp[-6] = add_object(gc, fp[-6], "framea"); }
-        if(m & 0x80) { fp[-7] = add_object(gc, fp[-7], "frameb"); }
+        if(m & 0x01) { fp[-0] = add_object(gc, fp[-0], "frame0"); }
+        if(m & 0x02) { fp[-1] = add_object(gc, fp[-1], "frame1"); }
+        if(m & 0x04) { fp[-2] = add_object(gc, fp[-2], "frame2"); }
+        if(m & 0x08) { fp[-3] = add_object(gc, fp[-3], "frame3"); }
+        if(m & 0x10) { fp[-4] = add_object(gc, fp[-4], "frame4"); }
+        if(m & 0x20) { fp[-5] = add_object(gc, fp[-5], "frame5"); }
+        if(m & 0x40) { fp[-6] = add_object(gc, fp[-6], "frame6"); }
+        if(m & 0x80) { fp[-7] = add_object(gc, fp[-7], "frame7"); }
       }
     }
     top += framesize;
