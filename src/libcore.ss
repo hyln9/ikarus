@@ -851,7 +851,7 @@
                    (f x v n ($fxadd1 i)))))
         (error 'vector-memq "~s is not a vector" v))))
 
-(primitive-set! 'memv memq)
+(primitive-set! 'memv memq) ; INCORRECT, SHOULD USE EQV
 (primitive-set! 'vector-memv vector-memq)
  
 (primitive-set! 'list->string
@@ -1198,6 +1198,7 @@
                (let ([n ($string-length x)])
                  (and ($fx= n ($string-length y))
                       (string-loop x y 0 n))))]
+         [(number? x) (and (number? y) (= x y))]
          [else #f])))
    (primitive-set! 'equal? equal?))
 
