@@ -1,10 +1,14 @@
 
 .text
+.globl ik_asm_enter
 .globl _ik_asm_enter
 .globl ik_underflow_handler
+.globl ik_foreign_call
 .globl _ik_foreign_call
+.globl ik_asm_reenter
 .globl _ik_asm_reenter
 .align 8
+ik_asm_enter:
 _ik_asm_enter:
   # ignored value is the third arg 12(%esp)
   # code is the second arg  8(%esp)
@@ -50,6 +54,7 @@ L_multivalue_underflow:
   jmp L_do_underflow
 
 .align 8
+ik_asm_reenter:
 _ik_asm_reenter:
   # argc is at 12(%esp)
   # scheme stack is third arg   8(%esp)
@@ -74,6 +79,7 @@ L_multi_reentry:
 
 
 .align 8
+ik_foreign_call:
 _ik_foreign_call:
   movl %esp, 8(%esi)     # (movl fpr (pcb-ref 'frame-pointer))
   movl %ebp, 0(%esi)     # (movl apr (pcb-ref 'allocation-pointer))

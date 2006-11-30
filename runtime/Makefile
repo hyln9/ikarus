@@ -1,7 +1,7 @@
 
-CFLAGS = -Wall -DNDEBUG -O3
+CFLAGS = -I/opt/local/include -Wall -DNDEBUG -O3
 #CFLAGS = -Wall -g
-LDFLAGS = -g -ldl -lgmp -dynamic
+LDFLAGS = -L/opt/local/lib -g -ldl -lgmp -rdynamic
 CC = gcc
 all: ikarus
 
@@ -49,4 +49,4 @@ ikarus.h: ikarus-data.h
 	touch ikarus.h
 
 clean:
-	rm -f *.o ikarus
+	rm -f *.o 
