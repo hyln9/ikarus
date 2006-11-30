@@ -13,6 +13,9 @@
 #include <sys/mman.h>
 #include <dlfcn.h>
 
+#ifndef RTLD_DEFAULT
+#define RTLD_DEFAULT 0
+#endif
 
 typedef struct {
   char* membase;
