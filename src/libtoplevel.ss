@@ -54,8 +54,20 @@
       (putprop '|#system| '*sc-expander* sysmod)
       (putprop 'scheme '*sc-expander* schmod))))
 
-(begin
+(let-values ([(files args)
+              (let f ([args (command-line-arguments)])
+                (cond
+                  [(null? args) (values '() '())]
+                  [(string=? (car args) "--")
+                   (values '() (cdr args))]
+                  [else
+                   (let-values ([(f* a*) (f (cdr args))])
+                     (values (cons (car args) f*) a*))]))])
+  (current-eval compile)
+  (command-line-arguments args)
   (printf "Petite Ikarus Scheme (Build ~a)\n" (compile-time-date-string))
   (display "Copyright (c) 2006 Abdulaziz Ghuloum\n\n")
-  (current-eval compile)
+  (for-each load files)
   (new-cafe))
+
+
