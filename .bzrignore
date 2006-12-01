@@ -6,3 +6,4 @@
 .bzrignore
 ./ikarus.boot.back
 .DS_Store
+../src/ikarus.boot.back
