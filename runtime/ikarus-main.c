@@ -54,12 +54,6 @@ int main(int argc, char** argv){
     x = stpcpy(x, argv[0]);
     x = stpcpy(x, ".boot");
   }
-  if(argc != 1){
-    fprintf(stderr,
-        "Error ~s: unrecognized argument %s\n",
-        argv[0], argv[1]);
-    exit(-1);
-  }
 
   if(sizeof(mp_limb_t) != sizeof(int)){
     fprintf(stderr, "ERROR: limb size\n");
@@ -68,6 +62,23 @@ int main(int argc, char** argv){
     fprintf(stderr, "ERROR: bits_per_limb=%d\n", mp_bits_per_limb);
   }
   ikpcb* pcb = ik_make_pcb();
+  { /* set up arg_list */
+    ikp arg_list = null_object;
+    int i = argc-1;
+    while(i > 0){
+      char* s = argv[i];
+      int n = strlen(s);
+      ikp str = ik_alloc(pcb, align(n+disp_string_data+1));
+      ref(str, disp_string_length) = fix(n);
+      strcpy((char*)str+disp_string_data, s);
+      ikp p = ik_alloc(pcb, pair_size);
+      ref(p, disp_car) = str + string_tag;
+      ref(p, disp_cdr) = arg_list;
+      arg_list = p+pair_tag;
+      i--;
+    }
+    pcb->arg_list = arg_list;
+  }
   ik_fasl_load(pcb, boot_file);
   /*
   fprintf(stderr, "collect time: %d.%03d utime, %d.%03d stime (%d collections)\n", 

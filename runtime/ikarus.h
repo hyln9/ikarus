@@ -85,7 +85,7 @@ typedef struct {
   ikp   next_k;                       /* offset = 20 */
   void* system_stack;                 /* offset = 24 */
   unsigned int* dirty_vector;         /* offset = 28 */
-
+  ikp   arg_list;                     /* offset = 32 */
   /* the rest are not used by any scheme code        */
   /* they only support the runtime system (gc, etc.) */
   unsigned int* segment_vector; 
