@@ -42,18 +42,80 @@ get_option(char* opt, int argc, char** argv){
   return 0;
 }
 
+int
+file_exists(char* filename){
+  struct stat sb;
+  int s = stat(filename, &sb);
+  return (s == 0);
+}
+
+int
+copy_fst_path(char* buff, char* x){
+  int i = 0;
+  while(1){
+    char c = x[i];
+    if ((c == 0) || (c == ':')){
+      return i;
+    } 
+    buff[i] = c;
+    i++;
+  }
+}
+
+int global_exe(char* x){
+  while(1){
+    char c = *x;
+    if(c == 0){
+      return 1;
+    } 
+    if(c == '/'){
+      return 0;
+    }
+    x++;
+  }
+}
 
 int main(int argc, char** argv){
-  char ikarus_boot[FILENAME_MAX];
+  char buff[FILENAME_MAX];
   char* boot_file = get_option("-b", argc, argv);
   if(boot_file){
     argc -= 2;
-  } else {
-    boot_file = ikarus_boot;
-    char* x = ikarus_boot;
+  }
+  else if(global_exe(argv[0])){
+    /* search path name */
+    char* path = getenv("PATH");
+    if(path == NULL){
+      fprintf(stderr, "unable to locate boot file\n");
+      exit(-1);
+    }
+    while(*path){
+      int len = copy_fst_path(buff, path);
+      char* x = buff + len;
+      x = stpcpy(x, "/");
+      x = stpcpy(x, argv[0]);
+      if(file_exists(buff)){
+        x = stpcpy(x, ".boot");
+        boot_file = buff;
+        path = "";
+      }
+      else {
+        if(path[len]){
+          path += (len+1);
+        } else {
+          fprintf(stderr, "unable to locate %s\n", argv[0]);
+          exit(-1);
+        }
+      }
+    }
+  }
+  else {
+    char* x = buff;
     x = stpcpy(x, argv[0]);
     x = stpcpy(x, ".boot");
+    boot_file = buff;
   }
+
+
 
   if(sizeof(mp_limb_t) != sizeof(int)){
     fprintf(stderr, "ERROR: limb size\n");
