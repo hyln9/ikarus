@@ -161,6 +161,7 @@
     [$exit              1   effect]
     [$fp-at-base        0   pred]
     [$current-frame     0   value]
+    [$arg-list          0   value]
     [$seal-frame-and-call 1  tail]
     [$frame->continuation 1 value]
     ;;; 
@@ -2106,6 +2107,7 @@
       [(next-continuation)  (mem 20 pcr)]
       [(system-stack)       (mem 24 pcr)]
       [(dirty-vector)       (mem 28 pcr)]
+      [(arg-list)           (mem 32 pcr)]
       [else (error 'pcb-ref "invalid arg ~s" x)])))
 
 (define (primref-loc op)
@@ -2824,8 +2826,9 @@
                      (movb bh (mem idx apr))
                      (f (cdr arg*) (fxadd1 idx)))])]))]
      [($current-frame)
-      (list* (movl (pcb-ref 'next-continuation) eax)
-             ac)]
+      (list* (movl (pcb-ref 'next-continuation) eax) ac)]
+     [($arg-list)
+      (list* (movl (pcb-ref 'arg-list) eax) ac)]
      [($seal-frame-and-call) 
       (list* (movl (Simple (car arg*)) cpr) ; proc
              (movl (pcb-ref 'frame-base) eax)

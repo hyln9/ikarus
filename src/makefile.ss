@@ -86,7 +86,7 @@
     hash-table? make-hash-table get-hash-table put-hash-table!
     assembler-output
     $make-environment
-    features
+    features command-line-arguments
 
     port? input-port? output-port? 
     make-input-port make-output-port make-input/output-port
@@ -98,7 +98,7 @@
     port-name input-port-name output-port-name
     write-char read-char unread-char peek-char
     newline 
-    reset-input-port!  flush-output-port
+    reset-input-port! flush-output-port
     close-input-port close-output-port
     console-input-port current-input-port
     standard-output-port standard-error-port
@@ -138,7 +138,7 @@
     $code->closure list*->code* 
     make-code code? set-code-reloc-vector! code-reloc-vector code-freevars
     code-size code-ref code-set!
-    $frame->continuation $fp-at-base $current-frame $seal-frame-and-call
+    $frame->continuation $fp-at-base $current-frame $arg-list $seal-frame-and-call
     $make-call-with-values-procedure $make-values-procedure
     do-overflow collect
     $make-tcbucket $tcbucket-next $tcbucket-key $tcbucket-val
