@@ -65,7 +65,7 @@
                      (values (cons (car args) f*) a*))]))])
   (current-eval compile)
   (command-line-arguments args)
-  (printf "Petite Ikarus Scheme (Build ~a)\n" (compile-time-date-string))
+  (printf "Ikarus Scheme (Build ~a)\n" (compile-time-date-string))
   (display "Copyright (c) 2006 Abdulaziz Ghuloum\n\n")
   (for-each load files)
   (new-cafe))
