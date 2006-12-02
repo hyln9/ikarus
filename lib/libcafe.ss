@@ -1,17 +1,17 @@
 (let ()
   (define with-error-handler
     (lambda (p thunk)
-      (let ([old-error-handler (current-error-handler)])
+      (let ([old-error-handler (error-handler)])
         (dynamic-wind
           (lambda () 
-            (current-error-handler
+            (error-handler
               (lambda args
-                (current-error-handler old-error-handler)
+                (error-handler old-error-handler)
                 (apply p args)
                 (apply error args))))
           thunk
           (lambda ()
-            (current-error-handler old-error-handler))))))
+            (error-handler old-error-handler))))))
 
   (define eval-depth 0)
 
@@ -30,7 +30,6 @@
           (with-error-handler
             (lambda args
               (reset-input-port! (console-input-port))
-              ;(display "repl catch\n" (console-output-port))
               (apply print-error args)
               (k (void)))
             (lambda ()

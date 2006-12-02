@@ -69,7 +69,7 @@
     display write print-graph fasl-write printf format print-error
     read-token read
     error exit call/cc
-    current-error-handler
+    error-handler
     eval current-eval interpret compile compile-file new-cafe load
     system
     expand sc-expand current-expand expand-mode 

@@ -483,7 +483,7 @@
          (error 'display "~s is not an output port" p))
        (display x p)]))
   (primitive-set! 'print-error print-error)
-  (primitive-set! 'current-error-handler
+  (primitive-set! 'error-handler
     (make-parameter
       (lambda args
         (apply print-error args)
@@ -492,8 +492,8 @@
       (lambda (x)
         (if (procedure? x)
             x
-            (error 'current-error-handler "~s is not a procedure" x)))))
+            (error 'error-handler "~s is not a procedure" x)))))
   (primitive-set! 'error
     (lambda args
-      (apply (current-error-handler) args)))) 
+      (apply (error-handler) args))))
 
