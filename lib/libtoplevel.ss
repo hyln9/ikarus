@@ -71,15 +71,16 @@
                    (let-values ([(f* script a*) (f (cdr args))])
                      (values (cons (car args) f*) script a*))]))])
   (current-eval compile)
-  (command-line-arguments args)
   (cond
     [script ; no greeting, no cafe
+     (command-line-arguments (cons script args))
      (for-each load files)
      (load script)
      (exit 0)]
     [else
      (printf "Ikarus Scheme (Build ~a)\n" (compile-time-date-string))
      (display "Copyright (c) 2006 Abdulaziz Ghuloum\n\n")
+     (command-line-arguments args)
      (for-each load files)
      (new-cafe)]))
 
