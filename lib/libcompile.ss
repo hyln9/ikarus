@@ -1632,45 +1632,6 @@
            (f (cdr l*) (cons v nlhs*) (fxadd1 si) 
               (cons (cons (car l*) v) r)
               (cons si live)))])))
-  (define (do-tail-frame-old op rand* si r call-conv live)
-    (define (const? x)
-      (record-case x
-        [(constant) #t]
-        [(primref)  #t]
-        [else       #f]))
-    (define (evalrand* rand* i si r live)
-      (cond
-        [(null? rand*) 
-         (make-eval-cp (check? op) (Expr op si r live))]
-        [(const? (car rand*))
-         (evalrand* (cdr rand*) (fxadd1 i) (fxadd1 si) r live)]
-        [else
-         (let ([v (make-frame-var si)]
-               [rhs (Expr (car rand*) si r live)])
-           (cond
-             [(and (frame-var? rhs)
-                   (fx= (frame-var-idx rhs) i))
-              (evalrand* (cdr rand*) (fx+ i 1) (fx+ si 1) r (cons si live))]
-             [else
-              (make-seq
-                (make-assign v rhs)
-                (evalrand* (cdr rand*) (fx+ 1 i) (fx+ 1 si) r
-                           (cons si live)))]))]))
-    (define (moverand* rand* i si ac)
-      (cond
-        [(null? rand*) ac]
-        [(const? (car rand*))
-         (make-seq
-           (make-assign (make-frame-var i) (car rand*))
-           (moverand* (cdr rand*) (fxadd1 i) (fxadd1 si) ac))]
-        [else
-         (make-seq
-           (make-assign (make-frame-var i) (make-frame-var si))
-           (moverand* (cdr rand*) (fxadd1 i) (fxadd1 si) ac))]))
-    (make-seq
-      (evalrand* rand* 1 si r live)
-      (moverand* rand* 1 si
-        (make-tailcall-cp call-conv (length rand*))))) 
   (define (do-tail-frame op rand* si r call-conv live)
     (define (const? x)
       (record-case x
@@ -1680,10 +1641,13 @@
     (define (evalrand* rand* i si r live ac)
       (cond
         [(null? rand*) 
+         ;;; evaluate operator after all operands
          (make-seq
            (make-eval-cp (check? op) (Expr op si r live))
            ac)]
         [(const? (car rand*))
+         ;;; constants are not live since they can be assigned
+         ;;; after all args are evaluated
          (evalrand* (cdr rand*) (fxadd1 i) (fxadd1 si) r live
            (make-seq ac
              (make-assign (make-frame-var i) (car rand*))))]
@@ -1693,6 +1657,8 @@
            (cond
              [(and (frame-var? rhs)
                    (fx= (frame-var-idx rhs) i))
+              ;;; value of rhs is already in f[i]
+              ;;; just mark it live
               (evalrand* (cdr rand*) (fx+ i 1) (fx+ si 1) r (cons si live) ac)]
              [(fx= i si)
               (make-seq 
@@ -1796,7 +1762,8 @@
       (cond
         [(null? fml*) (values '() si r '())]
         [else
-          (let-values ([(nfml* nsi r live) (f (fxadd1 si) (cdr fml*))])
+          (let-values ([(nfml* nsi r live)
+                        (f (fxadd1 si) (cdr fml*))])
             (let ([v (make-frame-var si)])
               (values (cons v nfml*)
                       nsi
@@ -1807,8 +1774,8 @@
       (cond
         [(null? free*) r]
         [else
-          (f (cdr free*) (fxadd1 idx)
-             (cons (cons (car free*) (make-cp-var idx)) r))])))
+         (f (cdr free*) (fxadd1 idx)
+            (cons (cons (car free*) (make-cp-var idx)) r))])))
   (define CaseExpr 
     (lambda (r)
       (lambda (x)
