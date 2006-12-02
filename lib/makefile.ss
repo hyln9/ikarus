@@ -266,6 +266,7 @@
                  [expand-mode 'bootstrap]
                  [interaction-environment system-env])
      (printf "compiling ~a ...\n" ifile)
+     (flush-output-port)
      (compile-file ifile ofile 'replace)))
 
 (for-each 
