@@ -3320,11 +3320,6 @@
                 (Pred test Ljoin #f altern-ac)]
                [else
                 (Pred test #f Lf conseq-ac)]))]))]
-;;;  [(conditional test conseq altern)
-;;;   (let ([Lf (unique-label)] [Ljoin (unique-label)])
-;;;     (Pred test #f Lf
-;;;       (Effect conseq
-;;;         (list* (jmp Ljoin) Lf (Effect altern (cons Ljoin ac))))))]
      [(seq e0 e1)
       (Effect e0 (Effect e1 ac))]
      [(fix lhs* rhs* body)
@@ -3385,32 +3380,7 @@
           [else 
            (error who "invalid tail-call convention ~s" call-convention)])
         ac)]
-;;;     [(call-cp call-convention rp-convention idx argc mask)
-;;;      (unless (eq? rp-convention 'tail)
-;;;        (error who "nontail rp (~s) in tail context" rp-convention))
-;;;      (let f ([i 0])
-;;;        (cond
-;;;          [(fx= i argc)
-;;;           (case call-convention
-;;;             [(normal) 
-;;;              (list* 
-;;;                (movl (int (argc-convention argc)) eax)
-;;;                (tail-indirect-cpr-call)
-;;;                ac)]
-;;;             [(apply)
-;;;              (list* 
-;;;                (movl (int (argc-convention argc)) eax)
-;;;                (jmp (label SL_apply)) 
-;;;                ac)]
-;;;             [else
-;;;              (error who "invalid conv ~s in tail call-cpr" call-convention)])]
-;;;          [else
-;;;            (list* (movl (mem (fx* (fx+ idx (fxadd1 i))
-;;;                                   (fx- 0 wordsize)) fpr)
-;;;                         eax)
-;;;                   (movl eax (mem (fx* (fx+ i 1) (fx- 0 wordsize)) fpr))
-;;;                   (f (fxadd1 i)))]))]
-     [else (error 'Tail "invalid expression ~s" x)]))
+      [else (error 'Tail "invalid expression ~s" x)]))
   (define (handle-vararg fml-count ac)
     (define CONTINUE_LABEL (unique-label))
     (define DONE_LABEL (unique-label))
