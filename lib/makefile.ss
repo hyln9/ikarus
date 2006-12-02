@@ -67,7 +67,7 @@
     call-with-values values
     make-parameter dynamic-wind
     display write print-graph fasl-write printf format print-error
-    read-token read
+    read-token read comment-handler
     error exit call/cc
     error-handler
     eval current-eval interpret compile compile-file new-cafe load

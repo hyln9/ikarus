@@ -225,27 +225,40 @@
     (lambda ()
       (error 'tokenize
              "end of file encountered while inside a #|-style comment")))
+  (define apprev
+    (lambda (str i ac)
+      (cond
+        [(fx= i (string-length str)) ac]
+        [else
+         (apprev str (fx+ i 1) (cons (string-ref str i) ac))])))
   (define multiline-comment
     (lambda (p)
-      (let ([c (read-char p)])
-        (cond
-          [(eof-object? c) (multiline-error)]
-          [($char= #\| c) 
-           (let ([c (read-char p)])
-             (cond
-               [(eof-object? c) (multiline-error)]
-               [($char= #\# c)   (void)]
-               [else (multiline-comment p)]))]
-          [($char= #\# c)
-           (let ([c (read-char p)])
-             (cond
-               [(eof-object? c) (multiline-error)]
-               [($char= #\| c) 
-                (multiline-comment p)
-                (multiline-comment p)]
-               [else 
-                (multiline-comment p)]))]
-          [else (multiline-comment p)]))))
+      (define f 
+        (lambda (p ac)
+          (let ([c (read-char p)])
+            (cond
+              [(eof-object? c) (multiline-error)]
+              [($char= #\| c) 
+               (let ([c (read-char p)])
+                 (cond
+                   [(eof-object? c) (multiline-error)]
+                   [($char= #\# c) ac]
+                   [else (f p (cons c ac))]))]
+              [($char= #\# c)
+               (let ([c (read-char p)])
+                 (cond
+                   [(eof-object? c) (multiline-error)]
+                   [($char= #\| c)
+                    (let ([v (multiline-comment p)])
+                      (if (string? v)
+                          (f p (apprev v 0 ac))
+                          (f p ac)))]
+                   [else 
+                    (f p (cons c (cons #\# ac)))]))]
+              [else (f p (cons c ac))]))))
+      (let ([ac (f p '())])
+        ((comment-handler)
+          (list->string (reverse ac))))))
   (define read-binary
     (lambda (ac chars p)
       (let ([c (read-char p)])
@@ -650,6 +663,13 @@
        (if (input-port? p)
            (read p)
            (error 'read "~s is not an input port" p))]))
+  (primitive-set! 'comment-handler
+    (make-parameter
+      (lambda (x) (void))
+      (lambda (x)
+        (unless (procedure? x)
+          (error 'comment-handler "~s is not a procedure" x))
+        x)))
   (let ()
     (define read-and-eval
       (lambda (p)
