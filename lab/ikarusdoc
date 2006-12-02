@@ -1,5 +1,4 @@
 #!/Users/aghuloum/.opt/bin/ikarus --script
-
 (define get-comments
   (lambda (file-name)
     (define comments '())
@@ -16,12 +15,24 @@
       [(f (car ls)) (cons (car ls) (filter f (cdr ls)))]
       [else (filter f (cdr ls))])))
 
+(define find-end
+  (lambda (str i)
+    (cond
+      [(fx= i (string-length str)) i]
+      [(memv (string-ref str i) '(#\newline #\space #\tab)) i]
+      [(char=? (string-ref str i) #\:) i]
+      [else (find-end str (fxadd1 i))])))
+
 (define matcher
   (lambda (tok)
     (let ([n (string-length tok)])
       (lambda (str)
-        (and (fx>= (string-length str) n)
-             (string=? (substring str 0 n) tok))))))
+        (let f ([i 0]) 
+          (let ([j (find-end str i)])
+            (or (string=? tok (substring str i j))
+                (and (fx< j (string-length str))
+                     (char=? (string-ref str j) #\:)
+                     (f (fxadd1 j))))))))))
 
 (define get-matching
   (lambda (token file-name)
