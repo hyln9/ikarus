@@ -162,6 +162,9 @@
                [($char= #\newline c)
                 (write-char #\\ p)
                 (write-char #\n p)] 
+               [($char= #\return c)
+                (write-char #\\ p)
+                (write-char #\r p)] 
                [($char= #\tab c)
                 (write-char #\\ p)
                 (write-char #\t p)]
