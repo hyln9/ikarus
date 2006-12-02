@@ -41,8 +41,7 @@
 #|Usage:
     find.ss token files ...
   Prints all the comments matching Hash-Bar-token that are found 
-  in the files.
-|#
+  in the files.  |#
 (define usage
   (lambda (me?)
     (printf "Usage: ~a token files ...\n" (or me? "find"))
@@ -68,3 +67,5 @@
         (lambda (file)
           (print-comments file (get-matching tok file)))
         files))))
+
+;;; vim:syntax=scheme
