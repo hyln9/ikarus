@@ -486,9 +486,8 @@
     (make-parameter
       (lambda args
         (apply print-error args)
-        (display "exiting\n" (console-output-port))
         (flush-output-port (console-output-port))
-        (exit -100))
+        (exit -1))
       (lambda (x)
         (if (procedure? x)
             x

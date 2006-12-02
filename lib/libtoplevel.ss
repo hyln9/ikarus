@@ -54,20 +54,28 @@
       (putprop '|#system| '*sc-expander* sysmod)
       (putprop 'scheme '*sc-expander* schmod))))
 
-(let-values ([(files args)
+(let-values ([(files script? args)
               (let f ([args (command-line-arguments)])
                 (cond
-                  [(null? args) (values '() '())]
+                  [(null? args) (values '() #f '())]
                   [(string=? (car args) "--")
-                   (values '() (cdr args))]
+                   (values '() #f (cdr args))]
+                  [(string=? (car args) "--script")
+                   (let-values ([(f* _ a*) (f (cdr args))])
+                     (values f* #t a*))]
                   [else
-                   (let-values ([(f* a*) (f (cdr args))])
-                     (values (cons (car args) f*) a*))]))])
+                   (let-values ([(f* script? a*) (f (cdr args))])
+                     (values (cons (car args) f*) script? a*))]))])
   (current-eval compile)
   (command-line-arguments args)
-  (printf "Ikarus Scheme (Build ~a)\n" (compile-time-date-string))
-  (display "Copyright (c) 2006 Abdulaziz Ghuloum\n\n")
-  (for-each load files)
-  (new-cafe))
+  (cond
+    [script? ; no greeting, no cafe
+     (for-each load files)
+     (exit 0)]
+    [else
+     (printf "Ikarus Scheme (Build ~a)\n" (compile-time-date-string))
+     (display "Copyright (c) 2006 Abdulaziz Ghuloum\n\n")
+     (for-each load files)
+     (new-cafe)]))
 
 
