@@ -159,6 +159,9 @@
                [(or ($char= #\" c) ($char= #\\ c))
                 (write-char #\\ p)
                 (write-char c p)]
+               [($char= #\newline c)
+                (write-char #\\ p)
+                (write-char #\n p)] 
                [($char= #\tab c)
                 (write-char #\\ p)
                 (write-char #\t p)]
