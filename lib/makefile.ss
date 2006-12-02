@@ -265,9 +265,9 @@
   (parameterize ([assembler-output #f] 
                  [expand-mode 'bootstrap]
                  [interaction-environment system-env])
-     (printf "compiling ~a ...\n" ifile)
-     (flush-output-port)
-     (compile-file ifile ofile 'replace)))
+     (printf "compiling ~a ... " ifile)
+     (compile-file ifile ofile 'replace)
+     (newline)))
 
 (for-each 
   (lambda (x)
