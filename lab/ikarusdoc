@@ -43,8 +43,8 @@
   Prints all the comments matching Hash-Bar-token that are found 
   in the files.  |#
 (define usage
-  (lambda (me?)
-    (printf "Usage: ~a token files ...\n" (or me? "find"))
+  (lambda ()
+    (printf "Usage: ikarusdoc token files ...\n")
     (printf " Prints all multiline comments matching #|token<comment>|# from the files\n")
     (exit 0)))
 
@@ -59,9 +59,9 @@
         ls))))
 
 (let ([args (command-line-arguments)])
-  (when (null? args) (usage #f))
+  (when (null? args) (usage))
   (let ([me (car args)] [args (cdr args)])
-    (when (null? args) (usage me))
+    (when (null? args) (usage))
     (let ([tok (car args)] [files (cdr args)])
       (for-each
         (lambda (file)
