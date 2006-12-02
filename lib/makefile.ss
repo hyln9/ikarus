@@ -116,60 +116,53 @@
     ))
 
 (define system-primitives
-  '(immediate? $unbound-object? $forward-ptr?
-    pointer-value 
-    primitive-ref primitive-set!
-    $fx= $fx< $fx<= $fx> $fx>= $fxzero?
-    $fx+ $fx- $fx* $fxadd1 $fxsub1 $fxquotient $fxremainder $fxmodulo 
-    $fxsll $fxsra $fxlognot $fxlogor $fxlogand $fxlogxor
-    $fixnum->char $char->fixnum
-    $char= $char< $char<= $char> $char>=
-    $car $cdr $set-car! $set-cdr!
+  '(
+
+    immediate? $unbound-object? $forward-ptr?  pointer-value
+    primitive-ref primitive-set!  $fx= $fx< $fx<= $fx> $fx>=
+    $fxzero?  $fx+ $fx- $fx* $fxadd1 $fxsub1 $fxquotient
+    $fxremainder $fxmodulo $fxsll $fxsra $fxlognot $fxlogor
+    $fxlogand $fxlogxor $fixnum->char $char->fixnum $char= $char<
+    $char<= $char> $char>= $car $cdr $set-car! $set-cdr!
     $make-vector $vector-ref $vector-set! $vector-length
     $make-string $string-ref $string-set! $string-length $string
     $symbol-string $symbol-unique-string $symbol-value
-    $set-symbol-string! $set-symbol-unique-string! $set-symbol-value!
-    $make-symbol $set-symbol-plist!  $symbol-plist
-    $sc-put-cte 
-    $record? $record/rtd? $record-set! $record-ref $record-rtd
-    $make-record $record
-    $base-rtd
-    $code? $code-reloc-vector $code-freevars $code-size $code-ref $code-set!
-    $code->closure list*->code* 
-    make-code code? set-code-reloc-vector! code-reloc-vector code-freevars
-    code-size code-ref code-set!
-    $frame->continuation $fp-at-base $current-frame $arg-list $seal-frame-and-call
+    $set-symbol-string! $set-symbol-unique-string!
+    $set-symbol-value!  $make-symbol $set-symbol-plist!
+    $symbol-plist $sc-put-cte $record? $record/rtd? $record-set!
+    $record-ref $record-rtd $make-record $record $base-rtd $code?
+    $code-reloc-vector $code-freevars $code-size $code-ref
+    $code-set!  $code->closure list*->code* make-code code?
+    set-code-reloc-vector! code-reloc-vector code-freevars code-size
+    code-ref code-set!  $frame->continuation $fp-at-base
+    $current-frame $arg-list $seal-frame-and-call
     $make-call-with-values-procedure $make-values-procedure
-    do-overflow collect
-    $make-tcbucket $tcbucket-next $tcbucket-key $tcbucket-val
-    $set-tcbucket-next! $set-tcbucket-val! $set-tcbucket-tconc!
-    $tcbucket-dlink-prev
-    $tcbucket-dlink-next
-    $set-tcbucket-dlink-prev!
-    $set-tcbucket-dlink-next!
-    call/cf trace-symbol! untrace-symbol! make-traced-procedure
-    fixnum->string 
-    vector-memq vector-memv
+    do-overflow collect $make-tcbucket $tcbucket-next $tcbucket-key
+    $tcbucket-val $set-tcbucket-next! $set-tcbucket-val!
+    $set-tcbucket-tconc!  $tcbucket-dlink-prev $tcbucket-dlink-next
+    $set-tcbucket-dlink-prev!  $set-tcbucket-dlink-next!  call/cf
+    trace-symbol! untrace-symbol! make-traced-procedure
+    fixnum->string vector-memq vector-memv
 
-    ;;; must open-code
-    $make-port/input
-    $make-port/output
-    $make-port/both
+    ;;; TODO: must open-code
+
+    $make-port/input $make-port/output $make-port/both
     $make-input-port $make-output-port $make-input/output-port
-    $port-handler
-    $port-input-buffer $port-input-index $port-input-size 
-    $port-output-buffer $port-output-index $port-output-size 
-    $set-port-input-index! $set-port-input-size!
+    $port-handler $port-input-buffer $port-input-index
+    $port-input-size $port-output-buffer $port-output-index
+    $port-output-size $set-port-input-index! $set-port-input-size!
     $set-port-output-index! $set-port-output-size!
 
     ;;; better open-code
+
     $write-char $read-char $peek-char $unread-char
 
     ;;; never open-code 
-    $reset-input-port! $close-input-port
-    $close-output-port $flush-output-port
-    *standard-output-port* *standard-error-port* *current-output-port*
-    *standard-input-port* *current-input-port*
+
+    $reset-input-port! $close-input-port $close-output-port
+    $flush-output-port *standard-output-port* *standard-error-port*
+    *current-output-port* *standard-input-port* *current-input-port*
+    
     ))
  
 
@@ -214,6 +207,7 @@
 
 
 (when (eq? "" "")
+  (error #f "SEVERELY OUT OF DATE!\n")
   (load "chez-compat.ss")
   (set! primitive-ref top-level-value)
   (set! primitive-set! set-top-level-value!)
@@ -300,3 +294,4 @@
 (system
   (format "cat ~a > ikarus.boot"
           (join " " (map caddr scheme-library-files))))
+

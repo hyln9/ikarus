@@ -4101,6 +4101,7 @@
       (else (match* (unannotate e) p empty-wrap '())))))
 ))
 
+;;; global macros
 
 (define-syntax with-syntax
    (lambda (x)
