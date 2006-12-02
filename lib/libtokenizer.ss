@@ -672,21 +672,25 @@
         x)))
   (let ()
     (define read-and-eval
-      (lambda (p)
+      (lambda (p eval)
         (let ([x (read p)])
           (unless (eof-object? x)
             (eval x)
-            (read-and-eval p)))))
+            (read-and-eval p eval)))))
 
     (primitive-set! 'load
-      (lambda (x)
-        (unless (string? x)
-          (error 'load "~s is not a string" x))
-        (let ([p (open-input-file x)])
-          (let ([x (read-initial p)])
-            (unless (eof-object? x)
-              (eval x)
-              (read-and-eval p)))
-          (close-input-port p)))))
+      (case-lambda
+        [(x) (load x eval)]
+        [(x eval)
+         (unless (string? x)
+           (error 'load "~s is not a string" x))
+         (unless (procedure? eval)
+           (error 'load "~s is not a procedure" eval))
+         (let ([p (open-input-file x)])
+           (let ([x (read-initial p)])
+             (unless (eof-object? x)
+               (eval x)
+               (read-and-eval p eval)))
+           (close-input-port p))])))
   )
 
