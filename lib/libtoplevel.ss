@@ -54,23 +54,28 @@
       (putprop '|#system| '*sc-expander* sysmod)
       (putprop 'scheme '*sc-expander* schmod))))
 
-(let-values ([(files script? args)
+(let-values ([(files script args)
               (let f ([args (command-line-arguments)])
                 (cond
                   [(null? args) (values '() #f '())]
                   [(string=? (car args) "--")
                    (values '() #f (cdr args))]
                   [(string=? (car args) "--script")
-                   (let-values ([(f* _ a*) (f (cdr args))])
-                     (values f* #t a*))]
+                   (let ([d (cdr args)])
+                     (cond
+                       [(null? d) 
+                        (error #f "--script requires a script name")]
+                       [else
+                        (values '() (car d) (cdr d))]))]
                   [else
-                   (let-values ([(f* script? a*) (f (cdr args))])
-                     (values (cons (car args) f*) script? a*))]))])
+                   (let-values ([(f* script a*) (f (cdr args))])
+                     (values (cons (car args) f*) script a*))]))])
   (current-eval compile)
   (command-line-arguments args)
   (cond
-    [script? ; no greeting, no cafe
+    [script ; no greeting, no cafe
      (for-each load files)
+     (load script)
      (exit 0)]
     [else
      (printf "Ikarus Scheme (Build ~a)\n" (compile-time-date-string))

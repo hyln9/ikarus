@@ -425,7 +425,8 @@
                      (error who "invalid sequence ~~~a" c)])))]
               [else 
                (write-char c p)
-               (f (fxadd1 i) args)]))))))
+               (f (fxadd1 i) args)]))))
+      (flush-output-port p)))
 
   (define fprintf
     (lambda (port fmt . args)
