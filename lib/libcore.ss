@@ -222,7 +222,10 @@
         (let ([s ($make-string n)])
           (fill-strings s s* 0))))))
 
-
+#|procedure:substring 
+  (substring str i j)
+  Returns a substring of str starting from index i (inclusive)
+  and ending with index j (exclusive).|#
 (let ()
   (define fill
     (lambda (s d si sj di)
@@ -851,7 +854,9 @@
                    (f x v n ($fxadd1 i)))))
         (error 'vector-memq "~s is not a vector" v))))
 
-(primitive-set! 'memv memq) ; INCORRECT, SHOULD USE EQV
+#|BUG: memv should be defined in terms of eqv? now that we have
+bignums.|#
+(primitive-set! 'memv memq)
 (primitive-set! 'vector-memv vector-memq)
  
 (primitive-set! 'list->string
