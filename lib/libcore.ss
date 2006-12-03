@@ -147,7 +147,15 @@
          (let ([i ($fxsub1 i)])
            (f x i (cons ($string-ref x i) ac)))]))))
 
-
+#|procedure:string=?
+synopsis:
+  (string=? s s* ...)
+description:
+  string=? takes 1 or more strings and returns #t if all strings are
+  equal.  Two strings s1 and s2 are string=? if they have the same 
+  length and if (char=? (string-ref s1 i) (string-ref s2 i)) for all
+  0 <= i < (string-length s1)
+|#
 (let ()
   (define bstring=?
     (lambda (s1 s2 i j)
@@ -188,8 +196,16 @@
            (strings=? s s* ($string-length s))
            (err s))])))
 
-
-
+#|procedure:string-append
+synopsis:
+  (string-append str ...)
+description:  
+  Takes 0 or more strings and returns a new string that results from
+  appending the contents of the strings together.
+reference-implementation:
+  (define (string-append . s*)
+    (list->string (apply append (map string->list s*))))
+|#
 (let ()
   ;; FIXME: make nonconsing on 0,1,2, and 3 args
   (define length*
@@ -222,7 +238,7 @@
         (let ([s ($make-string n)])
           (fill-strings s s* 0))))))
 
-#|procedure:substring 
+#|procedure:substring
   (substring str i j)
   Returns a substring of str starting from index i (inclusive)
   and ending with index j (exclusive).|#
