@@ -34,23 +34,6 @@
   ;;;   (set-port-output-index! port fixnum)
   ;;;   (set-port-output-size! port fixnum)
   ;;;
-  #;(begin
-    ;;; uncomment this form to use the compiler's definition
-    ;;; of ports; otherwise, ports are represented as vanilla
-    ;;; records.
-    ($define-record-syntax port 
-        (handler input-buffer input-index input-size
-                 output-buffer output-index output-size))
-    (define-syntax port? (identifier-syntax $port?))
-    (define-syntax input-port? 
-      (syntax-rules ()
-        [(_ x) (identifier? #'x)
-         (and ($port? x) (string? ($port-input-buffer x)))]))
-    (define-syntax output-port? 
-      (syntax-rules ()
-        [(_ x)  (identifier? #'x)
-         (and ($port? x) (string? ($port-output-buffer x)))])))
-  ;;;
   (primitive-set! 'port?
     (lambda (x) (port? x)))
   ;;;
@@ -389,8 +372,6 @@
        (if (output-port? p)
            ($flush-output-port p)
            (error 'flush-output-port "~s is not an output-port" p))])))
-
-
 
 (let ()
   ;;; INPUT FILES

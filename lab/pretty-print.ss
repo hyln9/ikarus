@@ -178,3 +178,33 @@
 ;;; pretty-print prints when it is called. If set to #f (the default),
 ;;; no limit is imposed; if set to a nonnegative fixnum n, at most n
 ;;; lines are printed.
+
+
+
+(let ()
+;;; <fmt>    ::= (quote symbol)
+;;;            | var
+;;;            | symbol
+;;;            | (read-macro string symbol)
+;;;            | (meta)
+;;;            | (bracket . fmt-list)
+;;;            | (alt fmt fmt*)
+;;;            | fmt-list
+;;; fmt-list ::= ()
+;;;            | (tab fmt ...)
+;;;            | (fmt tab ...)
+;;;            | (tab fmt . fmt-list)
+;;;            | (fmt ...)
+;;;            | (fmt . fmt-list)
+;;;            | (fill tab fmt ...)
+;;; tab      ::= int
+;;;            | #f
+
+
+  )
+
+(pretty-format 
+  '([letrec    (_ ((x _) ...) #t _ _ ...)]
+    [let       (_ x ([x _] 0 ...) #t _ _ ...)]
+    [cond      (_ (or (_ 0 _) (_ '=> 0 _)) ...)]
+
