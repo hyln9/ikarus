@@ -1,3 +1,26 @@
+#|procedure:new-cafe
+synopsis:
+  (new-cafe [eval])
+description:
+  The procedure new-cafe starts a new read-eval-print loop inside
+  the current cafe (if one exists).  It prompts the user for an
+  expression, evaluates it, prints the result back, and repeats the
+  process.  If new-cafe is called with an argument, eval, then that
+  argument must be a procedure that takes a single argument.  The 
+  eval procedure will be used to evaluate the expressions.
+  
+  Every time a new cafe is started, the prompt is changed to reflect
+  the depth of the current cafe (i.e. how many eof objects is takes
+  to exit the outermost cafe).  
+  
+  Input and output performed by the cafe can be changed by the
+  console-input-port and console-output-port parameters.
+  
+  If an error occurs during reading, evaluating, or printing an
+  expression, then the error is printed to the error-port and the
+  operations of the cafe resume as normal.|#
+#|FIXME:new-cafe
+  Be specific about what the error-port is |#
 (let ()
   (define with-error-handler
     (lambda (p thunk)
