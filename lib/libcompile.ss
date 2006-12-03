@@ -1102,7 +1102,8 @@
 
 
 
-
+;(define thunk-count 0)
+;(define total-count 0)
 (define (convert-closures prog)
   (define who 'convert-closures)
   (define (Expr* x*)
@@ -1136,6 +1137,10 @@
                                        cls*)
                                  (union (difference body-free fml*) 
                                         cls*-free)))])]))])
+          ;(set! total-count (fxadd1 total-count))
+          ;(when (null? free) 
+          ;  (set! thunk-count (fxadd1 thunk-count))
+          ;  (printf "EMPTY CLOSURE ~s/~s\n" thunk-count total-count))
           (values (make-closure (make-clambda-code (gensym) cls* free) free)
                   free))]))
   (define (Expr ex)
@@ -3623,7 +3628,9 @@
          (handle-cases (car cases) (cdr cases)))]))
   (record-case x
     [(codes list body)
-     (cons (cons 0 (Tail body '()))
+     (cons (list* 0
+                  (label (gensym))
+                  (Tail body '()))
            (map CodeExpr list))]))
 
 
@@ -3654,21 +3661,21 @@
           (movl (primref-loc 'car-error) cpr)
           (movl (int (argc-convention 1)) eax)
           (tail-indirect-cpr-call))
-
+    
     (list 0
           (label SL_cdr_error)
           (movl ebx (mem (fx- 0 wordsize) fpr))
           (movl (primref-loc 'cdr-error) cpr)
           (movl (int (argc-convention 1)) eax)
           (tail-indirect-cpr-call))
-
+    
     (list 0
           (label SL_top_level_value_error)
           (movl ebx (mem (fx- 0 wordsize) fpr))
           (movl (primref-loc 'top-level-value-error) cpr)
           (movl (int (argc-convention 1)) eax)
           (tail-indirect-cpr-call))
-
+    
     (let ([L_cwv_done (gensym)]
           [L_cwv_loop (gensym)]
           [L_cwv_multi_rp (gensym)]
@@ -3729,7 +3736,7 @@
           (cmpl (int closure-tag) ebx)
           (jne (label SL_nonprocedure))
           (tail-indirect-cpr-call)))
-
+    
     (let ([L_values_one_value (gensym)]
           [L_values_many_values (gensym)])
       (list 0 ; no freevars
@@ -3742,7 +3749,7 @@
           (label L_values_one_value)
           (movl (mem (fx- 0 wordsize) fpr) eax)
           (ret)))
-
+    
     (let ([L_apply_done (gensym)]
           [L_apply_loop (gensym)])
       (list 0 
@@ -3760,23 +3767,23 @@
           (label L_apply_done)
           (addl (int wordsize) eax)
           (tail-indirect-cpr-call)))
-
+    
     (list 0
           (label SL_nonprocedure)
           (movl cpr (mem (fx- 0 wordsize) fpr)) ; first arg
           (movl (primref-loc '$apply-nonprocedure-error-handler) cpr)
           (movl (int (argc-convention 1)) eax)
           (tail-indirect-cpr-call))
-
+    
     (list 0
           (label SL_multiple_values_error_rp)
           (movl (primref-loc '$multiple-values-error) cpr)
           (tail-indirect-cpr-call))
-
+    
     (list 0
           (label SL_multiple_values_ignore_rp)
           (ret))
-
+    
     (list 0
           (label SL_invalid_args)
           ;;;
@@ -3786,7 +3793,7 @@
           (movl (primref-loc '$incorrect-args-error-handler) cpr)
           (movl (int (argc-convention 2)) eax)
           (tail-indirect-cpr-call))
-
+    
     (let ([Lset (gensym)] [Lloop (gensym)])
       (list 0
           (label SL_foreign_call)
@@ -3809,7 +3816,7 @@
           (movl (pcb-ref 'frame-pointer) fpr)
           (movl (pcb-ref 'allocation-pointer) apr)
           (ret)))
-
+    
     (let ([L_cont_zero_args      (gensym)] 
           [L_cont_mult_args      (gensym)]
           [L_cont_one_arg        (gensym)]
@@ -3872,15 +3879,15 @@
          [p (insert-stack-overflow-checks p)]
          [p (insert-allocation-checks p)]
          [p (remove-local-variables p)]
-         [p (optimize-ap-check p)]
-         [ls* (generate-code p)]
-         [f (when (assembler-output)
-              (for-each 
-                (lambda (ls)
-                  (for-each (lambda (x) (printf "    ~s\n" x)) ls))
-                ls*))]
-         [code* (list*->code* ls*)])
-    (car code*)))
+         [p (optimize-ap-check p)])
+    (let ([ls* (generate-code p)])
+      (when (assembler-output)
+        (for-each 
+          (lambda (ls)
+            (for-each (lambda (x) (printf "    ~s\n" x)) ls))
+          ls*))
+      (let ([code* (list*->code* ls*)])
+        (car code*)))))
 
 (define compile-file
   (lambda (input-file output-file . rest)
