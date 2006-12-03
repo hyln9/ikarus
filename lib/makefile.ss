@@ -132,9 +132,9 @@
     $symbol-plist $sc-put-cte $record? $record/rtd? $record-set!
     $record-ref $record-rtd $make-record $record $base-rtd $code?
     $code-reloc-vector $code-freevars $code-size $code-ref
-    $code-set!  $code->closure list*->code* make-code code?
-    set-code-reloc-vector! code-reloc-vector code-freevars code-size
-    code-ref code-set!  $frame->continuation $fp-at-base
+    $code-set!  $code->closure  list*->code* make-code
+    code?  set-code-reloc-vector! code-reloc-vector code-freevars
+    code-size code-ref code-set!  $frame->continuation $fp-at-base
     $current-frame $arg-list $seal-frame-and-call
     $make-call-with-values-procedure $make-values-procedure
     do-overflow collect $make-tcbucket $tcbucket-next $tcbucket-key

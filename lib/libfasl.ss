@@ -25,7 +25,8 @@
 ;;;   "{" + field-count + rtd + fields
 ;;;   ">" + 4-bytes(i) : mark the next object with index i
 ;;;   "<" + 4-bytes(i) : dereference the object marked with index i
-;;;
+;;;   "x" : denotes code
+;;;   "T" : Thunk; followed by code.
 
 
 (let ()
@@ -195,6 +196,8 @@
                      (lambda (name) 
                        (make-graph ((record-field-accessor rtd name) x) h))
                      (record-type-field-names rtd))]))]
+             ;[(procedure? x)
+             ; (make-graph ($closure-code x) h)]
              [else (error 'fasl-write "~s is not fasl-writable" x)])]))))
   (define do-fasl-write 
     (lambda (x port)
