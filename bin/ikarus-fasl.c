@@ -358,6 +358,16 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     }
     return rtd;
   }
+  else if(c == 'T'){ /* thunk */
+    fprintf(stderr, "THUNK\n");
+    ikp proc = ik_alloc(pcb, align(disp_closure_data)) + closure_tag;
+    if(put_mark_index){
+      p->marks[put_mark_index] = proc;
+    }
+    ikp code = do_read(pcb, p);
+    ref(proc, -closure_tag) = code + off_code_data;
+    return proc;
+  }
   else if(c == '<'){
     int idx;
     fasl_read_buf(p, &idx, sizeof(int));
