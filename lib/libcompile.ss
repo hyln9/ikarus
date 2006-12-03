@@ -831,18 +831,20 @@
   (define who 'uncover-assigned/referenced)
   (define (Expr* x*)
     (for-each Expr x*))
+  (define (init-var x)
+    (set-var-assigned! x #f)
+    (set-var-referenced! x #f))
   (define (Expr x)
     (record-case x
       [(constant) (void)]
       [(var) (set-var-referenced! x #t)]
       [(primref) (void)]
       [(bind lhs* rhs* body)
-       (begin (Expr body) (Expr* rhs*))]
-      [(recbind lhs* rhs* body)
-       (error who "BUG:recbind cannot be here")
+       (for-each init-var lhs*)
        (begin (Expr body) (Expr* rhs*))]
       [(fix lhs* rhs* body)
-       (Expr* rhs*) 
+       (for-each init-var lhs*)
+       (Expr* rhs*)
        (Expr body)
        (when (ormap var-assigned lhs*)
          (error who "a fix lhs is assigned"))]
@@ -852,6 +854,7 @@
       [(clambda cls*)
        (for-each
          (lambda (cls)
+           (for-each init-var (clambda-case-arg* cls))
            (Expr (clambda-case-body cls)))
          cls*)]
       [(primcall rator rand*) (Expr* rand*)]
@@ -866,6 +869,168 @@
       [else (error who "invalid expression ~s" (unparse x))]))
   (Expr x)
   x)
+
+(define (copy-propagate x)
+  (define who 'copy-propagate)
+  (define the-void (make-primcall 'void '()))
+  (define (known-value x) 
+    (record-case x 
+      [(constant) x] ; known
+      [(primref)  x] ; known
+      [(bind lhs* rhs* body) (known-value body)]
+      [(fix lhs* rhs* body) (known-value body)]
+      [(seq e0 e1) (known-value e1)]
+      [else #f]))
+  (define (partition-referenced lhs* rhs*)
+    (cond
+      [(null? lhs*) (values '() '() the-void)]
+      [else
+       (let ([lhs (car lhs*)] [rhs (car rhs*)])
+         (let-values ([(lhs* rhs* eff*) 
+                       (partition-referenced
+                           (cdr lhs*) (cdr rhs*))])
+           (cond
+             [(var-referenced lhs)
+              (values (cons lhs lhs*) (cons rhs rhs*) eff*)]
+             [else
+              (values lhs* rhs* (mk-seq eff* (Effect rhs)))])))]))
+  (define (partition/assign-known lhs* rhs*)
+    (cond
+      [(null? lhs*) (values '() '() the-void)]
+      [else
+       (let ([lhs (car lhs*)] [rhs (car rhs*)])
+         (let-values ([(lhs* rhs* eff*) 
+                       (partition/assign-known
+                           (cdr lhs*) (cdr rhs*))])
+           (cond
+             [(and (not (var-assigned lhs)) (known-value rhs)) =>
+              (lambda (v)
+                (set-var-referenced! lhs v)
+                (values lhs* rhs* (mk-seq eff* rhs)))]
+             [else
+              (values (cons lhs lhs*) (cons rhs rhs*) eff*)])))]))
+  (define (do-bind lhs* rhs* body k) 
+    (let-values ([(lhs* rhs* eff0)
+                  (partition-referenced lhs* rhs*)])
+      (let ([rhs* (map Value rhs*)])
+        (let-values ([(lhs* rhs* eff1)
+                      (partition/assign-known lhs* rhs*)])
+          (let ([body
+                 (cond
+                   [(null? lhs*) (k body)]
+                   [else
+                    (make-bind lhs* rhs* (k body))])])
+            (mk-seq (mk-seq eff0 eff1) body))))))
+  (define (do-fix lhs* rhs* body k) 
+    (let-values ([(lhs* rhs* eff*) 
+                  (partition-referenced lhs* rhs*)])
+      (cond
+        [(null? lhs*) (k body)]
+        [else
+         (make-fix lhs* (map Value rhs*) (k body))])))
+  (define (mk-seq e0 e1)  ;;; keep e1 seq-free.
+    (cond
+      [(and (primcall? e0) (eq? (primcall-arg* e0) 'void)) e1]
+      [(seq? e1)
+       (make-seq (make-seq e0 (seq-e0 e1)) (seq-e1 e1))]
+      [else
+       (make-seq e0 e1)]))
+  (define (do-clambda x)
+    (make-clambda
+      (map (lambda (cls)
+             (record-case cls
+               [(clambda-case arg* proper body)
+                (make-clambda-case arg* proper 
+                   (Value body))]))
+           (clambda-cases x))))
+  (define (Effect x)
+    (record-case x
+      [(constant) the-void]
+      [(var)      the-void]
+      [(primref)  the-void]
+      [(bind lhs* rhs* body)
+       (do-bind lhs* rhs* body Effect)]
+      [(fix lhs* rhs* body)
+       (do-fix lhs* rhs* body Effect)]
+      [(conditional test conseq altern)
+       (make-conditional (Pred test) (Effect conseq) (Effect altern))]
+      [(seq e0 e1) (mk-seq (Effect e0) (Effect e1))]
+      [(clambda cls*) the-void]
+      [(primcall rator rand*) ; remove effect-free primcalls
+       (make-primcall rator (map Value rand*))]
+      [(funcall rator rand*)
+       (make-funcall (Value rator) (map Value rand*))]
+      [(appcall rator rand*)
+       (make-appcall (Value rator) (map Value rand*))]
+      [(forcall rator rand*) 
+       (make-forcall rator (map Value rand*))]
+      [(assign lhs rhs)
+       (unless (var-assigned lhs)
+         (error who "var ~s is not assigned" lhs))
+       (if (var-referenced lhs)
+           (make-assign lhs (Value rhs))
+           (Effect rhs))]
+      [else (error who "invalid effect expression ~s" (unparse x))]))
+  (define (Pred x)
+    (record-case x
+      [(constant) x]
+      [(var) 
+       (let ([r (var-referenced x)])
+         (if (constant? r) r x))]
+      [(primref) (make-constant #t)]
+      [(bind lhs* rhs* body)
+       (do-bind lhs* rhs* body Pred)]
+      [(fix lhs* rhs* body)
+       (do-fix lhs* rhs* body Pred)]
+      [(conditional test conseq altern)
+       (make-conditional (Pred test) (Pred conseq) (Pred altern))]
+      [(seq e0 e1) (mk-seq (Effect e0) (Pred e1))]
+      [(clambda cls*) (make-constant #t)]
+      [(primcall rator rand*) ;;; check for some effect-free/known prims
+       (make-primcall rator (map Value rand*))]
+      [(funcall rator rand*)
+       (make-funcall (Value rator) (map Value rand*))]
+      [(appcall rator rand*)
+       (make-appcall (Value rator) (map Value rand*))]
+      [(forcall rator rand*) 
+       (make-forcall rator (map Value rand*))]
+      [(assign lhs rhs)
+       (mk-seq (Effect x) (make-constant #t))]
+      [else (error who "invalid pred expression ~s" (unparse x))]))
+  (define (Value x)
+    (record-case x
+      [(constant) x]
+      [(var) 
+       (let ([r (var-referenced x)])
+         (case r
+           [(#t) x]
+           [(#f) (error who "Reference to a var ~s that should not be" x)]
+           [else r]))]
+      [(primref) x]
+      [(bind lhs* rhs* body)
+       (do-bind lhs* rhs* body Value)]
+      [(fix lhs* rhs* body)
+       (do-fix lhs* rhs* body Value)]
+      [(conditional test conseq altern)
+       (make-conditional (Pred test) (Value conseq) (Value altern))]
+      [(seq e0 e1) (mk-seq (Effect e0) (Value e1))]
+      [(clambda) (do-clambda x)]
+      [(primcall rator rand*)
+       (make-primcall rator (map Value rand*))]
+      [(funcall rator rand*)
+       (make-funcall (Value rator) (map Value rand*))]
+      [(appcall rator rand*)
+       (make-appcall (Value rator) (map Value rand*))]
+      [(forcall rator rand*) 
+       (make-forcall rator (map Value rand*))]
+      [(assign lhs rhs)
+       (mk-seq (Effect x) (make-primcall 'void '()))]
+      [else (error who "invalid value expression ~s" (unparse x))]))
+  (let ([x (Value x)])
+    ;;; since we messed up the references and assignments here, we
+    ;;; redo them
+    (uncover-assigned/referenced x)))
+
 
 
 
@@ -3045,6 +3210,8 @@
            [(null? arg*) ac]
            [else 
             (Effect (car arg*) (f (cdr arg*)))]))]
+      [(car) ;;; may signal an error
+       (do-value-prim op arg* ac)]
       [else 
        (error 'do-effect-prim "unhandled op ~s" op)]))
  (define (do-simple-test x Lt Lf ac)
@@ -3696,6 +3863,7 @@
          [p (optimize-letrec p)]
          ;[p (remove-letrec p)]
          [p (uncover-assigned/referenced p)]
+         [p (copy-propagate p)]
          [p (rewrite-assignments p)]
          [p (convert-closures p)]
          [p (lift-codes p)]
