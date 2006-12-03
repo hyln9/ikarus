@@ -2,5 +2,6 @@
 *.out
 *.fasl
 .gdb_history
+.vim*
 ikarus.boot.back
 .DS_Store

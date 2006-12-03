@@ -211,7 +211,7 @@
 (define-record constant (value))
 (define-record code-loc (label))
 (define-record foreign-label (label))
-(define-record var (name assigned))
+(define-record var (name assigned referenced))
 (define-record cp-var (idx))
 (define-record frame-var (idx))
 (define-record new-frame (base-idx size body))
@@ -241,7 +241,7 @@
 (define-record assign (lhs rhs))
 
 (define (unique-var x)
-  (make-var (gensym x) #f))
+  (make-var (gensym x) #f #f))
 
 
 (define (make-bind^ lhs* rhs* body)
@@ -771,6 +771,8 @@
        void))
 
 
+
+;;; This pass was here before optimize-letrec was implemented.
 (define (remove-letrec x)
   (define who 'remove-letrec)
   (define (Expr x)
@@ -825,24 +827,25 @@
 
 
 
-(define (uncover-assigned x)
-  (define who 'uncover-assigned)
+(define (uncover-assigned/referenced x)
+  (define who 'uncover-assigned/referenced)
   (define (Expr* x*)
     (for-each Expr x*))
   (define (Expr x)
     (record-case x
       [(constant) (void)]
-      [(var) (void)]
+      [(var) (set-var-referenced! x #t)]
       [(primref) (void)]
       [(bind lhs* rhs* body)
        (begin (Expr body) (Expr* rhs*))]
       [(recbind lhs* rhs* body)
+       (error who "BUG:recbind cannot be here")
        (begin (Expr body) (Expr* rhs*))]
       [(fix lhs* rhs* body)
        (Expr* rhs*) 
        (Expr body)
        (when (ormap var-assigned lhs*)
-         (error 'uncover-assigned "a fix lhs is assigned"))]
+         (error who "a fix lhs is assigned"))]
       [(conditional test conseq altern)
        (begin (Expr test) (Expr conseq) (Expr altern))]
       [(seq e0 e1) (begin (Expr e0) (Expr e1))]
@@ -861,7 +864,8 @@
        (set-var-assigned! lhs #t)
        (Expr rhs)]
       [else (error who "invalid expression ~s" (unparse x))]))
-  (Expr x))
+  (Expr x)
+  x)
 
 
 
@@ -929,9 +933,6 @@
   (Expr x))
  
 
-(define (remove-assignments x)
-    (uncover-assigned x)
-    (rewrite-assignments x))
   
 
 
@@ -3694,7 +3695,8 @@
 ;;;         [foo (analyze-cwv p)]
          [p (optimize-letrec p)]
          ;[p (remove-letrec p)]
-         [p (remove-assignments p)]
+         [p (uncover-assigned/referenced p)]
+         [p (rewrite-assignments p)]
          [p (convert-closures p)]
          [p (lift-codes p)]
          [p (introduce-primcalls p)]

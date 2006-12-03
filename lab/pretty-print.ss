@@ -179,6 +179,411 @@
 ;;; no limit is imposed; if set to a nonnegative fixnum n, at most n
 ;;; lines are printed.
 
+(let ()
+
+  (begin ;;; symbol printing helpers
+    (define initial?
+      (lambda (c)
+        (or (letter? c) (special-initial? c))))
+    (define letter?
+      (lambda (c)
+        (or (and ($char<= #\a c) ($char<= c #\z))
+            (and ($char<= #\A c) ($char<= c #\Z)))))
+    (define digit?
+      (lambda (c)
+        (and ($char<= #\0 c) ($char<= c #\9))))
+    (define special-initial? 
+      (lambda (x)
+        (memq x '(#\! #\$ #\% #\& #\* #\/ #\: #\< #\= #\> #\? #\^ #\_ #\~))))
+    (define subsequent?
+      (lambda (x)
+        (or (initial? x)
+            (digit? x)
+            (special-subsequent? x))))
+    (define special-subsequent?
+      (lambda (x) 
+        (memq x '(#\+ #\- #\. #\@))))
+    (define subsequent*?
+      (lambda (str i n)
+        (or ($fx= i n)
+            (and (subsequent? ($string-ref str i))
+                 (subsequent*? str ($fxadd1 i) n)))))
+    (define valid-symbol-string?
+      (lambda (str)
+        (or (let ([n ($string-length str)])
+              (and ($fx>= n 1)
+                   (initial? ($string-ref str 0))
+                   (subsequent*? str 1 n)))
+            (string=? str "+")
+            (string=? str "-")
+            (string=? str "..."))))
+  
+    (define write-symbol-esc-loop
+      (lambda (x i n p)
+        (unless ($fx= i n)
+          (let ([c ($string-ref x i)])
+            (when (memq c '(#\\ #\|))
+              (write-char #\\ p))
+            (write-char c p))
+          (write-symbol-esc-loop x ($fxadd1 i) n p))))
+    (define write-symbol-esc
+      (lambda (x p)
+        (write-char #\| p)
+        (write-symbol-esc-loop x 0 ($string-length x) p)
+        (write-char #\| p)))
+    (define write-symbol
+      (lambda (x p)
+        (let ([str (symbol->string x)])
+          (if (valid-symbol-string? str)
+              (write-char* str p)
+              (write-symbol-esc str p))))))
+  (define (symbol-output symbol) ;-> var output box
+    (define (symbol-output-length str esc?)
+      (define (subs s n i)
+        (cond
+          [(fx= i n) n]
+          [(subsequent? (string-ref s i))
+           (subs s n (fxadd1 i))]
+          [else
+           (esc s n i i)]))
+      (define (esc s n i len)
+        (cond
+          [(fx= i n) (fx+ len 2)] ; for the bars
+          [(memv (string-ref s i) '(#\\ #\|))
+           (esc s n (fx+ i 1) (fx+ len 2))] ;;; for \ escape
+          [else
+           (esc s n (fx+ i 1) (fx+ len 1))]))
+      (define (init s n)
+        (cond
+          [(fx= n 0) 2] ; ||
+          [else
+           (case (string-ref s 0)
+             [(#\+ #\-) 
+              (if (fx= n 1)
+                  1
+                  (esc s n 1 1))]
+             [(#\.)
+              (if (and (fx= n 3) 
+                       (char=? (string-ref s 1) #\.)
+                       (char=? (string-ref s 2) #\.))
+                  3
+                  (esc s n 1 1))]
+             [else
+              (if (initial? (string-ref s 0))
+                  (subs s n 1)
+                  (esc s n 1 1))])]))
+      (if esc?
+          (esc str (string-length str) 0 0)
+          (init str (string-length str))))
+    (if (gensym? symbol)
+        `#(var ,symbol
+               ,(symbol-output-length (gensym->string symbol) #f)
+               ,(symbol-output-length (gensym->unique-string symbol) #t))
+        `#(var ,symbol 
+               ,(symbol-output-length (symbol->string symbol) #f))))
+  (define (number-output number) ; -> string
+    (number->string number))
+  (define (char-output char) ; -> string
+    (let ([i (char->integer char)])
+      (cond
+        [(fx< i (vector-length char-table)) 
+         (string-append "#\\" (vector-ref char-table i))]
+        [(fx< i 127)
+         (string-append "#\\" (string char))]
+        [(fx= i 127) "#\\del"]
+        [else (string-append "#\\+" (number->string i))])))
+  (define char-table ; first nonprintable chars
+    '#("nul" "soh" "stx" "etx" "eot" "enq" "ack" "bel" "bs" "tab" "newline"
+       "vt" "ff" "return" "so" "si" "dle" "dc1" "dc2" "dc3" "dc4" "nak" 
+       "syn" "etb" "can" "em" "sub" "esc" "fs" "gs" "rs" "us" "space"))
+  (define (string-output str) ; -> string | append
+    (define (f s n i len)
+      (cond
+        [(fx= i n) len]
+        [(memv (string-ref s i) '(#\newline #\" #\\ #\tab #\return))
+         (f s n (fxadd1 i) (fx+ len 2))]
+        [else 
+         (f s n (fxadd1 i) (fxadd1 len))]))
+    (let ([n (string-length str)])
+      (let ([m (f str (string-length str) 0 0)])
+        (if (fx= n m)
+            `#(append "\"" ,str "\"")
+            `#(string ,m ,str)))))
+
+  (define (make-output x h i) ;-> output, i
+    (cond
+      [(or (pair? x) (vector? x))
+       (cond
+         [(get-hash-table h x #f) =>
+          (lambda (n)
+            (cond
+              [(fx< n 0) ;;; shared and already printed
+               (values (ref-output n) i)]
+              [(fx= n 0) ;;; not shared
+               (if (pair? x)
+                   (pair-output x h i)
+                   (vector-output x h i))]
+              [else ;;; shared and this is the first ref
+               (let ([i (fx- i 1)])
+                 (put-hash-table! h x i)
+                 (let-values ([(no ni) 
+                               (if (pair? x)
+                                   (pair-output x h i)
+                                   (vector-output x h i))])
+                   (values `#(append ,(mark-output i) ,no) ni)))]))]
+         [else
+          (if (pair? x)
+              (pair-output x h i)
+              (vector-output x h i))])]
+      [(symbol? x) (values (symbol-output x) i)]
+      [(number? x) (values (number-output x) i)]
+      [(char? x) (values (char-output x) i)]
+      [(boolean? x) (values (if x "#t" "#f") i)]
+      [(null? x) (values "()" i)]
+      [(eq? x (void)) (values "#<void>" i)] 
+      [(eof-object? x) (values "#!eof" i)]
+      [(bwp-object? x) (values "#!bwp" i)]
+      [(hash-table? x) (values "#<hash-table>" i)]
+      [($unbound-object? x) (values "#<unbound-object>" i)]
+      [($forward-ptr? x) (values "#<forward-pointer>" i)]
+      [else (values "#<unknown>" i)]))
+  (define (vector-output x h i)
+    (let* ([n (vector-length x)]
+           [v (make-vector n)])
+      (let f ([idx 0] [i i])
+        (cond
+          [(fx= idx n) 
+           (values `#(vector ,v) i)]
+          [else
+           (let-values ([(o i)
+                         (make-output (vector-ref x idx) i)])
+             (vector-set! v idx o)
+             (f (fxadd1 idx) i))]))))
+  (define (make-pair-output x h i)
+    ;;; first cut, assume no special formatting
+      (errrrrrrrrrrrrrr))
+
+
+
+  (define write-list
+    (lambda (x p h i)
+      (cond
+       [(and (pair? x) 
+             (or (not (get-hash-table h x #f))
+                 (fxzero? (get-hash-table h x 0))))
+        (write-char #\space p)
+        (write-list (cdr x) p h 
+          (writer (car x) p h i))]
+       [(null? x) i]
+       [else
+        (write-char #\space p)
+        (write-char #\. p)
+        (write-char #\space p)
+        (writer x p h i)])))
+  (define write-vector
+    (lambda (x p h i)
+      (write-char #\# p)
+      (write-char #\( p)
+      (let ([n (vector-length x)])
+        (let ([i 
+               (cond
+                 [(fx> n 0)
+                  (let f ([idx 1] [i (writer (vector-ref x 0) p h i)])
+                    (cond
+                      [(fx= idx n)
+                       i]
+                      [else
+                       (write-char #\space p)
+                       (f (fxadd1 idx)
+                          (writer (vector-ref x idx) p h i))]))]
+                 [else i])])
+           (write-char #\) p)
+           i))))
+  (define write-record
+    (lambda (x p h i)
+      (write-char #\# p)
+      (write-char #\[ p)
+      (let ([i (writer (record-name x) p h i)])
+        (let ([n (record-length x)])
+          (let f ([idx 0] [i i])
+            (cond
+              [(fx= idx n)
+               (write-char #\] p)
+               i]
+              [else 
+               (write-char #\space p)
+               (f (fxadd1 idx) 
+                  (writer (record-ref x idx) p h i))]))))))
+  (define macro
+    (lambda (x)
+      (define macro-forms
+        '([quote .            "'"]
+          [quasiquote .       "`"]
+          [unquote .          ","]
+          [unquote-splicing . ",@"]
+          [syntax .           "#'"]
+          [|#primitive| .     "#%"]))
+      (and (pair? x)
+           (let ([d ($cdr x)])
+             (and (pair? d)
+                  (null? ($cdr d))))
+           (assq ($car x) macro-forms))))
+  (define write-pair
+    (lambda (x p h i)
+      (write-char #\( p)
+      (let ([i (writer (car x) p h i)])
+        (let ([i (write-list (cdr x) p h i)])
+          (write-char #\) p)
+          i))))
+  (define write-ref
+    (lambda (n p)
+      (write-char #\# p)
+      (write-fixnum (fx- -1 n) p)
+      (write-char #\# p)))
+  (define write-mark
+    (lambda (n p)
+      (write-char #\# p)
+      (write-fixnum (fx- -1 n) p)
+      (write-char #\= p)))
+  (define writer
+    (lambda (x p h i)
+      (cond
+        [(pair? x)
+         (pretty-pair x p h i)]
+        [(symbol? x)
+         (if (gensym? x)
+             (write-gensym x p h i)
+             (begin (write-symbol x p) i))]
+        [(fixnum? x)
+         (write-fixnum x p)
+         i]
+        [(string? x)
+         (write-string x p)
+         i]
+        [(boolean? x)
+         (write-char* (if x "#t" "#f") p)
+         i]
+        [(char? x)
+         (write-character x p)
+         i]
+        [(procedure? x)
+         (write-char* "#<procedure>" p)
+         i]
+        [(output-port? x)
+         (write-char* "#<output-port " p)
+         (let ([i (writer (output-port-name x) p #t h i)])
+           (write-char #\> p)
+           i)]
+        [(input-port? x)
+         (write-char* "#<input-port " p)
+         (let ([i (writer (input-port-name x) p #t h i)])
+           (write-char #\> p)
+           i)]
+        [(vector? x)
+         (write-shareable x p h i write-vector)]
+        [(null? x) 
+         (write-char #\( p)
+         (write-char #\) p)
+         i]
+        [(eq? x (void)) 
+         (write-char* "#<void>" p)
+         i]
+        [(eof-object? x)
+         (write-char* "#!eof" p)
+         i]
+        [(bwp-object? x)
+         (write-char* "#!bwp" p)
+         i]
+        [(record? x)
+         (let ([printer (record-printer x)])
+           (if (procedure? printer)
+               (begin (printer x p) i)
+               (write-shareable x p h i write-record)))]
+        [(hash-table? x)
+         (write-char* "#<hash-table>" p)
+         i]
+        [($unbound-object? x)
+         (write-char* "#<unbound-object>" p)
+         i]
+        [($forward-ptr? x)
+         (write-char* "#<forward-ptr>" p)
+         i]
+        [(number? x)
+         (write-char* (number->string x) p)
+         i]
+        [else 
+         (write-char* "#<unknown>" p)
+         i])))
+
+
+  (define (hasher x h)
+    (define (vec-graph x i j h)
+      (unless (fx= i j)
+        (graph (vector-ref x i) h)
+        (vec-graph x (fxadd1 i) j h)))
+    (define (vec-dynamic x i j h)
+      (unless (fx= i j)
+        (dynamic (vector-ref x i) h)
+        (vec-dynamic x (fxadd1 i) j h))) 
+    (define (graph x h)
+      (cond
+        [(pair? x)
+         (cond
+           [(get-hash-table h x #f) =>
+            (lambda (n)
+              (put-hash-table! h x (fxadd1 n)))]
+           [else
+            (put-hash-table! h x 0)
+            (graph (car x) h)
+            (graph (cdr x) h)])]
+        [(vector? x)
+         (cond
+           [(get-hash-table h x #f) =>
+            (lambda (n)
+              (put-hash-table! h x (fxadd1 n)))]
+           [else
+            (put-hash-table! h x 0)
+            (vec-graph x 0 (vector-length x) h)])]
+        [(gensym? x)
+         (cond
+           [(get-hash-table h x #f) =>
+            (lambda (n)
+              (put-hash-table! h x (fxadd1 n)))])]))
+    (define (dynamic x h)
+      (cond
+        [(pair? x)
+         (cond
+           [(get-hash-table h x #f) =>
+            (lambda (n)
+              (put-hash-table! h x (fxadd1 n)))]
+           [else
+            (put-hash-table! h x 0)
+            (dynamic (car x) h)
+            (dynamic (cdr x) h)
+            (when (and (get-hash-table h x #f)
+                       (fxzero? (get-hash-table h x #f)))
+              (put-hash-table! h x #f))])]
+        [(vector? x)
+         (cond
+           [(get-hash-table h x #f) =>
+            (lambda (n)
+              (put-hash-table! h x (fxadd1 n)))]
+           [else
+            (put-hash-table! h x 0)
+            (vec-dynamic x 0 (vector-length x) h)
+            (when (and (get-hash-table h x #f)
+                       (fxzero? (get-hash-table h x #f)))
+              (put-hash-table! h x #f))])])) 
+    (if (print-graph) 
+        (graph x h)
+        (dynamic x h)))
+
+  (define (write x p)
+    (let ([h (make-hash-table)])
+      (hasher x h)
+      (writer x p h 0))
+    (flush-output-port p))
+
 
 
 (let ()
