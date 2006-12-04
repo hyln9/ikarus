@@ -1830,7 +1830,7 @@
                    (fx= (frame-var-idx rhs) i))
               ;;; value of rhs is already in f[i]
               ;;; just mark it live
-              (evalrand* (cdr rand*) (fx+ i 1) (fx+ si 1) r (cons si live) ac)]
+              (evalrand* (cdr rand*) (fx+ i 1) (fx+ si 1) r live ac)]
              [(fx= i si)
               (make-seq 
                 (make-assign vsi rhs)
@@ -3910,4 +3910,5 @@
         (proc)))))
 
 )
+
 

@@ -1,6 +1,6 @@
 
-#CFLAGS = -I/opt/local/include -Wall -DNDEBUG -O3
-CFLAGS = -I/opt/local/include -Wall -g
+CFLAGS = -I/opt/local/include -Wall -DNDEBUG -O3
+#CFLAGS = -I/opt/local/include -Wall -g
 LDFLAGS = -L/opt/local/lib -g -ldl -lgmp -rdynamic
 CC = gcc
 all: ikarus

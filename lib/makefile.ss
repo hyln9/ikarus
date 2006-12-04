@@ -117,7 +117,7 @@
 
 (define system-primitives
   '(
-
+$closure-code 
     immediate? $unbound-object? $forward-ptr?  pointer-value
     primitive-ref primitive-set!  $fx= $fx< $fx<= $fx> $fx>=
     $fxzero?  $fx+ $fx- $fx* $fxadd1 $fxsub1 $fxquotient
@@ -132,7 +132,7 @@
     $symbol-plist $sc-put-cte $record? $record/rtd? $record-set!
     $record-ref $record-rtd $make-record $record $base-rtd $code?
     $code-reloc-vector $code-freevars $code-size $code-ref
-    $code-set!  $code->closure  list*->code* make-code
+    $code-set!  $code->closure list*->code* make-code
     code?  set-code-reloc-vector! code-reloc-vector code-freevars
     code-size code-ref code-set!  $frame->continuation $fp-at-base
     $current-frame $arg-list $seal-frame-and-call
