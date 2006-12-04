@@ -1618,10 +1618,11 @@
            (make-primcall 'void '()))
          body)]))
   (define (closure-size x)
-    #|FIXME: closures with free vars should not alloc|#
     (record-case x 
       [(closure code free*)
-       (align (fx+ disp-closure-data (fx* (length free*) wordsize)))]
+       (if (null? free*)
+           0
+           (align (fx+ disp-closure-data (fx* (length free*) wordsize))))]
       [else (error 'closure-size "~s is not a closure" x)]))
   (define (sum ac ls)
     (cond
