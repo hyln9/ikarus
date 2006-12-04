@@ -234,7 +234,6 @@
 (define-record clambda (cases))
 (define-record clambda-code (label cases free))
 (define-record closure (code free*))
-(define-record thunk (code))
 (define-record funcall (op rand*))
 (define-record appcall (op rand*))
 (define-record forcall (op rand*))
@@ -1104,8 +1103,6 @@
 
 
 
-;(define thunk-count 0)
-;(define total-count 0)
 (define (convert-closures prog)
   (define who 'convert-closures)
   (define (Expr* x*)
@@ -1139,10 +1136,6 @@
                                        cls*)
                                  (union (difference body-free fml*) 
                                         cls*-free)))])]))])
-          ;(set! total-count (fxadd1 total-count))
-          ;(when (null? free) 
-          ;  (set! thunk-count (fxadd1 thunk-count))
-          ;  (printf "EMPTY CLOSURE ~s/~s\n" thunk-count total-count))
           (values (make-closure (make-clambda-code (gensym) cls* free) free)
                   free))]))
   (define (Expr ex)
@@ -1613,15 +1606,19 @@
         (make-primcall 'void '()))
       body))
   (define (check-const n body)
-    (make-seq
-      (make-conditional 
-        (make-primcall '$ap-check-const
-          (list (make-constant n)))
-        (make-forcall "ik_collect" ;(make-primref 'do-overflow) 
-                      (list (make-constant (fx+ n 4096))))
-        (make-primcall 'void '()))
-      body))
+    (cond
+      [(fxzero? n) body]
+      [else
+       (make-seq
+         (make-conditional 
+           (make-primcall '$ap-check-const
+             (list (make-constant n)))
+           (make-forcall "ik_collect" ;(make-primref 'do-overflow) 
+                         (list (make-constant (fx+ n 4096))))
+           (make-primcall 'void '()))
+         body)]))
   (define (closure-size x)
+    #|FIXME: closures with free vars should not alloc|#
     (record-case x 
       [(closure code free*)
        (align (fx+ disp-closure-data (fx* (length free*) wordsize)))]
@@ -1727,7 +1724,7 @@
   (CodesExpr x))
 
 
-              
+
 (define (remove-local-variables x)
   (define who 'remove-local-variables)
   (define (simple* x* r)
@@ -3245,66 +3242,6 @@
       [(code-loc label) (label-address label)]
       [(primref op) (primref-loc op)]
       [else (error 'Simple "what ~s" x)]))
-  (define (closure-size x)
-    (align (fx+ disp-closure-data
-                (fx* wordsize (length (closure-free* x))))))
-  (define (assign-codes rhs* n* i ac)
-    (cond
-      [(null? rhs*) ac]
-      [else
-       (record-case (car rhs*)
-         [(closure label free*)
-          (cons (movl (Simple label) (mem i apr))
-                (assign-codes 
-                  (cdr rhs*) (cdr n*) (fx+ i (car n*)) ac))])]))
-  (define (whack-free x i n* rhs* ac)
-    (cond
-      [(null? rhs*) ac]
-      [else
-       (let ([free (closure-free* (car rhs*))])
-         (let f ([free free] [j (fx+ i disp-closure-data)])
-           (cond
-             [(null? free) 
-              (whack-free x (fx+ i (car n*)) (cdr n*) (cdr rhs*) ac)]
-             [(eq? (car free) x)
-              (cons
-                (movl eax (mem j apr))
-                (f (cdr free) (fx+ j wordsize)))]
-             [else (f (cdr free) (fx+ j wordsize))])))]))
-  (define (assign-nonrec-free* rhs* all-rhs* n* seen ac)
-    (cond
-      [(null? rhs*) ac]
-      [else
-       (let f ([ls (closure-free* (car rhs*))] [seen seen])
-         (cond
-           [(null? ls) 
-            (assign-nonrec-free* (cdr rhs*) all-rhs* n* seen ac)]
-           [(memq (car ls) seen) (f (cdr ls) seen)]
-           [else
-            (cons
-              (movl (Simple (car ls)) eax)
-              (whack-free (car ls) 0 n* all-rhs*
-                (f (cdr ls) (cons (car ls) seen))))]))]))
-  (define (assign-rec-free* lhs* rhs* all-n* ac)
-    (list* (movl apr eax)
-           (addl (int closure-tag) eax)
-           (let f ([lhs* lhs*] [n* all-n*])
-             (cond
-               [(null? (cdr lhs*)) 
-                (cons
-                  (movl eax (Simple (car lhs*)))
-                  (whack-free (car lhs*) 0 all-n* rhs* ac))]
-               [else
-                (cons
-                  (movl eax (Simple (car lhs*)))
-                  (whack-free (car lhs*) 0 all-n* rhs*
-                    (cons
-                      (addl (int (car n*)) eax)
-                      (f (cdr lhs*) (cdr n*)))))]))))
-  (define (sum ac ls)
-    (cond
-      [(null? ls) ac]
-      [else (sum (fx+ ac (car ls)) (cdr ls))]))
   (define (do-fix lhs* rhs* ac)
     ;;; 1. first, set the code pointers in the right places
     ;;; 2. next, for every variable appearing in the rhs* but is not in
@@ -3313,11 +3250,110 @@
     ;;;    value, store it on the stack, and set it everywhere it occurs
     ;;;    in the rhs*
     ;;; 4. that's it.
-    (let* ([n* (map closure-size rhs*)])
-      (assign-codes rhs* n* 0
-        (assign-nonrec-free* rhs* rhs* n* lhs*
-          (assign-rec-free* lhs* rhs* n*
-            (cons (addl (int (sum 0 n*)) apr) ac))))))
+    (define (closure-size x)
+      (align (fx+ disp-closure-data
+                  (fx* wordsize (length (closure-free* x))))))
+    (define (assign-codes rhs* n* i ac)
+      (cond
+        [(null? rhs*) ac]
+        [else
+         (record-case (car rhs*)
+           [(closure label free*)
+            (cons (movl (Simple label) (mem i apr))
+                  (assign-codes 
+                    (cdr rhs*) (cdr n*) (fx+ i (car n*)) ac))])]))
+    (define (whack-free x i n* rhs* ac)
+      (cond
+        [(null? rhs*) ac]
+        [else
+         (let ([free (closure-free* (car rhs*))])
+           (let f ([free free] [j (fx+ i disp-closure-data)])
+             (cond
+               [(null? free) 
+                (whack-free x (fx+ i (car n*)) (cdr n*) (cdr rhs*) ac)]
+               [(eq? (car free) x)
+                (cons
+                  (movl eax (mem j apr))
+                  (f (cdr free) (fx+ j wordsize)))]
+               [else (f (cdr free) (fx+ j wordsize))])))]))
+    (define (assign-nonrec-free* rhs* all-rhs* n* seen ac)
+      (cond
+        [(null? rhs*) ac]
+        [else
+         (let f ([ls (closure-free* (car rhs*))] [seen seen])
+           (cond
+             [(null? ls) 
+              (assign-nonrec-free* (cdr rhs*) all-rhs* n* seen ac)]
+             [(memq (car ls) seen) (f (cdr ls) seen)]
+             [else
+              (cons
+                (movl (Simple (car ls)) eax)
+                (whack-free (car ls) 0 n* all-rhs*
+                  (f (cdr ls) (cons (car ls) seen))))]))]))
+    (define (assign-rec-free* lhs* rhs* all-n* ac)
+      (list* (movl apr eax)
+             (addl (int closure-tag) eax)
+             (let f ([lhs* lhs*] [n* all-n*])
+               (cond
+                 [(null? (cdr lhs*)) 
+                  (cons
+                    (movl eax (Simple (car lhs*)))
+                    (whack-free (car lhs*) 0 all-n* rhs* ac))]
+                 [else
+                  (cons
+                    (movl eax (Simple (car lhs*)))
+                    (whack-free (car lhs*) 0 all-n* rhs*
+                      (cons
+                        (addl (int (car n*)) eax)
+                        (f (cdr lhs*) (cdr n*)))))]))))
+    (define (sum ac ls)
+      (cond
+        [(null? ls) ac]
+        [else (sum (fx+ ac (car ls)) (cdr ls))]))
+    (define partition
+      (lambda (lhs* rhs*)
+        (let f ([lhs* lhs*] [rhs* rhs*] 
+                [tlhs* '()] [trhs* '()]
+                [clhs* '()] [crhs* '()])
+          (cond
+            [(null? lhs*)
+             (values tlhs* trhs* clhs* crhs*)]
+            [(null? (closure-free* (car rhs*)))
+             (f (cdr lhs*) (cdr rhs*) 
+                (cons (car lhs*) tlhs*) (cons (car rhs*) trhs*)
+                clhs* crhs*)]
+            [else
+             (f (cdr lhs*) (cdr rhs*) 
+                tlhs* trhs*
+                (cons (car lhs*) clhs*) 
+                (cons (car rhs*) crhs*))]))))
+    (define do-closures
+      (lambda (lhs* rhs* ac)
+        (let* ([n* (map closure-size rhs*)])
+          (assign-codes rhs* n* 0
+            (assign-nonrec-free* rhs* rhs* n* lhs*
+              (assign-rec-free* lhs* rhs* n*
+                (cons (addl (int (sum 0 n*)) apr) ac)))))))
+    (define do-thunks
+      (lambda (lhs* rhs* ac)
+        (cond
+          [(null? lhs*) ac]
+          [else
+           (do-thunks (cdr lhs*) (cdr rhs*)
+              (cons (movl (obj (car rhs*)) 
+                          (idx->frame-loc
+                            (frame-var-idx (car lhs*))))
+                    ac))])))
+    (let-values ([(tlhs* trhs* clhs* crhs*)
+                  (partition lhs* rhs*)])
+      (cond
+        [(null? clhs*)
+         (do-thunks tlhs* trhs* ac)]
+        [(null? tlhs*)
+         (do-closures clhs* crhs* ac)]
+        [else
+         (do-thunks tlhs* trhs* 
+           (do-closures clhs* crhs* ac))])))
   (define (frame-adjustment offset)
     (fx* (fxsub1 offset) (fx- 0 wordsize)))
   (define (NonTail x ac) 
@@ -3333,18 +3369,22 @@
       [(primref c)
        (cons (movl (primref-loc c) eax) ac)]
       [(closure label arg*)
-       (let f ([arg* arg*] [off disp-closure-data])
-         (cond
-           [(null? arg*)
-            (list* (movl (Simple label) (mem 0 apr))
-                   (movl apr eax)
-                   (addl (int (align off)) apr)
-                   (addl (int closure-tag) eax)
-                   ac)]
-           [else
-            (list* (movl (Simple (car arg*)) eax)
-                   (movl eax (mem off apr))
-                   (f (cdr arg*) (fx+ off wordsize)))]))]
+       (cond
+         [(null? arg*)
+          (cons (movl (obj x) eax) ac)]
+         [else
+          (let f ([arg* arg*] [off disp-closure-data])
+            (cond
+              [(null? arg*)
+               (list* (movl (Simple label) (mem 0 apr))
+                      (movl apr eax)
+                      (addl (int (align off)) apr)
+                      (addl (int closure-tag) eax)
+                      ac)]
+              [else
+               (list* (movl (Simple (car arg*)) eax)
+                      (movl eax (mem off apr))
+                      (f (cdr arg*) (fx+ off wordsize)))]))])]
       [(conditional test conseq altern)
        (let ([Lj (unique-label)] [Lf (unique-label)])
          (Pred test #f Lf
@@ -3894,11 +3934,13 @@
             (for-each (lambda (x) (printf "    ~s\n" x)) ls))
           ls*))
       (let ([code* (list*->code* 
-                     (lambda (x) 
-                       (if (thunk? x)
-                           (thunk-code x)
-                           #f))
-                     ls*)])
+                      (lambda (x)
+                        (if (closure? x)
+                            (if (null? (closure-free* x))
+                                (code-loc-label (closure-code x))
+                                (error 'compile "BUG: non-thunk escaped: ~s" x))
+                            #f))
+                      ls*)])
         (car code*)))))
 
 (define compile-file
