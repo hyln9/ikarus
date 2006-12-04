@@ -559,7 +559,6 @@
 (define lambda-none 0)
 (define branching-producer 0)
 
-
 (define (analyze-cwv x)
   (define who 'analyze-cwv)
   (define (lambda? x)
@@ -636,9 +635,6 @@
        (E rhs)]
       [else (error who "invalid expression ~s" (unparse x))]))
   (E x))
-
-
-
 
 (define (optimize-letrec x)
   (define who 'optimize-letrec)
@@ -771,8 +767,6 @@
   (E x (lambda (x) (error who "free var ~s found" x))
        void))
 
-
-
 ;;; This pass was here before optimize-letrec was implemented.
 (define (remove-letrec x)
   (define who 'remove-letrec)
@@ -825,8 +819,6 @@
        (make-assign lhs (Expr rhs))]
       [else (error who "invalid expression ~s" (unparse x))]))
   (Expr x))
-
-
 
 (define (uncover-assigned/referenced x)
   (define who 'uncover-assigned/referenced)
@@ -1032,9 +1024,6 @@
     ;;; redo them
     (uncover-assigned/referenced x)))
 
-
-
-
 (define (rewrite-assignments x)
   (define who 'rewrite-assignments)
   (define (fix-lhs* lhs*)
@@ -1097,11 +1086,6 @@
        (make-primcall '$vector-set! (list lhs (make-constant 0) (Expr rhs)))]
       [else (error who "invalid expression ~s" (unparse x))]))
   (Expr x))
- 
-
-  
-
-
 
 (define (convert-closures prog)
   (define who 'convert-closures)
@@ -1322,7 +1306,7 @@
   (let ([x (E x)])
     (make-codes all-codes x)))
 
-(define (lift-codes x)
+(define (lift-codes x) ;;; NOT USED
   (define who 'lift-codes)
   (define all-codes '())
   (define (do-code x)
