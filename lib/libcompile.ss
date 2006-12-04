@@ -1188,6 +1188,9 @@
           free (unparse prog)))
    prog))
 
+(define (optimize-closures x)
+  (define who 'optimize-closures)
+  x)
 
 (define (lift-codes x)
   (define who 'lift-codes)
@@ -1226,9 +1229,6 @@
   (let ([x (E x)])
     (make-codes all-codes x)))
 
-
-
-            
 (define (syntactically-valid? op rand*)
   (define (valid-arg-count? op rand*)
     (let ([n (open-coded-primitive-args op)] [m (length rand*)])
@@ -1331,29 +1331,26 @@
        (or (null? rand*)
            (valid-arg-types? op rand*))))
 
-
-;;; the output of simplify-operands differs from the input in that the 
-;;; operands to primcalls are all simple (variables, primrefs, or constants).
-;;; funcalls to open-codable primrefs whos arguments are "ok" are converted to
-;;; primcalls.  
-
-
-(define uninlined '())
-(define (mark-uninlined x)
-  (cond
-    [(assq x uninlined) =>
-     (lambda (p) (set-cdr! p (fxadd1 (cdr p))))]
-    [else (set! uninlined (cons (cons x 1) uninlined))]))
-
-(module ()
-  (primitive-set! 'uninlined-stats 
-    (lambda () 
-      (let f ([ls uninlined] [ac '()])
-        (cond
-          [(null? ls) ac]
-          [(fx> (cdar ls) 15)
-           (f (cdr ls) (cons (car ls) ac))]
-          [else (f (cdr ls) ac)])))))
+(begin ;;; UNINLINED ANALYSIS
+  ;;; the output of simplify-operands differs from the input in that the 
+  ;;; operands to primcalls are all simple (variables, primrefs, or constants).
+  ;;; funcalls to open-codable primrefs whos arguments are "ok" are converted to
+  ;;; primcalls.  
+  (define uninlined '())
+  (define (mark-uninlined x)
+    (cond
+      [(assq x uninlined) =>
+       (lambda (p) (set-cdr! p (fxadd1 (cdr p))))]
+      [else (set! uninlined (cons (cons x 1) uninlined))]))
+  (module ()
+    (primitive-set! 'uninlined-stats 
+      (lambda () 
+        (let f ([ls uninlined] [ac '()])
+          (cond
+            [(null? ls) ac]
+            [(fx> (cdar ls) 15)
+             (f (cdr ls) (cons (car ls) ac))]
+            [else (f (cdr ls) ac)]))))))
 
 (define (introduce-primcalls x)
   (define who 'introduce-primcalls)
@@ -1445,7 +1442,6 @@
        (make-codes (map CodeExpr list) (Tail body))]))
   (CodesExpr x))
 
-
 (define (simplify-operands x)
   (define who 'simplify-operands)
   (define (simple? x) 
@@ -1522,7 +1518,6 @@
        (make-codes (map CodeExpr list) (Tail body))]))
   (CodesExpr x))
 
-
 (define (insert-stack-overflow-checks x)
   (define who 'insert-stack-overflow-checks)
   (define (insert-check body)
@@ -1579,7 +1574,6 @@
                        (insert-check body)
                        body))]))
   (CodesExpr x))
-
 
 (define (insert-allocation-checks x)
   (define who 'insert-allocation-checks)
@@ -1723,8 +1717,6 @@
       [(codes list body)
        (make-codes (map CodeExpr list) (Tail body))]))
   (CodesExpr x))
-
-
 
 (define (remove-local-variables x)
   (define who 'remove-local-variables)
@@ -1967,9 +1959,6 @@
                    (Tail body 1 '() '()))]))
   (CodesExpr x))
 
-
-
-(define checks-elim-count 0)
 (define (optimize-ap-check x)
   (define who 'optimize-ap-check)
   (define (min x y)
@@ -1998,8 +1987,6 @@
        (let ([n (constant-value (car arg*))])
          (cond
            [(fx< n f) 
-            ;(set! checks-elim-count (fxadd1 checks-elim-count))
-            ;(printf "~s checks eliminated\n" checks-elim-count)
             (values (make-constant #f) (fx- f n))]
            [(fx<= n 4096)
             (values (make-primcall '$ap-check-const 
@@ -2073,7 +2060,7 @@
                    (Tail body 0))]))
   (CodesExpr x))
 
-(begin
+(begin ;;; DEFINITIONS
   (define fx-shift 2)
   (define fx-mask #x03)
   (define fx-tag 0)
@@ -2162,10 +2149,9 @@
   (define align-shift 3)
   (define dirty-word -1))
 
-(define (align n)
-  (fxsll (fxsra (fx+ n (fxsub1 object-alignment)) align-shift) align-shift))
-
-(begin
+(begin ;;; COGEN HELERS
+  (define (align n)
+    (fxsll (fxsra (fx+ n (fxsub1 object-alignment)) align-shift) align-shift))
   (define (mem off val)
     (cond
       [(fixnum? off) (list 'disp (int off) val)]
@@ -2234,7 +2220,6 @@
   (define (argc-convention n)
     (fx- 0 (fxsll n fx-shift))))
 
-
 (define pcb-ref
   (lambda (x)
     (case x
@@ -2253,7 +2238,6 @@
   (unless (symbol? op) (error 'primref-loc "not a symbol ~s" op))
   (mem (fx- disp-symbol-system-value symbol-tag)
         (obj op)))
-
 
 (define (generate-code x)
   (define who 'generate-code)
@@ -3681,235 +3665,230 @@
                   (Tail body '()))
            (map CodeExpr list))]))
 
-
-(define SL_nonprocedure (gensym "SL_nonprocedure"))
-
-(define SL_top_level_value_error (gensym "SL_top_level_value_error"))
-(define SL_car_error (gensym "SL_car_error"))
-(define SL_cdr_error (gensym "SL_cdr_error"))
-
-(define SL_invalid_args (gensym "SL_invalid_args"))
-(define SL_foreign_call (gensym "SL_foreign_call"))
-(define SL_continuation_code (gensym "SL_continuation_code"))
-(define SL_multiple_values_error_rp (gensym "SL_multiple_values_error_rp"))
-(define SL_multiple_values_ignore_rp (gensym "SL_multiple_ignore_error_rp"))
-(define SL_underflow_multiple_values (gensym "SL_underflow_multiple_values"))
-(define SL_underflow_handler (gensym "SL_underflow_handler"))
-(define SL_scheme_exit (gensym "SL_scheme_exit"))
-(define SL_apply (gensym "SL_apply"))
-(define SL_values (gensym "SL_values"))
-(define SL_call_with_values (gensym "SL_call_with_values"))
-
-(module ()
-(list*->code* (lambda (x) #f)
-  (list
-    (list 0
-          (label SL_car_error)
-          (movl ebx (mem (fx- 0 wordsize) fpr))
-          (movl (primref-loc 'car-error) cpr)
-          (movl (int (argc-convention 1)) eax)
-          (tail-indirect-cpr-call))
-    
-    (list 0
-          (label SL_cdr_error)
-          (movl ebx (mem (fx- 0 wordsize) fpr))
-          (movl (primref-loc 'cdr-error) cpr)
-          (movl (int (argc-convention 1)) eax)
-          (tail-indirect-cpr-call))
-    
-    (list 0
-          (label SL_top_level_value_error)
-          (movl ebx (mem (fx- 0 wordsize) fpr))
-          (movl (primref-loc 'top-level-value-error) cpr)
-          (movl (int (argc-convention 1)) eax)
-          (tail-indirect-cpr-call))
-    
-    (let ([L_cwv_done (gensym)]
-          [L_cwv_loop (gensym)]
-          [L_cwv_multi_rp (gensym)]
-          [L_cwv_call (gensym)])
-      (list 
-          0 ; no free vars
-          (label SL_call_with_values)
-          (cmpl (int (argc-convention 2)) eax)
-          (jne (label SL_invalid_args))
-          (movl (mem (fx- 0 wordsize) fpr) ebx) ; producer
-          (movl ebx cpr)
-          (andl (int closure-mask) ebx)
-          (cmpl (int closure-tag) ebx)
-          (jne (label SL_nonprocedure))
-          (movl (int (argc-convention 0)) eax)
-          (subl (int (fx* wordsize 2)) fpr)
-          (jmp (label L_cwv_call))
-          ; MV NEW FRAME
-          (byte-vector '#(#b110))
-          (int (fx* wordsize 3))
-           '(current-frame-offset)
-          (label-address L_cwv_multi_rp)
-          (byte 0)
-          (byte 0)
-          (label L_cwv_call)
-          (indirect-cpr-call)
-          ;;; one value returned
-          (addl (int (fx* wordsize 2)) fpr)
-          (movl (mem (fx* -2 wordsize) fpr) ebx) ; consumer
-          (movl ebx cpr)
-          (movl eax (mem (fx- 0 wordsize) fpr))
-          (movl (int (argc-convention 1)) eax)
-          (andl (int closure-mask) ebx)
-          (cmpl (int closure-tag) ebx)
-          (jne (label SL_nonprocedure))
-          (tail-indirect-cpr-call)
-          ;;; multiple values returned
-          (label L_cwv_multi_rp)
-          ; because values does not pop the return point
-          ; we have to adjust fp one more word here
-          (addl (int (fx* wordsize 3)) fpr) 
-          (movl (mem (fx* -2 wordsize) fpr) cpr) ; consumer
-          (cmpl (int (argc-convention 0)) eax)
-          (je (label L_cwv_done))
-          (movl (int (fx* -4 wordsize)) ebx)
-          (addl fpr ebx)  ; ebx points to first value
-          (movl ebx ecx)
-          (addl eax ecx)  ; ecx points to the last value
-          (label L_cwv_loop)
-          (movl (mem 0 ebx) edx)
-          (movl edx (mem (fx* 3 wordsize) ebx))
-          (subl (int wordsize) ebx)
-          (cmpl ecx ebx)
-          (jge (label L_cwv_loop))
-          (label L_cwv_done)
-          (movl cpr ebx)
-          (andl (int closure-mask) ebx)
-          (cmpl (int closure-tag) ebx)
-          (jne (label SL_nonprocedure))
-          (tail-indirect-cpr-call)))
-    
-    (let ([L_values_one_value (gensym)]
-          [L_values_many_values (gensym)])
-      (list 0 ; no freevars
-          (label SL_values)
-          (cmpl (int (argc-convention 1)) eax)
-          (je (label L_values_one_value))
-          (label L_values_many_values)
-          (movl (mem 0 fpr) ebx) ; return point
-          (jmp (mem disp-multivalue-rp ebx))     ; go
-          (label L_values_one_value)
-          (movl (mem (fx- 0 wordsize) fpr) eax)
-          (ret)))
-    
-    (let ([L_apply_done (gensym)]
-          [L_apply_loop (gensym)])
-      (list 0 
-          (label SL_apply)
-          (movl (mem fpr eax) ebx)
-          (cmpl (int nil) ebx)
-          (je (label L_apply_done))
-          (label L_apply_loop)
-          (movl (mem (fx- disp-car pair-tag) ebx) ecx)
-          (movl (mem (fx- disp-cdr pair-tag) ebx) ebx)
-          (movl ecx (mem fpr eax))
-          (subl (int wordsize) eax)
-          (cmpl (int nil) ebx)
-          (jne (label L_apply_loop))
-          (label L_apply_done)
-          (addl (int wordsize) eax)
-          (tail-indirect-cpr-call)))
-    
-    (list 0
-          (label SL_nonprocedure)
-          (movl cpr (mem (fx- 0 wordsize) fpr)) ; first arg
-          (movl (primref-loc '$apply-nonprocedure-error-handler) cpr)
-          (movl (int (argc-convention 1)) eax)
-          (tail-indirect-cpr-call))
-    
-    (list 0
-          (label SL_multiple_values_error_rp)
-          (movl (primref-loc '$multiple-values-error) cpr)
-          (tail-indirect-cpr-call))
-    
-    (list 0
-          (label SL_multiple_values_ignore_rp)
-          (ret))
-    
-    (list 0
-          (label SL_invalid_args)
-          ;;;
-          (movl cpr (mem (fx- 0 wordsize) fpr)) ; first arg
-          (negl eax)
-          (movl eax (mem (fx- 0 (fx* 2 wordsize)) fpr))
-          (movl (primref-loc '$incorrect-args-error-handler) cpr)
-          (movl (int (argc-convention 2)) eax)
-          (tail-indirect-cpr-call))
-    
-    (let ([Lset (gensym)] [Lloop (gensym)])
-      (list 0
-          (label SL_foreign_call)
-          (movl fpr (pcb-ref 'frame-pointer))
-          (movl apr (pcb-ref 'allocation-pointer))
-          (movl fpr ebx)
-          (movl (pcb-ref 'system-stack) esp)
-          (pushl pcr)
-          (cmpl (int 0) eax)
-          (je (label Lset))
-          (label Lloop)
-          (movl (mem ebx eax) ecx)
-          (pushl ecx)
-          (addl (int 4) eax)
-          (cmpl (int 0) eax)
-          (jne (label Lloop))
-          (label Lset)
-          ; FOREIGN NEW FRAME
-          (call cpr)
-          (movl (pcb-ref 'frame-pointer) fpr)
-          (movl (pcb-ref 'allocation-pointer) apr)
-          (ret)))
-    
-    (let ([L_cont_zero_args      (gensym)] 
-          [L_cont_mult_args      (gensym)]
-          [L_cont_one_arg        (gensym)]
-          [L_cont_mult_move_args (gensym)]
-          [L_cont_mult_copy_loop (gensym)])
-      (list  1 ; freevars
-          (label SL_continuation_code)
-          (movl (mem (fx- disp-closure-data closure-tag) cpr) ebx) ; captured-k
-          (movl ebx (pcb-ref 'next-continuation)) ; set
-          (movl (pcb-ref 'frame-base) ebx)
-          (cmpl (int (argc-convention 1)) eax)
-          (jg (label L_cont_zero_args))
-          (jl (label L_cont_mult_args))
-          (label L_cont_one_arg)
-          (movl (mem (fx- 0 wordsize) fpr) eax)
-          (movl ebx fpr)
-          (subl (int wordsize) fpr)
-          (ret)
-          (label L_cont_zero_args)
-          (subl (int wordsize) ebx)
-          (movl ebx fpr)
-          (movl (mem 0 ebx) ebx) ; return point
-          (jmp (mem disp-multivalue-rp ebx))  ; go
-          (label L_cont_mult_args)
-          (subl (int wordsize) ebx)
-          (cmpl ebx fpr)
-          (jne (label L_cont_mult_move_args))
-          (movl (mem 0 ebx) ebx)
-          (jmp (mem disp-multivalue-rp ebx))
-          (label L_cont_mult_move_args)
-          ; move args from fpr to ebx
-          (movl (int 0) ecx)
-          (label L_cont_mult_copy_loop)
-          (subl (int wordsize) ecx)
-          (movl (mem fpr ecx) edx)
-          (movl edx (mem ebx ecx))
-          (cmpl ecx eax)
-          (jne (label L_cont_mult_copy_loop))
-          (movl ebx fpr)
-          (movl (mem 0 ebx) ebx)
-          (jmp (mem disp-multivalue-rp ebx))
-          ))
-    )))
-
-
+(begin ;;; ASSEMBLY HELPERS
+  (define SL_nonprocedure (gensym "SL_nonprocedure"))
+  (define SL_top_level_value_error (gensym "SL_top_level_value_error"))
+  (define SL_car_error (gensym "SL_car_error"))
+  (define SL_cdr_error (gensym "SL_cdr_error"))
+  (define SL_invalid_args (gensym "SL_invalid_args"))
+  (define SL_foreign_call (gensym "SL_foreign_call"))
+  (define SL_continuation_code (gensym "SL_continuation_code"))
+  (define SL_multiple_values_error_rp (gensym "SL_multiple_values_error_rp"))
+  (define SL_multiple_values_ignore_rp (gensym "SL_multiple_ignore_error_rp"))
+  (define SL_underflow_multiple_values (gensym "SL_underflow_multiple_values"))
+  (define SL_underflow_handler (gensym "SL_underflow_handler"))
+  (define SL_scheme_exit (gensym "SL_scheme_exit"))
+  (define SL_apply (gensym "SL_apply"))
+  (define SL_values (gensym "SL_values"))
+  (define SL_call_with_values (gensym "SL_call_with_values"))
+  (module ()
+    (list*->code* (lambda (x) #f)
+      (list
+        (list 0
+              (label SL_car_error)
+              (movl ebx (mem (fx- 0 wordsize) fpr))
+              (movl (primref-loc 'car-error) cpr)
+              (movl (int (argc-convention 1)) eax)
+              (tail-indirect-cpr-call))
+        
+        (list 0
+              (label SL_cdr_error)
+              (movl ebx (mem (fx- 0 wordsize) fpr))
+              (movl (primref-loc 'cdr-error) cpr)
+              (movl (int (argc-convention 1)) eax)
+              (tail-indirect-cpr-call))
+        
+        (list 0
+              (label SL_top_level_value_error)
+              (movl ebx (mem (fx- 0 wordsize) fpr))
+              (movl (primref-loc 'top-level-value-error) cpr)
+              (movl (int (argc-convention 1)) eax)
+              (tail-indirect-cpr-call))
+        
+        (let ([L_cwv_done (gensym)]
+              [L_cwv_loop (gensym)]
+              [L_cwv_multi_rp (gensym)]
+              [L_cwv_call (gensym)])
+          (list 
+              0 ; no free vars
+              (label SL_call_with_values)
+              (cmpl (int (argc-convention 2)) eax)
+              (jne (label SL_invalid_args))
+              (movl (mem (fx- 0 wordsize) fpr) ebx) ; producer
+              (movl ebx cpr)
+              (andl (int closure-mask) ebx)
+              (cmpl (int closure-tag) ebx)
+              (jne (label SL_nonprocedure))
+              (movl (int (argc-convention 0)) eax)
+              (subl (int (fx* wordsize 2)) fpr)
+              (jmp (label L_cwv_call))
+              ; MV NEW FRAME
+              (byte-vector '#(#b110))
+              (int (fx* wordsize 3))
+               '(current-frame-offset)
+              (label-address L_cwv_multi_rp)
+              (byte 0)
+              (byte 0)
+              (label L_cwv_call)
+              (indirect-cpr-call)
+              ;;; one value returned
+              (addl (int (fx* wordsize 2)) fpr)
+              (movl (mem (fx* -2 wordsize) fpr) ebx) ; consumer
+              (movl ebx cpr)
+              (movl eax (mem (fx- 0 wordsize) fpr))
+              (movl (int (argc-convention 1)) eax)
+              (andl (int closure-mask) ebx)
+              (cmpl (int closure-tag) ebx)
+              (jne (label SL_nonprocedure))
+              (tail-indirect-cpr-call)
+              ;;; multiple values returned
+              (label L_cwv_multi_rp)
+              ; because values does not pop the return point
+              ; we have to adjust fp one more word here
+              (addl (int (fx* wordsize 3)) fpr) 
+              (movl (mem (fx* -2 wordsize) fpr) cpr) ; consumer
+              (cmpl (int (argc-convention 0)) eax)
+              (je (label L_cwv_done))
+              (movl (int (fx* -4 wordsize)) ebx)
+              (addl fpr ebx)  ; ebx points to first value
+              (movl ebx ecx)
+              (addl eax ecx)  ; ecx points to the last value
+              (label L_cwv_loop)
+              (movl (mem 0 ebx) edx)
+              (movl edx (mem (fx* 3 wordsize) ebx))
+              (subl (int wordsize) ebx)
+              (cmpl ecx ebx)
+              (jge (label L_cwv_loop))
+              (label L_cwv_done)
+              (movl cpr ebx)
+              (andl (int closure-mask) ebx)
+              (cmpl (int closure-tag) ebx)
+              (jne (label SL_nonprocedure))
+              (tail-indirect-cpr-call)))
+        
+        (let ([L_values_one_value (gensym)]
+              [L_values_many_values (gensym)])
+          (list 0 ; no freevars
+              (label SL_values)
+              (cmpl (int (argc-convention 1)) eax)
+              (je (label L_values_one_value))
+              (label L_values_many_values)
+              (movl (mem 0 fpr) ebx) ; return point
+              (jmp (mem disp-multivalue-rp ebx))     ; go
+              (label L_values_one_value)
+              (movl (mem (fx- 0 wordsize) fpr) eax)
+              (ret)))
+        
+        (let ([L_apply_done (gensym)]
+              [L_apply_loop (gensym)])
+          (list 0 
+              (label SL_apply)
+              (movl (mem fpr eax) ebx)
+              (cmpl (int nil) ebx)
+              (je (label L_apply_done))
+              (label L_apply_loop)
+              (movl (mem (fx- disp-car pair-tag) ebx) ecx)
+              (movl (mem (fx- disp-cdr pair-tag) ebx) ebx)
+              (movl ecx (mem fpr eax))
+              (subl (int wordsize) eax)
+              (cmpl (int nil) ebx)
+              (jne (label L_apply_loop))
+              (label L_apply_done)
+              (addl (int wordsize) eax)
+              (tail-indirect-cpr-call)))
+        
+        (list 0
+              (label SL_nonprocedure)
+              (movl cpr (mem (fx- 0 wordsize) fpr)) ; first arg
+              (movl (primref-loc '$apply-nonprocedure-error-handler) cpr)
+              (movl (int (argc-convention 1)) eax)
+              (tail-indirect-cpr-call))
+        
+        (list 0
+              (label SL_multiple_values_error_rp)
+              (movl (primref-loc '$multiple-values-error) cpr)
+              (tail-indirect-cpr-call))
+        
+        (list 0
+              (label SL_multiple_values_ignore_rp)
+              (ret))
+        
+        (list 0
+              (label SL_invalid_args)
+              ;;;
+              (movl cpr (mem (fx- 0 wordsize) fpr)) ; first arg
+              (negl eax)
+              (movl eax (mem (fx- 0 (fx* 2 wordsize)) fpr))
+              (movl (primref-loc '$incorrect-args-error-handler) cpr)
+              (movl (int (argc-convention 2)) eax)
+              (tail-indirect-cpr-call))
+        
+        (let ([Lset (gensym)] [Lloop (gensym)])
+          (list 0
+              (label SL_foreign_call)
+              (movl fpr (pcb-ref 'frame-pointer))
+              (movl apr (pcb-ref 'allocation-pointer))
+              (movl fpr ebx)
+              (movl (pcb-ref 'system-stack) esp)
+              (pushl pcr)
+              (cmpl (int 0) eax)
+              (je (label Lset))
+              (label Lloop)
+              (movl (mem ebx eax) ecx)
+              (pushl ecx)
+              (addl (int 4) eax)
+              (cmpl (int 0) eax)
+              (jne (label Lloop))
+              (label Lset)
+              ; FOREIGN NEW FRAME
+              (call cpr)
+              (movl (pcb-ref 'frame-pointer) fpr)
+              (movl (pcb-ref 'allocation-pointer) apr)
+              (ret)))
+        
+        (let ([L_cont_zero_args      (gensym)] 
+              [L_cont_mult_args      (gensym)]
+              [L_cont_one_arg        (gensym)]
+              [L_cont_mult_move_args (gensym)]
+              [L_cont_mult_copy_loop (gensym)])
+          (list  1 ; freevars
+              (label SL_continuation_code)
+              (movl (mem (fx- disp-closure-data closure-tag) cpr) ebx) ; captured-k
+              (movl ebx (pcb-ref 'next-continuation)) ; set
+              (movl (pcb-ref 'frame-base) ebx)
+              (cmpl (int (argc-convention 1)) eax)
+              (jg (label L_cont_zero_args))
+              (jl (label L_cont_mult_args))
+              (label L_cont_one_arg)
+              (movl (mem (fx- 0 wordsize) fpr) eax)
+              (movl ebx fpr)
+              (subl (int wordsize) fpr)
+              (ret)
+              (label L_cont_zero_args)
+              (subl (int wordsize) ebx)
+              (movl ebx fpr)
+              (movl (mem 0 ebx) ebx) ; return point
+              (jmp (mem disp-multivalue-rp ebx))  ; go
+              (label L_cont_mult_args)
+              (subl (int wordsize) ebx)
+              (cmpl ebx fpr)
+              (jne (label L_cont_mult_move_args))
+              (movl (mem 0 ebx) ebx)
+              (jmp (mem disp-multivalue-rp ebx))
+              (label L_cont_mult_move_args)
+              ; move args from fpr to ebx
+              (movl (int 0) ecx)
+              (label L_cont_mult_copy_loop)
+              (subl (int wordsize) ecx)
+              (movl (mem fpr ecx) edx)
+              (movl edx (mem ebx ecx))
+              (cmpl ecx eax)
+              (jne (label L_cont_mult_copy_loop))
+              (movl ebx fpr)
+              (movl (mem 0 ebx) ebx)
+              (jmp (mem disp-multivalue-rp ebx))
+              ))
+        ))))
 
 (define (compile-expr expr)
   (let* ([p (recordize expr)]
@@ -3921,6 +3900,7 @@
          [p (copy-propagate p)]
          [p (rewrite-assignments p)]
          [p (convert-closures p)]
+         [p (optimize-closures p)]
          [p (lift-codes p)]
          [p (introduce-primcalls p)]
          [p (simplify-operands p)]
