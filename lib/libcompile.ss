@@ -234,6 +234,7 @@
 (define-record clambda (cases))
 (define-record clambda-code (label cases free))
 (define-record closure (code free*))
+(define-record thunk (code))
 (define-record funcall (op rand*))
 (define-record appcall (op rand*))
 (define-record forcall (op rand*))
@@ -3892,7 +3893,12 @@
           (lambda (ls)
             (for-each (lambda (x) (printf "    ~s\n" x)) ls))
           ls*))
-      (let ([code* (list*->code* (lambda (x) #f) ls*)])
+      (let ([code* (list*->code* 
+                     (lambda (x) 
+                       (if (thunk? x)
+                           (thunk-code x)
+                           #f))
+                     ls*)])
         (car code*)))))
 
 (define compile-file

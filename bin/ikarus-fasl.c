@@ -358,7 +358,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     }
     return rtd;
   }
-  else if(c == 'T'){ /* thunk */
+  else if(c == 'Q'){ /* thunk */
     fprintf(stderr, "THUNK\n");
     ikp proc = ik_alloc(pcb, align(disp_closure_data)) + closure_tag;
     if(put_mark_index){
