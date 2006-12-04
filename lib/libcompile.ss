@@ -1188,9 +1188,139 @@
           free (unparse prog)))
    prog))
 
-(define (optimize-closures x)
-  (define who 'optimize-closures)
-  x)
+(define (optimize-closures/lift-codes x)
+  (define who 'optimize-closures/lift-codes)
+  (define all-codes '())
+  (define (init-non-thunk var)
+    (set-var-assigned! var #f)
+    (set-var-referenced! var #f))
+  (define (var-thunk var)
+    (var-referenced var))
+  (define (make-thunk-var var thunk)
+    (set-var-referenced! var thunk))
+  (define (thunk? x)
+    (record-case x
+      [(closure code free*)
+       (null? free*)]
+      [else #f]))
+  (define (trim/lift-code code free*)
+    (record-case code
+      [(clambda-code label cls* free*/dropped)
+       (let ([cls* (map
+                     (lambda (x)
+                       (record-case x 
+                         [(clambda-case fml* proper body)
+                          (for-each init-non-thunk fml*)
+                          (make-clambda-case fml* proper
+                              (E body))]))
+                     cls*)])
+         (let ([g (make-code-loc label)])
+           (set! all-codes
+             (cons (make-clambda-code label cls* free*) all-codes))
+           g))]))
+  (define (optimize-one-closure x)
+    (record-case x 
+      [(closure code free*)
+       (let ([free* (trim-vars free*)])
+         (make-closure (trim/lift-code code free*) free*))]))
+  (define (trim p? ls)
+    (cond
+      [(null? ls) '()]
+      [(p? (car ls)) (trim p? (cdr ls))]
+      [else
+       (cons (car ls) (trim p? (cdr ls)))]))
+  (define (trim-vars ls)
+    (trim var-thunk ls))
+  (define (trim-thunks ls)
+    (trim thunk? ls))
+  (define (do-bind lhs* rhs* body)
+    (for-each init-non-thunk lhs*)
+    (let ([rhs* (map E rhs*)])
+      (for-each (lambda (x v) 
+                  (when (thunk? v) (make-thunk-var x v)))
+                lhs* rhs*)
+      (make-bind (trim-vars lhs*) (trim-thunks rhs*) (E body))))
+  (define (do-fix lhs* rhs* body)
+    (for-each init-non-thunk lhs*)
+    (let ([free** ;;; trim the free lists first; after init.
+           (map (lambda (x) (trim-vars (closure-free* x))) rhs*)])
+      (define-record node (name code deps whacked free))
+      (let ([node* (map (lambda (lhs rhs) 
+                          (let ([n (make-node lhs (closure-code rhs) '() #f '())])
+                            (make-thunk-var x n)
+                            n))
+                        lhs* rhs*)])
+        ;;; if x is free in y, then whenever x becomes a non-thunk,
+        ;;; y also becomes a non-thunk.  Here, we mark these
+        ;;; dependencies.
+        (for-each 
+          (lambda (my-node free*)
+            (for-each (lambda (fvar)
+                        (cond
+                          [(var-thunk fvar) => ;;; one of ours
+                           (lambda (her-node)
+                             (set-node-deps! her-node 
+                               (cons my-node (node-deps her-node))))]
+                          [else ;;; not one of ours
+                           (set-node-free! my-node
+                             (cons fvar (node-free my-node)))]))
+                      free*))
+           node* free**)
+        ;;; Next, we go over the list of nodes, and if we find one
+        ;;; that has any free variables, we know it's a non-thunk,
+        ;;; so we whack it and add it to all of its dependents.
+        (let ()
+          (define (process-node x)
+            (unless (null? (node-free x))
+              (unless (node-whacked x)
+                (set-node-whacked! x #t)
+                (for-each 
+                  (lambda (y)
+                    (set-node-free! y 
+                      (cons (node-name x) (node-free y)))
+                    (process-node y))
+                  (node-deps x)))))
+          (for-each process-node node*))
+        ;;; Now those that have free variables are actual closures.
+        ;;; Those with no free variables are actual thunks.
+        (let ([rhs*
+               (map
+                 (lambda (node)
+                   (let ([free (node-free node)])
+                     (let ([closure
+                            (make-closure (node-code node) free)])
+                       (if (null? free)
+                           (make-thunk-var (node-name node) closure)
+                           (init-non-thunk (node-name node)))
+                       closure)))
+                 node*)])
+          (for-each 
+            (lambda (x)
+              (set-closure-code! x
+                (trim/lift-code (closure-code x))))
+            rhs*)
+          ;;;
+          (make-fix (trim-vars lhs*)
+                    (trim-thunks rhs*)
+                    (E body))))))
+  (define (E x)
+    (record-case x
+      [(constant) x]
+      [(var)      (or (var-thunk x) x)]
+      [(primref)  x]
+      [(bind lhs* rhs* body) (do-bind lhs* rhs* body)]
+      [(fix lhs* rhs* body) (do-fix lhs* rhs* body)]
+      [(conditional test conseq altern)
+       (make-conditional (E test) (E conseq) (E altern))]
+      [(seq e0 e1)           (make-seq (E e0) (E e1))]
+      [(closure c free)      (optimize-one-closure c free)]
+      [(primcall op rand*)   (make-primcall op (map E rand*))]
+      [(forcall op rand*)    (make-forcall op (map E rand*))]
+      [(funcall rator rand*) (make-funcall (E rator) (map E rand*))]
+      [(appcall rator rand*) (make-appcall (E rator) (map E rand*))]
+      [else (error who "invalid expression ~s" (unparse x))]))
+  (let ([x (E x)])
+    (make-codes all-codes x)))
 
 (define (lift-codes x)
   (define who 'lift-codes)
@@ -3900,7 +4030,7 @@
          [p (copy-propagate p)]
          [p (rewrite-assignments p)]
          [p (convert-closures p)]
-         [p (optimize-closures p)]
+         ;[p (optimize-closures p)]
          [p (lift-codes p)]
          [p (introduce-primcalls p)]
          [p (simplify-operands p)]
