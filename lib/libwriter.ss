@@ -308,8 +308,8 @@
            (if (procedure? printer)
                (begin (printer x p) i)
                (write-shareable x p m h i write-record)))]
-        ;[(code? x)
-        ; (write-char* "#<code>" p)]
+        [(code? x)
+         (write-char* "#<code>" p)]
         [(hash-table? x)
          (write-char* "#<hash-table>" p)
          i]

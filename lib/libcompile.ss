@@ -184,6 +184,7 @@
     [$code-ref           2    value]
     [$code-set!          3    value]
     [$code->closure      1    value]
+    [$closure-code       1    value]
     ;;;
     [$make-call-with-values-procedure 0 value]
     [$make-values-procedure 0 value]
@@ -1318,6 +1319,7 @@
         $set-symbol-unique-string!
         $set-symbol-string!
         $seal-frame-and-call  $frame->continuation $code->closure
+        $closure-code
         $code-size $code-reloc-vector $code-freevars 
         $code-ref $code-set!
         $make-record $record? $record/rtd? $record-rtd $record-ref $record-set!
@@ -3006,6 +3008,10 @@
        (indirect-ref arg* (fx- disp-code-relocsize vector-tag) ac)]
      [($code-freevars) 
        (indirect-ref arg* (fx- disp-code-freevars vector-tag) ac)]
+     [($closure-code)
+      (indirect-ref arg* (fx- disp-closure-code closure-tag)
+        (list* (addl (int (fx- vector-tag disp-code-data)) eax)
+               ac))]
      [($set-car! $set-cdr! $vector-set! $string-set! $exit
        $set-symbol-value! $set-symbol-plist! 
        $code-set!  primitive-set! 

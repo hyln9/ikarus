@@ -1,4 +1,4 @@
-
+#!/Users/aghuloum/.opt/bin/ikarus --script
 
 ;;; 9.1: * starting with libnumerics
 ;;; 9.0: * graph marks for both reader and writer 
