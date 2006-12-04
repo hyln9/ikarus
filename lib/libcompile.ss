@@ -237,7 +237,6 @@
 (define-record funcall (op rand*))
 (define-record appcall (op rand*))
 (define-record forcall (op rand*))
-(define-record code-rec (arg* proper free* body))
 (define-record codes (list body))
 (define-record assign (lhs rhs))
 
@@ -445,10 +444,6 @@
        `(code ,label . ,(map E clauses))]
       [(closure code free*)
        `(closure ,(E code) ,(map E free*))]
-      [(code-rec arg* proper free* body) 
-       `(code-rec [arg: ,(E-args proper arg*)]
-              [free: ,(map E free*)]
-          ,(E body))]
       [(codes list body)
        `(codes ,(map E list)
           ,(E body))]
