@@ -782,7 +782,7 @@
                    (set-code-word! x idx idx)
                    (f (cdr ls) (fx+ idx 4) reloc)]
                   [(label)
-                   (set-label-loc! (cdr a) (cons x idx))
+                   (set-label-loc! (cdr a) (list x idx))
                    (f (cdr ls) idx reloc)]
                   [else
                    (error 'whack-instructions "unknown instr ~s" a)])))])))
@@ -805,10 +805,28 @@
           ls)))
 
 (define whack-reloc
-  (lambda (code vec)
+  (lambda (thunk?-label code vec)
     (define reloc-idx 0)
     (lambda (r)
-      (let ([idx (car r)] [type (cadr r)] [v (cddr r)])
+      (let ([idx (car r)] [type (cadr r)]
+            [v 
+             (let ([v (cddr r)])
+               (cond
+                 [(thunk?-label v) =>
+                  (lambda (label)
+                    (let ([p (label-loc label)])
+                      (cond
+                        [(fx= (length p) 2)
+                         (let ([code (car p)] [idx (cadr p)])
+                           (unless (fx= idx 0)
+                             (error 'whack-reloc 
+                               "cannot create a thunk pointing at ~s"
+                               idx))
+                           (let ([thunk ($code->closure code)])
+                             (set-cdr! (cdr p) (list thunk))
+                             thunk))]
+                        [else (caddr p)])))]
+                 [else v]))])
         (case type
           [(reloc-word)
            (vector-set! vec reloc-idx (fxsll idx 2))
@@ -826,14 +844,14 @@
              (set! reloc-idx (fx+ reloc-idx 3)))]
           [(label-addr)
            (let ([loc (label-loc v)])
-             (let ([obj (car loc)] [disp (cdr loc)])
+             (let ([obj (car loc)] [disp (cadr loc)])
                (vector-set! vec reloc-idx (fxlogor 2 (fxsll idx 2)))
                (vector-set! vec (fx+ reloc-idx 1) (fx+ disp 11))
                (vector-set! vec (fx+ reloc-idx 2) obj)))
            (set! reloc-idx (fx+ reloc-idx 3))]
           [(local-relative)
            (let ([loc (label-loc v)])
-             (let ([obj (car loc)] [disp (cdr loc)])
+             (let ([obj (car loc)] [disp (cadr loc)])
                (unless (eq? obj code)
                  (error 'whack-reloc "local-relative differ"))
                (let ([rel (fx- disp (fx+ idx 4))])
@@ -843,7 +861,7 @@
                  (code-set! code (fx+ idx 3) (fxlogand (fxsra rel 24) #xFF)))))]
           [(relative)
            (let ([loc (label-loc v)])
-             (let ([obj (car loc)] [disp (cdr loc)])
+             (let ([obj (car loc)] [disp (cadr loc)])
                (vector-set! vec reloc-idx (fxlogor 3 (fxsll idx 2)))
                (vector-set! vec (fx+ reloc-idx 1) (fx+ disp 11))
                (vector-set! vec (fx+ reloc-idx 2) obj)))
@@ -864,7 +882,7 @@
 ;;;           x)))))
 
 (define list*->code*
-  (lambda (thunk? ls*)
+  (lambda (thunk?-label ls*)
     (let ([closure-size* (map car ls*)]
           [ls* (map cdr ls*)])
       (let* ([ls* (map convert-instructions ls*)]
@@ -876,7 +894,7 @@
             (let ([reloc** (map whack-instructions code* ls*)])
               (for-each
                 (lambda (foo reloc*)
-                  (for-each (whack-reloc (car foo) (cdr foo)) reloc*))
+                  (for-each (whack-reloc thunk?-label (car foo) (cdr foo)) reloc*))
                 (map cons code* relv*) reloc**)
               (for-each set-code-reloc-vector! code* relv*)
               code*)))))))
