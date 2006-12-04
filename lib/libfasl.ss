@@ -132,6 +132,9 @@
                       (fasl-write 
                          ((record-field-accessor rtd (car names)) x)
                          p h m))]))]))]
+        [(procedure? x)
+         (write-char #\Q p)
+         (fasl-write ($closure-code x) p h m)]
         [else (error 'fasl-write "~s is not fasl-writable" x)])))
   (define fasl-write 
     (lambda (x p h m)
@@ -196,8 +199,13 @@
                      (lambda (name) 
                        (make-graph ((record-field-accessor rtd name) x) h))
                      (record-type-field-names rtd))]))]
-             ;[(procedure? x)
-             ; (make-graph ($closure-code x) h)]
+             [(procedure? x)
+              (let ([code ($closure-code x)])
+                (unless (fxzero? ($code-freevars code))
+                  (error 'fasl-write
+                         "Cannot write a non-thunk procedure; the one given has ~s free vars"
+                         ($code-freevars code)))
+                (make-graph code h))]
              [else (error 'fasl-write "~s is not fasl-writable" x)])]))))
   (define do-fasl-write 
     (lambda (x port)
