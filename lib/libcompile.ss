@@ -244,7 +244,6 @@
 (define (unique-var x)
   (make-var (gensym x) #f #f))
 
-
 (define (make-bind^ lhs* rhs* body)
   (if (null? lhs*)
       body
@@ -411,7 +410,6 @@
       [else (error 'recordize "invalid expression ~s" x)]))
   (E x '()))
 
-
 (define (unparse x)
   (define (E-args proper x)
     (if proper 
@@ -549,9 +547,6 @@
        (make-assign lhs (Expr rhs))]
       [else (error who "invalid expression ~s" (unparse x))]))
   (Expr x))
-
-
-
 
 (define lambda-both 0)
 (define lambda-producer 0)
@@ -4008,15 +4003,12 @@
 (define (compile-expr expr)
   (let* ([p (recordize expr)]
          [p (optimize-direct-calls p)]
-;;;         [foo (analyze-cwv p)]
          [p (optimize-letrec p)]
-         ;[p (remove-letrec p)]
          [p (uncover-assigned/referenced p)]
          [p (copy-propagate p)]
          [p (rewrite-assignments p)]
          [p (convert-closures p)]
          [p (optimize-closures/lift-codes p)]
-         ;[p (lift-codes p)]
          [p (introduce-primcalls p)]
          [p (simplify-operands p)]
          [p (insert-stack-overflow-checks p)]
