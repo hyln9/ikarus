@@ -303,6 +303,9 @@
         [(bwp-object? x)
          (write-char* "#!bwp" p)
          i]
+        [(hash-table? x)
+         (write-char* "#<hash-table>" p)
+         i]
         [(record? x)
          (let ([printer (record-printer x)])
            (if (procedure? printer)
@@ -310,9 +313,6 @@
                (write-shareable x p m h i write-record)))]
         [(code? x)
          (write-char* "#<code>" p)]
-        [(hash-table? x)
-         (write-char* "#<hash-table>" p)
-         i]
         [($unbound-object? x)
          (write-char* "#<unbound-object>" p)
          i]
