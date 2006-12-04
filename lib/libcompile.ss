@@ -3659,7 +3659,7 @@
 (define SL_call_with_values (gensym "SL_call_with_values"))
 
 (module ()
-(list*->code*
+(list*->code* (lambda (x) #f)
   (list
     (list 0
           (label SL_car_error)
@@ -3892,7 +3892,7 @@
           (lambda (ls)
             (for-each (lambda (x) (printf "    ~s\n" x)) ls))
           ls*))
-      (let ([code* (list*->code* ls*)])
+      (let ([code* (list*->code* (lambda (x) #f) ls*)])
         (car code*)))))
 
 (define compile-file

@@ -864,7 +864,7 @@
 ;;;           x)))))
 
 (define list*->code*
-  (lambda (ls*)
+  (lambda (thunk? ls*)
     (let ([closure-size* (map car ls*)]
           [ls* (map cdr ls*)])
       (let* ([ls* (map convert-instructions ls*)]
@@ -881,9 +881,9 @@
               (for-each set-code-reloc-vector! code* relv*)
               code*)))))))
 
-(define list->code
-  (lambda (ls)
-    (car (list*->code* (list ls)))))
+;(define list->code
+;  (lambda (ls)
+;    (car (list*->code* (list ls)))))
 
 (primitive-set! 'list*->code* list*->code*)
 )
