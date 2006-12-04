@@ -1218,11 +1218,9 @@
            (set! all-codes
              (cons (make-clambda-code label cls* free*) all-codes))
            g))]))
-  (define (optimize-one-closure x)
-    (record-case x 
-      [(closure code free*)
-       (let ([free* (trim-vars free*)])
-         (make-closure (trim/lift-code code free*) free*))]))
+  (define (optimize-one-closure code free)
+    (let ([free (trim-vars free)])
+      (make-closure (trim/lift-code code free) free)))
   (define (trim p? ls)
     (cond
       [(null? ls) '()]
@@ -1247,7 +1245,7 @@
       (define-record node (name code deps whacked free))
       (let ([node* (map (lambda (lhs rhs) 
                           (let ([n (make-node lhs (closure-code rhs) '() #f '())])
-                            (make-thunk-var x n)
+                            (make-thunk-var lhs n)
                             n))
                         lhs* rhs*)])
         ;;; if x is free in y, then whenever x becomes a non-thunk,
@@ -1297,7 +1295,9 @@
           (for-each 
             (lambda (x)
               (set-closure-code! x
-                (trim/lift-code (closure-code x))))
+                (trim/lift-code 
+                  (closure-code x)
+                  (closure-free* x))))
             rhs*)
           ;;;
           (make-fix (trim-vars lhs*)
@@ -1871,6 +1871,7 @@
   (define (check? x)
     (cond
       [(primref? x) #f]  ;;;; PRIMREF CHECK
+      [(closure? x) #f]
       [else         #t]))
   (define (do-new-frame op rand* si r call-convention rp-convention orig-live)
     (make-new-frame (fxadd1 si) (fx+ (length rand*) 2)
@@ -4030,8 +4031,8 @@
          [p (copy-propagate p)]
          [p (rewrite-assignments p)]
          [p (convert-closures p)]
-         ;[p (optimize-closures p)]
-         [p (lift-codes p)]
+         [p (optimize-closures/lift-codes p)]
+         ;[p (lift-codes p)]
          [p (introduce-primcalls p)]
          [p (simplify-operands p)]
          [p (insert-stack-overflow-checks p)]
