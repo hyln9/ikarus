@@ -221,7 +221,7 @@
 (define-record eval-cp (check body))
 (define-record return (value))
 (define-record call-cp
-  (call-convention label rp-convention base-idx arg-count live-mask))
+  (call-convention label save-cp? rp-convention base-idx arg-count live-mask))
 (define-record tailcall-cp (convention label arg-count))
 (define-record primcall (op arg*))
 (define-record primref (name))
@@ -467,7 +467,7 @@
        `(save-cp ,(E expr))]
       [(eval-cp check body)
        `(eval-cp ,check ,(E body))]
-      [(call-cp call-convention label rp-convention base-idx arg-count live-mask)
+      [(call-cp call-convention label save-cp? rp-convention base-idx arg-count live-mask)
        `(call-cp [conv: ,call-convention]
                  [label: ,label]
                  [rpconv: ,rp-convention]
@@ -1945,210 +1945,219 @@
 
 (define (remove-local-variables x)
   (define who 'remove-local-variables)
-  (define (simple* x* r)
-    (map (lambda (x) 
-           (cond
-             [(assq x r) => cdr]
-             [else
-               (when (var? x) (error who "unbound var ~s" x))
-               x]))
-          x*))
-  (define (env->mask r sz)
-    (let ([s (make-vector (fxsra (fx+ sz 7) 3) 0)])
-      (for-each 
-        (lambda (idx) 
-           (let ([q (fxsra idx 3)]
-                 [r (fxlogand idx 7)])
-             (vector-set! s q 
-               (fxlogor (vector-ref s q) (fxsll 1 r)))))
-        r)
-      s))
-  (define (check? x)
-    (cond
-      [(primref? x) #f]  ;;;; PRIMREF CHECK
-      [(closure? x) #f]
-      [else         #t]))
-  (define (do-new-frame label op rand* si r call-convention rp-convention orig-live)
-    (make-new-frame (fxadd1 si) (fx+ (length rand*) 2)
-      (let f ([r* rand*] [nsi (fx+ si 2)] [live orig-live])
+  (define (Body orig-x orig-si orig-r orig-live save-cp?)
+    (define (simple* x* r)
+      (map (lambda (x) 
+             (cond
+               [(assq x r) => cdr]
+               [else
+                 (when (var? x) (error who "unbound var ~s" x))
+                 x]))
+            x*))
+    (define (env->mask r sz)
+      (let ([s (make-vector (fxsra (fx+ sz 7) 3) 0)])
+        (for-each 
+          (lambda (idx) 
+             (let ([q (fxsra idx 3)]
+                   [r (fxlogand idx 7)])
+               (vector-set! s q 
+                 (fxlogor (vector-ref s q) (fxsll 1 r)))))
+          r)
+        s))
+    (define (check? x)
+      (cond
+        [(primref? x) #f]  ;;;; PRIMREF CHECK
+        [(closure? x) #f]
+        [else         #t]))
+    (define (do-new-frame label op rand* si r call-convention rp-convention orig-live)
+      (let ([start-si (if save-cp? (fxadd1 si) si)])
+        (make-new-frame start-si (fx+ (length rand*) 2)
+          (let f ([r* rand*] [nsi (fxadd1 start-si)] [live orig-live])
+            (cond
+              [(null? r*) 
+               (make-seq
+                 (make-seq 
+                   (if save-cp?
+                       (make-save-cp (make-frame-var si))
+                       (nop))
+                   (case call-convention
+                     [(normal apply)
+                      (make-eval-cp (check? op) (Expr op nsi r (cons si live)))]
+                     [(direct)
+                      (make-eval-cp (check? op) (Expr op nsi r (cons si live)))]
+                     [(foreign)
+                      (make-eval-cp #f (make-foreign-label op))]
+                     [else (error who "invalid convention ~s" call-convention)]))
+                 (make-call-cp call-convention label save-cp?
+                    rp-convention
+                    start-si    ; frame size
+                    (length rand*) ; argc
+                    (env->mask (if save-cp?
+                                   (cons si orig-live)
+                                   orig-live)
+                               start-si)))] ; mask-size ~~ frame size
+              [else
+               (make-seq 
+                 (make-assign (make-frame-var nsi)
+                   (Expr (car r*) nsi r live))
+                 (f (cdr r*) (fxadd1 nsi) (cons nsi live)))])))))
+    (define (nop) (make-primcall 'void '()))
+    (define (do-bind lhs* rhs* body si r live k)
+      (let f ([lhs* lhs*] [rhs* rhs*] [si si] [nr r] [live live])
         (cond
-          [(null? r*) 
-           (make-seq
-             (make-seq 
-               (make-save-cp (make-frame-var si))
-               (case call-convention
-                 [(normal apply direct)
-                  (make-eval-cp (check? op) (Expr op nsi r (cons si live)))]
-                 [(foreign)
-                  (make-eval-cp #f (make-foreign-label op))]
-                 [else (error who "invalid convention ~s" call-convention)]))
-             (make-call-cp call-convention label
-                rp-convention
-                (fxadd1 si)    ; frame size
-                (length rand*) ; argc
-                (env->mask (cons si orig-live) ; cp and everything before it
-                           (fxadd1 si))))] ; mask-size ~~ frame size
+          [(null? lhs*) (k body si nr live)]
           [else
-           (make-seq 
-             (make-assign (make-frame-var nsi)
-               (Expr (car r*) nsi r live))
-             (f (cdr r*) (fxadd1 nsi) (cons nsi live)))]))))
-  (define (nop) (make-primcall 'void '()))
-  (define (do-bind lhs* rhs* body si r live k)
-    (let f ([lhs* lhs*] [rhs* rhs*] [si si] [nr r] [live live])
-      (cond
-        [(null? lhs*) (k body si nr live)]
-        [else
-         (let ([v (make-frame-var si)])
+           (let ([v (make-frame-var si)])
+             (make-seq
+               (make-assign v (Expr (car rhs*) si r live))
+               (f (cdr lhs*) (cdr rhs*) (fxadd1 si)
+                  (cons (cons (car lhs*) v) nr)
+                  (cons si live))))])))
+    (define (do-closure r)
+      (lambda (x)
+        (record-case x
+          [(closure code free*)
+           (make-closure code (simple* free* r))])))
+    (define (do-fix lhs* rhs* body si r live k)
+      (let f ([l* lhs*] [nlhs* '()] [si si] [r r] [live live])
+        (cond
+          [(null? l*) 
+           (make-fix (reverse nlhs*) 
+                     (map (do-closure r) rhs*)
+                     (k body si r live))]
+          [else
+           (let ([v (make-frame-var si)])
+             (f (cdr l*) (cons v nlhs*) (fxadd1 si) 
+                (cons (cons (car l*) v) r)
+                (cons si live)))])))
+    (define (do-tail-frame label op rand* si r call-conv live)
+      (define (const? x)
+        (record-case x
+          [(constant) #t]
+          [(primref)  #t]
+          [else       #f]))
+      (define (evalrand* rand* i si r live ac)
+        (cond
+          [(null? rand*) 
+           ;;; evaluate operator after all operands
            (make-seq
-             (make-assign v (Expr (car rhs*) si r live))
-             (f (cdr lhs*) (cdr rhs*) (fxadd1 si)
-                (cons (cons (car lhs*) v) nr)
-                (cons si live))))])))
-  (define (do-closure r)
-    (lambda (x)
+             (make-eval-cp (check? op) (Expr op si r live))
+             ac)]
+          [(const? (car rand*))
+           ;;; constants are not live since they can be assigned
+           ;;; after all args are evaluated
+           (evalrand* (cdr rand*) (fxadd1 i) (fxadd1 si) r live
+             (make-seq ac
+               (make-assign (make-frame-var i) (car rand*))))]
+          [else
+           (let ([vsi (make-frame-var si)]
+                 [rhs (Expr (car rand*) si r live)])
+             (cond
+               [(and (frame-var? rhs)
+                     (fx= (frame-var-idx rhs) i))
+                ;;; value of rhs is already in f[i]
+                ;;; just mark it live
+                (evalrand* (cdr rand*) (fx+ i 1) (fx+ si 1) r live ac)]
+               [(fx= i si)
+                (make-seq 
+                  (make-assign vsi rhs)
+                  (evalrand* (cdr rand*) (fx+ i 1) (fx+ si 1) r
+                             (cons si live) ac))]
+               [else
+                (make-seq
+                  (make-assign vsi rhs)
+                  (evalrand* (cdr rand*) (fxadd1 i) (fxadd1 si) r (cons si live)
+                    (make-seq ac
+                      (make-assign (make-frame-var i) vsi))))]))]))
+      (make-seq
+        (evalrand* rand* 1 si r live (make-primcall 'void '()))
+        (make-tailcall-cp call-conv label (length rand*))))
+    (define (Tail x si r live)
       (record-case x
-        [(closure code free*)
-         (make-closure code (simple* free* r))])))
-  (define (do-fix lhs* rhs* body si r live k)
-    (let f ([l* lhs*] [nlhs* '()] [si si] [r r] [live live])
-      (cond
-        [(null? l*) 
-         (make-fix (reverse nlhs*) 
-                   (map (do-closure r) rhs*)
-                   (k body si r live))]
-        [else
-         (let ([v (make-frame-var si)])
-           (f (cdr l*) (cons v nlhs*) (fxadd1 si) 
-              (cons (cons (car l*) v) r)
-              (cons si live)))])))
-  (define (do-tail-frame label op rand* si r call-conv live)
-    (define (const? x)
+        [(return v) (make-return (Expr v si r live))]
+        [(bind lhs* rhs* body)
+         (do-bind lhs* rhs* body si r live Tail)]
+        [(fix lhs* rhs* body)
+         (do-fix lhs* rhs* body si r live Tail)]
+        [(conditional test conseq altern)
+         (make-conditional 
+           (Expr test si r live)
+           (Tail conseq si r live) 
+           (Tail altern si r live))]
+        [(seq e0 e1) (make-seq (Effect e0 si r live) (Tail e1 si r live))]
+        [(primcall op arg*)
+         (make-return 
+           (make-primcall op 
+             (map (lambda (x) (Expr x si r live)) arg*)))]
+                                    
+        [(funcall op rand*)
+         (do-tail-frame #f op rand* si r 'normal live)]
+        [(appcall op rand*)
+         (do-tail-frame #f op rand* si r 'apply live)]
+        [(jmpcall label op rand*)
+         (do-tail-frame label op rand* si r 'direct live)]
+        [else (error who "invalid expression ~s" (unparse x))]))
+    (define (Effect x si r live)
       (record-case x
-        [(constant) #t]
-        [(primref)  #t]
-        [else       #f]))
-    (define (evalrand* rand* i si r live ac)
-      (cond
-        [(null? rand*) 
-         ;;; evaluate operator after all operands
-         (make-seq
-           (make-eval-cp (check? op) (Expr op si r live))
-           ac)]
-        [(const? (car rand*))
-         ;;; constants are not live since they can be assigned
-         ;;; after all args are evaluated
-         (evalrand* (cdr rand*) (fxadd1 i) (fxadd1 si) r live
-           (make-seq ac
-             (make-assign (make-frame-var i) (car rand*))))]
-        [else
-         (let ([vsi (make-frame-var si)]
-               [rhs (Expr (car rand*) si r live)])
-           (cond
-             [(and (frame-var? rhs)
-                   (fx= (frame-var-idx rhs) i))
-              ;;; value of rhs is already in f[i]
-              ;;; just mark it live
-              (evalrand* (cdr rand*) (fx+ i 1) (fx+ si 1) r live ac)]
-             [(fx= i si)
-              (make-seq 
-                (make-assign vsi rhs)
-                (evalrand* (cdr rand*) (fx+ i 1) (fx+ si 1) r
-                           (cons si live) ac))]
-             [else
-              (make-seq
-                (make-assign vsi rhs)
-                (evalrand* (cdr rand*) (fxadd1 i) (fxadd1 si) r (cons si live)
-                  (make-seq ac
-                    (make-assign (make-frame-var i) vsi))))]))]))
-    (make-seq
-      (evalrand* rand* 1 si r live (make-primcall 'void '()))
-      (make-tailcall-cp call-conv label (length rand*))))
-  (define (Tail x si r live)
-    (record-case x
-      [(return v) (make-return (Expr v si r live))]
-      [(bind lhs* rhs* body)
-       (do-bind lhs* rhs* body si r live Tail)]
-      [(fix lhs* rhs* body)
-       (do-fix lhs* rhs* body si r live Tail)]
-      [(conditional test conseq altern)
-       (make-conditional 
-         (Expr test si r live)
-         (Tail conseq si r live) 
-         (Tail altern si r live))]
-      [(seq e0 e1) (make-seq (Effect e0 si r live) (Tail e1 si r live))]
-      [(primcall op arg*)
-       (make-return 
+        [(constant) (nop)]
+        [(var) (nop)] 
+        [(primref) (nop)]
+        [(closure code free*) (nop)]
+        [(bind lhs* rhs* body)
+         (do-bind lhs* rhs* body si r live Effect)]
+        [(fix lhs* rhs* body)
+         (do-fix lhs* rhs* body si r live Effect)]
+        [(conditional test conseq altern)
+         (make-conditional 
+           (Expr test si r live)
+           (Effect conseq si r live) 
+           (Effect altern si r live))]
+        [(seq e0 e1) (make-seq (Effect e0 si r live) (Effect e1 si r live))]
+        [(primcall op arg*)
          (make-primcall op 
-           (map (lambda (x) (Expr x si r live)) arg*)))]
-                                  
-      [(funcall op rand*)
-       (do-tail-frame #f op rand* si r 'normal live)]
-      [(appcall op rand*)
-       (do-tail-frame #f op rand* si r 'apply live)]
-      [(jmpcall label op rand*)
-       (do-tail-frame label op rand* si r 'direct live)]
-      [else (error who "invalid expression ~s" (unparse x))]))
-  (define (Effect x si r live)
-    (record-case x
-      [(constant) (nop)]
-      [(var) (nop)] 
-      [(primref) (nop)]
-      [(closure code free*) (nop)]
-      [(bind lhs* rhs* body)
-       (do-bind lhs* rhs* body si r live Effect)]
-      [(fix lhs* rhs* body)
-       (do-fix lhs* rhs* body si r live Effect)]
-      [(conditional test conseq altern)
-       (make-conditional 
-         (Expr test si r live)
-         (Effect conseq si r live) 
-         (Effect altern si r live))]
-      [(seq e0 e1) (make-seq (Effect e0 si r live) (Effect e1 si r live))]
-      [(primcall op arg*)
-       (make-primcall op 
-         (map (lambda (x) (Expr x si r live)) arg*))]
-      [(forcall op rand*)
-       (do-new-frame #f op rand* si r 'foreign 'effect live)]
-      [(funcall op rand*)
-       (do-new-frame #f op rand* si r 'normal 'effect live)]
-      [(jmpcall label op rand*)
-       (do-new-frame label op rand* si r 'direct 'effect live)]
-      [(appcall op rand*)
-       (do-new-frame #f op rand* si r 'apply 'effect live)]
-      [else (error who "invalid effect expression ~s" (unparse x))]))
-  (define (Expr x si r live)
-    (record-case x
-      [(constant) x]
-      [(var) 
-       (cond
-         [(assq x r) => cdr]
-         [else (error who "unbound var ~s" x)])]
-      [(primref) x]
-      [(closure code free*) 
-       (make-closure code (simple* free* r))]
-      [(bind lhs* rhs* body)
-       (do-bind lhs* rhs* body si r live Expr)]
-      [(fix lhs* rhs* body)
-       (do-fix lhs* rhs* body si r live Expr)]
-      [(conditional test conseq altern)
-       (make-conditional 
-         (Expr test si r live)
-         (Expr conseq si r live) 
-         (Expr altern si r live))]
-      [(seq e0 e1) (make-seq (Effect e0 si r live) (Expr e1 si r live))]
-      [(primcall op arg*)
-       (make-primcall op 
-         (map (lambda (x) (Expr x si r live)) arg*))]
-      [(forcall op rand*)
-       (do-new-frame #f op rand* si r 'foreign 'value live)]
-      [(funcall op rand*)
-       (do-new-frame #f op rand* si r 'normal 'value live)]
-      [(jmpcall label op rand*)
-       (do-new-frame label op rand* si r 'direct 'value live)]
-      [(appcall op rand*)
-       (do-new-frame #f op rand* si r 'apply 'value live)]
-      [else (error who "invalid expression ~s" (unparse x))]))
+           (map (lambda (x) (Expr x si r live)) arg*))]
+        [(forcall op rand*)
+         (do-new-frame #f op rand* si r 'foreign 'effect live)]
+        [(funcall op rand*)
+         (do-new-frame #f op rand* si r 'normal 'effect live)]
+        [(jmpcall label op rand*)
+         (do-new-frame label op rand* si r 'direct 'effect live)]
+        [(appcall op rand*)
+         (do-new-frame #f op rand* si r 'apply 'effect live)]
+        [else (error who "invalid effect expression ~s" (unparse x))]))
+    (define (Expr x si r live)
+      (record-case x
+        [(constant) x]
+        [(var) 
+         (cond
+           [(assq x r) => cdr]
+           [else (error who "unbound var ~s" x)])]
+        [(primref) x]
+        [(closure code free*) 
+         (make-closure code (simple* free* r))]
+        [(bind lhs* rhs* body)
+         (do-bind lhs* rhs* body si r live Expr)]
+        [(fix lhs* rhs* body)
+         (do-fix lhs* rhs* body si r live Expr)]
+        [(conditional test conseq altern)
+         (make-conditional 
+           (Expr test si r live)
+           (Expr conseq si r live) 
+           (Expr altern si r live))]
+        [(seq e0 e1) (make-seq (Effect e0 si r live) (Expr e1 si r live))]
+        [(primcall op arg*)
+         (make-primcall op 
+           (map (lambda (x) (Expr x si r live)) arg*))]
+        [(forcall op rand*)
+         (do-new-frame #f op rand* si r 'foreign 'value live)]
+        [(funcall op rand*)
+         (do-new-frame #f op rand* si r 'normal 'value live)]
+        [(jmpcall label op rand*)
+         (do-new-frame label op rand* si r 'direct 'value live)]
+        [(appcall op rand*)
+         (do-new-frame #f op rand* si r 'apply 'value live)]
+        [else (error who "invalid expression ~s" (unparse x))]))
+    (Tail orig-x orig-si orig-r orig-live))
   (define (bind-fml* fml* r)
     (let f ([si 1] [fml* fml*])
       (cond
@@ -2169,7 +2178,7 @@
          (f (cdr free*) (fxadd1 idx)
             (cons (cons (car free*) (make-cp-var idx)) r))])))
   (define CaseExpr 
-    (lambda (r)
+    (lambda (r save-cp?)
       (lambda (x)
         (record-case x 
           [(clambda-case info body)
@@ -2178,17 +2187,17 @@
               (let-values ([(fml* si r live) (bind-fml* fml* r)])
                 (make-clambda-case 
                   (make-case-info label fml* proper)
-                  (Tail body si r live)))])]))))
+                  (Body body si r live save-cp?)))])]))))
   (define (CodeExpr x)
     (record-case x
       [(clambda L cases free)
        (let ([r (bind-free* free)])
-         (make-clambda L (map (CaseExpr r) cases) free))]))
+         (make-clambda L (map (CaseExpr r (not (null? free))) cases) free))]))
   (define (CodesExpr x)
     (record-case x 
       [(codes list body)
        (make-codes (map CodeExpr list) 
-                   (Tail body 1 '() '()))]))
+                   (Body body 1 '() '() #f))]))
   (CodesExpr x))
 
 (define (optimize-ap-check x)
@@ -3619,7 +3628,7 @@
        (do-value-prim op rand* ac)]
       [(new-frame base-idx size body)
        (NonTail body ac)]
-      [(call-cp call-convention direct-label rp-convention offset size mask)
+      [(call-cp call-convention direct-label save-cp? rp-convention offset size mask)
        (let ([L_CALL (unique-label)])
          (case call-convention
            [(normal)
@@ -3635,7 +3644,7 @@
                    `(byte 0) ; direct calls are ok
                    L_CALL
                    (indirect-cpr-call)
-                   (movl (mem 0 fpr) cpr)
+                   (if save-cp? (movl (mem 0 fpr) cpr) '(nop))
                    (subl (int (frame-adjustment offset)) fpr)
                    ac)]
            [(direct)
@@ -3649,7 +3658,7 @@
                    (rp-label rp-convention)
                    L_CALL
                    (call (label direct-label))
-                   (movl (mem 0 fpr) cpr)
+                   (if save-cp? (movl (mem 0 fpr) cpr) '(nop))
                    (subl (int (frame-adjustment offset)) fpr)
                    ac)] 
            [(foreign) 
@@ -3667,7 +3676,7 @@
                    '(byte 0)
                    L_CALL
                    (call ebx)
-                   (movl (mem 0 fpr) cpr)
+                   (if save-cp? (movl (mem 0 fpr) cpr) '(nop))
                    (subl (int (frame-adjustment offset)) fpr)
                    ac)]
            [else
