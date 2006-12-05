@@ -4710,3 +4710,14 @@
       [(_ name args body body* ...)
        #'(make-traced-procedure 'name (lambda args body body* ...))])))
 
+(define-syntax trace-define
+  (lambda (x)
+    (syntax-case x ()
+      [(_ (id . args) b b* ...)
+       #'(define id
+           (make-traced-procedure 'id
+              (lambda args b b* ...)))]
+      [(_ id value)
+       #'(define id
+           (make-traced-procedure 'id value))])))
+

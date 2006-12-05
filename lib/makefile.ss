@@ -26,7 +26,7 @@
     syntax-case syntax-rules module $module import $import import-only
     syntax quasisyntax unsyntax unsyntax-splicing datum
     let let* let-values cond case define-record or and when unless do
-    include parameterize trace untrace trace-lambda))
+    include parameterize trace untrace trace-lambda trace-define))
 
 
 

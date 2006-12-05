@@ -87,3 +87,21 @@
   (primitive-set! 'untrace-symbol! untrace-symbol!))
 
 
+#!eof
+
+
+Try:
+
+(trace-define fact
+  (lambda (n)
+    (if (zero? n)
+        1
+        (* n (fact (sub1 n))))))
+(fact 5)
+
+(trace-define (fact n m)
+  (cond
+    [(zero? n) m]
+    [else (fact (sub1 n) (* n m))]))
+(fact 5 1)
+
