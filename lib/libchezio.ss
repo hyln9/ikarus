@@ -1,7 +1,6 @@
 
 
 (let ()
-  (include "unsafe-record.ss")
   ;;;
   ;;; GENERIC PORTS: BASIC PRIMITIVES
   ;;;
