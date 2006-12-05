@@ -105,3 +105,17 @@ Try:
     [else (fact (sub1 n) (* n m))]))
 (fact 5 1)
 
+
+(trace-define (fact n m k)
+  (cond
+    [(zero? n) (k m)]
+    [else (begin (fact (sub1 n) (* n m) k) 0)]))
+(call/cc
+  (lambda (k)
+    (fact 6 1
+      (trace-lambda escape (v) (k v)))))
+
+(trace-define (infinite-loop n)
+  (infinite-loop (add1 n)))
+(infinite-loop 0)
+
