@@ -2,5 +2,5 @@
 *.out
 *.fasl
 .gdb_history
-ikarus.boot.back
+.vimview
 .DS_Store
