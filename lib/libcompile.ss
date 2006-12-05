@@ -1,4 +1,5 @@
 
+
 ;;; 9.0: * calls (gensym <symbol>) instead of 
 ;;;        (gensym (symbol->string <symbol>)) in order to avoid incrementing
 ;;;        gensym-count.
@@ -231,7 +232,7 @@
 
 (define-record seq (e0 e1))
 (define-record clambda-case (arg* proper body))
-(define-record clambda (cases))
+(define-record clambda (label cases))
 (define-record clambda-code (label cases free))
 (define-record closure (code free*))
 (define-record funcall (op rand*))
@@ -243,10 +244,6 @@
 (define (unique-var x)
   (make-var (gensym x) #f #f))
 
-(define (make-bind^ lhs* rhs* body)
-  (if (null? lhs*)
-      body
-      (make-bind lhs* rhs* body)))
 
 (define (recordize x)
   (define (gen-fml* fml*)
@@ -355,7 +352,7 @@
                              (list? fml*) 
                              body)))))
                    (cdr x))])
-            (make-clambda cls*))]
+            (make-clambda (gensym) cls*))]
          [(foreign-call)
           (let ([name (quoted-string (cadr x))] [arg* (cddr x)])
             (make-forcall name
@@ -438,7 +435,7 @@
       [(seq e0 e1) `(begin ,(E e0) ,(E e1))]
       [(clambda-case args proper body)
        `(clambda-case ,(E-args proper args) ,(E body))]
-      [(clambda cls*)
+      [(clambda g cls*)
        `(case-lambda . ,(map E cls*))]
       [(clambda-code label clauses free)
        `(code ,label . ,(map E clauses))]
@@ -503,9 +500,9 @@
       [else (try-inline (cdr cls*) rand* default)]))
   (define (inline rator rand*)
     (record-case rator
-      [(clambda cls*)
+      [(clambda g cls*)
        (try-inline cls* rand*
-           (make-funcall rator rand*))]
+          (make-funcall rator rand*))]
       [else (make-funcall rator rand*)]))
   (define (Expr x)
     (record-case x
@@ -523,8 +520,8 @@
          (Expr altern))]
       [(seq e0 e1) 
        (make-seq (Expr e0) (Expr e1))]
-      [(clambda cls*)
-       (make-clambda
+      [(clambda g cls*)
+       (make-clambda g
          (map (lambda (x)
                 (record-case x
                   [(clambda-case fml* proper body)
@@ -568,7 +565,7 @@
         [(clambda-case fml* proper body) 
          (bt? body)]))
     (record-case x
-      [(clambda cls*)
+      [(clambda g cls*)
        (ormap branching-clause? cls*)]
       [else #f]))
   (define (analyze producer consumer)
@@ -600,7 +597,7 @@
        (E conseq)
        (E altern)]
       [(seq e0 e1) (E e0) (E e1)]
-      [(clambda cls*)
+      [(clambda g cls*)
        (for-each 
          (lambda (x)
            (record-case x
@@ -720,8 +717,8 @@
       [(conditional e0 e1 e2)
        (make-conditional (E e0 ref comp) (E e1 ref comp) (E e2 ref comp))]
       [(seq e0 e1) (make-seq (E e0 ref comp) (E e1 ref comp))]
-      [(clambda cls*)
-       (make-clambda
+      [(clambda g cls*)
+       (make-clambda g
          (map (lambda (x)
                 (record-case x
                   [(clambda-case fml* proper body)
@@ -790,8 +787,8 @@
          (Expr altern))]
       [(seq e0 e1) 
        (make-seq (Expr e0) (Expr e1))]
-      [(clambda cls*)
-       (make-clambda
+      [(clambda g cls*)
+       (make-clambda g
          (map (lambda (x)
                 (record-case x
                   [(clambda-case fml* proper body)
@@ -834,7 +831,7 @@
       [(conditional test conseq altern)
        (begin (Expr test) (Expr conseq) (Expr altern))]
       [(seq e0 e1) (begin (Expr e0) (Expr e1))]
-      [(clambda cls*)
+      [(clambda g cls*)
        (for-each
          (lambda (cls)
            (for-each init-var (clambda-case-arg* cls))
@@ -918,14 +915,14 @@
        (make-seq (make-seq e0 (seq-e0 e1)) (seq-e1 e1))]
       [else
        (make-seq e0 e1)]))
-  (define (do-clambda x)
-    (make-clambda
+  (define (do-clambda g cls*)
+    (make-clambda g
       (map (lambda (cls)
              (record-case cls
                [(clambda-case arg* proper body)
                 (make-clambda-case arg* proper 
                    (Value body))]))
-           (clambda-cases x))))
+           cls*)))
   (define (Effect x)
     (record-case x
       [(constant) the-void]
@@ -938,7 +935,7 @@
       [(conditional test conseq altern)
        (make-conditional (Pred test) (Effect conseq) (Effect altern))]
       [(seq e0 e1) (mk-seq (Effect e0) (Effect e1))]
-      [(clambda cls*) the-void]
+      [(clambda g cls*) the-void]
       [(primcall rator rand*) ; remove effect-free primcalls
        (make-primcall rator (map Value rand*))]
       [(funcall rator rand*)
@@ -968,7 +965,7 @@
       [(conditional test conseq altern)
        (make-conditional (Pred test) (Pred conseq) (Pred altern))]
       [(seq e0 e1) (mk-seq (Effect e0) (Pred e1))]
-      [(clambda cls*) (make-constant #t)]
+      [(clambda g cls*) (make-constant #t)]
       [(primcall rator rand*) ;;; check for some effect-free/known prims
        (make-primcall rator (map Value rand*))]
       [(funcall rator rand*)
@@ -997,7 +994,7 @@
       [(conditional test conseq altern)
        (make-conditional (Pred test) (Value conseq) (Value altern))]
       [(seq e0 e1) (mk-seq (Effect e0) (Value e1))]
-      [(clambda) (do-clambda x)]
+      [(clambda g cls*) (do-clambda g cls*)]
       [(primcall rator rand*)
        (make-primcall rator (map Value rand*))]
       [(funcall rator rand*)
@@ -1053,8 +1050,8 @@
       [(conditional test conseq altern)
        (make-conditional (Expr test) (Expr conseq) (Expr altern))]
       [(seq e0 e1) (make-seq (Expr e0) (Expr e1))]
-      [(clambda cls*) 
-       (make-clambda
+      [(clambda g cls*) 
+       (make-clambda g
          (map (lambda (cls)
                 (record-case cls
                   [(clambda-case fml* proper body)
@@ -1095,7 +1092,7 @@
          (values (cons a d) (union a-free d-free)))]))
   (define (do-clambda x)
     (record-case x 
-      [(clambda cls*)
+      [(clambda g cls*)
        (let-values ([(cls* free) 
                      (let f ([cls* cls*])
                        (cond
@@ -1110,7 +1107,7 @@
                                        cls*)
                                  (union (difference body-free fml*) 
                                         cls*-free)))])]))])
-          (values (make-closure (make-clambda-code (gensym) cls* free) free)
+          (values (make-closure (make-clambda-code g cls* free) free)
                   free))]))
   (define (Expr ex)
     (record-case ex
@@ -1458,8 +1455,6 @@
 
 (define (introduce-primcalls x)
   (define who 'introduce-primcalls)
-  (define (simple? x) 
-    (or (constant? x) (var? x) (primref? x)))
   (define (Expr x)
     (record-case x
       [(constant) x]
@@ -1549,7 +1544,8 @@
 (define (simplify-operands x)
   (define who 'simplify-operands)
   (define (simple? x) 
-    (or (constant? x) (var? x) (primref? x)))
+    (or (constant? x) (var? x) (primref? x)
+        (and (closure? x) (null? (closure-free* x)))))
   (define (simplify arg lhs* rhs* k)
     (if (simple? arg)
         (k arg lhs* rhs*)
@@ -1564,6 +1560,10 @@
            (simplify* (cdr arg*) lhs* rhs*
              (lambda (d lhs* rhs*)
                (k (cons a d) lhs* rhs*)))))]))
+  (define (make-bind^ lhs* rhs* body)
+    (if (null? lhs*)
+        body
+        (make-bind lhs* rhs* body)))
   (define (Expr x)
     (record-case x
       [(constant) x]
@@ -3331,6 +3331,10 @@
       [(constant c) (constant-val c)]
       [(code-loc label) (label-address label)]
       [(primref op) (primref-loc op)]
+      [(closure label free) 
+       (cond
+         [(null? free) (obj x)]
+         [else (error 'Simple "BUG: not a thunk ~s" x)])]
       [else (error 'Simple "what ~s" x)]))
   (define (do-fix lhs* rhs* ac)
     ;;; 1. first, set the code pointers in the right places
