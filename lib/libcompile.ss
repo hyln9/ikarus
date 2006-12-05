@@ -232,8 +232,7 @@
 
 (define-record seq (e0 e1))
 (define-record clambda-case (arg* proper body))
-(define-record clambda (label cases))
-(define-record clambda-code (label cases free))
+(define-record clambda (label cases free))
 (define-record closure (code free*))
 (define-record funcall (op rand*))
 (define-record appcall (op rand*))
@@ -352,7 +351,7 @@
                              (list? fml*) 
                              body)))))
                    (cdr x))])
-            (make-clambda (gensym) cls*))]
+            (make-clambda (gensym) cls* #f))]
          [(foreign-call)
           (let ([name (quoted-string (cadr x))] [arg* (cddr x)])
             (make-forcall name
@@ -437,7 +436,7 @@
        `(clambda-case ,(E-args proper args) ,(E body))]
       [(clambda g cls*)
        `(case-lambda . ,(map E cls*))]
-      [(clambda-code label clauses free)
+      [(clambda label clauses free)
        `(code ,label . ,(map E clauses))]
       [(closure code free*)
        `(closure ,(E code) ,(map E free*))]
@@ -526,7 +525,8 @@
                 (record-case x
                   [(clambda-case fml* proper body)
                    (make-clambda-case fml* proper (Expr body))]))
-              cls*))]
+              cls*)
+         #f)]
       [(primcall rator rand*) 
        (make-primcall rator (map Expr rand*))]
       [(funcall rator rand*)
@@ -725,7 +725,8 @@
                    (let ([h (make-hash-table)])
                      (let ([body (E body (extend-hash fml* h ref) void)])
                        (make-clambda-case fml* proper body)))]))
-              cls*))]
+              cls*)
+         #f)]
       [(primcall rator rand*) 
        (when (memq rator '(call/cc call/cf))
          (comp))
@@ -793,7 +794,8 @@
                 (record-case x
                   [(clambda-case fml* proper body)
                    (make-clambda-case fml* proper (Expr body))]))
-              cls*))]
+              cls*)
+         #f)]
       [(primcall rator rand*) 
        (make-primcall rator (map Expr rand*))]
       [(funcall rator rand*)
@@ -922,7 +924,8 @@
                [(clambda-case arg* proper body)
                 (make-clambda-case arg* proper 
                    (Value body))]))
-           cls*)))
+           cls*)
+      #f))
   (define (Effect x)
     (record-case x
       [(constant) the-void]
@@ -1058,7 +1061,8 @@
                    (let-values ([(fml* a-lhs* a-rhs*) (fix-lhs* fml*)])
                      (make-clambda-case fml* proper 
                        (bind-assigned a-lhs* a-rhs* (Expr body))))]))
-              cls*))]
+              cls*)
+         #f)]
       [(primcall op rand*)
        (make-primcall op (map Expr rand*))]
       [(forcall op rand*)
@@ -1107,7 +1111,7 @@
                                        cls*)
                                  (union (difference body-free fml*) 
                                         cls*-free)))])]))])
-          (values (make-closure (make-clambda-code g cls* free) free)
+          (values (make-closure (make-clambda g cls* free) free)
                   free))]))
   (define (Expr ex)
     (record-case ex
@@ -1176,7 +1180,7 @@
       [else #f]))
   (define (trim/lift-code code free*)
     (record-case code
-      [(clambda-code label cls* free*/dropped)
+      [(clambda label cls* free*/dropped)
        (let ([cls* (map
                      (lambda (x)
                        (record-case x 
@@ -1187,7 +1191,7 @@
                      cls*)])
          (let ([g (make-code-loc label)])
            (set! all-codes
-             (cons (make-clambda-code label cls* free*) all-codes))
+             (cons (make-clambda label cls* free*) all-codes))
            g))]))
   (define (optimize-one-closure code free)
     (let ([free (trim-vars free)])
@@ -1298,7 +1302,7 @@
   (define all-codes '())
   (define (do-code x)
     (record-case x
-      [(clambda-code label cls* free) 
+      [(clambda label cls* free) 
        (let ([cls* (map 
                      (lambda (x)
                        (record-case x
@@ -1307,7 +1311,7 @@
                      cls*)])
          (let ([g (make-code-loc label)])
            (set! all-codes
-             (cons (make-clambda-code label cls* free) all-codes))
+             (cons (make-clambda label cls* free) all-codes))
            g))]))
   (define (E x)
     (record-case x
@@ -1533,8 +1537,8 @@
        (make-clambda-case fml* proper (Tail body))]))
   (define (CodeExpr x)
     (record-case x
-      [(clambda-code L cases free) 
-       (make-clambda-code L (map CaseExpr cases) free)]))
+      [(clambda L cases free) 
+       (make-clambda L (map CaseExpr cases) free)]))
   (define (CodesExpr x)
     (record-case x 
       [(codes list body)
@@ -1614,8 +1618,8 @@
        (make-clambda-case fml* proper (Tail body))]))
   (define (CodeExpr x)
     (record-case x
-      [(clambda-code L clauses free)
-       (make-clambda-code L (map CaseExpr clauses) free)]))
+      [(clambda L clauses free)
+       (make-clambda L (map CaseExpr clauses) free)]))
   (define (CodesExpr x)
     (record-case x 
       [(codes list body)
@@ -1668,8 +1672,8 @@
            x)]))
   (define (CodeExpr x)
     (record-case x
-      [(clambda-code L cases free)
-       (make-clambda-code L (map CaseExpr cases) free)]))
+      [(clambda L cases free)
+       (make-clambda L (map CaseExpr cases) free)]))
   (define (CodesExpr x)
     (record-case x 
       [(codes list body)
@@ -1814,8 +1818,8 @@
        (make-clambda-case fml* proper (Tail body))]))
   (define (CodeExpr x)
     (record-case x
-      [(clambda-code L cases free)
-       (make-clambda-code L (map CaseExpr cases) free)]))
+      [(clambda L cases free)
+       (make-clambda L (map CaseExpr cases) free)]))
   (define (CodesExpr x)
     (record-case x 
       [(codes list body)
@@ -2054,9 +2058,9 @@
              (make-clambda-case fml* proper (Tail body si r live)))]))))
   (define (CodeExpr x)
     (record-case x
-      [(clambda-code L cases free)
+      [(clambda L cases free)
        (let ([r (bind-free* free)])
-         (make-clambda-code L (map (CaseExpr r) cases) free))]))
+         (make-clambda L (map (CaseExpr r) cases) free))]))
   (define (CodesExpr x)
     (record-case x 
       [(codes list body)
@@ -2156,8 +2160,8 @@
          (make-clambda-case fml* proper (Tail body 0))])))
   (define (CodeExpr x)
     (record-case x
-      [(clambda-code L cases free)
-       (make-clambda-code L (map CaseExpr cases) free)]))
+      [(clambda L cases free)
+       (make-clambda L (map CaseExpr cases) free)]))
   (define (CodesExpr x)
     (record-case x 
       [(codes list body)
@@ -3762,7 +3766,7 @@
                  (f (car x*) (cdr x*) (car L*) (cdr L*))))])))))
   (define (CodeExpr x)
     (record-case x
-      [(clambda-code L cases free)
+      [(clambda L cases free)
        (list*
          (length free)
          (label L)
