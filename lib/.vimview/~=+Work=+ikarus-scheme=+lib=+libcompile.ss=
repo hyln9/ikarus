@@ -1,0 +1,194 @@
+let s:so_save = &so | let s:siso_save = &siso | set so=0 siso=0
+argglobal
+setlocal noarabic
+setlocal autoindent
+setlocal autoread
+setlocal nobinary
+setlocal bufhidden=
+setlocal buflisted
+setlocal buftype=
+setlocal nocindent
+setlocal cinkeys=0{,0},0),:,0#,!^F,o,O,e
+setlocal cinoptions=
+setlocal cinwords=if,else,while,do,for,switch
+setlocal comments=s1:/*,mb:*,ex:*/,://,b:#,:%,:XCOMM,n:>,fb:-
+setlocal commentstring=/*%s*/
+setlocal complete=.,w,b,u,t,i
+setlocal completefunc=
+setlocal nocopyindent
+setlocal nocursorcolumn
+setlocal nocursorline
+setlocal define=
+setlocal dictionary=
+setlocal nodiff
+setlocal equalprg=
+setlocal errorformat=
+setlocal expandtab
+if &filetype != 'scheme'
+setlocal filetype=scheme
+endif
+setlocal foldcolumn=0
+setlocal foldenable
+setlocal foldexpr=0
+setlocal foldignore=#
+setlocal foldlevel=0
+setlocal foldmarker={{{,}}}
+setlocal foldmethod=manual
+setlocal foldminlines=1
+setlocal foldnestmax=20
+setlocal foldtext=foldtext()
+setlocal formatexpr=
+setlocal formatoptions=tcq
+setlocal formatlistpat=^\\s*\\d\\+[\\]:.)}\\t\ ]\\s*
+setlocal grepprg=
+setlocal iminsert=0
+setlocal imsearch=0
+setlocal include=
+setlocal includeexpr=
+setlocal indentexpr=
+setlocal indentkeys=0{,0},:,0#,!^F,o,O,e
+setlocal noinfercase
+setlocal iskeyword=33,35-39,42-58,60-90,94,95,97-122,126,_
+setlocal keymap=
+setlocal keywordprg=
+setlocal nolinebreak
+setlocal lisp
+setlocal nolist
+setlocal makeprg=
+setlocal matchpairs=(:),{:},[:]
+setlocal modeline
+setlocal modifiable
+setlocal nrformats=octal,hex
+setlocal nonumber
+setlocal numberwidth=4
+setlocal omnifunc=
+setlocal path=
+setlocal nopreserveindent
+setlocal nopreviewwindow
+setlocal quoteescape=\\
+setlocal noreadonly
+setlocal norightleft
+setlocal rightleftcmd=search
+setlocal noscrollbind
+setlocal shiftwidth=2
+setlocal noshortname
+setlocal nosmartindent
+setlocal softtabstop=0
+setlocal nospell
+setlocal spellcapcheck=[.?!]\\_[\\])'\"\	\ ]\\+
+setlocal spellfile=
+setlocal spelllang=en
+setlocal statusline=
+setlocal suffixesadd=
+setlocal swapfile
+setlocal synmaxcol=3000
+if &syntax != 'scheme'
+setlocal syntax=scheme
+endif
+setlocal tabstop=8
+setlocal tags=
+setlocal textwidth=68
+setlocal thesaurus=
+setlocal nowinfixheight
+setlocal nowinfixwidth
+setlocal wrap
+setlocal wrapmargin=0
+silent! normal! zE
+32,193fold
+32,193fold
+248,409fold
+411,479fold
+481,551fold
+559,634fold
+636,766fold
+769,820fold
+822,865fold
+867,1026fold
+1028,1093fold
+1095,1177fold
+1179,1266fold
+1268,1401fold
+1403,1438fold
+1440,1540fold
+1542,1561fold
+1563,1653fold
+1655,1738fold
+1740,1797fold
+1799,1944fold
+1946,2211fold
+2213,2312fold
+2314,2401fold
+2403,2472fold
+2474,2486fold
+2488,2491fold
+2493,3949fold
+3951,4174fold
+32
+normal zo
+32
+normal zc
+32
+normal zo
+248
+normal zc
+411
+normal zc
+481
+normal zc
+559
+normal zc
+636
+normal zc
+769
+normal zc
+822
+normal zc
+867
+normal zc
+1028
+normal zc
+1095
+normal zc
+1179
+normal zc
+1268
+normal zc
+1403
+normal zc
+1440
+normal zc
+1542
+normal zc
+1563
+normal zc
+1655
+normal zc
+1740
+normal zc
+1799
+normal zc
+1946
+normal zc
+2213
+normal zc
+2314
+normal zc
+2403
+normal zc
+2474
+normal zc
+2488
+normal zc
+2493
+normal zc
+3951
+normal zc
+let s:l = 3951 - ((1463 * winheight(0) + 17) / 35)
+if s:l < 1 | let s:l = 1 | endif
+exe s:l
+normal! zt
+3951
+normal! 0
+let &so = s:so_save | let &siso = s:siso_save
+doautoall SessionLoadPost
+" vim: set ft=vim :
