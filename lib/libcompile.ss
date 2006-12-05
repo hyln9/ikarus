@@ -1982,9 +1982,19 @@
                        (nop))
                    (case call-convention
                      [(normal apply)
-                      (make-eval-cp (check? op) (Expr op nsi r (cons si live)))]
+                      (make-eval-cp (check? op)
+                        (Expr op nsi r 
+                          (if save-cp? 
+                              (cons si live)
+                              live)))]
                      [(direct)
-                      (make-eval-cp (check? op) (Expr op nsi r (cons si live)))]
+                      (if (closure? op)
+                          (nop)
+                          (make-eval-cp #f
+                            (Expr op nsi r 
+                              (if save-cp?
+                                  (cons si live)
+                                  live))))]
                      [(foreign)
                       (make-eval-cp #f (make-foreign-label op))]
                      [else (error who "invalid convention ~s" call-convention)]))
@@ -3656,6 +3666,7 @@
                    `(int ,(fx* offset wordsize))
                    `(current-frame-offset)
                    (rp-label rp-convention)
+                   ;;; no padding for direct calls
                    L_CALL
                    (call (label direct-label))
                    (if save-cp? (movl (mem 0 fpr) cpr) '(nop))
