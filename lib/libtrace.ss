@@ -29,14 +29,25 @@
                (dynamic-wind
                  (lambda () (set! k* (cons f k*)))
                  (lambda () 
-                   (let ([v 
-                          (call/cf
-                            (lambda (nf)
-                              (set! f nf)
-                              (set-car! k* nf)
-                              (apply proc args)))])
-                     (display-trace k* v)
-                     v))
+                   (call-with-values
+                     (lambda ()
+                       (call/cf
+                         (lambda (nf)
+                           (set! f nf)
+                           (set-car! k* nf)
+                           (apply proc args))))
+                     (lambda v*
+                       (display-prefix k* #t)
+                       (unless (null? v*)
+                         (write (car v*))
+                         (let f ([v* (cdr v*)])
+                           (cond
+                             [(null? v*) (newline)]
+                             [else
+                              (write-char #\space)
+                              (write (car v*))
+                              (f (cdr v*))])))
+                       (apply values v*))))
                  (lambda () (set! k* (cdr k*))))]))))))
       
   (define traced-symbols '())
