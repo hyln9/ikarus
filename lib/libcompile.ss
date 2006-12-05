@@ -221,8 +221,8 @@
 (define-record eval-cp (check body))
 (define-record return (value))
 (define-record call-cp
-  (call-convention rp-convention base-idx arg-count live-mask))
-(define-record tailcall-cp (convention arg-count))
+  (call-convention label rp-convention base-idx arg-count live-mask))
+(define-record tailcall-cp (convention label arg-count))
 (define-record primcall (op arg*))
 (define-record primref (name))
 (define-record conditional (test conseq altern))
@@ -236,6 +236,7 @@
 (define-record clambda (label cases free))
 (define-record closure (code free*))
 (define-record funcall (op rand*))
+(define-record jmpcall (label op rand*))
 (define-record appcall (op rand*))
 (define-record forcall (op rand*))
 (define-record codes (list body))
@@ -448,6 +449,8 @@
        `(codes ,(map E list)
           ,(E body))]
       [(funcall rator rand*) `(funcall ,(E rator) . ,(map E rand*))]
+      [(jmpcall label rator rand*)
+       `(jmpcall ,label ,(E rator) . ,(map E rand*))]
       [(appcall rator rand*) `(appcall ,(E rator) . ,(map E rand*))]
       [(forcall rator rand*) `(foreign-call ,rator . ,(map E rand*))]
       [(assign lhs rhs) `(set! ,(E lhs) ,(E rhs))]
@@ -464,8 +467,9 @@
        `(save-cp ,(E expr))]
       [(eval-cp check body)
        `(eval-cp ,check ,(E body))]
-      [(call-cp call-convention rp-convention base-idx arg-count live-mask)
+      [(call-cp call-convention label rp-convention base-idx arg-count live-mask)
        `(call-cp [conv: ,call-convention]
+                 [label: ,label]
                  [rpconv: ,rp-convention]
                  [base-idx: ,base-idx]
                  [arg-count: ,arg-count]
@@ -1088,6 +1092,90 @@
       [else (error who "invalid expression ~s" (unparse x))]))
   (Expr x))
 
+(define (optimize-for-direct-jumps x)
+  (define who 'optimize-for-direct-jumps)
+  (define (init-var x)
+    (set-var-referenced! x #f))
+  (define (set-var x v)
+    (record-case v
+      [(clambda) (set-var-referenced! x v)]
+      [(var) 
+       (cond
+         [(bound-var v) => (lambda (v) (set-var-referenced! x v))]
+         [else (void)])]
+      [else (void)]))
+  (define (bound-var x)
+    (var-referenced x))
+  (define (optimize c rator rand*)
+    (let ([n (length rand*)])
+      (record-case c
+        [(clambda main-label cls*)
+         (let f ([cls* cls*])
+           (cond
+             [(null? cls*) 
+              ;;; none matching?
+              (make-funcall rator rand*)]
+             [else
+              (record-case (clambda-case-info (car cls*))
+                [(case-info label fml* proper)
+                 (cond
+                   [proper
+                    (if (fx= n (length fml*))
+                        (make-jmpcall label rator rand*)
+                        (f (cdr cls*)))]
+                   [else
+                    (if (fx<= (length (cdr fml*)) n)
+                        (make-jmpcall label rator
+                           (let f ([fml* (cdr fml*)] [rand* rand*])
+                             (cond
+                               [(null? fml*) 
+                                (list (make-primcall 'list rand*))]
+                               [else
+                                (cons (car rand*)
+                                      (f (cdr fml*) (cdr rand*)))])))
+                        (f (cdr cls*)))])])]))])))
+  (define (Expr x)
+    (record-case x
+      [(constant) x]
+      [(var)      x]
+      [(primref)  x]
+      [(bind lhs* rhs* body)
+       (for-each init-var lhs*)
+       (let ([rhs* (map Expr rhs*)])
+         (for-each set-var lhs* rhs*)
+         (make-bind lhs* rhs* (Expr body)))]
+      [(fix lhs* rhs* body)
+       (for-each set-var lhs* rhs*)
+       (make-fix lhs* (map Expr rhs*) (Expr body))]
+      [(conditional test conseq altern)
+       (make-conditional (Expr test) (Expr conseq) (Expr altern))]
+      [(seq e0 e1) (make-seq (Expr e0) (Expr e1))]
+      [(clambda g cls*) 
+       (make-clambda g
+         (map (lambda (cls)
+                (record-case cls
+                  [(clambda-case info body)
+                   (for-each init-var (case-info-args info))
+                   (make-clambda-case info (Expr body))]))
+              cls*)
+         #f)]
+      [(primcall op rand*)
+       (make-primcall op (map Expr rand*))]
+      [(forcall op rand*)
+       (make-forcall op (map Expr rand*))]
+      [(funcall rator rand*)
+       (let ([rator (Expr rator)])
+         (cond
+           [(and (var? rator) (bound-var rator)) =>
+            (lambda (c)
+              (optimize c rator (map Expr rand*)))]
+           [else
+            (make-funcall rator (map Expr rand*))]))]
+      [(appcall rator rand*)
+       (make-appcall (Expr rator) (map Expr rand*))]
+      [else (error who "invalid expression ~s" (unparse x))]))
+  (Expr x))
+
 (define (convert-closures prog)
   (define who 'convert-closures)
   (define (Expr* x*)
@@ -1160,6 +1248,11 @@
                     [(rand* rand*-free) (Expr* rand*)])
          (values (make-funcall rator rand*) 
                  (union rat-free rand*-free)))]
+      [(jmpcall label rator rand*)
+       (let-values ([(rator rat-free) (Expr rator)]
+                    [(rand* rand*-free) (Expr* rand*)])
+         (values (make-jmpcall label rator rand*) 
+                 (union rat-free rand*-free)))] 
       [(appcall rator rand*)
        (let-values ([(rator rat-free) (Expr rator)]
                     [(rand* rand*-free) (Expr* rand*)])
@@ -1301,6 +1394,7 @@
       [(primcall op rand*)   (make-primcall op (map E rand*))]
       [(forcall op rand*)    (make-forcall op (map E rand*))]
       [(funcall rator rand*) (make-funcall (E rator) (map E rand*))]
+      [(jmpcall label rator rand*) (make-jmpcall label (E rator) (map E rand*))]
       [(appcall rator rand*) (make-appcall (E rator) (map E rand*))]
       [else (error who "invalid expression ~s" (unparse x))]))
   (let ([x (E x)])
@@ -1503,6 +1597,8 @@
           (when (primref? rator)
             (mark-uninlined (primref-name rator)))
           (make-funcall (Expr rator) (map Expr rand*))])]
+      [(jmpcall label op arg*)
+       (make-jmpcall label (Expr op) (map Expr arg*))]
       [(appcall op arg*)
        (make-appcall (Expr op) (map Expr arg*))]
       [else (error who "invalid expression ~s" (unparse x))]))
@@ -1537,6 +1633,8 @@
           (Tail (make-primcall (primref-name rator) rand*))]
          [else
           (make-funcall (Expr rator) (map Expr rand*))])]
+      [(jmpcall label op arg*)
+       (make-jmpcall label (Expr op) (map Expr arg*))]
       [(appcall op arg*)
        (make-appcall (Expr op) (map Expr arg*))]
       [else (error who "invalid expression ~s" (unparse x))]))
@@ -1605,6 +1703,8 @@
        (make-funcall (Expr rator) (map Expr rand*))]
       [(appcall op arg*)
        (make-appcall (Expr op) (map Expr arg*))]
+      [(jmpcall label op arg*)
+       (make-jmpcall label (Expr op) (map Expr arg*))]
       [else (error who "invalid expression ~s" (unparse x))]))
   (define (Tail x)
     (record-case x
@@ -1620,6 +1720,8 @@
        (make-funcall (Expr rator) (map Expr rand*))]
       [(appcall op arg*)
        (make-appcall (Expr op) (map Expr arg*))]
+      [(jmpcall label op arg*)
+       (make-jmpcall label (Expr op) (map Expr arg*))]
       [else (error who "invalid expression ~s" (unparse x))]))
   (define (CaseExpr x)
     (record-case x 
@@ -1660,6 +1762,7 @@
       [(forcall op arg*)  (ormap Expr arg*)]
       [(funcall rator arg*) #t] 
       [(appcall rator arg*)    #t]
+      [(jmpcall label rator arg*)    #t]
       [else (error who "invalid expression ~s" (unparse x))]))
   (define (Tail x)
     (record-case x
@@ -1672,6 +1775,7 @@
       [(seq e0 e1) (or (Expr e0) (Tail e1))]
       [(funcall rator arg*) (or (Expr rator) (ormap Expr arg*))] 
       [(appcall rator arg*) (or (Expr rator) (ormap Expr arg*))]
+      [(jmpcall label rator arg*) (or (Expr rator) (ormap Expr arg*))]
       [else (error who "invalid tail expression ~s" (unparse x))]))
   (define (CaseExpr x)
     (record-case x 
@@ -1801,6 +1905,8 @@
        (make-funcall (Expr rator) (map Expr rand*))]
       [(appcall op arg*)
        (make-appcall (Expr op) (map Expr arg*))]
+      [(jmpcall label op arg*)
+       (make-jmpcall label (Expr op) (map Expr arg*))]
       [else (error who "invalid expression ~s" (unparse x))]))
   (define (Tail x)
     (record-case x
@@ -1818,6 +1924,8 @@
       [(seq e0 e1) (make-seq (Expr e0) (Tail e1))]
       [(funcall rator rand*)
        (make-funcall (Expr rator) (map Expr rand*))]
+      [(jmpcall label op arg*)
+       (make-jmpcall label (Expr op) (map Expr arg*))]
       [(appcall op arg*)
        (make-appcall (Expr op) (map Expr arg*))]
       [else (error who "invalid expression ~s" (unparse x))]))
@@ -1860,7 +1968,7 @@
       [(primref? x) #f]  ;;;; PRIMREF CHECK
       [(closure? x) #f]
       [else         #t]))
-  (define (do-new-frame op rand* si r call-convention rp-convention orig-live)
+  (define (do-new-frame label op rand* si r call-convention rp-convention orig-live)
     (make-new-frame (fxadd1 si) (fx+ (length rand*) 2)
       (let f ([r* rand*] [nsi (fx+ si 2)] [live orig-live])
         (cond
@@ -1869,12 +1977,12 @@
              (make-seq 
                (make-save-cp (make-frame-var si))
                (case call-convention
-                 [(normal apply)
+                 [(normal apply direct)
                   (make-eval-cp (check? op) (Expr op nsi r (cons si live)))]
                  [(foreign)
                   (make-eval-cp #f (make-foreign-label op))]
                  [else (error who "invalid convention ~s" call-convention)]))
-             (make-call-cp call-convention 
+             (make-call-cp call-convention label
                 rp-convention
                 (fxadd1 si)    ; frame size
                 (length rand*) ; argc
@@ -1914,7 +2022,7 @@
            (f (cdr l*) (cons v nlhs*) (fxadd1 si) 
               (cons (cons (car l*) v) r)
               (cons si live)))])))
-  (define (do-tail-frame op rand* si r call-conv live)
+  (define (do-tail-frame label op rand* si r call-conv live)
     (define (const? x)
       (record-case x
         [(constant) #t]
@@ -1955,7 +2063,7 @@
                     (make-assign (make-frame-var i) vsi))))]))]))
     (make-seq
       (evalrand* rand* 1 si r live (make-primcall 'void '()))
-      (make-tailcall-cp call-conv (length rand*))))
+      (make-tailcall-cp call-conv label (length rand*))))
   (define (Tail x si r live)
     (record-case x
       [(return v) (make-return (Expr v si r live))]
@@ -1975,13 +2083,11 @@
            (map (lambda (x) (Expr x si r live)) arg*)))]
                                   
       [(funcall op rand*)
-       (do-tail-frame op rand* si r 'normal live)]
+       (do-tail-frame #f op rand* si r 'normal live)]
       [(appcall op rand*)
-       (do-tail-frame op rand* si r 'apply live)]
-;;;      [(funcall op rand*)
-;;;       (do-new-frame op rand* si r 'normal 'tail live)]
-;;;      [(appcall op rand*)
-;;;       (do-new-frame op rand* si r 'apply 'tail live)]
+       (do-tail-frame #f op rand* si r 'apply live)]
+      [(jmpcall label op rand*)
+       (do-tail-frame label op rand* si r 'direct live)]
       [else (error who "invalid expression ~s" (unparse x))]))
   (define (Effect x si r live)
     (record-case x
@@ -2003,11 +2109,13 @@
        (make-primcall op 
          (map (lambda (x) (Expr x si r live)) arg*))]
       [(forcall op rand*)
-       (do-new-frame op rand* si r 'foreign 'effect live)]
+       (do-new-frame #f op rand* si r 'foreign 'effect live)]
       [(funcall op rand*)
-       (do-new-frame op rand* si r 'normal 'effect live)]
+       (do-new-frame #f op rand* si r 'normal 'effect live)]
+      [(jmpcall label op rand*)
+       (do-new-frame label op rand* si r 'direct 'effect live)]
       [(appcall op rand*)
-       (do-new-frame op rand* si r 'apply 'effect live)]
+       (do-new-frame #f op rand* si r 'apply 'effect live)]
       [else (error who "invalid effect expression ~s" (unparse x))]))
   (define (Expr x si r live)
     (record-case x
@@ -2033,11 +2141,13 @@
        (make-primcall op 
          (map (lambda (x) (Expr x si r live)) arg*))]
       [(forcall op rand*)
-       (do-new-frame op rand* si r 'foreign 'value live)]
+       (do-new-frame #f op rand* si r 'foreign 'value live)]
       [(funcall op rand*)
-       (do-new-frame op rand* si r 'normal 'value live)]
+       (do-new-frame #f op rand* si r 'normal 'value live)]
+      [(jmpcall label op rand*)
+       (do-new-frame label op rand* si r 'direct 'value live)]
       [(appcall op rand*)
-       (do-new-frame op rand* si r 'apply 'value live)]
+       (do-new-frame #f op rand* si r 'apply 'value live)]
       [else (error who "invalid expression ~s" (unparse x))]))
   (define (bind-fml* fml* r)
     (let f ([si 1] [fml* fml*])
@@ -3509,7 +3619,7 @@
        (do-value-prim op rand* ac)]
       [(new-frame base-idx size body)
        (NonTail body ac)]
-      [(call-cp call-convention rp-convention offset size mask)
+      [(call-cp call-convention direct-label rp-convention offset size mask)
        (let ([L_CALL (unique-label)])
          (case call-convention
            [(normal)
@@ -3528,6 +3638,20 @@
                    (movl (mem 0 fpr) cpr)
                    (subl (int (frame-adjustment offset)) fpr)
                    ac)]
+           [(direct)
+            (list* (addl (int (frame-adjustment offset)) fpr)
+                   ;(movl (int (argc-convention size)) eax)
+                   (jmp L_CALL)
+                   ; NEW FRAME
+                   `(byte-vector ,mask)
+                   `(int ,(fx* offset wordsize))
+                   `(current-frame-offset)
+                   (rp-label rp-convention)
+                   L_CALL
+                   (call (label direct-label))
+                   (movl (mem 0 fpr) cpr)
+                   (subl (int (frame-adjustment offset)) fpr)
+                   ac)] 
            [(foreign) 
             (list* (addl (int (frame-adjustment offset)) fpr)
                    (movl (int (argc-convention size)) eax)
@@ -3669,15 +3793,23 @@
       (do-fix lhs* rhs* (Tail body ac))]
      [(new-frame idx size body)
       (Tail body ac)]
-     [(tailcall-cp call-convention argc)
-      (list* 
-        (movl (int (argc-convention argc)) eax)
-        (case call-convention
-          [(normal) (tail-indirect-cpr-call)]
-          [(apply)  (jmp (label SL_apply))]
-          [else 
-           (error who "invalid tail-call convention ~s" call-convention)])
-        ac)]
+     [(tailcall-cp call-convention direct-label argc)
+      (case call-convention
+        [(normal) 
+         (list*
+           (movl (int (argc-convention argc)) eax)
+           (tail-indirect-cpr-call)
+           ac)]
+        [(apply)  
+         (list*
+           (movl (int (argc-convention argc)) eax)
+           (jmp (label SL_apply))
+           ac)]
+        [(direct) 
+         (list* (jmp (label direct-label)) ac)]
+        [else 
+         (error who "invalid tail-call convention ~s"
+                call-convention)])]
       [else (error 'Tail "invalid expression ~s" x)]))
   (define (handle-vararg fml-count ac)
     (define CONTINUE_LABEL (unique-label))
@@ -4028,6 +4160,7 @@
          [p (uncover-assigned/referenced p)]
          [p (copy-propagate p)]
          [p (rewrite-assignments p)]
+         [p (optimize-for-direct-jumps p)]
          [p (convert-closures p)]
          [p (optimize-closures/lift-codes p)]
          [p (introduce-primcalls p)]
