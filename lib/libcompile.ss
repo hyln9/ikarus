@@ -231,7 +231,8 @@
 (define-record fix (lhs* rhs* body))
 
 (define-record seq (e0 e1))
-(define-record clambda-case (arg* proper body))
+(define-record case-info (args proper))
+(define-record clambda-case (info body))
 (define-record clambda (label cases free))
 (define-record closure (code free*))
 (define-record funcall (op rand*))
@@ -242,7 +243,6 @@
 
 (define (unique-var x)
   (make-var (gensym x) #f #f))
-
 
 (define (recordize x)
   (define (gen-fml* fml*)
@@ -347,8 +347,9 @@
                        (let ([nfml* (gen-fml* fml*)])
                          (let ([body (E body (extend-env fml* nfml* env))])
                            (make-clambda-case 
-                             (properize nfml*) 
-                             (list? fml*) 
+                             (make-case-info
+                               (properize nfml*) 
+                               (list? fml*)) 
                              body)))))
                    (cdr x))])
             (make-clambda (gensym) cls* #f))]
@@ -432,8 +433,10 @@
        `(fix ,(map (lambda (lhs rhs) (list (E lhs) (E rhs))) lhs* rhs*)
           ,(E body))]
       [(seq e0 e1) `(begin ,(E e0) ,(E e1))]
-      [(clambda-case args proper body)
-       `(clambda-case ,(E-args proper args) ,(E body))]
+      [(clambda-case info body)
+       `(clambda-case ,(E-args (case-info-proper info)
+                               (case-info-args info))
+            ,(E body))]
       [(clambda g cls*)
        `(case-lambda . ,(map E cls*))]
       [(clambda label clauses free)
@@ -486,12 +489,14 @@
       [else (cons (car rhs*) (properize (cdr lhs*) (cdr rhs*)))]))
   (define (inline-case cls rand*)
     (record-case cls
-      [(clambda-case fml* proper body)
-       (if proper
-           (and (fx= (length fml*) (length rand*))
-                (make-bind fml* rand* body))
-           (and (fx<= (length fml*) (length rand*))
-                (make-bind fml* (properize fml* rand*) body)))]))
+      [(clambda-case info body)
+       (record-case info
+         [(case-info fml* proper)
+          (if proper
+              (and (fx= (length fml*) (length rand*))
+                   (make-bind fml* rand* body))
+              (and (fx<= (length fml*) (length rand*))
+                   (make-bind fml* (properize fml* rand*) body)))])]))
   (define (try-inline cls* rand* default)
     (cond
       [(null? cls*) default]
@@ -523,8 +528,8 @@
        (make-clambda g
          (map (lambda (x)
                 (record-case x
-                  [(clambda-case fml* proper body)
-                   (make-clambda-case fml* proper (Expr body))]))
+                  [(clambda-case info body)
+                   (make-clambda-case info (Expr body))]))
               cls*)
          #f)]
       [(primcall rator rand*) 
@@ -562,7 +567,7 @@
         [else #f]))
     (define (branching-clause? x)
       (record-case x 
-        [(clambda-case fml* proper body) 
+        [(clambda-case info body) 
          (bt? body)]))
     (record-case x
       [(clambda g cls*)
@@ -601,7 +606,7 @@
        (for-each 
          (lambda (x)
            (record-case x
-             [(clambda-case fml* proper body) (E body)]))
+             [(clambda-case info body) (E body)]))
          cls*)]
       [(primcall rator rand*) 
        (for-each E rand*)
@@ -721,10 +726,10 @@
        (make-clambda g
          (map (lambda (x)
                 (record-case x
-                  [(clambda-case fml* proper body)
+                  [(clambda-case info body)
                    (let ([h (make-hash-table)])
-                     (let ([body (E body (extend-hash fml* h ref) void)])
-                       (make-clambda-case fml* proper body)))]))
+                     (let ([body (E body (extend-hash (case-info-args info) h ref) void)])
+                       (make-clambda-case info body)))]))
               cls*)
          #f)]
       [(primcall rator rand*) 
@@ -792,8 +797,8 @@
        (make-clambda g
          (map (lambda (x)
                 (record-case x
-                  [(clambda-case fml* proper body)
-                   (make-clambda-case fml* proper (Expr body))]))
+                  [(clambda-case info body)
+                   (make-clambda-case info (Expr body))]))
               cls*)
          #f)]
       [(primcall rator rand*) 
@@ -836,8 +841,10 @@
       [(clambda g cls*)
        (for-each
          (lambda (cls)
-           (for-each init-var (clambda-case-arg* cls))
-           (Expr (clambda-case-body cls)))
+           (record-case cls
+             [(clambda-case info body)
+              (for-each init-var (case-info-args info))
+              (Expr body)]))
          cls*)]
       [(primcall rator rand*) (Expr* rand*)]
       [(funcall rator rand*)
@@ -921,9 +928,8 @@
     (make-clambda g
       (map (lambda (cls)
              (record-case cls
-               [(clambda-case arg* proper body)
-                (make-clambda-case arg* proper 
-                   (Value body))]))
+               [(clambda-case info body)
+                (make-clambda-case info (Value body))]))
            cls*)
       #f))
   (define (Effect x)
@@ -1057,10 +1063,13 @@
        (make-clambda g
          (map (lambda (cls)
                 (record-case cls
-                  [(clambda-case fml* proper body)
-                   (let-values ([(fml* a-lhs* a-rhs*) (fix-lhs* fml*)])
-                     (make-clambda-case fml* proper 
-                       (bind-assigned a-lhs* a-rhs* (Expr body))))]))
+                  [(clambda-case info body)
+                   (record-case info
+                     [(case-info fml* proper)
+                      (let-values ([(fml* a-lhs* a-rhs*) (fix-lhs* fml*)])
+                        (make-clambda-case 
+                          (make-case-info fml* proper)
+                          (bind-assigned a-lhs* a-rhs* (Expr body))))])]))
               cls*)
          #f)]
       [(primcall op rand*)
@@ -1103,13 +1112,12 @@
                          [(null? cls*) (values '() '())]
                          [else
                           (record-case (car cls*)
-                            [(clambda-case fml* proper body)
+                            [(clambda-case info body)
                              (let-values ([(body body-free) (Expr body)]
                                           [(cls* cls*-free) (f (cdr cls*))])
                                (values
-                                 (cons (make-clambda-case fml* proper body)
-                                       cls*)
-                                 (union (difference body-free fml*) 
+                                 (cons (make-clambda-case info body) cls*)
+                                 (union (difference body-free (case-info-args info))
                                         cls*-free)))])]))])
           (values (make-closure (make-clambda g cls* free) free)
                   free))]))
@@ -1184,10 +1192,10 @@
        (let ([cls* (map
                      (lambda (x)
                        (record-case x 
-                         [(clambda-case fml* proper body)
-                          (for-each init-non-thunk fml*)
-                          (make-clambda-case fml* proper
-                              (E body))]))
+                         [(clambda-case info body)
+                          (for-each init-non-thunk
+                              (case-info-args info))
+                          (make-clambda-case info (E body))]))
                      cls*)])
          (let ([g (make-code-loc label)])
            (set! all-codes
@@ -1306,8 +1314,8 @@
        (let ([cls* (map 
                      (lambda (x)
                        (record-case x
-                         [(clambda-case fml* proper body)
-                          (make-clambda-case fml* proper (E body))]))
+                         [(clambda-case info body)
+                          (make-clambda-case info (E body))]))
                      cls*)])
          (let ([g (make-code-loc label)])
            (set! all-codes
@@ -1533,8 +1541,8 @@
       [else (error who "invalid expression ~s" (unparse x))]))
   (define (CaseExpr x)
     (record-case x
-      [(clambda-case fml* proper body)
-       (make-clambda-case fml* proper (Tail body))]))
+      [(clambda-case info body)
+       (make-clambda-case info (Tail body))]))
   (define (CodeExpr x)
     (record-case x
       [(clambda L cases free) 
@@ -1614,8 +1622,8 @@
       [else (error who "invalid expression ~s" (unparse x))]))
   (define (CaseExpr x)
     (record-case x 
-      [(clambda-case fml* proper body)
-       (make-clambda-case fml* proper (Tail body))]))
+      [(clambda-case info body)
+       (make-clambda-case info (Tail body))]))
   (define (CodeExpr x)
     (record-case x
       [(clambda L clauses free)
@@ -1666,9 +1674,9 @@
       [else (error who "invalid tail expression ~s" (unparse x))]))
   (define (CaseExpr x)
     (record-case x 
-      [(clambda-case fml* proper body)
+      [(clambda-case info body)
        (if (Tail body)
-           (make-clambda-case fml* proper (insert-check body))
+           (make-clambda-case info (insert-check body))
            x)]))
   (define (CodeExpr x)
     (record-case x
@@ -1814,8 +1822,8 @@
       [else (error who "invalid expression ~s" (unparse x))]))
   (define (CaseExpr x)
     (record-case x 
-      [(clambda-case fml* proper body)
-       (make-clambda-case fml* proper (Tail body))]))
+      [(clambda-case info body)
+       (make-clambda-case info (Tail body))]))
   (define (CodeExpr x)
     (record-case x
       [(clambda L cases free)
@@ -2053,9 +2061,12 @@
     (lambda (r)
       (lambda (x)
         (record-case x 
-          [(clambda-case fml* proper body)
-           (let-values ([(fml* si r live) (bind-fml* fml* r)])
-             (make-clambda-case fml* proper (Tail body si r live)))]))))
+          [(clambda-case info body)
+           (let-values ([(fml* si r live) 
+                         (bind-fml* (case-info-args info) r)])
+             (make-clambda-case 
+               (make-case-info fml* (case-info-proper info))
+               (Tail body si r live)))]))))
   (define (CodeExpr x)
     (record-case x
       [(clambda L cases free)
@@ -2156,8 +2167,8 @@
   (define CaseExpr 
     (lambda (x)
       (record-case x 
-        [(clambda-case fml* proper body)
-         (make-clambda-case fml* proper (Tail body 0))])))
+        [(clambda-case info body)
+         (make-clambda-case info (Tail body 0))])))
   (define (CodeExpr x)
     (record-case x
       [(clambda L cases free)
@@ -3724,34 +3735,38 @@
            ac))
   (define (Entry check? x ac)
     (record-case x
-      [(clambda-case fml* proper body)
+      [(clambda-case info body)
        (let ([ac (Tail body ac)])
-         (cond
-           [(and proper check?)
-            (list* (cmpl (int (argc-convention (length fml*))) eax)
-                   (jne (label SL_invalid_args))
-                   ac)]
-           [proper ac]
-           [else
-            (handle-vararg (length fml*) ac)]))]))
+         (record-case info
+           [(case-info fml* proper)
+            (cond
+              [(and proper check?)
+               (list* (cmpl (int (argc-convention (length fml*))) eax)
+                      (jne (label SL_invalid_args))
+                      ac)]
+              [proper ac]
+              [else
+               (handle-vararg (length fml*) ac)])]))]))
   (define make-dispatcher
     (lambda (j? L L* x x* ac)
       (cond
         [(null? L*) (if j? (cons (jmp (label L)) ac) ac)]
         [else
          (record-case x
-           [(clambda-case fml* proper _)
-            (cond
-              [proper
-               (list* (cmpl (int (argc-convention (length fml*))) eax)
-                      (je (label L))
-                      (make-dispatcher #t 
-                        (car L*) (cdr L*) (car x*) (cdr x*) ac))]
-              [else
-               (list* (cmpl (int (argc-convention (fxsub1 (length fml*)))) eax)
-                      (jle (label L))
-                      (make-dispatcher #t
-                        (car L*) (cdr L*) (car x*) (cdr x*) ac))])])])))
+           [(clambda-case info _)
+            (record-case info
+              [(case-info fml* proper)
+               (cond
+                 [proper
+                  (list* (cmpl (int (argc-convention (length fml*))) eax)
+                         (je (label L))
+                         (make-dispatcher #t 
+                           (car L*) (cdr L*) (car x*) (cdr x*) ac))]
+                 [else
+                  (list* (cmpl (int (argc-convention (fxsub1 (length fml*)))) eax)
+                         (jle (label L))
+                         (make-dispatcher #t
+                           (car L*) (cdr L*) (car x*) (cdr x*) ac))])])])])))
   (define (handle-cases x x*)
     (let ([L* (map (lambda (_) (gensym)) x*)]
           [L (gensym)])
