@@ -864,9 +864,47 @@
 
 
 (define (optimize-primcall ctxt op rand*)
+  (define (giveup)
+    (make-funcall (make-primref op) rand*))
+  (define (known-value x) 
+    (record-case x 
+      [(constant) x] ; known
+      [(primref)  x] ; known
+      [(bind lhs* rhs* body) (known-value body)]
+      [(fix lhs* rhs* body) (known-value body)]
+      [(seq e0 e1) (known-value e1)]
+      [else #f]))
+  (define (mk-seq e0 e1)  ;;; keep e1 seq-free.
+    (cond
+      [(and (primcall? e0) (eq? (primcall-op e0) 'void)) e1]
+      [(seq? e1)
+       (make-seq (make-seq e0 (seq-e0 e1)) (seq-e1 e1))]
+      [else
+       (make-seq e0 e1)]))
   (case op
-    [else
-     (make-funcall (make-primref op) rand*)]))
+    [(memv)
+     (cond
+       [(fx= (length rand*) 2)
+        (let ([x (car rand*)] [ls (cadr rand*)])
+          (cond
+            [(known-value ls) =>
+             (lambda (kls)
+               (record-case kls
+                 [(constant t)
+                  (cond
+                    [(not (list? t)) (giveup)]
+                    [(eq? ctxt 'e) (mk-seq x ls)]
+                    [(andmap (lambda (x)
+                               (if (number? x)
+                                   (fixnum? x)
+                                   #t))
+                             t)
+                     (optimize-primcall ctxt 'memq rand*)]
+                    [else (giveup)])]
+                 [else (giveup)]))]
+            [else (giveup)]))]
+       [else (giveup)])]
+    [else (giveup)]))
 
 
 (define (copy-propagate x)
@@ -988,7 +1026,7 @@
       [(seq e0 e1) (mk-seq (Effect e0) (Effect e1))]
       [(clambda g cls*) the-void]
       [(primcall rator rand*) 
-       (optimize-primcall 'effect rator (map Value rand*))]
+       (optimize-primcall 'e rator (map Value rand*))]
       [(funcall rator rand*)
        (let ([rator (Value rator)])
          (cond
@@ -997,7 +1035,7 @@
               (record-case v
                 [(primref op)
                  (mk-seq rator
-                    (optimize-primcall 'effect op (map Value rand*)))]
+                    (optimize-primcall 'e op (map Value rand*)))]
                 [else
                  (make-funcall rator (map Value rand*))]))]
            [else (make-funcall rator (map Value rand*))]))]
@@ -1046,7 +1084,7 @@
       [(seq e0 e1) (mk-seq (Effect e0) (Pred e1))]
       [(clambda g cls*) (make-constant #t)]
       [(primcall rator rand*) 
-       (optimize-primcall 'pred rator (map Value rand*))]
+       (optimize-primcall 'p rator (map Value rand*))]
       [(funcall rator rand*)
        (let ([rator (Value rator)])
          (cond
@@ -1055,7 +1093,7 @@
               (record-case v
                 [(primref op)
                  (mk-seq rator
-                    (optimize-primcall 'pred op (map Value rand*)))]
+                    (optimize-primcall 'p op (map Value rand*)))]
                 [else
                  (make-funcall rator (map Value rand*))]))]
            [else (make-funcall rator (map Value rand*))]))]
@@ -1098,7 +1136,7 @@
       [(seq e0 e1) (mk-seq (Effect e0) (Value e1))]
       [(clambda g cls*) (do-clambda g cls*)]
       [(primcall rator rand*) 
-       (optimize-primcall 'value rator (map Value rand*))]
+       (optimize-primcall 'v rator (map Value rand*))]
       [(funcall rator rand*)
        (let ([rator (Value rator)])
          (cond
@@ -1107,7 +1145,7 @@
               (record-case v
                 [(primref op)
                  (mk-seq rator
-                    (optimize-primcall 'value op (map Value rand*)))]
+                    (optimize-primcall 'v op (map Value rand*)))]
                 [else
                  (make-funcall rator (map Value rand*))]))]
            [else (make-funcall rator (map Value rand*))]))]
