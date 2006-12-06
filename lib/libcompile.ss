@@ -106,7 +106,6 @@
     [$vector-length     1   value]
     [$vector-ref        2   value]
     [$vector-set!       3   effect]
-    [$vector-memq       2   value]
     ;;; strings
     [$make-string       1   value]
     [$string          any   value]

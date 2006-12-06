@@ -142,7 +142,7 @@ $closure-code
     $set-tcbucket-tconc!  $tcbucket-dlink-prev $tcbucket-dlink-next
     $set-tcbucket-dlink-prev!  $set-tcbucket-dlink-next!  call/cf
     trace-symbol! untrace-symbol! make-traced-procedure
-    fixnum->string vector-memq vector-memv
+    fixnum->string 
 
     ;;; TODO: must open-code
 

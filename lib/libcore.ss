@@ -866,18 +866,6 @@ reference-implementation:
      (lambda (x ls)
        (race ls ls ls x))))
 
-(primitive-set! 'vector-memq
-  (lambda (x v)
-    (if (vector? v)
-        (let f ([x x] [v v] [n ($vector-length v)] [i 0])
-          (and ($fx< i n)
-               (or (eq? x ($vector-ref v i))
-                   (f x v n ($fxadd1 i)))))
-        (error 'vector-memq "~s is not a vector" v))))
-
-#|BUG: memv should be defined in terms of eqv? now that we have
-bignums.|#
-
 (primitive-set! 'memv
   (letrec ([race
             (lambda (h t ls x)
@@ -901,8 +889,6 @@ bignums.|#
        (race ls ls ls x))))
 
 
-(primitive-set! 'vector-memv vector-memq)
- 
 (primitive-set! 'list->string
   (letrec ([race
             (lambda (h t ls n)
