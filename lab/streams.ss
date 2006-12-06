@@ -1,4 +1,6 @@
-
+;;; do optimize fx< fx<= fx= fx> fx>=
+;;; do optimize fxzero?
+;;; do optimize fxadd1 fxsub1 fx+ fx- 
 (module (s-car s-cdr (s-cons make-stream) stream? s-head)
   (import scheme)
   (define-record stream (car cdr))

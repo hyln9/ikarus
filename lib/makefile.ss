@@ -45,8 +45,8 @@
     make-list length list-ref append make-vector vector-ref
     vector-set! vector-length vector vector->list list->vector
     make-string string-ref string-set! string-length string
-    list->string uuid string-append substring string=? string<?
-    string<=? string>? string>=? remprop putprop getprop
+    string->list list->string uuid string-append substring string=?
+    string<?  string<=? string>? string>=? remprop putprop getprop
     property-list apply map for-each andmap ormap memq memv assq
     assv assoc eq? eqv? equal? reverse string->symbol symbol->string
     oblist top-level-value set-top-level-value!  top-level-bound?
@@ -266,5 +266,5 @@
   (format "cat ~a > ikarus.boot"
           (join " " (map caddr scheme-library-files))))
 
-(#%compiler-giveup-tally)
+;(#%compiler-giveup-tally)
 

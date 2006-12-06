@@ -417,6 +417,9 @@
                     [($char= c #\~) 
                      (write-char #\~ p)
                      (f (fxadd1 i) args)]
+                    [($char= c #\%) 
+                     (write-char #\newline p)
+                     (f (fxadd1 i) args)] 
                     [($char= c #\a)
                      (when (null? args)
                        (error who "insufficient arguments"))
