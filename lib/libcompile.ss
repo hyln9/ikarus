@@ -866,13 +866,12 @@
 (define (optimize-primcall ctxt op rand*)
   (define (giveup)
     (make-funcall (make-primref op) rand*))
-  (define (known-value x) 
+  (define (constant-value x k) 
     (record-case x 
-      [(constant) x] ; known
-      [(primref)  x] ; known
-      [(bind lhs* rhs* body) (known-value body)]
-      [(fix lhs* rhs* body) (known-value body)]
-      [(seq e0 e1) (known-value e1)]
+      [(constant t) (k t)] ; known
+      [(bind lhs* rhs* body) (constant-value body k)]
+      [(fix lhs* rhs* body) (constant-value body k)]
+      [(seq e0 e1) (constant-value e1 k)]
       [else #f]))
   (define (mk-seq e0 e1)  ;;; keep e1 seq-free.
     (cond
@@ -883,27 +882,27 @@
        (make-seq e0 e1)]))
   (case op
     [(memv)
-     (cond
-       [(fx= (length rand*) 2)
-        (let ([x (car rand*)] [ls (cadr rand*)])
-          (cond
-            [(known-value ls) =>
-             (lambda (kls)
-               (record-case kls
-                 [(constant t)
-                  (cond
-                    [(not (list? t)) (giveup)]
-                    [(eq? ctxt 'e) (mk-seq x ls)]
-                    [(andmap (lambda (x)
-                               (if (number? x)
-                                   (fixnum? x)
-                                   #t))
-                             t)
-                     (optimize-primcall ctxt 'memq rand*)]
-                    [else (giveup)])]
-                 [else (giveup)]))]
-            [else (giveup)]))]
-       [else (giveup)])]
+     (or (and (fx= (length rand*) 2)
+              (let ([a0 (car rand*)] [a1 (cadr rand*)])
+                (constant-value a1
+                  (lambda (ls)
+                    (cond
+                      [(not (list? ls)) #f]
+                      [(eq? ctxt 'e) (mk-seq a0 a1)]
+                      [(constant-value a0
+                         (lambda (x)
+                           (mk-seq (mk-seq a0 a1)
+                             (case ctxt
+                               [(v) (make-constant (memv x ls))]
+                               [else (make-constant
+                                       (if (memv x ls) #t #f))]))))]
+                      [(andmap
+                         (lambda (x)
+                           (if (number? x) (fixnum? x) #t))
+                         ls)
+                       (optimize-primcall ctxt 'memq rand*)]
+                      [else #f])))))
+         (giveup))]
     [else (giveup)]))
 
 
