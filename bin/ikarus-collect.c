@@ -275,7 +275,7 @@ static void fix_new_pages(gc_t* gc);
 
 
 ikpcb* 
-ik_collect(int req, ikpcb* pcb){
+ik_collect(int mem_req, ikpcb* pcb){
 
   struct rusage t0, t1;
    
@@ -290,7 +290,7 @@ ik_collect(int req, ikpcb* pcb){
   pcb->collection_id++;
 #ifndef NDEBUG
   fprintf(stderr, "ik_collect entry %d free=%d (collect gen=%d/id=%d)\n",
-      req,
+      mem_req,
       (unsigned int) pcb->allocation_redline
         - (unsigned int) pcb->allocation_pointer,
       gc.collect_gen, pcb->collection_id-1);
@@ -368,6 +368,36 @@ ik_collect(int req, ikpcb* pcb){
    pcb->collect_stime.tv_sec -= 1;
   }
  
+  /* delete all old heap pages */
+  if(pcb->heap_pages){
+    ikpages* p = pcb->heap_pages;
+    do{
+      ikpages* next = p->next;
+      ik_munmap_from_segment(p->base, p->size, pcb);
+      ik_free(p, sizeof(ikpages));
+      p=next;
+    } while(p);
+    pcb->heap_pages = 0;
+  }
+
+  int free_space = 
+    ((unsigned int)pcb->allocation_redline) - 
+    ((unsigned int)pcb->allocation_pointer);
+  if(free_space <= mem_req){
+#ifndef NDEBUG
+    fprintf(stderr, "REQ=%d, got %d\n", mem_req, free_space);
+#endif
+    int memsize = align_to_next_page(mem_req);
+    ik_munmap_from_segment(
+        pcb->heap_base,
+        pcb->heap_size,
+        pcb);
+    ikp ptr = ik_mmap_mixed(memsize+2*pagesize, pcb);
+    pcb->allocation_pointer = ptr;
+    pcb->allocation_redline = ptr+memsize;
+    pcb->heap_base = ptr;
+    pcb->heap_size = memsize+2*pagesize;
+  }
 
   return pcb;
 }
@@ -734,9 +764,11 @@ add_object(gc_t* gc, ikp x, char* caller){
     else if(fst == continuation_tag){
       ikp top = ref(x, off_continuation_top);
       int size = (int) ref(x, off_continuation_size);
+#ifndef NDEBUG
       if(size > 4096){
         fprintf(stderr, "large cont size=0x%08x\n", size);
       }
+#endif
       ikp next = ref(x, off_continuation_next);
       ikp y = gc_alloc_new_ptr(continuation_size, gen, gc) + vector_tag;
       ref(x, -vector_tag) = forward_ptr;

@@ -318,11 +318,6 @@ ik_alloc(ikpcb* pcb, int size){
     return ap;
   } 
   else {
-    static int did_warn = 0;
-    if(! did_warn){
-      fprintf(stderr, "Extension causes leak? %d bytes\n", size);
-      did_warn = 1;
-    }
     if(ap){
       ikpages* p = ik_malloc(sizeof(ikpages));
       p->base = pcb->heap_base;
@@ -354,13 +349,16 @@ void ik_error(ikp args){
 
 
 void ik_stack_overflow(ikpcb* pcb){
+#ifndef NDEBUG
   fprintf(stderr, "entered ik_stack_overflow pcb=0x%08x\n", (int)pcb);
-
+#endif
   set_segment_type(pcb->stack_base, pcb->stack_size, data_mt, pcb);
   
   ikp frame_base = pcb->frame_base;
   ikp underflow_handler = ref(frame_base, -wordsize);
+#ifndef NDEBUG
   fprintf(stderr, "underflow_handler = 0x%08x\n", (int)underflow_handler);
+#endif
   /* capture continuation and set it as next_k */
   ikp k = ik_alloc(pcb, align(continuation_size)) + vector_tag;
   ref(k, -vector_tag) = continuation_tag;
