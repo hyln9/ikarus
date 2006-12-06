@@ -62,6 +62,11 @@ inthash(int key) {
 typedef unsigned char* ikp;
 void ik_error(ikp args);
 
+typedef struct ikpage{
+  ikp base;
+  struct ikpage* next;
+} ikpage;
+
 typedef struct ikpages{
   ikp base;
   int size;
@@ -94,6 +99,8 @@ typedef struct {
   ikp   heap_base; 
   int   heap_size;
   ikpages* heap_pages;
+  ikpage* cached_pages; /* pages cached so that we don't map/unmap */
+  ikpage* uncached_pages; /* ikpages cached so that we don't malloc/free */
   ikp   stack_base;
   int   stack_size;
   ikp   oblist;

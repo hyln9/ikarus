@@ -94,14 +94,46 @@ ik_munmap_from_segment(unsigned char* base, int size, ikpcb* pcb){
     *s = 0;  
     p++; s++;
   }
-  ik_munmap(base, size);
+  ikpage* r = pcb->uncached_pages;
+  if (r){
+    ikpage* cache = pcb->cached_pages;
+    do{
+      r->base = base;
+      ikpage* next = r->next;
+      r->next = cache;
+      cache = r;
+      r = next;
+      base += pagesize;
+      size -= pagesize;
+    } while(r && size);
+    pcb->cached_pages = cache;
+    pcb->uncached_pages = r;
+  }
+  if(size){
+    ik_munmap(base, size);
+  }
 }
 
 
 
 void* 
 ik_mmap_typed(int size, unsigned int type, ikpcb* pcb){
-  unsigned char* p = ik_mmap(size);
+  unsigned char* p;
+  if(size == pagesize) {
+    ikpage* s = pcb->cached_pages;
+    if(s){
+      p = s->base;
+      pcb->cached_pages = s->next;
+      s->next = pcb->uncached_pages;
+      pcb->uncached_pages = s; 
+    } 
+    else {
+      p = ik_mmap(size);
+    }
+  } 
+  else {
+    p = ik_mmap(size);
+  }
   extend_table_maybe(p, size, pcb);
   set_segment_type(p, size, type, pcb);
   return p;
@@ -219,6 +251,7 @@ ikp ik_mmap_protected(int size){
 }
 
 
+#define CACHE_SIZE (pagesize * 8) /* must be multiple of pagesize*/
 
 ikpcb* ik_make_pcb(){
   ikpcb* pcb = ik_malloc(sizeof(ikpcb));
@@ -236,6 +269,19 @@ ikpcb* ik_make_pcb(){
   pcb->frame_pointer = pcb->stack_base + pcb->stack_size;
   pcb->frame_base = pcb->frame_pointer;
   pcb->frame_redline = pcb->stack_base + 2 * 4096;
+
+
+  { /* make cache ikpage */
+    ikpage* p = ik_mmap(CACHE_SIZE * sizeof(ikpage));
+    ikpage* q = 0;
+    ikpage* e = p + CACHE_SIZE;
+    while(p < e){
+      p->next = q;
+      q = p;
+      p++;
+    }
+    pcb->uncached_pages = q;
+  }
 
   {
     /* compute extent of heap and stack */
@@ -303,6 +349,7 @@ void ik_delete_pcb(ikpcb* pcb){
   int vecsize = (segment_index(end) - segment_index(base)) * pagesize;
   ik_munmap(pcb->dirty_vector_base, vecsize);
   ik_munmap(pcb->segment_vector_base, vecsize);
+   
   ik_free(pcb, sizeof(ikpcb));
 }
 
