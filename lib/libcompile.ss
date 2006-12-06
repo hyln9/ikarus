@@ -929,7 +929,41 @@
        (make-seq (make-seq e0 (seq-e0 e1)) (seq-e1 e1))]
       [else
        (make-seq e0 e1)]))
+  (define (equable? x)
+    (if (number? x) (fixnum? x) #t))
   (case op
+    [(eq?)
+     (or (and (fx= (length rand*) 2)
+              (let ([a0 (car rand*)] [a1 (cadr rand*)])
+                (or
+                  (constant-value a0
+                    (lambda (x0)
+                      (constant-value a1
+                        (lambda (x1)
+                          (mk-seq (mk-seq a0 a1)
+                            (make-constant (eq? x0 x1)))))
+                  (and (eq? ctxt 'e)
+                       (mk-seq a0 a1)))))))
+         (giveup))] 
+    [(eqv?)
+     (or (and (fx= (length rand*) 2)
+              (let ([a0 (car rand*)] [a1 (cadr rand*)])
+                (or
+                  (constant-value a0
+                    (lambda (x0)
+                      (or (constant-value a1
+                            (lambda (x1)
+                              (mk-seq (mk-seq a0 a1)
+                                (make-constant (eqv? x0 x1)))))
+                          (and (equable? x0)
+                               (optimize-primcall ctxt 'eq? rand*)))))
+                  (constant-value a1
+                    (lambda (x1)
+                      (and (equable? x1)
+                           (optimize-primcall ctxt 'eq? rand*))))
+                  (and (eq? ctxt 'e)
+                       (mk-seq a0 a1)))))
+         (giveup))]
     [(memv)
      (or (and (fx= (length rand*) 2)
               (let ([a0 (car rand*)] [a1 (cadr rand*)])
@@ -945,11 +979,12 @@
                                [(v) (make-constant (memv x ls))]
                                [else (make-constant
                                        (if (memv x ls) #t #f))]))))]
-                      [(andmap
-                         (lambda (x)
-                           (if (number? x) (fixnum? x) #t))
-                         ls)
+                      [(andmap equable? ls)
                        (optimize-primcall ctxt 'memq rand*)]
+                      [(fx= (length ls) 1)
+                       (mk-seq a1
+                         (optimize-primcall ctxt 'eqv?
+                            (list a0 (make-constant (car ls)))))]
                       [else #f])))))
          (giveup))]
     [(memq) 
@@ -967,6 +1002,10 @@
                                [(v) (make-constant (memq x ls))]
                                [else (make-constant
                                        (if (memq x ls) #t #f))]))))]
+                      [(fx= (length ls) 1)
+                       (mk-seq a1
+                         (optimize-primcall ctxt 'eq?
+                           (list a0 (make-constant (car ls)))))]
                       [else (make-primcall '$memq rand*)])))))
          (giveup))]
     [else (giveup)]))
