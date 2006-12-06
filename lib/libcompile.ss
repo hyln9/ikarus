@@ -876,7 +876,7 @@
     (for-each 
       (lambda (x)
         (let ([n (getprop x '*compiler-giveup-tally*)])
-          (when (> n 100)
+          (when (>= n 40)
             (printf "~s ~s\n" n x))))
       giveup-list))
   (primitive-set! 'compiler-giveup-tally print-tally))
@@ -911,9 +911,17 @@
   645 list
 |#
 
-(define (optimize-primcall ctxt op rand*)
-  (define (giveup)
-    (make-funcall (make-primref op) rand*))
+(module (optimize-primcall)
+  (define (optimize-primcall ctxt op rand*)
+    (cond
+      [(getprop op *cookie*) =>
+       (lambda (proc)
+         (proc ctxt op rand* 
+               (lambda () 
+                 (make-funcall (make-primref op) rand*))))]
+      [else
+       (tally-giveup op)
+       (make-funcall (make-primref op) rand*)]))
   (define (constant-value x k) 
     (record-case x 
       [(constant t) (k t)] ; known
@@ -930,7 +938,16 @@
        (make-seq e0 e1)]))
   (define (equable? x)
     (if (number? x) (fixnum? x) #t))
-  (case op
+  (define *cookie* (gensym "optimizer-cookie"))
+  (define-syntax set-cases
+    (syntax-rules ()
+      [(_ ctxt op rand* giveup 
+          [(op** ...) b* b** ...] ...)
+       (begin
+         (let ([p (lambda (ctxt op rand* giveup) b* b** ...)])
+           (putprop 'op** *cookie* p) ...
+           (void)) ...)]))
+  (set-cases ctxt op rand* giveup
     [(eq?)
      (or (and (fx= (length rand*) 2)
               (let ([a0 (car rand*)] [a1 (cadr rand*)])
@@ -1086,7 +1103,8 @@
                                [(car) (car v)]
                                [else  (cdr v)]))))))))
          (giveup))]
-    [(not null? pair? fixnum? vector?)
+    [(not null? pair? fixnum? vector? string? char? symbol?
+      eof-object?)
      (or (and (fx= (length rand*) 1)
               (let ([a (car rand*)])
                 (case ctxt
@@ -1102,6 +1120,10 @@
                              [(pair?) (pair? v)]
                              [(fixnum?) (fixnum? v)]
                              [(vector?) (vector? v)]
+                             [(string?) (string? v)]
+                             [(char?) (char? v)]
+                             [(symbol?) (symbol? v)]
+                             [(eof-object?) (eof-object? v)]
                              [else 
                               (error 'optimize
                                 "huh ~s" op)])))))])))
@@ -1123,9 +1145,11 @@
                     (giveup))))
          (error 'optimize "incorrect args ~s to ~s"
                 (map unparse rand*) op))]
-    [else
-     (tally-giveup op)
-     (giveup)]))
+    ;;; unoptimizables
+    [(error syntax-error $syntax-dispatch $sc-put-cte 
+      primitive-set!  apply) 
+     (giveup)]
+    ))
 
 
 (define (copy-propagate x)
