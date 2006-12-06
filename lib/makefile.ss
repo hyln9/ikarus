@@ -31,117 +31,85 @@
 
 
 (define public-primitives
-  '(null? pair? char? fixnum? symbol? gensym? string? vector? list?
-    boolean? procedure? 
-    not
-    eof-object eof-object? bwp-object?
-    void
-    fx= fx< fx<= fx> fx>= fxzero?
-    fx+ fx- fx* fxadd1 fxsub1 fxquotient fxremainder fxmodulo 
-    fxsll fxsra fxlognot fxlogor fxlogand fxlogxor
-    integer->char char->integer
-    char=? char<? char<=? char>? char>=?
-    cons car cdr set-car! set-cdr!
-    caar cadr cdar cddr 
-    caaar caadr cadar caddr cdaar cdadr cddar cdddr 
-    caaaar caaadr caadar caaddr cadaar cadadr caddar cadddr 
-    cdaaar cdaadr cdadar cdaddr cddaar cddadr cdddar cddddr 
-    list list* make-list length list-ref
-    append
-    make-vector vector-ref vector-set! vector-length vector
-    vector->list list->vector
-    make-string string-ref string-set! string-length string list->string
-    uuid
-    string-append substring 
-    string=? string<? string<=? string>? string>=?
-    remprop putprop getprop property-list
-    apply
-    map for-each andmap ormap
-    memq memv assq assoc
-    eq? eqv? equal?
-    reverse
-    string->symbol symbol->string oblist 
-    top-level-value set-top-level-value! top-level-bound?
-    gensym gensym-count gensym-prefix print-gensym
-    gensym->unique-string
-    call-with-values values
-    make-parameter dynamic-wind
-    display write print-graph fasl-write printf format print-error
-    read-token read comment-handler
-    error exit call/cc
-    error-handler
-    eval current-eval interpret compile compile-file new-cafe load
-    system
-    expand sc-expand current-expand expand-mode 
-    environment? interaction-environment
-    identifier? free-identifier=? bound-identifier=? literal-identifier=?
+  '(
+    
+    null? pair? char? fixnum? symbol? gensym? string? vector? list?
+    boolean? procedure?  not eof-object eof-object? bwp-object?
+    void fx= fx< fx<= fx> fx>= fxzero?  fx+ fx- fx* fxadd1 fxsub1
+    fxquotient fxremainder fxmodulo fxsll fxsra fxlognot fxlogor
+    fxlogand fxlogxor integer->char char->integer char=? char<?
+    char<=? char>? char>=?  cons car cdr set-car! set-cdr!  caar
+    cadr cdar cddr caaar caadr cadar caddr cdaar cdadr cddar cdddr
+    caaaar caaadr caadar caaddr cadaar cadadr caddar cadddr cdaaar
+    cdaadr cdadar cdaddr cddaar cddadr cdddar cddddr list list*
+    make-list length list-ref append make-vector vector-ref
+    vector-set! vector-length vector vector->list list->vector
+    make-string string-ref string-set! string-length string
+    list->string uuid string-append substring string=? string<?
+    string<=? string>? string>=?  remprop putprop getprop
+    property-list apply map for-each andmap ormap memq memv assq
+    assv assoc eq? eqv? equal?  reverse string->symbol
+    symbol->string oblist top-level-value set-top-level-value!
+    top-level-bound?  gensym gensym-count gensym-prefix print-gensym
+    gensym->unique-string call-with-values values make-parameter
+    dynamic-wind display write print-graph fasl-write printf format
+    print-error read-token read comment-handler error exit call/cc
+    error-handler eval current-eval interpret compile compile-file
+    new-cafe load system expand sc-expand current-expand expand-mode
+    environment? interaction-environment identifier?
+    free-identifier=? bound-identifier=? literal-identifier=?
     datum->syntax-object syntax-object->datum syntax-error
-    syntax->list
-    generate-temporaries
-    record? record-set! record-ref record-length
-    record-type-descriptor make-record-type
+    syntax->list generate-temporaries record? record-set! record-ref
+    record-length record-type-descriptor make-record-type
     record-printer record-name record-field-accessor
     record-field-mutator record-predicate record-constructor
-    record-type-name record-type-symbol record-type-field-names 
+    record-type-name record-type-symbol record-type-field-names
     hash-table? make-hash-table get-hash-table put-hash-table!
-    assembler-output
-    $make-environment
-    features command-line-arguments
-
-    port? input-port? output-port? 
+    assembler-output $make-environment features
+    command-line-arguments port? input-port? output-port?
     make-input-port make-output-port make-input/output-port
-    port-handler
-    port-input-buffer port-input-index port-input-size 
-    port-output-buffer port-output-index port-output-size 
-    set-port-input-index! set-port-input-size! 
-    set-port-output-index! set-port-output-size!
-    port-name input-port-name output-port-name
-    write-char read-char unread-char peek-char
-    newline 
-    reset-input-port! flush-output-port
-    close-input-port close-output-port
-    console-input-port current-input-port
-    standard-output-port standard-error-port
-    console-output-port current-output-port
-    open-output-file open-input-file
-    open-output-string get-output-string
-    with-output-to-file call-with-output-file
-    with-input-from-file call-with-input-file
-    date-string
-    file-exists? delete-file
-
-    + - add1 sub1 * expt number? positive? negative? zero? number->string
-    logand
-    = < > <= >=
-    ))
+    port-handler port-input-buffer port-input-index port-input-size
+    port-output-buffer port-output-index port-output-size
+    set-port-input-index! set-port-input-size!
+    set-port-output-index! set-port-output-size!  port-name
+    input-port-name output-port-name write-char read-char
+    unread-char peek-char newline reset-input-port!
+    flush-output-port close-input-port close-output-port
+    console-input-port current-input-port standard-output-port
+    standard-error-port console-output-port current-output-port
+    open-output-file open-input-file open-output-string
+    get-output-string with-output-to-file call-with-output-file
+    with-input-from-file call-with-input-file date-string
+    file-exists? delete-file + - add1 sub1 * expt number? positive?
+    negative? zero? number->string logand = < > <= >=))
 
 (define system-primitives
   '(
-$closure-code 
-    immediate? $unbound-object? $forward-ptr?  pointer-value
-    primitive-ref primitive-set!  $fx= $fx< $fx<= $fx> $fx>=
-    $fxzero?  $fx+ $fx- $fx* $fxadd1 $fxsub1 $fxquotient
+
+    $closure-code immediate? $unbound-object? $forward-ptr?
+    pointer-value primitive-ref primitive-set!  $fx= $fx< $fx<= $fx>
+    $fx>= $fxzero?  $fx+ $fx- $fx* $fxadd1 $fxsub1 $fxquotient
     $fxremainder $fxmodulo $fxsll $fxsra $fxlognot $fxlogor
     $fxlogand $fxlogxor $fixnum->char $char->fixnum $char= $char<
     $char<= $char> $char>= $car $cdr $set-car! $set-cdr!
     $make-vector $vector-ref $vector-set! $vector-length
-    $make-string $string-ref $string-set! $string-length $string
+    $make-string $string-ref $string-set!  $string-length $string
     $symbol-string $symbol-unique-string $symbol-value
     $set-symbol-string! $set-symbol-unique-string!
     $set-symbol-value!  $make-symbol $set-symbol-plist!
     $symbol-plist $sc-put-cte $record? $record/rtd? $record-set!
     $record-ref $record-rtd $make-record $record $base-rtd $code?
     $code-reloc-vector $code-freevars $code-size $code-ref
-    $code-set!  $code->closure list*->code* make-code
-    code?  set-code-reloc-vector! code-reloc-vector code-freevars
+    $code-set!  $code->closure list*->code* make-code code?
+    set-code-reloc-vector!  code-reloc-vector code-freevars
     code-size code-ref code-set!  $frame->continuation $fp-at-base
     $current-frame $arg-list $seal-frame-and-call
     $make-call-with-values-procedure $make-values-procedure
     do-overflow collect $make-tcbucket $tcbucket-next $tcbucket-key
-    $tcbucket-val $set-tcbucket-next! $set-tcbucket-val!
+    $tcbucket-val $set-tcbucket-next!  $set-tcbucket-val!
     $set-tcbucket-tconc!  $tcbucket-dlink-prev $tcbucket-dlink-next
     $set-tcbucket-dlink-prev!  $set-tcbucket-dlink-next!  call/cf
-    trace-symbol! untrace-symbol! make-traced-procedure
+    trace-symbol! untrace-symbol!  make-traced-procedure
     fixnum->string 
 
     ;;; TODO: must open-code
