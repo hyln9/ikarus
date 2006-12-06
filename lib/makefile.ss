@@ -46,11 +46,11 @@
     vector-set! vector-length vector vector->list list->vector
     make-string string-ref string-set! string-length string
     list->string uuid string-append substring string=? string<?
-    string<=? string>? string>=?  remprop putprop getprop
+    string<=? string>? string>=? remprop putprop getprop
     property-list apply map for-each andmap ormap memq memv assq
-    assv assoc eq? eqv? equal?  reverse string->symbol
-    symbol->string oblist top-level-value set-top-level-value!
-    top-level-bound?  gensym gensym-count gensym-prefix print-gensym
+    assv assoc eq? eqv? equal? reverse string->symbol symbol->string
+    oblist top-level-value set-top-level-value!  top-level-bound?
+    gensym gensym-count gensym-prefix print-gensym
     gensym->unique-string call-with-values values make-parameter
     dynamic-wind display write print-graph fasl-write printf format
     print-error read-token read comment-handler error exit call/cc

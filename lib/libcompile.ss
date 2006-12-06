@@ -188,7 +188,6 @@
     ;;;
     [$make-call-with-values-procedure 0 value]
     [$make-values-procedure 0 value]
-    [$install-underflow-handler 0 effect]
    ))
 
 (define (primitive-context x)

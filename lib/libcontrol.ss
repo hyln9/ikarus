@@ -122,6 +122,5 @@
   (primitive-set! 'call/cf call-with-current-frame)
   (primitive-set! 'call/cc call/cc)
   (primitive-set! 'dynamic-wind dynamic-wind)
-  ;($install-underflow-handler)
   (void))
 
