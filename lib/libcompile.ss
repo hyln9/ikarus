@@ -862,6 +862,13 @@
   (Expr x)
   x)
 
+
+(define (optimize-primcall ctxt op rand*)
+  (case op
+    [else
+     (make-funcall (make-primref op) rand*)]))
+
+
 (define (copy-propagate x)
   (define who 'copy-propagate)
   (define the-void (make-primcall 'void '()))
@@ -873,6 +880,32 @@
       [(fix lhs* rhs* body) (known-value body)]
       [(seq e0 e1) (known-value e1)]
       [else #f]))
+  (define (same-values? x y)
+    (cond
+      [(constant? x)
+       (and (constant? y) 
+            (eq? (constant-value x) 
+                 (constant-value y)))]
+      [(primref? x)
+       (and (primref? y)
+            (eq? (primref-name x)
+                 (primref-name y)))]
+      [else #f]))
+  (define (predicate-value x)
+    (record-case x
+      [(constant t) (if t 't 'f)]
+      [(bind lhs rhs body) (predicate-value body)]
+      [(fix lhs rhs body) (predicate-value body)]
+      [(seq e0 e1) (predicate-value e1)]
+      [else #f]))
+  (define (do-conditional e0 e1 e2 k)
+    (let ([e0 (Pred e0)])
+      (cond
+        [(predicate-value e0) =>
+         (lambda (v)
+           (if (eq? v 't) (k e1) (k e2)))]
+        [else
+         (make-conditional e0 (k e1) (k e2))])))
   (define (partition-referenced lhs* rhs*)
     (cond
       [(null? lhs*) (values '() '() the-void)]
@@ -922,7 +955,7 @@
          (make-fix lhs* (map Value rhs*) (k body))])))
   (define (mk-seq e0 e1)  ;;; keep e1 seq-free.
     (cond
-      [(and (primcall? e0) (eq? (primcall-arg* e0) 'void)) e1]
+      [(and (primcall? e0) (eq? (primcall-op e0) 'void)) e1]
       [(seq? e1)
        (make-seq (make-seq e0 (seq-e0 e1)) (seq-e1 e1))]
       [else
@@ -944,14 +977,30 @@
        (do-bind lhs* rhs* body Effect)]
       [(fix lhs* rhs* body)
        (do-fix lhs* rhs* body Effect)]
-      [(conditional test conseq altern)
-       (make-conditional (Pred test) (Effect conseq) (Effect altern))]
+      [(conditional e0 e1 e2)
+       (let ([e0 (Pred e0)])
+         (cond
+           [(predicate-value e0) =>
+            (lambda (v)
+              (mk-seq e0 (if (eq? v 't) (Effect e1) (Effect e2))))]
+           [else
+            (make-conditional e0 (Effect e1) (Effect e2))]))]
       [(seq e0 e1) (mk-seq (Effect e0) (Effect e1))]
       [(clambda g cls*) the-void]
-      [(primcall rator rand*) ; remove effect-free primcalls
-       (make-primcall rator (map Value rand*))]
+      [(primcall rator rand*) 
+       (optimize-primcall 'effect rator (map Value rand*))]
       [(funcall rator rand*)
-       (make-funcall (Value rator) (map Value rand*))]
+       (let ([rator (Value rator)])
+         (cond
+           [(known-value rator) =>
+            (lambda (v)
+              (record-case v
+                [(primref op)
+                 (mk-seq rator
+                    (optimize-primcall 'effect op (map Value rand*)))]
+                [else
+                 (make-funcall rator (map Value rand*))]))]
+           [else (make-funcall rator (map Value rand*))]))]
       [(appcall rator rand*)
        (make-appcall (Value rator) (map Value rand*))]
       [(forcall rator rand*) 
@@ -974,14 +1023,42 @@
        (do-bind lhs* rhs* body Pred)]
       [(fix lhs* rhs* body)
        (do-fix lhs* rhs* body Pred)]
-      [(conditional test conseq altern)
-       (make-conditional (Pred test) (Pred conseq) (Pred altern))]
+      [(conditional e0 e1 e2)
+       (let ([e0 (Pred e0)])
+         (cond
+           [(predicate-value e0) =>
+            (lambda (t0)
+              (mk-seq e0 (if (eq? t0 't) (Pred e1) (Pred e2))))]
+           [else
+            (let ([e1 (Pred e1)] [e2 (Pred e2)])
+              (cond
+                [(predicate-value e1) =>
+                 (lambda (t1)
+                   (cond
+                     [(predicate-value e2) =>
+                      (lambda (t2)
+                        (if (eq? t1 t2)
+                            (mk-seq (make-conditional e0 e1 e2) 
+                                    (make-constant (if (eq? t1 't) #t #f)))
+                            (make-conditional e0 e1 e2)))]
+                     [else (make-conditional e0 e1 e2)]))]
+                [else (make-conditional e0 e1 e2)]))]))]
       [(seq e0 e1) (mk-seq (Effect e0) (Pred e1))]
       [(clambda g cls*) (make-constant #t)]
-      [(primcall rator rand*) ;;; check for some effect-free/known prims
-       (make-primcall rator (map Value rand*))]
+      [(primcall rator rand*) 
+       (optimize-primcall 'pred rator (map Value rand*))]
       [(funcall rator rand*)
-       (make-funcall (Value rator) (map Value rand*))]
+       (let ([rator (Value rator)])
+         (cond
+           [(known-value rator) =>
+            (lambda (v)
+              (record-case v
+                [(primref op)
+                 (mk-seq rator
+                    (optimize-primcall 'pred op (map Value rand*)))]
+                [else
+                 (make-funcall rator (map Value rand*))]))]
+           [else (make-funcall rator (map Value rand*))]))]
       [(appcall rator rand*)
        (make-appcall (Value rator) (map Value rand*))]
       [(forcall rator rand*) 
@@ -1003,20 +1080,43 @@
        (do-bind lhs* rhs* body Value)]
       [(fix lhs* rhs* body)
        (do-fix lhs* rhs* body Value)]
-      [(conditional test conseq altern)
-       (make-conditional (Pred test) (Value conseq) (Value altern))]
+      [(conditional e0 e1 e2)
+       (let ([e0 (Pred e0)])
+         (cond
+           [(predicate-value e0) =>
+            (lambda (t0)
+              (mk-seq e0 (if (eq? t0 't) (Value e1) (Value e2))))]
+           [else
+            (let ([e1 (Value e1)] [e2 (Value e2)])
+              (let ([t1 (known-value e1)] [t2 (known-value e2)])
+                (cond
+                  [(and t1 t2) 
+                   (if (same-values? t1 t2)
+                       (mk-seq (make-conditional e0 e1 e2) t1)
+                       (make-conditional e0 e1 e2))]
+                  [else (make-conditional e0 e1 e2)])))]))]
       [(seq e0 e1) (mk-seq (Effect e0) (Value e1))]
       [(clambda g cls*) (do-clambda g cls*)]
-      [(primcall rator rand*)
-       (make-primcall rator (map Value rand*))]
+      [(primcall rator rand*) 
+       (optimize-primcall 'value rator (map Value rand*))]
       [(funcall rator rand*)
-       (make-funcall (Value rator) (map Value rand*))]
+       (let ([rator (Value rator)])
+         (cond
+           [(known-value rator) =>
+            (lambda (v)
+              (record-case v
+                [(primref op)
+                 (mk-seq rator
+                    (optimize-primcall 'value op (map Value rand*)))]
+                [else
+                 (make-funcall rator (map Value rand*))]))]
+           [else (make-funcall rator (map Value rand*))]))]
       [(appcall rator rand*)
        (make-appcall (Value rator) (map Value rand*))]
       [(forcall rator rand*) 
        (make-forcall rator (map Value rand*))]
       [(assign lhs rhs)
-       (mk-seq (Effect x) (make-primcall 'void '()))]
+       (mk-seq (Effect x) the-void)]
       [else (error who "invalid value expression ~s" (unparse x))]))
   (let ([x (Value x)])
     ;;; since we messed up the references and assignments here, we
@@ -3447,7 +3547,7 @@
                (addl (pcb-ref 'dirty-vector) ebx)
                (movl (int dirty-word) (mem 0 ebx))
               ac)]
-      [(cons void $fxadd1 $fxsub1 $record-ref)
+      [(cons pair? void $fxadd1 $fxsub1 $record-ref $fx=)
        (let f ([arg* arg*])
          (cond
            [(null? arg*) ac]
