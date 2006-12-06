@@ -709,6 +709,11 @@ reference-implementation:
 
 (primitive-set! 'eq? (lambda (x y) (eq? x y)))
 
+(primitive-set! 'eqv?
+  (lambda (x y)
+    (or (eq? x y)
+        (and (number? x) (number? y) (= x y)))))
+
 (primitive-set! 'set-car!
   (lambda (x y) 
     (unless (pair? x)
@@ -872,7 +877,30 @@ reference-implementation:
 
 #|BUG: memv should be defined in terms of eqv? now that we have
 bignums.|#
-(primitive-set! 'memv memq)
+
+(primitive-set! 'memv
+  (letrec ([race
+            (lambda (h t ls x)
+               (if (pair? h)
+                   (if (eqv? ($car h) x)
+                       h
+                       (let ([h ($cdr h)])
+                         (if (pair? h)
+                             (if (eqv? ($car h) x)
+                                 h
+                                 (if (not (eq? h t))
+                                     (race ($cdr h) ($cdr t) ls x)
+                                     (error 'memv "circular list ~s" ls)))
+                             (if (null? h)
+                                 '#f
+                                 (error 'memv "~s is not a proper list" ls)))))
+                   (if (null? h)
+                       '#f
+                       (error 'memv "~s is not a proper list" ls))))])
+     (lambda (x ls)
+       (race ls ls ls x))))
+
+
 (primitive-set! 'vector-memv vector-memq)
  
 (primitive-set! 'list->string

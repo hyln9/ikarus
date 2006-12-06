@@ -58,7 +58,7 @@
     apply
     map for-each andmap ormap
     memq memv assq assoc
-    eq? equal?
+    eq? eqv? equal?
     reverse
     string->symbol symbol->string oblist 
     top-level-value set-top-level-value! top-level-bound?
