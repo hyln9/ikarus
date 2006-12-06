@@ -913,7 +913,6 @@
 
 (define (optimize-primcall ctxt op rand*)
   (define (giveup)
-    (tally-giveup op)
     (make-funcall (make-primref op) rand*))
   (define (constant-value x k) 
     (record-case x 
@@ -1008,7 +1007,125 @@
                            (list a0 (make-constant (car ls)))))]
                       [else (make-primcall '$memq rand*)])))))
          (giveup))]
-    [else (giveup)]))
+    [(list)
+     (case ctxt
+       [(v) (if (null? rand*) (make-constant '()) (giveup))]
+       [else
+        (if (null? rand*)
+            (make-constant #t)
+            (let f ([a (car rand*)] [d (cdr rand*)])
+              (cond
+                [(null? d) (make-seq a (make-constant #t))]
+                [else
+                 (f (make-seq a (car d)) (cdr d))])))])]
+    [(list*)
+     (case ctxt
+       [(e) 
+        (cond
+          [(null? rand*) (giveup)]
+          [else
+           (let f ([a (car rand*)] [d (cdr rand*)])
+             (cond
+               [(null? d) a]
+               [else (f (mk-seq a (car d)) (cdr d))]))])]
+       [(p) 
+        (cond
+          [(null? rand*) (giveup)]
+          [(null? (cdr rand*)) 
+           (let ([a (car rand*)])
+             (or (constant-value a
+                   (lambda (v)
+                     (mk-seq a (make-constant (if v #t #f)))))
+                 a))]
+          [else 
+           (let f ([a (car rand*)] [d (cdr rand*)])
+             (cond
+               [(null? d) (mk-seq a (make-constant #t))]
+               [else (f (mk-seq a (car d)) (cdr d))]))])]
+       [else
+        (cond
+          [(null? rand*) (giveup)]
+          [(null? (cdr rand*)) (car rand*)]
+          [else (giveup)])])]
+    [(cons)
+     (or (and (fx= (length rand*) 2)
+              (let ([a0 (car rand*)] [a1 (cadr rand*)])
+                (case ctxt
+                  [(e) (mk-seq a0 a1)]
+                  [(p) (mk-seq (mk-seq a0 a1) (make-constant #t))]
+                  [else (giveup)])))
+         (giveup))]
+    [($record-ref $record/rtd?)
+     (or (and (fx= (length rand*) 2)
+              (let ([a0 (car rand*)] [a1 (cadr rand*)])
+                (case ctxt
+                  [(e) (mk-seq a0 a1)]
+                  [else 
+                   (or (constant-value a1
+                         (lambda (n1)
+                           (mk-seq a1
+                             (make-primcall op
+                                (list a0 (make-constant n1))))))
+                       (make-primcall op rand*))])))
+         (error 'optimize "~s rands to ~s" (map unparse rand*) op))]
+    [(void)
+     (or (and (null? rand*)
+              (case ctxt
+                [(p) (make-constant #t)]
+                [else (make-constant (void))]))
+         (giveup))]
+    [(car cdr)
+     (or (and (fx= (length rand*) 1)
+              (let ([a (car rand*)])
+                (constant-value a
+                  (lambda (v)
+                    (and (pair? v)
+                         (mk-seq a
+                           (make-constant
+                             (case op
+                               [(car) (car v)]
+                               [else  (cdr v)]))))))))
+         (giveup))]
+    [(not null? pair? fixnum? vector?)
+     (or (and (fx= (length rand*) 1)
+              (let ([a (car rand*)])
+                (case ctxt
+                  [(e) a]
+                  [else
+                   (constant-value a
+                     (lambda (v)
+                       (mk-seq a
+                         (make-constant
+                           (case op
+                             [(not) (not v)]
+                             [(null?) (null? v)]
+                             [(pair?) (pair? v)]
+                             [(fixnum?) (fixnum? v)]
+                             [(vector?) (vector? v)]
+                             [else 
+                              (error 'optimize
+                                "huh ~s" op)])))))])))
+         (giveup))]
+    [($car $cdr)
+     (or (and (fx= (length rand*) 1)
+              (let ([a (car rand*)])
+                (or (constant-value a
+                      (lambda (v)
+                        (if (pair? v)
+                            (make-seq a
+                              (make-constant
+                                (case op
+                                  [($car) (car v)]
+                                  [else   (cdr v)])))
+                            (error 'optimize
+                                   "incorrect arg ~s to ~s"
+                                   v op))))
+                    (giveup))))
+         (error 'optimize "incorrect args ~s to ~s"
+                (map unparse rand*) op))]
+    [else
+     (tally-giveup op)
+     (giveup)]))
 
 
 (define (copy-propagate x)
@@ -3737,7 +3854,7 @@
            [(null? arg*) ac]
            [else 
             (Effect (car arg*) (f (cdr arg*)))]))]
-      [(car) ;;; may signal an error
+      [(car cdr top-level-value) ;;; may signal an error
        (do-value-prim op arg* ac)]
       [else 
        (error 'do-effect-prim "unhandled op ~s" op)]))

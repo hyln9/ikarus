@@ -266,5 +266,5 @@
   (format "cat ~a > ikarus.boot"
           (join " " (map caddr scheme-library-files))))
 
-;(#%compiler-giveup-tally)
+(#%compiler-giveup-tally)
 
