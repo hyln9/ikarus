@@ -862,9 +862,58 @@
   (Expr x)
   x)
 
+(module (tally-giveup)
+  (define giveup-list '())
+  (define (tally-giveup op)
+    (cond
+      [(getprop op '*compiler-giveup-tally*) =>
+       (lambda (n)
+         (putprop op '*compiler-giveup-tally* (add1 n)))]
+      [else 
+       (set! giveup-list (cons op giveup-list))
+       (putprop op '*compiler-giveup-tally* 1)]))
+  (define (print-tally)
+    (for-each 
+      (lambda (x)
+        (let ([n (getprop x '*compiler-giveup-tally*)])
+          (when (> n 100)
+            (printf "~s ~s\n" n x))))
+      giveup-list))
+  (primitive-set! 'compiler-giveup-tally print-tally))
+
+#|FIXME:missing-optimizations
+  128 list*
+  111 cadr
+  464 $record/rtd?
+  404 memq
+  249 map
+  114 not
+  451 car
+  224 syntax-error
+  248 $syntax-dispatch
+  237 pair?
+  125 length
+  165 $cdr
+  137 $car
+  805 $record-ref
+  181 fixnum?
+  328 null?
+  136 fx-
+  207 eq?
+  153 call-with-values
+  165 values
+  336 apply
+  384 cdr
+  898 cons
+  747 error
+  331 primitive-set!
+  555 void
+  645 list
+|#
 
 (define (optimize-primcall ctxt op rand*)
   (define (giveup)
+    (tally-giveup op)
     (make-funcall (make-primref op) rand*))
   (define (constant-value x k) 
     (record-case x 
@@ -902,6 +951,23 @@
                          ls)
                        (optimize-primcall ctxt 'memq rand*)]
                       [else #f])))))
+         (giveup))]
+    [(memq) 
+     (or (and (fx= (length rand*) 2)
+              (let ([a0 (car rand*)] [a1 (cadr rand*)])
+                (constant-value a1
+                  (lambda (ls)
+                    (cond
+                      [(not (list? ls)) #f]
+                      [(eq? ctxt 'e) (make-seq a0 a1)]
+                      [(constant-value a0
+                         (lambda (x)
+                           (mk-seq (mk-seq a0 a1)
+                             (case ctxt
+                               [(v) (make-constant (memq x ls))]
+                               [else (make-constant
+                                       (if (memq x ls) #t #f))]))))]
+                      [else (make-primcall '$memq rand*)])))))
          (giveup))]
     [else (giveup)]))
 
@@ -2884,6 +2950,26 @@
      [($fp-overflow) 
       (list* (cmpl (pcb-ref 'frame-redline) fpr)
              (cond-branch 'jle Lt Lf ac))]
+     [($memq)
+      (record-case (cadr rand*)
+        [(constant ls)
+         (let-values ([(Lt ac)
+                       (if Lt 
+                           (values Lt ac)
+                           (let ([L (unique-label)])
+                             (values L (cons L ac))))])
+           (NonTail (car rand*)
+             (let f ([ls ls])
+               (cond
+                 [(null? ls)
+                  (if Lf (list* (jmp Lf) ac) ac)]
+                 [else
+                  (list* (cmpl (Simple (make-constant (car ls))) eax)
+                         (je Lt)
+                         (f (cdr ls)))]))))]
+        [else
+         (error 'compile 
+           "BUG: second arg to $memq should be constant")])]
      [($vector-ref top-level-value car cdr $record-ref) 
       (do-value-prim op rand*
         (do-simple-test eax Lt Lf ac))]
@@ -3416,6 +3502,28 @@
       (NonTail 
         (make-closure (make-code-loc SL_values) arg*)
         ac)]
+     [($memq)
+      (record-case (cadr arg*)
+        [(constant ls)
+         (let-values ([(Lt ac)
+                       (let ([L (unique-label)])
+                         (values L (cons L ac)))])
+           (NonTail (car arg*)
+             (list*
+               (movl eax ebx)
+               (let f ([ls ls])
+                 (cond
+                   [(null? ls)
+                    (list* (movl (int bool-f) eax) ac)]
+                   [else
+                    (list* 
+                      (movl (obj ls) eax)
+                      (cmpl (Simple (make-constant (car ls))) ebx)
+                      (je Lt)
+                      (f (cdr ls)))])))))]
+        [else
+         (error 'compile 
+           "BUG: second arg to $memq should be constant")])]
      [else
       (error 'value-prim "unhandled ~s" op)]))
   (define (indirect-assignment arg* offset ac)

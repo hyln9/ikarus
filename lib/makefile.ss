@@ -131,6 +131,8 @@
     $flush-output-port *standard-output-port* *standard-error-port*
     *current-output-port* *standard-input-port* *current-input-port*
     
+    ;;; 
+    compiler-giveup-tally
     ))
  
 
@@ -263,4 +265,6 @@
 (system
   (format "cat ~a > ikarus.boot"
           (join " " (map caddr scheme-library-files))))
+
+;(#%compiler-giveup-tally)
 
