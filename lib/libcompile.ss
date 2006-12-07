@@ -1097,6 +1097,22 @@
                     (giveup))))
          (error 'optimize "incorrect args ~s to ~s"
                 (map unparse rand*) op))]
+    [(fxadd1 fxsub1)
+     (or (and (fx= (length rand*) 1)
+              (let ([a (car rand*)])
+                (or (constant-value a
+                      (lambda (v)
+                        (and (fixnum? v)
+                             (let ([t 
+                                    (case op
+                                      [(fxadd1) (add1 v)]
+                                      [else     (sub1 v)])])
+                                (and (fixnum? t)
+                                     (mk-seq a 
+                                       (make-constant t)))))))
+                    (make-primcall op rand*))))
+         (giveup))]
+                                  
     ;;; unoptimizables
     [(error syntax-error $syntax-dispatch $sc-put-cte 
       primitive-set!  apply) 
@@ -2025,7 +2041,7 @@
       [(seq e0 e1) (make-seq (Expr e0) (Expr e1))]
       [(primcall op arg*)
        (cond
-         [(memq op '(not car cdr))
+         [(memq op '(not car cdr fxadd1 fxsub1)) ;;; SIMPLIFY
           (make-primcall op (map Expr arg*))]
          [else
           (simplify* arg* '() '()
@@ -2785,6 +2801,7 @@
   (define (jl label) (list 'jl label))
   (define (jb label) (list 'jb label))
   (define (ja label) (list 'ja label))
+  (define (jo label) (list 'jo label))
   (define (jmp label) (list 'jmp label))
   (define edi '%edx) ; closure pointer
   (define esi '%esi) ; pcb
@@ -3156,6 +3173,22 @@
        (list* (movl (Simple (car arg*)) eax)
               (addl (constant-val 1) eax)
               ac)]
+      [(fxadd1)
+       (NonTail (car arg*)
+         (list* (movl eax ebx)
+                (andl (int fx-mask) ebx)
+                (jne (label SL_fxadd1_error))
+                (addl (int (fxsll 1 fx-shift)) eax)
+                (jo (label SL_fxadd1_error))
+                ac))]
+      [(fxsub1)
+       (NonTail (car arg*)
+         (list* (movl eax ebx)
+                (andl (int fx-mask) ebx)
+                (jne (label SL_fxsub1_error))
+                (subl (int (fxsll 1 fx-shift)) eax)
+                (jo (label SL_fxsub1_error))
+                ac))] 
       [($fxsub1) 
        (list* (movl (Simple (car arg*)) eax)
               (addl (constant-val -1) eax)
@@ -4326,6 +4359,8 @@
            (map CodeExpr list))]))
 
 (begin ;;; ASSEMBLY HELPERS
+  (define SL_fxadd1_error (gensym "SL_fxadd1_error"))
+  (define SL_fxsub1_error (gensym "SL_fxsub1_error"))
   (define SL_nonprocedure (gensym "SL_nonprocedure"))
   (define SL_top_level_value_error (gensym "SL_top_level_value_error"))
   (define SL_car_error (gensym "SL_car_error"))
@@ -4344,6 +4379,18 @@
   (module ()
     (list*->code* (lambda (x) #f)
       (list
+        (list 0
+              (label SL_fxadd1_error)
+              (movl eax (mem (fx- 0 wordsize) fpr))
+              (movl (primref-loc 'fxadd1-error) cpr)
+              (movl (int (argc-convention 1)) eax)
+              (tail-indirect-cpr-call))
+        (list 0
+              (label SL_fxsub1_error)
+              (movl eax (mem (fx- 0 wordsize) fpr))
+              (movl (primref-loc 'fxsub1-error) cpr)
+              (movl (int (argc-convention 1)) eax)
+              (tail-indirect-cpr-call)) 
         (list 0
               (label SL_car_error)
               (movl ebx (mem (fx- 0 wordsize) fpr))

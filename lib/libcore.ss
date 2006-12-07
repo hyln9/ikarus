@@ -30,15 +30,11 @@
 
 (primitive-set! 'fxadd1
   (lambda (n)
-    (unless (fixnum? n)
-      (error 'fxadd1 "~s is not a fixnum" n))
-    ($fxadd1 n)))
+    (fxadd1 n)))
   
 (primitive-set! 'fxsub1 
   (lambda (n) 
-    (unless (fixnum? n)
-      (error 'fxsub1 "~s is not a fixnum" n))
-    ($fxsub1 n)))
+    (fxsub1 n)))
   
 (primitive-set! 'integer->char
   (lambda (n)

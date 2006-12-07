@@ -43,3 +43,15 @@
   (lambda (x)
     (error 'cdr "~s is not a pair" x)))
 
+(primitive-set! 'fxadd1-error
+  (lambda (x)
+    (if (fixnum? x)
+        (error 'fxadd1 "overflow")
+        (error 'fxadd1 "~s is not a fixnum" x))))
+
+(primitive-set! 'fxsub1-error
+  (lambda (x)
+    (if (fixnum? x)
+        (error 'fxsub1 "underflow")
+        (error 'fxsub1 "~s is not a fixnum" x))))
+
