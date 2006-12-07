@@ -1,13 +1,17 @@
+
+(primitive-set! 'car (lambda (x) (car x)))
+(primitive-set! 'cdr (lambda (x) (cdr x)))
+(primitive-set! 'cadr (lambda (x) (cadr x)))
 (let ([err (lambda (who x)
              (error who "invalid list structure ~s" x))])
-  (primitive-set!
-    'car
-    (lambda (orig)
-      (if (pair? orig) ($car orig) (err 'car orig))))
-  (primitive-set!
-    'cdr
-    (lambda (orig)
-      (if (pair? orig) ($cdr orig) (err 'cdr orig))))
+  ;(primitive-set!
+  ;  'car
+  ;  (lambda (orig)
+  ;    (if (pair? orig) ($car orig) (err 'car orig))))
+  ;(primitive-set!
+  ;  'cdr
+  ;  (lambda (orig)
+  ;    (if (pair? orig) ($cdr orig) (err 'cdr orig))))
   (primitive-set!
     'caar
     (lambda (orig)
@@ -15,13 +19,13 @@
           (let ([x ($car orig)])
             (if (pair? x) ($car x) (err 'caar orig)))
           (err 'caar orig))))
-  (primitive-set!
-    'cadr
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($cdr orig)])
-            (if (pair? x) ($car x) (err 'cadr orig)))
-          (err 'cadr orig))))
+  ;(primitive-set!
+  ;  'cadr
+  ;  (lambda (orig)
+  ;    (if (pair? orig)
+  ;        (let ([x ($cdr orig)])
+  ;          (if (pair? x) ($car x) (err 'cadr orig)))
+  ;        (err 'cadr orig))))
   (primitive-set!
     'cdar
     (lambda (orig)

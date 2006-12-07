@@ -828,7 +828,7 @@
     (for-each 
       (lambda (x)
         (let ([n (getprop x '*compiler-giveup-tally*)])
-          (when (>= n 40)
+          (when (>= n 30)
             (printf "~s ~s\n" n x))))
       giveup-list))
   (primitive-set! 'compiler-giveup-tally print-tally))
@@ -1055,6 +1055,18 @@
                                [(car) (car v)]
                                [else  (cdr v)]))))))))
          (giveup))]
+    [(cadr)
+     (or (and (fx= (length rand*) 1)
+              (let ([a (car rand*)])
+                (or (constant-value a
+                      (lambda (v)
+                        (and (pair? v)
+                             (pair? (cdr v))
+                             (mk-seq a
+                               (make-constant
+                                 (cadr v))))))
+                    (make-primcall op rand*))))
+         (giveup))] 
     [(not null? pair? fixnum? vector? string? char? symbol?
       eof-object?)
      (or (and (fx= (length rand*) 1)
@@ -2041,7 +2053,7 @@
       [(seq e0 e1) (make-seq (Expr e0) (Expr e1))]
       [(primcall op arg*)
        (cond
-         [(memq op '(not car cdr fxadd1 fxsub1)) ;;; SIMPLIFY
+         [(memq op '(not car cdr cadr fxadd1 fxsub1)) ;;; SIMPLIFY
           (make-primcall op (map Expr arg*))]
          [else
           (simplify* arg* '() '()
@@ -3364,6 +3376,20 @@
                    (jne (label SL_cdr_error))
                    (movl (mem (fx- disp-cdr pair-tag) ebx) eax)
                    ac)))))]
+      [(cadr)
+       (NonTail (car arg*)
+          (list* 
+            (movl eax ebx)
+            (andl (int pair-mask) eax)
+            (cmpl (int pair-tag) eax)
+            (jne (label SL_cadr_error))
+            (movl (mem (fx- disp-cdr pair-tag) ebx) eax)
+            (movl eax ecx)
+            (andl (int pair-mask) eax)
+            (cmpl (int pair-tag) eax)
+            (jne (label SL_cadr_error))
+            (movl (mem (fx- disp-car pair-tag) ecx) eax)
+            ac))]
       [(top-level-value)
        (let ([x (car arg*)])
          (cond
@@ -4365,6 +4391,7 @@
   (define SL_top_level_value_error (gensym "SL_top_level_value_error"))
   (define SL_car_error (gensym "SL_car_error"))
   (define SL_cdr_error (gensym "SL_cdr_error"))
+  (define SL_cadr_error (gensym "SL_cadr_error"))
   (define SL_invalid_args (gensym "SL_invalid_args"))
   (define SL_foreign_call (gensym "SL_foreign_call"))
   (define SL_continuation_code (gensym "SL_continuation_code"))
@@ -4404,7 +4431,12 @@
               (movl (primref-loc 'cdr-error) cpr)
               (movl (int (argc-convention 1)) eax)
               (tail-indirect-cpr-call))
-        
+        (list 0
+              (label SL_cadr_error)
+              (movl ebx (mem (fx- 0 wordsize) fpr))
+              (movl (primref-loc 'cadr-error) cpr)
+              (movl (int (argc-convention 1)) eax)
+              (tail-indirect-cpr-call))
         (list 0
               (label SL_top_level_value_error)
               (movl ebx (mem (fx- 0 wordsize) fpr))

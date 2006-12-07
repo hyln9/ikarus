@@ -55,3 +55,8 @@
         (error 'fxsub1 "underflow")
         (error 'fxsub1 "~s is not a fixnum" x))))
 
+(primitive-set! 'cadr-error
+  (lambda (x)
+    (error 'cadr "invalid list structure in ~s" x)))
+
+
