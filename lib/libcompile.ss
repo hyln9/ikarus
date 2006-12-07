@@ -1358,6 +1358,7 @@
     ;;; redo them
     (uncover-assigned/referenced x)))
 
+
 (define (rewrite-assignments x)
   (define who 'rewrite-assignments)
   (define (fix-lhs* lhs*)
@@ -1508,6 +1509,7 @@
        (make-appcall (Expr rator) (map Expr rand*))]
       [else (error who "invalid expression ~s" (unparse x))]))
   (Expr x))
+
 
 (define (convert-closures prog)
   (define who 'convert-closures)

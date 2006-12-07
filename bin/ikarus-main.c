@@ -10,6 +10,9 @@
 #include <errno.h>
 #include <gmp.h>
 
+int get_all_options(){
+}
+
 /* get_option
    
    takes pointers to argc and argv and looks for the first
