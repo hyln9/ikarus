@@ -1074,23 +1074,24 @@
                 (case ctxt
                   [(e) a]
                   [else
-                   (constant-value a
-                     (lambda (v)
-                       (mk-seq a
-                         (make-constant
-                           (case op
-                             [(not) (not v)]
-                             [(null?) (null? v)]
-                             [(pair?) (pair? v)]
-                             [(fixnum?) (fixnum? v)]
-                             [(vector?) (vector? v)]
-                             [(string?) (string? v)]
-                             [(char?) (char? v)]
-                             [(symbol?) (symbol? v)]
-                             [(eof-object?) (eof-object? v)]
-                             [else 
-                              (error 'optimize
-                                "huh ~s" op)])))))])))
+                   (or (constant-value a
+                         (lambda (v)
+                           (mk-seq a
+                             (make-constant
+                               (case op
+                                 [(not) (not v)]
+                                 [(null?) (null? v)]
+                                 [(pair?) (pair? v)]
+                                 [(fixnum?) (fixnum? v)]
+                                 [(vector?) (vector? v)]
+                                 [(string?) (string? v)]
+                                 [(char?) (char? v)]
+                                 [(symbol?) (symbol? v)]
+                                 [(eof-object?) (eof-object? v)]
+                                 [else 
+                                  (error 'optimize
+                                    "huh ~s" op)])))))
+                       (make-primcall op rand*))])))
          (giveup))]
     [($car $cdr)
      (or (and (fx= (length rand*) 1)
@@ -2053,7 +2054,10 @@
       [(seq e0 e1) (make-seq (Expr e0) (Expr e1))]
       [(primcall op arg*)
        (cond
-         [(memq op '(not car cdr cadr fxadd1 fxsub1)) ;;; SIMPLIFY
+         [(memq op '(not car cdr cadr fxadd1 fxsub1
+                     null? pair? fixnum? vector? string?
+                     char? symbol? eof-object?
+                     )) ;;; SIMPLIFY
           (make-primcall op (map Expr arg*))]
          [else
           (simplify* arg* '() '()
@@ -2882,70 +2886,55 @@
       [(not Lt) (cons (list (opposite op) Lf) ac)] 
       [else (list* (list op Lt) (jmp Lf) ac)]))
   (define (indirect-type-pred pri-mask pri-tag sec-mask sec-tag rand* Lt Lf ac)
-    (cond
-      [(and Lt Lf)
-       (list* (movl (Simple (car rand*)) eax)
-              (movl eax ebx)
-              (andl (int pri-mask) ebx)
-              (cmpl (int pri-tag) ebx)
-              (jne Lf)
-              (movl (mem (fx- 0 pri-tag) eax) ebx)
-              (if sec-mask
-                  (andl (int sec-mask) ebx)
-                  '(nop))
-              (cmpl (int sec-tag) ebx)
-              (jne Lf)
-              (jmp Lt)
-              ac)]
-      [Lf
-       (list* (movl (Simple (car rand*)) eax)
-              (movl eax ebx)
-              (andl (int pri-mask) ebx)
-              (cmpl (int pri-tag) ebx)
-              (jne Lf)
-              (movl (mem (fx- 0 pri-tag) eax) ebx)
-              (if sec-mask
-                  (andl (int sec-mask) ebx)
-                  '(nop))
-              (cmpl (int sec-tag) ebx)
-              (jne Lf)
-              ac)]
-      [Lt
-       (let ([L_END (unique-label)])
-         (list* (movl (Simple (car rand*)) eax)
-                (movl eax ebx)
+    (NonTail (car rand*)
+      (cond
+        [(and Lt Lf)
+         (list* (movl eax ebx)
                 (andl (int pri-mask) ebx)
                 (cmpl (int pri-tag) ebx)
-                (jne L_END)
+                (jne Lf)
                 (movl (mem (fx- 0 pri-tag) eax) ebx)
                 (if sec-mask
                     (andl (int sec-mask) ebx)
                     '(nop))
                 (cmpl (int sec-tag) ebx)
-                (je Lt)
-                L_END
-                ac))]
-      [else ac]))
+                (jne Lf)
+                (jmp Lt)
+                ac)]
+        [Lf
+         (list* (movl eax ebx)
+                (andl (int pri-mask) ebx)
+                (cmpl (int pri-tag) ebx)
+                (jne Lf)
+                (movl (mem (fx- 0 pri-tag) eax) ebx)
+                (if sec-mask
+                    (andl (int sec-mask) ebx)
+                    '(nop))
+                (cmpl (int sec-tag) ebx)
+                (jne Lf)
+                ac)]
+        [Lt
+         (let ([L_END (unique-label)])
+           (list* (movl eax ebx)
+                  (andl (int pri-mask) ebx)
+                  (cmpl (int pri-tag) ebx)
+                  (jne L_END)
+                  (movl (mem (fx- 0 pri-tag) eax) ebx)
+                  (if sec-mask
+                      (andl (int sec-mask) ebx)
+                      '(nop))
+                  (cmpl (int sec-tag) ebx)
+                  (je Lt)
+                  L_END
+                  ac))]
+        [else ac])))
   (define (type-pred mask tag rand* Lt Lf ac)
-    (cond
-      [mask
-       (list* 
-         (movl (Simple (car rand*)) eax)
-         (andl (int mask) eax)
-         (cmpl (int tag) eax)
-         (cond-branch 'je Lt Lf ac))]
-      [else 
-       (let ([v (Simple (car rand*))])
-         (cond
-           [(memq (car v) '(mem register)) 
-            (list*
-              (cmpl (int tag) (Simple (car rand*)))
-              (cond-branch 'je Lt Lf ac))]
-           [else
-            (list*
-              (movl (Simple (car rand*)) eax)
-              (cmpl (int tag) eax)
-              (cond-branch 'je Lt Lf ac))]))])) 
+    (let* ([ac (cond-branch 'je Lt Lf ac)]
+           [ac (cons (cmpl (int tag) eax) ac)]
+           [ac (if mask
+                   (cons (andl (int mask) eax) ac)
+                   ac)])
+      (NonTail (car rand*) ac)))
   (define (compare-and-branch op rand* Lt Lf ac)
     (define (opposite x)
       (cadr (assq x '([je je] [jl jg] [jle jge] [jg jl] [jge jle]))))
@@ -2981,7 +2970,6 @@
      [($unbound-object?) (type-pred #f unbound rand* Lt Lf ac)]
      [($forward-ptr?) (type-pred #f -1 rand* Lt Lf ac)]
      [(not)        (Pred (car rand*) Lf Lt ac)]
-     ;[(not)        (type-pred #f bool-f rand* Lt Lf ac)]
      [(eof-object?) (type-pred #f eof rand* Lt Lf ac)]
      [(bwp-object?) (type-pred #f bwp-object rand* Lt Lf ac)]
      [($code?) 
