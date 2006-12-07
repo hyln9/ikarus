@@ -243,25 +243,32 @@
 (define (unique-var x)
   (make-var (gensym x) #f #f))
 
-
-
 (define (recordize x)
+  (define *cookie* (gensym))
   (define (gen-fml* fml*)
     (cond
       [(pair? fml*)
-       (cons (unique-var (car fml*))
-             (gen-fml* (cdr fml*)))]
+       (let ([v (unique-var (car fml*))])
+         (putprop (car fml*) *cookie* v)
+         (cons v (gen-fml* (cdr fml*))))]
       [(symbol? fml*)
-       (unique-var fml*)]
+       (let ([v (unique-var fml*)])
+         (putprop fml* *cookie* v)
+         v)]
       [else '()]))
+  (define (ungen-fml* fml*)
+    (cond
+      [(pair? fml*)
+       (remprop (car fml*) *cookie*)
+       (ungen-fml* (cdr fml*))]
+      [(symbol? fml*)
+       (remprop fml* *cookie*)]))
   (define (properize fml*)
     (cond
       [(pair? fml*)
        (cons (car fml*) (properize (cdr fml*)))]
       [(null? fml*) '()]
       [else (list fml*)]))
-  (define (extend-env fml* nfml* env)
-    (cons (cons fml* nfml*) env))
   (define (quoted-sym x)
     (if (and (list? x)
              (fx= (length x) 2)
@@ -269,84 +276,51 @@
              (symbol? (cadr x)))
         (cadr x)
         (error 'quoted-sym "not a quoted symbol ~s" x)))
-   (define (quoted-string x)
+  (define (quoted-string x)
     (if (and (list? x)
              (fx= (length x) 2)
              (eq? 'quote (car x))
              (string? (cadr x)))
         (cadr x)
         (error 'quoted-string "not a quoted string ~s" x)))
-  (define (lookup^ x lhs* rhs*)
-    (cond
-      [(pair? lhs*)
-       (if (eq? x (car lhs*))
-           (car rhs*)
-           (lookup^ x (cdr lhs*) (cdr rhs*)))]
-      [(eq? x lhs*) rhs*]
-      [else #f]))
-  (define (lookup x env)
-    (cond
-      [(pair? env)
-       (or (lookup^ x (caar env) (cdar env))
-           (lookup x (cdr env)))]
-      [else #f]))
-  (define (E x env)
+  (define (Var x)
+    (or (getprop x *cookie*) 
+        (error 'recordize "unbound ~s" x)))
+  (define (E x)
     (cond
       [(pair? x)
        (case (car x)
-         [(quote)  (make-constant (cadr x))]
+         [(quote) (make-constant (cadr x))]
          [(if) 
           (make-conditional 
-            (E (cadr x) env)
-            (E (caddr x) env)
-            (E (cadddr x) env))]
+            (E (cadr x))
+            (E (caddr x))
+            (E (cadddr x)))]
          [(set!)
           (let ([lhs (cadr x)] [rhs (caddr x)])
-            (make-assign
-              (or (lookup lhs env) 
-                  (error 'recordize "invalid assignment ~s" x))
-              (E rhs env)))]
+            (make-assign (Var lhs) (E rhs)))]
          [(begin)
           (let f ([a (cadr x)] [d (cddr x)])
             (cond
-              [(null? d) (E a env)]
-              [else
-               (make-seq 
-                 (E a env)
-                 (f (car d) (cdr d)))]))]
+              [(null? d) (E a)]
+              [else (make-seq (E a) (f (car d) (cdr d)))]))]
          [(letrec)
           (unless (fx= (length x) 3) (syntax-error x))
           (let ([bind* (cadr x)] [body (caddr x)])
             (let ([lhs* (map car bind*)]
                   [rhs* (map cadr bind*)])
               (let ([nlhs* (gen-fml* lhs*)])
-                (let ([env (extend-env lhs* nlhs* env)])
-                  (make-recbind nlhs* 
-                                (map (lambda (rhs) (E rhs env)) rhs*)
-                                (E body env))))))]
-         [(letrec)
-          (unless (fx= (length x) 3) (syntax-error x))
-          (let ([bind* (cadr x)] [body (caddr x)])
-            (let ([lhs* (map car bind*)]
-                  [rhs* (map cadr bind*)]
-                  [v* (map (lambda (x) '(void)) bind*)]
-                  [t* (map (lambda (x) (gensym)) bind*)])
-              (E `((case-lambda 
-                     [,lhs* 
-                       ((case-lambda 
-                          [,t* 
-                           (begin ,@(map (lambda (x v) `(set! ,x ,v)) lhs* t*)
-                                  ,body)])
-                        ,@rhs*)])
-                   ,@v*)
-                 env)))]
+                (let ([expr (make-recbind nlhs* (map E rhs*) (E body ))])
+                  (ungen-fml* lhs*)
+                  expr))))]
          [(case-lambda)
           (let ([cls*
                  (map
                    (lambda (cls)
                      (let ([fml* (car cls)] [body (cadr cls)])
                        (let ([nfml* (gen-fml* fml*)])
-                         (let ([body (E body (extend-env fml* nfml* env))])
+                         (let ([body (E body)])
+                           (ungen-fml* fml*)
                            (make-clambda-case 
                              (make-case-info
                                (gensym)
@@ -357,56 +331,36 @@
             (make-clambda (gensym) cls* #f))]
          [(foreign-call)
           (let ([name (quoted-string (cadr x))] [arg* (cddr x)])
-            (make-forcall name
-              (map (lambda (x) (E x env)) arg*)))]
+            (make-forcall name (map E arg*)))]
          [(|#primitive|)
           (let ([var (cadr x)])
             (make-primref var))]
-         ;;; [(|#primitive|)
-         ;;;  (let ([var (cadr x)])
-         ;;;    (if (primitive? var)
-         ;;;        (make-primref var)
-         ;;;        (error 'recordize "invalid primitive ~s" var)))]
          [(top-level-value)
           (let ([var (quoted-sym (cadr x))])
             (if (eq? (expand-mode) 'bootstrap)
                 (error 'compile "reference to ~s in bootstrap mode" var)
-                ;(make-primref var)
                 (make-funcall
                   (make-primref 'top-level-value)
                   (list (make-constant var)))))]
-         ;;; [(top-level-value)
-         ;;;  (let ([var (quoted-sym (cadr x))])
-         ;;;    (if (eq? (expand-mode) 'bootstrap)
-         ;;;        (if (primitive? var)
-         ;;;            (make-primref var)
-         ;;;            (error 'compile "invalid primitive ~s" var))
-         ;;;        (make-funcall
-         ;;;          (make-primref 'top-level-value)
-         ;;;          (list (make-constant var)))))]
          [(set-top-level-value!)
           (make-funcall (make-primref 'set-top-level-value!)
-                        (map (lambda (x) (E x env)) (cdr x)))]
+                        (map E (cdr x)))]
          [(memv) 
           (make-funcall
              (make-primref 'memq)
-             (map (lambda (x) (E x env)) (cdr x)))]
+             (map E (cdr x)))]
          [($apply)
           (let ([proc (cadr x)] [arg* (cddr x)])
             (make-appcall
-              (E proc env)
-              (map (lambda (x) (E x env)) arg*)))]
+              (E proc)
+              (map E arg*)))]
          [(void) 
           (make-constant (void))]
          [else
-          (make-funcall 
-            (E (car x) env)
-            (map (lambda (x) (E x env)) (cdr x)))])]
-      [(symbol? x)
-       (or (lookup x env)
-           (error 'recordize "invalid reference in ~s" x))]
+          (make-funcall (E (car x)) (map E (cdr x)))])]
+      [(symbol? x) (Var x)]
       [else (error 'recordize "invalid expression ~s" x)]))
-  (E x '()))
+  (E x))
 
 (define (unparse x)
   (define (E-args proper x)
