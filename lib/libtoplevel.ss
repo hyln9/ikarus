@@ -1,9 +1,16 @@
 
+;;; this file is one big hack that initializes the whole system.
+
+
+;;; first, it defines all public primitives to their primref values.
+;;;       (cross your fingers they're all defined in code)
 (for-each
   (lambda (x)
     ($set-symbol-value! x (primitive-ref x)))
   (public-primitives))
 
+;;; second, it hacks a |#system| module by defining all system and
+;;; public primitives to be (core-primitive . name) syntaxes.
 (let ()
   (define add-prim 
     (lambda (x)
@@ -13,6 +20,9 @@
   (for-each add-prim (public-primitives))
   (for-each add-prim (system-primitives)))
 
+;;; third, all macros that are defined in the compiler |#system| are
+;;;  added to the top-level, and those defined in the top-level are
+;;;  added to the |#system|.
 (for-each
   (lambda (x)
     (cond
@@ -28,6 +38,8 @@
       [else (error #f "~s is not a macro" x)]))
   (macros))
 
+;;; Now we hack the read #system and scheme modules by forging
+;;; interfaces and putting property lists.
 (let ([gsys (gensym "#system")] [gsch (gensym "*scheme*")])
   (define (make-stx x)
     (vector 'syntax-object x 
@@ -54,6 +66,8 @@
       (putprop '|#system| '*sc-expander* sysmod)
       (putprop 'scheme '*sc-expander* schmod))))
 
+
+;;; Finally, we're ready to evaluate the files and enter the cafe.
 (let-values ([(files script args)
               (let f ([args (command-line-arguments)])
                 (cond
