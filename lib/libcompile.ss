@@ -1125,7 +1125,30 @@
                                        (make-constant t)))))))
                     (make-primcall op rand*))))
          (giveup))]
-                                  
+    ;X; [(fx- fx+ fx*)
+    ;X;  (or (and (fx= (length rand*) 2)
+    ;X;           (let ([a0 (car rand*)] [a1 (cadr rand*)])
+    ;X;             (or (constant-value a1
+    ;X;                   (lambda (v1)
+    ;X;                     (and (fixnum? v1)
+    ;X;                          (or (constant-value a0
+    ;X;                                (lambda (v0)
+    ;X;                                  (and (fixnum? v0)
+    ;X;                                       (let ([r (case op
+    ;X;                                                  [(fx+) (+ v0 v1)]
+    ;X;                                                  [(fx-) (- v0 v1)]
+    ;X;                                                  [(fx*) (* v0 v1)]
+    ;X;                                                  [else (error 'compile "BOO")])])
+    ;X;                                         (and (fixnum? r)
+    ;X;                                               (mk-seq (mk-seq a0 a1)
+    ;X;                                                 (make-constant r)))))))
+    ;X;                              (mk-seq a1 (make-primcall op (list a0 v1)))))))
+    ;X;                 (constant-value a0
+    ;X;                   (lambda (v0)
+    ;X;                     (and (fixnum? v0)
+    ;X;                          (mk-seq a0 (make-primcall op (list v0 a1))))))
+    ;X;                 (make-primcall op (list a0 a1)))))
+    ;X;      (giveup))]
     ;;; unoptimizables
     [(error syntax-error $syntax-dispatch $sc-put-cte 
       primitive-set!  apply) 
@@ -3029,7 +3052,6 @@
          (list* (movl (Simple (car rand*)) eax)
              (movl eax ebx)
              (andl (int fx-mask) ebx)
-             (cmpl (int 0) ebx)
              (je Lt)
              (andl (int 7) eax)
              (cmpl (int 7) eax)
@@ -3040,7 +3062,6 @@
          (list* (movl (Simple (car rand*)) eax)
              (movl eax ebx)
              (andl (int fx-mask) ebx)
-             (cmpl (int 0) ebx)
              (je Lt)
              (andl (int 7) eax)
              (cmpl (int 7) eax)
@@ -3052,7 +3073,6 @@
              (movl (Simple (car rand*)) eax)
              (movl eax ebx)
              (andl (int fx-mask) ebx)
-             (cmpl (int 0) ebx)
              (je Ljoin)
              (andl (int 7) eax)
              (cmpl (int 7) eax)
@@ -3201,6 +3221,30 @@
        (list* (movl (Simple (car arg*)) eax)
               (subl (Simple (cadr arg*)) eax)
               ac)]
+      ;X; [(fx-)
+      ;X;  (let ([a0 (car arg*)] [a1 (cadr arg*)])
+      ;X;    (cond
+      ;X;      [(simple? a1)
+      ;X;       (cond
+      ;X;         [(and (constant? a1) (fixnum? (constant-value a1)))
+      ;X;          (NonTail a0
+      ;X;             (movl eax ebx)
+      ;X;             (andl (int fx-mask) ebx)
+      ;X;             (jne (label SL_fx-_eax_error))
+      ;X;             (subl (Simple a1) eax)
+      ;X;             (jo (label SL_fx-_overflow))
+      ;X;             ac)]
+      ;X;         [else
+      ;X;          (NonTail a0
+      ;X;             (movl eax ebx)
+      ;X;             (movl (Simple a1) ecx)
+      ;X;             (orl ecx ebx)
+      ;X;             (andl (int fx-mask) ebx)
+      ;X;             (jne (label SL_fx-_eax/ecx_error))
+      ;X;             (subl ecx eax)
+      ;X;             (jo (label SL_fx-_overflow))
+      ;X;             ac)])]
+      ;X;      ljfhjdhfkjdhfjk]
       [($fx*)
        (cond
          [(constant? (car arg*))
@@ -3893,6 +3937,15 @@
        (list* (cmpl (int bool-f) x) (jne Lt) ac)]
       [else
        (list* (cmpl (int bool-f) x) (je Lf) (jmp Lt) ac)]))
+  (define (simple? x) 
+    (record-case x
+      [(cp-var)    #t]
+      [(frame-var) #t]
+      [(constant)  #t]
+      [(code-loc)  #t]
+      [(primref)   #t]
+      [(closure)   #t]
+      [else        #f]))
   (define (Simple x)
     (record-case x
       [(cp-var i) 
