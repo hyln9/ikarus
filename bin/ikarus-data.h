@@ -198,5 +198,6 @@
 #define bignum_sign_shift   3
 #define bignum_length_shift 4
 #define disp_bignum_data wordsize
+#define off_bignum_data (disp_bignum_data - vector_tag)
 
 #endif

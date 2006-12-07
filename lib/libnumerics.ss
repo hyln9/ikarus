@@ -360,6 +360,43 @@
                 (error 'expt "power should be positive, got ~s" m))])]
         [else (error 'expt "~s is not a number" m)])))
 
+  (primitive-set! 'quotient
+    (lambda (x y)
+      (let-values ([(q r) (quotient+remainder x y)])
+        q)))
+
+  (primitive-set! 'remainder
+    (lambda (x y)
+      (let-values ([(q r) (quotient+remainder x y)])
+        r)))
+
+  (primitive-set! 'quotient+remainder
+    (lambda (x y)
+      (cond
+        [(eq? y 0) 
+         (error 'quotient+remainder
+                "second argument must be non-zero")]
+        [(fixnum? x) 
+         (cond
+           [(fixnum? y)
+            (values (fxquotient x y)
+                    (fxremainder x y))]
+           [(bignum? y) (values 0 x)]
+           [else (error 'quotient+remainder 
+                        "~s is not a number" y)])]
+        [(bignum? x)
+         (cond
+           [(fixnum? y)
+            (let ([p (foreign-call "ikrt_bnfxdivrem" x y)])
+              (values (car p) (cdr p)))]
+           [(bignum? y)
+            (let ([p (foreign-call "ikrt_bnbndivrem" x y)])
+              (values (car p) (cdr p)))]
+           [else (error 'quotient+remainder 
+                        "~s is not a number" y)])]
+        [else (error 'quotient+remainder 
+                  "~s is not a number" x)])))
+
   (primitive-set! 'positive?
     (lambda (x)
       (cond

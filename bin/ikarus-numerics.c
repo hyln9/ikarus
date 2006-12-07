@@ -1021,6 +1021,141 @@ ikrt_bnbnlogand(ikp x, ikp y, ikpcb* pcb){
   }
 }
 
+#if 0
+From TFM:
+void
+mpn_tdiv_qr (
+  mp limb t *qp,        /* quotient placed here */
+  mp limb t *rp,        /* remainder placed here */
+  mp size t qxn,        /* must be zero! */ 
+  const mp limb t *np,  /* first number  */
+  mp size t nn,         /* its length    */
+  const mp limb t *dp,  /* second number */
+  mp size t dn          /* its length    */
+)
+
+Divide {np, nn} by {dp, dn} and put the quotient at {qp,nn-dn+1}
+and the remainder at {rp, dn}. The quotient is rounded towards 0.
+No overlap is permitted between arguments. nn must be greater than
+or equal to dn. The most significant limb of dp must be non-zero.
+The qxn operand must be zero. 
+#endif
+
+ikp
+ikrt_bnbndivrem(ikp x, ikp y, ikpcb* pcb){
+  ikp xfst = ref(x, -vector_tag);
+  ikp yfst = ref(y, -vector_tag);
+  mp_size_t xn = ((unsigned int) xfst) >> bignum_length_shift;
+  mp_size_t yn = ((unsigned int) yfst) >> bignum_length_shift;
+  if(xn < yn){
+    /* quotient is zero, remainder is x */
+    ikp rv = ik_alloc(pcb, pair_size);
+    ref(rv, disp_car) = 0;
+    ref(rv, disp_cdr) = x;
+    return rv+pair_tag;
+  }
+  mp_size_t qn = xn - yn + 1;
+  mp_size_t rn = yn;
+  ikp q = ik_alloc(pcb, align(disp_bignum_data + qn*wordsize));
+  ikp r = ik_alloc(pcb, align(disp_bignum_data + rn*wordsize));
+  mpn_tdiv_qr (
+      (mp_limb_t*)(q+disp_bignum_data),
+      (mp_limb_t*)(r+disp_bignum_data),
+      0,
+      (mp_limb_t*)(x+off_bignum_data),
+      xn,
+      (mp_limb_t*)(y+off_bignum_data),
+      yn);
+
+  if(((unsigned int) xfst) & bignum_sign_mask){
+    /* x is negative => remainder is negative */
+    r = normalize_bignum(rn, 1 << bignum_sign_shift, r);
+  } else {
+    r = normalize_bignum(rn, 0, r);
+  }
+
+  if(((unsigned int) yfst) & bignum_sign_mask){
+    /* y is negative => quotient is opposite of x */
+    int sign = 
+      bignum_sign_mask - (((unsigned int)xfst) & bignum_sign_mask);
+    q = normalize_bignum(qn, sign, q);
+  } else {
+    /* y is positive => quotient is same as x */
+    int sign = (((unsigned int)xfst) & bignum_sign_mask);
+    q = normalize_bignum(qn, sign, q);
+  }
+  ikp rv = ik_alloc(pcb, pair_size);
+  ref(rv, disp_car) = q;
+  ref(rv, disp_cdr) = r;
+  return rv+pair_tag;
+}
+
+
+#if 0
+[Function]
+
+mp_limb_t
+mpn_divrem_1 (
+  mp limb t *r1p,
+  mp size t qxn, 
+  mp limb t *s2p,
+  mp size t s2n,
+  mp limb t s3limb 
+) 
+
+Divide {s2p, s2n} by s3limb, and write the quotient at r1p. Return the remainder. 
+The integer quotient is written to {r1p+qxn, s2n} and in addition qxn fraction limbs are 
+developed and written to {r1p, qxn}. Either or both s2n and qxn can be zero. For most 
+usages, qxn will be zero. 
+#endif
+
+ikp
+ikrt_bnfxdivrem(ikp x, ikp y, ikpcb* pcb){
+  int yint = unfix(y);
+  mp_limb_t* s2p = (mp_limb_t*)(x+off_bignum_data);
+  ikp fst = ref(x, -vector_tag);
+  mp_size_t s2n = ((unsigned int) fst) >> bignum_length_shift;
+  ikp quot = ik_alloc(pcb,
+      align(s2n*wordsize + disp_bignum_data));
+  mp_limb_t rv = mpn_divrem_1(
+      (mp_limb_t*)(quot+disp_bignum_data),
+      0,
+      s2p,
+      s2n,
+      abs(yint));
+
+  ikp rem;
+
+  if(yint < 0){
+    /* y is negative => quotient is opposite of x */
+    int sign = 
+      bignum_sign_mask - (((unsigned int)fst) & bignum_sign_mask);
+    quot = normalize_bignum(s2n, sign, quot);
+  } else {
+    /* y is positive => quotient is same as x */
+    int sign = (((unsigned int)fst) & bignum_sign_mask);
+    quot = normalize_bignum(s2n, sign, quot);
+  }
+
+  /* the remainder is always less than |y|, so it will
+     always be a fixnum.  (if y == most_negative_fixnum, 
+     then |remainder| will be at most most_positive_fixnum). */
+  if(((unsigned int) fst) & bignum_sign_mask){
+    /* x is negative => remainder is negative */
+    rem = (ikp) -(rv << fx_shift);
+  } else {
+    rem = fix(rv);
+  }
+  ikp p = ik_alloc(pcb, pair_size);
+  ref(p, disp_car) = quot;
+  ref(p, disp_cdr) = rem;
+  return p+pair_tag;
+}
+
+
+
+
+
 
 ikp
 ikrt_bntostring(ikp x, ikpcb* pcb){
