@@ -243,6 +243,8 @@
 (define (unique-var x)
   (make-var (gensym x) #f #f))
 
+
+
 (define (recordize x)
   (define (gen-fml* fml*)
     (cond
@@ -4597,7 +4599,8 @@
         ))))
 
 (define (compile-expr expr)
-  (let* ([p (recordize expr)]
+  (let* ([p (expand expr)]
+         [p (recordize p)]
          [p (optimize-direct-calls p)]
          [p (optimize-letrec p)]
          [p (uncover-assigned/referenced p)]
@@ -4635,7 +4638,7 @@
       (let f ()
         (let ([x (read ip)])
           (unless (eof-object? x)
-            (fasl-write (compile-expr (expand x)) op)
+            (fasl-write (compile-expr x) op)
             (f))))
       (close-input-port ip)
       (close-output-port op))))
@@ -4644,7 +4647,7 @@
 (primitive-set! 'assembler-output (make-parameter #f))
 (primitive-set! 'compile
   (lambda (x)
-    (let ([code (compile-expr (expand x))])
+    (let ([code (compile-expr x)])
       (let ([proc ($code->closure code)])
         (proc)))))
 

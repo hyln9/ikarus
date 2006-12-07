@@ -231,6 +231,14 @@
     ))
 
 
+(define (expand-file ifile)
+  (with-input-from-file ifile
+     (lambda ()
+       (let f ()
+         (let ([x (read)])
+           (unless (eof-object? x)
+             (sc-expand x)
+             (f)))))))
 
 (define (compile-library ifile ofile)
   (parameterize ([assembler-output #f] 
@@ -238,6 +246,7 @@
                  [interaction-environment system-env])
      (printf "compiling ~a ... " ifile)
      (compile-file ifile ofile 'replace)
+     ;(expand-file ifile)
      (newline)))
 
 (for-each 
@@ -245,7 +254,6 @@
     (when (cadr x)
       (compile-library (car x) (caddr x))))
   scheme-library-files)
-
 
 (define (join s ls)
   (cond
