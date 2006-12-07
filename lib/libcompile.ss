@@ -300,12 +300,12 @@
           (let ([lhs (cadr x)] [rhs (caddr x)])
             (make-assign (Var lhs) (E rhs)))]
          [(begin)
-          (let f ([a (cadr x)] [d (cddr x)])
+          (let f ([a (E (cadr x))] [d (cddr x)])
             (cond
-              [(null? d) (E a)]
-              [else (make-seq (E a) (f (car d) (cdr d)))]))]
+              [(null? d) a]
+              [else
+               (f (make-seq a (E (car d))) (cdr d))]))]
          [(letrec)
-          (unless (fx= (length x) 3) (syntax-error x))
           (let ([bind* (cadr x)] [body (caddr x)])
             (let ([lhs* (map car bind*)]
                   [rhs* (map cadr bind*)])
@@ -345,10 +345,6 @@
          [(set-top-level-value!)
           (make-funcall (make-primref 'set-top-level-value!)
                         (map E (cdr x)))]
-         [(memv) 
-          (make-funcall
-             (make-primref 'memq)
-             (map E (cdr x)))]
          [($apply)
           (let ([proc (cadr x)] [arg* (cddr x)])
             (make-appcall
