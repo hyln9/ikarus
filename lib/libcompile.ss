@@ -1125,6 +1125,30 @@
                                        (make-constant t)))))))
                     (make-primcall op rand*))))
          (giveup))]
+    #;[(fx+)
+     (or (and (fx= (length rand*) 2)
+              (let ([a0 (car rand*)] [a1 (cadr rand*)])
+                (or (constant-value a1
+                      (lambda (v1)
+                        (and (fixnum? v1)
+                             (or (constant-value a0
+                                   (lambda (v0)
+                                     (and (fixnum? v0)
+                                          (let ([r (+ v0 v1)])
+                                            (and (fixnum? r)
+                                                 (mk-seq (mk-seq a0 a1) 
+                                                   (make-constant r)))))))
+                                 (mk-seq a1 
+                                   (make-primcall op 
+                                     (list a0 (make-constant v1))))))))
+                    (constant-value a0
+                      (lambda (v0)
+                        (and (fixnum? v0)
+                             (mk-seq a0 
+                               (make-primcall op
+                                  (list (make-constant v0) a1))))))
+                    (make-primcall op rand*))))
+         (giveup))]
     ;X; [(fx- fx+ fx*)
     ;X;  (or (and (fx= (length rand*) 2)
     ;X;           (let ([a0 (car rand*)] [a1 (cadr rand*)])
@@ -2082,6 +2106,20 @@
                      char? symbol? eof-object?
                      )) ;;; SIMPLIFY
           (make-primcall op (map Expr arg*))]
+         [(memq op '(fx+))
+          (cond
+            [(simple? (cadr arg*))
+             (make-primcall op 
+                (list (Expr (car arg*)) (cadr arg*)))]
+            [(simple? (car arg*))
+             (make-primcall op
+                (list (car arg*) (Expr (cadr arg*))))]
+            [else 
+             (simplify* (cdr arg*) '() '()
+               (lambda (a* lhs* rhs*)
+                 (make-bind^ lhs* rhs*
+                   (make-primcall op
+                     (cons (Expr (car arg*)) a*)))))])]
          [else
           (simplify* arg* '() '()
             (lambda (arg* lhs* rhs*)
@@ -2657,7 +2695,14 @@
        (if (eq? call-conv 'foreign)
            (values x f)
            (values x 0))]
-      [(primcall op arg*) (do-primcall op arg* f)]
+      [(primcall op arg*) 
+       (let loop ([arg* arg*] [ls '()] [f f])
+         (cond
+           [(null? arg*) 
+            (do-primcall op (reverse ls) f)]
+           [else
+            (let-values ([(a f) (NonTail (car arg*) f)])
+              (loop (cdr arg*) (cons a ls) f))]))]
       [(fix lhs* rhs* body)
        (let-values ([(body f) (NonTail body f)])
          (values (make-fix lhs* rhs* body) f))]
@@ -4671,7 +4716,8 @@
         ))))
 
 (define (compile-expr expr)
-  (let* ([p (expand expr)]
+  (let* ([p (parameterize ([assembler-output #f])
+              (expand expr))]
          [p (recordize p)]
          [p (optimize-direct-calls p)]
          [p (optimize-letrec p)]
@@ -4689,10 +4735,11 @@
          [p (optimize-ap-check p)])
     (let ([ls* (generate-code p)])
       (when (assembler-output)
-        (for-each 
-          (lambda (ls)
-            (for-each (lambda (x) (printf "    ~s\n" x)) ls))
-          ls*))
+        (parameterize ([gensym-prefix "L"])
+          (for-each 
+            (lambda (ls)
+              (for-each (lambda (x) (printf "    ~s\n" x)) ls))
+            ls*)))
       (let ([code* (list*->code* 
                       (lambda (x)
                         (if (closure? x)

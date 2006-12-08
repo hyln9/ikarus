@@ -276,4 +276,4 @@
           (join " " (map caddr scheme-library-files))))
 
 (#%compiler-giveup-tally)
-
+; vim:syntax=scheme
