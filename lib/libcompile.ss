@@ -1125,7 +1125,7 @@
                                        (make-constant t)))))))
                     (make-primcall op rand*))))
          (giveup))]
-    #;[(fx+)
+    [(fx+)
      (or (and (fx= (length rand*) 2)
               (let ([a0 (car rand*)] [a1 (cadr rand*)])
                 (or (constant-value a1
@@ -2936,6 +2936,9 @@
   (define unique-label
     (lambda ()
       (label (gensym))))
+  (define handlers '())
+  (define (add-handler! ls)
+    (set-cdr! handlers (append ls (cdr handlers))))
   (define (constant-val x)
     (cond
       [(fixnum? x) (obj x)]
@@ -3246,6 +3249,52 @@
                 (addl (int (fxsll 1 fx-shift)) eax)
                 (jo (label SL_fxadd1_error))
                 ac))]
+      [(fx+)
+       (let foo ([a0 (car arg*)] [a1 (cadr arg*)])
+         (cond
+           [(simple? a1)
+            (cond
+              [(constant? a1)
+               (let ([v (constant-value a1)])
+                 (cond
+                   [(fixnum? v)
+                    (let ([L 
+                           (let ([L (unique-label)])
+                             (add-handler!
+                               (list L
+                                     (movl (Simple a1) ebx)
+                                     (jmp (label SL_fx+_overflow))))
+                             L)])
+                      (NonTail a0
+                        (list* 
+                          (movl eax ebx)
+                          (andl (int fx-mask) ebx)
+                          ;;; arg in eax
+                          (jne (label SL_fx+_type))
+                          (addl (Simple a1) eax)
+                          (jo L)
+                          ac)))]
+                   [else
+                    (NonTail a0
+                      (list*
+                        (movl (Simple a1) eax)
+                        ;;; arg in eax
+                        (jmp (label SL_fx+_type))
+                        ac))]))]
+              [else
+               (NonTail a0
+                 (list* 
+                   (movl eax ecx)
+                   (movl (Simple a1) ebx)
+                   (orl ebx ecx)
+                   (andl (int fx-mask) ecx)
+                   ;;; args in eax, ebx
+                   (jne (label SL_fx+_types))
+                   (addl ebx eax)
+                   ;;; args in eax (ac),ebx
+                   (jo (label SL_fx+_overflow))
+                   ac))])]
+           [else (foo a1 a0)]))]
       [(fxsub1)
        (NonTail (car arg*)
          (list* (movl eax ebx)
@@ -4444,14 +4493,14 @@
                          (jle (label L))
                          (make-dispatcher #t
                            (car L*) (cdr L*) (car x*) (cdr x*) ac))])])])])))
-  (define (handle-cases x x*)
+  (define (handle-cases x x* ac)
     (let ([L* (map (lambda (_) (gensym)) x*)]
           [L (gensym)])
       (make-dispatcher #f L L* x x*
         (let f ([x x] [x* x*] [L L] [L* L*])
           (cond
             [(null? x*) 
-             (cons (label L) (Entry 'check x '()))]
+             (cons (label L) (Entry 'check x ac))]
             [else
              (cons (label L)
                (Entry #f x
@@ -4459,18 +4508,26 @@
   (define (CodeExpr x)
     (record-case x
       [(clambda L cases free)
+       (set! handlers (list '(nop)))
        (list*
          (length free)
          (label L)
-         (handle-cases (car cases) (cdr cases)))]))
+         (handle-cases (car cases) (cdr cases) handlers))]))
   (record-case x
-    [(codes list body)
-     (cons (list* 0
-                  (label (gensym))
-                  (Tail body '()))
-           (map CodeExpr list))]))
+    [(codes ls body)
+     (let ([body
+            (begin
+              (set! handlers (list '(nop)))
+              (Tail body handlers))])
+       (cons (list* 0
+                    (label (gensym))
+                    body)
+             (map CodeExpr ls)))]))
 
 (begin ;;; ASSEMBLY HELPERS
+  (define SL_fx+_type (gensym "SL_fx+_type"))
+  (define SL_fx+_types (gensym "SL_fx+_types"))
+  (define SL_fx+_overflow (gensym "SL_fx+_overflow"))
   (define SL_fxadd1_error (gensym "SL_fxadd1_error"))
   (define SL_fxsub1_error (gensym "SL_fxsub1_error"))
   (define SL_nonprocedure (gensym "SL_nonprocedure"))
@@ -4497,6 +4554,26 @@
               (movl eax (mem (fx- 0 wordsize) fpr))
               (movl (primref-loc 'fxadd1-error) cpr)
               (movl (int (argc-convention 1)) eax)
+              (tail-indirect-cpr-call))
+        (list 0
+              (label SL_fx+_type)
+              (movl eax (mem (fx- 0 wordsize) fpr))
+              (movl (primref-loc 'fx+-type-error) cpr)
+              (movl (int (argc-convention 1)) eax)
+              (tail-indirect-cpr-call)) 
+        (list 0
+              (label SL_fx+_overflow)
+              (movl eax (mem (fx- 0 wordsize) fpr))
+              (movl ebx (mem (fx- wordsize wordsize) fpr))
+              (movl (primref-loc 'fx+-overflow-error) cpr)
+              (movl (int (argc-convention 2)) eax)
+              (tail-indirect-cpr-call)) 
+        (list 0
+              (label SL_fx+_types)
+              (movl eax (mem (fx- 0 wordsize) fpr))
+              (movl ebx (mem (fx- wordsize wordsize) fpr))
+              (movl (primref-loc 'fx+-types-error) cpr)
+              (movl (int (argc-convention 2)) eax)
               (tail-indirect-cpr-call))
         (list 0
               (label SL_fxsub1_error)

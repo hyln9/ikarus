@@ -59,9 +59,15 @@
   (lambda (x)
     (error 'cadr "invalid list structure in ~s" x)))
 
-(primitive-set! 'fx+-error
+(primitive-set! 'fx+-type-error
   (lambda (x)
-    (if (fixnum? x)
-        (error 'fx+ "overflow")
-        (error 'fx+ "~s is not a fixnum" x))))
+    (error 'fx+ "~s is not a fixnum" x)))
 
+(primitive-set! 'fx+-types-error
+  (lambda (x y)
+    (error 'fx+ "~s is not a fixnum"
+           (if (fixnum? x) y x))))
+
+(primitive-set! 'fx+-overflow-error
+  (lambda (x y)
+    (error 'fx+ "overflow")))
