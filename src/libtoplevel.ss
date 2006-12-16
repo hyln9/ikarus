@@ -96,6 +96,7 @@
      (display "Copyright (c) 2006 Abdulaziz Ghuloum\n\n")
      (command-line-arguments args)
      (for-each load files)
-     (new-cafe)]))
+     (new-cafe)
+     (exit 0)]))
 
 

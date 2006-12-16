@@ -1,4 +1,4 @@
-#!/Users/aghuloum/.opt/bin/ikarus --script
+#!../bin/ikarus -b ikarus.boot --script
 
 ;;; 9.1: * starting with libnumerics
 ;;; 9.0: * graph marks for both reader and writer 
@@ -275,5 +275,5 @@
   (format "cat ~a > ikarus.boot"
           (join " " (map caddr scheme-library-files))))
 
-(#%compiler-giveup-tally)
+;(#%compiler-giveup-tally)
 ; vim:syntax=scheme
