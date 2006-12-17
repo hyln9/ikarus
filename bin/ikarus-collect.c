@@ -798,6 +798,7 @@ add_object_proc(gc_t* gc, ikp x)
 #if accounting
       continuation_count++;
 #endif
+      return y;
     }
     else if(tagof(fst) == pair_tag){
       /* tcbucket */
