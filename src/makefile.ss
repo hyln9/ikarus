@@ -231,14 +231,17 @@
     ))
 
 
-(define (expand-file ifile)
+(define (read-file ifile)
   (with-input-from-file ifile
-     (lambda ()
-       (let f ()
-         (let ([x (read)])
-           (unless (eof-object? x)
-             (sc-expand x)
-             (f)))))))
+    (lambda ()
+      (let f ()
+        (let ([x (read)])
+          (if (eof-object? x)
+              '()
+              (cons x (f))))))))
+
+(define (expand-file ifile)
+  (map sc-expand (read-file ifile)))
 
 (define (compile-library ifile ofile)
   (parameterize ([assembler-output #f] 
@@ -247,6 +250,7 @@
      (printf "compiling ~a ... " ifile)
      (compile-file ifile ofile 'replace)
      ;(expand-file ifile)
+     ;(read-file ifile)
      (newline)))
 
 (for-each 

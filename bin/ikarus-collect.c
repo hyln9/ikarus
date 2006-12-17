@@ -17,6 +17,7 @@
 
 #define accounting 0
 
+#if accounting
 static int pair_count = 0;
 static int symbol_count = 0;
 static int closure_count = 0;
@@ -25,6 +26,7 @@ static int record_count = 0;
 static int continuation_count = 0;
 static int string_count = 0;
 static int htable_count = 0;
+#endif
 
 typedef struct qupages_t{
   ikp p;    /* pointer to the scan start */
@@ -230,7 +232,15 @@ gc_tconc_push(gc_t* gc, ikp tcbucket){
   }
 }
 
-static ikp add_object(gc_t* gc, ikp x, char* caller);
+
+#ifndef NDEBUG
+static ikp add_object_proc(gc_t* gc, ikp x, char* caller);
+#define add_object(gc,x,caller) add_object_proc(gc,x,caller)
+#else
+static ikp add_object_proc(gc_t* gc, ikp x);
+#define add_object(gc,x,caller) add_object_proc(gc,x)
+#endif
+
 static void collect_stack(gc_t*, ikp top, ikp base);
 static void collect_loop(gc_t*);
 static void fix_weak_pointers(gc_t*);
@@ -307,7 +317,7 @@ ik_collect(int mem_req, ikpcb* pcb){
   collect_stack(&gc, pcb->frame_pointer, pcb->frame_base - wordsize);
   pcb->next_k = add_object(&gc, pcb->next_k, "next_k"); 
   pcb->oblist = add_object(&gc, pcb->oblist, "oblist"); 
-  pcb->arg_list = add_object(&gc, pcb->arg_list, "args_list");
+  pcb->arg_list = add_object(&gc, pcb->arg_list, "args_list_foo");
   /* now we trace all live objects */
   collect_loop(&gc);
 
@@ -321,7 +331,7 @@ ik_collect(int mem_req, ikpcb* pcb){
   pcb->weak_pairs_ap = 0;
   pcb->weak_pairs_ep = 0;
 
-  if(accounting){
+#if accounting
     fprintf(stderr, 
         "[%d cons|%d sym|%d cls|%d vec|%d rec|%d cck|%d str|%d htb]\n",
         pair_count,
@@ -340,7 +350,7 @@ ik_collect(int mem_req, ikpcb* pcb){
     continuation_count = 0;
     string_count = 0;
     htable_count = 0;
-  }
+#endif
   //ik_dump_metatable(pcb);
 #ifndef NDEBUG
   fprintf(stderr, "collect done\n");
@@ -662,7 +672,12 @@ add_list(gc_t* gc, unsigned int t, int gen, ikp x, ikp* loc){
 
 
 static ikp 
-add_object(gc_t* gc, ikp x, char* caller){
+#ifndef NDEBUG
+add_object_proc(gc_t* gc, ikp x, char* caller)
+#else
+add_object_proc(gc_t* gc, ikp x)
+#endif
+{
   if(is_fixnum(x)){ 
     return x;
   } 
@@ -699,9 +714,9 @@ add_object(gc_t* gc, ikp x, char* caller){
     ref(y, off_symbol_system_plist) = ref(x, off_symbol_system_plist);
     ref(x, -symbol_tag) = forward_ptr;
     ref(x, wordsize-symbol_tag) = y;
-    if(accounting){
+#if accounting
       symbol_count++;
-    }
+#endif
     return y;
   }
   else if(tag == closure_tag){
@@ -717,9 +732,9 @@ add_object(gc_t* gc, ikp x, char* caller){
     ref(y,-closure_tag) = add_code_entry(gc, ref(y,-closure_tag));
     ref(x,-closure_tag) = forward_ptr;
     ref(x,wordsize-closure_tag) = y;
-    if(accounting){
-      closure_count++;
-    }
+#if accounting
+    closure_count++;
+#endif
     return y;
   }
   else if(tag == vector_tag){
@@ -734,9 +749,9 @@ add_object(gc_t* gc, ikp x, char* caller){
       memcpy(y+off_vector_data, x+off_vector_data, size);
       ref(x,-vector_tag) = forward_ptr;
       ref(x,wordsize-vector_tag) = y;
-      if(accounting){
-        vector_count++;
-      }
+#if accounting
+      vector_count++;
+#endif
       return y;
     } 
     else if(tagof(fst) == rtd_tag){
@@ -751,9 +766,9 @@ add_object(gc_t* gc, ikp x, char* caller){
       memcpy(y-vector_tag, x-vector_tag, size+wordsize);
       ref(x,-vector_tag) = forward_ptr;
       ref(x,wordsize-vector_tag) = y;
-      if(accounting){
+#if accounting
         record_count++;
-      }
+#endif
       return y;
     }
     else if(fst == code_tag){
@@ -780,10 +795,9 @@ add_object(gc_t* gc, ikp x, char* caller){
       ref(y, off_continuation_top) = new_top;
       ref(y, off_continuation_size) = (ikp) size;
       ref(y, off_continuation_next) = next;
-      if(accounting){
-        continuation_count++;
-      }
-      return y;
+#if accounting
+      continuation_count++;
+#endif
     }
     else if(tagof(fst) == pair_tag){
       /* tcbucket */
@@ -842,9 +856,9 @@ add_object(gc_t* gc, ikp x, char* caller){
              strlen + 1);
       ref(x, -string_tag) = forward_ptr;
       ref(x, wordsize-string_tag) = new_str;
-      if(accounting){
-        string_count++;
-      }
+#if accounting
+      string_count++;
+#endif
       return new_str;
     }
     else {

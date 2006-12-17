@@ -200,11 +200,6 @@ ik_munmap(void* mem, int size){
   int mapsize = pages * pagesize;
   assert(size == mapsize);
   assert(((-pagesize) & (int)mem) == (int)mem);
-//int err = mprotect(mem, mapsize, PROT_NONE);
-//if(err != 0){
-//  fprintf(stderr, "error protecting unmapped pages\n");
-//  exit(-1);
-//}
   total_allocated_pages -= pages;
   int err = munmap(mem, mapsize);
   if(err != 0){
