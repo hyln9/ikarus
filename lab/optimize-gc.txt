@@ -17,3 +17,6 @@ Copyright (c) 2006 Abdulaziz Ghuloum
 > 
         4.23 real         3.23 user         1.00 sys
 
+As of r127:
+        3.79 real         3.15 user         0.63 sys
+

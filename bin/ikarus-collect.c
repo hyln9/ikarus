@@ -66,7 +66,6 @@ static unsigned int meta_mt[meta_count] = {
   pointers_mt
 };
 
-#define generation_count 5  /* generations 0 (nursery), 1, 2, 3, 4 */
 
 
 typedef struct{
@@ -243,6 +242,7 @@ static ikp add_object_proc(gc_t* gc, ikp x);
 
 static void collect_stack(gc_t*, ikp top, ikp base);
 static void collect_loop(gc_t*);
+static void guardians_loop(gc_t*);
 static void fix_weak_pointers(gc_t*);
 static void gc_add_tconcs(gc_t*);
 
@@ -320,8 +320,13 @@ ik_collect(int mem_req, ikpcb* pcb){
   pcb->arg_list = add_object(&gc, pcb->arg_list, "args_list_foo");
   /* now we trace all live objects */
   collect_loop(&gc);
+  
+  /* next we trace all guardian/guarded objects,
+     the procedure does a collect_loop at the end */
+  guardians_loop(&gc);
 
-  fix_weak_pointers(&gc);
+  /* does not allocate, only bwp's dead pointers */
+  fix_weak_pointers(&gc); 
   /* now deallocate all unused pages */
   deallocate_unused_pages(&gc);
 
@@ -412,46 +417,17 @@ ik_collect(int mem_req, ikpcb* pcb){
   return pcb;
 }
 
+static void  
+guardians_loop(gc_t* gc){
 
+
+}
 #define disp_frame_offset -13
 #define disp_multivalue_rp -9
 
 
 #define CODE_EXTENSION_SIZE (pagesize)
 
-//X static ikp
-//X gc_alloc_new_code_extending(int size, int old_gen, gc_t* gc){
-//X   int mapsize = align_to_next_page(size);
-//X   if(mapsize < CODE_EXTENSION_SIZE){
-//X     mapsize = CODE_EXTENSION_SIZE;
-//X   }
-//X   if(gc->gen[old_gen].code_base){
-//X     qupages_t* p = ik_malloc(sizeof(qupages_t));
-//X     ikp aq = gc->gen[old_gen].code_aq;
-//X     ikp ap = gc->gen[old_gen].code_ap;
-//X     ikp ep = gc->gen[old_gen].code_ep;
-//X     p->p = aq;
-//X     p->q = ap;
-//X     p->next = gc->code_queue;
-//X     gc->code_queue = p;
-//X     ikp x = ap;
-//X     while(x < ep){
-//X       ref(x, 0) = 0;
-//X       x += wordsize;
-//X     }
-//X   }
-//X   ikp mem = ik_mmap_typed(
-//X       mapsize, 
-//X       code_mt | next_gen_tag[old_gen],
-//X       gc->pcb);
-//X   gc->segment_vector = gc->pcb->segment_vector;
-//X   gc->gen[old_gen].code_ap = mem + size;
-//X   gc->gen[old_gen].code_aq = mem;
-//X   gc->gen[old_gen].code_ep = mem + mapsize;
-//X   gc->gen[old_gen].code_base = mem;
-//X   return mem;
-//X }
-//X 
 static int alloc_code_count = 0;
 
 

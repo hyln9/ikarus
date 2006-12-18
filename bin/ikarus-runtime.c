@@ -821,3 +821,27 @@ ikrt_write_char(){
   fprintf(stderr, "ikrt_write_char\n");
   return void_object;
 }
+
+
+
+ikp 
+ikrt_register_guardian(ikp tc, ikp obj, ikpcb* pcb){
+  ik_guardian_table* g = pcb->guardians[0];
+  if((!g) || (g->count == ik_guardian_table_size)){
+    if(sizeof(ik_guardian_table) != pagesize){
+      fprintf(stderr, "ERR: invaldi guardian table size\n");
+      exit(-1);
+    }
+    ik_guardian_table* p = 
+      (ik_guardian_table*)ik_alloc(pcb, sizeof(ik_guardian_table));
+    p->next = g;
+    p->count = 0;
+    pcb->guardians[0] = p;
+    g=p;
+  } 
+  ik_guardian_pair* p = &(g->p[g->count]);
+  p->tc = tc;
+  p->obj = obj;
+  g->count++;
+  return 0;
+}

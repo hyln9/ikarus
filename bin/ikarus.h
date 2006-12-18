@@ -59,6 +59,11 @@ inthash(int key) {
 
 
 
+#define wordsize 4
+#define wordshift 2
+#define pagesize 4096
+#define generation_count 5  /* generations 0 (nursery), 1, 2, 3, 4 */
+
 typedef unsigned char* ikp;
 void ik_error(ikp args);
 
@@ -78,6 +83,20 @@ typedef struct ikdl{ /* double-link */
   struct ikdl* next;
 } ikdl;
 
+typedef struct ik_guardian_pair{
+  ikp tc;
+  ikp obj;
+} ik_guardian_pair;
+
+#define ik_guardian_table_size \
+  ((pagesize - sizeof(int) - sizeof(struct ik_guardian_table*))/sizeof(ik_guardian_pair))
+
+typedef struct ik_guardian_table{
+  int count;
+  struct ik_guardian_table* next;
+  ik_guardian_pair p[ik_guardian_table_size];
+} ik_guardian_table;
+  
 
 typedef struct {
   /* the first locations may be accessed by some     */
@@ -104,6 +123,7 @@ typedef struct {
   ikp   stack_base;
   int   stack_size;
   ikp   oblist;
+  ik_guardian_table* guardians[generation_count];
   unsigned int* dirty_vector_base;
   unsigned int* segment_vector_base;
   unsigned char* memory_base;
@@ -147,9 +167,6 @@ ikp ik_asm_reenter(ikpcb*, ikp code_object, ikp val);
 ikp ik_underflow_handler(ikpcb*);
 ikp ik_alloc(ikpcb* pcb, int size);
 #include "ikarus-data.h"
-#define wordsize 4
-#define wordshift 2
-#define pagesize 4096
 #define ik_eof_p(x) ((x) == ik_eof_object)
 #define page_index(x) (((unsigned int)(x)) >> pageshift)
 
