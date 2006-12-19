@@ -98,7 +98,7 @@ typedef struct ik_guardian_table{
 } ik_guardian_table;
   
 
-typedef struct {
+typedef struct ikpcb{
   /* the first locations may be accessed by some     */
   /* compiled code to perform overflow/underflow ops */
   ikp   allocation_pointer;           /* offset =  0 */

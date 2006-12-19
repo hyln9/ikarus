@@ -82,7 +82,9 @@
     with-input-from-file call-with-input-file date-string
     file-exists? delete-file + - add1 sub1 * expt 
     quotient+remainder quotient remainder number? positive?
-    negative? zero? number->string logand = < > <= >=))
+    negative? zero? number->string logand = < > <= >=
+    make-guardian
+    ))
 
 (define system-primitives
   '(
@@ -213,6 +215,7 @@
     ["librecord.ss"     #t  "librecord.fasl"]
     ["libcxr.ss"        #t  "libcxr.fasl"]
     ["libnumerics.ss"   #t  "libnumerics.fasl"]
+    ["libguardians.ss"  #t  "libguardians.fasl"]
     ["libcore.ss"       #t  "libcore.fasl"]
     ["libchezio.ss"     #t  "libchezio.fasl"]
     ["libhash.ss"       #t  "libhash.fasl"]

@@ -68,7 +68,7 @@ static unsigned int meta_mt[meta_count] = {
 
 
 
-typedef struct{
+typedef struct gc_t{
   meta_t meta[generation_count][meta_count];
   qupages_t* queues [meta_count];
   ikpcb* pcb;
@@ -78,6 +78,7 @@ typedef struct{
   ikp tconc_ep;
   ikp tconc_base;
   ikpages* tconc_queue;
+  ik_guardian_table* final_guardians;
 } gc_t;
 
 static unsigned int 
@@ -245,6 +246,7 @@ static void collect_loop(gc_t*);
 static void guardians_loop(gc_t*);
 static void fix_weak_pointers(gc_t*);
 static void gc_add_tconcs(gc_t*);
+static void gc_add_guardians(gc_t*);
 
 /* ik_collect is called from scheme under the following conditions:
  * 1. An attempt is made to allocate a small object and the ap is above
@@ -333,6 +335,7 @@ ik_collect(int mem_req, ikpcb* pcb){
   fix_new_pages(&gc);
   pcb->allocation_pointer = pcb->heap_base;
   gc_add_tconcs(&gc);
+  gc_add_guardians(&gc);
   pcb->weak_pairs_ap = 0;
   pcb->weak_pairs_ep = 0;
 
@@ -417,11 +420,219 @@ ik_collect(int mem_req, ikpcb* pcb){
   return pcb;
 }
 
+static inline int
+is_live(ikp x, gc_t* gc){
+  if(is_fixnum(x)){ 
+    return 1;
+  } 
+  int tag = tagof(x);
+  if(tag == immediate_tag){
+    return 1;
+  }
+  if(ref(x, -tag) == forward_ptr){
+    return 1;
+  }
+  unsigned int t = gc->segment_vector[page_index(x)];
+  int gen = t & gen_mask;
+  if(gen > gc->collect_gen){
+    return 1;
+  }
+  return 0;
+}
+
+static ik_guardian_table*
+move_guardian(ikp tc, ikp obj, ik_guardian_table* t){
+  if(t && (t->count < ik_guardian_table_size)){
+    ik_guardian_pair* p = &t->p[t->count];
+    p->tc = tc;
+    p->obj = obj;
+    t->count++;
+    return t;
+  } else {
+    ik_guardian_table* nt = 
+      (ik_guardian_table*)ik_mmap(sizeof(ik_guardian_table));
+    nt->next = t;
+    nt->count = 1;
+    nt->p[0].tc = tc;
+    nt->p[0].obj = obj;
+    return nt;
+  }
+}
+
+static inline int 
+next_gen(int i){
+  return ((i == generation_count) ? generation_count : (i+1));
+}
+
+
 static void  
 guardians_loop(gc_t* gc){
+  ikpcb* pcb = gc->pcb;
+  int gen = gc->collect_gen;
+  ik_guardian_table* pending_hold[generation_count]; 
+  ik_guardian_table* pending_final = 0;
+  ik_guardian_table* final = 0;
+  /* reset all pending_hold and pending_fina lists. */
+  { 
+    int i;
+    for(i=0; i<=gen; i++){
+      pending_hold[i] = 0;
+    }
+  }
+  /* move all guardian tc/objects to either pending_hold */
+  /* or pending_fina depending on whether the object is  */
+  /* live or dead respectively.                          */
+  {
+    int i;
+    for(i=0; i<=gen; i++){
+      ik_guardian_table* t = pcb->guardians[i];
+      while(t){
+        int j;
+        int c = t->count;
+        for(j=0; j<c; j++){
+          ikp obj = t->p[j].obj;
+          if(is_live(obj, gc)){
+            pending_hold[i] =
+              move_guardian(t->p[j].tc, obj, pending_hold[i]);
+          } else {
+            pending_final =
+              move_guardian(t->p[j].tc, obj, pending_final);
+          }
+        }
+        ik_guardian_table* next = t->next;
+        ik_munmap(t, sizeof(ik_guardian_table));
+        t = next;
+      }
+      pcb->guardians[i] = 0;
+    }
+  }
+  int more;
+  do{
+    /* for each tc/obj in pending_final, if tc is live, then */
+    /* we add  tc/obj to final list. */
+    ik_guardian_table* t = pending_final;
+    more = 0;
+    while(t){
+      int j;
+      int k=0;
+      int count = t->count;
+      for(j=0; j < count; j++){
+        ikp tc = t->p[j].tc;
+        ikp obj = t->p[j].obj;
+        if(is_live(tc, gc)){
+          final = move_guardian(tc, obj, final);
+        } 
+        else {
+          t->p[k].tc = tc;
+          t->p[k].obj = obj;
+          k++;
+        }
+      }
+      if(k != count){
+        t->count = k;
+        more = 1;
+      }
+      t = t->next;
+    }
+    if(more){
+      ik_guardian_table* t = final;
+      while(t){
+        int i;
+        int count = final->count;
+        for(i=0; i<count; i++){
+          gc->final_guardians = move_guardian(
+            add_object(gc, final->p[i].tc, "guardian_tc"),
+            add_object(gc, final->p[i].obj, "guardian_obj"),
+            gc->final_guardians);
+        }
+        t = t->next;
+      }
+      while(final){
+        t = final->next;
+        ik_munmap(final, sizeof(ik_guardian_table));
+        final = t;
+      }
+    }
+    collect_loop(gc);
+  } while (more);
+  /* */
+  while(pending_final){
+    ik_guardian_table* next = pending_final->next;
+    ik_munmap(pending_final, sizeof(ik_guardian_table));
+    pending_final = next;
+  }
+  /* */
+  {
+    int i;
+    for(i=0; i<=gen; i++){
+      int ni = next_gen(i);
+      ik_guardian_table* t = pending_hold[i];
+      while(t){
+        int count = t->count;
+        int j;
+        for(j=0; j<count; j++){
+          ikp tc = t->p[j].tc;
+          ikp obj = t->p[j].obj;
+          if(is_live(tc, gc)){
+            pcb->guardians[ni] = move_guardian(
+              add_object(gc, tc, "guardian_tc2"),
+              add_object(gc, obj, "guardian_obj2"),
+              pcb->guardians[ni]);
+          }
+        }
+        ik_guardian_table* next = t->next;
+        ik_munmap(t, sizeof(ik_guardian_table));
+        t = next;
+      }
+    }
+  }
+}  
 
 
+
+
+#if 0
+  while(1){
+    int i;
+    /* for every tc/obj in the queues, 
+       - if tc is live and obj is live, move them to guard_move
+       - if tc is live and obj is dead, move them to guard_dead
+       - else keep tc, obj in guard_wait.
+     */
+    for(i=0; i<=gen; i++){
+      ik_guardian_table* t = guard_wait[i];
+      while (t){
+        int j = 0;
+        int k = 0;
+        int count = t->count;
+        while(j < count){
+          ikp tc = t->p[j].tc;
+          ikp obj = t->p[j].obj;
+          if(is_live(tc, gc)){
+            if(is_live(obj, gc)){
+              guard_move[i] = move_guardian(tc, obj, guard_move[i]);
+            }
+            else {
+              guard_dead[i] = move_guardian(tc, obj, guard_dead[i]);
+            }
+          }
+          else {
+            t->p[k].tc = tc;
+            t->p[k].obj = obj;
+            k++;
+          }
+          j++;
+        }
+        t->count = k;
+        t = t->next;
+      }
+    }
+    /* now all things in guard_move are moved to next-gen's
+     * guardians */
+  }
 }
+#endif
+
 #define disp_frame_offset -13
 #define disp_multivalue_rp -9
 
@@ -1434,3 +1645,31 @@ gc_add_tconcs(gc_t* gc){
   }
 }
 
+static void
+gc_add_guardians(gc_t* gc){
+  ik_guardian_table* t = gc->final_guardians;
+  ikpcb* pcb = gc->pcb;
+  while(t){
+    int i;
+    int count = t->count;
+    for(i=0; i<count; i++){
+      ikp tc = t->p[i].tc;
+      ikp obj = t->p[i].obj;
+      assert(tagof(tc) == pair_tag);
+      ikp d = ref(tc, off_cdr);
+      assert(tagof(d) == pair_tag);
+      ikp new_pair = ik_alloc(pcb, pair_size) + pair_tag;
+      ref(d, off_car) = obj;
+      ref(d, off_cdr) = new_pair;
+      ref(new_pair, off_car) = false_object;
+      ref(new_pair, off_cdr) = false_object;
+      ref(tc, off_cdr) = new_pair;
+      pcb->dirty_vector[page_index(tc)] = -1;
+      pcb->dirty_vector[page_index(d)] = -1;
+    }
+    ik_guardian_table* next = t->next;
+    ik_munmap(t, sizeof(ik_guardian_table));
+    t = next;
+  }
+  gc->final_guardians = 0;
+}
