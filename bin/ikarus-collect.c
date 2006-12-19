@@ -488,15 +488,16 @@ guardians_loop(gc_t* gc){
       ik_guardian_table* t = pcb->guardians[i];
       while(t){
         int j;
-        int c = t->count;
-        for(j=0; j<c; j++){
+        int count = t->count;
+        for(j=0; j<count; j++){
+          ikp tc = t->p[j].tc;
           ikp obj = t->p[j].obj;
           if(is_live(obj, gc)){
             pending_hold[i] =
-              move_guardian(t->p[j].tc, obj, pending_hold[i]);
+              move_guardian(tc, obj, pending_hold[i]);
           } else {
             pending_final =
-              move_guardian(t->p[j].tc, obj, pending_final);
+              move_guardian(tc, obj, pending_final);
           }
         }
         ik_guardian_table* next = t->next;
@@ -868,10 +869,12 @@ add_object_proc(gc_t* gc, ikp x)
   if(is_fixnum(x)){ 
     return x;
   } 
+#ifndef NDEBUG
   if(x == forward_ptr){
     fprintf(stderr, "GOTCHA\n");
     exit(-1);
   }
+#endif
   int tag = tagof(x);
   if(tag == immediate_tag){
     return x;
