@@ -2184,10 +2184,9 @@
   (define who 'insert-stack-overflow-checks)
   (define (insert-check body)
     (make-seq
-      (make-conditional 
+      (make-interrupt-call 
         (make-primcall '$fp-overflow '())
-        (make-funcall (make-primref 'do-stack-overflow) '())
-        (make-primcall 'void '()))
+        (make-funcall (make-primref 'do-stack-overflow) '()))
       body))
   (define (Expr x)
     (record-case x
@@ -2243,37 +2242,34 @@
   (define who 'insert-allocation-checks)
   (define (check-bytes n var body)
     (make-seq
-      (make-conditional 
+      (make-interrupt-call 
         (make-primcall '$ap-check-bytes
           (list (make-constant n) var))
-        (make-forcall "ik_collect" ;(make-primref 'do-overflow) 
+        (make-forcall "ik_collect" 
                       (list 
                         (make-primcall '$fx+ 
-                          (list (make-constant (fx+ n 4096)) var))))
-        (make-primcall 'void '()))
+                          (list (make-constant (fx+ n 4096)) var)))))
       body))
   (define (check-words n var body)
     (make-seq
-      (make-conditional 
+      (make-interrupt-call 
         (make-primcall '$ap-check-words
           (list (make-constant n) var))
         (make-forcall "ik_collect" ; (make-primref 'do-overflow-words)
                       (list
                         (make-primcall '$fx+ 
-                          (list (make-constant (fx+ n 4096)) var))))
-        (make-primcall 'void '()))
+                          (list (make-constant (fx+ n 4096)) var)))))
       body))
   (define (check-const n body)
     (cond
       [(fxzero? n) body]
       [else
        (make-seq
-         (make-conditional 
+         (make-interrupt-call 
            (make-primcall '$ap-check-const
              (list (make-constant n)))
            (make-forcall "ik_collect" ;(make-primref 'do-overflow) 
-                         (list (make-constant (fx+ n 4096))))
-           (make-primcall 'void '()))
+                         (list (make-constant (fx+ n 4096)))))
          body)]))
   (define (closure-size x)
     (record-case x 
@@ -2350,6 +2346,8 @@
        (make-appcall (Expr op) (map Expr arg*))]
       [(jmpcall label op arg*)
        (make-jmpcall label (Expr op) (map Expr arg*))]
+      [(interrupt-call e0 e1)
+       (make-interrupt-call (Expr e0) (Expr e1))]
       [else (error who "invalid expression ~s" (unparse x))]))
   (define (Tail x)
     (record-case x
