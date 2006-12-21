@@ -478,6 +478,8 @@
        (CODE #x01 (ModRM 3 src dst ac))]
       [(and (mem? src) (reg? dst))
        (CODErd #x03 dst src ac)]
+      [(and (imm? src) (mem? dst)) 
+       (CODEdi #x81 dst src ac)]
       [else (error who "invalid ~s" instr)])]
    [(subl src dst)
     (cond   

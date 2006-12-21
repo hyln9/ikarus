@@ -48,8 +48,7 @@ sub gen3{
   }
 }
 
-gen1 "movl \$27, 4(r1)\n";
-gen1 "movl \$27, 4000(r1)\n";
+gen1 "addl \$27, 12(r1)\n";
 
 #gen1 "movb \$0, 4(r1)\n";
 #gen1 "movb -2(r1), %ah\n";

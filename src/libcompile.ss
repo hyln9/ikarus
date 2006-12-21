@@ -2931,6 +2931,7 @@
       [(system-stack)       (mem 24 pcr)]
       [(dirty-vector)       (mem 28 pcr)]
       [(arg-list)           (mem 32 pcr)]
+      [(engine-counter)     (mem 36 pcr)]
       [else (error 'pcb-ref "invalid arg ~s" x)])))
 
 (define (primref-loc op)
