@@ -5,6 +5,8 @@ _interrupt_mem:
 L_loop1:
   subl $1, 0(%eax);
   jz L_int1
+  subl $1, 0(%eax);
+  jz L_int1
   jmp L_loop1
 L_int1:
   ret
