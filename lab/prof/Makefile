@@ -1,6 +1,4 @@
 
-main: main.c
-	gcc -m64 -O3 -Wall main.c -o main
+main: main.c int.s
+	gcc -Wall main.c int.s -o main
 
-main.s: main.c
-	gcc -m64 -O3 -Wall -fomit-frame-pointer -fno-PIC -S main.c
