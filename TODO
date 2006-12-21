@@ -1,4 +1,5 @@
 * Guardians:
+CHECK  - Implement guardians. 
   - clean up after file ports are dead by flushing/closing the
     underlying file handle.
 

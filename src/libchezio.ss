@@ -679,16 +679,15 @@
          (error 'with-output-to-file "~s is not a procedure" proc))
        (let ([p (apply open-output-file name args)]
              [shot #f])
-         (parameterize ([current-output-port p])
-           (dynamic-wind 
-             (lambda () 
-               (when shot
-                 (error 'with-output-to-file 
-                        "cannot reenter")))
-             proc
-             (lambda () 
-               (close-output-port p)
-               (set! shot #t)))))))
+         (call-with-values 
+           (lambda () 
+             (parameterize ([current-output-port p])
+               (proc)))
+           (case-lambda
+             [(v) (close-output-port p) v]
+             [v*
+              (close-output-port p)
+              (apply values v*)])))))
   
   (primitive-set! 'call-with-output-file
      (lambda (name proc . args)
@@ -696,16 +695,13 @@
          (error 'call-with-output-file "~s is not a string" name))
        (unless (procedure? proc)
          (error 'call-with-output-file "~s is not a procedure" proc))
-       (let ([p (apply open-output-file name args)]
-             [shot #f])
-         (dynamic-wind 
-           (lambda () 
-             (when shot
-               (error 'call-with-output-file "cannot reenter")))
-           (lambda () (proc p))
-           (lambda () 
-             (close-output-port p)
-             (set! shot #t))))))
+       (let ([p (apply open-output-file name args)])
+         (call-with-values (lambda () (proc p))
+            (case-lambda
+              [(v) (close-output-port p) v]
+              [v*
+               (close-output-port p)
+               (apply values v*)])))))
   
   (primitive-set! 'with-input-from-file
      (lambda (name proc)
@@ -713,33 +709,28 @@
          (error 'with-input-from-file "~s is not a string" name))
        (unless (procedure? proc)
          (error 'with-input-from-file "~s is not a procedure" proc))
-       (let ([p (open-input-file name)]
-             [shot #f])
-         (parameterize ([current-input-port p])
-           (dynamic-wind 
-             (lambda () 
-               (when shot
-                 (error 'with-input-from-file 
-                        "cannot reenter")))
-             proc
-             (lambda () 
-               (close-input-port p)
-               (set! shot #t)))))))
-  
+       (let ([p (open-input-file name)])
+         (call-with-values 
+           (lambda () 
+             (parameterize ([current-input-port p])
+               (proc)))
+           (case-lambda
+             [(v) (close-input-port p) v]
+             [v*
+              (close-input-port p)
+              (apply values v*)])))))
+    
   (primitive-set! 'call-with-input-file
      (lambda (name proc)
        (unless (string? name) 
          (error 'call-with-input-file "~s is not a string" name))
        (unless (procedure? proc)
          (error 'call-with-input-file "~s is not a procedure" proc))
-       (let ([p (open-input-file name)]
-             [shot #f])
-         (dynamic-wind 
-           (lambda () 
-             (when shot
-               (error 'call-with-input-file "cannot reenter")))
-           (lambda () (proc p))
-           (lambda () 
-             (close-input-port p)
-             (set! shot #t))))))
+       (let ([p (open-input-file name)])
+         (call-with-values (lambda () (proc p))
+            (case-lambda
+              [(v) (close-input-port p) v]
+              [v*
+               (close-input-port p)
+               (apply values v*)])))))
 )

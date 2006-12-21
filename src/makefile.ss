@@ -83,7 +83,7 @@
     file-exists? delete-file + - add1 sub1 * expt 
     quotient+remainder quotient remainder number? positive?
     negative? zero? number->string logand = < > <= >=
-    make-guardian
+    make-guardian weak-cons
     ))
 
 (define system-primitives
