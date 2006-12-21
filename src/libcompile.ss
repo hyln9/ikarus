@@ -236,6 +236,7 @@
 (define-record primcall (op arg*))
 (define-record primref (name))
 (define-record conditional (test conseq altern))
+(define-record interrupt-call (test handler))
 (define-record bind (lhs* rhs* body))
 (define-record recbind (lhs* rhs* body))
 (define-record fix (lhs* rhs* body))
@@ -386,6 +387,8 @@
       [(primref x) x]
       [(conditional test conseq altern) 
        `(if ,(E test) ,(E conseq) ,(E altern))]
+      [(interrupt-call e0 e1)
+       `(interrupt-call ,(E e0) ,(E e1))]
       [(primcall op arg*) `(,op . ,(map E arg*))]
       [(bind lhs* rhs* body) 
        `(let ,(map (lambda (lhs rhs) (list (E lhs) (E rhs))) lhs* rhs*)
@@ -2383,6 +2386,28 @@
        (make-codes (map CodeExpr list) (Tail body))]))
   (CodesExpr x))
 
+
+(define (insert-engine-checks x)
+  (define (Tail x)
+    (make-seq
+      (make-interrupt-call 
+        (make-primcall '$engine-check '())
+        (make-funcall (make-primref '$engine-expired) '()))
+      x))
+  (define (CaseExpr x)
+    (record-case x 
+      [(clambda-case info body)
+       (make-clambda-case info (Tail body))]))
+  (define (CodeExpr x)
+    (record-case x
+      [(clambda L cases free)
+       (make-clambda L (map CaseExpr cases) free)]))
+  (define (CodesExpr x)
+    (record-case x 
+      [(codes list body)
+       (make-codes (map CodeExpr list) (Tail body))]))
+  (CodesExpr x))
+
 (define (remove-local-variables x)
   (define who 'remove-local-variables)
   (define (Body orig-x orig-si orig-r orig-live save-cp?)
@@ -2574,6 +2599,10 @@
          (do-new-frame label op rand* si r 'direct 'effect live)]
         [(appcall op rand*)
          (do-new-frame #f op rand* si r 'apply 'effect live)]
+        [(interrupt-call e0 e1)
+         (make-interrupt-call 
+           (Expr e0 si r live)
+           (Effect e1 si r live))]
         [else (error who "invalid effect expression ~s" (unparse x))]))
     (define (Expr x si r live)
       (record-case x
@@ -2741,6 +2770,11 @@
       [(new-frame base-idx size body)
        (let-values ([(body f) (NonTail body f)])
          (values (make-new-frame base-idx size body) f))]
+      [(interrupt-call e0 e1) ;;; FIXME: suboptimal
+       (let-values ([(e0 f0) (NonTail e0 f)])
+         (let-values ([(e1 f1) (NonTail e1 f0)])
+           (values (make-interrupt-call e0 e1) 
+                   (min f0 f1))))]
       [else (error who "invalid nontail expression ~s" (unparse x))]))
   (define CaseExpr 
     (lambda (x)
@@ -3202,6 +3236,9 @@
         [else
          (error 'compile 
            "BUG: second arg to $memq should be constant")])]
+     [($engine-check)
+      (list* (addl (int 1) (pcb-ref 'engine-counter))
+             (cond-branch 'je Lt Lf ac))]
      [($vector-ref top-level-value car cdr $record-ref) 
       (do-value-prim op rand*
         (do-simple-test eax Lt Lf ac))]
@@ -4346,6 +4383,15 @@
                 (Pred test Ljoin #f altern-ac)]
                [else
                 (Pred test #f Lf conseq-ac)]))]))]
+     [(interrupt-call test handler)
+      (let ([Ljoin (unique-label)]
+            [Lint (unique-label)])
+        (let ([handler 
+               (Effect handler 
+                 (list* (jmp Ljoin) '()))])
+          (add-handler! (cons Lint handler))
+          (Pred test Lint #f 
+             (cons Ljoin ac))))]
      [(seq e0 e1)
       (Effect e0 (Effect e1 ac))]
      [(fix lhs* rhs* body)
@@ -4821,6 +4867,7 @@
          [p (simplify-operands p)]
          [p (insert-stack-overflow-checks p)]
          [p (insert-allocation-checks p)]
+         [p (insert-engine-checks p)]
          [p (remove-local-variables p)]
          [p (optimize-ap-check p)])
     (let ([ls* (generate-code p)])

@@ -71,3 +71,8 @@
 (primitive-set! 'fx+-overflow-error
   (lambda (x y)
     (error 'fx+ "overflow")))
+
+(primitive-set! '$engine-expired
+  (lambda ()
+    (display "Engine Expired\n" (console-output-port))))
+
