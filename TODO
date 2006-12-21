@@ -1,7 +1,7 @@
 * Guardians:
 CHECK  - Implement guardians. 
-  - clean up after file ports are dead by flushing/closing the
-    underlying file handle.
+CHECK  - clean up after file ports are dead by flushing/closing the
+         underlying file handle.
 
 * Interrupts:
   - pcb should have an engine-counter field that's decremented on

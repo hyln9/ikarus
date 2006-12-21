@@ -390,6 +390,14 @@
              (error 'flush-output-port "~s is not an output-port" p))])))
   
   (let () ;;; INPUT FILES
+    (define guardian (make-guardian))
+    (define close-ports
+      (lambda ()
+        (cond
+          [(guardian) =>
+           (lambda (p)
+             (close-input-port p)
+             (close-ports))])))
     ;;;
     (define make-input-file-handler
       (lambda (fd port-name)
@@ -463,12 +471,14 @@
                       "message not handled ~s" (cons msg args))])))))
     (define open-input-file
       (lambda (filename)
+        (close-ports)
         (let ([fd/error (foreign-call "ikrt_open_input_file" filename)])
           (if (fixnum? fd/error)
               (let ([port (make-input-port 
                             (make-input-file-handler fd/error filename)
                             (make-string 4096))])
                 (set-port-input-size! port 0)
+                (guardian port)
                 port)
               (error 'open-input-file "cannot open ~s: ~a" filename fd/error)))))
     (primitive-set! '*standard-input-port* 
@@ -493,6 +503,14 @@
              (error 'open-input-file "~s is not a string" filename)))))
   
   (let () ;;; OUTPUT FILES
+    (define guardian (make-guardian))
+    (define close-ports
+      (lambda ()
+        (cond
+          [(guardian) =>
+           (lambda (p)
+             (close-output-port p)
+             (close-ports))])))
     ;;;
     (define do-write-buffer
       (lambda (fd port-name p caller)
@@ -550,14 +568,18 @@
         [else (error 'open-output-file "~s is not a valid mode" x)]))
     (define open-output-file
       (lambda (filename options)
+        (close-ports)
         (let ([fd/error 
                (foreign-call "ikrt_open_output_file" 
                              filename 
                              (option-id options))])
           (if (fixnum? fd/error)
-              (make-output-port
-                (make-output-file-handler fd/error filename)
-                (make-string 4096))
+              (let ([port
+                     (make-output-port
+                       (make-output-file-handler fd/error filename)
+                       (make-string 4096))])
+                (guardian port)
+                port)
               (error 'open-output-file "cannot open ~s: ~a" filename fd/error)))))
     (primitive-set! '*standard-output-port* 
       (make-output-port
