@@ -4870,7 +4870,8 @@
          [p (optimize-ap-check p)])
     (let ([ls* (generate-code p)])
       (when (assembler-output)
-        (parameterize ([gensym-prefix "L"])
+        (parameterize ([gensym-prefix "L"]
+                       [print-gensym #f])
           (for-each 
             (lambda (ls)
               (for-each (lambda (x) (printf "    ~s\n" x)) ls))
