@@ -4874,7 +4874,8 @@
                        [print-gensym #f])
           (for-each 
             (lambda (ls)
-              (for-each (lambda (x) (printf "    ~s\n" x)) ls))
+              (newline)
+              (for-each (lambda (x) (printf "    ~s\n" x)) (cdr ls)))
             ls*)))
       (let ([code* (list*->code* 
                       (lambda (x)

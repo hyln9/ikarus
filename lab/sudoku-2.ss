@@ -414,7 +414,8 @@
                 (if (= count2 1)
                     (begin
                       (let ([row (+ (car (sub-grid-list sub)) (quotient loc 3))]
-                            [col (+ (caddr (sub-grid-list sub)) (modulo loc 3))])
+                            [col (+ (caddr (sub-grid-list sub))
+                                    (remainder loc 3))])
                         (grid-set! row col (+ i 1))
                         (row-init row)
                         (col-init col)
@@ -603,8 +604,6 @@
       (print-sudoku)
       (error 'sudoku "MIS-ENTERED INITIALIZATION"))))
 
-(define quotient fxquotient)
-(define modulo fxmodulo)
 (define do-file
   (lambda ()
     (let f ()
