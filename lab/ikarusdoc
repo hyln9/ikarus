@@ -1,4 +1,4 @@
-#!/Users/aghuloum/.opt/bin/ikarus --script
+#!/usr/bin/env ikarus --script
 (define get-comments
   (lambda (file-name)
     (define comments '())

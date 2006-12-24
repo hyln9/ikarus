@@ -1,4 +1,4 @@
-#!../bin/ikarus -b ikarus.boot --script
+#!/usr/bin/env ikarus -b ikarus.boot --script
 
 ;;; 9.1: * starting with libnumerics
 ;;; 9.0: * graph marks for both reader and writer 
@@ -12,7 +12,6 @@
 ;;;      * added tcbuckets
 ;;; 6.1: * added case-lambda, dropped lambda
 ;;; 6.0: * basic compiler
-
 
 
 
