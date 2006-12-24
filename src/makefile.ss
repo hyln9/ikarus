@@ -83,7 +83,7 @@
     file-exists? delete-file + - add1 sub1 * expt 
     quotient+remainder quotient remainder number? positive?
     negative? zero? number->string logand = < > <= >=
-    make-guardian weak-cons
+    make-guardian weak-cons collect 
     ))
 
 (define system-primitives
@@ -108,7 +108,7 @@
     code-size code-ref code-set!  $frame->continuation $fp-at-base
     $current-frame $arg-list $seal-frame-and-call
     $make-call-with-values-procedure $make-values-procedure
-    do-overflow collect $make-tcbucket $tcbucket-next $tcbucket-key
+    do-overflow $make-tcbucket $tcbucket-next $tcbucket-key
     $tcbucket-val $set-tcbucket-next!  $set-tcbucket-val!
     $set-tcbucket-tconc!  $tcbucket-dlink-prev $tcbucket-dlink-next
     $set-tcbucket-dlink-prev!  $set-tcbucket-dlink-next!  call/cf
