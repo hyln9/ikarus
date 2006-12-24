@@ -176,6 +176,8 @@
     [$arg-list          0   value]
     [$seal-frame-and-call 1  tail]
     [$frame->continuation 1 value]
+    [$interrupted?       0   pred]
+    [$unset-interrupted! 0 effect]
     ;;; 
     ;;; records
     ;;;
@@ -2390,7 +2392,7 @@
     (make-seq
       (make-interrupt-call 
         (make-primcall '$engine-check '())
-        (make-funcall (make-primref '$engine-expired) '()))
+        (make-funcall (make-primref '$do-event) '()))
       x))
   (define (CaseExpr x)
     (record-case x 
@@ -2964,6 +2966,7 @@
       [(dirty-vector)       (mem 28 pcr)]
       [(arg-list)           (mem 32 pcr)]
       [(engine-counter)     (mem 36 pcr)]
+      [(interrupted)        (mem 40 pcr)]
       [else (error 'pcb-ref "invalid arg ~s" x)])))
 
 (define (primref-loc op)
@@ -2994,7 +2997,10 @@
       [else (obj x)]))
   (define (cond-branch op Lt Lf ac)
     (define (opposite x)
-      (cadr (assq x '([je jne] [jl jge] [jle jg] [jg jle] [jge jl]))))
+      (cond
+        [(assq x '([je jne] [jne je] [jl jge] [jle jg] [jg jle] [jge jl]))
+         => cadr]
+        [else (error who "BUG: no opposite of ~s" x)]))
     (unless (or Lt Lf)
       (error 'cond-branch "no labels"))
     (cond
@@ -3211,6 +3217,10 @@
         (subl (int wordsize) eax)
         (cmpl eax fpr)
         (cond-branch 'je Lt Lf ac))]
+     [($interrupted?)
+      (list* (movl (pcb-ref 'interrupted) eax)
+             (cmpl (int 0) eax)
+             (cond-branch 'jne Lt Lf ac))]
      [($fp-overflow) 
       (list* (cmpl (pcb-ref 'frame-redline) fpr)
              (cond-branch 'jle Lt Lf ac))]
@@ -4058,6 +4068,9 @@
                (sall (int wordshift) ebx)
                (addl (pcb-ref 'dirty-vector) ebx)
                (movl (int dirty-word) (mem 0 ebx))
+              ac)]
+      [($unset-interrupted!)
+       (list* (movl (int 0) (pcb-ref 'interrupted))
               ac)]
       [(cons pair? void $fxadd1 $fxsub1 $record-ref $fx=)
        (let f ([arg* arg*])

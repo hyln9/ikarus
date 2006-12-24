@@ -759,13 +759,26 @@ ikrt_close_file(ikp fd, ikpcb* pcb){
 
 ikp
 ikrt_read(ikp fd, ikp buff, ikpcb* pcb){
-  int bytes = read(unfix(fd), string_data(buff), unfix(ref(buff, off_string_length)));
+  int bytes =
+    read(unfix(fd), string_data(buff), unfix(ref(buff, off_string_length)));
+  ikp fbytes = fix(bytes);
+  if (bytes == unfix(fbytes)){
+    return fbytes;
+  } else {
+    fprintf(stderr, "ERR: ikrt_read: too big\n");
+    exit(-1);
+  }
+}
+
+#if 0
   if(bytes == -1){
+    fprintf(stderr, "ERR=%s (%d)\n", strerror(errno), errno);
     return false_object;
   } else {
     return fix(bytes);
   }
 }
+#endif
 
 ikp
 ikrt_open_input_file(ikp fname, ikpcb* pcb){

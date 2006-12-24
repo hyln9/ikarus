@@ -414,16 +414,18 @@
                        ($string-ref ($port-input-buffer p) idx))
                      (if open?
                          (let ([bytes
-                                (foreign-call "ikrt_read" fd
-                                              ($port-input-buffer p))])
+                                (foreign-call "ikrt_read" 
+                                   fd ($port-input-buffer p))])
+                           ;($do-event)
                            (cond
-                             [(not bytes)
-                              (error 'read-char "Cannot read from ~s" port-name)]
+                             [($fx> bytes 0)
+                              ($set-port-input-size! p bytes)
+                              ($read-char p)]
                              [($fx= bytes 0)
                               (eof-object)]
                              [else
-                              ($set-port-input-size! p bytes)
-                              ($read-char p)]))
+                              (error 'read-char "Cannot read from ~a"
+                                     port-name)]))
                          (error 'read-char "port ~s is closed" p))))]
               [(peek-char p)
                (unless (input-port? p)

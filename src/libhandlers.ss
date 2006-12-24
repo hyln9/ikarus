@@ -72,7 +72,12 @@
   (lambda (x y)
     (error 'fx+ "overflow")))
 
-(primitive-set! '$engine-expired
+(primitive-set! '$do-event
   (lambda ()
-    (display "Engine Expired\n" (console-output-port))))
+    (if ($interrupted?)
+        (begin
+          ($unset-interrupted!)
+          (error #f "Interrupted"))
+        (display "Engine Expired\n" (console-output-port)))))
+
 

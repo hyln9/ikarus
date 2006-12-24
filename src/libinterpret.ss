@@ -304,11 +304,11 @@
              ))]
         [else (syntax-error x)])))
   ;;;
-  (primitive-set! 'interpret
-    (lambda (x)
-      (let ([x (expand x)])
-        (let ([p (C x '())])
-          (p '())))))
+  ;(primitive-set! 'interpret
+  ;  (lambda (x)
+  ;    (let ([x (expand x)])
+  ;      (let ([p (C x '())])
+  ;        (p '())))))
   ;;;
   (primitive-set! 'current-eval
     (make-parameter 

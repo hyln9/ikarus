@@ -114,7 +114,7 @@
     $set-tcbucket-dlink-prev!  $set-tcbucket-dlink-next!  call/cf
     trace-symbol! untrace-symbol!  make-traced-procedure
     fixnum->string 
-
+    $interrupted? $unset-interrupted! $do-event
     ;;; TODO: must open-code
 
     $make-port/input $make-port/output $make-port/both
