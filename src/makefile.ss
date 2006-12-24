@@ -208,27 +208,27 @@
 (whack-system-env #t)
 
 (define scheme-library-files
-  '(["libhandlers.ss"   #t  "libhandlers.fasl"]
-    ["libcontrol.ss"    #t  "libcontrol.fasl"]
-    ["libcollect.ss"    #t  "libcollect.fasl"]
-    ["librecord.ss"     #t  "librecord.fasl"]
-    ["libcxr.ss"        #t  "libcxr.fasl"]
-    ["libnumerics.ss"   #t  "libnumerics.fasl"]
-    ["libguardians.ss"  #t  "libguardians.fasl"]
-    ["libcore.ss"       #t  "libcore.fasl"]
-    ["libchezio.ss"     #t  "libchezio.fasl"]
-    ["libhash.ss"       #t  "libhash.fasl"]
-    ["libwriter.ss"     #t  "libwriter.fasl"]
-    ["libtokenizer.ss"  #t  "libtokenizer.fasl"]
-    ["libassembler.ss"  #t  "libassembler.fasl"]
-    ["libintelasm.ss"   #t  "libintelasm.fasl"]
-    ["libfasl.ss"       #t  "libfasl.fasl"]
-    ["libcompile.ss"    #t  "libcompile.fasl"]
-    ["psyntax-7.1.ss"   #t  "psyntax.fasl"]
-    ["libcafe.ss"       #t  "libcafe.fasl"]
-    ["libtrace.ss"      #t  "libtrace.fasl"]
-    ["libposix.ss"      #t  "libposix.fasl"]
-    ["libtoplevel.ss"   #t  "libtoplevel.fasl"]
+  '(["libhandlers.ss"   "libhandlers.fasl"]
+    ["libcontrol.ss"    "libcontrol.fasl"]
+    ["libcollect.ss"    "libcollect.fasl"]
+    ["librecord.ss"     "librecord.fasl"]
+    ["libcxr.ss"        "libcxr.fasl"]
+    ["libnumerics.ss"   "libnumerics.fasl"]
+    ["libguardians.ss"  "libguardians.fasl"]
+    ["libcore.ss"       "libcore.fasl"]
+    ["libchezio.ss"     "libchezio.fasl"]
+    ["libhash.ss"       "libhash.fasl"]
+    ["libwriter.ss"     "libwriter.fasl"]
+    ["libtokenizer.ss"  "libtokenizer.fasl"]
+    ["libassembler.ss"  "libassembler.fasl"]
+    ["libintelasm.ss"   "libintelasm.fasl"]
+    ["libfasl.ss"       "libfasl.fasl"]
+    ["libcompile.ss"    "libcompile.fasl"]
+    ["psyntax-7.1.ss"   "psyntax.fasl"]
+    ["libcafe.ss"       "libcafe.fasl"]
+    ["libtrace.ss"      "libtrace.fasl"]
+    ["libposix.ss"      "libposix.fasl"]
+    ["libtoplevel.ss"   "libtoplevel.fasl"]
     ))
 
 
@@ -257,7 +257,7 @@
 (for-each 
   (lambda (x)
     (when (cadr x)
-      (compile-library (car x) (caddr x))))
+      (compile-library (car x) (cadr x))))
   scheme-library-files)
 
 (define (join s ls)
@@ -278,7 +278,7 @@
 
 (system
   (format "cat ~a > ikarus.boot"
-          (join " " (map caddr scheme-library-files))))
+          (join " " (map cadr scheme-library-files))))
 
 ;(#%compiler-giveup-tally)
 ; vim:syntax=scheme

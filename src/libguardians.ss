@@ -1,4 +1,7 @@
 
+;;; The procedure make-guardian is coped en verbatim 
+;;; from Dybvig et al. Guardians paper.
+
 (let ()
   (define make-guardian
     (lambda ()
