@@ -83,6 +83,7 @@
     quotient+remainder quotient remainder number? positive?
     negative? zero? number->string logand = < > <= >=
     make-guardian weak-cons collect 
+    interrupt-handler
     ))
 
 (define system-primitives

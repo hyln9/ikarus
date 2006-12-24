@@ -1176,19 +1176,6 @@ reference-implementation:
 ;;X            (error 'make-parameter "insufficient arguments")))))
 ;;X 
 
-(primitive-set! 'make-parameter
-  (case-lambda
-    [(x) 
-     (case-lambda
-       [() x]
-       [(v) (set! x v)])]
-    [(x guard)
-     (unless (procedure? guard)
-       (error 'make-parameter "~s is not a procedure" guard))
-     (set! x (guard x))
-     (case-lambda
-       [() x]
-       [(v) (set! x (guard v))])]))
 
 (let ()
    (define vector-loop

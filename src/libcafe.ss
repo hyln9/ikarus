@@ -46,6 +46,16 @@ description:
             (display ">" (console-output-port))
             (display-prompt (fx+ i 1))))))
 
+  (define my-read
+    (lambda (k)
+      (parameterize ([interrupt-handler
+                      (lambda ()
+                        (flush-output-port (console-output-port))
+                        (reset-input-port! (console-input-port))
+                        (newline (console-output-port))
+                        (k))])
+         (read (console-input-port)))))
+
   (define wait
     (lambda (eval escape-k)
       (call/cc
@@ -57,7 +67,7 @@ description:
               (k (void)))
             (lambda ()
               (display-prompt 0)
-              (let ([x (read (console-input-port))])
+              (let ([x (my-read k)])
                 (cond
                   [(eof-object? x) 
                    (newline (console-output-port))

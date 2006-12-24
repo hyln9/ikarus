@@ -1,7 +1,33 @@
 
+
+(primitive-set! 'make-parameter
+  (case-lambda
+    [(x) 
+     (case-lambda
+       [() x]
+       [(v) (set! x v)])]
+    [(x guard)
+     (unless (procedure? guard)
+       (error 'make-parameter "~s is not a procedure" guard))
+     (set! x (guard x))
+     (case-lambda
+       [() x]
+       [(v) (set! x (guard v))])]))
+
+
 (primitive-set! 'error
   (lambda args
     (foreign-call "ik_error" args)))
+
+(primitive-set! 'interrupt-handler
+  (make-parameter
+    (lambda ()
+      (flush-output-port (console-output-port))
+      (error #f "interrupted"))
+    (lambda (x)
+      (if (procedure? x)
+          x
+          (error 'interrupt-handler "~s is not a procedure" x)))))
 
 (primitive-set! '$apply-nonprocedure-error-handler
   (lambda (x)
@@ -77,7 +103,7 @@
     (if ($interrupted?)
         (begin
           ($unset-interrupted!)
-          (error #f "Interrupted"))
+          ((interrupt-handler)))
         (display "Engine Expired\n" (console-output-port)))))
 
 
