@@ -54,7 +54,7 @@
     gensym->unique-string call-with-values values make-parameter
     dynamic-wind display write print-graph fasl-write printf format
     print-error read-token read comment-handler error exit call/cc
-    error-handler eval current-eval interpret compile compile-file
+    error-handler eval current-eval compile compile-file
     new-cafe load system expand sc-expand current-expand expand-mode
     environment? interaction-environment identifier?
     free-identifier=? bound-identifier=? literal-identifier=?
@@ -226,7 +226,6 @@
     ["libfasl.ss"       #t  "libfasl.fasl"]
     ["libcompile.ss"    #t  "libcompile.fasl"]
     ["psyntax-7.1.ss"   #t  "psyntax.fasl"]
-    ["libinterpret.ss"  #t  "libinterpret.fasl"]
     ["libcafe.ss"       #t  "libcafe.fasl"]
     ["libtrace.ss"      #t  "libtrace.fasl"]
     ["libposix.ss"      #t  "libposix.fasl"]

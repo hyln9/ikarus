@@ -4920,6 +4920,19 @@
       (let ([proc ($code->closure code)])
         (proc)))))
 
+(primitive-set! 'current-eval
+  (make-parameter 
+    compile
+    (lambda (f)
+      (unless (procedure? f)
+        (error 'current-eval "~s is not a procedure" f))
+      f)))
+;;;
+(primitive-set! 'eval
+  (lambda (x)
+    ((current-eval) x)))
+
+
 )
 
 
