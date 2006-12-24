@@ -110,7 +110,8 @@ typedef struct ikpcb{
   void* system_stack;                 /* offset = 24 */
   unsigned int* dirty_vector;         /* offset = 28 */
   ikp   arg_list;                     /* offset = 32 */
-  ikp   engine_counter;               /* offset = 36 */
+  int   engine_counter;               /* offset = 36 */
+  int   interrupted;                  /* offset = 40 */
   /* the rest are not used by any scheme code        */
   /* they only support the runtime system (gc, etc.) */
   unsigned int* segment_vector; 

@@ -9,9 +9,12 @@
 #include <string.h>
 #include <errno.h>
 #include <gmp.h>
+#include <signal.h>
 
-int get_all_options(){
-}
+void register_handlers();
+void register_alt_stack();
+
+ikpcb* the_pcb;
 
 /* get_option
    
@@ -127,6 +130,7 @@ int main(int argc, char** argv){
     fprintf(stderr, "ERROR: bits_per_limb=%d\n", mp_bits_per_limb);
   }
   ikpcb* pcb = ik_make_pcb();
+  the_pcb = pcb;
   { /* set up arg_list */
     ikp arg_list = null_object;
     int i = argc-1;
@@ -144,6 +148,8 @@ int main(int argc, char** argv){
     }
     pcb->arg_list = arg_list;
   }
+  register_handlers();
+  register_alt_stack();
   ik_fasl_load(pcb, boot_file);
   /*
   fprintf(stderr, "collect time: %d.%03d utime, %d.%03d stime (%d collections)\n", 
@@ -157,5 +163,75 @@ int main(int argc, char** argv){
   return 0;
 }
 
+#if 0
+     #include <signal.h>
+
+     struct  sigaction {
+             union {
+                     void    (*__sa_handler)(int);
+                     void    (*__sa_sigaction)(int, struct __siginfo *, void *);
+             } __sigaction_u;                /* signal handler */
+             int     sa_flags;               /* see signal options below */
+             sigset_t sa_mask;               /* signal mask to apply */
+     };
+
+     #define sa_handler      __sigaction_u.__sa_handler
+     #define sa_sigaction    __sigaction_u.__sa_sigaction
+
+     int
+     sigaction(int sig, const struct sigaction * restrict act,
+         struct sigaction * restrict oact);
+#endif
+
+void handler(int signo, struct __siginfo* info, ucontext_t* uap){
+  the_pcb->engine_counter = 1;
+  the_pcb->interrupted = 1;
+}
+
+void
+register_handlers(){
+  struct sigaction sa;
+  sa.sa_sigaction = (void(*)(int,struct __siginfo*,void*)) handler;
+  sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
+  sa.sa_mask = 0;
+  int err = sigaction(SIGINT, &sa, 0);
+  if(err){
+    fprintf(stderr, "Sigaction Failed: %s\n", strerror(errno));
+    exit(-1);
+  }
+}
 
 
+#if 0
+SYNOPSIS
+     #include <sys/types.h>
+     #include <signal.h>
+
+     struct sigaltstack {
+             char   *ss_sp;
+             int     ss_size;
+             int     ss_flags;
+     };
+
+     int
+     sigaltstack(const struct sigaltstack *ss, struct sigaltstack *oss);
+#endif
+
+void
+register_alt_stack(){
+  char* stk = ik_mmap(SIGSTKSZ);
+  if(stk == 0){
+    fprintf(stderr, "Cannot maloc an alt stack\n");
+    exit(-1);
+  }
+
+  struct sigaltstack sa;
+  sa.ss_sp = stk;
+  sa.ss_size = SIGSTKSZ;
+  sa.ss_flags = 0;
+  int err = sigaltstack(&sa, 0);
+  if(err){
+    fprintf(stderr, "Cannot set alt stack: %s\n", strerror(errno));
+    exit(-1);
+  }
+}
