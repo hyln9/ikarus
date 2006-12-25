@@ -1076,10 +1076,6 @@ reference-implementation:
       (error 'string->symbol "~s is not a string" x))
     (foreign-call "ik_intern_string" x)))
   
-(primitive-set! 'oblist
-  (lambda ()
-    (foreign-call "ik_oblist")))
-
 (primitive-set! 'gensym
   (case-lambda
     [() ($make-symbol #f)]
