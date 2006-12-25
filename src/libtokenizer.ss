@@ -351,6 +351,20 @@
                (cons 'datum (eof-object)))))]
         [(digit? c) 
          (tokenize-hashnum p (char->num c))]
+        [($char= #\: c)
+         (let* ([c (skip-whitespace p "gensym")]
+                [id0 
+                 (cond
+                   [(initial? c)
+                    (list->string
+                      (reverse (tokenize-identifier (cons c '()) p)))]
+                   [($char= #\| c)
+                    (list->string 
+                      (reverse (tokenize-bar p '())))]
+                   [else 
+                    (error 'tokenize
+                      "invalid char ~a inside gensym" c)])])
+              (cons 'datum (gensym id0)))]
         [($char= #\{ c)
          (let* ([c (skip-whitespace p "gensym")]
                 [id0 

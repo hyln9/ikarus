@@ -135,17 +135,27 @@
   (define write-gensym
     (lambda (x p m h i)
       (cond
-        [(and m (print-gensym))
-         (let ([str (symbol->string x)])
-           (write-char #\# p)
-           (write-char #\{ p)
-           (if (valid-symbol-string? str)
-               (write-char* str p)
-               (write-symbol-esc str p))
-           (write-char #\space p)
-           (write-symbol-esc (gensym->unique-string x) p)
-           (write-char #\} p))
-         i]
+        [(and m (print-gensym)) =>
+         (lambda (gensym-how)
+           (case gensym-how
+             [(pretty)
+              (let ([str (symbol->string x)])
+                (write-char #\# p)
+                (write-char #\: p)
+                (if (valid-symbol-string? str)
+                    (write-char* str p)
+                    (write-symbol-esc str p)))]
+             [else
+              (let ([str (symbol->string x)])
+                (write-char #\# p)
+                (write-char #\{ p)
+                (if (valid-symbol-string? str)
+                    (write-char* str p)
+                    (write-symbol-esc str p))
+                (write-char #\space p)
+                (write-symbol-esc (gensym->unique-string x) p)
+                (write-char #\} p))])
+           i)]
         [else 
          (write-symbol x p m)
          i])))

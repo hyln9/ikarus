@@ -1613,8 +1613,8 @@ reference-implementation:
   (make-parameter
     #t
     (lambda (x)
-      (unless (boolean? x) 
-        (error 'print-gensym "~s is not a boolean" x))
+      (unless (or (boolean? x) (eq? x 'pretty))
+        (error 'print-gensym "~s is not in #t|#f|pretty" x))
       x)))
 
 ;; X (primitive-set! 'make-hash-table
