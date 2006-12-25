@@ -5,13 +5,12 @@
 #include <stdlib.h>
 
 static ikp
-initialize_symbol_table(ikpcb* pcb){
+make_symbol_table(ikpcb* pcb){
   #define NUM_OF_BUCKETS 4096 /* power of 2 */
   int size = align_to_next_page(disp_vector_data + NUM_OF_BUCKETS * wordsize);
   ikp st = ik_mmap_ptr(size, 0, pcb) + vector_tag;
   bzero(st-vector_tag, size);
   ref(st, off_vector_length) = fix(NUM_OF_BUCKETS);
-  pcb->symbol_table = st;
   return st;
 }
 
@@ -43,10 +42,11 @@ static int strings_eqp(ikp str1, ikp str2){
   return 0;
 }
 
-static ikp ik_make_symbol(ikp str, ikpcb* pcb){
+static ikp 
+ik_make_symbol(ikp str, ikp ustr, ikpcb* pcb){
   ikp sym = ik_alloc(pcb, symbol_size) + symbol_tag;
   ref(sym, off_symbol_string)  = str;
-  ref(sym, off_symbol_ustring) = false_object;
+  ref(sym, off_symbol_ustring) = ustr;
   ref(sym, off_symbol_value)   = unbound_object;
   ref(sym, off_symbol_plist)   = null_object;
   ref(sym, off_symbol_system_value) = str;
@@ -55,11 +55,8 @@ static ikp ik_make_symbol(ikp str, ikpcb* pcb){
 }
 
 
-ikp ik_intern_string(ikp str, ikpcb* pcb){
-  ikp st = pcb->symbol_table;
-  if(st == 0){
-    st = initialize_symbol_table(pcb);
-  }
+static ikp
+intern_string(ikp str, ikp st, ikpcb* pcb){
   int h = compute_hash(str);
   int idx = h & (unfix(ref(st, off_vector_length)) - 1);
   ikp bckt = ref(st, off_vector_data + idx*wordsize);
@@ -72,7 +69,7 @@ ikp ik_intern_string(ikp str, ikpcb* pcb){
     }
     b = ref(b, off_cdr);
   }
-  ikp sym = ik_make_symbol(str, pcb);
+  ikp sym = ik_make_symbol(str, false_object,  pcb);
   b = ik_alloc(pcb, pair_size) + pair_tag;
   ref(b, off_car) = sym;
   ref(b, off_cdr) = bckt;
@@ -82,12 +79,93 @@ ikp ik_intern_string(ikp str, ikpcb* pcb){
 }
 
 ikp
+ikrt_intern_unique_string(ikp ustr, ikp st, ikpcb* pcb){
+  int h = compute_hash(ustr);
+  int idx = h & (unfix(ref(st, off_vector_length)) - 1);
+  ikp bckt = ref(st, off_vector_data + idx*wordsize);
+  ikp b = bckt;
+  while(b){
+    ikp sym = ref(b, off_car);
+    ikp sym_str = ref(sym, off_symbol_ustring);
+    if(strings_eqp(sym_str, ustr)){
+      return sym;
+    }
+    b = ref(b, off_cdr);
+  }
+  ikp sym = ik_make_symbol(false_object, ustr, pcb);
+  b = ik_alloc(pcb, pair_size) + pair_tag;
+  ref(b, off_car) = sym;
+  ref(b, off_cdr) = bckt;
+  ref(st, off_vector_data + idx*wordsize) = b;
+  pcb->dirty_vector[page_index(st+off_vector_data+idx*wordsize)] = -1;
+  return sym;
+}
+
+ikp
+ikrt_intern_gensym(ikp sym, ikpcb* pcb){
+  ikp st = pcb->gensym_table;
+  if(st == 0){
+    st = make_symbol_table(pcb);
+    pcb->gensym_table = st;
+  }
+  ikp ustr = ref(sym, off_symbol_ustring);
+  int h = compute_hash(ustr);
+  int idx = h & (unfix(ref(st, off_vector_length)) - 1);
+  ikp bckt = ref(st, off_vector_data + idx*wordsize);
+  ikp b = bckt;
+  while(b){
+    ikp sym = ref(b, off_car);
+    ikp sym_ustr = ref(sym, off_symbol_ustring);
+    if(strings_eqp(sym_ustr, ustr)){
+      return false_object;
+    }
+    b = ref(b, off_cdr);
+  }
+  b = ik_alloc(pcb, pair_size) + pair_tag;
+  ref(b, off_car) = sym;
+  ref(b, off_cdr) = bckt;
+  ref(st, off_vector_data + idx*wordsize) = b;
+  pcb->dirty_vector[page_index(st+off_vector_data+idx*wordsize)] = -1;
+  return true_object;
+}
+
+
+
+
+ikp 
+ikrt_string_to_symbol(ikp str, ikpcb* pcb){
+  ikp st = pcb->symbol_table;
+  if(st == 0){
+    st = make_symbol_table(pcb);
+    pcb->symbol_table = st;
+  }
+  return intern_string(str, st, pcb);
+}
+
+ikp 
+ik_intern_string(ikp str, ikpcb* pcb){
+  return ikrt_string_to_symbol(str, pcb);
+}
+
+ikp 
+ikrt_string_to_gensym(ikp str, ikpcb* pcb){
+  ikp st = pcb->gensym_table;
+  if(st == 0){
+    st = make_symbol_table(pcb);
+    pcb->gensym_table = st;
+  }
+  return intern_string(str, st, pcb);
+}
+
+
+
+ikp
 ik_cstring_to_symbol(char* str, ikpcb* pcb){
   int n = strlen(str);
   int size = n + disp_string_data + 1;
   ikp s = ik_alloc(pcb, align(size)) + string_tag;
   ref(s, off_string_length) = fix(n);
   memcpy(s+off_string_data, str, n+1);
-  ikp sym = ik_intern_string(s, pcb);
+  ikp sym = ikrt_string_to_symbol(s, pcb);
   return sym;
 }

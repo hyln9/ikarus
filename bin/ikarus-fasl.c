@@ -257,7 +257,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
   else if(c == 'M'){
     /* symbol */
     ikp str = do_read(pcb, p);
-    ikp sym = ik_intern_string(str, pcb);
+    ikp sym = ikrt_string_to_symbol(str, pcb);
     if(put_mark_index){
       p->marks[put_mark_index] = sym;
     }

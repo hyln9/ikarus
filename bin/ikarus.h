@@ -124,7 +124,8 @@ typedef struct ikpcb{
   ikpage* uncached_pages; /* ikpages cached so that we don't malloc/free */
   ikp   stack_base;
   int   stack_size;
-  ikp   symbol_table;;
+  ikp   symbol_table;
+  ikp   gensym_table;
   ik_guardian_table* guardians[generation_count];
   unsigned int* dirty_vector_base;
   unsigned int* segment_vector_base;
@@ -160,7 +161,7 @@ ikp ik_exec_code(ikpcb* pcb, ikp code_ptr);
 void ik_print(ikp x);
 void ik_fprint(FILE*, ikp x);
 
-ikp ik_intern_string(ikp, ikpcb*);
+ikp ikrt_string_to_symbol(ikp, ikpcb*);
 
 ikp ik_cstring_to_symbol(char*, ikpcb*);
 

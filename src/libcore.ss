@@ -1074,7 +1074,7 @@ reference-implementation:
   (lambda (x)
     (unless (string? x) 
       (error 'string->symbol "~s is not a string" x))
-    (foreign-call "ik_intern_string" x)))
+    (foreign-call "ikrt_string_to_symbol" x)))
   
 (primitive-set! 'gensym
   (case-lambda
@@ -1138,39 +1138,6 @@ reference-implementation:
                         (cons ($car a) (cons ($cdr a) ac))))]))])
       (f ($symbol-plist x) '()))))
 
-
-;;X (primitive-set! 'make-parameter
-;;X   (letrec ([make-param-no-guard
-;;X             (lambda (x)
-;;X               (lambda args
-;;X                 (if (null? args)
-;;X                     x
-;;X                     (if (null? ($cdr args))
-;;X                         (set! x ($car args))
-;;X                         (error #f "too many arguments to parameter")))))]
-;;X            [make-param-with-guard
-;;X             (lambda (x g)
-;;X               (let ([f
-;;X                      (lambda args
-;;X                        (if (null? args)
-;;X                            x
-;;X                            (if (null? ($cdr args))
-;;X                                (set! x (g ($car args)))
-;;X                                (error #f "too many arguments to parameter"))))])
-;;X                (if (procedure? g)
-;;X                    (begin (set! x (g x)) f)
-;;X                    (error 'make-parameter "not a procedure ~s" g))))])
-;;X     (lambda args
-;;X        (if (pair? args)
-;;X            (let ([x ($car args)] [args ($cdr args)])
-;;X              (if (null? args)
-;;X                  (make-param-no-guard x)
-;;X                  (let ([g ($car args)])
-;;X                    (if (null? ($cdr args))
-;;X                        (make-param-with-guard x g)
-;;X                        (error 'make-parameter "too many arguments")))))
-;;X            (error 'make-parameter "insufficient arguments")))))
-;;X 
 
 
 (let ()
@@ -1619,9 +1586,12 @@ reference-implementation:
         [(eq? us #t) 
          (error 'gensym->unique-string "~s is not a gensym" x)]
         [else
-         (let ([id (uuid)])
-           ($set-symbol-unique-string! x id)
-           id)]))))
+         (let f ([x x])
+           (let ([id (uuid)])
+             ($set-symbol-unique-string! x id)
+             (cond
+               [(foreign-call "ikrt_intern_gensym" x) id]
+               [else (f x)])))]))))
 
 (primitive-set! 'gensym-prefix
   (make-parameter
