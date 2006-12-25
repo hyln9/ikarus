@@ -11,7 +11,7 @@ initialize_symbol_table(ikpcb* pcb){
   ikp st = ik_mmap_ptr(size, 0, pcb) + vector_tag;
   bzero(st-vector_tag, size);
   ref(st, off_vector_length) = fix(NUM_OF_BUCKETS);
-  pcb->oblist = st;
+  pcb->symbol_table = st;
   return st;
 }
 
@@ -54,13 +54,9 @@ static ikp ik_make_symbol(ikp str, ikpcb* pcb){
   return sym;
 }
 
-ikp ik_oblist(ikpcb* pcb){
-  fprintf(stderr, "oblist dead!\n");
-  exit(-1);
-}
 
 ikp ik_intern_string(ikp str, ikpcb* pcb){
-  ikp st = pcb->oblist;
+  ikp st = pcb->symbol_table;
   if(st == 0){
     st = initialize_symbol_table(pcb);
   }

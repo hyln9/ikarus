@@ -124,7 +124,7 @@ typedef struct ikpcb{
   ikpage* uncached_pages; /* ikpages cached so that we don't malloc/free */
   ikp   stack_base;
   int   stack_size;
-  ikp   oblist;
+  ikp   symbol_table;;
   ik_guardian_table* guardians[generation_count];
   unsigned int* dirty_vector_base;
   unsigned int* segment_vector_base;

@@ -313,12 +313,12 @@ ik_collect(int mem_req, ikpcb* pcb){
    *  0. dirty pages not collected in this run
    *  1. the stack
    *  2. the next continuation
-   *  3. the oblist
+   *  3. the symbol-table
    */
   scan_dirty_pages(&gc);
   collect_stack(&gc, pcb->frame_pointer, pcb->frame_base - wordsize);
   pcb->next_k = add_object(&gc, pcb->next_k, "next_k"); 
-  pcb->oblist = add_object(&gc, pcb->oblist, "oblist"); 
+  pcb->symbol_table = add_object(&gc, pcb->symbol_table, "symbol_table"); 
   pcb->arg_list = add_object(&gc, pcb->arg_list, "args_list_foo");
   /* now we trace all live objects */
   collect_loop(&gc);
