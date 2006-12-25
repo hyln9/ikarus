@@ -1,0 +1,13 @@
+
+* Investigate what happens when an interrupt occurs during a write.
+
+   > (define (f) (write (gensym)) (newline) (f))
+   > (f)
+   ...
+   #{g17660 |adxhQB29QdSYPKBS|}
+   #{g17661 |ZaFfTMGRz!c17&zm|}
+   #{g17662 |>yF!AMbaIL$dTG>B|}#{g17662 |>yF!AMbaIL$dTG>B|}Error:
+   interrupted.
+   >
+
+Two displays occurred at the end.
