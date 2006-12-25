@@ -310,16 +310,11 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     char x = fasl_read_byte(p);
     return byte_to_scheme_char(x);
   }
-  else if(c == 'G'){ /* G is for gensym */
+  else if(c == 'G'){ 
+    /* G is for gensym */
     ikp pretty = do_read(pcb, p);
     ikp unique = do_read(pcb, p);
-    ikp sym = ik_alloc(pcb, align(symbol_size)) + symbol_tag;
-    ref(sym, off_symbol_string) = pretty;
-    ref(sym, off_symbol_ustring) = unique;
-    ref(sym, off_symbol_value) = unbound_object;
-    ref(sym, off_symbol_system_value) = unbound_object;
-    ref(sym, off_symbol_plist) = null_object;
-    ref(sym, off_symbol_system_plist) = null_object;
+    ikp sym = ikrt_strings_to_gensym(pretty, unique, pcb);
     if(put_mark_index){
       p->marks[put_mark_index] = sym;
     }

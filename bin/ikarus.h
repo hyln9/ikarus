@@ -162,6 +162,7 @@ void ik_print(ikp x);
 void ik_fprint(FILE*, ikp x);
 
 ikp ikrt_string_to_symbol(ikp, ikpcb*);
+ikp ikrt_strings_to_gensym(ikp, ikp,  ikpcb*);
 
 ikp ik_cstring_to_symbol(char*, ikpcb*);
 
