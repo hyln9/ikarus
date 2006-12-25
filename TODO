@@ -5,14 +5,14 @@ CHECK  - clean up after file ports are dead by flushing/closing the
   - Flush and close output-port on exit.
 
 * Interrupts:
-  - pcb should have an engine-counter field that's decremented on
+CHECK  - pcb should have an engine-counter field that's decremented on
     every procedure call.
-  - an engine-expired procedure must be called when the counter goes
+CHECK  - a do-event procedure must be called when the counter goes
     negative.  It should capture the current continuation and
     reschedule the process.
-  - figure out what to do when a process gets interrupted while
+CHECK  - figure out what to do when a process gets interrupted while
     reading from a file.
-  - Implement [CTRL-C] keyboard interruption with the ability to
+CHECK  - Implement [CTRL-C] keyboard interruption with the ability to
     resume the computation, reset to the repl, or terminate the
     program (at least for now).
 
@@ -22,3 +22,4 @@ CHECK  - clean up after file ports are dead by flushing/closing the
     (foreign-call void: FOO int32: x char*: y ptr: z)
   - may dump the bignum stuff in the VM and move it to scheme.
 
+* Read-invariant gensym.
