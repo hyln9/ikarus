@@ -10,7 +10,7 @@
   (define delimiter?
     (lambda (c)
       (or (char-whitespace? c)
-          (memq c '(#\( #\) #\[ #\] #\' #\` #\, #\")))))
+          (memq c '(#\( #\) #\[ #\] #\{ #\} #\' #\` #\, #\")))))
   (define digit?
     (lambda (c)
       (and ($char<= #\0 c) ($char<= c #\9))))
@@ -274,6 +274,14 @@
   (define tokenize-hash
     (lambda (p)
       (tokenize-hash/c (read-char p) p)))
+  (define (skip-whitespace p caller)
+    (let ([c (read-char p)])
+      (cond
+        [(eof-object? c)
+         (error 'tokenize "invalid eof insize ~a" caller)]
+        [(char-whitespace? c)
+         (skip-whitespace p caller)]
+        [else c])))
   (define tokenize-hash/c
     (lambda (c p)
       (cond
@@ -343,6 +351,46 @@
                (cons 'datum (eof-object)))))]
         [(digit? c) 
          (tokenize-hashnum p (char->num c))]
+        [($char= #\{ c)
+         (let* ([c (skip-whitespace p "gensym")]
+                [id0 
+                 (cond
+                   [(initial? c)
+                    (list->string
+                      (reverse (tokenize-identifier (cons c '()) p)))]
+                   [($char= #\| c)
+                    (list->string 
+                      (reverse (tokenize-bar p '())))]
+                   [else 
+                    (error 'tokenize
+                      "invalid char ~a inside gensym" c)])]
+                [c (skip-whitespace p "gensym")])
+           (cond
+             [($char= #\} c)
+              (cons 'datum (gensym id0))]
+             [else
+              (let ([id1
+                     (cond
+                       [(initial? c)
+                        (list->string
+                         (reverse
+                           (tokenize-identifier 
+                             (cons c '()) p)))]
+                       [($char= #\| c)
+                        (list->string 
+                          (reverse (tokenize-bar p '())))]
+                       [else 
+                        (error 'tokenize
+                          "invalid char ~a inside gensym" c)])])
+                (let ([c (skip-whitespace p "gensym")])
+                  (cond
+                    [($char= #\} c)
+                     (cons 'datum
+                      (foreign-call "ikrt_strings_to_gensym" 
+                        id0 id1))]
+                    [else
+                     (error 'tokenize
+                        "invalid char ~a inside gensym" c)])))]))]
         [else 
          (unread-char c p)
          (error 'tokenize "invalid syntax #~a" c)])))
