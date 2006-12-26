@@ -115,6 +115,7 @@
     trace-symbol! untrace-symbol!  make-traced-procedure
     fixnum->string 
     $interrupted? $unset-interrupted! $do-event
+    $fasl-read
     ;;; TODO: must open-code
 
     $make-port/input $make-port/output $make-port/both

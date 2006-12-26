@@ -79,21 +79,40 @@
         [else #f])))
 
   (define make-record-type
-    (lambda (name fields)
-      (unless (string? name)
-        (error 'make-record-type "name must be a string, got ~s" name))
-      (unless (list? fields)
-        (error 'make-record-type "fields must be a list, got ~s" fields))
-      (for-each verify-field fields)
-      (make-rtd name fields #f (gensym name))))
-
+    (case-lambda
+      [(name fields)
+       (unless (string? name)
+         (error 'make-record-type "name must be a string, got ~s" name))
+       (unless (list? fields)
+         (error 'make-record-type "fields must be a list, got ~s" fields))
+       (for-each verify-field fields)
+       (let ([g (gensym name)])
+         (let ([rtd (make-rtd name fields #f g)])
+           (set-top-level-value! g rtd)
+           rtd))]
+      [(name fields g)
+       (unless (string? name)
+         (error 'make-record-type "name must be a string, got ~s" name))
+       (unless (list? fields)
+         (error 'make-record-type "fields must be a list, got ~s" fields))
+       (for-each verify-field fields)
+       (cond
+         [(top-level-bound? g) 
+          (let ([rtd (top-level-value g)])
+            (unless (and (string=? name (record-type-name rtd))
+                         (equal? fields (record-type-field-names rtd)))
+              (error 'make-record-type "definition mismatch"))
+            rtd)]
+         [else
+          (let ([rtd (make-rtd name fields #f g)])
+            (set-top-level-value! g rtd)
+            rtd)])]))
 
   (define record-type-name
     (lambda (rtd)
       (unless (rtd? rtd)
         (error 'record-type-name "~s is not an rtd" rtd))
       (rtd-name rtd)))
- 
 
   (define record-type-symbol
     (lambda (rtd)
