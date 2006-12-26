@@ -233,11 +233,31 @@
   (define (assert-eq? x y)
     (unless (eq? x y)
       (error who "Expected ~s, got ~s\n" y x)))
+  (define (char->int x)
+    (if (char? x)
+        (char->integer x)
+        (error who "unexpected eof inside a fasl object")))
   (define (do-read p)
-    (let ([h (read-char p)])
-      (case h
-        [else 
-         (error who "Unexpected ~s as a fasl object header" h)])))
+    (define (read)
+      (let ([h (read-char p)])
+        (case h
+          [(#\I)
+           (let ([c0 (char->int (read-char p))]
+                 [c1 (char->int (read-char p))]
+                 [c2 (char->int (read-char p))]
+                 [c3 (char->int (read-char p))])
+             (cond
+               [(fx<= c3 127)
+                (fxlogor (fxlogor (fxsra c0 2) (fxsll c1 6))
+                         (fxlogor (fxsll c2 14) (fxsll c3 22)))]
+               [else (error who "neg")]))]
+          [(#\P)
+           (let ([a (read)])
+             (cons a (read)))]
+          [(#\N) '()]
+          [else 
+           (error who "Unexpected ~s as a fasl object header" h)])))
+    (read))
   (primitive-set! '$fasl-read
     (lambda (p)
       (assert-eq? (read-char p) #\I)
@@ -245,3 +265,4 @@
       (assert-eq? (read-char p) #\0)
       (assert-eq? (read-char p) #\1)
       (do-read p))))
+
