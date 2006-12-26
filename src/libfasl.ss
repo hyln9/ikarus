@@ -217,7 +217,8 @@
          (write-char #\K port)
          (write-char #\0 port)
          (write-char #\1 port)
-         (fasl-write x port h 1))))
+         (fasl-write x port h 1)
+         (void))))
   (primitive-set! 'fasl-write
      (case-lambda 
        [(x) (do-fasl-write x (current-output-port))]
