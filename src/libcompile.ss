@@ -4916,7 +4916,8 @@
 (primitive-set! 'assembler-output (make-parameter #f))
 (primitive-set! 'compile
   (lambda (x)
-    (let ([code (compile-expr x)])
+    (let ([code 
+           (if (code? x) x (compile-expr x))])
       (let ([proc ($code->closure code)])
         (proc)))))
 

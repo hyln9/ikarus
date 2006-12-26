@@ -313,7 +313,7 @@
              (let ([clos ($code->closure code)])
                (put-mark clos-m clos)
                (set-code-reloc-vector! code (read))
-               clos)]
+               code)]
             [else
              (set-code-reloc-vector! code (read))
              code]))))
@@ -321,7 +321,8 @@
       (let ([c (read-char p)])
         (case c
           [(#\x)
-           (read-code #f m)]
+           (let ([code (read-code #f m)])
+             (if m (vector-ref marks m) ($code->closure code)))]
           [(#\<) 
            (let ([cm (read-int p)])
              (unless (fx< cm (vector-length marks))
@@ -333,7 +334,8 @@
           [(#\>)
            (let ([cm (read-int p)])
              (assert-eq? (read-char p) #\x)
-             (read-code cm m))]
+             (let ([code (read-code cm m)])
+               (if m (vector-ref marks m) ($code->closure code))))]
           [else (error who "invalid code header ~s" c)])))
     (define (read/mark m)
       (define (nom)
