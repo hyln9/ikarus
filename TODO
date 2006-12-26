@@ -22,4 +22,4 @@ CHECK  - Implement [CTRL-C] keyboard interruption with the ability to
     (foreign-call void: FOO int32: x char*: y ptr: z)
   - may dump the bignum stuff in the VM and move it to scheme.
 
-* Read-invariant gensym.
+CHECK * Read-invariant gensym.
