@@ -250,7 +250,16 @@
                [(fx<= c3 127)
                 (fxlogor (fxlogor (fxsra c0 2) (fxsll c1 6))
                          (fxlogor (fxsll c2 14) (fxsll c3 22)))]
-               [else (error who "neg")]))]
+               [else
+                (let ([c0 (fxlogand #xFF (fxlognot c0))]
+                      [c1 (fxlogand #xFF (fxlognot c1))]
+                      [c2 (fxlogand #xFF (fxlognot c2))]
+                      [c3 (fxlogand #xFF (fxlognot c3))])
+                  (fx- -1 
+                    (fxlogor (fxlogor (fxsra c0 2) 
+                                      (fxsll c1 6))
+                             (fxlogor (fxsll c2 14) 
+                                      (fxsll c3 22)))))]))]
           [(#\P)
            (let ([a (read)])
              (cons a (read)))]
