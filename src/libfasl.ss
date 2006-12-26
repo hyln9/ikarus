@@ -226,3 +226,21 @@
           (error 'fasl-write "~s is not an output port" port))
         (do-fasl-write x port)])))
 
+
+(let ()
+  (define who 'fasl-read)
+  (define (assert-eq? x y)
+    (unless (eq? x y)
+      (error who "Expected ~s, got ~s\n" y x)))
+  (define (do-read p)
+    (let ([h (read-char p)])
+      (case h
+        [else 
+         (error who "Unexpected ~s as a fasl object header" h)])))
+  (primitive-set! '$fasl-read
+    (lambda (p)
+      (assert-eq? (read-char p) #\I)
+      (assert-eq? (read-char p) #\K)
+      (assert-eq? (read-char p) #\0)
+      (assert-eq? (read-char p) #\1)
+      (do-read p))))

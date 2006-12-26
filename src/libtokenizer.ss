@@ -405,6 +405,8 @@
                     [else
                      (error 'tokenize
                         "invalid char ~a inside gensym" c)])))]))]
+        [($char= #\@ c)
+         (cons 'datum ($fasl-read p))]
         [else 
          (unread-char c p)
          (error 'tokenize "invalid syntax #~a" c)])))
