@@ -339,15 +339,23 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
       ptr -= pair_size;
       ref(ptr, off_cdr) = null_object;
     }
-    ikp rtd = ik_alloc(pcb, align(rtd_size)) + vector_tag;
-    ikp base_sym = ik_cstring_to_symbol("$base-rtd", pcb);
-    ikp base_rtd = ref(base_sym, off_symbol_system_value);
-    ref(rtd, off_rtd_rtd) = base_rtd;
-    ref(rtd, off_rtd_name) = name;
-    ref(rtd, off_rtd_length) = fix(n);
-    ref(rtd, off_rtd_fields) = fields;
-    ref(rtd, off_rtd_printer) = false_object;
-    ref(rtd, off_rtd_symbol) = symb;
+    ikp gensym_val = ref(symb, off_symbol_value);
+    ikp rtd;
+    if(gensym_val == unbound_object){
+      rtd = ik_alloc(pcb, align(rtd_size)) + vector_tag;
+      ikp base_sym = ik_cstring_to_symbol("$base-rtd", pcb);
+      ikp base_rtd = ref(base_sym, off_symbol_system_value);
+      ref(rtd, off_rtd_rtd) = base_rtd;
+      ref(rtd, off_rtd_name) = name;
+      ref(rtd, off_rtd_length) = fix(n);
+      ref(rtd, off_rtd_fields) = fields;
+      ref(rtd, off_rtd_printer) = false_object;
+      ref(rtd, off_rtd_symbol) = symb;
+      ref(symb, off_symbol_value) = rtd;
+      pcb->dirty_vector[page_index(symb+off_symbol_value)] = -1;
+    } else {
+      rtd = gensym_val;
+    }
     if(put_mark_index){
       p->marks[put_mark_index] = rtd;
     }
