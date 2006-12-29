@@ -11,6 +11,8 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <assert.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 #include <uuid/uuid.h>
 
@@ -858,3 +860,23 @@ ikrt_register_guardian(ikp tc, ikp obj, ikpcb* pcb){
   g->count++;
   return 0;
 }
+
+
+ikp 
+ikrt_stats_now(ikp t, ikpcb* pcb){
+  struct rusage r;
+  struct timeval s;
+
+  gettimeofday(&s, 0);
+  getrusage(RUSAGE_SELF, &r);
+  ref(t, off_record_data)                = fix(r.ru_utime.tv_sec);
+  ref(t, off_record_data + wordsize)     = fix(r.ru_utime.tv_usec);
+  ref(t, off_record_data + 2 * wordsize) = fix(r.ru_stime.tv_sec);
+  ref(t, off_record_data + 3 * wordsize) = fix(r.ru_stime.tv_usec);
+  ref(t, off_record_data + 4 * wordsize) = fix(s.tv_sec);
+  ref(t, off_record_data + 5 * wordsize) = fix(s.tv_usec);
+  return void_object;
+}
+
+
+

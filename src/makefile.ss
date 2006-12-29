@@ -25,7 +25,8 @@
     syntax-case syntax-rules module $module import $import import-only
     syntax quasisyntax unsyntax unsyntax-splicing datum
     let let* let-values cond case define-record or and when unless do
-    include parameterize trace untrace trace-lambda trace-define))
+    include parameterize trace untrace trace-lambda trace-define
+    time))
 
 
 
@@ -84,6 +85,7 @@
     negative? zero? number->string logand = < > <= >=
     make-guardian weak-cons collect 
     interrupt-handler
+    time-it
     ))
 
 (define system-primitives
@@ -230,6 +232,7 @@
     ["libcafe.ss"       "libcafe.fasl"]
     ["libtrace.ss"      "libtrace.fasl"]
     ["libposix.ss"      "libposix.fasl"]
+    ["libtimers.ss"     "libtimers.fasl"]
     ["libtoplevel.ss"   "libtoplevel.fasl"]
     ))
 

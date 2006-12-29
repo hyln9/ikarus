@@ -4669,3 +4669,9 @@
        #'(define id
            (make-traced-procedure 'id value))])))
 
+(define-syntax time
+  (lambda (x)
+    (syntax-case x ()
+      [(_ expr)
+       #'(time-it (lambda () expr) 'expr)])))
+
