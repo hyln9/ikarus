@@ -1,3 +1,6 @@
+* Recognize calls to call-with-values where the second argument is a
+  case-lambda and handle them sensibly.
+
 * Guardians:
 CHECK  - Implement guardians. 
 CHECK  - clean up after file ports are dead by flushing/closing the
@@ -23,3 +26,4 @@ CHECK  - Implement [CTRL-C] keyboard interruption with the ability to
   - may dump the bignum stuff in the VM and move it to scheme.
 
 CHECK * Read-invariant gensym.
+
