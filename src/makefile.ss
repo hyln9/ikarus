@@ -85,7 +85,7 @@
     negative? zero? number->string logand = < > <= >=
     make-guardian weak-cons collect 
     interrupt-handler
-    time-it
+    time-it 
     ))
 
 (define system-primitives

@@ -12,6 +12,8 @@ extern int hash_table_count;
 #define cardsize 512
 #define cards_per_page 8
 
+#define most_bytes_in_minor 0x10000000
+
 #define old_gen_mask    0x00000007
 #define new_gen_mask    0x00000008
 #define gen_mask        0x0000000F
@@ -132,6 +134,8 @@ typedef struct ikpcb{
   unsigned char* memory_base;
   unsigned char* memory_end;
   int collection_id;
+  int allocation_count_minor;
+  int allocation_count_major;
   struct timeval collect_utime;
   struct timeval collect_stime;
   

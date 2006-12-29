@@ -369,6 +369,18 @@ ik_alloc(ikpcb* pcb, int size){
       p->next = pcb->heap_pages;
       pcb->heap_pages = p;
     }
+
+    { /* ACCOUNTING */
+      int bytes = ((int)pcb->allocation_pointer) -
+                  ((int)pcb->heap_base);
+      int minor = bytes + pcb->allocation_count_minor;
+      while(minor >= most_bytes_in_minor){
+        minor -= most_bytes_in_minor;
+        pcb->allocation_count_major++;
+      }
+      pcb->allocation_count_minor = minor;
+    }
+
     int new_size = (size > IK_HEAP_EXT_SIZE) ? size : IK_HEAP_EXT_SIZE;
     new_size += 2 * 4096;
     new_size = align_to_next_page(new_size);
@@ -875,8 +887,21 @@ ikrt_stats_now(ikp t, ikpcb* pcb){
   ref(t, off_record_data + 3 * wordsize) = fix(r.ru_stime.tv_usec);
   ref(t, off_record_data + 4 * wordsize) = fix(s.tv_sec);
   ref(t, off_record_data + 5 * wordsize) = fix(s.tv_usec);
+  ref(t, off_record_data + 6 * wordsize) = fix(pcb->collection_id);
   return void_object;
 }
 
+ikp
+ikrt_bytes_allocated(ikpcb* pcb){
+  int bytes_in_heap = ((int) pcb->allocation_pointer) -
+                      ((int) pcb->heap_base);
+  int bytes = bytes_in_heap + pcb->allocation_count_minor;
+  return fix(bytes);
+}
 
+
+ikp
+ikrt_bytes_allocated_major(ikpcb* pcb){
+  return fix(pcb->allocation_count_major);
+}
 

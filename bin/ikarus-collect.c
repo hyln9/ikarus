@@ -289,6 +289,18 @@ static void fix_new_pages(gc_t* gc);
 ikpcb* 
 ik_collect(int mem_req, ikpcb* pcb){
 
+  { /* ACCOUNTING */
+    int bytes = ((int)pcb->allocation_pointer) -
+                ((int)pcb->heap_base);
+    int minor = bytes + pcb->allocation_count_minor;
+    while(minor >= most_bytes_in_minor){
+      minor -= most_bytes_in_minor;
+      pcb->allocation_count_major++;
+    }
+    pcb->allocation_count_minor = minor;
+  }
+
+
   struct rusage t0, t1;
    
   getrusage(RUSAGE_SELF, &t0);
@@ -1027,9 +1039,9 @@ add_object_proc(gc_t* gc, ikp x)
       int len = ((unsigned int)fst) >> bignum_length_shift;
       int memreq = align(disp_bignum_data + len*wordsize);
       ikp new = gc_alloc_new_data(memreq, gen, gc) + vector_tag;
-      memcpy(new-vector_tag, x, memreq);
-      ref(x, 0) = forward_ptr;
-      ref(x, wordsize) = new;
+      memcpy(new-vector_tag, x-vector_tag, memreq);
+      ref(x, -vector_tag) = forward_ptr;
+      ref(x, wordsize-vector_tag) = new;
       return new;
     }
     else {
