@@ -254,6 +254,7 @@
 (define-record forcall (op rand*))
 (define-record codes (list body))
 (define-record assign (lhs rhs))
+(define-record mvcall (producer consumer))
 
 (define (unique-var x)
   (make-var (gensym x) #f #f))
@@ -406,7 +407,7 @@
        `(clambda-case ,(E-args (case-info-proper info)
                                (case-info-args info))
             ,(E body))]
-      [(clambda g cls*)
+      [(clambda g cls* free)
        `(case-lambda . ,(map E cls*))]
       [(clambda label clauses free)
        `(code ,label . ,(map E clauses))]
@@ -437,11 +438,17 @@
       [(call-cp call-convention label save-cp? rp-convention base-idx arg-count live-mask)
        `(call-cp [conv: ,call-convention]
                  [label: ,label]
-                 [rpconv: ,rp-convention]
+                 [rpconv: ,(if (symbol? rp-convention)
+                               rp-convention
+                               (E rp-convention))]
                  [base-idx: ,base-idx]
                  [arg-count: ,arg-count]
                  [live-mask: ,live-mask])]
+
+      [(tailcall-cp convention label arg-count)
+       `(tailcall-cp ,convention ,label ,arg-count)]
       [(foreign-label x) `(foreign-label ,x)]
+      [(mvcall prod cons) `(mvcall ,(E prod) ,(E cons))]
       [else (error 'unparse "invalid record ~s" x)]))
   (E x))
 
@@ -475,10 +482,44 @@
       [(inline-case (car cls*) rand*)]
       [else (try-inline (cdr cls*) rand* default)]))
   (define (inline rator rand*)
+    (define (valid-mv-consumer? x)
+      (record-case x
+        [(clambda L cases F)
+         (and (fx= (length cases) 1)
+              (record-case (car cases)
+                [(clambda-case info body)
+                 (record-case info
+                   [(case-info L args proper) proper])]))]
+        [else #f]))
+    (define (valid-mv-producer? x)
+      (record-case x
+        [(funcall) #t]
+        [(conditional) #f]
+        [(bind lhs* rhs* body) (valid-mv-producer? body)]
+        [else (error 'valid-mv-producer? "unhandles ~s"
+                     (unparse x))]))
     (record-case rator
       [(clambda g cls*)
        (try-inline cls* rand*
           (make-funcall rator rand*))]
+      [(primref op)
+       (case op
+         ;;; FIXME HERE
+         #;[(call-with-values)
+          (cond
+            [(fx= (length rand*) 2)
+             (let ([producer (inline (car rand*) '())] 
+                   [consumer (cadr rand*)])
+               (cond
+                 [(and (valid-mv-consumer? consumer)
+                       (valid-mv-producer? producer))
+                  (make-mvcall producer consumer)]
+                 [else 
+                  (make-funcall rator rand*)]))]
+            [else
+             (make-funcall rator rand*)])]
+         [else
+          (make-funcall rator rand*)])]
       [else (make-funcall rator rand*)]))
   (define (Expr x)
     (record-case x
@@ -717,6 +758,10 @@
            [else
             (comp)])
          (make-funcall rator rand*))]
+      [(mvcall p c)
+       (let ([p (E p ref comp)] [c (E c ref comp)])
+         (comp)
+         (make-mvcall p c))]
       [(appcall rator rand*)
        (let ([rator (E rator ref comp)] [rand* (E* rand* ref comp)])
          (record-case rator
@@ -823,6 +868,7 @@
        (begin (Expr rator) (Expr* rand*))]
       [(appcall rator rand*)
        (begin (Expr rator) (Expr* rand*))]
+      [(mvcall p c) (begin (Expr p) (Expr c))]
       [(forcall rator rand*) (Expr* rand*)]
       [(assign lhs rhs)
        (set-var-assigned! lhs #t)
@@ -1197,6 +1243,15 @@
     ))
 
 
+(define (mk-mvcall p c)
+  (record-case p
+    [(funcall) (make-mvcall p c)]
+    [(seq e0 e1)
+     (make-seq e0 (mk-mvcall e1 c))]
+    [(bind lhs* rhs* body)
+     (make-bind lhs* rhs* (mk-mvcall body c))]
+    [else (error 'mk-mvcall "invalid producer ~s" (unparse p))]))
+
 (define (copy-propagate x)
   (define who 'copy-propagate)
   (define the-void (make-primcall 'void '()))
@@ -1333,6 +1388,8 @@
        (make-appcall (Value rator) (map Value rand*))]
       [(forcall rator rand*) 
        (make-forcall rator (map Value rand*))]
+      [(mvcall p c)
+       (mk-mvcall (Value p) (Value c))]
       [(assign lhs rhs)
        (unless (var-assigned lhs)
          (error who "var ~s is not assigned" lhs))
@@ -1393,6 +1450,8 @@
        (make-forcall rator (map Value rand*))]
       [(assign lhs rhs)
        (mk-seq (Effect x) (make-constant #t))]
+      [(mvcall p c)
+       (mk-mvcall (Value p) (Value c))]
       [else (error who "invalid pred expression ~s" (unparse x))]))
   (define (Value x)
     (record-case x
@@ -1445,6 +1504,8 @@
        (make-forcall rator (map Value rand*))]
       [(assign lhs rhs)
        (mk-seq (Effect x) the-void)]
+      [(mvcall p c)
+       (mk-mvcall (Value p) (Value c))]
       [else (error who "invalid value expression ~s" (unparse x))]))
   (let ([x (Value x)])
     ;;; since we messed up the references and assignments here, we
@@ -1516,6 +1577,7 @@
        (unless (var-assigned lhs)
          (error 'rewrite-assignments "not assigned ~s in ~s" lhs x))
        (make-primcall '$vector-set! (list lhs (make-constant 0) (Expr rhs)))]
+      [(mvcall p c) (make-mvcall (Expr p) (Expr c))]
       [else (error who "invalid expression ~s" (unparse x))]))
   (Expr x))
 
@@ -1600,6 +1662,7 @@
             (make-funcall rator (map Expr rand*))]))]
       [(appcall rator rand*)
        (make-appcall (Expr rator) (map Expr rand*))]
+      [(mvcall p c) (make-mvcall (Expr p) (Expr c))]
       [else (error who "invalid expression ~s" (unparse x))]))
   (Expr x))
 
@@ -1667,7 +1730,7 @@
        (do-clambda ex)]
       [(primcall op rand*)
        (let-values ([(rand* rand*-free) (Expr* rand*)])
-         (values (make-primcall op rand*)  rand*-free))]
+         (values (make-primcall op rand*) rand*-free))]
       [(forcall op rand*)
        (let-values ([(rand* rand*-free) (Expr* rand*)])
          (values (make-forcall op rand*)  rand*-free))]
@@ -1686,6 +1749,15 @@
                     [(rand* rand*-free) (Expr* rand*)])
          (values (make-appcall rator rand*) 
                  (union rat-free rand*-free)))]
+      [(mvcall p c)
+       (let-values ([(p p-free) (Expr p)]
+                    [(c c-free) (Expr c)])
+         (record-case c
+           [(closure code free^) 
+            (values (make-mvcall p code)
+                    (union p-free c-free))]
+           [else (error who "invalid mvcall consumer ~s" 
+                        (unparse c))]))]
       [else (error who "invalid expression ~s" (unparse ex))]))
   (let-values ([(prog free) (Expr prog)])
     (unless (null? free) 
@@ -1824,6 +1896,17 @@
       [(funcall rator rand*) (make-funcall (E rator) (map E rand*))]
       [(jmpcall label rator rand*) (make-jmpcall label (E rator) (map E rand*))]
       [(appcall rator rand*) (make-appcall (E rator) (map E rand*))]
+      [(mvcall p c)
+       (record-case c 
+         [(clambda label cases free)
+          (make-mvcall (E p) 
+            (make-clambda label
+              (map (lambda (x)
+                     (record-case x
+                       [(clambda-case info body)
+                        (make-clambda-case info (E body))]))
+                   cases)
+              free))])]
       [else (error who "invalid expression ~s" (unparse x))]))
   (let ([x (E x)])
     (make-codes all-codes x)))
@@ -2029,6 +2112,17 @@
        (make-jmpcall label (Expr op) (map Expr arg*))]
       [(appcall op arg*)
        (make-appcall (Expr op) (map Expr arg*))]
+      [(mvcall p c)
+       (record-case c
+         [(clambda label cases free)
+          (make-mvcall (Expr p)
+            (make-clambda label 
+              (map (lambda (x)
+                     (record-case x
+                       [(clambda-case info body)
+                        (make-clambda-case info (Expr body))]))
+                   cases)
+              free))])]
       [else (error who "invalid expression ~s" (unparse x))]))
   (define (Tail x)
     (record-case x
@@ -2065,6 +2159,17 @@
        (make-jmpcall label (Expr op) (map Expr arg*))]
       [(appcall op arg*)
        (make-appcall (Expr op) (map Expr arg*))]
+      [(mvcall p c)
+       (record-case c
+         [(clambda label cases free)
+          (make-mvcall (Expr p)
+            (make-clambda label 
+              (map (lambda (x)
+                     (record-case x
+                       [(clambda-case info body)
+                        (make-clambda-case info (Tail body))]))
+                   cases)
+              free))])]
       [else (error who "invalid expression ~s" (unparse x))]))
   (define (CaseExpr x)
     (record-case x
@@ -2150,6 +2255,8 @@
        (make-appcall (Expr op) (map Expr arg*))]
       [(jmpcall label op arg*)
        (make-jmpcall label (Expr op) (map Expr arg*))]
+      [(mvcall p c)
+       (make-mvcall (Expr p) (CodeExpr c))]
       [else (error who "invalid expression ~s" (unparse x))]))
   (define (Tail x)
     (record-case x
@@ -2167,6 +2274,8 @@
        (make-appcall (Expr op) (map Expr arg*))]
       [(jmpcall label op arg*)
        (make-jmpcall label (Expr op) (map Expr arg*))]
+      [(mvcall p c)
+       (make-mvcall (Expr p) (CodeExpr c))]
       [else (error who "invalid expression ~s" (unparse x))]))
   (define (CaseExpr x)
     (record-case x 
@@ -2207,6 +2316,7 @@
       [(funcall rator arg*) #t] 
       [(appcall rator arg*)    #t]
       [(jmpcall label rator arg*)    #t]
+      [(mvcall p c) #t]
       [else (error who "invalid expression ~s" (unparse x))]))
   (define (Tail x)
     (record-case x
@@ -2220,6 +2330,7 @@
       [(funcall rator arg*) (or (Expr rator) (ormap Expr arg*))] 
       [(appcall rator arg*) (or (Expr rator) (ormap Expr arg*))]
       [(jmpcall label rator arg*) (or (Expr rator) (ormap Expr arg*))]
+      [(mvcall p c) #t]
       [else (error who "invalid tail expression ~s" (unparse x))]))
   (define (CaseExpr x)
     (record-case x 
@@ -2350,6 +2461,8 @@
        (make-jmpcall label (Expr op) (map Expr arg*))]
       [(interrupt-call e0 e1)
        (make-interrupt-call (Expr e0) (Expr e1))]
+      [(mvcall p c)
+       (make-mvcall (Expr p) (CodeExpr c))]
       [else (error who "invalid expression ~s" (unparse x))]))
   (define (Tail x)
     (record-case x
@@ -2371,7 +2484,9 @@
        (make-jmpcall label (Expr op) (map Expr arg*))]
       [(appcall op arg*)
        (make-appcall (Expr op) (map Expr arg*))]
-      [else (error who "invalid expression ~s" (unparse x))]))
+      [(mvcall p c)
+       (make-mvcall (Expr p) (CodeExpr c))]
+      [else (error who "invalid tail expression ~s" (unparse x))]))
   (define (CaseExpr x)
     (record-case x 
       [(clambda-case info body)
@@ -2419,7 +2534,7 @@
                  (when (var? x) (error who "unbound var ~s" x))
                  x]))
             x*))
-    (define (env->mask r sz)
+    (define (env->live-mask r sz)
       (let ([s (make-vector (fxsra (fx+ sz 7) 3) 0)])
         (for-each 
           (lambda (idx) 
@@ -2467,10 +2582,9 @@
                     rp-convention
                     start-si    ; frame size
                     (length rand*) ; argc
-                    (env->mask (if save-cp?
-                                   (cons si orig-live)
-                                   orig-live)
-                               start-si)))] ; mask-size ~~ frame size
+                    (env->live-mask 
+                      (if save-cp? (cons si orig-live) orig-live)
+                      start-si)))] ; mask-size ~~ frame size
               [else
                (make-seq 
                  (make-assign (make-frame-var nsi)
@@ -2564,14 +2678,45 @@
          (make-return 
            (make-primcall op 
              (map (lambda (x) (Expr x si r live)) arg*)))]
-                                    
         [(funcall op rand*)
          (do-tail-frame #f op rand* si r 'normal live)]
         [(appcall op rand*)
          (do-tail-frame #f op rand* si r 'apply live)]
         [(jmpcall label op rand*)
          (do-tail-frame label op rand* si r 'direct live)]
+        [(mvcall p c)
+         (do-mvcall p c x si r live Tail)]
         [else (error who "invalid expression ~s" (unparse x))]))
+    (define (do-mvcall p c x si r live k)
+      (define (make-mv-rp c si r live k)
+        (define (do-clambda-case x)
+          (record-case x 
+            [(clambda-case info body)
+             (record-case info
+               [(case-info label fml* proper)
+                (let-values ([(fml* si r live) 
+                              (bind-fml* fml* 
+                                         (if save-cp?
+                                             (fx+ si 2)
+                                             (fx+ si 1)) 
+                                         r)])
+                  (make-clambda-case
+                    (make-case-info label fml* proper)
+                    (k body si r live)))])]))
+        (record-case c
+          [(clambda L cases free)
+           (make-clambda L (map do-clambda-case cases) free)]))
+      (record-case p
+        [(funcall op rand*) 
+         (do-new-frame #f op rand* si r 'normal 
+           (make-mv-rp c si r live k)
+           live)]
+        [(jmpcall label op rand*) 
+         (do-new-frame label op rand* si r 'direct
+           (make-mv-rp c si r live k)
+           live)]
+        [else (error who "invalid mvcall producer ~s" 
+                (unparse p))]))
     (define (Effect x si r live)
       (record-case x
         [(constant) (nop)]
@@ -2595,6 +2740,8 @@
          (do-new-frame #f op rand* si r 'foreign 'effect live)]
         [(funcall op rand*)
          (do-new-frame #f op rand* si r 'normal 'effect live)]
+        [(mvcall p c)
+         (do-mvcall p c x si r live Effect)]
         [(jmpcall label op rand*)
          (do-new-frame label op rand* si r 'direct 'effect live)]
         [(appcall op rand*)
@@ -2635,10 +2782,12 @@
          (do-new-frame label op rand* si r 'direct 'value live)]
         [(appcall op rand*)
          (do-new-frame #f op rand* si r 'apply 'value live)]
+        [(mvcall p c)
+         (do-mvcall p c x si r live Expr)]
         [else (error who "invalid expression ~s" (unparse x))]))
     (Tail orig-x orig-si orig-r orig-live))
-  (define (bind-fml* fml* r)
-    (let f ([si 1] [fml* fml*])
+  (define (bind-fml* fml* si  r)
+    (let f ([si si] [fml* fml*])
       (cond
         [(null? fml*) (values '() si r '())]
         [else
@@ -2663,7 +2812,7 @@
           [(clambda-case info body)
            (record-case info
              [(case-info label fml* proper)
-              (let-values ([(fml* si r live) (bind-fml* fml* r)])
+              (let-values ([(fml* si r live) (bind-fml* fml* 1 r)])
                 (make-clambda-case 
                   (make-case-info label fml* proper)
                   (Body body si r live save-cp?)))])]))))
@@ -2700,6 +2849,14 @@
        (let-values ([(e0 f) (NonTail e0 f)])
          (make-seq e0 (Tail e1 f)))]
       [(tailcall-cp) x]
+      [(new-frame base-idx size body)
+       (make-new-frame base-idx size (Tail body f))]
+      [(call-cp call-conv)
+       (let-values ([(x f) 
+                     (do-cp-call x f 
+                       (lambda (x f) 
+                         (values (Tail x f) 0)))])
+         x)]
       [else (error who "invalid tail expression ~s" (unparse x))]))
   (define (do-primcall op arg* f)
     (case op
@@ -2723,6 +2880,30 @@
                        (cadr arg*)))
                4096)]
       [else (values (make-primcall op arg*) f)]))
+  (define (do-cp-call x f k)
+    (record-case x
+      [(call-cp call-conv label save-cp? rp-conv si argc mask)
+       (record-case rp-conv
+         [(clambda L cases free)
+          (let-values ([(cases f)
+                        (let g ([cases cases])
+                          (cond
+                            [(null? cases) 
+                             (values '() f)]
+                            [else
+                             (let-values ([(c* f) (g (cdr cases))])
+                               (record-case (car cases)
+                                [(clambda-case info body)
+                                 (let-values ([(c f0) (k body f)])
+                                   (values 
+                                     (cons (make-clambda-case info c) c*)
+                                     (min f f0)))]))]))])
+            (values 
+              (make-call-cp call-conv label save-cp? 
+                (make-clambda L cases free) si argc mask)
+              f))]
+         [else 
+          (values x f)])]))
   (define (NonTail x f)
     (record-case x
       [(constant)         (values x f)]
@@ -2732,10 +2913,13 @@
       [(foreign-label)    (values x f)]
       [(primref)          (values x f)]
       [(closure)          (values x f)]
-      [(call-cp call-conv) 
-       (if (eq? call-conv 'foreign)
-           (values x f)
-           (values x 0))]
+      [(call-cp call-conv)
+       (let-values ([(x f) (do-cp-call x f NonTail)])
+         (cond
+           [(eq? call-conv 'foreign)
+            (values x f)]
+           [else
+            (values x 0)]))]
       [(primcall op arg*) 
        (let loop ([arg* arg*] [ls '()] [f f])
          (cond
@@ -2976,11 +3160,14 @@
 
 (define (generate-code x)
   (define who 'generate-code)
-  (define (rp-label x)
+  (define (rp-label x L_multi)
     (case x
       [(value) (label-address SL_multiple_values_error_rp)]
       [(effect) (label-address SL_multiple_values_ignore_rp)]
-      [else (error who "invalid rp-convention ~s" x)]))
+      [else 
+       (if (clambda? x)
+           (label-address L_multi)
+           (error who "invalid rp-convention ~s" x))]))
   (define unique-label
     (lambda ()
       (label (gensym))))
@@ -4270,7 +4457,9 @@
        (do-value-prim op rand* ac)]
       [(new-frame base-idx size body)
        (NonTail body ac)]
-      [(call-cp call-convention direct-label save-cp? rp-convention offset size mask)
+      [(call-cp)
+       (handle-call-cp x ac NonTail)]
+    #;[(call-cp call-convention direct-label save-cp? rp-convention offset size mask)
        (let ([L_CALL (unique-label)])
          (case call-convention
            [(normal)
@@ -4471,7 +4660,87 @@
         [else 
          (error who "invalid tail-call convention ~s"
                 call-convention)])]
-      [else (error 'Tail "invalid expression ~s" x)]))
+      [(call-cp)
+       (handle-call-cp x ac Tail)]
+      [else (error 'GenTail "invalid expression ~s" (unparse x))]))
+  (define (handle-call-cp x ac k)
+    (record-case x
+      [(call-cp call-convention direct-label save-cp?
+                rp-convention offset size mask)
+       (let* ([L_multi (gensym "L_multi")]
+              [ac
+               (record-case rp-convention
+                 [(clambda L cases F)
+                  (record-case (car cases)
+                    [(clambda-case info body)
+                     (record-case info
+                       [(case-info L args proper)
+                        (when (or (fx= (length args) 1)
+                                  (not proper))
+                          (error who "BUG: unhandles single rv"))
+                        (list*
+                          (subl (int (frame-adjustment offset)) fpr)
+                          (movl (int (argc-convention 1)) eax)
+                          (jmp (label SL_invalid_args))
+                          (label L_multi)
+                          (if save-cp? (movl (mem wordsize fpr) cpr) '(nop))
+                          (subl (int (frame-adjustment (fxadd1 offset))) fpr)
+                          (cmpl (int (argc-convention (length args))) eax)
+                          (jne (label SL_invalid_args))
+                          (k body ac))])])]
+                 [else 
+                  (list* 
+                    (if save-cp? (movl (mem 0 fpr) cpr) '(nop))
+                    (subl (int (frame-adjustment offset)) fpr)
+                    ac)])]
+              [L_CALL (unique-label)])
+         (case call-convention
+           [(normal)
+            (list* (addl (int (frame-adjustment offset)) fpr)
+                   (movl (int (argc-convention size)) eax)
+                   (jmp L_CALL)
+                   ; NEW FRAME
+                   `(byte-vector ,mask)
+                   `(int ,(fx* offset wordsize))
+                   `(current-frame-offset)
+                   (rp-label rp-convention L_multi)
+                   `(byte 0) ; padding for indirect calls only
+                   `(byte 0) ; direct calls are ok
+                   L_CALL
+                   (indirect-cpr-call)
+                   ac)]
+           [(direct)
+            (list* (addl (int (frame-adjustment offset)) fpr)
+                   ;(movl (int (argc-convention size)) eax)
+                   (jmp L_CALL)
+                   ; NEW FRAME
+                   `(byte-vector ,mask)
+                   `(int ,(fx* offset wordsize))
+                   `(current-frame-offset)
+                   (rp-label rp-convention L_multi)
+                   ;;; no padding for direct calls
+                   L_CALL
+                   (call (label direct-label))
+                   ac)] 
+           [(foreign) 
+            (list* (addl (int (frame-adjustment offset)) fpr)
+                   (movl (int (argc-convention size)) eax)
+                   (movl '(foreign-label "ik_foreign_call") ebx)
+                   (jmp L_CALL)
+                   ; NEW FRAME
+                   (byte-vector mask)
+                   `(int ,(fx* offset wordsize))
+                   `(current-frame-offset)
+                   (rp-label rp-convention L_multi) ; should be 0, since C has 1 rv
+                   '(byte 0)
+                   '(byte 0)
+                   '(byte 0)
+                   L_CALL
+                   (call ebx)
+                   ac)]
+           [else
+            (error who "invalid convention ~s for call-cp"
+                   call-convention)]))]))
   (define (handle-vararg fml-count ac)
     (define CONTINUE_LABEL (unique-label))
     (define DONE_LABEL (unique-label))
@@ -4867,6 +5136,7 @@
               (expand expr))]
          [p (recordize p)]
          [p (optimize-direct-calls p)]
+         ;[p^ (analyze-cwv p)]
          [p (optimize-letrec p)]
          [p (uncover-assigned/referenced p)]
          [p (copy-propagate p)]

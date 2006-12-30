@@ -430,6 +430,13 @@ ik_collect(int mem_req, ikpcb* pcb){
     pcb->heap_size = memsize+2*pagesize;
   }
 
+#ifndef NDEBUG
+  ikp x = pcb->allocation_pointer;
+  while(x < pcb->allocation_redline){
+    ref(x, 0) = (ikp)(0x1234FFFF);
+    x+=wordsize;
+  }
+#endif
   return pcb;
 }
 
