@@ -505,7 +505,7 @@
       [(primref op)
        (case op
          ;;; FIXME HERE
-         #;[(call-with-values)
+         [(call-with-values)
           (cond
             [(fx= (length rand*) 2)
              (let ([producer (inline (car rand*) '())] 
@@ -2549,7 +2549,8 @@
         [(primref? x) #f]  ;;;; PRIMREF CHECK
         [(closure? x) #f]
         [else         #t]))
-    (define (do-new-frame label op rand* si r call-convention rp-convention orig-live)
+    (define (do-new-frame label op rand* si r 
+              call-convention rp-convention orig-live)
       (let ([start-si (if save-cp? (fxadd1 si) si)])
         (make-new-frame start-si (fx+ (length rand*) 2)
           (let f ([r* rand*] [nsi (fxadd1 start-si)] [live orig-live])
@@ -2619,6 +2620,27 @@
              (f (cdr l*) (cons v nlhs*) (fxadd1 si) 
                 (cons (cons (car l*) v) r)
                 (cons si live)))])))
+    (define (do-tail-frame-unoptimized label op rand* si r call-conv live)
+      (let f ([i si] [r* rand*] [live live])
+        (cond
+          [(null? r*)
+           (make-seq
+             (make-eval-cp (check? op) (Expr op i r live))
+             (let f ([i 1] [j si] [r* rand*])
+               (cond
+                 [(null? r*) 
+                  (make-tailcall-cp call-conv label (length rand*))]
+                 [else
+                  (make-seq
+                    (make-assign (make-frame-var i)
+                                 (make-frame-var j))
+                    (f (fxadd1 i) (fxadd1 j) (cdr r*)))])))]
+          [else
+           (let ([fv (make-frame-var i)]
+                 [rhs (Expr (car r*) i r live)])
+             (make-seq
+               (make-assign fv rhs)
+               (f (fxadd1 i) (cdr r*) (cons i live))))])))
     (define (do-tail-frame label op rand* si r call-conv live)
       (define (const? x)
         (record-case x
@@ -2696,10 +2718,8 @@
                [(case-info label fml* proper)
                 (let-values ([(fml* si r live) 
                               (bind-fml* fml* 
-                                         (if save-cp?
-                                             (fx+ si 2)
-                                             (fx+ si 1)) 
-                                         r)])
+                                (if save-cp? (fx+ si 2) (fx+ si 1)) 
+                                r live)])
                   (make-clambda-case
                     (make-case-info label fml* proper)
                     (k body si r live)))])]))
@@ -2786,10 +2806,10 @@
          (do-mvcall p c x si r live Expr)]
         [else (error who "invalid expression ~s" (unparse x))]))
     (Tail orig-x orig-si orig-r orig-live))
-  (define (bind-fml* fml* si  r)
+  (define (bind-fml* fml* si r live)
     (let f ([si si] [fml* fml*])
       (cond
-        [(null? fml*) (values '() si r '())]
+        [(null? fml*) (values '() si r live)]
         [else
           (let-values ([(nfml* nsi r live)
                         (f (fxadd1 si) (cdr fml*))])
@@ -2812,7 +2832,7 @@
           [(clambda-case info body)
            (record-case info
              [(case-info label fml* proper)
-              (let-values ([(fml* si r live) (bind-fml* fml* 1 r)])
+              (let-values ([(fml* si r live) (bind-fml* fml* 1 r '())])
                 (make-clambda-case 
                   (make-case-info label fml* proper)
                   (Body body si r live save-cp?)))])]))))
