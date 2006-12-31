@@ -213,28 +213,28 @@
 (whack-system-env #t)
 
 (define scheme-library-files
-  '(["libhandlers.ss"   "libhandlers.fasl"]
-    ["libcontrol.ss"    "libcontrol.fasl"]
-    ["libcollect.ss"    "libcollect.fasl"]
-    ["librecord.ss"     "librecord.fasl"]
-    ["libcxr.ss"        "libcxr.fasl"]
-    ["libnumerics.ss"   "libnumerics.fasl"]
-    ["libguardians.ss"  "libguardians.fasl"]
-    ["libcore.ss"       "libcore.fasl"]
-    ["libchezio.ss"     "libchezio.fasl"]
-    ["libhash.ss"       "libhash.fasl"]
-    ["libwriter.ss"     "libwriter.fasl"]
-    ["libtokenizer.ss"  "libtokenizer.fasl"]
-    ["libassembler.ss"  "libassembler.fasl"]
-    ["libintelasm.ss"   "libintelasm.fasl"]
-    ["libfasl.ss"       "libfasl.fasl"]
-    ["libcompile.ss"    "libcompile.fasl"]
-    ["psyntax-7.1.ss"   "psyntax.fasl"]
-    ["libcafe.ss"       "libcafe.fasl"]
-    ["libtrace.ss"      "libtrace.fasl"]
-    ["libposix.ss"      "libposix.fasl"]
-    ["libtimers.ss"     "libtimers.fasl"]
-    ["libtoplevel.ss"   "libtoplevel.fasl"]
+  '(["libhandlers.ss"   "libhandlers.fasl"  p0]
+    ["libcontrol.ss"    "libcontrol.fasl"   p0]
+    ["libcollect.ss"    "libcollect.fasl"   p0]
+    ["librecord.ss"     "librecord.fasl"    p0]
+    ["libcxr.ss"        "libcxr.fasl"       p0]
+    ["libnumerics.ss"   "libnumerics.fasl"  p0]
+    ["libguardians.ss"  "libguardians.fasl" p0]
+    ["libcore.ss"       "libcore.fasl"      p0]
+    ["libchezio.ss"     "libchezio.fasl"    p0]
+    ["libhash.ss"       "libhash.fasl"      p0]
+    ["libwriter.ss"     "libwriter.fasl"    p0]
+    ["libtokenizer.ss"  "libtokenizer.fasl" p0]
+    ["libassembler.ss"  "libassembler.fasl" p0]
+    ["libintelasm.ss"   "libintelasm.fasl"  p0]
+    ["libfasl.ss"       "libfasl.fasl"      p0]
+    ["libcompile.ss"    "libcompile.fasl"   p1]
+    ["psyntax-7.1.ss"   "psyntax.fasl"      p0]
+    ["libcafe.ss"       "libcafe.fasl"      p0]
+    ["libtrace.ss"      "libtrace.fasl"     p0]
+    ["libposix.ss"      "libposix.fasl"     p0]
+    ["libtimers.ss"     "libtimers.fasl"    p0]
+    ["libtoplevel.ss"   "libtoplevel.fasl"  p0]
     ))
 
 
@@ -254,17 +254,32 @@
   (parameterize ([assembler-output #f] 
                  [expand-mode 'bootstrap]
                  [interaction-environment system-env])
-     (printf "compiling ~a ... " ifile)
-     (compile-file ifile ofile 'replace)
-     ;(expand-file ifile)
-     ;(read-file ifile)
-     (newline)))
+     (printf "compiling ~a ... \n" ifile)
+     (compile-file ifile ofile 'replace)))
 
-(for-each 
-  (lambda (x)
-    (when (cadr x)
-      (compile-library (car x) (cadr x))))
-  scheme-library-files)
+
+
+(let ()
+  (define (compile-all who)
+    (for-each
+      (lambda (x)
+        (when (eq? who (caddr x))
+          (compile-library (car x) (cadr x))))
+      scheme-library-files))
+  (fork
+    (lambda (pid) 
+      (time (compile-all 'p1))
+      (unless (fxzero? (waitpid pid))
+        (exit -1)))
+    (lambda ()
+      (time (compile-all 'p0))
+      (exit))))
+
+;;; (for-each 
+;;;   (lambda (x)
+;;;     (when (cadr x)
+;;;       (compile-library (car x) (cadr x))))
+;;;   scheme-library-files)
 
 (define (join s ls)
   (cond

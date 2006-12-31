@@ -916,5 +916,5 @@ ikp
 ikrt_waitpid(ikp pid){
   int status;
   pid_t t = waitpid(unfix(pid), &status, 0);
-  return fix(t);
+  return fix(status);
 }
