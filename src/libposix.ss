@@ -1,16 +1,22 @@
 
-;;; ($pcb-set! posix-fork
-;;;   (lambda ()
-;;;     (foreign-call "S_fork")))
-;;; 
-;;; ($pcb-set! fork
-;;;   (lambda (parent-proc child-proc)
-;;;     (let ([pid (posix-fork)])
-;;;       (cond
-;;;         [(fx= pid 0) (child-proc)]
-;;;         [(fx= pid -1) 
-;;;          (error 'fork "failed")]
-;;;         [else (parent-proc pid)]))))
+(primitive-set! 'posix-fork
+  (lambda ()
+    (foreign-call "ikrt_fork")))
+
+(primitive-set! 'fork
+  (lambda (parent-proc child-proc)
+    (let ([pid (posix-fork)])
+      (cond
+        [(fx= pid 0) (child-proc)]
+        [(fx= pid -1) 
+         (error 'fork "failed")]
+        [else (parent-proc pid)]))))
+
+(primitive-set! 'waitpid
+  (lambda (pid)
+    (unless (fixnum? pid)
+      (error 'waitpid "~s is not a fixnum" pid))
+    (foreign-call "ikrt_waitpid" pid)))
 
 (primitive-set! 'system
   (lambda (x)

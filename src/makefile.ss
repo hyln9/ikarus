@@ -86,6 +86,7 @@
     make-guardian weak-cons collect 
     interrupt-handler
     time-it 
+    posix-fork fork waitpid
     ))
 
 (define system-primitives

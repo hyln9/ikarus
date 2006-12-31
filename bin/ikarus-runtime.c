@@ -905,3 +905,16 @@ ikrt_bytes_allocated_major(ikpcb* pcb){
   return fix(pcb->allocation_count_major);
 }
 
+
+ikp 
+ikrt_fork(){
+  int pid = fork();
+  return fix(pid);
+}
+
+ikp 
+ikrt_waitpid(ikp pid){
+  int status;
+  pid_t t = waitpid(unfix(pid), &status, 0);
+  return fix(t);
+}
