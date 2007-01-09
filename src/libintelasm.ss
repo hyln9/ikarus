@@ -38,13 +38,6 @@
 
 
 (let ()
-(define-syntax car
-  (syntax-rules ()
-    [(_ x)
-     (let ([t x])
-       (if (pair? t)
-           (#%car t)
-           (error '(car x) "~s is not a pair" t)))]))
 
 (define fold
   (lambda (f init ls)
@@ -194,22 +187,16 @@
               (cons (byte #x24) ac)
               ac))))
 
-(define (int-val x)
-  (cond
-    [(fixnum? x) x]
-    [(and (pair? x) (eq? (car x) 'int)) (cadr x)]
-    [else (error 'int-val "not a fixnum ~s" x)]))
 
 (define IMM32
   (lambda (n ac)
     (cond
       [(int? n) 
-       (let ([n (int-val n)])
-         (list* (byte n)
-           (byte (fxsra n  8))
-           (byte (fxsra n 16))
-           (byte (fxsra n 24))
-           ac))]
+       (list* (byte n)
+         (byte (fxsra n  8))
+         (byte (fxsra n 16))
+         (byte (fxsra n 24))
+         ac)]
       [(obj? n)
        (let ([v (cadr n)])
          (if (immediate? v)
@@ -229,8 +216,7 @@
   (lambda (n ac)
     (cond
       [(int? n) 
-       (let ([n (int-val n)])
-         (list* (byte n) ac))]
+       (list* (byte n) ac)]
       [else (error 'IMM8 "invalid ~s" n)])))
 
 
@@ -249,7 +235,7 @@
 
 (define imm8?
   (lambda (x)
-    (and (int? x) (byte? (int-val x)))))
+    (and (int? x) (byte? x))))
 
 (define label?
   (lambda (x)
@@ -277,11 +263,7 @@
 (define label-name
   (lambda (x) (cadr x)))
 
-(define int?
-  (lambda (x)
-    (or 
-      (fixnum? x)
-      (and (pair? x) (eq? (car x) 'int)))))
+(define int? fixnum?)
 
 (define obj?
   (lambda (x)
@@ -335,7 +317,7 @@
   (lambda (i1 i2 ac)
     (cond
       [(and (int? i1) (obj? i2))
-       (let ([d (int-val i1)] [v (cadr i2)])
+       (let ([d i1] [v (cadr i2)])
          (cons (reloc-word+ v d) ac))]
       [else (error 'assemble "IMM32*2 ~s ~s" i1 i2)])))
 
@@ -512,7 +494,7 @@
       [else (error who "invalid ~s" instr)])]
    [(sall src dst)
     (cond
-      [(and (equal? '(int 1) src) (reg? dst))
+      [(and (equal? 1 src) (reg? dst))
        (CODE #xD1 (ModRM 3 '/4 dst ac))]
       [(and (imm8? src) (reg? dst))
        (CODE #xC1 (ModRM 3 '/4 dst (IMM8 src ac)))]
@@ -521,7 +503,7 @@
       [else (error who "invalid ~s" instr)])]
    [(shrl src dst)
     (cond
-      [(and (equal? '(int 1) src) (reg? dst))
+      [(and (equal? 1 src) (reg? dst))
        (CODE #xD1 (ModRM 3 '/5 dst ac))]
       [(and (imm8? src) (reg? dst))
        (CODE #xC1 (ModRM 3 '/5 dst (IMM8 src ac)))]
@@ -530,7 +512,7 @@
       [else (error who "invalid ~s" instr)])]
    [(sarl src dst)
     (cond
-      [(and (equal? '(int 1) src) (reg? dst))
+      [(and (equal? 1 src) (reg? dst))
        (CODE #xD1 (ModRM 3 '/7 dst ac))]
       [(and (imm8? src) (reg? dst))
        (CODE #xC1 (ModRM 3 '/7 dst (IMM8 src ac)))]
@@ -701,7 +683,7 @@
     (unless (byte? x) (error who "~s is not a byte" x))
     (cons (byte x) ac)]
    [(byte-vector x) (append (map (lambda (x) (byte x)) (vector->list x)) ac)]
-   [(int a) (IMM32 instr ac)]
+   [(int a) (IMM32 a ac)]
    [(label L)
     (unless (symbol? L) (error who "label ~s is not a symbol" L))
     (cons (cons 'label L) ac)]
@@ -908,7 +890,7 @@
 
 (define list*->code*
   (lambda (thunk?-label ls*)
-    (let ([closure-size* (map (lambda (x) (car x)) ls*)]
+    (let ([closure-size* (map car ls*)]
           [ls* (map cdr ls*)])
       (let* ([ls* (map convert-instructions ls*)]
              [ls* (map optimize-local-jumps ls*)])

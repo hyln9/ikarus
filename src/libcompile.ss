@@ -323,7 +323,7 @@
                (f (make-seq a (E (car d))) (cdr d))]))]
          [(letrec)
           (let ([bind* (cadr x)] [body (caddr x)])
-            (let ([lhs* (map (lambda (x) (car x)) bind*)]
+            (let ([lhs* (map car bind*)]
                   [rhs* (map cadr bind*)])
               (let ([nlhs* (gen-fml* lhs*)])
                 (let ([expr (make-recbind nlhs* (map E rhs*) (E body ))])
@@ -3093,11 +3093,9 @@
       [(fixnum? off) (list 'disp (int off) val)]
       [(register? off) (list 'disp off val)]
       [else (error 'mem "invalid disp ~s" off)]))
-  (define (int x) 
-    (cond
-      [(fixnum? x) x]
-      [else (error 'int "not a fixnum ~s" x)]))
-
+  (define-syntax int
+    (syntax-rules ()
+      [(_ x) x]))
   (define (obj x) (list 'obj x))
   (define (byte x) (list 'byte x))
   (define (byte-vector x) (list 'byte-vector x))
@@ -3182,15 +3180,6 @@
   (unless (symbol? op) (error 'primref-loc "not a symbol ~s" op))
   (mem (fx- disp-symbol-system-value symbol-tag)
         (obj op)))
-
-
-(define-syntax car
-  (syntax-rules ()
-    [(_ x)
-     (let ([t x])
-       (if (pair? t)
-           (#%car t)
-           (error '(car x) "~s is not a pair" t)))]))
 
 
 (define (generate-code x)
