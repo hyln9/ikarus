@@ -259,13 +259,14 @@
 
 
 
-(let ()
+#;(let ()
   (define (compile-all who)
     (for-each
       (lambda (x)
         (when (eq? who (caddr x))
           (compile-library (car x) (cadr x))))
       scheme-library-files))
+  (define (time x) x)
   (fork
     (lambda (pid) 
       (time (compile-all 'p1))
@@ -275,11 +276,11 @@
       (time (compile-all 'p0))
       (exit))))
 
-;;; (for-each 
-;;;   (lambda (x)
-;;;     (when (cadr x)
-;;;       (compile-library (car x) (cadr x))))
-;;;   scheme-library-files)
+(for-each 
+  (lambda (x)
+    (when (cadr x)
+      (compile-library (car x) (cadr x))))
+  scheme-library-files)
 
 (define (join s ls)
   (cond

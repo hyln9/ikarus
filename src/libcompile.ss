@@ -323,7 +323,7 @@
                (f (make-seq a (E (car d))) (cdr d))]))]
          [(letrec)
           (let ([bind* (cadr x)] [body (caddr x)])
-            (let ([lhs* (map car bind*)]
+            (let ([lhs* (map (lambda (x) (car x)) bind*)]
                   [rhs* (map cadr bind*)])
               (let ([nlhs* (gen-fml* lhs*)])
                 (let ([expr (make-recbind nlhs* (map E rhs*) (E body ))])
@@ -444,13 +444,13 @@
                  [base-idx: ,base-idx]
                  [arg-count: ,arg-count]
                  [live-mask: ,live-mask])]
-
       [(tailcall-cp convention label arg-count)
        `(tailcall-cp ,convention ,label ,arg-count)]
       [(foreign-label x) `(foreign-label ,x)]
       [(mvcall prod cons) `(mvcall ,(E prod) ,(E cons))]
       [else (error 'unparse "invalid record ~s" x)]))
   (E x))
+
 
 (define (optimize-direct-calls x)
   (define who 'optimize-direct-calls)
@@ -3093,7 +3093,11 @@
       [(fixnum? off) (list 'disp (int off) val)]
       [(register? off) (list 'disp off val)]
       [else (error 'mem "invalid disp ~s" off)]))
-  (define (int x) (list 'int x))
+  (define (int x) 
+    (cond
+      [(fixnum? x) x]
+      [else (error 'int "not a fixnum ~s" x)]))
+
   (define (obj x) (list 'obj x))
   (define (byte x) (list 'byte x))
   (define (byte-vector x) (list 'byte-vector x))
@@ -3108,6 +3112,7 @@
   (define (xorl src targ) (list 'xorl src targ))
   (define (andl src targ) (list 'andl src targ))
   (define (movl src targ) (list 'movl src targ))
+  (define (leal src targ) (list 'leal src targ))
   (define (movb src targ) (list 'movb src targ))
   (define (addl src targ) (list 'addl src targ))
   (define (imull src targ) (list 'imull src targ))
@@ -3177,6 +3182,16 @@
   (unless (symbol? op) (error 'primref-loc "not a symbol ~s" op))
   (mem (fx- disp-symbol-system-value symbol-tag)
         (obj op)))
+
+
+(define-syntax car
+  (syntax-rules ()
+    [(_ x)
+     (let ([t x])
+       (if (pair? t)
+           (#%car t)
+           (error '(car x) "~s is not a pair" t)))]))
+
 
 (define (generate-code x)
   (define who 'generate-code)
@@ -3871,9 +3886,8 @@
        (list* (movl (Simple (car arg*)) eax)
               (movl (Simple (cadr arg*)) ebx)
               (movl eax (mem disp-car apr))
-              (movl apr eax)
               (movl ebx (mem disp-cdr apr))
-              (addl (int pair-tag) eax)
+              (leal (mem pair-tag apr) eax)
               (addl (int (align pair-size)) apr)
               ac)]
       [(list)
@@ -4479,60 +4493,6 @@
        (NonTail body ac)]
       [(call-cp)
        (handle-call-cp x ac NonTail)]
-    #;[(call-cp call-convention direct-label save-cp? rp-convention offset size mask)
-       (let ([L_CALL (unique-label)])
-         (case call-convention
-           [(normal)
-            (list* (addl (int (frame-adjustment offset)) fpr)
-                   (movl (int (argc-convention size)) eax)
-                   (jmp L_CALL)
-                   ; NEW FRAME
-                   `(byte-vector ,mask)
-                   `(int ,(fx* offset wordsize))
-                   `(current-frame-offset)
-                   (rp-label rp-convention)
-                   `(byte 0) ; padding for indirect calls only
-                   `(byte 0) ; direct calls are ok
-                   L_CALL
-                   (indirect-cpr-call)
-                   (if save-cp? (movl (mem 0 fpr) cpr) '(nop))
-                   (subl (int (frame-adjustment offset)) fpr)
-                   ac)]
-           [(direct)
-            (list* (addl (int (frame-adjustment offset)) fpr)
-                   ;(movl (int (argc-convention size)) eax)
-                   (jmp L_CALL)
-                   ; NEW FRAME
-                   `(byte-vector ,mask)
-                   `(int ,(fx* offset wordsize))
-                   `(current-frame-offset)
-                   (rp-label rp-convention)
-                   ;;; no padding for direct calls
-                   L_CALL
-                   (call (label direct-label))
-                   (if save-cp? (movl (mem 0 fpr) cpr) '(nop))
-                   (subl (int (frame-adjustment offset)) fpr)
-                   ac)] 
-           [(foreign) 
-            (list* (addl (int (frame-adjustment offset)) fpr)
-                   (movl (int (argc-convention size)) eax)
-                   (movl '(foreign-label "ik_foreign_call") ebx)
-                   (jmp L_CALL)
-                   ; NEW FRAME
-                   (byte-vector mask)
-                   `(int ,(fx* offset wordsize))
-                   `(current-frame-offset)
-                   (rp-label rp-convention) ; should be 0, since C has 1 rv
-                   '(byte 0)
-                   '(byte 0)
-                   '(byte 0)
-                   L_CALL
-                   (call ebx)
-                   (if save-cp? (movl (mem 0 fpr) cpr) '(nop))
-                   (subl (int (frame-adjustment offset)) fpr)
-                   ac)]
-           [else
-            (error who "invalid convention ~s for call-cp" call-convention)]))]
       [else (error 'NonTail "invalid expression ~s" x)]))
   (define (Pred x Lt Lf ac)
     (record-case x
@@ -4791,9 +4751,9 @@
            (movl (primref-loc 'do-vararg-overflow) cpr) ; load handler
            (jmp L_CALL)   ; go to overflow handler
            ; NEW FRAME
-           (int 0)        ; if the framesize=0, then the framesize is dynamic
+           '(int 0)        ; if the framesize=0, then the framesize is dynamic
            '(current-frame-offset)
-           (int 0)        ; multiarg rp
+           '(int 0)        ; multiarg rp
            (byte 0)
            (byte 0)
            L_CALL
@@ -4985,7 +4945,7 @@
               (jmp (label L_cwv_call))
               ; MV NEW FRAME
               (byte-vector '#(#b110))
-              (int (fx* wordsize 3))
+              `(int ,(fx* wordsize 3))
                '(current-frame-offset)
               (label-address L_cwv_multi_rp)
               (byte 0)
