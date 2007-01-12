@@ -2812,7 +2812,8 @@
        (id? (syntax mid))
       ; id receives old wrap so it won't be confused with id of same name
       ; defined within the module
-       (values (syntax orig) (wrap (syntax mid) w) (listify (syntax (ex ...))) (map (lambda (x) (wrap x *w)) (syntax (form ...)))))
+       (values (syntax orig) (wrap (syntax mid) w) (listify (syntax (ex ...))) 
+          (map (lambda (x) (wrap x *w)) (syntax (form ...)))))
       (_ (syntax-error (source-wrap e w ae))))))
 
 (define parse-import

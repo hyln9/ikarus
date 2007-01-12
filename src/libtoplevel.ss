@@ -93,7 +93,7 @@
      (exit 0)]
     [else
      (printf "Ikarus Scheme (Build ~a)\n" (compile-time-date-string))
-     (display "Copyright (c) 2006 Abdulaziz Ghuloum\n\n")
+     (display "Copyright (c) 2006-2007 Abdulaziz Ghuloum\n\n")
      (command-line-arguments args)
      (for-each load files)
      (new-cafe)
