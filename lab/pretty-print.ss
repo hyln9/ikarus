@@ -5,6 +5,7 @@
   (define-record lbox (length boxes))
   (define-record sbox (length string))
   (define-record pbox (length ls last))
+  (define-record mbox (length str val))
   (define (box-length x)
     (cond
       [(string? x) (string-length x)]
@@ -12,6 +13,7 @@
       [(lbox? x)   (lbox-length x)]
       [(sbox? x)   (sbox-length x)]
       [(pbox? x)   (pbox-length x)]
+      [(mbox? x)   (mbox-length x)]
       [else (error 'boxify "invalid box ~s" x)]))
   (define (boxify x)
     (define (conc . a*)
@@ -35,15 +37,35 @@
            (conc "#:" (boxify-symbol-string name))]
           [else (boxify-symbol-string name)])))
     (define (boxify-list ls)
-      (let ([ls (map boxify ls)])
-        (let ([n 
-               (let f ([ls ls] [n 1])
-                 (cond
-                   [(null? ls) n]
-                   [else
-                    (f (cdr ls)
-                       (fx+ (box-length (car ls)) (fxadd1 n)))]))])
-          (make-lbox n ls))))
+      (define (boxify-list-generic ls)
+        (let ([ls (map boxify ls)])
+          (let ([n 
+                 (let f ([ls ls] [n 1])
+                   (cond
+                     [(null? ls) n]
+                     [else
+                      (f (cdr ls)
+                         (fx+ (box-length (car ls)) (fxadd1 n)))]))])
+            (make-lbox n ls))))
+      (define (boxify-reader-macro x)
+        (define (macro-string x)
+          (cdr (getprop x '*pretty-format*)))
+        (let ([str (macro-string (car x))]
+              [v (boxify (cadr x))])
+          (make-mbox (fx+ (string-length str) (box-length v))
+                     str v)))
+      (define (reader-macro? x)
+        (and (pair? x)
+             (let ([a (car x)] [d (cdr x)])
+               (and (symbol? a)
+                    (pair? d)
+                    (null? (cdr d))
+                    (let ([p (getprop a '*pretty-format*)])
+                      (and p (eq? (car p) 'reader-macro)))))))
+      (cond
+        [(reader-macro? ls) 
+         (boxify-reader-macro ls)]
+        [else (boxify-list-generic ls)]))
     (define (boxify-string x)
       (define (count s i j n)
         (cond
@@ -289,6 +311,9 @@
          (pbox-one-line x p col)]
         [else
          (pbox-multi-fill x p col)]))
+    (define (output-mbox x p col)
+      (display (mbox-str x) p)
+      (f (mbox-val x) p (fx+ col (string-length (mbox-str x)))))
     (define (f x p col)
       (cond
         [(string? x) 
@@ -298,6 +323,7 @@
         [(lbox? x)   (output-lbox x p col)]
         [(sbox? x)   (output-sbox x p col)]
         [(pbox? x)   (output-pbox x p col)]
+        [(mbox? x)   (output-mbox x p col)]
         [else (error 'pretty-print-output "invalid ~s" x)]))
     (f x p 0)
     (newline p))
@@ -312,7 +338,16 @@
       [(x p)
        (if (output-port? p)
            (pretty x p)
-           (error 'pretty-print "~s is not an output port" p))])))
+           (error 'pretty-print "~s is not an output port" p))]))
+  (define (set-fmt! name fmt)
+    (putprop name '*pretty-format* fmt))
+  (set-fmt! 'quote '(reader-macro . "'"))
+  (set-fmt! 'unquote '(reader-macro . ","))
+  (set-fmt! 'unquote-splicing '(reader-macro . ",@"))
+  (set-fmt! 'quasiquote '(reader-macro . "`"))
+  (set-fmt! 'syntax '(reader-macro . "#'"))
+  (set-fmt! '|#primitive| '(reader-macro . "#%"))
+  )
 
 (define (test x)
   (pretty-print x)
@@ -350,3 +385,5 @@
 (test '(384 7384 83947 893478 9137489 3894789 134789314 79817238
         97314897 318947138974 981374 89137489 1374897 13498713
         894713894 137894 89137489 1374 891348314 12 17 9000000 . 17))
+
+(test '(',,@#''(quote 1 2)))
