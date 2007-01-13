@@ -115,6 +115,7 @@
               [($char= #\" c) (tokenize-string (cons #\" ls) p)]
               [($char= #\\ c) (tokenize-string (cons #\\ ls) p)]
               [($char= #\n c) (tokenize-string (cons #\newline ls) p)]
+              [($char= #\r c) (tokenize-string (cons #\return ls) p)]
               [($char= #\t c) (tokenize-string (cons #\tab ls) p)]
               [else (error 'tokenize "invalid string escape \\~a" c)]))]
          [else
