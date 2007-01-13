@@ -31,7 +31,7 @@
   (define binary-logand
     (lambda (x y)
       (cond
-        [(fixnum? x) 
+        [(fixnum? x)
          (cond
            [(fixnum? y) (#%$fxlogand x y)]
            [(bignum? y)

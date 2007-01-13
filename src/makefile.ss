@@ -86,7 +86,7 @@
     make-guardian weak-cons collect 
     interrupt-handler
     time-it 
-    posix-fork fork waitpid
+    posix-fork fork waitpid env environ
     ))
 
 (define system-primitives
@@ -266,7 +266,7 @@
         (when (eq? who (caddr x))
           (compile-library (car x) (cadr x))))
       scheme-library-files))
- ; (define (time x) x)
+  (define (time x) x)
   (fork
     (lambda (pid) 
       (time (compile-all 'p1))

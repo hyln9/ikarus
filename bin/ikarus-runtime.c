@@ -17,6 +17,9 @@
 #include <uuid/uuid.h>
 
 int total_allocated_pages = 0;
+         
+extern char **environ;
+
 
 #define segment_size  (pagesize*pagesize/wordsize)
 #define segment_shift (pageshift+pageshift-wordshift)
@@ -917,4 +920,52 @@ ikrt_waitpid(ikp pid){
   int status;
   pid_t t = waitpid(unfix(pid), &status, 0);
   return fix(status);
+}
+
+ikp 
+ikrt_getenv(ikp str, ikpcb* pcb){
+  char* v = getenv(string_data(str));
+  if(v){
+    int n = strlen(v);
+    ikp s = ik_alloc(pcb, align(n+disp_string_data+1)) + string_tag;
+    ref(s, -string_tag) = fix(n);
+    memcpy(s+off_string_data, v, n+1);
+    return s;
+  } 
+  else {
+    ikp s = ik_alloc(pcb, align(disp_string_data+1)) + string_tag;
+    ref(s, -string_tag) = fix(0);
+    ref(s, off_string_data) = 0;
+    return s;
+  }
+}
+
+ikp 
+ikrt_setenv(ikp key, ikp val, ikp overwrite){
+  int err = setenv(string_data(key), string_data(val), 
+                   overwrite!=false_object);
+  if(err){
+    return false_object;
+  } else {
+    return true_object;
+  }
+}
+
+
+ikp 
+ikrt_environ(ikpcb* pcb){
+  char** es = environ;
+  int i; char* e;
+  ikp ac = null_object;
+  for(i=0; (e=es[i]); i++){
+    int n = strlen(e);
+    ikp s = ik_alloc(pcb, align(n+disp_string_data+1)) + string_tag;
+    ref(s, -string_tag) = fix(n);
+    memcpy(s+off_string_data, e, n+1);
+    ikp p = ik_alloc(pcb, pair_size) + pair_tag;
+    ref(p, off_cdr) = ac;
+    ref(p, off_car) = s;
+    ac = p;
+  }
+  return ac;
 }

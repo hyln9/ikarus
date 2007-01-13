@@ -69,6 +69,35 @@
                   [else "Unknown error while deleting ~s"])
                 x)]))))
 
+(primitive-set! 'env
+  (let ()
+    (define env
+      (case-lambda
+        [(key) 
+         (if (string? key)
+             (foreign-call "ikrt_getenv" key)
+             (error 'env "the key: ~s is not a string" key))]
+        [(key val) (env key val #t)]
+        [(key val overwrite?)
+         (if (string? key)
+             (if (string? val)
+                 (unless (foreign-call "ikrt_setenv" key val overwrite?)
+                   (error 'env "failed to set ~s to ~s" key val))
+                 (error 'env "the value: ~s is not a string" val))
+             (error 'env "the key: ~s is not a string" key))]))
+    env))
 
-
-
+(primitive-set! 'environ
+  (lambda ()
+    (map 
+      (lambda (s)
+        (define (loc= s i n)
+          (cond
+            [(fx= i n) i]
+            [(char=? (string-ref s i) #\=) i]
+            [else (loc= s (fx+ i 1) n)]))
+        (let ([n (string-length s)])
+          (let ([i (loc= s 0 n)])
+            (cons (substring s 0 i)
+                  (substring s (fxadd1 i) n)))))
+      (foreign-call "ikrt_environ"))))
