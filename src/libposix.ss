@@ -99,5 +99,7 @@
         (let ([n (string-length s)])
           (let ([i (loc= s 0 n)])
             (cons (substring s 0 i)
-                  (substring s (fxadd1 i) n)))))
+                  (if (fx< (fxadd1 i) n)
+                      (substring s (fxadd1 i) n)
+                      "")))))
       (foreign-call "ikrt_environ"))))
