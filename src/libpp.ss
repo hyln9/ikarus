@@ -1,6 +1,5 @@
-(module (pretty-print)
-  (import-only scheme)
-  (define (pretty-width) 60)
+(let ()
+  (define (pretty-width) 70)
   (define-record cbox (length boxes))
   (define-record lbox (length boxes))
   (define-record sbox (length string))
@@ -26,18 +25,6 @@
                  [else
                   (f (cdr a*) (fx+ len (box-length (car a*))))]))])
         (make-cbox n a*)))
-    (define (boxify-symbol x)
-      (define (boxify-symbol-string x)
-        (define (valid-symbol-string? x) #t) ;;; FIXME
-        (define (barify x) (error 'barify "NOT YET")) ;;; FIXME
-        (if (valid-symbol-string? x)
-            x
-            (conc "|" (barify x) "|")))
-      (let ([name (symbol->string x)])
-        (cond
-          [(gensym? x)
-           (conc "#:" (boxify-symbol-string name))]
-          [else (boxify-symbol-string name)])))
     (define (boxify-list ls)
       (define (boxify-list-generic ls)
         (let ([ls (map boxify ls)])
@@ -108,21 +95,6 @@
                        (fx+ (fxadd1 n) (box-length (car ls))))]))])
           (make-pbox (fx+ n (box-length last)) ls last))))
 
-    (define char-table ; first nonprintable chars
-      '#("nul" "soh" "stx" "etx" "eot" "enq" "ack" "bel" "bs" "tab" "newline"
-         "vt" "ff" "return" "so" "si" "dle" "dc1" "dc2" "dc3" "dc4" "nak" 
-         "syn" "etb" "can" "em" "sub" "esc" "fs" "gs" "rs" "us" "space"))
-    (define (boxify-char x)
-      (let ([n (char->integer x)])
-        (cond
-          [(fx< n (vector-length char-table))
-           (conc "#\\" (vector-ref char-table n))]
-          [(fx< n 128)
-           (string #\# #\\ x)]
-          [else
-           (string #\# #\c 
-                   (hexify (fxquotient n 16))
-                   (hexify (fxremainder n 16)))])))
     (define (boxify-vector x)
       (let ([ls (map boxify (vector->list x))])
         (let ([n
@@ -133,18 +105,12 @@
                     (f (cdr ls) (fx+ n (box-length (car ls))))]))])
           (make-vbox (fx+ (fx+ n 2) (vector-length x)) ls))))
     (cond
-      [(number? x)    (number->string x)]
-      [(symbol? x)    (boxify-symbol x)]
       [(string? x)    (boxify-string x)]
       [(null? x)      "()"]
-      [(boolean? x)   (if x "#t" "#f")]
       [(vector? x)    (boxify-vector x)]
       [(list? x)      (boxify-list x)]
       [(pair? x)      (boxify-pair x)]
-      [(char? x)      (boxify-char x)]
-      [(procedure? x) "#<procedure>"]
-      [(eq? x (void)) "#<void>"]
-      [else           "#<unknown>"]))
+      [else           (format "~s" x)]))
 
   (define string-esc-table
     '((7 . "a")
@@ -369,22 +335,25 @@
     (let ([x (boxify x)])
       (output x p)))
   ;;;
-  (define pretty-print 
+  (define (set-fmt! name fmt)
+    (putprop name '*pretty-format* fmt))
+  (primitive-set! 'pretty-print 
     (case-lambda
       [(x) (pretty x (current-output-port))]
       [(x p)
        (if (output-port? p)
            (pretty x p)
            (error 'pretty-print "~s is not an output port" p))]))
-  (define (set-fmt! name fmt)
-    (putprop name '*pretty-format* fmt))
   (set-fmt! 'quote '(reader-macro . "'"))
   (set-fmt! 'unquote '(reader-macro . ","))
   (set-fmt! 'unquote-splicing '(reader-macro . ",@"))
   (set-fmt! 'quasiquote '(reader-macro . "`"))
   (set-fmt! 'syntax '(reader-macro . "#'"))
   (set-fmt! '|#primitive| '(reader-macro . "#%"))
+  (set-fmt! 'define '(_ name tab e tab e ...))
   )
+
+#!eof
 
 (define (test x)
   (pretty-print x)
@@ -436,31 +405,34 @@
   (printf "testing file ~s ...\n" x)
   (with-input-from-file x 
     (lambda ()
-      (let f ()
-        (let ([x (read)])
+      (let f ([i 0])
+        (let ([x (read)] [fname (format "tmp.~a.pp" i)])
           (unless (eof-object? x)
             (let ([y
                    (begin
-                     (call-with-output-file "tmp.pp"
+                     (call-with-output-file fname
                         (lambda (p) 
                           (pretty-print x p))
                         'replace)
-                     (with-input-from-file "tmp.pp" read))])
+                     (with-input-from-file fname read))])
               (if (equal? x y)
-                  (f)
+                  (f (fxadd1 i))
                   (error 'test-file "mismatch ~s ~s" x y)))))))))
 
 (for-each test-file 
-  '("../src/fact.ss" "../src/libhash.ss" "../src/foo.ss"
-    "../src/libintelasm.ss" "../src/libassembler.ss"
-    "../src/libnumerics.ss" "../src/libcafe.ss" "../src/libposix.ss"
-    "../src/libchezio.ss" "../src/librecord.ss"
-    "../src/libcollect.ss" "../src/libtimers.ss"
-    "../src/libcompile.ss" "../src/libtokenizer.ss"
-    "../src/libcontrol.ss" "../src/libtoplevel.ss"
-    "../src/libcore.ss" "../src/libtrace.ss" "../src/libcxr.ss"
-    "../src/libwriter.ss" "../src/libengines.ss" "../src/makefile.ss"
-    "../src/libfasl.ss" "../src/psyntax-7.1.ss"
-    "../src/libguardians.ss" "../src/self-exporting-module.ss"
-    "../src/libhandlers.ss" "../src/set-operations.ss"))
+  '(;"../src/fact.ss" "../src/libhash.ss" "../src/foo.ss"
+    ;"../src/libintelasm.ss" "../src/libassembler.ss"
+    ;"../src/libnumerics.ss" "../src/libcafe.ss" "../src/libposix.ss"
+    ;"../src/libchezio.ss" "../src/librecord.ss"
+    ;"../src/libcollect.ss" "../src/libtimers.ss"
+    "../src/libcompile.ss"
+    ;"../src/libtokenizer.ss"
+    ;"../src/libcontrol.ss" "../src/libtoplevel.ss"
+    ;"../src/libcore.ss" "../src/libtrace.ss" "../src/libcxr.ss"
+    ;"../src/libwriter.ss" "../src/libengines.ss" 
+    ;"../src/libfasl.ss" 
+    ;"../src/libguardians.ss" "../src/self-exporting-module.ss"
+    ;"../src/libhandlers.ss" "../src/set-operations.ss"
+    ;"../src/psyntax-7.1.ss"
+    ))
 

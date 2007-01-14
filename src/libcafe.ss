@@ -79,8 +79,7 @@ description:
                        (unless (andmap (lambda (v) (eq? v (void))) v*)
                          (for-each
                            (lambda (v)
-                             (write v (console-output-port))
-                             (newline (console-output-port)))
+                             (pretty-print v (console-output-port)))
                            v*))))]))))))
       (wait eval escape-k)))
 

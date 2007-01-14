@@ -87,6 +87,7 @@
     interrupt-handler
     time-it 
     posix-fork fork waitpid env environ
+    pretty-print
     ))
 
 (define system-primitives
@@ -230,6 +231,7 @@
     ["libfasl.ss"       "libfasl.fasl"      p0]
     ["libcompile.ss"    "libcompile.fasl"   p1]
     ["psyntax-7.1.ss"   "psyntax.fasl"      p0]
+    ["libpp.ss"         "libpp.fasl"        p0]
     ["libcafe.ss"       "libcafe.fasl"      p0]
     ["libtrace.ss"      "libtrace.fasl"     p0]
     ["libposix.ss"      "libposix.fasl"     p0]
