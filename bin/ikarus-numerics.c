@@ -32,6 +32,17 @@ ikrt_positive_bn(ikp x){
   }
 }
 
+ikp 
+ikrt_even_bn(ikp x){
+  int fst = (int)ref(x, wordsize-vector_tag);
+  if(fst & 1){
+    return false_object;
+  } else {
+    return true_object;
+  }
+}
+
+
 
 ikp 
 ikrt_fxfxplus(ikp x, ikp y, ikpcb* pcb){

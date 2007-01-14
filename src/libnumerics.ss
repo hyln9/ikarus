@@ -175,7 +175,24 @@
 
 
   (define even-bignum?
-    (lambda (x) (error 'even-bignum? "not implemented")))
+    (lambda (x) 
+      (foreign-call "ikrt_even_bn" x)))
+
+  (define ($fxeven? x)
+    ($fxzero? ($fxlogand x 1)))
+
+  (define (even? x)
+    (cond
+      [(fixnum? x) ($fxeven? x)]
+      [(bignum? x) (even-bignum? x)]
+      [else (error 'even? "~s is not an integer" x)]))
+
+  (define (odd? x)
+    (not
+      (cond
+        [(fixnum? x) ($fxeven? x)]
+        [(bignum? x) (even-bignum? x)]
+        [else (error 'odd? "~s is not an integer" x)])))
 
   (define number->string
     (lambda (x)
@@ -410,4 +427,7 @@
         [(fixnum? x) (#%$fx< x 0)]
         [(bignum? x) (not (positive-bignum? x))]
         [else (error 'negative? "~s is not a number" x)])))
+
+  (primitive-set! 'even? even?)
+  (primitive-set! 'odd? odd?)
   )
