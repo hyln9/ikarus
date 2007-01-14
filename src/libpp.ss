@@ -380,14 +380,6 @@
            (pretty x p)
            (error 'pretty-print "~s is not an output port" p))])))
 
-(with-input-from-file "pretty-print.ss"
-  (lambda ()
-    (let f ()
-      (let ([x (read)])
-        (unless (eof-object? x)
-          (test x)
-          (f))))))
-
 (test '(384 7384 83947 893478 9137489 3894789 134789314 79817238
         97314897 318947138974 981374 89137489 1374897 13498713
         894713894 137894 89137489 1374 891348314 12 17 9000000 . 17))
@@ -420,19 +412,33 @@
                   (error 'test-file "mismatch ~s ~s" x y)))))))))
 
 (for-each test-file 
-  '(;"../src/fact.ss" "../src/libhash.ss" "../src/foo.ss"
-    ;"../src/libintelasm.ss" "../src/libassembler.ss"
-    ;"../src/libnumerics.ss" "../src/libcafe.ss" "../src/libposix.ss"
-    ;"../src/libchezio.ss" "../src/librecord.ss"
-    ;"../src/libcollect.ss" "../src/libtimers.ss"
-    "../src/libcompile.ss"
-    ;"../src/libtokenizer.ss"
-    ;"../src/libcontrol.ss" "../src/libtoplevel.ss"
-    ;"../src/libcore.ss" "../src/libtrace.ss" "../src/libcxr.ss"
-    ;"../src/libwriter.ss" "../src/libengines.ss" 
-    ;"../src/libfasl.ss" 
-    ;"../src/libguardians.ss" "../src/self-exporting-module.ss"
-    ;"../src/libhandlers.ss" "../src/set-operations.ss"
-    ;"../src/psyntax-7.1.ss"
+  '("fact.ss"
+    "libhash.ss"
+    "foo.ss"
+    "libintelasm.ss"
+    "libassembler.ss"
+    "libnumerics.ss"
+    "libcafe.ss"
+    "libposix.ss"
+    "libchezio.ss"
+    "librecord.ss"
+    "libcollect.ss"
+    "libtimers.ss"
+    "libcompile.ss"
+    "libtokenizer.ss"
+    "libcontrol.ss"
+    "libtoplevel.ss"
+    "libcore.ss"
+    "libtrace.ss"
+    "libcxr.ss"
+    "libwriter.ss"
+    "libengines.ss" 
+    "libfasl.ss" 
+    "libguardians.ss"
+    "libpp.ss"
+    "self-exporting-module.ss"
+    "libhandlers.ss"
+    "set-operations.ss"
+    "psyntax-7.1.ss"
     ))
 
