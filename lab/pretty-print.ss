@@ -6,6 +6,7 @@
   (define-record sbox (length string))
   (define-record pbox (length ls last))
   (define-record mbox (length str val))
+  (define-record vbox (length ls))
   (define (box-length x)
     (cond
       [(string? x) (string-length x)]
@@ -14,6 +15,7 @@
       [(sbox? x)   (sbox-length x)]
       [(pbox? x)   (pbox-length x)]
       [(mbox? x)   (mbox-length x)]
+      [(vbox? x)   (vbox-length x)]
       [else (error 'boxify "invalid box ~s" x)]))
   (define (boxify x)
     (define (conc . a*)
@@ -121,13 +123,22 @@
            (string #\# #\c 
                    (hexify (fxquotient n 16))
                    (hexify (fxremainder n 16)))])))
+    (define (boxify-vector x)
+      (let ([ls (map boxify (vector->list x))])
+        (let ([n
+               (let f ([ls ls] [n 0])
+                 (cond
+                   [(null? ls) n]
+                   [else
+                    (f (cdr ls) (fx+ n (box-length (car ls))))]))])
+          (make-vbox (fx+ (fx+ n 2) (vector-length x)) ls))))
     (cond
       [(number? x)    (number->string x)]
       [(symbol? x)    (boxify-symbol x)]
       [(string? x)    (boxify-string x)]
       [(null? x)      "()"]
       [(boolean? x)   (if x "#t" "#f")]
-      ;[(vector? x)    (boxify-vector x)]
+      [(vector? x)    (boxify-vector x)]
       [(list? x)      (boxify-list x)]
       [(pair? x)      (boxify-pair x)]
       [(char? x)      (boxify-char x)]
@@ -314,6 +325,31 @@
     (define (output-mbox x p col)
       (display (mbox-str x) p)
       (f (mbox-val x) p (fx+ col (string-length (mbox-str x)))))
+    (define (output-vbox x p col)
+      (let ([ls (vbox-ls x)])
+        (cond
+          [(null? ls)
+           (display "#()" p)
+           (fx+ col 3)]
+          [else
+           (display "#(" p)
+           (let g ([ls (cdr ls)] [p p]
+                   [col (f (car ls) p (fx+ col 2))]
+                   [start (fx+ col 2)])
+             (cond
+               [(null? ls)
+                (display ")" p)
+                (fx+ col 1)]
+               [(fx<= (fx+ (fx+ col 1) (box-length (car ls))) (pretty-width))
+                (display " " p)
+                (g (cdr ls) p 
+                   (f (car ls) p (fx+ col 1))
+                   start)]
+               [else
+                (tab start p)
+                (g (cdr ls) p 
+                   (f (car ls) p start)
+                   start)]))])))
     (define (f x p col)
       (cond
         [(string? x) 
@@ -324,6 +360,7 @@
         [(sbox? x)   (output-sbox x p col)]
         [(pbox? x)   (output-pbox x p col)]
         [(mbox? x)   (output-mbox x p col)]
+        [(vbox? x)   (output-vbox x p col)]
         [else (error 'pretty-print-output "invalid ~s" x)]))
     (f x p 0)
     (newline p))
@@ -386,4 +423,44 @@
         97314897 318947138974 981374 89137489 1374897 13498713
         894713894 137894 89137489 1374 891348314 12 17 9000000 . 17))
 
-(test '(',,@#''(quote 1 2)))
+(test '(',,@#''(quote (syntax unquote-splicing . 2) 2)))
+
+(test '#(1 2 3))
+
+(test '#(384 7384 83947 893478 9137489 3894789 134789314 79817238
+         97314897 318947138974 981374 89137489 1374897 13498713
+         894713894 137894 89137489))
+
+
+(define (test-file x)
+  (printf "testing file ~s ...\n" x)
+  (with-input-from-file x 
+    (lambda ()
+      (let f ()
+        (let ([x (read)])
+          (unless (eof-object? x)
+            (let ([y
+                   (begin
+                     (call-with-output-file "tmp.pp"
+                        (lambda (p) 
+                          (pretty-print x p))
+                        'replace)
+                     (with-input-from-file "tmp.pp" read))])
+              (if (equal? x y)
+                  (f)
+                  (error 'test-file "mismatch ~s ~s" x y)))))))))
+
+(for-each test-file 
+  '("../src/fact.ss" "../src/libhash.ss" "../src/foo.ss"
+    "../src/libintelasm.ss" "../src/libassembler.ss"
+    "../src/libnumerics.ss" "../src/libcafe.ss" "../src/libposix.ss"
+    "../src/libchezio.ss" "../src/librecord.ss"
+    "../src/libcollect.ss" "../src/libtimers.ss"
+    "../src/libcompile.ss" "../src/libtokenizer.ss"
+    "../src/libcontrol.ss" "../src/libtoplevel.ss"
+    "../src/libcore.ss" "../src/libtrace.ss" "../src/libcxr.ss"
+    "../src/libwriter.ss" "../src/libengines.ss" "../src/makefile.ss"
+    "../src/libfasl.ss" "../src/psyntax-7.1.ss"
+    "../src/libguardians.ss" "../src/self-exporting-module.ss"
+    "../src/libhandlers.ss" "../src/set-operations.ss"))
+
