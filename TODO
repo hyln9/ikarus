@@ -1,4 +1,7 @@
-* Recognize calls to call-with-values where the second argument is a
+* Fix pretty-print to handle shared/cyclic data.
+* Fix pretty-print to print records properly.
+
+CHECK * Recognize calls to call-with-values where the second argument is a
   case-lambda and handle them sensibly.
 
 * Guardians:

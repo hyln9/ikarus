@@ -1,20 +1,22 @@
+
 (let ()
-  (define (pretty-width) 70)
+  (define (pretty-width) 80)
+  (define (pretty-indent) 1)
   (define-record cbox (length boxes))
-  (define-record lbox (length boxes))
   (define-record sbox (length string))
   (define-record pbox (length ls last))
   (define-record mbox (length str val))
   (define-record vbox (length ls))
+  (define-record fbox (length box* sep*))
   (define (box-length x)
     (cond
       [(string? x) (string-length x)]
       [(cbox? x)   (cbox-length x)]
-      [(lbox? x)   (lbox-length x)]
       [(sbox? x)   (sbox-length x)]
       [(pbox? x)   (pbox-length x)]
       [(mbox? x)   (mbox-length x)]
       [(vbox? x)   (vbox-length x)]
+      [(fbox? x)   (fbox-length x)]
       [else (error 'boxify "invalid box ~s" x)]))
   (define (boxify x)
     (define (conc . a*)
@@ -25,36 +27,137 @@
                  [else
                   (f (cdr a*) (fx+ len (box-length (car a*))))]))])
         (make-cbox n a*)))
-    (define (boxify-list ls)
-      (define (boxify-list-generic ls)
-        (let ([ls (map boxify ls)])
-          (let ([n 
-                 (let f ([ls ls] [n 1])
+    (define (boxify-list ls alt-fmt*)
+      (define (sum-box* ls)
+        (cond
+          [(null? (cdr ls)) 
+           (fx+ (box-length (car ls)) 2)]
+          [else 
+           (fx+ (box-length (car ls)) 
+                (fxadd1 (sum-box* (cdr ls))))]))
+      (define (gensep*-default ls)
+        (cond
+          [(null? (cdr ls)) '()]
+          [else
+           (cons (pretty-indent) (gensep*-default (cdr ls)))]))
+      (define (tab-value x)
+        (cond
+          [(eq? x 'tab) (pretty-indent)]
+          [(fixnum? x) x]
+          [else #f]))
+      (define (select-alt alt-fmt* ls)
+        (define (good-match? fmt ls)
+          (cond
+            [(not (pair? fmt)) #t]
+            [(eq? (car fmt) 'read-macro)
+             (and (list? ls) (fx= (length ls) 2))]
+            [else
+             (let ([a (car fmt)] [fmt (cdr fmt)])
+               (cond
+                 [(or (eq? a 'tab) (fixnum? a))
+                  (good-match? fmt ls)]
+                 [(and (pair? fmt) (eq? (car fmt) '...))
+                  (and (list? ls)
+                       (andmap (lambda (x) (good-match? a x)) ls))]
+                 [(pair? ls)
+                  (and (good-match? a (car ls))
+                       (good-match? fmt (cdr ls)))]
+                 [else #f]))]))
+         (ormap (lambda (fmt) (and (good-match? fmt ls) fmt)) 
+                alt-fmt*))
+      (define (applicable-formats a alt-fmt*)
+        (cond
+          [(and (symbol? a) (getprop a *pretty-format*)) =>
+           (lambda (fmt) 
+             (cond
+               [(and (pair? fmt) (eq? (car fmt) 'alt))
+                (append alt-fmt* (cdr fmt))]
+               [else
+                (append alt-fmt* (list fmt))]))]
+          [(null? alt-fmt*) #f]
+          [else       alt-fmt*]))
+      (define (return sep* box*)
+        (let ([n (sum-box* box*)])
+          (make-fbox n box* sep*)))
+      (let ([a (car ls)])
+        (cond
+          [(applicable-formats a alt-fmt*) =>
+           (lambda (fmt*)
+             (let ([fmt (select-alt fmt* ls)])
+               (module (fmt-dots? skip-fmt fmt-tab sub-fmt)
+                 (define (parse-fmt x)
+                   (define (parse-dots tab fmt x)
+                     (cond
+                       [(and (pair? x) (eq? (car x) '...))
+                        (values tab fmt #t (cdr x))]
+                       [else
+                        (values tab fmt #f x)]))
+                   (define (parse-tab tab x)
+                     (cond
+                       [(pair? x)
+                        (parse-dots tab (car x) (cdr x))]
+                       [else (values tab #f #f #f)]))
                    (cond
-                     [(null? ls) n]
-                     [else
-                      (f (cdr ls)
-                         (fx+ (box-length (car ls)) (fxadd1 n)))]))])
-            (make-lbox n ls))))
-      (define (boxify-reader-macro x)
-        (define (macro-string x)
-          (cdr (getprop x '*pretty-format*)))
-        (let ([str (macro-string (car x))]
-              [v (boxify (cadr x))])
-          (make-mbox (fx+ (string-length str) (box-length v))
-                     str v)))
-      (define (reader-macro? x)
-        (and (pair? x)
-             (let ([a (car x)] [d (cdr x)])
-               (and (symbol? a)
-                    (pair? d)
-                    (null? (cdr d))
-                    (let ([p (getprop a '*pretty-format*)])
-                      (and p (eq? (car p) 'reader-macro)))))))
-      (cond
-        [(reader-macro? ls) 
-         (boxify-reader-macro ls)]
-        [else (boxify-list-generic ls)]))
+                     [(pair? x)
+                      (let ([a0 (car x)])
+                        (cond
+                          [(eq? a0 'tab) 
+                           (parse-tab (pretty-indent) (cdr x))]
+                          [(fixnum? a0) 
+                           (parse-tab a0 (cdr x))]
+                          [else (parse-tab #f x)]))]
+                     [else (values (pretty-indent) #f #f #f)]))
+                 (define (fmt-dots? x)
+                   (let-values ([(tab subfmt dots fmt) (parse-fmt x)])
+                      dots))
+                 (define (fmt-tab x)
+                   (let-values ([(tab subfmt dots fmt) (parse-fmt x)])
+                      tab))
+                 (define (sub-fmt x)
+                   (let-values ([(tab subfmt dots fmt) (parse-fmt x)])
+                      subfmt))
+                 (define (skip-fmt x)
+                   (let-values ([(tab subfmt dots fmt) (parse-fmt x)])
+                      fmt)))
+               (define (boxify/fmt fmt x) 
+                 (cond
+                   [(and (pair? fmt) (pair? x) (list? x))
+                    (boxify-list x 
+                      (if (eq? (car fmt) 'alt)
+                          (cdr fmt)
+                          (list fmt)))]
+                   [else (boxify x)]))
+               (define (read-macro? x)
+                 (and (pair? x) (eq? (car x) 'read-macro)))
+               (cond
+                 [(read-macro? fmt) 
+                  (conc (cdr fmt) (boxify (cadr ls)))]
+                 [(fmt-dots? fmt) 
+                  (return (fmt-tab fmt) 
+                          (map (lambda (x) (boxify/fmt (sub-fmt fmt) x))
+                               ls))]
+                 [else
+                  (let-values ([(sep* ls)
+                                (let f ([fmt (skip-fmt fmt)] [ls (cdr ls)])
+                                  (cond
+                                    [(null? ls) 
+                                     (values '() '())]
+                                    [(fmt-dots? fmt) 
+                                     (values (fmt-tab fmt) 
+                                             (map (lambda (x)
+                                                    (boxify/fmt (sub-fmt fmt) x))
+                                                  ls))]
+                                    [else
+                                     (let-values ([(f^ l^) 
+                                                   (f (skip-fmt fmt) (cdr ls))])
+                                       (values (cons (fmt-tab fmt) f^)
+                                               (cons (boxify/fmt
+                                                       (sub-fmt fmt)
+                                                       (car ls))
+                                                     l^)))]))])
+                    (return sep* (cons (boxify/fmt (sub-fmt fmt) a) ls)))])))]
+            [else 
+             (return (gensep*-default ls) (map boxify ls))])))
     (define (boxify-string x)
       (define (count s i j n)
         (cond
@@ -94,7 +197,6 @@
                     (f (cdr ls) 
                        (fx+ (fxadd1 n) (box-length (car ls))))]))])
           (make-pbox (fx+ n (box-length last)) ls last))))
-
     (define (boxify-vector x)
       (let ([ls (map boxify (vector->list x))])
         (let ([n
@@ -108,10 +210,9 @@
       [(string? x)    (boxify-string x)]
       [(null? x)      "()"]
       [(vector? x)    (boxify-vector x)]
-      [(list? x)      (boxify-list x)]
+      [(list? x)      (boxify-list x '())]
       [(pair? x)      (boxify-pair x)]
       [else           (format "~s" x)]))
-
   (define string-esc-table
     '((7 . "a")
       (8 . "b")
@@ -122,7 +223,6 @@
       (13 . "r")
       (34 . "\"")
       (92 . "\\")))
-
   (define (hexify n)
     (cond
       [(fx< n 10) (integer->char (fx+ n (char->integer #\0)))]
@@ -168,71 +268,6 @@
         (unless (fxzero? col)
           (display #\space p)
           (f (fxsub1 col) p))))
-    (define (output-lbox x p col)
-      (define (lbox-one-line x p col ls)
-        (display "(" p)
-        (let g ([ls (cdr ls)] [p p] 
-                [col (f (car ls) p (fx+ col 1))]) 
-          (cond
-            [(null? ls)
-             (display ")" p)
-             (fx+ col 1)]
-            [else
-             (display " " p)
-             (g (cdr ls) p
-                (f (car ls) p (fxadd1 col)))])))
-      (define (lbox-multi-line x p col ls)
-        (display "(" p)
-        (let ([col (fx+ col 1)])
-          (f (car ls) p col)
-          (let g ([ls (cdr ls)] [p p] [col col])
-            (cond
-              [(null? ls) (display ")" p) col]
-              [else
-               (tab col p)
-               (f (car ls) p col)
-               (g (cdr ls) p col)]))))
-      (define (lbox-multi-fill x p col ls)
-        (display "(" p)
-        (let g ([ls (cdr ls)] [p p] 
-                [start-col (fx+ col 2)]
-                [where #f]
-                [col (f (car ls) p (fx+ col 1))])
-          (cond
-            [(null? ls) (display ")" p) (fx+ col 1)]
-            [where
-             (case where
-               [(end) 
-                (tab start-col p)
-                (g ls p start-col 'start start-col)]
-               [(start)
-                (g (cdr ls) p start-col 
-                   (if (fx>= (fx+ start-col (box-length (car ls)))
-                             (pretty-width))
-                       'end #f)
-                   (f (car ls) p start-col))])]
-            [(fx<= (fx+ (fx+ col 1) (box-length (car ls)))
-                   (pretty-width))
-             ; fits in the rest of the current line
-             (display " " p)
-             (g (cdr ls) p start-col 
-                #f
-                (f (car ls) p (fx+ col 1)))]
-            [else 
-             (g ls p start-col 'end col)]
-            #;[else
-             ; too big, give it a new line
-             (tab start-col p)
-             (f (car ls) p start-col)
-             (g (cdr ls) p start-col 'end start-col)])))
-      (let ([ls (lbox-boxes x)])
-        (cond
-          [(null? ls) (display "()" p) (fx+ col 2)]
-          [(fx<= (fx+ (fx+ col 2) (lbox-length x)) 
-                 (pretty-width))
-           (lbox-one-line x p col ls)]
-          [else
-           (lbox-multi-fill x p col ls)])))
     (define (output-pbox x p col)
       (define (pbox-one-line x p col)
         (display "(" p)
@@ -316,27 +351,146 @@
                 (g (cdr ls) p 
                    (f (car ls) p start)
                    start)]))])))
+    (define (output-fbox x p col)
+      (define (output-rest-cont box* sep* p col left)
+        (cond
+          [(null? box*) col]
+          [(pair? sep*) 
+           (let* ([box (car box*)]
+                  [sep (car sep*)]
+                  [w (box-length box)])
+             (cond
+               [(fx<= (fx+ (fxadd1 w) col) (pretty-width))
+                (display " " p)
+                (output-rest-cont (cdr box*) (cdr sep*) p 
+                  (f box p (fxadd1 col)) left)]
+               [(not sep)
+                (display " " p)
+                (output-rest-multi (cdr box*) (cdr sep*) p 
+                   (f box p (fxadd1 col)) left)]
+               [else
+                (let ([col (fx+ left sep)])
+                  (tab col p)
+                  (cond
+                    [(fx<= (fx+ w col) (pretty-width))
+                     (output-rest-cont (cdr box*) (cdr sep*) p 
+                       (f box p col) left)]
+                    [else
+                     (output-rest-multi (cdr box*) (cdr sep*) p
+                       (f box p col) left)]))]))]
+          [else 
+           (output-last-cont box* sep* p col left)]))
+      (define (output-last-cont box* sep p col left)
+        (define (sum ls)
+          (cond
+            [(null? ls) 0]
+            [else (fx+ (box-length (car ls)) 
+                       (fxadd1 (sum (cdr ls))))]))
+        (cond
+          [(not sep) 
+           (output-rest-cont box* '(#f . #f) p col left)]
+          [(fx<= (fx+ (sum box*) col) (pretty-width))
+           (let g ([box* box*] [p p] [col col])
+             (cond
+               [(null? box*) col]
+               [else
+                (display " " p)
+                (g (cdr box*) p (f (car box*) p (fxadd1 col)))]))]
+          [else 
+           (let g ([box* box*] [p p] [left (fx+ left sep)] [col col])
+             (cond
+               [(null? box*) col]
+               [else
+                (tab left p)
+                (g (cdr box*) p left 
+                   (f (car box*) p left))]))]))
+      (define (output-last-multi box* sep p col left)
+        (define (sum ls)
+          (cond
+            [(null? ls) 0]
+            [else (fx+ (box-length (car ls)) 
+                       (fxadd1 (sum (cdr ls))))]))
+        (cond
+          [(not sep) 
+           (output-rest-multi box* '(#f . #f) p col left)]
+          #;[(fx<= (fx+ (sum box*) col) (pretty-width))
+           (let g ([box* box*] [p p] [col col])
+             (cond
+               [(null? box*) col]
+               [else
+                (display " " p)
+                (g (cdr box*) p (f (car box*) p (fxadd1 col)))]))]
+          [else 
+           (let g ([box* box*] [p p] [left (fx+ left sep)] [col col])
+             (cond
+               [(null? box*) col]
+               [else
+                (tab left p)
+                (g (cdr box*) p left 
+                   (f (car box*) p left))]))]))
+      (define (output-rest-multi box* sep* p col left)
+        (cond
+          [(null? box*) col]
+          [(pair? sep*) 
+           (let* ([box (car box*)]
+                  [sep (car sep*)]
+                  [w (box-length box)])
+             (cond
+               [(not sep)
+                (display " " p)
+                (output-rest-multi (cdr box*) (cdr sep*) p 
+                   (f box p (fxadd1 col)) left)]
+               [else
+                (let ([col (fx+ left sep)])
+                  (tab col p)
+                  (cond
+                    [(fx<= (fx+ w col) (pretty-width))
+                     (output-rest-cont (cdr box*) (cdr sep*) p 
+                       (f box p col) left)]
+                    [else
+                     (output-rest-multi (cdr box*) (cdr sep*) p
+                       (f box p col) left)]))]))]
+          [else (output-last-multi box* sep* p col left)]))                
+      (define (output-box-init box box* sep* p left)
+        (let ([w (box-length box)])
+          (cond
+            [(fx<= (fx+ w left) (pretty-width))
+             (let ([col (f box p left)])
+               (output-rest-cont box* sep* p col left))]
+            [else
+             (let ([col (f box p left)])
+               (output-rest-multi box* sep* p col left))])))
+      (display "(" p)
+      (let ([col (fx+ col 1)]
+            [box* (fbox-box* x)]
+            [sep* (fbox-sep* x)])
+        (let ([col (output-box-init (car box*) (cdr box*) sep* p col)])
+          (display ")" p)
+          (fx+ col 1))))
     (define (f x p col)
       (cond
         [(string? x) 
          (display x p)
          (fx+ col (string-length x))]
         [(cbox? x)   (output-cbox x p col)]
-        [(lbox? x)   (output-lbox x p col)]
         [(sbox? x)   (output-sbox x p col)]
         [(pbox? x)   (output-pbox x p col)]
         [(mbox? x)   (output-mbox x p col)]
         [(vbox? x)   (output-vbox x p col)]
+        [(fbox? x)   (output-fbox x p col)]
         [else (error 'pretty-print-output "invalid ~s" x)]))
     (f x p 0)
     (newline p))
   ;;;
   (define (pretty x p)
+    ;(write x) (newline)
     (let ([x (boxify x)])
+      ;(write x) (newline)
       (output x p)))
   ;;;
+  (define *pretty-format* '*pretty-format*)
   (define (set-fmt! name fmt)
-    (putprop name '*pretty-format* fmt))
+    (putprop name *pretty-format* fmt))
   (primitive-set! 'pretty-print 
     (case-lambda
       [(x) (pretty x (current-output-port))]
@@ -344,13 +498,37 @@
        (if (output-port? p)
            (pretty x p)
            (error 'pretty-print "~s is not an output port" p))]))
-  (set-fmt! 'quote '(reader-macro . "'"))
-  (set-fmt! 'unquote '(reader-macro . ","))
-  (set-fmt! 'unquote-splicing '(reader-macro . ",@"))
-  (set-fmt! 'quasiquote '(reader-macro . "`"))
-  (set-fmt! 'syntax '(reader-macro . "#'"))
-  (set-fmt! '|#primitive| '(reader-macro . "#%"))
+  (set-fmt! 'quote '(read-macro . "'"))
+  (set-fmt! 'unquote '(read-macro . ","))
+  (set-fmt! 'unquote-splicing '(read-macro . ",@"))
+  (set-fmt! 'quasiquote '(read-macro . "`"))
+  (set-fmt! 'syntax '(read-macro . "#'"))
+  (set-fmt! '|#primitive| '(read-macro . "#%"))
+  (set-fmt! 'let '(alt 
+                    (_ (0 [e 0 e] ...) tab e ...)
+                    (_ x (0 [e 0 e] ...) tab e ...)))
+  (set-fmt! 'letrec '(_ (0 [e 0 e] ...) tab e ...))
+  (set-fmt! 'let-syntax '(_ (0 [e 0 e] ...) tab e ...))
+  (set-fmt! 'letrec-syntax '(_ (0 [e 0 e] ...) tab e ...))
+  (set-fmt! 'let* '(_ (0 [e 0 e] ...) tab e ...))
+  (set-fmt! 'let-values '(_ (0 [e 0 e] ...) tab e tab e* ...))
+  (set-fmt! 'cond '(_ tab [0 e ...] ...))
   (set-fmt! 'define '(_ name tab e tab e ...))
+  (set-fmt! 'case-lambda 
+     '(_ tab [0 e ...] ...))
+  (set-fmt! 'record-case 
+     '(_ e tab [e 0 e ...] ...))
+  (set-fmt! 'if '(_ test 3 e ...))
+  (set-fmt! 'and '(and test 4 e ...))
+  (set-fmt! 'or '(or test 3 e ...))
+  (set-fmt! 'begin '(_ tab e ...))
+  (set-fmt! 'lambda '(_ fmls tab e tab e* ...))
+  (set-fmt! 'case '(_ e tab [e 0 e] ...))
+  (set-fmt! 'syntax-rules '(_ kwd* tab [e 0 e] ...))
+  (set-fmt! 'syntax-case '(_ expr kwd*  
+                             tab (e 0 e 0 e ...) ...))
+  (set-fmt! 'module '(alt (_ (fill ...) tab e ...)
+                          (_ name (fill ...) tab e ...)))
   )
 
 #!eof
@@ -409,8 +587,9 @@
                      (with-input-from-file fname read))])
               (if (equal? x y)
                   (f (fxadd1 i))
-                  (error 'test-file "mismatch ~s ~s" x y)))))))))
+                  (error 'test-file "mismatch\n\n~s\n\n~s" x y)))))))))
 
+;#!eof
 (for-each test-file 
   '("fact.ss"
     "libhash.ss"
