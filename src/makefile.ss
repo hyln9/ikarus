@@ -115,8 +115,8 @@
     $make-call-with-values-procedure $make-values-procedure
     do-overflow $make-tcbucket $tcbucket-next $tcbucket-key
     $tcbucket-val $set-tcbucket-next!  $set-tcbucket-val!
-    $set-tcbucket-tconc!  $tcbucket-dlink-prev $tcbucket-dlink-next
-    $set-tcbucket-dlink-prev!  $set-tcbucket-dlink-next!  call/cf
+    $set-tcbucket-tconc!  
+    call/cf
     trace-symbol! untrace-symbol!  make-traced-procedure
     fixnum->string 
     $interrupted? $unset-interrupted! $do-event
