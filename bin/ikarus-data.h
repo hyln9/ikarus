@@ -181,15 +181,11 @@
 #define disp_tcbucket_key          4
 #define disp_tcbucket_val          8
 #define disp_tcbucket_next        12
-#define disp_tcbucket_dlink_prev  16
-#define disp_tcbucket_dlink_next  20
-#define tcbucket_size 24
+#define tcbucket_size             16
 #define off_tcbucket_tconc       (disp_tcbucket_tconc - vector_tag)
 #define off_tcbucket_key         (disp_tcbucket_key   - vector_tag)
 #define off_tcbucket_val         (disp_tcbucket_val   - vector_tag)
 #define off_tcbucket_next        (disp_tcbucket_next  - vector_tag)
-#define off_tcbucket_dlink_next  (disp_tcbucket_dlink_next  - vector_tag)
-#define off_tcbucket_dlink_prev  (disp_tcbucket_dlink_prev  - vector_tag)
 
 
 #define bignum_mask       0x7

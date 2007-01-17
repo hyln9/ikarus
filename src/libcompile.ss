@@ -160,12 +160,8 @@
     [$tcbucket-key        1   value]
     [$tcbucket-val        1   value]
     [$tcbucket-next       1   value]
-    [$tcbucket-dlink-next       1   value]
-    [$tcbucket-dlink-prev       1   value]
     [$set-tcbucket-val!   2  effect]
     [$set-tcbucket-next!  2  effect]
-    [$set-tcbucket-dlink-next!  2  effect]
-    [$set-tcbucket-dlink-prev!  2  effect]
     [$set-tcbucket-tconc! 2  effect]
     ;;; misc
     [eof-object         0   value]
@@ -2038,11 +2034,7 @@
         $make-record $record? $record/rtd? $record-rtd $record-ref $record-set!
         primitive-set! primitive-ref
         $make-tcbucket $tcbucket-key $tcbucket-val $tcbucket-next
-        $tcbucket-dlink-next 
-        $tcbucket-dlink-prev 
         $set-tcbucket-val! 
-        $set-tcbucket-dlink-next! 
-        $set-tcbucket-dlink-prev! 
         $set-tcbucket-next! $set-tcbucket-tconc!)
        #t]
       [else (error 'valid-arg-types? "unhandled op ~s" op)]))
@@ -3071,8 +3063,6 @@
   (define disp-tcbucket-key   4)
   (define disp-tcbucket-val   8)
   (define disp-tcbucket-next 12)
-  (define disp-tcbucket-dlink-prev 16)
-  (define disp-tcbucket-dlink-next 20)
   (define tcbucket-size      24)
   (define record-ptag  5)
   (define record-pmask 7)
@@ -3725,10 +3715,6 @@
        (indirect-ref arg* (fx- disp-tcbucket-val vector-tag) ac)]
       [($tcbucket-next) 
        (indirect-ref arg* (fx- disp-tcbucket-next vector-tag) ac)]
-      [($tcbucket-dlink-next) 
-       (indirect-ref arg* (fx- disp-tcbucket-dlink-next vector-tag) ac)]
-      [($tcbucket-dlink-prev) 
-       (indirect-ref arg* (fx- disp-tcbucket-dlink-prev vector-tag) ac)]
       [($port-handler) 
        (indirect-ref arg* (fx- disp-port-handler vector-tag) ac)]
       [($port-input-buffer) 
@@ -3947,8 +3933,8 @@
               (movl eax (mem disp-tcbucket-val apr))
               (movl (Simple (cadddr arg*)) eax)
               (movl eax (mem disp-tcbucket-next apr))
-              (movl (int 0) (mem disp-tcbucket-dlink-prev apr))
-              (movl (int 0) (mem disp-tcbucket-dlink-next apr))
+              (movl (int 0) (mem 16 apr))
+              (movl (int 0) (mem 20 apr))
               (movl apr eax)
               (addl (int vector-tag) eax)
               (addl (int (align tcbucket-size)) apr)
@@ -4180,10 +4166,6 @@
        (indirect-assignment arg* (fx- disp-tcbucket-val vector-tag) ac)]
       [($set-tcbucket-next!)
        (indirect-assignment arg* (fx- disp-tcbucket-next vector-tag) ac)]
-      [($set-tcbucket-dlink-next!)
-       (indirect-assignment arg* (fx- disp-tcbucket-dlink-next vector-tag) ac)]
-      [($set-tcbucket-dlink-prev!)
-       (indirect-assignment arg* (fx- disp-tcbucket-dlink-prev vector-tag) ac)]
       [($set-tcbucket-tconc!)
        (indirect-assignment arg* (fx- disp-tcbucket-tconc vector-tag) ac)]
       [($set-port-input-index!)

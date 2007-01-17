@@ -1018,8 +1018,6 @@ add_object_proc(gc_t* gc, ikp x)
       ref(y,off_tcbucket_key) = key;
       ref(y,off_tcbucket_val) = ref(x, off_tcbucket_val);
       ref(y,off_tcbucket_next) = ref(x, off_tcbucket_next);
-      ref(y,off_tcbucket_dlink_next) = ref(x, off_tcbucket_dlink_next);
-      ref(y,off_tcbucket_dlink_prev) = ref(x, off_tcbucket_dlink_prev);
       if((! is_fixnum(key)) && (tagof(key) != immediate_tag)){
         unsigned int kt = gc->segment_vector[page_index(key)];
         if((kt & gen_mask) <= gc->collect_gen){

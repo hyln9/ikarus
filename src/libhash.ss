@@ -1,12 +1,11 @@
 
-(let ([hash-rtd (make-record-type '"hash-table" '(hash-vec count tc dlink))])
+(let ([hash-rtd (make-record-type '"hash-table" '(hash-vec count tc))])
   ;;; accessors
   (define get-vec (record-field-accessor hash-rtd 0))
   (define set-vec! (record-field-mutator hash-rtd 0))
   (define get-count (record-field-accessor hash-rtd 1))
   (define set-count! (record-field-mutator hash-rtd 1))
   (define get-tc (record-field-accessor hash-rtd 2))
-  (define get-dlink (record-field-accessor hash-rtd 3))
   ;;; implementation
 
   ;;; directly from Dybvig's paper
@@ -165,13 +164,7 @@
                               [idx 
                                ($fxlogand ih ($fx- ($vector-length vec) 1))])
                          ($set-tcbucket-next! bucket ($vector-ref vec idx))
-                         ($vector-set! vec idx bucket)))
-                   (let ([b1 (get-dlink h)])
-                     (let ([b2 ($tcbucket-dlink-next b1)])
-                       ($set-tcbucket-dlink-next! bucket b2)
-                       ($set-tcbucket-dlink-prev! bucket b1)
-                       ($set-tcbucket-dlink-next! b1 bucket)
-                       ($set-tcbucket-dlink-prev! b2 bucket))))
+                         ($vector-set! vec idx bucket))))
                  (let ([ct (get-count h)])
                    (set-count! h ($fxadd1 ct))
                    (when ($fx> ct ($vector-length vec))
@@ -227,11 +220,7 @@
       (lambda ()
         (let ([x (cons #f #f)])
           (let ([tc (cons x x)])
-            (make (make-base-vec 32) 0 tc
-                  (let ([b ($make-tcbucket tc #f #f #f)])
-                    ($set-tcbucket-dlink-next! b b)
-                    ($set-tcbucket-dlink-prev! b b)
-                    b)))))))
+            (make (make-base-vec 32) 0 tc))))))
   (primitive-set! 'get-hash-table
     (lambda (h x v)
       (if (hash-table? h)
