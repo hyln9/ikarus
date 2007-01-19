@@ -5109,14 +5109,15 @@
               (newline)
               (for-each (lambda (x) (printf "    ~s\n" x)) ls))
             ls*)))
-      (let ([code* (list*->code* 
-                      (lambda (x)
-                        (if (closure? x)
-                            (if (null? (closure-free* x))
-                                (code-loc-label (closure-code x))
-                                (error 'compile "BUG: non-thunk escaped: ~s" x))
-                            #f))
-                      ls*)])
+      (let ([code* 
+             (list*->code* 
+               (lambda (x)
+                 (if (closure? x)
+                     (if (null? (closure-free* x))
+                         (code-loc-label (closure-code x))
+                         (error 'compile "BUG: non-thunk escaped: ~s" x))
+                     #f))
+               ls*)])
         (car code*)))))
 
 (define compile-file

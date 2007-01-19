@@ -320,6 +320,9 @@ ik_collect(int mem_req, ikpcb* pcb){
       gc.collect_gen, pcb->collection_id-1);
 #endif
 
+  /* cache heap-pages to delete later */
+  ikpages* old_heap_pages = pcb->heap_pages;
+  pcb->heap_pages = 0;
 
   /* the roots are:
    *  0. dirty pages not collected in this run
@@ -327,6 +330,7 @@ ik_collect(int mem_req, ikpcb* pcb){
    *  2. the next continuation
    *  3. the symbol-table
    */
+
   scan_dirty_pages(&gc);
   collect_stack(&gc, pcb->frame_pointer, pcb->frame_base - wordsize);
   pcb->next_k = add_object(&gc, pcb->next_k, "next_k"); 
@@ -400,15 +404,15 @@ ik_collect(int mem_req, ikpcb* pcb){
   }
  
   /* delete all old heap pages */
-  if(pcb->heap_pages){
-    ikpages* p = pcb->heap_pages;
+  if(old_heap_pages){
+    ikpages* p = old_heap_pages;
     do{
       ikpages* next = p->next;
       ik_munmap_from_segment(p->base, p->size, pcb);
       ik_free(p, sizeof(ikpages));
       p=next;
     } while(p);
-    pcb->heap_pages = 0;
+    old_heap_pages = 0;
   }
 
   int free_space = 
@@ -1620,6 +1624,7 @@ fix_new_pages(gc_t* gc){
     i++;
   }
 } 
+
 
 static void
 add_one_tconc(ikpcb* pcb, ikp tcbucket){
