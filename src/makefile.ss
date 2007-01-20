@@ -88,7 +88,10 @@
     time-it 
     posix-fork fork waitpid env environ
     pretty-print
-    even? odd? member char-whitespace?
+    even? odd? member char-whitespace? char-alphabetic?
+    char-downcase max min complex? real? rational? 
+    exact? inexact? integer?
+    string->number
     ))
 
 (define system-primitives

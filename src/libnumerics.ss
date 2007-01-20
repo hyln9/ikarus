@@ -163,11 +163,89 @@
         [else
          (binary* n (expt (binary* n n) (#%$fxsra m 1)))])))
 
+  (define max
+    (case-lambda
+      [(x y)
+       (cond
+         [(fixnum? x) 
+          (cond
+            [(fixnum? y) 
+             (if ($fx> x y) x y)]
+            [(bignum? y)
+             (if (positive-bignum? y) y x)]
+            [else (error 'max "~s is not a number" y)])]
+         [(bignum? x)
+          (cond
+            [(fixnum? y)
+             (if (positive-bignum? x) x y)]
+            [(bignum? y)
+             (if (bnbn> x y) x y)]
+            [else (error 'max "~s is not a number" y)])]
+         [else (error 'max "~s is not a number" x)])]
+      [(x y z . rest)
+       (let f ([a (max x y)] [b z] [ls rest])
+         (cond
+           [(null? ls) (max a b)]
+           [else
+            (f (max a b) (car ls) (cdr ls))]))]
+      [(x) 
+       (if (number? x) 
+           x 
+           (error 'max "~s is not a number" x))]))
+
+(define min
+    (case-lambda
+      [(x y)
+       (cond
+         [(fixnum? x) 
+          (cond
+            [(fixnum? y) 
+             (if ($fx> x y) y x)]
+            [(bignum? y)
+             (if (positive-bignum? y) x y)]
+            [else (error 'min "~s is not a number" y)])]
+         [(bignum? x)
+          (cond
+            [(fixnum? y)
+             (if (positive-bignum? x) y x)]
+            [(bignum? y)
+             (if (bnbn> x y) y x)]
+            [else (error 'min "~s is not a number" y)])]
+         [else (error 'min "~s is not a number" x)])]
+      [(x y z . rest)
+       (let f ([a (min x y)] [b z] [ls rest])
+         (cond
+           [(null? ls) (min a b)]
+           [else
+            (f (min a b) (car ls) (cdr ls))]))]
+      [(x) 
+       (if (number? x) 
+           x 
+           (error 'min "~s is not a number" x))]))
 
   (define number?
     (lambda (x)
       (or (fixnum? x)
           (bignum? x))))
+
+  (define complex?
+    (lambda (x) (number? x)))
+  (define real?
+    (lambda (x) (number? x)))
+  (define rational?
+    (lambda (x) (number? x)))
+  (define integer?
+    (lambda (x) (number? x)))
+  (define exact?
+    (lambda (x) 
+      (or (number? x)
+          (error 'exact? "~s is not a number" x))))
+
+  (define inexact?
+    (lambda (x) 
+      (if (number? x)
+          #f
+          (error 'inexact? "~s is not a number" x))))
 
   (define positive-bignum?
     (lambda (x) 
@@ -315,6 +393,7 @@
 
 
 
+
   (primitive-set! '+ +)
   (primitive-set! '- -)
   (primitive-set! '* *)
@@ -430,4 +509,12 @@
 
   (primitive-set! 'even? even?)
   (primitive-set! 'odd? odd?)
+  (primitive-set! 'max max)
+  (primitive-set! 'min min)
+  (primitive-set! 'complex? complex?)
+  (primitive-set! 'real? real?)
+  (primitive-set! 'rational? rational?)
+  (primitive-set! 'exact? exact?)
+  (primitive-set! 'inexact? inexact?)
+  (primitive-set! 'integer? integer?)
   )

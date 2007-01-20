@@ -1,6 +1,6 @@
 
 ****************************
-Benchmarking Ikarus-Scheme-r6rs on Sat Jan 20 00:42:10 EST 2007 under Darwin adsl-75-19-180-26.dsl.bltnin.sbcglobal.net 8.8.3 Darwin Kernel Version 8.8.3: Wed Oct 18 21:57:10 PDT 2006; root:xnu-792.15.4.obj~4/RELEASE_I386 i386 i386
+Benchmarking Ikarus-Scheme-r6rs on Sat Jan 20 16:21:46 EST 2007 under Darwin 10-231-80-30.dhcp-bl.indiana.edu 8.8.3 Darwin Kernel Version 8.8.3: Wed Oct 18 21:57:10 PDT 2006; root:xnu-792.15.4.obj~4/RELEASE_I386 i386 i386
 
 Testing boyer under Ikarus-Scheme-r6rs
 Compiling...
@@ -11,9 +11,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     17 collections
-    1.001s user time
-    0.007s system time
-    1.009s real time
+    1.019s real    1.010s user    0.007s sys
     72832056 bytes allocated
 
 Testing browse under Ikarus-Scheme-r6rs
@@ -25,9 +23,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     151 collections
-    2.512s user time
-    0.030s system time
-    2.544s real time
+    2.551s real    2.519s user    0.031s sys
     633609656 bytes allocated
 
 Testing cpstak under Ikarus-Scheme-r6rs
@@ -39,9 +35,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     243 collections
-    2.584s user time
-    0.038s system time
-    2.623s real time
+    2.575s real    2.528s user    0.042s sys
     1017728056 bytes allocated
 
 Testing ctak under Ikarus-Scheme-r6rs
@@ -53,9 +47,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     127 collections
-    1.097s user time
-    0.212s system time
-    1.310s real time
+    1.329s real    1.109s user    0.219s sys
     534317320 bytes allocated
 
 Testing dderiv under Ikarus-Scheme-r6rs
@@ -67,9 +59,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     248 collections
-    1.440s user time
-    0.012s system time
-    1.453s real time
+    1.488s real    1.469s user    0.013s sys
     1040000056 bytes allocated
 
 Testing deriv under Ikarus-Scheme-r6rs
@@ -81,9 +71,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     187 collections
-    0.961s user time
-    0.012s system time
-    0.974s real time
+    0.991s real    0.979s user    0.012s sys
     784000056 bytes allocated
 
 Testing destruc under Ikarus-Scheme-r6rs
@@ -95,9 +83,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     61 collections
-    3.251s user time
-    0.015s system time
-    3.267s real time
+    3.282s real    3.258s user    0.017s sys
     257444056 bytes allocated
 
 Testing diviter under Ikarus-Scheme-r6rs
@@ -109,9 +95,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     191 collections
-    1.935s user time
-    0.011s system time
-    1.947s real time
+    1.948s real    1.935s user    0.012s sys
     800000056 bytes allocated
 
 Testing divrec under Ikarus-Scheme-r6rs
@@ -123,9 +107,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     191 collections
-    1.969s user time
-    0.017s system time
-    1.992s real time
+    1.975s real    1.962s user    0.012s sys
     800000056 bytes allocated
 
 Testing puzzle under Ikarus-Scheme-r6rs
@@ -137,9 +119,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     17 collections
-    4.314s user time
-    0.011s system time
-    4.330s real time
+    4.370s real    4.357s user    0.011s sys
     70742488 bytes allocated
 
 Testing takl under Ikarus-Scheme-r6rs
@@ -151,9 +131,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     no collections
-    1.515s user time
-    0.000s system time
-    1.520s real time
+    1.519s real    1.518s user    0.000s sys
     48 bytes allocated
 
 Testing triangl under Ikarus-Scheme-r6rs
@@ -165,9 +143,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     no collections
-    5.125s user time
-    0.002s system time
-    5.132s real time
+    5.333s real    5.332s user    0.001s sys
     930048 bytes allocated
 
 Testing fft under Ikarus-Scheme-r6rs
@@ -188,9 +164,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     no collections
-    6.944s user time
-    0.001s system time
-    6.946s real time
+    6.741s real    6.732s user    0.002s sys
     48 bytes allocated
 
 Testing fibfp under Ikarus-Scheme-r6rs
@@ -229,9 +203,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     no collections
-    4.625s user time
-    0.005s system time
-    4.633s real time
+    4.222s real    4.215s user    0.001s sys
     80048 bytes allocated
 
 Testing sumfp under Ikarus-Scheme-r6rs
@@ -252,9 +224,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     no collections
-    3.766s user time
-    0.001s system time
-    3.773s real time
+    3.696s real    3.694s user    0.000s sys
     48 bytes allocated
 
 Testing ack under Ikarus-Scheme-r6rs
@@ -266,9 +236,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     no collections
-    0.499s user time
-    0.000s system time
-    0.499s real time
+    0.522s real    0.522s user    0.000s sys
     48 bytes allocated
 
 Testing array1 under Ikarus-Scheme-r6rs
@@ -280,9 +248,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     40 collections
-    2.020s user time
-    0.035s system time
-    2.056s real time
+    2.071s real    2.035s user    0.035s sys
     160005672 bytes allocated
 
 Testing cat under Ikarus-Scheme-r6rs
@@ -294,9 +260,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     no collections
-    0.175s user time
-    0.039s system time
-    0.214s real time
+    0.211s real    0.174s user    0.036s sys
     34520 bytes allocated
 
 Testing string under Ikarus-Scheme-r6rs
@@ -308,9 +272,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     10 collections
-    0.292s user time
-    0.010s system time
-    0.303s real time
+    0.303s real    0.292s user    0.010s sys
     31464952 bytes allocated
 
 Testing sum1 under Ikarus-Scheme-r6rs
@@ -331,9 +293,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     no collections
-    5.242s user time
-    0.001s system time
-    5.244s real time
+    5.562s real    5.560s user    0.001s sys
     64 bytes allocated
 
 Testing tail under Ikarus-Scheme-r6rs
@@ -345,9 +305,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     18 collections
-    0.478s user time
-    0.082s system time
-    0.560s real time
+    0.578s real    0.499s user    0.078s sys
     77128368 bytes allocated
 
 Testing wc under Ikarus-Scheme-r6rs
@@ -359,9 +317,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     no collections
-    0.432s user time
-    0.005s system time
-    0.438s real time
+    0.341s real    0.335s user    0.005s sys
     12960 bytes allocated
 
 Testing conform under Ikarus-Scheme-r6rs
@@ -373,12 +329,8 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     38 collections
-    1.360s user time
-    0.015s system time
-    1.376s real time
+    1.387s real    1.371s user    0.015s sys
     162415416 bytes allocated
-Error in top-level-value: char-downcase is unbound.
-> 
 
 Testing dynamic under Ikarus-Scheme-r6rs
 Compiling...
@@ -389,9 +341,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     11 collections
-    0.508s user time
-    0.012s system time
-    0.520s real time
+    0.525s real    0.512s user    0.012s sys
     44168776 bytes allocated
 
 Testing earley under Ikarus-Scheme-r6rs
@@ -412,9 +362,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     79 collections
-    1.333s user time
-    0.136s system time
-    1.470s real time
+    1.440s real    1.301s user    0.138s sys
     334408904 bytes allocated
 
 Testing graphs under Ikarus-Scheme-r6rs
@@ -426,9 +374,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     189 collections
-    2.249s user time
-    0.045s system time
-    2.295s real time
+    2.294s real    2.248s user    0.045s sys
     790269656 bytes allocated
 
 Testing lattice under Ikarus-Scheme-r6rs
@@ -440,9 +386,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     91 collections
-    1.670s user time
-    0.023s system time
-    1.697s real time
+    1.633s real    1.609s user    0.023s sys
     381967088 bytes allocated
 
 Testing matrix under Ikarus-Scheme-r6rs
@@ -462,7 +406,7 @@ Ikarus Scheme (Build 2007-01-20)
 Copyright (c) 2006-2007 Abdulaziz Ghuloum
 
 > 
-Error in top-level-value: exact? is unbound.
+Error in top-level-value: modulo is unbound.
 > 
 
 Testing mazefun under Ikarus-Scheme-r6rs
@@ -484,9 +428,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     65 collections
-    3.472s user time
-    0.011s system time
-    3.484s real time
+    3.347s real    3.335s user    0.012s sys
     274320056 bytes allocated
 
 Testing paraffins under Ikarus-Scheme-r6rs
@@ -496,8 +438,10 @@ Ikarus Scheme (Build 2007-01-20)
 Copyright (c) 2006-2007 Abdulaziz Ghuloum
 
 > 
-Error in top-level-value: max is unbound.
-> 
+running stats for (run-bench name count ok? run):
+    198 collections
+    1.447s real    1.194s user    0.252s sys
+    831232056 bytes allocated
 
 Testing peval under Ikarus-Scheme-r6rs
 Compiling...
@@ -508,9 +452,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     36 collections
-    1.007s user time
-    0.013s system time
-    1.022s real time
+    1.028s real    1.016s user    0.012s sys
     151770008 bytes allocated
 
 Testing primes under Ikarus-Scheme-r6rs
@@ -538,7 +480,7 @@ Running...
 Ikarus Scheme (Build 2007-01-20)
 Copyright (c) 2006-2007 Abdulaziz Ghuloum
 
-> Error in top-level-value: complex? is unbound.
+> Error in top-level-value: / is unbound.
 > 
 
 Testing simplex under Ikarus-Scheme-r6rs
@@ -557,8 +499,10 @@ Ikarus Scheme (Build 2007-01-20)
 Copyright (c) 2006-2007 Abdulaziz Ghuloum
 
 > 
-Error in top-level-value: char-alphabetic? is unbound.
-> 
+running stats for (run-bench name count ok? run):
+    9 collections
+    2.424s real    0.504s user    0.991s sys
+    36086008 bytes allocated
 
 Testing perm9 under Ikarus-Scheme-r6rs
 Compiling...
@@ -569,9 +513,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     40 collections
-    2.363s user time
-    0.164s system time
-    2.528s real time
+    2.613s real    2.425s user    0.172s sys
     170498936 bytes allocated
 
 Testing nboyer under Ikarus-Scheme-r6rs
@@ -583,9 +525,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     49 collections
-    1.491s user time
-    0.008s system time
-    1.501s real time
+    1.530s real    1.513s user    0.010s sys
     203661656 bytes allocated
 
 Testing sboyer under Ikarus-Scheme-r6rs
@@ -597,9 +537,7 @@ Copyright (c) 2006-2007 Abdulaziz Ghuloum
 > 
 running stats for (run-bench name count ok? run):
     16 collections
-    1.528s user time
-    0.007s system time
-    1.536s real time
+    1.530s real    1.509s user    0.010s sys
     66159256 bytes allocated
 
 Testing gcbench under Ikarus-Scheme-r6rs
@@ -618,8 +556,10 @@ Ikarus Scheme (Build 2007-01-20)
 Copyright (c) 2006-2007 Abdulaziz Ghuloum
 
 > 
-Error in top-level-value: char-whitespace? is unbound.
-> 
+running stats for (run-bench name count ok? run):
+    41 collections
+    5.054s real    5.011s user    0.023s sys
+    171456072 bytes allocated
 
 Testing gcold under Ikarus-Scheme-r6rs
 Compiling...

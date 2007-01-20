@@ -821,7 +821,7 @@ ikrt_open_output_file(ikp fname, ikp flagptr, ikpcb* pcb){
     unlink(string_data(fname));
     flags = O_WRONLY | O_CREAT;
   } else if(f == 2){
-    flags = O_WRONLY | O_TRUNC;
+    flags = O_WRONLY | O_TRUNC | O_CREAT;
   } else if(f == 3){
     flags = O_WRONLY | O_APPEND;
   } else {

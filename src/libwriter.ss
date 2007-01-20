@@ -24,7 +24,8 @@
               (write-char #\\ p)
               (write-char* "del" p)]
              [else
-              (write-char #\+ p)
+              (write-char #\\ p)
+              (write-char #\x p)
               (write-fixnum i p)]))
           (write-char x p))))
   (define write-list
