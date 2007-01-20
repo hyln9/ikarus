@@ -1,0 +1,910 @@
+
+****************************
+Benchmarking Larceny-r6rs on Sat Jan 20 00:46:42 EST 2007 under Darwin adsl-75-19-180-26.dsl.bltnin.sbcglobal.net 8.8.3 Darwin Kernel Version 8.8.3: Wed Oct 18 21:57:10 PDT 2006; root:xnu-792.15.4.obj~4/RELEASE_I386 i386 i386
+
+Testing boyer under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 9174986
+Words reclaimed: 0
+Elapsed time...: 604 ms (User: 589 ms; System: 15 ms)
+Elapsed GC time: 84 ms (CPU: 81 in 35 collections.)
+
+Testing browse under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 120585534
+Words reclaimed: 0
+Elapsed time...: 2857 ms (User: 2848 ms; System: 8 ms)
+Elapsed GC time: 176 ms (CPU: 172 in 460 collections.)
+
+Testing cpstak under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 318239878
+Words reclaimed: 0
+Elapsed time...: 1479 ms (User: 1473 ms; System: 6 ms)
+Elapsed GC time: 440 ms (CPU: 440 in 1214 collections.)
+
+Testing ctak under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 265286660
+Words reclaimed: 0
+Elapsed time...: 4785 ms (User: 4756 ms; System: 9 ms)
+Elapsed GC time: 383 ms (CPU: 379 in 1012 collections.)
+
+Testing dderiv under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 244055776
+Words reclaimed: 0
+Elapsed time...: 1892 ms (User: 1881 ms; System: 10 ms)
+Elapsed GC time: 328 ms (CPU: 332 in 931 collections.)
+
+Testing deriv under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 244055778
+Words reclaimed: 0
+Elapsed time...: 1476 ms (User: 1464 ms; System: 11 ms)
+Elapsed GC time: 336 ms (CPU: 335 in 931 collections.)
+
+Testing destruc under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 43253750
+Words reclaimed: 0
+Elapsed time...: 1039 ms (User: 1034 ms; System: 3 ms)
+Elapsed GC time: 67 ms (CPU: 67 in 165 collections.)
+
+Testing diviter under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 200015872
+Words reclaimed: 0
+Elapsed time...: 1156 ms (User: 1150 ms; System: 6 ms)
+Elapsed GC time: 281 ms (CPU: 277 in 763 collections.)
+
+Testing divrec under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 200537100
+Words reclaimed: 0
+Elapsed time...: 1515 ms (User: 1414 ms; System: 101 ms)
+Elapsed GC time: 289 ms (CPU: 286 in 765 collections.)
+
+Testing puzzle under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 8126378
+Words reclaimed: 0
+Elapsed time...: 1949 ms (User: 1806 ms; System: 144 ms)
+Elapsed GC time: 14 ms (CPU: 14 in 31 collections.)
+
+Testing takl under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 0
+Words reclaimed: 0
+Elapsed time...: 908 ms (User: 907 ms; System: 0 ms)
+Elapsed GC time: 0 ms (CPU: 0 in 0 collections.)
+
+Testing triangl under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 262144
+Words reclaimed: 0
+Elapsed time...: 2103 ms (User: 2100 ms; System: 1 ms)
+Elapsed GC time: 1 ms (CPU: 1 in 1 collections.)
+
+Testing fft under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 217579520
+Words reclaimed: 0
+Elapsed time...: 1651 ms (User: 1622 ms; System: 29 ms)
+Elapsed GC time: 536 ms (CPU: 429 in 830 collections.)
+
+Testing fib under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 0
+Words reclaimed: 0
+Elapsed time...: 1804 ms (User: 1802 ms; System: 1 ms)
+Elapsed GC time: 0 ms (CPU: 0 in 0 collections.)
+
+Testing fibfp under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 358610902
+Words reclaimed: 0
+Elapsed time...: 3192 ms (User: 3145 ms; System: 38 ms)
+Elapsed GC time: 498 ms (CPU: 489 in 1368 collections.)
+
+Testing mbrot under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 551809449
+Words reclaimed: 0
+Elapsed time...: 2238 ms (User: 2223 ms; System: 14 ms)
+Elapsed GC time: 755 ms (CPU: 771 in 2105 collections.)
+
+Testing pnpoly under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 72351712
+Words reclaimed: 0
+Elapsed time...: 1463 ms (User: 1450 ms; System: 5 ms)
+Elapsed GC time: 100 ms (CPU: 103 in 276 collections.)
+
+Testing sum under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 0
+Words reclaimed: 0
+Elapsed time...: 554 ms (User: 553 ms; System: 1 ms)
+Elapsed GC time: 0 ms (CPU: 0 in 0 collections.)
+
+Testing sumfp under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 400031744
+Words reclaimed: 0
+Elapsed time...: 1805 ms (User: 1799 ms; System: 6 ms)
+Elapsed GC time: 539 ms (CPU: 538 in 1526 collections.)
+
+Testing tak under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 0
+Words reclaimed: 0
+Elapsed time...: 1207 ms (User: 1202 ms; System: 1 ms)
+Elapsed GC time: 0 ms (CPU: 0 in 0 collections.)
+
+Testing ack under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 0
+Words reclaimed: 0
+Elapsed time...: 85 ms (User: 84 ms; System: 0 ms)
+Elapsed GC time: 0 ms (CPU: 0 in 0 collections.)
+
+Testing array1 under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 39870054
+Words reclaimed: 0
+Elapsed time...: 517 ms (User: 437 ms; System: 80 ms)
+Elapsed GC time: 45 ms (CPU: 48 in 100 collections.)
+
+Testing cat under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 0
+Words reclaimed: 0
+Elapsed time...: 499 ms (User: 373 ms; System: 126 ms)
+Elapsed GC time: 0 ms (CPU: 0 in 0 collections.)
+
+Testing string under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 7834358
+Words reclaimed: 0
+Elapsed time...: 417 ms (User: 396 ms; System: 21 ms)
+Elapsed GC time: 41 ms (CPU: 37 in 30 collections.)
+
+Testing sum1 under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 6553374
+Words reclaimed: 0
+Elapsed time...: 3490 ms (User: 2051 ms; System: 1438 ms)
+Elapsed GC time: 8 ms (CPU: 11 in 25 collections.)
+
+Testing sumloop under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 0
+Words reclaimed: 0
+Elapsed time...: 804 ms (User: 803 ms; System: 0 ms)
+Elapsed GC time: 0 ms (CPU: 0 in 0 collections.)
+
+Testing tail under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 19136354
+Words reclaimed: 0
+Elapsed time...: 703 ms (User: 573 ms; System: 130 ms)
+Elapsed GC time: 46 ms (CPU: 44 in 73 collections.)
+
+Testing wc under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 0
+Words reclaimed: 0
+Elapsed time...: 293 ms (User: 249 ms; System: 44 ms)
+Elapsed GC time: 0 ms (CPU: 0 in 0 collections.)
+
+Testing conform under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 22544148
+Words reclaimed: 0
+Elapsed time...: 1441 ms (User: 1432 ms; System: 9 ms)
+Elapsed GC time: 65 ms (CPU: 71 in 86 collections.)
+
+Testing dynamic under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 14942078
+Words reclaimed: 0
+Elapsed time...: 773 ms (User: 711 ms; System: 61 ms)
+Elapsed GC time: 193 ms (CPU: 195 in 57 collections.)
+
+Testing earley under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 123206268
+Words reclaimed: 0
+Elapsed time...: 2025 ms (User: 1934 ms; System: 91 ms)
+Elapsed GC time: 582 ms (CPU: 579 in 470 collections.)
+
+Testing fibc under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 192411392
+Words reclaimed: 0
+Elapsed time...: 4123 ms (User: 4114 ms; System: 8 ms)
+Elapsed GC time: 270 ms (CPU: 276 in 734 collections.)
+
+Testing graphs under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 157021446
+Words reclaimed: 0
+Elapsed time...: 1658 ms (User: 1627 ms; System: 22 ms)
+Elapsed GC time: 267 ms (CPU: 273 in 599 collections.)
+
+Testing lattice under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 19398398
+Words reclaimed: 0
+Elapsed time...: 1681 ms (User: 1677 ms; System: 4 ms)
+Elapsed GC time: 32 ms (CPU: 27 in 74 collections.)
+
+Testing matrix under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 87555006
+Words reclaimed: 0
+Elapsed time...: 1862 ms (User: 1849 ms; System: 12 ms)
+Elapsed GC time: 126 ms (CPU: 122 in 334 collections.)
+
+Testing maze under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 36170288
+Words reclaimed: 0
+Elapsed time...: 5834 ms (User: 5798 ms; System: 29 ms)
+Elapsed GC time: 88 ms (CPU: 79 in 138 collections.)
+
+Testing mazefun under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 47447672
+Words reclaimed: 0
+Elapsed time...: 1293 ms (User: 1285 ms; System: 8 ms)
+Elapsed GC time: 75 ms (CPU: 72 in 181 collections.)
+
+Testing nqueens under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 71302772
+Words reclaimed: 0
+Elapsed time...: 1594 ms (User: 1583 ms; System: 11 ms)
+Elapsed GC time: 99 ms (CPU: 105 in 272 collections.)
+
+Testing paraffins under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 201324942
+Words reclaimed: 0
+Elapsed time...: 4293 ms (User: 3757 ms; System: 534 ms)
+Elapsed GC time: 2462 ms (CPU: 2465 in 768 collections.)
+
+Testing peval under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 34340444
+Words reclaimed: 0
+Elapsed time...: 1256 ms (User: 1248 ms; System: 6 ms)
+Elapsed GC time: 62 ms (CPU: 59 in 131 collections.)
+
+Testing primes under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 92273280
+Words reclaimed: 0
+Elapsed time...: 7606 ms (User: 7568 ms; System: 33 ms)
+Elapsed GC time: 127 ms (CPU: 123 in 352 collections.)
+
+Testing ray under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 218093224
+Words reclaimed: 0
+Elapsed time...: 23048 ms (User: 13115 ms; System: 9906 ms)
+Elapsed GC time: 317 ms (CPU: 301 in 832 collections.)
+
+Testing scheme under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 29621860
+Words reclaimed: 0
+Elapsed time...: 1194 ms (User: 1190 ms; System: 3 ms)
+Elapsed GC time: 41 ms (CPU: 45 in 113 collections.)
+
+Testing simplex under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 126088192
+Words reclaimed: 0
+Elapsed time...: 42463 ms (User: 22981 ms; System: 19433 ms)
+Elapsed GC time: 191 ms (CPU: 224 in 481 collections.)
+
+Testing slatex under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 4194150
+Words reclaimed: 0
+Elapsed time...: 1883 ms (User: 550 ms; System: 825 ms)
+Elapsed GC time: 12 ms (CPU: 13 in 16 collections.)
+
+Testing perm9 under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 27000532
+Words reclaimed: 0
+Elapsed time...: 1552 ms (User: 1333 ms; System: 217 ms)
+Elapsed GC time: 1028 ms (CPU: 1027 in 103 collections.)
+
+Testing nboyer under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 50855620
+Words reclaimed: 0
+Elapsed time...: 1686 ms (User: 1603 ms; System: 82 ms)
+Elapsed GC time: 413 ms (CPU: 425 in 194 collections.)
+
+Testing sboyer under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 16514958
+Words reclaimed: 0
+Elapsed time...: 1321 ms (User: 1310 ms; System: 8 ms)
+Elapsed GC time: 45 ms (CPU: 46 in 63 collections.)
+
+Testing gcbench under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> The garbage collector should touch about 32 megabytes of heap storage.
+The use of more or less memory will skew the results.
+
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Words allocated: 94867544
+Words reclaimed: 0
+Elapsed time...: 1855 ms (User: 1589 ms; System: 260 ms)
+Elapsed GC time: 1144 ms (CPU: 1151 in 360 collections.)
+
+Testing parsing under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 100923902
+Words reclaimed: 0
+Elapsed time...: 6581 ms (User: 6507 ms; System: 70 ms)
+Elapsed GC time: 289 ms (CPU: 280 in 385 collections.)
+
+Testing gcold under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 25 megabytes
+0 work units per step.
+promotion ratio is 1:10
+pointer mutation rate is 10
+10000 steps
+Allocating 76 trees.
+  (24902160 bytes)
+  (1245108 nodes)
+Initialization complete...
+
+Words allocated: 2754230651
+Words reclaimed: 0
+Elapsed time...: 24962 ms (User: 20787 ms; System: 4153 ms)
+Elapsed GC time: 13536 ms (CPU: 13544 in 10508 collections.)
