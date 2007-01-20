@@ -245,7 +245,8 @@
   (define number?
     (lambda (x)
       (or (fixnum? x)
-          (bignum? x))))
+          (bignum? x)
+          (flonum? x))))
 
   (define complex?
     (lambda (x) (number? x)))
@@ -255,21 +256,28 @@
     (lambda (x) (number? x)))
   (define integer?
     (lambda (x) (number? x)))
+
   (define exact?
     (lambda (x) 
-      (or (number? x)
-          (error 'exact? "~s is not a number" x))))
+      (cond
+        [(fixnum? x) #t]
+        [(bignum? x) #t]
+        [(flonum? x) #f]
+        [else 
+         (error 'exact? "~s is not a number" x)])))
 
   (define inexact?
     (lambda (x) 
-      (if (number? x)
-          #f
-          (error 'inexact? "~s is not a number" x))))
+      (cond
+        [(fixnum? x) #f]
+        [(bignum? x) #f]
+        [(flonum? x) #t]
+        [else 
+         (error 'inexact? "~s is not a number" x)])))
 
   (define positive-bignum?
     (lambda (x) 
       (foreign-call "ikrt_positive_bn" x)))
-
 
   (define even-bignum?
     (lambda (x) 
@@ -296,6 +304,7 @@
       (cond
         [(fixnum? x) (fixnum->string x)]
         [(bignum? x) (foreign-call "ikrt_bntostring" x)]
+        [(flonum? x) (foreign-call "ikrt_flonum_to_string" x)]
         [else (error 'number->string "~s is not a number" x)])))
 
   (define-syntax mk<
