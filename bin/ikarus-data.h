@@ -196,4 +196,9 @@
 #define disp_bignum_data wordsize
 #define off_bignum_data (disp_bignum_data - vector_tag)
 
+#define flonum_tag  ((ikp)0xFF)
+#define flonum_size         16
+#define disp_flonum_data     8
+#define off_flonum_data (disp_flonum_data - vector_tag)
+
 #endif

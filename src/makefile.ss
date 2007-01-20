@@ -92,6 +92,8 @@
     char-downcase max min complex? real? rational? 
     exact? inexact? integer?
     string->number
+
+    flonum? flonum->string string->flonum
     ))
 
 (define system-primitives

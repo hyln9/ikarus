@@ -1,5 +1,24 @@
 
 (let ()
+  (define (flonum? x)
+    (foreign-call "ikrt_is_flonum" x))
+  (define (flonum->string x)
+    (or (foreign-call "ikrt_flonum_to_string" x)
+        (error 'flonum->string "~s is not a flonum" x)))
+  (define (string->flonum x)
+    (cond
+      [(string? x) (foreign-call "ikrt_string_to_flonum" x)]
+      [else 
+       (error 'string->flonum "~s is not a string" x)]))
+
+  (primitive-set! 'flonum? flonum?)
+  (primitive-set! 'flonum->string flonum->string)
+  (primitive-set! 'string->flonum string->flonum)
+)
+
+
+
+(let ()
   
   (define bignum? 
     ; FIXME: temporary definition.  Compiler should be made aware
