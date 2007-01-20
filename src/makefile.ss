@@ -88,7 +88,7 @@
     time-it 
     posix-fork fork waitpid env environ
     pretty-print
-    even? odd? member
+    even? odd? member char-whitespace?
     ))
 
 (define system-primitives

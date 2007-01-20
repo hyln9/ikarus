@@ -696,6 +696,13 @@ reference-implementation:
                        (err c2)))))
            (err c1))])))
 
+(primitive-set! 'char-whitespace?
+  (lambda (c)
+    (cond 
+      [(memq c '(#\space #\tab #\newline #\return)) #t]
+      [(char? c) #f]
+      [else
+       (error 'char-whitespace? "~s is not a character" c)])))
 
 (primitive-set! 'cons (lambda (x y) (cons x y)))
 

@@ -3,10 +3,6 @@
 ;;; 9.0: graph marks/refs
 ;;;
 (let ()
-  (define char-whitespace?
-    (lambda (c)
-      (or ($char= #\space c)
-          (memq ($char->fixnum c) '(9 10 11 12 13))))) 
   (define delimiter?
     (lambda (c)
       (or (char-whitespace? c)
