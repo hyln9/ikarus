@@ -26,6 +26,17 @@
     (lambda (x)
       (foreign-call "ikrt_isbignum" x)))
 
+  (define (fixnum->flonum x)
+    (foreign-call "ikrt_fixnum_to_flonum" x))
+  (define (bignum->flonum x)
+    (foreign-call "ikrt_bignum_to_flonum" x))
+  (define ($fl+ x y)
+    (foreign-call "ikrt_fl_plus" x y))
+  (define ($fl- x y)
+    (foreign-call "ikrt_fl_minus" x y))
+  (define ($fl* x y)
+    (foreign-call "ikrt_fl_times" x y))
+
   (define binary+
     (lambda (x y)
       (cond
@@ -35,6 +46,8 @@
             (foreign-call "ikrt_fxfxplus" x y)]
            [(bignum? y)
             (foreign-call "ikrt_fxbnplus" x y)]
+           [(flonum? y)
+            ($fl+ (fixnum->flonum x) y)]
            [else 
             (error '+ "~s is not a number" y)])]
         [(bignum? x)
@@ -43,6 +56,18 @@
             (foreign-call "ikrt_fxbnplus" y x)]
            [(bignum? y)
             (foreign-call "ikrt_bnbnplus" x y)]
+           [(flonum? y)
+            ($fl+ (bignum->flonum x) y)]
+           [else 
+            (error '+ "~s is not a number" y)])]
+        [(flonum? x)
+         (cond
+           [(fixnum? y)
+            ($fl+ x (fixnum->flonum y))]
+           [(bignum? y)
+            ($fl+ x (bignum->flonum y))]
+           [(flonum? y)
+            ($fl+ x y)]
            [else 
             (error '+ "~s is not a number" y)])]
         [else (error '+ "~s is not a number" x)])))
@@ -77,6 +102,8 @@
             (foreign-call "ikrt_fxfxminus" x y)]
            [(bignum? y)
             (foreign-call "ikrt_fxbnminus" x y)]
+           [(flonum? y)
+            ($fl- (fixnum->flonum x) y)]
            [else 
             (error '- "~s is not a number" y)])]
         [(bignum? x)
@@ -85,7 +112,19 @@
             (foreign-call "ikrt_bnfxminus" x y)]
            [(bignum? y)
             (foreign-call "ikrt_bnbnminus" x y)]
+           [(flonum? y)
+            ($fl- (bignum->flonum x) y)]
            [else 
+            (error '- "~s is not a number" y)])]
+        [(flonum? x)
+         (cond
+           [(fixnum? y)
+            ($fl- x (fixnum->flonum y))]
+           [(bignum? y)
+            ($fl- x (bignum->flonum y))]
+           [(flonum? y)
+            ($fl- x y)]
+           [else
             (error '- "~s is not a number" y)])]
         [else (error '- "~s is not a number" x)])))
 
@@ -98,6 +137,8 @@
             (foreign-call "ikrt_fxfxmult" x y)]
            [(bignum? y)
             (foreign-call "ikrt_fxbnmult" x y)]
+           [(flonum? y)
+            ($fl* (fixnum->flonum x) y)]
            [else 
             (error '* "~s is not a number" y)])]
         [(bignum? x)
@@ -106,7 +147,19 @@
             (foreign-call "ikrt_fxbnmult" y x)]
            [(bignum? y)
             (foreign-call "ikrt_bnbnmult" x y)]
+           [(flonum? y)
+            ($fl* (bignum->flonum x) y)]
            [else 
+            (error '* "~s is not a number" y)])]
+        [(flonum? x)
+         (cond
+           [(fixnum? y)
+            ($fl* x (fixnum->flonum y))]
+           [(bignum? y)
+            ($fl* x (bignum->flonum y))]
+           [(flonum? y)
+            ($fl* x y)]
+           [else
             (error '* "~s is not a number" y)])]
         [else (error '* "~s is not a number" x)])))
 
@@ -212,7 +265,7 @@
            x 
            (error 'max "~s is not a number" x))]))
 
-(define min
+  (define min
     (case-lambda
       [(x y)
        (cond
@@ -250,10 +303,18 @@
 
   (define complex?
     (lambda (x) (number? x)))
+  
   (define real?
     (lambda (x) (number? x)))
+
   (define rational?
-    (lambda (x) (number? x)))
+    (lambda (x) 
+      (cond
+        [(fixnum? x) #t]
+        [(bignum? x) #t]
+        [(flonum? x) #f]
+        [else (error 'rational? "~s is not a number" x)])))
+
   (define integer?
     (lambda (x) (number? x)))
 
@@ -265,6 +326,15 @@
         [(flonum? x) #f]
         [else 
          (error 'exact? "~s is not a number" x)])))
+
+  (define exact->inexact
+    (lambda (x)
+      (cond
+        [(fixnum? x) (fixnum->flonum x)]
+        [(bignum? x) (bignum->flonum x)]
+        [else
+         (error 'exact->inexact 
+                "~s is not an exact number" x)])))
 
   (define inexact?
     (lambda (x) 
@@ -545,4 +615,5 @@
   (primitive-set! 'exact? exact?)
   (primitive-set! 'inexact? inexact?)
   (primitive-set! 'integer? integer?)
+  (primitive-set! 'exact->inexact exact->inexact)
   )

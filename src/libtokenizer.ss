@@ -45,6 +45,8 @@
          [(eof-object? c) n]
          [(digit? c)
           (tokenize-number (+ (* n 10) (char->num c)) p)]
+         [($char= c #\.)
+          (tokenize-flonum/with-digits n p)]
          [(delimiter? c)
           (unread-char c p)
           n]
@@ -123,6 +125,46 @@
           (let ([i ($char->fixnum c)])
             (unless (or (fx= i 10) (fx= i 13))
               (skip-comment p)))))))
+  (define (ls->flonum ls pos?)
+    (let ([str (if pos?
+                   (list->string 
+                     (cons #\. (reverse ls)))
+                   (list->string
+                     (list* #\- #\. (reverse ls))))])
+       (string->flonum str)))
+  (define (tokenize-flonum ls pos? p)
+    (let ([c (read-char p)])
+      (cond
+        [(eof-object? c) (ls->flonum ls pos?)]
+        [(digit? c) (tokenize-flonum (cons c ls) pos? p)]
+        [(delimiter? c)
+         (unread-char c p)
+         (ls->flonum ls pos?)]
+        [else 
+         (unread-char c p)
+         (error 'tokenize "invalid char ~a after flonum" c)])))
+  (define (tokenize-flonum/no-digits pos? p)
+    (let ([c (read-char p)])
+      (cond
+        [(eof-object? c) 
+         (error 'tokenize "invalid eof")]
+        [(digit? c)
+         (tokenize-flonum (list c) pos? p)]
+        [else 
+         (unread-char c p)
+         (error 'tokenize "invalid char ~a after decimal point" c)])))
+  (define (tokenize-flonum/with-digits n p)
+    (let ([c (read-char p)])
+      (cond
+        [(eof-object? c) (+ n (string->flonum "0.0"))]
+        [(digit? c)
+         (+ n (tokenize-flonum (list c) #t p))]
+        [(delimiter? c)
+         (unread-char c p)
+         (+ n (string->flonum "0.0"))]
+        [else 
+         (unread-char c p)
+         (error 'tokenize "invalid char ~a after decimal point" c)])))
   (define tokenize-plus
     (lambda (p)
       (let ([c (peek-char p)])
@@ -132,6 +174,9 @@
           [(digit? c) 
            (read-char p)
            (cons 'datum (tokenize-number (char->num c) p))]
+          [($char= c #\.)
+           (read-char p)
+           (cons 'datum (tokenize-flonum/no-digits #t p))]
           [else (error 'tokenize "invalid sequence +~a" c)]))))
   (define tokenize-minus
     (lambda (p)
@@ -142,6 +187,9 @@
           [(digit? c) 
            (read-char p)
            (cons 'datum (* -1 (tokenize-number (char->num c) p)))]
+          [($char= c #\.)
+           (read-char p)
+           (cons 'datum (tokenize-flonum/no-digits #f p))]
           [else (error 'tokenize "invalid sequence -~a" c)]))))
   (define tokenize-dot
     (lambda (p)
@@ -158,13 +206,16 @@
                [($char= c #\.) ; this is the third
                 (let ([c (peek-char p)])
                   (cond
-                   [(eof-object? c) '(datum . ...)]
-                   [(delimiter? c)  '(datum . ...)]
-                   [else 
-                    (error 'tokenize "invalid syntax ...~a" c)]))]
+                    [(eof-object? c) '(datum . ...)]
+                    [(delimiter? c)  '(datum . ...)]
+                    [else 
+                     (error 'tokenize "invalid syntax ...~a" c)]))]
                [else
-                (unread-char c)
+                (unread-char c p)
                 (error 'tokenize "invalid syntax ..~a" c)]))]
+          [(digit? c)
+           (read-char p)
+           (cons 'datum (tokenize-flonum (list c) #t p))]
           [else
            (error 'tokenize "invalid syntax .~a" c)]))))
   (define tokenize-char* 
@@ -265,7 +316,7 @@
           [($char= #\1 c) (read-binary (+ (* ac 2) 1) (cons c chars) p)]
           [(delimiter? c) (unread-char c p) ac]
           [else 
-           (unread-char c)
+           (unread-char c p)
            (error 'tokenize "invalid syntax #b~a"
                   (list->string (reverse (cons c chars))))]))))
   (define tokenize-hash

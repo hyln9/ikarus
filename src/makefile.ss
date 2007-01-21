@@ -91,7 +91,7 @@
     even? odd? member char-whitespace? char-alphabetic?
     char-downcase max min complex? real? rational? 
     exact? inexact? integer?
-    string->number
+    string->number exact->inexact
 
     flonum? flonum->string string->flonum
     ))

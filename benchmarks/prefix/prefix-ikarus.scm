@@ -114,10 +114,10 @@
   (syntax-rules ()
     ((FLOATvector x ...) (vector x ...))))
 
-;; (define-syntax FLOATmake-vector
-;;   (syntax-rules ()
-;;     ((FLOATmake-vector n) (make-vector n 0.0))
-;;     ((FLOATmake-vector n init) (make-vector n init))))
+(define-syntax FLOATmake-vector
+  (syntax-rules ()
+    ((FLOATmake-vector n) (make-vector n 0.0))
+    ((FLOATmake-vector n init) (make-vector n init))))
 
 (define-syntax FLOATvector-ref
   (syntax-rules ()
@@ -328,10 +328,10 @@
   (syntax-rules ()
     ((FLOATvector x ...) (vector x ...))))
 
-;; (define-syntax FLOATmake-vector
-;;   (syntax-rules ()
-;;     ((FLOATmake-vector n) (make-vector n 0.0))
-;;     ((FLOATmake-vector n init) (make-vector n init))))
+(define-syntax FLOATmake-vector
+  (syntax-rules ()
+    ((FLOATmake-vector n) (make-vector n 0.0))
+    ((FLOATmake-vector n init) (make-vector n init))))
 
 (define-syntax FLOATvector-ref
   (syntax-rules ()

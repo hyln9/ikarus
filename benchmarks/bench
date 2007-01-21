@@ -380,7 +380,7 @@ henchman_exec ()
 }
 
 # -----------------------------------------------------------------------------
-# Definitions specific to Chez Scheme
+# Definitions specific to Ikarus Scheme
 
 ikarus_comp ()
 {
