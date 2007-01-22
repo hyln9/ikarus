@@ -1907,6 +1907,13 @@
   (let ([x (E x)])
     (make-codes all-codes x)))
 
+
+
+(include "libcogen1.ss")
+
+
+
+
 (define (lift-codes x) ;;; NOT USED
   (define who 'lift-codes)
   (define all-codes '())
@@ -5092,7 +5099,9 @@
          [p (rewrite-assignments p)]
          [p (optimize-for-direct-jumps p)]
          [p (convert-closures p)]
-         [p (optimize-closures/lift-codes p)]
+         [p (optimize-closures/lift-codes p)] 
+
+         [p^ (new-cogen p)]
          [p (introduce-primcalls p)]
          [p (simplify-operands p)]
          [p (insert-stack-overflow-checks p)]
