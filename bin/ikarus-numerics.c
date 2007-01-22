@@ -11,6 +11,9 @@
 
 #define max_digits_per_limb 10
 
+#ifdef NDEBUG
+#define verify_bignum(x,caller) (x)
+#else
 static ikp
 verify_bignum(ikp x, char* caller){
   if(tagof(x) != vector_tag){
@@ -58,6 +61,7 @@ verify_bignum(ikp x, char* caller){
   /* ok */
   return x;
 }
+#endif
 
 #define BN(x) verify_bignum(x,"BN")
 

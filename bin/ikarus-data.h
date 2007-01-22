@@ -189,14 +189,14 @@
 
 
 #define bignum_mask       0x7
-#define bignum_tag        0x2
+#define bignum_tag        0x3
 #define bignum_sign_mask  0x8
 #define bignum_sign_shift   3
 #define bignum_length_shift 4
 #define disp_bignum_data wordsize
 #define off_bignum_data (disp_bignum_data - vector_tag)
 
-#define flonum_tag  ((ikp)0x6F)
+#define flonum_tag  ((ikp)0x17)
 #define flonum_size         16
 #define disp_flonum_data     8
 #define off_flonum_data (disp_flonum_data - vector_tag)

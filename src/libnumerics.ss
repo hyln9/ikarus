@@ -40,7 +40,7 @@
   (define binary+
     (lambda (x y)
       (cond
-        [(fixnum? x) 
+        [(fixnum? x)
          (cond
            [(fixnum? y)
             (foreign-call "ikrt_fxfxplus" x y)]

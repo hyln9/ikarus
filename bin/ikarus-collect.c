@@ -1044,19 +1044,19 @@ add_object_proc(gc_t* gc, ikp x)
       ref(x, wordsize-vector_tag) = y;
       return y;
     }
+    else if(fst == flonum_tag){
+      ikp new = gc_alloc_new_data(flonum_size, gen, gc) + vector_tag;
+      ref(new, -vector_tag) = flonum_tag;
+      flonum_data(new) = flonum_data(x);
+      ref(x, -vector_tag) = forward_ptr;
+      ref(x, wordsize-vector_tag) = new;
+      return new;
+    }
     else if((((int)fst) & bignum_mask) == bignum_tag){
       int len = ((unsigned int)fst) >> bignum_length_shift;
       int memreq = align(disp_bignum_data + len*wordsize);
       ikp new = gc_alloc_new_data(memreq, gen, gc) + vector_tag;
       memcpy(new-vector_tag, x-vector_tag, memreq);
-      ref(x, -vector_tag) = forward_ptr;
-      ref(x, wordsize-vector_tag) = new;
-      return new;
-    }
-    else if(fst == flonum_tag){
-      ikp new = gc_alloc_new_data(flonum_size, gen, gc) + vector_tag;
-      ref(new, -vector_tag) = flonum_tag;
-      flonum_data(new) = flonum_data(x);
       ref(x, -vector_tag) = forward_ptr;
       ref(x, wordsize-vector_tag) = new;
       return new;
