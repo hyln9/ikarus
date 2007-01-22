@@ -80,8 +80,8 @@
     open-output-file open-input-file open-output-string
     get-output-string with-output-to-file call-with-output-file
     with-input-from-file call-with-input-file date-string
-    file-exists? delete-file + - add1 sub1 * expt 
-    quotient+remainder quotient remainder number? positive?
+    file-exists? delete-file + - add1 sub1 * / expt 
+    quotient+remainder quotient remainder modulo number? positive?
     negative? zero? number->string logand = < > <= >=
     make-guardian weak-cons collect 
     interrupt-handler
@@ -94,6 +94,7 @@
     string->number exact->inexact
 
     flonum? flonum->string string->flonum
+    sin
     ))
 
 (define system-primitives

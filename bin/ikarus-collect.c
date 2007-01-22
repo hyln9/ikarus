@@ -1053,6 +1053,14 @@ add_object_proc(gc_t* gc, ikp x)
       ref(x, wordsize-vector_tag) = new;
       return new;
     }
+    else if(fst == flonum_tag){
+      ikp new = gc_alloc_new_data(flonum_size, gen, gc) + vector_tag;
+      ref(new, -vector_tag) = flonum_tag;
+      flonum_data(new) = flonum_data(x);
+      ref(x, -vector_tag) = forward_ptr;
+      ref(x, wordsize-vector_tag) = new;
+      return new;
+    }
     else {
       fprintf(stderr, "unhandled vector with fst=0x%08x\n", (int)fst);
       exit(-1);

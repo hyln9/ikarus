@@ -1189,7 +1189,7 @@ chicken-int) NAME='Chicken-int'
             esac
             ;;
 
-      ikarus) NAME='Ikarus-Scheme'
+      ikarus) NAME='Ikarus'
             COMP=ikarus_comp
             COMPOPTS=""
             EXEC=ikarus_exec

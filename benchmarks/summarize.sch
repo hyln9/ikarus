@@ -9,13 +9,15 @@
                (string-append in setting)
                (string-append out setting))))))
            
-    ((summarize bigloo-results) "results.Bigloo" "summary.Bigloo")
-    ((summarize chez-results) "results.Chez-Scheme" "summary.Chez")
-    ((summarize chicken-results) "results.Chicken" "summary.Chicken")
-    ((summarize gambit-results) "results.Gambit-C" "summary.Gambit")
+    ;((summarize bigloo-results) "results.Bigloo" "summary.Bigloo")
+    ;((summarize chez-results) "results.Chez-Scheme" "summary.Chez")
+    ((summarize ikarus-results) "results.Ikarus-Scheme" "summary.Ikarus")
+    ;((summarize chicken-results) "results.Chicken" "summary.Chicken")
+    ;((summarize gambit-results) "results.Gambit-C" "summary.Gambit")
     ((summarize larceny-results) "results.Larceny" "summary.Larceny")
-    ((summarize mzscheme-results) "results.MzScheme" "summary.MzScheme")
-    ((summarize scheme48-results) "results.Scheme48" "summary.Scheme48")))
+    ;((summarize mzscheme-results) "results.MzScheme" "summary.MzScheme")
+    ;((summarize scheme48-results) "results.Scheme48" "summary.Scheme48")
+    ))
 
 (define (decode-usual-suspects . rest)
   (let* ((setting (if (null? rest) "-r6rs" (car rest)))
@@ -24,12 +26,14 @@
             (decode-summary (string-append in setting)))))
     (map decode-summary
          '("summary.Larceny"
-           "summary.Bigloo"
-           "summary.Chez"
-           "summary.Chicken"
-           "summary.Gambit"
-           "summary.MzScheme"
-           "summary.Scheme48"))))
+           ;"summary.Bigloo"
+           ;"summary.Chez"
+           ;"summary.Chicken"
+           ;"summary.Gambit"
+           "summary.Ikarus"
+           ;"summary.MzScheme"
+           ;"summary.Scheme48"
+           ))))
 
 (define (summarize-usual-suspects-linux . rest)
   (let* ((setting (if (null? rest) "-r6rs" (car rest)))
@@ -47,6 +51,7 @@
     ((summarize larceny-results) "results.Larceny" "summary.Larceny")
     ((summarize mit-results) "results.MIT-Scheme" "summary.MIT")
     ((summarize mzscheme-results) "results.MzScheme" "summary.MzScheme")
+    ((summarize ikarus-results) "results.Ikarus" "summary.Ikarus")
     ((summarize petite-chez-results) "results.Petite-Chez-Scheme" "summary.Petite")
     ((summarize scheme48-results) "results.Scheme48" "summary.Scheme48")))
 
@@ -58,13 +63,15 @@
     (map decode-summary
          '(;"summary.Henchman"
            "summary.Larceny"
-           "summary.Bigloo"
-           "summary.Chicken"
-           "summary.Gambit"
-           "summary.MIT"
-           "summary.MzScheme"
-           "summary.Petite"
-           "summary.Scheme48"))))
+           ;"summary.Bigloo"
+           ;"summary.Chicken"
+           ;"summary.Gambit"
+           "summary.Ikarus"
+           ;"summary.MIT"
+           ;"summary.MzScheme"
+           ;"summary.Petite"
+           ;"summary.Scheme48"
+           ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
@@ -356,13 +363,16 @@
                      (display (make-string name-width #\space) out)))
               (loop (cdr lines) real)))))))
 
-; Chez Scheme.
+; Chez and Ikarus Scheme.
 
 (define (chez-results lines out)
   (chez-results-proto "Chez-Scheme" lines out))
 
 (define (petite-chez-results lines out)
   (chez-results-proto "Petite-Chez-Scheme" lines out))
+
+(define (ikarus-results lines out)
+  (chez-results-proto "Ikarus" lines out))
 
 (define (chez-results-proto sysname lines out)
   (let ((system-key "Benchmarking ")
@@ -371,7 +381,7 @@
         (cpu-key " ms elapsed cpu time")
         (real-key " ms elapsed real time")
         (space-key "    ")
-        (error-key "Error: ")
+        (error-key "Error")
         (wrong-key "*** wrong result ***"))
     (let ((n-system-key (string-length system-key))
           (n-test-key (string-length test-key))
@@ -407,17 +417,18 @@
                      (let ((x (substring line
                                          n-space-key
                                          (substring? real-key line))))
-                       (right-justify x timing-width out)
-                       (newline out)))
+                       (right-justify x timing-width out)))
                     ((substring=? error-key line 0 n-error-key)
                      (display line out)
-                     (newline out)
-                     (display (make-string name-width #\space) out))
+                     ;(newline out)
+                     ;(display (make-string name-width #\space) out)
+                     )
                     ((substring=? wrong-key line 0 n-wrong-key)
                      (display "    " out)
                      (display line out)
                      (newline out)
                      (display (make-string name-width #\space) out)))
+              ;(flush-output-port out)
               (loop (cdr lines))))))))
 
 ; Larceny

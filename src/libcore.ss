@@ -1469,6 +1469,29 @@ reference-implementation:
              (f a)
              (error who "list was altered"))]
         [else (error who "list was altered")])))
+  (define andmap2
+    (lambda (f a1 a2 d1 d2 n)
+      (cond
+        [(pair? d1)
+         (cond
+           [(pair? d2)
+            (if ($fxzero? n)
+                (error who "list was altered")
+                (and
+                  (f a1 a2) 
+                  (andmap2 f
+                    ($car d1) ($car d2)
+                    ($cdr d1) ($cdr d2)
+                    ($fxsub1 n))))]
+           [else (error who "length mismatch")])]
+        [(null? d1)
+         (cond
+           [(null? d2)
+            (if ($fxzero? n)
+                (f a1 a2)
+                (error who "list was altered"))]
+           [else (error who "length mismatch")])]
+        [else (error who "list was altered")])))
   (primitive-set! 'andmap
      (case-lambda
        [(f ls)
@@ -1480,7 +1503,23 @@ reference-implementation:
              (andmap1 f ($car ls) d (len d d 0)))]
           [(null? ls) #t]
           [else (error who "improper list")])]
-       [_ (error who "vararg not supported yet")])))
+       [(f ls ls2)
+        (unless (procedure? f)
+          (error who "~s is not a procedure" f))
+        (cond
+          [(pair? ls)
+           (if (pair? ls2)
+               (let ([d ($cdr ls)])
+                 (andmap2 f
+                    ($car ls) ($car ls2) d ($cdr ls2) (len d d 0)))
+               (error who "length mismatch"))]
+          [(null? ls)
+           (if (null? ls2)
+               #t
+               (error who "length mismatch"))]
+          [else (error who "not a list")])]
+       [(f . ls*) (error who "vararg not supported yet in ~s" 
+                         (length ls*))])))
 
 
 (let ()

@@ -11,6 +11,56 @@
 
 #define max_digits_per_limb 10
 
+static ikp
+verify_bignum(ikp x, char* caller){
+  if(tagof(x) != vector_tag){
+    fprintf(stderr, "Error in (%s) invalid primary tag %p\n", caller, x);
+    exit(-1);
+  }
+  ikp fst = ref(x, -vector_tag);
+  int limb_count = ((unsigned int) fst) >> bignum_length_shift;
+  if(limb_count <= 0){
+    fprintf(stderr, 
+        "Error in (%s) invalid limb count in fst=0x%08x\n", 
+        caller, (int)fst);
+    exit(-1);
+  }
+  int pos;
+  if((int)fst & bignum_sign_mask){
+    pos = 0;
+  } else {
+    pos = 1;
+  }
+  unsigned int last_limb = 
+    (unsigned int) ref(x, off_bignum_data + (limb_count - 1) * wordsize);
+  if(last_limb == 0){
+    fprintf(stderr, 
+        "Error in (%s) invalid last limb = 0x%08x", caller, last_limb);
+    exit(-1);
+  }
+  if(limb_count == 1){
+    if(pos){
+      if(last_limb <= most_positive_fixnum){
+        fprintf(stderr, 
+                "Error in (%s) should be a positive fixnum: 0x%08x\n", 
+                caller, last_limb);
+        exit(-1);
+      }
+    } else {
+      if(last_limb <= most_negative_fixnum){
+        fprintf(stderr, 
+                "Error in (%s) should be a negative fixnum: 0x%08x\n", 
+                caller, last_limb);
+        exit(-1);
+      }
+    }
+  }
+  /* ok */
+  return x;
+}
+
+#define BN(x) verify_bignum(x,"BN")
+
 ikp 
 ikrt_isbignum(ikp x){
   if(tagof(x) == vector_tag){
@@ -66,7 +116,7 @@ ikrt_fxfxplus(ikp x, ikp y, ikpcb* pcb){
               (1 << bignum_sign_shift));
       ref(bn, disp_bignum_data) = (ikp)-r;
     }
-    return bn+vector_tag;
+    return verify_bignum(bn+vector_tag, "fxfx+");
   }
 }
 
@@ -90,16 +140,17 @@ ikrt_fxbnplus(ikp x, ikp y, ikpcb* pcb){
              (((limb_count + 1) << bignum_length_shift) |
               (0 << bignum_sign_shift) |
               bignum_tag);
-        return r+vector_tag;
+        return verify_bignum(r+vector_tag, "fxbn+1");
       } else {
         ref(r, 0) = (ikp)
           ((limb_count << bignum_length_shift) |
            (0 << bignum_sign_shift) |
            bignum_tag);
-        return r+vector_tag;
+        return verify_bignum(r+vector_tag, "fxbn+2");
       }
     }
     else {
+      fprintf(stderr, "this case 0x%08x\n", intx);
       /* positive fx + negative bn = smaller negative bn */
       ikp r = ik_alloc(pcb, align(disp_bignum_data+limb_count*wordsize));
       int borrow = mpn_sub_1((mp_limb_t*)(r+disp_bignum_data), 
@@ -107,7 +158,7 @@ ikrt_fxbnplus(ikp x, ikp y, ikpcb* pcb){
                              limb_count,
                              intx);
       if(borrow){
-        fprintf(stderr, "Error: BUG in borrow\n");
+        fprintf(stderr, "Error: BUG in borrow1 %d\n", borrow);
         exit(-1);
       }
       int result_size = 
@@ -128,7 +179,7 @@ ikrt_fxbnplus(ikp x, ikp y, ikpcb* pcb){
         ((result_size << bignum_length_shift) |
          (1 << bignum_sign_shift) |
          bignum_tag);
-      return r+vector_tag;
+      return verify_bignum(r+vector_tag, "fxbn+3");
     }
   }
   else {
@@ -140,7 +191,7 @@ ikrt_fxbnplus(ikp x, ikp y, ikpcb* pcb){
                              limb_count,
                              - intx);
       if(borrow){
-        fprintf(stderr, "Error: BUG in borrow\n");
+        fprintf(stderr, "Error: BUG in borrow2\n");
         exit(-1);
       }
       int result_size = 
@@ -161,7 +212,7 @@ ikrt_fxbnplus(ikp x, ikp y, ikpcb* pcb){
         ((result_size << bignum_length_shift) |
          (0 << bignum_sign_shift) |
          bignum_tag);
-      return r+vector_tag;
+      return verify_bignum(r+vector_tag, "fxbn+4");
     } else {
       /* negative fx + negative bn = larger negative */
       ikp r = ik_alloc(pcb, align(disp_bignum_data+(limb_count+1)*wordsize));
@@ -175,13 +226,13 @@ ikrt_fxbnplus(ikp x, ikp y, ikpcb* pcb){
              (((limb_count + 1) << bignum_length_shift) |
               (1 << bignum_sign_shift) |
               bignum_tag);
-        return r+vector_tag;
+        return verify_bignum(r+vector_tag, "fxbn+5");
       } else {
         ref(r, 0) = (ikp)
           ((limb_count << bignum_length_shift) |
            (1 << bignum_sign_shift) |
            bignum_tag);
-        return r+vector_tag;
+        return verify_bignum(r+vector_tag, "fxbn+5");
       }
     }
   }
@@ -218,13 +269,13 @@ ikrt_bnbnplus(ikp x, ikp y, ikpcb* pcb){
                     (((n1+1) << bignum_length_shift) |
                      xsign |
                      bignum_tag);
-      return res+vector_tag;
+      return verify_bignum(res+vector_tag, "bnbn+1");
     } else {
       ref(res, 0) = (ikp)
                     ((n1 << bignum_length_shift) |
                      xsign |
                      bignum_tag);
-      return res+vector_tag;
+      return verify_bignum(res+vector_tag, "bnbn+2");
     }
   }
   else {
@@ -283,7 +334,7 @@ ikrt_bnbnplus(ikp x, ikp y, ikpcb* pcb){
                     ((len << bignum_length_shift) |
                      result_sign |
                      bignum_tag);
-      return res+vector_tag;
+      return verify_bignum(res+vector_tag, "bnbn+3");
     } else {
       /* negative result */
       if(len == 1){
@@ -296,7 +347,7 @@ ikrt_bnbnplus(ikp x, ikp y, ikpcb* pcb){
                     ((len << bignum_length_shift) |
                      result_sign |
                      bignum_tag);
-      return res+vector_tag;
+      return verify_bignum(res+vector_tag, "bnbn+4");
     }
   }
 }
@@ -316,11 +367,12 @@ ikrt_fxfxminus(ikp x, ikp y, ikpcb* pcb){
       ikp bn = ik_alloc(pcb, align(disp_bignum_data + wordsize));
       ref(bn, 0) = (ikp) (bignum_tag | (1 << bignum_length_shift));
       ref(bn, disp_bignum_data) = (ikp)r;
-      return bn+vector_tag;
+      return verify_bignum(bn+vector_tag,"fxfx-1");
     }
   } else {
-    if(((unsigned int)r) <= most_negative_fixnum){
-      return fix(r);
+    ikp fxr = fix(r);
+    if(unfix(fxr) == r){
+      return fxr;
     } else {
       ikp bn = ik_alloc(pcb, align(disp_bignum_data + wordsize));
       ref(bn, 0) = (ikp) 
@@ -328,7 +380,7 @@ ikrt_fxfxminus(ikp x, ikp y, ikpcb* pcb){
          (1 << bignum_sign_shift) |
          (1 << bignum_length_shift));
       ref(bn, disp_bignum_data) = (ikp)(-r);
-      return bn+vector_tag;
+      return verify_bignum(bn+vector_tag, "fxfx-2");
     }
   }
 }
@@ -355,7 +407,7 @@ ikrt_bnnegate(ikp x, ikpcb* pcb){
     (bignum_tag |
      ((1 << bignum_sign_shift) - (bignum_sign_mask & (int)fst)) |
      (limb_count << bignum_length_shift));
-  return bn+vector_tag;
+  return verify_bignum(bn+vector_tag, "bnneg");
 }
 
 ikp 
@@ -378,13 +430,13 @@ ikrt_fxbnminus(ikp x, ikp y, ikpcb* pcb){
              (((limb_count + 1) << bignum_length_shift) |
               (0 << bignum_sign_shift) |
               bignum_tag);
-        return r+vector_tag;
+        return verify_bignum(r+vector_tag, "fxbn-1");
       } else {
         ref(r, 0) = (ikp)
           ((limb_count << bignum_length_shift) |
            (0 << bignum_sign_shift) |
            bignum_tag);
-        return r+vector_tag;
+        return verify_bignum(r+vector_tag, "fxbn-2");
       }
     }
     else {
@@ -395,7 +447,7 @@ ikrt_fxbnminus(ikp x, ikp y, ikpcb* pcb){
                              limb_count,
                              intx);
       if(borrow){
-        fprintf(stderr, "Error: BUG in borrow\n");
+        fprintf(stderr, "Error: BUG in borrow3\n");
         exit(-1);
       }
       int result_size = 
@@ -416,7 +468,7 @@ ikrt_fxbnminus(ikp x, ikp y, ikpcb* pcb){
         ((result_size << bignum_length_shift) |
          (1 << bignum_sign_shift) |
          bignum_tag);
-      return r+vector_tag;
+      return verify_bignum(r+vector_tag, "fxbn-");
     }
   }
   else {
@@ -428,7 +480,7 @@ ikrt_fxbnminus(ikp x, ikp y, ikpcb* pcb){
                              limb_count,
                              - intx);
       if(borrow){
-        fprintf(stderr, "Error: BUG in borrow\n");
+        fprintf(stderr, "Error: BUG in borrow4\n");
         exit(-1);
       }
       int result_size = 
@@ -449,7 +501,7 @@ ikrt_fxbnminus(ikp x, ikp y, ikpcb* pcb){
         ((result_size << bignum_length_shift) |
          (0 << bignum_sign_shift) |
          bignum_tag);
-      return r+vector_tag;
+      return verify_bignum(r+vector_tag,"fxbn-");
     } else {
       /* negative fx - positive bn = larger negative */
       ikp r = ik_alloc(pcb, align(disp_bignum_data+(limb_count+1)*wordsize));
@@ -463,13 +515,13 @@ ikrt_fxbnminus(ikp x, ikp y, ikpcb* pcb){
              (((limb_count + 1) << bignum_length_shift) |
               (1 << bignum_sign_shift) |
               bignum_tag);
-        return r+vector_tag;
+        return verify_bignum(r+vector_tag, "fxbn-");
       } else {
         ref(r, 0) = (ikp)
           ((limb_count << bignum_length_shift) |
            (1 << bignum_sign_shift) |
            bignum_tag);
-        return r+vector_tag;
+        return verify_bignum(r+vector_tag, "fxbn-");
       }
     }
   }
@@ -495,13 +547,13 @@ ikrt_bnfxminus(ikp x, ikp y, ikpcb* pcb){
              (((limb_count + 1) << bignum_length_shift) |
               (0 << bignum_sign_shift) |
               bignum_tag);
-        return r+vector_tag;
+        return verify_bignum(r+vector_tag,"bnfx-");
       } else {
         ref(r, 0) = (ikp)
           ((limb_count << bignum_length_shift) |
            (0 << bignum_sign_shift) |
            bignum_tag);
-        return r+vector_tag;
+        return verify_bignum(r+vector_tag,"bnfx-");
       }
     }
     else {
@@ -512,7 +564,7 @@ ikrt_bnfxminus(ikp x, ikp y, ikpcb* pcb){
                              limb_count,
                              -inty);
       if(borrow){
-        fprintf(stderr, "Error: BUG in borrow\n");
+        fprintf(stderr, "Error: BUG in borrow5\n");
         exit(-1);
       }
       int result_size = 
@@ -533,7 +585,7 @@ ikrt_bnfxminus(ikp x, ikp y, ikpcb* pcb){
         ((result_size << bignum_length_shift) |
          (1 << bignum_sign_shift) |
          bignum_tag);
-      return r+vector_tag;
+      return verify_bignum(r+vector_tag,"bnfx-");
     }
   }
   else {
@@ -545,7 +597,7 @@ ikrt_bnfxminus(ikp x, ikp y, ikpcb* pcb){
                              limb_count,
                              inty);
       if(borrow){
-        fprintf(stderr, "Error: BUG in borrow\n");
+        fprintf(stderr, "Error: BUG in borrow6\n");
         exit(-1);
       }
       int result_size = 
@@ -566,7 +618,7 @@ ikrt_bnfxminus(ikp x, ikp y, ikpcb* pcb){
         ((result_size << bignum_length_shift) |
          (0 << bignum_sign_shift) |
          bignum_tag);
-      return r+vector_tag;
+      return verify_bignum(r+vector_tag, "bnfx-");
     } else {
       /* - positive fx + negative bn = larger negative */
       ikp r = ik_alloc(pcb, align(disp_bignum_data+(limb_count+1)*wordsize));
@@ -580,13 +632,13 @@ ikrt_bnfxminus(ikp x, ikp y, ikpcb* pcb){
              (((limb_count + 1) << bignum_length_shift) |
               (1 << bignum_sign_shift) |
               bignum_tag);
-        return r+vector_tag;
+        return verify_bignum(r+vector_tag, "bnfx-");
       } else {
         ref(r, 0) = (ikp)
           ((limb_count << bignum_length_shift) |
            (1 << bignum_sign_shift) |
            bignum_tag);
-        return r+vector_tag;
+        return verify_bignum(r+vector_tag, "bnfx-");
       }
     }
   }
@@ -623,13 +675,13 @@ ikrt_bnbnminus(ikp x, ikp y, ikpcb* pcb){
                     (((n1+1) << bignum_length_shift) |
                      xsign |
                      bignum_tag);
-      return res+vector_tag;
+      return verify_bignum(res+vector_tag, "bnbn-");
     } else {
       ref(res, 0) = (ikp)
                     ((n1 << bignum_length_shift) |
                      xsign |
                      bignum_tag);
-      return res+vector_tag;
+      return verify_bignum(res+vector_tag, "bnbn-");
     }
   }
   else {
@@ -690,7 +742,7 @@ ikrt_bnbnminus(ikp x, ikp y, ikpcb* pcb){
                     ((len << bignum_length_shift) |
                      result_sign |
                      bignum_tag);
-      return res+vector_tag;
+      return verify_bignum(res+vector_tag, "bnbn-");
     } else {
       /* negative result */
       if(len == 1){
@@ -703,7 +755,7 @@ ikrt_bnbnminus(ikp x, ikp y, ikpcb* pcb){
                     ((len << bignum_length_shift) |
                      result_sign |
                      bignum_tag);
-      return res+vector_tag;
+      return verify_bignum(res+vector_tag, "bnbn-");
     }
   }
 }
@@ -742,7 +794,7 @@ ikrt_fxfxmult(ikp x, ikp y, ikpcb* pcb){
        (sign << bignum_sign_shift) |
        (1 << bignum_length_shift));
     ref(r, disp_bignum_data) = (ikp)lo;
-    return r+vector_tag;
+    return BN(r+vector_tag);
   } else {
     ikp r = ik_alloc(pcb, align(disp_bignum_data + 2*wordsize));
     ref(r, 0) = (ikp)
@@ -751,7 +803,7 @@ ikrt_fxfxmult(ikp x, ikp y, ikpcb* pcb){
        (2 << bignum_length_shift));
     ref(r, disp_bignum_data) = (ikp)lo;
     ref(r, disp_bignum_data+wordsize) = (ikp)hi;
-    return r+vector_tag;
+    return BN(r+vector_tag);
   }
 }
 
@@ -777,7 +829,7 @@ normalize_bignum(int limbs, int sign, ikp r){
     (bignum_tag |
      sign |
      (limbs << bignum_length_shift));
-  return r+vector_tag;
+  return BN(r+vector_tag);
 }
 
 
@@ -926,7 +978,7 @@ ikrt_fxbnlogand(ikp x, ikp y, ikpcb* pcb){
         ref(r, disp_bignum_data+i*wordsize) = 
           ref(y, disp_bignum_data-vector_tag+i*wordsize);
       }
-      return r+vector_tag;
+      return BN(r+vector_tag);
     } else {
       /* y is positive */
       int len = (((unsigned int) fst) >> bignum_length_shift);
@@ -939,7 +991,7 @@ ikrt_fxbnlogand(ikp x, ikp y, ikpcb* pcb){
         ref(r, disp_bignum_data+i*wordsize) = 
           ref(y, disp_bignum_data-vector_tag+i*wordsize);
       }
-      return r+vector_tag;
+      return BN(r+vector_tag);
     }
   }
 }
