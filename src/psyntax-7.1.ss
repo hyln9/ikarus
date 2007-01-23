@@ -3826,7 +3826,7 @@
 
 (primitive-set! 'expand-mode
   (make-parameter
-    'eval
+    'compile
     (lambda (x)
       (unless (memq x '(eval compile bootstrap))
         (error 'expand-mode "~s is not a valid mode" x))

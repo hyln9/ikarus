@@ -52,7 +52,7 @@
     top-level-value set-top-level-value!  top-level-bound?
     gensym gensym-count gensym-prefix print-gensym
     gensym->unique-string call-with-values values make-parameter
-    dynamic-wind display write print-graph fasl-write printf format
+    dynamic-wind display write print-graph fasl-write printf fprintf format
     print-error read-token read comment-handler error exit call/cc
     error-handler eval current-eval compile compile-file
     new-cafe load system expand sc-expand current-expand expand-mode
@@ -78,6 +78,7 @@
     console-input-port current-input-port standard-output-port
     standard-error-port console-output-port current-output-port
     open-output-file open-input-file open-output-string
+    with-output-to-string
     get-output-string with-output-to-file call-with-output-file
     with-input-from-file call-with-input-file date-string
     file-exists? delete-file + - add1 sub1 * / expt 

@@ -695,6 +695,14 @@
             (error 'get-output-string "~s is not an output port" p))))
   )
   
+  (primitive-set! 'with-output-to-string
+    (lambda (f)
+      (unless (procedure? f)
+        (error 'with-output-to-string "~s is not a procedure" f))
+      (let ([p (open-output-string)])
+        (parameterize ([current-output-port p]) (f))
+        (get-output-string p))))
+
   (primitive-set! 'with-output-to-file
      (lambda (name proc . args)
        (unless (string? name) 

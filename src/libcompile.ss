@@ -5146,7 +5146,10 @@
 (primitive-set! 'compile
   (lambda (x)
     (let ([code 
-           (if (code? x) x (compile-expr x))])
+           (if (code? x)
+               x
+               (parameterize ([expand-mode 'eval])
+                 (compile-expr x)))])
       (let ([proc ($code->closure code)])
         (proc)))))
 
