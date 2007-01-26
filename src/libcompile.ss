@@ -487,6 +487,16 @@
                  (record-case info
                    [(case-info L args proper) proper])]))]
         [else #f]))
+    (define (single-value-consumer? x)
+      (record-case x
+        [(clambda L cases F)
+         (and (fx= (length cases) 1)
+              (record-case (car cases)
+                [(clambda-case info body)
+                 (record-case info
+                   [(case-info L args proper)
+                    (and proper (fx= (length args) 1))])]))]
+        [else #f])) 
     (define (valid-mv-producer? x)
       (record-case x
         [(funcall) #t]
@@ -507,6 +517,8 @@
              (let ([producer (inline (car rand*) '())] 
                    [consumer (cadr rand*)])
                (cond
+                 [(single-value-consumer? consumer)
+                  (inline consumer (list producer))]
                  [(and (valid-mv-consumer? consumer)
                        (valid-mv-producer? producer))
                   (make-mvcall producer consumer)]

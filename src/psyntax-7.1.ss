@@ -4676,3 +4676,10 @@
       [(_ expr)
        #'(time-it (lambda () expr) 'expr)])))
 
+(define-syntax rec
+  (lambda (x)
+    (syntax-case x ()
+      [(_ name proc) (identifier? #'name)
+       #'(letrec ([name proc])
+           name)])))
+

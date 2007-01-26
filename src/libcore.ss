@@ -1597,8 +1597,11 @@ reference-implementation:
          (revcons (reverse ls ls ls '())
             (append ($car ls*) ($cdr ls*)))])))
   (primitive-set! 'append
-    (lambda (ls . ls*)
-      (append ls ls*))))
+    (case-lambda
+      [() '()]
+      [(ls) ls]
+      [(ls . ls*)
+       (append ls ls*)])))
 
 
 (primitive-set! 'list->vector

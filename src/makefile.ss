@@ -26,6 +26,7 @@
     syntax quasisyntax unsyntax unsyntax-splicing datum
     let let* let-values cond case define-record or and when unless do
     include parameterize trace untrace trace-lambda trace-define
+    rec
     time))
 
 
