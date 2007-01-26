@@ -105,13 +105,26 @@
                (subsequent*? str ($fxadd1 i) n)))))
   (define valid-symbol-string?
     (lambda (str)
-      (or (let ([n ($string-length str)])
+      (define normal-symbol-string?
+        (lambda (str)
+          (let ([n ($string-length str)])
             (and ($fx>= n 1)
                  (initial? ($string-ref str 0))
-                 (subsequent*? str 1 n)))
-          (string=? str "+")
-          (string=? str "-")
-          (string=? str "..."))))
+                 (subsequent*? str 1 n)))))
+      (define peculiar-symbol-string?
+        (lambda (str)
+          (let ([n (string-length str)])
+            (cond
+              [(fx= n 1) 
+               (memq (string-ref str 0) '(#\+ #\-))]
+              [(fx>= n 2)
+               (or (and (char=? (string-ref str 0) #\-)
+                        (char=? (string-ref str 1) #\>)
+                        (subsequent*? str 2 n))
+                   (string=? str "..."))]))))
+      (or (normal-symbol-string? str)
+          (peculiar-symbol-string? str))))
+
   (define write-symbol-esc-loop
     (lambda (x i n p)
       (unless ($fx= i n)

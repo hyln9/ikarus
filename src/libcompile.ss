@@ -5101,7 +5101,7 @@
          [p (convert-closures p)]
          [p (optimize-closures/lift-codes p)] 
 
-         [p^ (new-cogen p)]
+         ;[p^ (new-cogen p)]
          [p (introduce-primcalls p)]
          [p (simplify-operands p)]
          [p (insert-stack-overflow-checks p)]

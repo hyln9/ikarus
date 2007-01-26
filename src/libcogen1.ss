@@ -1,4 +1,4 @@
-
+#!eof
 ;;; input to cogen is <Program>:
 ;;;  <Expr> ::= (constant x)
 ;;;           | (var)

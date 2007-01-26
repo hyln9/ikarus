@@ -190,6 +190,11 @@
           [($char= c #\.)
            (read-char p)
            (cons 'datum (tokenize-flonum/no-digits #f p))]
+          [($char= c #\>)
+           (read-char p)
+           (let ([ls (tokenize-identifier '() p)])
+             (let ([str (list->string (list* #\- #\> (reverse ls)))])
+               (cons 'datum (string->symbol str))))]
           [else (error 'tokenize "invalid sequence -~a" c)]))))
   (define tokenize-dot
     (lambda (p)
