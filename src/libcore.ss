@@ -871,6 +871,23 @@ reference-implementation:
      (lambda (x)
        (race x x x '()))))
 
+(primitive-set! 'last-pair
+  (letrec ([race
+            (lambda (h t ls last)
+              (if (pair? h)
+                  (let ([h ($cdr h)] [last h])
+                     (if (pair? h)
+                         (if (not (eq? h t))
+                             (race ($cdr h) ($cdr t) ls h)
+                             (error 'last-pair "~s is a circular list" ls))
+                         last))
+                  last))])
+     (lambda (x)
+       (if (pair? x)
+           (let ([d (cdr x)])
+             (race d d x x))
+           (error 'last-pair "~s is not a pair" x)))))
+
 (primitive-set! 'memq
   (letrec ([race
             (lambda (h t ls x)
@@ -1602,6 +1619,8 @@ reference-implementation:
       [(ls) ls]
       [(ls . ls*)
        (append ls ls*)])))
+
+
 
 
 (primitive-set! 'list->vector

@@ -85,6 +85,7 @@
     file-exists? delete-file + - add1 sub1 * / expt 
     quotient+remainder quotient remainder modulo number? positive?
     negative? zero? number->string logand = < > <= >=
+    last-pair
     make-guardian weak-cons collect 
     interrupt-handler
     time-it 
