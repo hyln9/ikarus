@@ -54,7 +54,7 @@
     gensym gensym-count gensym-prefix print-gensym
     gensym->unique-string call-with-values values make-parameter
     dynamic-wind display write print-graph fasl-write printf fprintf format
-    print-error read-token read comment-handler error exit call/cc
+    print-error read-token read comment-handler error warning exit call/cc
     error-handler eval current-eval compile compile-file
     new-cafe load system expand sc-expand current-expand expand-mode
     environment? interaction-environment identifier?

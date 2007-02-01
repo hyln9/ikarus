@@ -483,14 +483,14 @@
         (formatter 'format p fmt args)
         (get-output-string p))))
 
-  (define print-error
-    (lambda (who fmt . args)
+  (define display-error
+    (lambda (errname who fmt args)
       (unless (string? fmt)
         (error 'print-error "~s is not a string" fmt))
       (let ([p (standard-error-port)])
         (if who
-            (fprintf p "Error in ~a: " who)
-            (fprintf p "Error: "))
+            (fprintf p "~a in ~a: " errname who)
+            (fprintf p "~a: " errname))
         (formatter 'print-error p fmt args)
         (write-char #\. p)
         (newline p))))
@@ -515,7 +515,12 @@
        (unless (output-port? p) 
          (error 'display "~s is not an output port" p))
        (display x p)]))
-  (primitive-set! 'print-error print-error)
+  (primitive-set! 'print-error 
+    (lambda (who fmt . args)
+      (display-error "Error" who fmt args)))
+  (primitive-set! 'warning 
+    (lambda (who fmt . args)
+      (display-error "Warning" who fmt args)))
   (primitive-set! 'error-handler
     (make-parameter
       (lambda args
