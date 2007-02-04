@@ -81,6 +81,7 @@
     open-output-file open-input-file open-output-string
     with-output-to-string
     get-output-string with-output-to-file call-with-output-file
+    open-input-string
     with-input-from-file call-with-input-file date-string
     file-exists? delete-file + - add1 sub1 * / expt 
     quotient+remainder quotient remainder modulo number? positive?
