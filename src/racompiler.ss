@@ -80,11 +80,13 @@
     ;;;
     (define rv-register (mkreg '%eax))
     ;;;
+    (define (return x)
+      (mkseq (mkset rv-register x)
+             (mkprm 'return rv-register)))
     (define (Tail x)
       (record-case x
-        [(constant c) 
-         (mkseq (mkset rv-register x)
-                (mkprm 'return rv-register))]
+        [(constant) (return x)]
+        [(int)      (return x)]
         [else (error who "invalid tail ~s" x)]))
     ;;;
     (Tail x))
@@ -94,9 +96,10 @@
     ;;;
     (define (op x)
       (record-case x
-        [(register r) r]
+        [(reg r) r]
         [(constant c) `(obj ,c)]
-        [(int i) `(int ,i)]
+        [(int i) i]
+        [else (error who "invalid op ~s" x)]))
     ;;;
     (define (Effect x ac)
       (record-case x
@@ -117,7 +120,7 @@
            [else (error who "invalid tail prim ~s" op)])]
         [else (error who "invalid tail ~s" x)]))
     ;;;
-    (list (Tail x '())))
+    (list (cons 0 (Tail x '()))))
   ;;;
   (define (compile x)
     (let* ([x (expand x)]
@@ -151,3 +154,4 @@
 
 (load "tests/tests-1.1-req.scm")
 
+(printf "ALL IS GOOD :-)\n")

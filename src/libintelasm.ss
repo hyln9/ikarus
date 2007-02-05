@@ -192,11 +192,19 @@
   (lambda (n ac)
     (cond
       [(int? n) 
-       (list* (byte n)
-         (byte (fxsra n  8))
-         (byte (fxsra n 16))
-         (byte (fxsra n 24))
-         ac)]
+       (if (fixnum? n)
+           (list* (byte n)
+             (byte (fxsra n 8))
+             (byte (fxsra n 16))
+             (byte (fxsra n 24))
+             ac)
+           (let ([lo (remainder n 256)]
+                 [hi (quotient n 256)])
+             (list* (byte lo)
+               (byte hi)
+               (byte (fxsra hi 8))
+               (byte (fxsra hi 16))
+             ac)))]
       [(obj? n)
        (let ([v (cadr n)])
          (if (immediate? v)
