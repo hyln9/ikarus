@@ -263,7 +263,7 @@
 (define label-name
   (lambda (x) (cadr x)))
 
-(define int? fixnum?)
+(define int? integer?)
 
 (define obj?
   (lambda (x)
