@@ -56,13 +56,35 @@
     (define who 'specify-representation)
     ;;;
     (define fixnum-scale 4)
+    (define true-object #x3F)
+    (define false-object #x2F)
+    (define void-object #x7F)
+    (define bwp-object #x8F)
+    (define eof-object #x5F)
+    (define null-object #x4F)
+    (define char-shift 8)
+    (define char-tag #x0F)
+    (define char-mask #xFF)
     ;;;
     (define (immediate? c)
-      (or (fixnum? c)))
+      (or (fixnum? c)
+          (boolean? c)
+          (char? c)
+          (null? c)
+          (eq? c (void))
+          (eof-object? c)
+          (bwp-object? c)))
     ;;;
     (define (immediate-rep c)
       (cond
         [(fixnum? c) (mkint (* c fixnum-scale))]
+        [(boolean? c) (mkint (if c true-object false-object))]
+        [(char? c) 
+         (mkint (fxlogor char-tag (fxsll (char->integer c) char-shift)))]
+        [(null? c) (mkint null-object)]
+        [(eof-object? c) (mkint eof-object)]
+        [(eq? c (void)) (mkint void-object)]
+        [(bwp-object? c) (mkint bwp-object)]
         [else (error 'immediate-rep "invalid ~s" c)]))
     ;;;
     (define (Tail x)
@@ -153,5 +175,6 @@
        ...)]))
 
 (load "tests/tests-1.1-req.scm")
+(load "tests/tests-1.2-req.scm")
 
 (printf "ALL IS GOOD :-)\n")
