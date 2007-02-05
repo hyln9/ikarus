@@ -555,6 +555,10 @@
       [else (error who "invalid ~s" instr)])]
    [(xorl src dst) 
     (cond
+      [(and (imm8? src) (reg? dst)) 
+       (CODE #x83 (ModRM 3 '/6 dst (IMM8 src ac)))]
+      [(and (imm? src) (eq? dst '%eax)) 
+       (CODE #x35 (IMM32 src ac))]
       [(and (reg? src) (reg? dst))
        (CODE #x31 (ModRM 3 src dst ac))]
       [(and (mem? src) (reg? dst))

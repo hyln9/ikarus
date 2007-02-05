@@ -1,4 +1,5 @@
 #!/usr/bin/env ikarus --script
+(import scheme)
 (define (racompile x)
   ;;;
   (define-syntax record-case
@@ -38,24 +39,111 @@
   (define (mkprm op . rand*) (make-primcall op rand*))
   (define-record seq (e0 e1))
   (define (mkseq e0 e1) (make-seq e0 e1))
+  (define-record conditional (e0 e1 e2))
+  (define (mkif e0 e1 e2) (make-conditional e0 e1 e2))
+  ;;;
+  (module (primitive? arg-count-ok? primitive-context)
+    (define primitives 
+      '([$fxadd1           1  v]
+        [$fxlognot         1  v]
+        [$fixnum->char     1  v]
+        [$char->fixnum     1  v]
+        [fixnum?           1  p]
+        [null?             1  p]
+        [$fxzero?          1  p]
+        [boolean?          1  p]
+        [char?             1  p]
+        [not               1  not]
+        ))
+    ;;;
+    (define (primitive? x)
+      (and (assq x primitives) #t))
+    ;;;
+    (define (arg-count-ok? prim n)
+      (cond
+        [(assq prim primitives) =>
+         (lambda (p)
+           (let ([m (cadr p)])
+             (cond
+               [(= n m) #t]
+               [else #f])))]
+        [else (error 'arg-count-ok? "~s is not a primitive" prim)]))
+    ;;;
+    (define (primitive-context prim)
+      (cond
+        [(assq prim primitives) => caddr]
+        [else (error 'arg-count-ok? "~s is not a primitive" prim)]))
+    #|module|#)
   ;;;
   (define (recordize x)
     (define who 'recordize)
     ;;;
+    (define (E* x* r)
+      (map (lambda (x) (E x r)) x*))
+    ;;;
     (define (E x r)
       (cond
-        [(pair? x)
+        [(and (pair? x) (symbol? (car x)))
          (case (car x)
            [(quote) (mkconst (cadr x))]
            [else (error who "invalid expression ~s" x)])]
+        [(pair? x)
+         (let ([a (car x)])
+           (cond 
+             [(and (pair? a) (eq? (car a) '|#primitive|))
+              (let ([op (cadr a)])
+                (cond
+                  [(not (primitive? op))
+                   (error who "invalid primitive ~s" op)]
+                  [(not (arg-count-ok? op (length (cdr x))))
+                   (error who "incorrect args in ~s" x)]
+                  [else
+                   (make-primcall op (E* (cdr x) r))]))]
+             [else (error who "invalid expression ~s" x)]))]
         [else (error who "invalid expression ~s" x)]))
     ;;;
     (E x '()))
+  ;;;
+  (define (normalize-context x)
+    (define who 'normalize-context)
+    ;;;
+    (define (P x)
+      (define (predicafy x)
+        (mkif (mkprm 'eq? x (make-constant #f))
+          (make-constant #f)
+          (make-constant #t)))
+      (record-case x
+        [(constant c) (make-constant (if c #t #f))]
+        [(primcall op rands)
+         (case (primitive-context op)
+           [(v) (predicafy (V x))]
+           [(p) (make-primcall op (map V rands))]
+           [(not) (mkif (P (car rands)) (mkconst #f) (mkconst #t))]
+           [else (error who "unhandled pred context")])]
+        [else (error who "invalid expression ~s" x)]))
+    ;;;
+    (define (V x)
+      (record-case x
+        [(constant) x]
+        [(primcall op rands)
+         (case (primitive-context op)
+           [(v) (make-primcall op (map V rands))]
+           [(p) (mkif (P x) (mkconst #t) (mkconst #f))]
+           [(not) (mkif (P (car rands)) (mkconst #f) (mkconst #t))]
+           [else (error who "unhandled value context")])]
+        [else (error who "invalid expression ~s" x)]))
+    ;;;
+    (V x))
   ;;;
   (define (specify-representation x)
     (define who 'specify-representation)
     ;;;
     (define fixnum-scale 4)
+    (define fixnum-shift 2)
+    (define fixnum-mask 3)
+    (define fixnum-tag 0)
+    (define boolean-mask #xEF)
+    (define boolean-tag #x2F)
     (define true-object #x3F)
     (define false-object #x2F)
     (define void-object #x7F)
@@ -87,28 +175,127 @@
         [(bwp-object? c) (mkint bwp-object)]
         [else (error 'immediate-rep "invalid ~s" c)]))
     ;;;
-    (define (Tail x)
+    (define (P x)
+      (define (tagcmp rands mask tag)
+        (mkprm 'int= 
+            (mkprm 'intand (V (car rands)) (mkint mask))
+            (mkint tag)))
+      (record-case x
+        [(constant) x]
+        [(conditional e0 e1 e2)
+         (mkif (P e0) (P e1) (P e2))]
+        [(primcall op rands)
+         (case op
+           [(fixnum?)  (tagcmp rands fixnum-mask fixnum-tag)] 
+           [(boolean?) (tagcmp rands boolean-mask boolean-tag)] 
+           [(char?)    (tagcmp rands char-mask char-tag)] 
+           [($fxzero?)
+            (mkprm 'int= (V (car rands)) (immediate-rep 0))]
+           [(null?)
+            (mkprm 'int= (V (car rands)) (immediate-rep '()))]
+           [else (error who "invalid value prim ~s" op)])]
+        [else (error who "invalid value ~s" x)])) 
+    (define (V x)
       (record-case x
         [(constant c)
          (if (immediate? c)
              (immediate-rep c)
              x)]
-        [else (error who "invalid tail ~s" x)]))
+        [(conditional e0 e1 e2)
+         (mkif (P e0) (V e1) (V e2))]
+        [(primcall op rands)
+         (case op
+           [($fxadd1) 
+            (mkprm 'int+ (V (car rands)) (immediate-rep 1))]
+           [($fxlognot) 
+            (mkprm 'intxor (V (car rands)) (immediate-rep -1))]
+           [($char->fixnum)
+            (mkprm 'intsra (V (car rands))
+                   (mkint (- char-shift fixnum-shift)))]
+           [($fixnum->char)
+            (mkprm 'intor 
+                (mkprm 'intsll (V (car rands)) 
+                       (mkint (- char-shift fixnum-shift)))
+                (mkint char-tag))]
+           [else (error who "invalid value prim ~s" op)])]
+        [else (error who "invalid value ~s" x)]))
     ;;;
-    (Tail x))
+    (V x))
   ;;;
   (define (impose-calling-convention x)
     (define who 'impose-calling-convention)
     ;;;
     (define rv-register (mkreg '%eax))
     ;;;
-    (define (return x)
-      (mkseq (mkset rv-register x)
-             (mkprm 'return rv-register)))
-    (define (Tail x)
+    (define (simple? x)
       (record-case x
-        [(constant) (return x)]
-        [(int)      (return x)]
+        [(constant) #t]
+        [(int)      #t]
+        [else       #f]))
+    ;;;
+    (define (P x)
+      (define (prim op op^ a b)
+        (cond
+          [(simple? a) 
+           (mkseq (V b) (mkprm op^ rv-register a))]
+          [(simple? b)
+           (mkseq (V a) (mkprm op rv-register b))]
+          [else (error who "two complex operands ~s ~s" a b)]))
+      (record-case x
+        [(constant) x]
+        [(conditional e0 e1 e2)
+         (mkif (P e0) (P e1) (P e2))]
+        [(primcall op rands)
+         (case op
+           [(int=)
+            (prim 'int= 'int= (car rands) (cadr rands))]
+           [else (error who "invalid pred prim ~s" op)])]
+        [else (error who "invalid pred value ~s" x)])) 
+    (define (V x)
+      (define (assoc op a b)
+        (cond
+          [(simple? a) 
+           (mkseq (V b)
+                  (mkset rv-register (mkprm op rv-register a)))]
+          [(simple? b)
+           (mkseq (V a)
+                  (mkset rv-register (mkprm op rv-register b)))]
+          [else (error who "two complex operands ~s ~s" a b)]))
+      (record-case x
+        [(constant) (mkset rv-register x)]
+        [(int)      (mkset rv-register x)]
+        [(conditional e0 e1 e2)
+         (mkif (P e0) (V e1) (V e2))]
+        [(primcall op rands) 
+         (case op
+           [(int+)
+            (assoc 'int+ (car rands) (cadr rands))]
+           [(intxor)
+            (assoc 'intxor (car rands) (cadr rands))]
+           [(intor)
+            (assoc 'intor (car rands) (cadr rands))]
+           [(intand)
+            (assoc 'intand (car rands) (cadr rands))]
+           [(intsll intsra)
+            (let ([a (car rands)] [b (cadr rands)])
+              (record-case b
+                [(int) 
+                 (mkseq (V a)
+                        (mkset rv-register (mkprm op rv-register b)))]
+                [else 
+                 (error who "unhandled intsll ~s" b)]))]
+           [else (error who "invalid value prim ~s" op)])]
+        [else (error who "invalid value value ~s" x)]))
+    ;;;
+    (define (Tail x)
+      (define (return x)
+        (mkseq x (mkprm 'return rv-register)))
+      (record-case x
+        [(constant) (return (V x))]
+        [(int)      (return (V x))]
+        [(primcall) (return (V x))]
+        [(conditional e0 e1 e2)
+         (mkif (P e0) (Tail e1) (Tail e2))]
         [else (error who "invalid tail ~s" x)]))
     ;;;
     (Tail x))
@@ -123,18 +310,180 @@
         [(int i) i]
         [else (error who "invalid op ~s" x)]))
     ;;;
+    (define (same? x y)
+      (record-case x
+        [(reg rx) 
+         (record-case y
+           [(reg ry) (eq? rx ry)]
+           [else #f])]
+        [else (error 'same? "invalid arg ~s" x)]))
+    ;;;
+    (define (indep? x y)
+      (record-case x
+        [(reg rx)
+         (let f ([y y])
+           (record-case y
+             [(int) #t]
+             [(constant) #t]
+             [(reg ry) (not (eq? rx ry))]
+             [(primcall op rands)
+              (andmap f rands)]
+             [else (error 'indep? "unhandled ~s" y)]))]
+        [else (error 'indep? "invalid arg ~s" x)]))
+    ;;;
+    (define (Pred x lt lf ac)
+      (define (revcmp x)
+        (case x
+          [(int=) 'int=]
+          [(int<) 'int>]
+          [(int<=) 'int>=]
+          [(int>) 'int<]
+          [(int>=) 'int<=]
+          [else (errot 'revcmp "invalid cmp ~s" x)]))
+      (define (CJump cnd lt lf ac)
+        (define (cjumpop x)
+          (case x
+            [(int=) 'je]
+            [(int<) 'jl]
+            [(int<=) 'jle]
+            [(int>) 'jg]
+            [(int>=) 'jge]))
+        (define (cjumpop^ x)
+          (case x
+            [(int=) 'jne]
+            [(int<) 'jnl]
+            [(int<=) 'jnle]
+            [(int>) 'jng]
+            [(int>=) 'jnge]))
+        (cond
+          [(and lt lf) 
+           (list* `(,(cjumpop cnd) (label ,lt))
+                  `(jmp (label lf))
+                  ac)]
+          [lt
+           (list* `(,(cjumpop cnd) (label ,lt))
+                  ac)]
+          [lf
+           (list* `(,(cjumpop^ cnd) (label ,lf))
+                  ac)]
+          [else ac]))
+      (record-case x
+        [(constant c)
+         (if c
+             (if lt (cons `(jmp (label ,lt)) ac) ac)
+             (if lf (cons `(jmp (label ,lf)) ac) ac))]
+        [(seq e0 e1)
+         (Effect e0 (Pred e1 lt lf ac))]
+        [(conditional e0 e1 e2)
+         (cond
+           [(and lt lf)
+            (let ([g (gensym)])
+              (Pred e0 #f g
+                 (Pred e1 lt lf 
+                    (cons `(label ,g) 
+                          (Pred e2 lt lf ac)))))]
+           [lt
+            (let ([g (gensym)] [lf (gensym)])
+              (Pred e0 #f g
+                 (Pred e1 lt lf
+                    (cons `(label ,g)
+                          (Pred e2 lt #f
+                             (cons `(label ,lf) ac))))))]
+           [lf
+            (let ([g (gensym)] [lt (gensym)])
+              (Pred e0 #f g
+                 (Pred e1 lt lf
+                    (cons `(label ,g)
+                          (Pred e2 #f lf
+                             (cons `(label ,lt) ac))))))]
+           [else
+            (let ([g (gensym)] [lt (gensym)])
+              (Pred e0 #f g
+                 (Pred e1 lt lt
+                    (cons `(label ,g)
+                          (Pred e2 #f #f
+                             (cons `(label ,lt) ac))))))])]
+        [(primcall prim rands)
+         (let ([a (car rands)] [b (cadr rands)])
+           (record-case a
+             [(reg ra) 
+              (cons `(cmpl ,(op b) ,(op a))
+                    (CJump (revcmp prim) lt lf ac))]
+             [(reg rb) 
+              (cons `(cmpl ,(op a) ,(op b))
+                    (CJump prim lt lf ac))]
+             [else (error who "invalid operands in pred ~s ~s" a b)]))]
+        [else (error who "invalid pred ~s" x)]))
+
+    ;;;
     (define (Effect x ac)
+      (define (primname x)
+        (case x
+          [(int+) 'addl]
+          [(intor) 'orl]
+          [(intxor) 'xorl]
+          [(intand) 'andl]
+          [(intsll) 'sall]
+          [(intsra) 'sarl]
+          [else (error who "invalid primname ~s" x)]))
       (record-case x
         [(seq e0 e1)
          (Effect e0 (Effect e1 ac))]
+        [(conditional e0 e1 e2)
+         (let ([g (gensym)] [elabel (gensym)])
+           (Pred e0 #f g
+              (Effect e1 
+                (list* `(jmp (label ,elabel))
+                       `(label ,g)
+                       (Effect e2 
+                          (cons `(label ,elabel) ac))))))]
         [(set targ v)
-         (cons `(movl ,(op v) ,(op targ)) ac)]
+         (record-case v
+           [(int i) (cons `(movl ,i ,(op targ)) ac)]
+           [(constant c) (cons `(movl (obj ,c) ,(op targ)) ac)]
+           [(primcall prim rands)
+            (case prim
+              [(int+ intor intxor intand) 
+               (let ([asmprm (primname prim)])
+                 (let ([a (car rands)] [b (cadr rands)])
+                   (cond
+                     [(and (same? targ a) (indep? targ b))
+                      (cons `(,asmprm ,(op b) ,(op a)) ac)]
+                     [(and (same? targ b) (indep? targ b))
+                      (cons `(,asmprm ,(op a) ,(op b)) ac)]
+                     [(indep? targ b)
+                      (list* `(movl ,(op a) ,(op targ))
+                             `(,asmprm ,(op b) ,(op targ))
+                             ac)]
+                     [(indep? targ a)
+                      (list* `(movl ,(op b) ,(op targ))
+                             `(,asmprm ,(op a) ,(op targ))
+                             ac)]
+                     [else (error who "invalid ops")])))]
+              [(intsll intsra) 
+               (let ([asmprm (primname prim)])
+                 (let ([a (car rands)] [b (cadr rands)])
+                   (cond
+                     [(and (same? targ a) (indep? targ b))
+                      (cons `(,asmprm ,(op b) ,(op a)) ac)]
+                     [(indep? targ b)
+                      (list* `(movl ,(op a) ,(op targ))
+                             `(,asmprm ,(op b) ,(op targ))
+                             ac)]
+                     [else (error who "invalid ops")])))]
+              [else (error who "invalid op ~s" prim)])])]
         [else (error who "invalid effect ~s" x)]))
     ;;;
     (define (Tail x ac)
       (record-case x
         [(seq e0 e1)
          (Effect e0 (Tail e1 ac))]
+        [(conditional e0 e1 e2)
+         (let ([g (gensym)])
+           (Pred e0 #f g
+              (Tail e1 
+                (cons `(label ,g)
+                      (Tail e2 ac)))))]
         [(primcall op rands) 
          (case op
            [(return) 
@@ -145,11 +494,22 @@
     (list (cons 0 (Tail x '()))))
   ;;;
   (define (compile x)
-    (let* ([x (expand x)]
+    (let* ([x (parameterize ([expand-mode 'bootstrap]
+                             [interaction-environment 
+                               ($make-environment '|#system| #t)])
+                (expand x))]
            [x (recordize x)]
+           [x (normalize-context x)]
            [x (specify-representation x)]
            [x (impose-calling-convention x)]
            [x* (linearize x)]
+           [foo (parameterize ([print-gensym 'pretty])
+                  (for-each 
+                    (lambda (ls)
+                      (for-each (lambda (x) 
+                                  (printf "     ~s\n" x))
+                                ls))
+                    x*))]
            [code (car (#%list*->code* 
                          (lambda (x) #f)
                          x*))])
@@ -165,16 +525,20 @@
        (printf "SECTION ~a ...\n" 'name)
        (let ([str str*]
              [expr 'expr*])
-         (printf "testing ~s\n" expr)
-         (let ([r (with-output-to-string 
-                    (lambda ()
-                      (write (racompile expr))
-                      (newline)))])
+         (fprintf (console-output-port) "testing ~s\n" expr)
+         (let ([r (let ([v (racompile expr)])
+                    (fprintf (console-output-port) ".")
+                    (with-output-to-string 
+                      (lambda ()
+                        (write v)
+                        (newline))))])
+           (fprintf (console-output-port) ".")
            (unless (string=? r str)
              (error #f "expected ~s, got ~s\n" str r)))) 
        ...)]))
 
 (load "tests/tests-1.1-req.scm")
 (load "tests/tests-1.2-req.scm")
+(load "tests/tests-1.3-req.scm")
 
 (printf "ALL IS GOOD :-)\n")
