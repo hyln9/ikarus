@@ -45,6 +45,7 @@
   (module (primitive? arg-count-ok? primitive-context)
     (define primitives 
       '([$fxadd1           1  v]
+        [$fxsub1           1  v]
         [$fxlognot         1  v]
         [$fixnum->char     1  v]
         [$char->fixnum     1  v]
@@ -86,6 +87,10 @@
         [(and (pair? x) (symbol? (car x)))
          (case (car x)
            [(quote) (mkconst (cadr x))]
+           [(if) 
+            (mkif (E (cadr x) r) 
+                  (E (caddr x) r)
+                  (E (cadddr x) r))]
            [else (error who "invalid expression ~s" x)])]
         [(pair? x)
          (let ([a (car x)])
@@ -114,6 +119,8 @@
           (make-constant #t)))
       (record-case x
         [(constant c) (make-constant (if c #t #f))]
+        [(conditional e0 e1 e2)
+         (mkif (P e0) (P e1) (P e2))]
         [(primcall op rands)
          (case (primitive-context op)
            [(v) (predicafy (V x))]
@@ -125,6 +132,8 @@
     (define (V x)
       (record-case x
         [(constant) x]
+        [(conditional e0 e1 e2)
+         (mkif (P e0) (V e1) (V e2))]
         [(primcall op rands)
          (case (primitive-context op)
            [(v) (make-primcall op (map V rands))]
@@ -193,6 +202,8 @@
             (mkprm 'int= (V (car rands)) (immediate-rep 0))]
            [(null?)
             (mkprm 'int= (V (car rands)) (immediate-rep '()))]
+           [(eq?) 
+            (mkprm 'int= (V (car rands)) (V (cadr rands)))]
            [else (error who "invalid value prim ~s" op)])]
         [else (error who "invalid value ~s" x)])) 
     (define (V x)
@@ -207,6 +218,8 @@
          (case op
            [($fxadd1) 
             (mkprm 'int+ (V (car rands)) (immediate-rep 1))]
+           [($fxsub1) 
+            (mkprm 'int+ (V (car rands)) (immediate-rep -1))]
            [($fxlognot) 
             (mkprm 'intxor (V (car rands)) (immediate-rep -1))]
            [($char->fixnum)
@@ -358,7 +371,7 @@
         (cond
           [(and lt lf) 
            (list* `(,(cjumpop cnd) (label ,lt))
-                  `(jmp (label lf))
+                  `(jmp (label ,lf))
                   ac)]
           [lt
            (list* `(,(cjumpop cnd) (label ,lt))
@@ -540,5 +553,6 @@
 (load "tests/tests-1.1-req.scm")
 (load "tests/tests-1.2-req.scm")
 (load "tests/tests-1.3-req.scm")
+(load "tests/tests-1.4-req.scm")
 
 (printf "ALL IS GOOD :-)\n")
