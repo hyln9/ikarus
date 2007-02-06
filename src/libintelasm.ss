@@ -193,18 +193,20 @@
     (cond
       [(int? n) 
        (if (fixnum? n)
-           (list* (byte n)
+           (list* 
+             (byte n)
              (byte (fxsra n 8))
              (byte (fxsra n 16))
              (byte (fxsra n 24))
              ac)
-           (let ([lo (remainder n 256)]
-                 [hi (quotient n 256)])
-             (list* (byte lo)
+           (let* ([lo (remainder n 256)]
+                  [hi (quotient (if (< n 0) (- n 255) n) 256)])
+             (list* 
+               (byte lo)
                (byte hi)
                (byte (fxsra hi 8))
                (byte (fxsra hi 16))
-             ac)))]
+               ac)))]
       [(obj? n)
        (let ([v (cadr n)])
          (if (immediate? v)
@@ -476,7 +478,7 @@
     (cond   
       [(and (imm8? src) (reg? dst)) 
        (CODE #x83 (ModRM 3 '/0 dst (IMM8 src ac)))]
-      [(and (imm? src) (eq? dst '%eax)) 
+      [(and (imm? src) (eq? dst '%eax))
        (CODE #x05 (IMM32 src ac))]
       [(and (imm? src) (reg? dst))
        (CODE #x81 (ModRM 3 '/0 dst (IMM32 src ac)))]

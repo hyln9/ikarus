@@ -55,6 +55,16 @@
         [boolean?          1  p]
         [char?             1  p]
         [not               1  not]
+        [$fx+              2  v]
+        [$fx-              2  v]
+        [$fx*              2  v]
+        [$fxlogor          2  v]
+        [$fxlogand         2  v]
+        [$fx=              2  p]
+        [$fx<              2  p]
+        [$fx<=             2  p]
+        [$fx>              2  p]
+        [$fx>=             2  p]
         ))
     ;;;
     (define (primitive? x)
@@ -202,8 +212,16 @@
             (mkprm 'int= (V (car rands)) (immediate-rep 0))]
            [(null?)
             (mkprm 'int= (V (car rands)) (immediate-rep '()))]
-           [(eq?) 
+           [(eq? $fx=) 
             (mkprm 'int= (V (car rands)) (V (cadr rands)))]
+           [(eq? $fx<) 
+            (mkprm 'int< (V (car rands)) (V (cadr rands)))]
+           [(eq? $fx<=) 
+            (mkprm 'int<= (V (car rands)) (V (cadr rands)))]
+           [(eq? $fx>) 
+            (mkprm 'int> (V (car rands)) (V (cadr rands)))]
+           [(eq? $fx>=) 
+            (mkprm 'int>= (V (car rands)) (V (cadr rands)))]
            [else (error who "invalid value prim ~s" op)])]
         [else (error who "invalid value ~s" x)])) 
     (define (V x)
@@ -220,6 +238,33 @@
             (mkprm 'int+ (V (car rands)) (immediate-rep 1))]
            [($fxsub1) 
             (mkprm 'int+ (V (car rands)) (immediate-rep -1))]
+           [($fx+)
+            (mkprm 'int+ (V (car rands)) (V (cadr rands)))]
+           [($fxlogor)
+            (mkprm 'intor (V (car rands)) (V (cadr rands)))]
+           [($fxlogand)
+            (mkprm 'intand (V (car rands)) (V (cadr rands)))]
+           [($fx-)
+            (mkprm 'int- (V (car rands)) (V (cadr rands)))]
+           [($fx*)
+            (let ([a (car rands)] [b (cadr rands)])
+              (let ([ai (record-case a
+                          [(constant i) 
+                           (if (fixnum? i) i #f)]
+                          [else #f])]
+                    [bi (record-case b
+                          [(constant i) 
+                           (if (fixnum? i) i #f)]
+                          [else #f])])
+                (cond
+                  [ai
+                   (mkprm 'int* (V b) (mkint ai))]
+                  [bi
+                   (mkprm 'int* (V a) (mkint bi))]
+                  [else
+                   (mkprm 'int* ;;; FIXME GC problem
+                          (mkprm 'intsra (V a) (mkint fixnum-shift))
+                          (V b))])))]
            [($fxlognot) 
             (mkprm 'intxor (V (car rands)) (immediate-rep -1))]
            [($char->fixnum)
@@ -262,6 +307,14 @@
          (case op
            [(int=)
             (prim 'int= 'int= (car rands) (cadr rands))]
+           [(int<)
+            (prim 'int< 'int> (car rands) (cadr rands))]
+           [(int<=)
+            (prim 'int<= 'int>= (car rands) (cadr rands))]
+           [(int>)
+            (prim 'int> 'int< (car rands) (cadr rands))]
+           [(int>=)
+            (prim 'int>= 'int<= (car rands) (cadr rands))]
            [else (error who "invalid pred prim ~s" op)])]
         [else (error who "invalid pred value ~s" x)])) 
     (define (V x)
@@ -283,12 +336,25 @@
          (case op
            [(int+)
             (assoc 'int+ (car rands) (cadr rands))]
+           [(int*)
+            (assoc 'int* (car rands) (cadr rands))]
            [(intxor)
             (assoc 'intxor (car rands) (cadr rands))]
            [(intor)
             (assoc 'intor (car rands) (cadr rands))]
            [(intand)
             (assoc 'intand (car rands) (cadr rands))]
+           [(int-)
+            (let ([a (car rands)] [b (cadr rands)])
+              (cond
+               [(simple? b)
+                (mkseq (V a)
+                       (mkset rv-register (mkprm 'int- rv-register b)))]
+               [(simple? a)
+                (mkseq (mkseq (V b) 
+                         (mkset rv-register (mkprm 'intneg rv-register)))
+                       (mkset rv-register (mkprm 'int+ rv-register a)))]
+               [else (error who "two complex operands ~s ~s" a b)]))]
            [(intsll intsra)
             (let ([a (car rands)] [b (cadr rands)])
               (record-case b
@@ -421,18 +487,18 @@
            (record-case a
              [(reg ra) 
               (cons `(cmpl ,(op b) ,(op a))
-                    (CJump (revcmp prim) lt lf ac))]
+                    (CJump prim lt lf ac))]
              [(reg rb) 
               (cons `(cmpl ,(op a) ,(op b))
-                    (CJump prim lt lf ac))]
+                    (CJump (revcmp prim) lt lf ac))]
              [else (error who "invalid operands in pred ~s ~s" a b)]))]
         [else (error who "invalid pred ~s" x)]))
-
     ;;;
     (define (Effect x ac)
       (define (primname x)
         (case x
           [(int+) 'addl]
+          [(int*) 'imull]
           [(intor) 'orl]
           [(intxor) 'xorl]
           [(intand) 'andl]
@@ -456,7 +522,7 @@
            [(constant c) (cons `(movl (obj ,c) ,(op targ)) ac)]
            [(primcall prim rands)
             (case prim
-              [(int+ intor intxor intand) 
+              [(int+ intor intxor intand int*) 
                (let ([asmprm (primname prim)])
                  (let ([a (car rands)] [b (cadr rands)])
                    (cond
@@ -473,6 +539,18 @@
                              `(,asmprm ,(op a) ,(op targ))
                              ac)]
                      [else (error who "invalid ops")])))]
+              [(int-)
+               (let ([a (car rands)] [b (cadr rands)])
+                 (cond
+                   [(and (same? targ a) (indep? targ b))
+                    (cons `(subl ,(op b) ,(op a)) ac)]
+                   [else (error who "invalid ops int-")]))]
+              [(intneg)
+               (let ([a (car rands)])
+                 (cond
+                   [(same? targ a)
+                    (cons `(negl ,(op a)) ac)]
+                   [else (error who "invalid ops intneg")]))]
               [(intsll intsra) 
                (let ([asmprm (primname prim)])
                  (let ([a (car rands)] [b (cadr rands)])
@@ -504,7 +582,8 @@
            [else (error who "invalid tail prim ~s" op)])]
         [else (error who "invalid tail ~s" x)]))
     ;;;
-    (list (cons 0 (Tail x '()))))
+    (list (list* 0
+                 (Tail x '()))))
   ;;;
   (define (compile x)
     (let* ([x (parameterize ([expand-mode 'bootstrap]
@@ -554,5 +633,6 @@
 (load "tests/tests-1.2-req.scm")
 (load "tests/tests-1.3-req.scm")
 (load "tests/tests-1.4-req.scm")
+(load "tests/tests-1.5-req.scm")
 
 (printf "ALL IS GOOD :-)\n")
