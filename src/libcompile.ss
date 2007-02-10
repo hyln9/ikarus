@@ -252,6 +252,13 @@
 (define-record assign (lhs rhs))
 (define-record mvcall (producer consumer))
 
+
+
+(define-record fvar (idx))
+(define-record set (lhs rhs))
+(define-record object (val))
+(define-record locals (vars body))
+
 (define (unique-var x)
   (make-var (gensym x) #f #f))
 
@@ -398,13 +405,19 @@
       [(fix lhs* rhs* body) 
        `(fix ,(map (lambda (lhs rhs) (list (E lhs) (E rhs))) lhs* rhs*)
           ,(E body))]
-      [(seq e0 e1) `(begin ,(E e0) ,(E e1))]
+      [(seq e0 e1) 
+       (let ()
+         (define (f x ac)
+           (record-case x
+             [(seq e0 e1) (f e0 (f e1 ac))]
+             [else (cons (E x) ac)]))
+         (cons 'begin (f e0 (f e1 '()))))]
       [(clambda-case info body)
-       `(clambda-case ,(E-args (case-info-proper info)
+       `(,(E-args (case-info-proper info)
                                (case-info-args info))
             ,(E body))]
       [(clambda g cls* free)
-       `(case-lambda . ,(map E cls*))]
+       `(,g (case-lambda . ,(map E cls*)))]
       [(clambda label clauses free)
        `(code ,label . ,(map E clauses))]
       [(closure code free*)
@@ -444,7 +457,10 @@
        `(tailcall-cp ,convention ,label ,arg-count)]
       [(foreign-label x) `(foreign-label ,x)]
       [(mvcall prod cons) `(mvcall ,(E prod) ,(E cons))]
-      [else (error 'unparse "invalid record ~s" x)]))
+      [(set lhs rhs) `(set ,(E lhs) ,(E rhs))]
+      [(fvar idx) (string->symbol (format "fv.~a" idx))]
+      [(locals vars body) `(locals ,(map E vars) ,(E body))]
+      [else x]))
   (E x))
 
 
@@ -5141,6 +5157,42 @@
                ls*)])
         (car code*)))))
 
+
+(include "libaltcogen.ss")
+
+
+(define (alt-compile-expr expr)
+  (let* ([p (parameterize ([assembler-output #f])
+              (expand expr))]
+         [p (recordize p)]
+         [p (optimize-direct-calls p)]
+         [p (optimize-letrec p)]
+         [p (uncover-assigned/referenced p)]
+         [p (copy-propagate p)]
+         [p (rewrite-assignments p)]
+         [p (optimize-for-direct-jumps p)]
+         [p (convert-closures p)]
+         [p (optimize-closures/lift-codes p)])
+    (let ([ls* (alt-cogen p)])
+      (when (assembler-output)
+        (parameterize ([gensym-prefix "L"]
+                       [print-gensym #f])
+          (for-each 
+            (lambda (ls)
+              (newline)
+              (for-each (lambda (x) (printf "    ~s\n" x)) ls))
+            ls*)))
+      (let ([code* 
+             (list*->code* 
+               (lambda (x)
+                 (if (closure? x)
+                     (if (null? (closure-free* x))
+                         (code-loc-label (closure-code x))
+                         (error 'compile "BUG: non-thunk escaped: ~s" x))
+                     #f))
+               ls*)])
+        (car code*)))))
+
 (define compile-file
   (lambda (input-file output-file . rest)
     (let ([ip (open-input-file input-file)]
@@ -5164,6 +5216,17 @@
                  (compile-expr x)))])
       (let ([proc ($code->closure code)])
         (proc)))))
+
+(primitive-set! 'alt-compile
+  (lambda (x)
+    (let ([code 
+           (if (code? x)
+               x
+               (parameterize ([expand-mode 'eval])
+                 (alt-compile-expr x)))])
+      (let ([proc ($code->closure code)])
+        (proc)))))
+
 
 (primitive-set! 'current-eval
   (make-parameter 

@@ -341,6 +341,8 @@
            (CODE c (RegReg r1 a1 a2 ac))]
           [(and (imm? a1) (reg? a2))
            (CODErri c r1 a2 a1 ac)]
+          [(and (imm? a2) (reg? a1))
+           (CODErri c r1 a1 a2 ac)]
           [(and (imm? a1) (imm? a2))
            (CODE c 
              (ModRM 0 r1 '/5 
@@ -362,6 +364,8 @@
            (error 'CODEdi "unsupported1")]
           [(and (imm? a1) (reg? a2))
            (CODErri c '/0 a2 a1 (IMM32 n ac))]
+          [(and (imm? a2) (reg? a1))
+           (CODErri c '/0 a1 a2 (IMM32 n ac))]
           [(and (imm? a1) (imm? a2))
            (error 'CODEdi "unsupported2")]
           [else (error 'CODEdi "unhandled ~s" disp)])))))
