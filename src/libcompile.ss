@@ -3149,9 +3149,9 @@
   (define (ja label) (list 'ja label))
   (define (jo label) (list 'jo label))
   (define (jmp label) (list 'jmp label))
-  (define edi '%edx) ; closure pointer
-  (define esi '%esi) ; pcb
-  (define ebp '%ebp) ; allocation pointer
+ ; (define edi '%edx) ; closure pointer
+ ; (define esi '%esi) ; pcb
+ ; (define ebp '%ebp) ; allocation pointer
   (define esp '%esp) ; stack base pointer 
   (define al '%al)
   (define ah '%ah)
@@ -3161,10 +3161,10 @@
   (define ebx '%ebx)
   (define ecx '%ecx)
   (define edx '%edx)
-  (define apr '%ebp)
-  (define fpr '%esp)
-  (define cpr '%edi)
-  (define pcr '%esi)
+  (define apr '%ebp) ; allocation pointer
+  (define fpr '%esp) ; frame pointer
+  (define cpr '%edi) ; closure pointer
+  (define pcr '%esi) ; pcb pointer
   (define register? symbol?)
   (define (argc-convention n)
     (fx- 0 (fxsll n fx-shift))))
