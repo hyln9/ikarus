@@ -917,13 +917,16 @@
     (define (actual-frame-size vars i)
       (define (conflicts? i ls)
         (and (not (null? ls))
-             (or (record-case (car ls)
-                   [(fvar j) (eq? i j)]
-                   [else #f])
+             (or (let f ([x (car ls)])
+                   (record-case x
+                     [(fvar j) (eq? i j)]
+                     [(var) (f (Var x))]
+                     [(nfvar conf loc) (f loc)]
+                     [else #f]))
                  (conflicts? i (cdr ls)))))
       (define (frame-size-ok? i vars)
         (or (null? vars)
-            (and (not (conflicts? i (map Lhs (nfvar-conf (car vars)))))
+            (and (not (conflicts? i (nfvar-conf (car vars))))
                  (frame-size-ok? (fxadd1 i) (cdr vars)))))
       (cond
         [(frame-size-ok? i vars) i]
@@ -1002,7 +1005,7 @@
          (make-conditional (P e0) (T e1) (T e2))]
         [(seq e0 e1) (make-seq (E e0) (T e1))]
         [else (error who "invalid tail ~s" x)]))
-    ;(print-graph frame-g)
+    ;(print-code x)
     (T x))
   ;;;
   (define (do-spill sp* g)
@@ -1331,7 +1334,7 @@
   (Program x))
 
 (define (print-code x)
-  (parameterize ([print-gensym 'pretty])
+  (parameterize ([print-gensym '#t])
     (pretty-print (unparse x))))
 
 (define (alt-cogen x)
