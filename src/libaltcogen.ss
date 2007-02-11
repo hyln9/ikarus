@@ -500,13 +500,6 @@
 (define (impose-calling-convention/evaluation-order x)
   (define who 'impose-calling-convention/evaluation-order)
   ;;;
-  (define (E x)
-    (record-case x
-      [(primcall op rands)
-       (S* rands
-           (lambda (rands)
-             (make-primcall op rands)))]
-      [else (error who "invalid effect ~s" x)]))
   ;;;
   (define (S* x* k)
     (cond
@@ -519,9 +512,13 @@
                   (k (cons a d))))))]))
   ;;;
   (define (S x k)
-    (record-case x 
-      [(constant) (k x)]
-      [(var)      (k x)]
+    (cond
+      [(or (constant? x) (var? x)) 
+       (k x)]
+      [(funcall? x) 
+       (let ([t (unique-var 'tmp)])
+         (do-bind (list t) (list x)
+           (k t)))]
       [else (error who "invalid S ~s" x)]))
   ;;;
   (define (do-bind lhs* rhs* body)
@@ -551,6 +548,8 @@
        (do-bind lhs* rhs* (V d e))]
       [(seq e0 e1)
        (make-seq (E e0) (V d e1))]
+      [(conditional e0 e1 e2)
+       (make-conditional (P e0) (V d e1) (V d e2))]
       [(primcall op rands)
        (S* rands
           (lambda (rands)
@@ -588,6 +587,28 @@
        (V return-value-register x)
        (make-primcall 'return (list return-value-register))))
   ;;;
+  (define (E x)
+    (record-case x
+      [(seq e0 e1) (make-seq (E e0) (E e1))]
+      [(conditional e0 e1 e2)
+       (make-conditional (P e0) (E e1) (E e2))]
+      [(primcall op rands)
+       (S* rands
+           (lambda (rands)
+             (make-primcall op rands)))]
+      [else (error who "invalid effect ~s" x)]))
+  ;;;
+  (define (P x)
+    (record-case x
+      [(seq e0 e1) (make-seq (E e0) (P e1))]
+      [(conditional e0 e1 e2)
+       (make-conditional (P e0) (P e1) (P e2))]
+      [(primcall op rands)
+       (S* rands
+           (lambda (rands)
+             (make-primcall op rands)))]
+      [else (error who "invalid pred ~s" x)]))
+  ;;;
   (define (Tail x)
     (record-case x 
       [(constant) (VT x)]
@@ -597,6 +618,8 @@
        (do-bind lhs* rhs* (Tail e))]
       [(seq e0 e1)
        (make-seq (E e0) (Tail e1))]
+      [(conditional e0 e1 e2)
+       (make-conditional (P e0) (Tail e1) (Tail e2))]
       [(funcall rator rands)
        (let ([cpt (unique-var 'rator)]
              [rt* (map (lambda (x) (unique-var 't)) rands)])
@@ -743,6 +766,12 @@
     [(null? s2) s1]
     [else (set-difference (set-rem (car s2) s1) (cdr s2))]))
 
+(define (set-union s1 s2)
+  (cond
+    [(null? s1) s2]
+    [(memq (car s1) s2) (set-union (cdr s1) s2)]
+    [else (cons (car s1) (set-union (cdr s1) s2))]))
+
 
 (module (color-by-chaitin)
   (import ListyGraphs)
@@ -783,6 +812,9 @@
               (Rhs rhs s))]
            [else (Rhs rhs s)])]
         [(seq e0 e1) (E e0 (E e1 s))]
+        [(conditional e0 e1 e2)
+         (let ([s1 (E e1 s)] [s2 (E e2 s)])
+           (P e0 s1 s2 (set-union s1 s2)))]
         [(primcall op rands) (add-rands rands s)]
         [(nframe vars live body)
          (when (reg? return-value-register)
@@ -795,8 +827,21 @@
          (set-nframe-live! x s)
          (E body s)]
         [else (error who "invalid effect ~s" x)]))
+    (define (P x st sf su)
+      (record-case x
+        [(seq e0 e1)
+         (E e0 (P e1 st sf su))]
+        [(conditional e0 e1 e2)
+         (let ([s1 (P e1 st sf su)] [s2 (P e2 st sf su)])
+           (P e0 s1 s2 (set-union s1 s2)))]
+        [(primcall op rands) 
+         (add-rands rands su)]
+        [else (error who "invalid pred ~s" x)]))
     (define (T x)
       (record-case x
+        [(conditional e0 e1 e2)
+         (let ([s1 (T e1)] [s2 (T e2)])
+           (P e0 s1 s2 (set-union s1 s2)))]
         [(primcall op rands) 
          (add-rands rands '())]
         [(seq e0 e1) (E e0 (T e1))]
@@ -860,7 +905,7 @@
                    (values (cons sp spills) sp* env))))))]
       [else (error color-graph "whoaaa")]))
   ;;;
-  (define (substitute env x frame-g)
+  (define (substitute env x)
     (define who 'substitute)
     (define (max-live vars i)
       (cond
@@ -930,6 +975,8 @@
                   (make-primcall 'nop '())]
              [else (make-set lhs rhs)]))]
         [(seq e0 e1) (make-seq (E e0) (E e1))]
+        [(conditional e0 e1 e2) 
+         (make-conditional (P e0) (E e1) (E e2))]
         [(primcall op rands) 
          (make-primcall op (map Rand rands))]
         [(nframe vars live body)
@@ -940,9 +987,19 @@
            (assign-frame-vars! vars i)
            (NFE (fxsub1 i) body))]
         [else (error who "invalid effect ~s" x)]))
+    (define (P x)
+      (record-case x
+        [(primcall op rands) 
+         (make-primcall op (map Rand rands))]
+        [(conditional e0 e1 e2) 
+         (make-conditional (P e0) (P e1) (P e2))]
+        [(seq e0 e1) (make-seq (E e0) (P e1))]
+        [else (error who "invalid pred ~s" x)])) 
     (define (T x)
       (record-case x
         [(primcall op rands) x]
+        [(conditional e0 e1 e2) 
+         (make-conditional (P e0) (T e1) (T e2))]
         [(seq e0 e1) (make-seq (E e0) (T e1))]
         [else (error who "invalid tail ~s" x)]))
     ;(print-graph frame-g)
@@ -1008,15 +1065,34 @@
                     (make-primcall (primcall-op rhs) s*))))]
            [else (error who "invalid set in ~s" x)])]
         [(seq e0 e1) (make-seq (E e0) (E e1))]
+        [(conditional e0 e1 e2)
+         (make-conditional (P e0) (E e1) (E e2))]
         [(primcall op rands) 
          (case op
            [(nop) x]
            [(indirect-call) x]
            [else (error who "invalid op in ~s" x)])]
         [else (error who "invalid effect ~s" x)]))
+    (define (P x)
+      (record-case x
+        [(primcall op rands)
+         (let ([a0 (car rands)] [a1 (cadr rands)])
+           (cond
+             [(and (fvar? a0) (fvar? a1))
+              (let ([u (mku)])
+                (make-seq 
+                  (make-set u a0)
+                  (make-primcall op u a1)))]
+             [else x]))]
+        [(conditional e0 e1 e2)
+         (make-conditional (P e0) (P e1) (P e2))]
+        [(seq e0 e1) (make-seq (E e0) (P e1))]
+        [else (error who "invalid pred ~s" x)]))
     (define (T x)
       (record-case x
         [(primcall op rands) x]
+        [(conditional e0 e1 e2)
+         (make-conditional (P e0) (T e1) (T e2))]
         [(seq e0 e1) (make-seq (E e0) (T e1))]
         [else (error who "invalid tail ~s" x)]))
     (let ([x (T x)])
@@ -1033,10 +1109,10 @@
                   ;  (print-code body)
              (let-values ([(spills sp* env) (color-graph sp* un* g)])
                (cond
-                 [(null? spills) (substitute env body frame-g)]
+                 [(null? spills) (substitute env body)]
                  [else 
                   (let* ([env (do-spill spills frame-g)]
-                         [body (substitute env body frame-g)])
+                         [body (substitute env body)])
                     (let-values ([(un* body)
                                   (add-unspillables un* body)])
                        (loop sp* un* body)))])))))]))
@@ -1122,6 +1198,12 @@
       [(seq e0 e1) (E e0 (E e1 ac))]
       [(set lhs rhs) 
        (Rhs rhs (Rand lhs) ac)]
+      [(conditional e0 e1 e2)
+       (let ([lf (unique-label)])
+         (P e0 #f lf
+            (E e1 
+               (cons `(jmp ,lf) 
+                     (E e2 (cons lf ac))))))]
       [(primcall op rands)
        (case op
          [(nop) ac]
@@ -1136,9 +1218,81 @@
          [else (error who "invalid effect ~s" x)])]
       [else (error who "invalid effect ~s" x)]))
   ;;;
+  (define (unique-label)
+    (label (gensym)))
+  ;;;
+  (define (P x lt lf ac)
+    (record-case x
+      [(seq e0 e1)
+       (E e0 (P e1 lt lf ac))]
+      [(conditional e0 e1 e2)
+       (cond
+         [(and lt lf) 
+          (let ([l (unique-label)])
+            (P e0 #f l
+               (P e1 lt lf
+                  (cons l (P e2 lt lf ac)))))]
+         [lt
+          (let ([lf (unique-label)] [l (unique-label)])
+            (P e0 #f l
+               (P e1 lt lf
+                  (cons l (P e2 lt #f (cons lf ac))))))]
+         [lf 
+          (let ([lt (unique-label)] [l (unique-label)])
+            (P e0 #f l
+               (P e1 lt lf
+                  (cons l (P e2 #f lf (cons lt ac))))))]
+         [else
+          (let ([lf (unique-label)] [l (unique-label)])
+            (P e0 #f l
+               (P e1 #f #f
+                  (cons `(jmp ,lf)
+                    (cons l (P e2 #f #f (cons lf ac)))))))])]
+      [(primcall op rands)
+       (let ([a0 (car rands)] [a1 (cadr rands)])
+         (define (notop x)
+           (cond
+             [(assq x '([= !=] [!= =] [< >=] [<= >] [> <=] [>= <]))
+              => cadr]
+             [else (error who "invalid op ~s" x)]))
+         (define (jmpname x)
+           (cond
+             [(assq x '([= je] [!= jne] [< jl] [<= jle] [> jg] [>= jge]))
+              => cadr]
+             [else (error who "invalid jmpname ~s" x)]))
+         (define (revjmpname x)
+           (cond
+             [(assq x '([= je] [!= jne] [< jg] [<= jge] [> jl] [>= jle]))
+              => cadr]
+             [else (error who "invalid jmpname ~s" x)]))
+         (define (cmp op a0 a1 lab ac)
+           (cond
+             [(or (symbol? a0) (constant? a1))
+              (list* `(cmpl ,(Rand a1) ,(Rand a0))
+                     `(,(jmpname op) ,lab)
+                     ac)]
+             [(or (symbol? a1) (constant? a0))
+              (list* `(cmpl ,(Rand a0) ,(Rand a1))
+                     `(,(revjmpname op) ,lab)
+                     ac)]
+             [else (error who "invalid ops ~s ~s" a0 a1)]))
+         (cond
+           [(and lt lf)
+            (cmp op a0 a1 lt
+                (cons `(jmp ,lf) ac))]
+           [lt 
+            (cmp op a0 a1 lt ac)]
+           [lf 
+            (cmp (notop op) a0 a1 lf ac)]
+           [else ac]))]
+      [else (error who "invalid pred ~s" x)]))
+  ;;;
   (define (T x ac)
     (record-case x
       [(seq e0 e1) (E e0 (T e1 ac))]
+      [(conditional e0 e1 e2)
+       (let ([L (unique-label)])
+         (P e0 #f L (T e1 (cons L (T e2 ac)))))]
       [(primcall op rands)
        (case op
         [(return) (cons '(ret) ac)]
