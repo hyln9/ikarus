@@ -165,7 +165,7 @@
        (make-seq (Expr e0) (Expr e1))]
       [(closure) x]
       [(primcall op arg*)
-       (make-appcall (make-primref op) (map Expr arg*))]
+       (make-funcall (make-primref op) (map Expr arg*))]
       [(forcall op arg*)
        (make-forcall op (map Expr arg*))]
       [(funcall rator arg*)
@@ -540,6 +540,27 @@
             (values (cons (car regs) r*)
                     (cons (car args) rl*)
                     f*))])))
+  (define (handle-nontail-call rator rands dest)
+    (let-values ([(reg-locs reg-args frm-args)
+                  (nontail-locations (cons rator rands))])
+      (let ([regt* (map (lambda (x) (unique-var 'rt)) reg-args)]
+            [frmt* (map (lambda (x) (make-nfvar #f #f)) frm-args)])
+        (let ([body
+               (make-nframe frmt* #f
+                 (do-bind frmt* frm-args
+                   (do-bind regt* reg-args
+                     (assign* reg-locs regt*
+                       (make-seq 
+                         (make-set argc-register 
+                            (make-constant
+                              (argc-convention (length rands))))
+                         (make-primcall
+                           'indirect-call 
+                           (cons argc-register 
+                                 (append reg-locs frmt*))))))))])
+          (if dest 
+              (make-seq body (make-set dest return-value-register))
+              body)))))
   (define (V d x)
     (record-case x 
       [(constant) (make-set d x)]
@@ -555,23 +576,7 @@
           (lambda (rands)
             (make-set d (make-primcall op rands))))]
       [(funcall rator rands) 
-       (let-values ([(reg-locs reg-args frm-args)
-                     (nontail-locations (cons rator rands))])
-         (let ([regt* (map (lambda (x) (unique-var 'rt)) reg-args)]
-               [frmt* (map (lambda (x) (make-nfvar #f #f)) frm-args)])
-           (make-seq
-             (make-nframe frmt* #f
-               (do-bind frmt* frm-args
-                 (do-bind regt* reg-args
-                   (assign* reg-locs regt*
-                     (make-seq 
-                       (make-set argc-register 
-                          (make-constant
-                            (argc-convention (length rands))))
-                       (make-primcall
-                         'indirect-call 
-                         (cons argc-register (append reg-locs frmt*))))))))
-             (make-set d return-value-register))))]
+       (handle-nontail-call rator rands d)]
       [else (error who "invalid value ~s" x)]))
   ;;;
   (define (assign* lhs* rhs* ac)
@@ -596,6 +601,8 @@
        (S* rands
            (lambda (rands)
              (make-primcall op rands)))]
+      [(funcall rator rands) 
+       (handle-nontail-call rator rands #f)]
       [else (error who "invalid effect ~s" x)]))
   ;;;
   (define (P x)
@@ -920,7 +927,10 @@
              (or (let f ([x (car ls)])
                    (record-case x
                      [(fvar j) (eq? i j)]
-                     [(var) (f (Var x))]
+                     [(var) 
+                      (cond
+                        [(assq x env) => (lambda (x) (f (cdr x)))]
+                        [else #f])]
                      [(nfvar conf loc) (f loc)]
                      [else #f]))
                  (conflicts? i (cdr ls)))))
@@ -1339,7 +1349,10 @@
 
 (define (alt-cogen x)
   (verify-new-cogen-input x)
-  (let* ([x (remove-primcalls x)]
+  (let* (
+         ;[foo (print-code x)]
+         [x (remove-primcalls x)]
+         ;[foo (print-code x)]
          [x (eliminate-fix x)]
          [x (specify-representation x)]
          [x (impose-calling-convention/evaluation-order x)]
