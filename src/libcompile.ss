@@ -258,6 +258,21 @@
 (define-record set (lhs rhs))
 (define-record object (val))
 (define-record locals (vars body))
+(define-record nframe (vars live body))
+(define-record nfvar (conf loc))
+
+(define mkfvar
+  (let ([cache '()])
+    (lambda (i)
+      (cond
+        [(fixnum? i)
+         (cond
+           [(assv i cache) => cdr]
+           [else
+            (let ([fv (make-fvar i)])
+              (set! cache (cons (cons i fv) cache))
+              fv)])]
+        [else (error 'mkfvar "~s is not a fixnum" i)]))))
 
 (define (unique-var x)
   (make-var (gensym x) #f #f))
@@ -460,6 +475,7 @@
       [(set lhs rhs) `(set ,(E lhs) ,(E rhs))]
       [(fvar idx) (string->symbol (format "fv.~a" idx))]
       [(locals vars body) `(locals ,(map E vars) ,(E body))]
+      [(nframe vars live body) `(nframe ,(map E vars) ,(E body))]
       [else x]))
   (E x))
 
@@ -5225,6 +5241,7 @@
                (parameterize ([expand-mode 'eval])
                  (alt-compile-expr x)))])
       (let ([proc ($code->closure code)])
+        (printf "running ...\n")
         (proc)))))
 
 

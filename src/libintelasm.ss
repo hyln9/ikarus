@@ -329,6 +329,7 @@
       [(and (int? i1) (obj? i2))
        (let ([d i1] [v (cadr i2)])
          (cons (reloc-word+ v d) ac))]
+      [(and (int? i2) (obj? i1)) (IMM32*2 i2 i1 ac)]
       [else (error 'assemble "IMM32*2 ~s ~s" i1 i2)])))
 
 
