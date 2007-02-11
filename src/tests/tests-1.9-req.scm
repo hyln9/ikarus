@@ -172,7 +172,7 @@
   [(let ([v (make-string 2)])
      (string-set! v 0 #\x)
      (string-set! v 1 #\x)
-     (char= (string-ref v 0) (string-ref v 1))) => "#t\n"]
+     (char=? (string-ref v 0) (string-ref v 1))) => "#t\n"]
   [(let ([v0 (make-string 3)])
      (let ([v1 (make-string 3)])
        (string-set! v0 0 #\a)
@@ -201,21 +201,21 @@
        (string-set! v1 (fx- (string-length v1) 1) #\X)
        (cons v0 v1)))) =>  "(\"abc\" . \"ZYX\")\n"]
   [(let ([n 1])
-     (string-set! (make-string n) (fxsub1 n) (fixnum->char 34))
+     (string-set! (make-string n) (fxsub1 n) (integer->char 34))
      n) => "1\n"]
   [(let ([n 1])
      (let ([v (make-string 1)])
-       (string-set! v (fxsub1 n) (fixnum->char n))
-       (char->fixnum (string-ref v (fxsub1 n))))) => "1\n"]
+       (string-set! v (fxsub1 n) (integer->char n))
+       (char->integer (string-ref v (fxsub1 n))))) => "1\n"]
  [(let ([v0 (make-string 1)])
     (string-set! v0 0 #\a)
     (let ([v1 (make-string 1)])
       (string-set! v1 0 #\A)
       (string-set! (if (string? v0) v0 v1) 
            (fxsub1 (string-length (if (string? v0) v0 v1)))
-           (fixnum->char
+           (integer->char
              (fxadd1 
-                (char->fixnum
+                (char->integer
                   (string-ref
                      (if (string? v0) v0 v1)
                      (fxsub1 (string-length (if (string? v0) v0 v1))))))))
