@@ -807,11 +807,17 @@
             (cond
               [(or (var? rhs) (reg? rhs))
                (let ([s (set-rem rhs (set-rem lhs s))])
-                 (for-each (lambda (x) (add-edge! g lhs x)) s)
+                 (for-each (lambda (x) 
+                             (when (or (var? x) (reg? x))
+                               (add-edge! g lhs x)))
+                          s)
                  (cons rhs s))]
               [else
                (let ([s (set-rem lhs s)])
-                 (for-each (lambda (x) (add-edge! g lhs x)) s)
+                 (for-each (lambda (x) 
+                             (when (or (var? x) (reg? x))
+                               (add-edge! g lhs x))) 
+                           s)
                  (Rhs rhs s))])]
            [(nfvar? lhs)
             (let ([s (set-rem lhs s)])
@@ -910,9 +916,9 @@
                    (values spills (cons sp sp*)
                        (cons (cons sp r) env))
                    (values (cons sp spills) sp* env))))))]
-      [else (error color-graph "whoaaa")]))
+      [else (error 'color-graph "whoaaa")]))
   ;;;
-  (define (substitute env x)
+  (define (substitute env x frm-graph)
     (define who 'substitute)
     (define (max-live vars i)
       (cond
@@ -943,7 +949,14 @@
         [else (actual-frame-size vars (fxadd1 i))]))
     (define (assign-frame-vars! vars i)
       (unless (null? vars)
-        (set-nfvar-loc! (car vars) (mkfvar i))
+        (let ([v (car vars)]
+              [fv (mkfvar i)])
+          (set-nfvar-loc! v fv)
+          (for-each
+            (lambda (x)
+              (when (var? x)
+                (add-edge! frm-graph x fv)))
+            (nfvar-conf v)))
         (assign-frame-vars! (cdr vars) (fxadd1 i))))
     (define (Var x)
       (cond
@@ -1120,12 +1133,13 @@
            (let ([g (build-graph body symbol?)])
                   ;  (printf "loop:\n")
                   ;  (print-code body)
+             ;(print-graph g)
              (let-values ([(spills sp* env) (color-graph sp* un* g)])
                (cond
-                 [(null? spills) (substitute env body)]
+                 [(null? spills) (substitute env body frame-g)]
                  [else 
                   (let* ([env (do-spill spills frame-g)]
-                         [body (substitute env body)])
+                         [body (substitute env body frame-g)])
                     (let-values ([(un* body)
                                   (add-unspillables un* body)])
                        (loop sp* un* body)))])))))]))
@@ -1186,6 +1200,8 @@
     (record-case x
       [(constant c)
        (cons `(movl ,(Rand x) ,d) ac)]
+      [(fvar i)
+       (cons `(movl ,(FVar i) ,d) ac)]
       [(primcall op rands)
        (case op
          [(mref)
@@ -1360,13 +1376,14 @@
          [x (color-by-chaitin x)]
          ;[foo (print-code x)]
          [ls (flatten-codes x)])
-    (parameterize ([gensym-prefix "L"]
-                   [print-gensym #f])
-      (for-each 
-        (lambda (ls)
-          (newline)
-          (for-each (lambda (x) (printf "    ~s\n" x)) ls))
-        ls))
+    (when #f
+      (parameterize ([gensym-prefix "L"]
+                     [print-gensym #f])
+        (for-each 
+          (lambda (ls)
+            (newline)
+            (for-each (lambda (x) (printf "    ~s\n" x)) ls))
+          ls)))
     ls))
   
 #|module alt-cogen|#)
