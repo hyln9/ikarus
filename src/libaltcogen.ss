@@ -447,7 +447,7 @@
             (record-case a1
               [(constant i) 
                (unless (fixnum? i) (err x))
-               (make-primcall 'mem 
+               (make-primcall 'mref 
                   (list (Value a0) 
                         (make-constant 
                           (+ (- disp-closure-data closure-tag)
@@ -540,26 +540,34 @@
             (values (cons (car regs) r*)
                     (cons (car args) rl*)
                     f*))])))
-  (define (handle-nontail-call rator rands dest)
+  (define (handle-nontail-call rator rands value-dest call-targ)
     (let-values ([(reg-locs reg-args frm-args)
                   (nontail-locations (cons rator rands))])
       (let ([regt* (map (lambda (x) (unique-var 'rt)) reg-args)]
             [frmt* (map (lambda (x) (make-nfvar #f #f)) frm-args)])
-        (let ([body
-               (make-nframe frmt* #f
-                 (do-bind frmt* frm-args
-                   (do-bind regt* reg-args
-                     (assign* reg-locs regt*
-                       (make-seq 
-                         (make-set argc-register 
-                            (make-constant
-                              (argc-convention (length rands))))
-                         (make-primcall
-                           'indirect-call 
-                           (cons argc-register 
-                                 (append reg-locs frmt*))))))))])
-          (if dest 
-              (make-seq body (make-set dest return-value-register))
+        (let* ([call 
+                (cond
+                  [call-targ
+                   (make-primcall 'direct-call
+                     (cons call-targ 
+                       (cons argc-register
+                         (append reg-locs frmt*))))]
+                  [else
+                   (make-primcall 'indirect-call 
+                     (cons argc-register 
+                           (append reg-locs frmt*)))])]
+               [body
+                (make-nframe frmt* #f
+                  (do-bind frmt* frm-args
+                    (do-bind regt* reg-args
+                      (assign* reg-locs regt*
+                        (make-seq 
+                          (make-set argc-register 
+                             (make-constant
+                               (argc-convention (length rands))))
+                          call)))))])
+          (if value-dest 
+              (make-seq body (make-set value-dest return-value-register))
               body)))))
   (define (V d x)
     (record-case x 
@@ -576,7 +584,9 @@
           (lambda (rands)
             (make-set d (make-primcall op rands))))]
       [(funcall rator rands) 
-       (handle-nontail-call rator rands d)]
+       (handle-nontail-call rator rands d #f)]
+      [(jmpcall label rator rands) 
+       (handle-nontail-call rator rands d (make-code-loc label))]
       [else (error who "invalid value ~s" x)]))
   ;;;
   (define (assign* lhs* rhs* ac)
@@ -602,7 +612,7 @@
            (lambda (rands)
              (make-primcall op rands)))]
       [(funcall rator rands) 
-       (handle-nontail-call rator rands #f)]
+       (handle-nontail-call rator rands #f #f)]
       [else (error who "invalid effect ~s" x)]))
   ;;;
   (define (P x)
@@ -616,6 +626,24 @@
              (make-primcall op rands)))]
       [else (error who "invalid pred ~s" x)]))
   ;;;
+  (define (handle-tail-call target rator rands)
+    (let ([cpt (unique-var 'rator)]
+          [rt* (map (lambda (x) (unique-var 't)) rands)])
+      (do-bind rt* rands
+        (do-bind (list cpt) (list rator)
+           (let ([args (cons cpt rt*)]
+                 [locs (formals-locations (cons cpt rt*))])
+             (assign* (reverse locs)
+                      (reverse args)
+               (make-seq
+                 (make-set argc-register 
+                   (make-constant
+                     (argc-convention (length rands))))
+                 (cond
+                   [target 
+                    (make-primcall 'direct-jump (cons target locs))]
+                   [else 
+                    (make-primcall 'indirect-jump locs)]))))))))
   (define (Tail x)
     (record-case x 
       [(constant) (VT x)]
@@ -628,19 +656,9 @@
       [(conditional e0 e1 e2)
        (make-conditional (P e0) (Tail e1) (Tail e2))]
       [(funcall rator rands)
-       (let ([cpt (unique-var 'rator)]
-             [rt* (map (lambda (x) (unique-var 't)) rands)])
-         (do-bind rt* rands
-           (do-bind (list cpt) (list rator)
-              (let ([args (cons cpt rt*)]
-                    [locs (formals-locations (cons cpt rt*))])
-                (assign* (reverse locs)
-                         (reverse args)
-                  (make-seq
-                    (make-set argc-register 
-                      (make-constant
-                        (argc-convention (length rands))))
-                    (make-primcall 'indirect-jump locs)))))))]
+       (handle-tail-call #f rator rands)]
+      [(jmpcall label rator rands)
+       (handle-tail-call (make-code-loc label) rator rands)]
       [else (error who "invalid tail ~s" x)]))
   ;;;
   (define (formals-locations args)
@@ -983,7 +1001,7 @@
         [(seq e0 e1) (make-seq (E e0) (NFE idx e1))]
         [(primcall op rands) 
          (case op
-           [(indirect-call) 
+           [(indirect-call direct-call)
             (make-primcall op 
               (cons (make-constant idx) (map Rand rands)))]
            [else (error who "invalid NFE ~s" x)])]
@@ -1097,6 +1115,7 @@
          (case op
            [(nop) x]
            [(indirect-call) x]
+           [(direct-call) x]
            [else (error who "invalid op in ~s" x)])]
         [else (error who "invalid effect ~s" x)]))
     (define (P x)
@@ -1228,14 +1247,27 @@
       [(set lhs rhs) 
        (Rhs rhs (Rand lhs) ac)]
       [(conditional e0 e1 e2)
-       (let ([lf (unique-label)])
+       (let ([lf (unique-label)] [le (unique-label)])
          (P e0 #f lf
             (E e1 
-               (cons `(jmp ,lf) 
-                     (E e2 (cons lf ac))))))]
+               (list* `(jmp ,le) lf
+                  (E e2 (cons le ac))))))]
       [(primcall op rands)
        (case op
          [(nop) ac]
+         [(mset!) 
+          (cons `(movl ,(Rand (caddr rands)) 
+                       (disp ,(Rand (car rands))
+                             ,(Rand (cadr rands))))
+                ac)]
+         [(direct-call)
+          (record-case (car rands)
+            [(constant i) 
+             (list* `(subl ,(* (fxsub1 i) wordsize) ,fpr)
+                    `(call (label ,(code-loc-label (cadr rands))))
+                    `(addl ,(* (fxsub1 i) wordsize) ,fpr)
+                    ac)]
+            [else (error who "invalid ~s" x)])]
          [(indirect-call) 
           (record-case (car rands)
             [(constant i) 
@@ -1328,6 +1360,8 @@
         [(indirect-jump) 
          (cons `(jmp (disp ,(fx- disp-closure-code closure-tag) ,cp-register))
                ac)]
+        [(direct-jump)
+         (cons `(jmp (label ,(code-loc-label (car rands)))) ac)]
         [else (error who "invalid tail ~s" x)])]
       [else (error who "invalid tail ~s" x)]))
   ;;;
@@ -1376,7 +1410,7 @@
          [x (color-by-chaitin x)]
          ;[foo (print-code x)]
          [ls (flatten-codes x)])
-    (when #f
+    (when #t
       (parameterize ([gensym-prefix "L"]
                      [print-gensym #f])
         (for-each 
