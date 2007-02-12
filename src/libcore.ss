@@ -264,7 +264,8 @@ reference-implementation:
                ""
                (fill s ($make-string len) n m 0)))))))
 
-(primitive-set! 'not (lambda (x) (not x)))
+(primitive-set! 'not 
+  (lambda (x) (if x #f #t)))
   
 (primitive-set! 'symbol->string
   (lambda (x)

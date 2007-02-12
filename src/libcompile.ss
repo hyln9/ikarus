@@ -260,6 +260,7 @@
 (define-record locals (vars body))
 (define-record nframe (vars live body))
 (define-record nfvar (conf loc))
+(define-record ntcall (target value args mask size))
 
 (define mkfvar
   (let ([cache '()])
@@ -479,6 +480,7 @@
       [else x]))
   (E x))
 
+(define open-mvcalls (make-parameter #t))
 
 (define (optimize-direct-calls x)
   (define who 'optimize-direct-calls)
@@ -545,7 +547,7 @@
          ;;; FIXME HERE
          [(call-with-values)
           (cond
-            [(fx= (length rand*) 2)
+            [(and (open-mvcalls) (fx= (length rand*) 2))
              (let ([producer (inline (car rand*) '())] 
                    [consumer (cadr rand*)])
                (cond
@@ -4524,8 +4526,10 @@
        (if c
            (if Lt (cons (jmp Lt) ac) ac)
            (if Lf (cons (jmp Lf) ac) ac))]
-     [(fix lhs* rhs* body)
-      (do-fix lhs* rhs* (Pred body Lt Lf ac))]
+      [(closure) 
+       (if Lt (cons (jmp Lt) ac) ac)]
+      [(fix lhs* rhs* body)
+       (do-fix lhs* rhs* (Pred body Lt Lf ac))]
       [(primcall op rand*)
        (do-pred-prim op rand* Lt Lf ac)]
       [(conditional test conseq altern)
@@ -5181,7 +5185,8 @@
   (let* ([p (parameterize ([assembler-output #f])
               (expand expr))]
          [p (recordize p)]
-         [p (optimize-direct-calls p)]
+         [p (parameterize ([open-mvcalls #f])
+              (optimize-direct-calls p))]
          [p (optimize-letrec p)]
          [p (uncover-assigned/referenced p)]
          [p (copy-propagate p)]
