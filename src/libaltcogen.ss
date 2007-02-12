@@ -1570,14 +1570,20 @@
         [else (error who "invalid tail ~s" x)])]
       [else (error who "invalid tail ~s" x)]))
   ;;;
+  (define (properize args proper ac)
+    (cond
+      [proper ac]
+      [else
+       (error 'properize "not yet")
+       ac]))
+  ;;;
   (define (ClambdaCase x) 
     (record-case x
       [(clambda-case info body)
        (record-case info
          [(case-info L args proper)
-          (unless proper (error who "improper lambda"))
-          (cons (label L) 
-                (T body '()))])]))
+          (properize args proper
+            (cons (label L) (T body '())))])]))
   ;;;
   (define (Clambda x)
     (record-case x

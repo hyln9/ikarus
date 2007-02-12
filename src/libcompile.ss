@@ -5221,7 +5221,21 @@
       (close-input-port ip)
       (close-output-port op))))
 
+(define alt-compile-file
+  (lambda (input-file output-file . rest)
+    (let ([ip (open-input-file input-file)]
+          [op (apply open-output-file output-file rest)])
+      (let f ()
+        (let ([x (read ip)])
+          (unless (eof-object? x)
+            (fasl-write (alt-compile-expr x) op)
+            (f))))
+      (close-input-port ip)
+      (close-output-port op))))
+
+
 (primitive-set! 'compile-file compile-file)
+(primitive-set! 'alt-compile-file alt-compile-file)
 (primitive-set! 'assembler-output (make-parameter #f))
 (primitive-set! 'compile
   (lambda (x)

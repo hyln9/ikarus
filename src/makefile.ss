@@ -56,6 +56,7 @@
     dynamic-wind display write print-graph fasl-write printf fprintf format
     print-error read-token read comment-handler error warning exit call/cc
     error-handler eval current-eval compile alt-compile compile-file
+    alt-compile-file
     new-cafe load system expand sc-expand current-expand expand-mode
     environment? interaction-environment identifier?
     free-identifier=? bound-identifier=? literal-identifier=?
@@ -225,29 +226,29 @@
 (whack-system-env #t)
 
 (define scheme-library-files
-  '(["libhandlers.ss"   "libhandlers.fasl"  p0]
-    ["libcontrol.ss"    "libcontrol.fasl"   p0]
-    ["libcollect.ss"    "libcollect.fasl"   p0]
-    ["librecord.ss"     "librecord.fasl"    p0]
-    ["libcxr.ss"        "libcxr.fasl"       p0]
-    ["libnumerics.ss"   "libnumerics.fasl"  p0]
-    ["libguardians.ss"  "libguardians.fasl" p0]
-    ["libcore.ss"       "libcore.fasl"      p0]
-    ["libchezio.ss"     "libchezio.fasl"    p0]
-    ["libhash.ss"       "libhash.fasl"      p0]
-    ["libwriter.ss"     "libwriter.fasl"    p0]
-    ["libtokenizer.ss"  "libtokenizer.fasl" p0]
-    ["libassembler.ss"  "libassembler.fasl" p0]
-    ["libintelasm.ss"   "libintelasm.fasl"  p0]
-    ["libfasl.ss"       "libfasl.fasl"      p0]
-    ["libtrace.ss"      "libtrace.fasl"     p0]
-    ["libcompile.ss"    "libcompile.fasl"   p1]
-    ["psyntax-7.1.ss"   "psyntax.fasl"      p0]
-    ["libpp.ss"         "libpp.fasl"        p0]
-    ["libcafe.ss"       "libcafe.fasl"      p0]
-    ["libposix.ss"      "libposix.fasl"     p0]
-    ["libtimers.ss"     "libtimers.fasl"    p0]
-    ["libtoplevel.ss"   "libtoplevel.fasl"  p0]
+  '(["libhandlers.ss"   "libhandlers.fasl"  p0 onepass]
+    ["libcontrol.ss"    "libcontrol.fasl"   p0 onepass]
+    ["libcollect.ss"    "libcollect.fasl"   p0 onepass]
+    ["librecord.ss"     "librecord.fasl"    p0 onepass]
+    ["libcxr.ss"        "libcxr.fasl"       p0 onepass]
+    ["libnumerics.ss"   "libnumerics.fasl"  p0 onepass]
+    ["libguardians.ss"  "libguardians.fasl" p0 onepass]
+    ["libcore.ss"       "libcore.fasl"      p0 onepass]
+    ["libchezio.ss"     "libchezio.fasl"    p0 onepass]
+    ["libhash.ss"       "libhash.fasl"      p0 onepass]
+    ["libwriter.ss"     "libwriter.fasl"    p0 onepass]
+    ["libtokenizer.ss"  "libtokenizer.fasl" p0 onepass]
+    ["libassembler.ss"  "libassembler.fasl" p0 onepass]
+    ["libintelasm.ss"   "libintelasm.fasl"  p0 onepass]
+    ["libfasl.ss"       "libfasl.fasl"      p0 onepass]
+    ["libtrace.ss"      "libtrace.fasl"     p0 onepass]
+    ["libcompile.ss"    "libcompile.fasl"   p1 onepass]
+    ["psyntax-7.1.ss"   "psyntax.fasl"      p0 onepass]
+    ["libpp.ss"         "libpp.fasl"        p0 onepass]
+    ["libcafe.ss"       "libcafe.fasl"      p0 onepass]
+    ["libposix.ss"      "libposix.fasl"     p0 onepass]
+    ["libtimers.ss"     "libtimers.fasl"    p0 onepass]
+    ["libtoplevel.ss"   "libtoplevel.fasl"  p0 onepass]
     ))
 
 
@@ -263,12 +264,18 @@
 (define (expand-file ifile)
   (map sc-expand (read-file ifile)))
 
-(define (compile-library ifile ofile)
+(define (compile-library ifile ofile which-compile)
   (parameterize ([assembler-output #f] 
                  [expand-mode 'bootstrap]
                  [interaction-environment system-env])
-     (printf "compiling ~a ... \n" ifile)
-     (compile-file ifile ofile 'replace)))
+     (let ([proc 
+            (case which-compile
+              [(onepass) compile-file]
+              [(chaitin) alt-compile-file]
+              [else (error 'compile-library "unknown compile ~s"
+                           which-compile)])])
+      (printf "compiling ~a ... \n" ifile)
+      (proc ifile ofile 'replace))))
 
 
 
@@ -277,7 +284,7 @@
     (for-each
       (lambda (x)
         (when (eq? who (caddr x))
-          (compile-library (car x) (cadr x))))
+          (compile-library (car x) (cadr x) (cadddr x))))
       scheme-library-files))
   (define (time x) x)
   (fork
