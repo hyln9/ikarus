@@ -41,7 +41,7 @@
       ((fix f) 5))) => "120\n"]
 )
 
-(add-tests-with-string-output "letrec*"
+#;(add-tests-with-string-output "letrec*"
   [(letrec* () 12) => "12\n"]
   [(letrec* ([f 12]) f) => "12\n"]
   [(letrec* ([f 12] [g 13]) (fx+ f g)) => "25\n"]

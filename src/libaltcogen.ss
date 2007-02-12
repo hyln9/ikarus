@@ -117,8 +117,19 @@
   (Program x))
 
 
-(define (must-open-code? x)
-  (memq x '($vector-ref $vector-set!)))
+(module (must-open-code? prim-context)
+  (define prims
+    '([$vector-ref       v]
+      [$vector-set!      e]
+      [$cpref            v]
+      [$cpset!           e]
+      [$make-cp          v]))
+  (define (must-open-code? x)
+    (and (assq x prims) #t))
+  (define (prim-context x)
+    (cond
+      [(assq x prims) => cadr]
+      [else (error 'prim-context "~s is not a prim" x)])))
 
 
 ;;; the program so far includes both primcalls and funcalls to
@@ -218,7 +229,7 @@
         (cond
           [(null? free*) x]
           [(eq? x (car free*))
-           (make-primcall 'cpref (list cpvar (make-constant i)))]
+           (make-primcall '$cpref (list cpvar (make-constant i)))]
           [else (f (cdr free*) (fxadd1 i))])))
     ;;;
     (define (make-closure x)
@@ -227,7 +238,7 @@
          (cond
            [(null? free*) x]
            [else 
-            (make-primcall 'make-closure 
+            (make-primcall '$make-cp 
               (list code (make-constant (length free*))))])]))
     ;;;
     (define (closure-sets var x ac)
@@ -238,7 +249,7 @@
              [(null? free*) ac]
              [else
               (make-seq 
-                (make-primcall 'closure-set! 
+                (make-primcall '$cpset! 
                   (list var (make-constant i) 
                         (Var (car free*))))
                 (f (fxadd1 i) (cdr free*)))]))]))
@@ -313,6 +324,149 @@
   (Program x))
 
 
+(define (normalize-context x)
+  (define who 'normalize-context)
+  ;;;
+  (define nop (make-primcall 'nop '()))
+  ;;;
+  (define (Predicafy x)
+    (make-primcall 'neq?
+      (list (V x) (make-constant #f))))
+  (define (Unpred x)
+    (make-conditional (P x) 
+        (make-constant #t)
+        (make-constant #f)))
+  (define (mkif e0 e1 e2)
+    (record-case e0
+      [(constant c) (if c e1 e2)]
+      [(seq p0 p1) 
+       (make-seq p0 (mkif p1 e1 e2))]
+      [else
+       (make-conditional e0 e1 e2)]))
+  (define (mkbind lhs* rhs* body)
+    (if (null? lhs*)
+        body
+        (make-bind lhs* rhs* body)))
+  (define (mkseq e0 e1)
+    (if (eq? e0 nop)
+        e1
+        (make-seq e0 e1)))
+  ;;;
+  (define (P x)
+    (record-case x
+      [(constant v) (make-constant (not (not v)))]
+      [(primref)    (make-constant #t)]
+      [(closure)    (make-constant #t)]
+      [(code-loc)   (make-constant #t)]
+      [(seq e0 e1) 
+       (mkseq (E e0) (P e1))]
+      [(conditional e0 e1 e2) 
+       (mkif (P e0) (P e1) (P e2))]
+      [(bind lhs* rhs* body)
+       (mkbind lhs* (map V rhs*) (P body))]
+      [(var)     (Predicafy x)]
+      [(funcall) (Predicafy x)]
+      [(jmpcall) (Predicafy x)]
+      [(primcall op rands)
+       (case (prim-context op)
+         [(v) (Predicafy x)]
+         [(p) (make-primcall op (map V rands))]
+         [(e) 
+          (let f ([rands rands])
+            (cond
+              [(null? rands) (make-constant #t)]
+              [else
+               (mkseq (E (car rands)) (f (cdr rands)))]))]
+         [else (error who "invalid context for ~s" op)])] 
+      [else (error who "invalid pred ~s" x)]))
+  ;;;
+  (define (E x)
+    (record-case x
+      [(constant) nop]
+      [(primref)  nop]
+      [(var)      nop]
+      [(closure)  nop]
+      [(code-loc) nop]
+      [(seq e0 e1)
+       (mkseq (E e0) (E e1))]
+      [(bind lhs* rhs* body)
+       (mkbind lhs* (map V rhs*) (E body))]
+      [(conditional e0 e1 e2) 
+       (let ([e1 (E e1)] [e2 (E e2)])
+         (cond
+           [(and (eq? e1 nop) (eq? e2 nop))
+            (E e0)]
+           [else
+            (mkif (P e0) e1 e2)]))]
+      [(funcall rator rand*)
+       (make-funcall (V rator) (map V rand*))]
+      [(jmpcall label rator rand*) 
+       (make-jmpcall label (V rator) (map V rand*))]
+      [(primcall op rands)
+       (case (prim-context op)
+         [(p v) 
+          (let f ([rands rands])
+            (cond
+              [(null? rands) nop]
+              [else
+               (mkseq (f (cdr rands)) (E (car rands)))]))]
+         [(e) (make-primcall op (map V rands))]
+         [else (error who "invalid context for ~s" op)])] 
+      [else (error who "invalid effect ~s" x)]))
+  ;;;
+  (define (V x) 
+    (record-case x
+      [(constant) x]
+      [(primref)  x]
+      [(var)      x]
+      [(closure)  x]
+      [(code-loc) x]
+      [(seq e0 e1) 
+       (mkseq (E e0) (V e1))]
+      [(conditional e0 e1 e2)
+       (mkif (P e0) (V e1) (V e2))]
+      [(bind lhs* rhs* body)
+       (mkbind lhs* (map V rhs*) (V body))]
+      [(funcall rator rand*)
+       (make-funcall (V rator) (map V rand*))]
+      [(jmpcall label rator rand*) 
+       (make-jmpcall label (V rator) (map V rand*))]
+      [(primcall op rands)
+       (case (prim-context op)
+         [(v) (make-primcall op (map V rands))]
+         [(p) (Unpred x)]
+         [(e) 
+          (let f ([rands rands])
+            (cond
+              [(null? rands) (make-constant (void))]
+              [else
+               (mkseq (E (car rands)) (f (cdr rands)))]))]
+         [else (error who "invalid context for ~s" op)])]
+      [else (error who "invalid value ~s" x)]))
+  ;;;
+  (define (ClambdaCase x)
+    (record-case x
+      [(clambda-case info body)
+       (make-clambda-case info (V body))]
+      [else (error who "invalid clambda-case ~s" x)]))
+  ;;;
+  (define (Clambda x)
+    (record-case x
+      [(clambda label case* free*)
+       (make-clambda label 
+          (map ClambdaCase case*)
+          free*)]
+      [else (error who "invalid clambda ~s" x)]))
+  ;;;
+  (define (Program x)
+    (record-case x 
+      [(codes code* body)
+       (make-codes 
+         (map Clambda code*)
+         (V body))]
+      [else (error who "invalid program ~s" x)]))
+  ;;;
+  (Program x))
 
 (define (specify-representation x)
   (define who 'specify-representation)
@@ -336,10 +490,6 @@
   ;;;
   (define (Effect x)
     (record-case x
-      [(constant c) nop]
-      [(var)        nop]
-      [(primref)    nop]
-      [(closure code free*) nop]
       [(bind lhs* rhs* body)
        (make-bind lhs* (map Value rhs*) (Effect body))]
       [(conditional e0 e1 e2) 
@@ -348,7 +498,8 @@
        (make-seq (Effect e0) (Effect e1))]
       [(primcall op arg*)
        (case op
-         [(closure-set!)
+         [(nop) nop]
+         [($cpset!)
           (let ([x (Value (car arg*))] 
                 [i (cadr arg*)]
                 [v (Value (caddr arg*))])
@@ -408,10 +559,7 @@
   ;;;
   (define (Pred x)
     (record-case x
-      [(constant c) (make-constant (if c #t #f))]
-      [(var) (make-primcall '!= (list x (make-constant bool-f)))]
-      [(primref)  (make-constant #t)]
-      [(closure code free*) (make-constant #t)]
+      [(constant) x]
       [(bind lhs* rhs* body)
        (make-bind lhs* (map Value rhs*) (Pred body))]
       [(conditional e0 e1 e2) 
@@ -419,19 +567,10 @@
       [(seq e0 e1)
        (make-seq (Effect e0) (Pred e1))]
       [(primcall op arg*)
-       (error who "pred prim ~a not supported" op)]
-      [(forcall op arg*)
-       (error who "pred forcall not supported" op)]
-      [(funcall rator arg*)
-       (make-primcall '!= 
-          (list (make-funcall (Value rator) (map Value arg*))
-                (make-constant bool-f)))]
-      [(jmpcall label rator arg*)
-       (make-primcall '!= 
-          (list (make-jmpcall label (Value rator) (map Value arg*))
-                (make-constant bool-f)))]
-      [(appcall rator arg*)
-       (error who "appcall not supported yet")]
+       (case op
+         [(eq?)  (make-primcall '= (map Value arg*))]
+         [(neq?) (make-primcall '!= (map Value arg*))]
+         [else (error who "pred prim ~a not supported" op)])]
       [(mvcall rator x)
        (make-mvcall (Value rator) (Clambda x Pred))]
       [else (error who "invalid pred expr ~s" x)])) 
@@ -459,7 +598,7 @@
        (make-seq (Effect e0) (Value e1))]
       [(primcall op arg*)
        (case op
-         [(make-closure)
+         [($make-cp)
           (let ([label (car arg*)] [len (cadr arg*)])
             (record-case len
               [(constant i)
@@ -479,7 +618,7 @@
                               (Value label)))
                       t)))]
               [else (err x)]))]
-         [(cpref) 
+         [($cpref) 
           (let ([a0 (car arg*)] [a1 (cadr arg*)])
             (record-case a1
               [(constant i) 
@@ -673,6 +812,8 @@
              (make-primcall op rands)))]
       [(funcall rator rands) 
        (handle-nontail-call rator rands #f #f)]
+      [(jmpcall label rator rands) 
+       (handle-nontail-call rator rands #f (make-code-loc label))]
       [else (error who "invalid effect ~s" x)]))
   ;;;
   (define (P x)
@@ -1468,6 +1609,7 @@
          [x (remove-primcalls x)]
          ;[foo (print-code x)]
          [x (eliminate-fix x)]
+         [x (normalize-context x)]
          [x (specify-representation x)]
          [x (impose-calling-convention/evaluation-order x)]
          ;[foo (print-code x)]
