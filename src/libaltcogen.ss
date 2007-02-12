@@ -117,6 +117,8 @@
   (Program x))
 
 
+(define (must-open-code? x)
+  (memq x '($vector-ref $vector-set!)))
 
 
 ;;; the program so far includes both primcalls and funcalls to
@@ -165,7 +167,11 @@
        (make-seq (Expr e0) (Expr e1))]
       [(closure) x]
       [(primcall op arg*)
-       (make-funcall (make-primref op) (map Expr arg*))]
+       (cond
+         [(must-open-code? op)
+          (make-primcall op (map Expr arg*))]
+         [else
+          (make-funcall (make-primref op) (map Expr arg*))])]
       [(forcall op arg*)
        (make-forcall op (map Expr arg*))]
       [(funcall rator arg*)
@@ -264,7 +270,7 @@
          (let ([t (unique-var 'tmp)])
            (Expr (make-fix (list t) (list x) t)))]
         [(primcall op arg*)
-         (make-appcall (make-primref op) (map Expr arg*))]
+         (make-primcall op (map Expr arg*))]
         [(forcall op arg*)
          (make-forcall op (map Expr arg*))]
         [(funcall rator arg*)
@@ -356,6 +362,37 @@
                           (- disp-closure-data closure-tag)))
                        v))]
               [else (err x)]))]
+         [($vector-set!)
+          (let ([x (Value (car arg*))] 
+                [i (cadr arg*)]
+                [v (Value (caddr arg*))])
+            (record-case i
+              [(constant i) 
+               (unless (fixnum? i) (err x))
+               (make-primcall 'mset!
+                 (list x
+                       (make-constant 
+                         (+ (* i wordsize) 
+                          (- disp-vector-data vector-tag)))
+                       v))]
+              [else
+               (record-case v
+                 [(constant) 
+                  (make-primcall 'mset!
+                    (list (make-primcall 'int+ 
+                            (list x (Value i)))
+                          (make-constant
+                            (- disp-vector-data vector-tag))
+                          v))]
+                 [else
+                  (let ([t (unique-var 't)])
+                    (make-bind (list t) (list v)
+                      (make-primcall 'mset!
+                        (list (make-primcall 'int+ 
+                                (list x (Value i)))
+                              (make-constant
+                                (- disp-vector-data vector-tag))
+                              t))))])]))]
          [else (error who "invalid effect prim ~s" op)])]
       [(forcall op arg*)
        (error who "effect forcall not supported" op)]
@@ -453,6 +490,23 @@
                           (+ (- disp-closure-data closure-tag)
                              (* i wordsize) ))))]
               [else (err x)]))]
+         [($vector-ref) 
+          (let ([a0 (car arg*)] [a1 (cadr arg*)])
+            (record-case a1
+              [(constant i) 
+               (unless (fixnum? i) (err x))
+               (make-primcall 'mref 
+                  (list (Value a0) 
+                        (make-constant 
+                          (+ (- disp-vector-data vector-tag)
+                             (* i wordsize)))))]
+              [else 
+               (make-primcall 'mref 
+                  (list (make-primcall 'int+
+                          (list (Value a0) 
+                                (Value a1)))
+                        (make-constant 
+                          (- disp-vector-data vector-tag))))]))]
          [else (error who "value prim ~a not supported" (unparse x))])]
       [(forcall op arg*)
        (error who "value forcall not supported" op)]
@@ -488,6 +542,7 @@
          (Value body))]
       [else (error who "invalid program ~s" x)]))
   ;;;
+  (print-code x)
   (Program x))
 
 
@@ -512,14 +567,19 @@
                   (k (cons a d))))))]))
   ;;;
   (define (S x k)
-    (cond
-      [(or (constant? x) (var? x)) 
-       (k x)]
-      [(funcall? x) 
-       (let ([t (unique-var 'tmp)])
-         (do-bind (list t) (list x)
-           (k t)))]
-      [else (error who "invalid S ~s" x)]))
+    (record-case x
+      [(bind lhs* rhs* body)
+       (do-bind lhs* rhs* (S body k))]
+      [(seq e0 e1)
+       (make-seq (E e0) (S e1 k))]
+      [else
+       (cond
+         [(or (constant? x) (var? x)) (k x)]
+         [(or (funcall? x) (primcall? x))
+          (let ([t (unique-var 'tmp)])
+            (do-bind (list t) (list x)
+              (k t)))]
+         [else (error who "invalid S ~s" x)])]))
   ;;;
   (define (do-bind lhs* rhs* body)
     (cond
@@ -1116,6 +1176,10 @@
            [(nop) x]
            [(indirect-call) x]
            [(direct-call) x]
+           [(mset!)
+            (S* rands
+                (lambda (s*)
+                  (make-primcall op s*)))]
            [else (error who "invalid op in ~s" x)])]
         [else (error who "invalid effect ~s" x)]))
     (define (P x)
@@ -1406,7 +1470,7 @@
          [x (eliminate-fix x)]
          [x (specify-representation x)]
          [x (impose-calling-convention/evaluation-order x)]
-    ;     [foo (print-code x)]
+         ;[foo (print-code x)]
          [x (color-by-chaitin x)]
          ;[foo (print-code x)]
          [ls (flatten-codes x)])
