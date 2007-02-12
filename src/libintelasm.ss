@@ -350,23 +350,17 @@
                (IMM32*2 a1 a2 ac)))]
           [else (error 'CODErd "unhandled ~s" disp)])))))
 
-;;; (define CODEdi
-;;;   (lambda (c disp n ac)
-;;;     (with-args disp
-;;;       (lambda (i r)
-;;;         (CODErri c '/0 r i (IMM32 n ac))))))
-
 (define CODEdi
-  (lambda (c disp n ac)
+  (lambda (c /? disp n ac)
     (with-args disp
       (lambda (a1 a2)
         (cond
           [(and (reg? a1) (reg? a2)) 
-           (error 'CODEdi "unsupported1")]
+           (error 'CODEdi "unsupported1 ~s" disp)]
           [(and (imm? a1) (reg? a2))
-           (CODErri c '/0 a2 a1 (IMM32 n ac))]
+           (CODErri c /? a2 a1 (IMM32 n ac))]
           [(and (imm? a2) (reg? a1))
-           (CODErri c '/0 a1 a2 (IMM32 n ac))]
+           (CODErri c /? a1 a2 (IMM32 n ac))]
           [(and (imm? a1) (imm? a2))
            (error 'CODEdi "unsupported2")]
           [else (error 'CODEdi "unhandled ~s" disp)])))))
@@ -439,7 +433,7 @@
     [(imm? arg1)
      (cond
        [(reg? arg2) (CODEri ircode arg2 arg1 ac)]
-       [(mem? arg2) (CODEdi imcode arg2 arg1 ac)]
+       [(mem? arg2) (CODEdi imcode '/0 arg2 arg1 ac)]
        [else (error 'instr/2 "invalid args ~s ~s" arg1 arg2)])]
     [(reg? arg1)
      (cond
@@ -472,6 +466,7 @@
 (add-instructions instr ac
    [(ret)  (CODE #xC3 ac)]
    [(cltd) (CODE #x99 ac)]
+   ;                         ircode imcode rrcode rmcode mrcode)
    [(movl src dst) (instr/2 src dst ac #xB8 #xC7 #x89 #x89 #x8B)]
    [(movb src dst)
     (cond
@@ -492,7 +487,7 @@
       [(and (mem? src) (reg? dst))
        (CODErd #x03 dst src ac)]
       [(and (imm? src) (mem? dst)) 
-       (CODEdi #x81 dst src ac)]
+       (CODEdi #x81 '/0 dst src ac)]
       [else (error who "invalid ~s" instr)])]
    [(subl src dst)
     (cond   
@@ -555,6 +550,8 @@
        (CODE #x0D (IMM32 src ac))]
       [(and (imm? src) (reg? dst))
        (CODE #x81 (ModRM 3 '/1 dst (IMM32 src ac)))]
+      [(and (imm? src) (mem? dst)) 
+       (CODEdi #x81 '/1 dst src ac)]
       [(and (reg? src) (reg? dst))
        (CODE #x09 (ModRM 3 src dst ac))]
       [(and (mem? src) (reg? dst))

@@ -261,6 +261,8 @@
 (define-record nframe (vars live body))
 (define-record nfvar (conf loc))
 (define-record ntcall (target value args mask size))
+(define-record asm-instr (op dst src))
+(define-record disp (s0 s1))
 
 (define mkfvar
   (let ([cache '()])
@@ -476,7 +478,9 @@
       [(set lhs rhs) `(set ,(E lhs) ,(E rhs))]
       [(fvar idx) (string->symbol (format "fv.~a" idx))]
       [(locals vars body) `(locals ,(map E vars) ,(E body))]
-      [(nframe vars live body) `(nframe ,(map E vars) ,(E body))]
+      [(nframe vars live body) `(nframe [vars: ,(map E vars)]
+                                        [live: ,(map E live)]
+                                  ,(E body))]
       [else x]))
   (E x))
 
