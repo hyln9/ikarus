@@ -143,6 +143,7 @@
 
       [$fx+              v]
       [$fxadd1           v]
+      [$fxsub1           v]
       [$fxsll            v]
       [$fxsra            v]
       [$fxlogand         v]
@@ -595,10 +596,10 @@
     (lambda (x) 
       (syntax-case x ()
         [(_ ([lhs* rhs*] ...) b b* ...)
-         #'(let ([lhs* (unique-var 'lhs*)] ...)
-             (make-bind (list lhs* ...)
-                        (list rhs* ...)
-                b b* ...))])))
+         #'(let ([ls (list rhs* ...)])
+             (let ([lhs* (unique-var 'lhs*)] ...)
+               (make-bind (list lhs* ...) ls
+                  b b* ...)))])))
   (define (Effect x)
     (define (mem-assign v x i)
       (tbind ([q v])
@@ -640,7 +641,7 @@
          [($set-symbol-value!)
           (let ([x (Value (car arg*))] [v (Value (cadr arg*))])
             (mem-assign v x 
-               (- disp-symbol-value symbol-tag)))] 
+               (- disp-symbol-value symbol-tag)))]
          [($vector-set! $record-set!)
           (let ([x (Value (car arg*))] 
                 [i (cadr arg*)]
@@ -718,7 +719,7 @@
           (sec-tag-test (Value (car arg*)) 
              vector-mask vector-tag fixnum-mask fixnum-tag)]
          [($record?)
-          (sec-tag-test (Value (car arg*)) 
+          (sec-tag-test (Value (car arg*))
              vector-mask vector-tag vector-mask vector-tag)]
          [(input-port?)
           (sec-tag-test (Value (car arg*)) 
@@ -737,9 +738,6 @@
                    (prm 'mref t (K (- vector-tag))) 
                    (Value (cadr arg*)))
               (make-constant #f)))]
-         [(output-port?)
-          (sec-tag-test (Value (car arg*))
-             vector-mask vector-tag #f output-port-tag)]
          [(immediate?)
           (tbind ([t (Value (car arg*))])
             (make-conditional 
@@ -795,7 +793,7 @@
          [($cdr) 
           (prm 'mref (Value (car arg*)) (K (- disp-cdr pair-tag)))]
          [(primitive-ref) 
-          (prm 'mref (Value (car arg*)) 
+          (prm 'mref (Value (car arg*))
                (K (- disp-symbol-system-value symbol-tag)))]
          [($make-cp)
           (let ([label (car arg*)] [len (cadr arg*)])
@@ -814,28 +812,29 @@
               [else (err x)]))]
          [($record) 
           (let ([rtd (car arg*)] [v* (map Value (cdr arg*))])
-            (unless (constant? rtd) 
-              (error who "invalid rtd ~s for $record" rtd))
-            (let ([t* (map (lambda (x) (unique-var 'v)) v*)])
-              (make-bind t* v*
-                (tbind ([t (prm 'alloc 
-                                (K (+ disp-record-data
-                                      (* (length v*) wordsize)))
-                                (K vector-tag))])
-                  (seq*
-                    (prm 'mset! t 
-                         (K (- disp-record-rtd vector-tag))
-                         (Value rtd))
-                    (let f ([t* t*] [i (- disp-record-data vector-tag)])
-                      (cond
-                        [(null? t*) t]
-                        [else
-                         (make-seq 
-                           (prm 'mset! t (K i) (car t*))
-                           (f (cdr t*) (+ i wordsize)))])))))))]
+            (tbind ([rtd (Value rtd)])
+              (let ([t* (map (lambda (x) (unique-var 'v)) v*)])
+                (make-bind t* v*
+                  (tbind ([t (prm 'alloc 
+                                  (K (align
+                                       (+ disp-record-data
+                                         (* (length v*) wordsize))))
+                                  (K vector-tag))])
+                    (seq*
+                      (prm 'mset! t 
+                           (K (- disp-record-rtd vector-tag))
+                           rtd)
+                      (let f ([t* t*] 
+                              [i (- disp-record-data vector-tag)])
+                        (cond
+                          [(null? t*) t]
+                          [else
+                           (make-seq 
+                             (prm 'mset! t (K i) (car t*))
+                             (f (cdr t*) (+ i wordsize)))]))))))))]
          [($make-record)
           (let ([rtd (car arg*)] [len (cadr arg*)])
-            (tbind ([rtd rtd])
+            (tbind ([rtd (Value rtd)])
               (record-case len
                 [(constant i) 
                  (unless (fixnum? i)
@@ -845,20 +844,20 @@
                                               disp-record-data)))
                                  (K vector-tag))])
                    (seq* 
-                     (prm 'mset! t 
+                     (prm 'mset! t
                           (K (- disp-record-rtd vector-tag))
                           rtd)
                      t))]
                 [else 
-                 (tbind ([len 
+                 (tbind ([ln 
                           (prm 'sll 
                                (prm 'sra
                                     (prm 'int+ (Value len) 
-                                         (K (sub1
-                                              object-alignment)))
+                                         (K (+ disp-record-data 
+                                               (sub1 object-alignment))))
                                     (K align-shift))
                                (K align-shift))])
-                    (tbind ([t (prm 'alloc len (K vector-tag))])
+                    (tbind ([t (prm 'alloc ln (K vector-tag))])
                       (seq* 
                         (prm 'mset! t 
                              (K (- disp-record-rtd vector-tag))
@@ -969,17 +968,15 @@
               [(constant i) 
                (unless (fixnum? i) (err x))
                (make-primcall 'mref 
-                  (list (Value a0) 
-                        (make-constant 
-                          (+ (- disp-vector-data vector-tag)
-                             (* i wordsize)))))]
+                  (list (Value a0)
+                        (K (+ (- disp-vector-data vector-tag)
+                              (* i wordsize)))))]
               [else 
                (make-primcall 'mref 
                   (list (make-primcall 'int+
                           (list (Value a0) 
                                 (Value a1)))
-                        (make-constant 
-                          (- disp-vector-data vector-tag))))]))]
+                        (K (- disp-vector-data vector-tag))))]))]
          [($closure-code)
           (prm 'int+ 
                (prm 'mref
@@ -1027,6 +1024,9 @@
   ;;;
   ;(print-code x)
   (Program x))
+
+
+
 
 
 (define parameter-registers '(%edi)) 
@@ -1117,6 +1117,18 @@
           (if value-dest
               (make-seq body (make-set value-dest return-value-register))
               body)))))
+  (define (alloc-check size)
+    (E (make-conditional ;;; PCB ALLOC-REDLINE
+         (make-primcall '<= 
+           (list (make-primcall 'int+ (list apr size)) 
+                 (make-primcall 'mref (list pcr (make-constant 4)))))
+         (make-primcall 'nop '())
+         (make-funcall 
+           (make-primcall 'mref
+              (list (make-constant (make-object 'do-overflow))
+                    (make-constant (- disp-symbol-system-value
+                                      symbol-tag))))
+           (list size)))))
   ;;; impose value
   (define (V d x)
     (record-case x 
@@ -1133,13 +1145,15 @@
          [(alloc) 
           (S (car rands)
              (lambda (size)
-               (S (cadr rands)
-                  (lambda (tag)
-                    (make-seq
-                      (make-seq 
-                        (make-set d apr)
-                        (make-asm-instr 'logor d tag))
-                      (make-asm-instr 'int+ apr size))))))]
+               (make-seq
+                 (alloc-check size)
+                 (S (cadr rands)
+                    (lambda (tag)
+                      (make-seq
+                        (make-seq 
+                          (make-set d apr)
+                          (make-asm-instr 'logor d tag))
+                        (make-asm-instr 'int+ apr size)))))))]
          [(mref) 
           (S* rands
               (lambda (rands)
@@ -2298,9 +2312,9 @@
          ;[foo (print-code x)]
          [x (specify-representation x)]
          [foo (printf "4")]
+         ;[foo (print-code x)]
          [x (impose-calling-convention/evaluation-order x)]
          [foo (printf "5")]
-         ;[foo (print-code x)]
          [x (color-by-chaitin x)]
          [foo (printf "6")]
          ;[foo (print-code x)]
@@ -2315,6 +2329,7 @@
           ls)))
     ls))
   
+
 #|module alt-cogen|#)
 
 

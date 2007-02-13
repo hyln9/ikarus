@@ -501,8 +501,6 @@
       [(and (mem? src) (reg? dst))
        (CODErd #x03 dst src ac)]
       [(and (imm? src) (mem? dst)) 
-      ; (printf "addl ~s ~s\n" src dst)
-      ; (printf "=> ~s\n" ((CODE/r #x81 '/0) dst (IMM32 src '())))
        ((CODE/r #x81 '/0) dst (IMM32 src ac))]
       [(and (reg? src) (mem? dst))
        (CODErd #x81 src dst ac)]
@@ -951,4 +949,6 @@
 ;    (car (list*->code* (list ls)))))
 
 (primitive-set! 'list*->code* list*->code*)
+
 )
+
