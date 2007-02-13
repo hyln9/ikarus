@@ -1,4 +1,4 @@
-
+#!/usr/bin/env ikarus --script 
 (define (asm-test res ls)
   (printf "Testing:\n")
   (for-each (lambda (x)
@@ -50,6 +50,20 @@
     [movl (disp -4 %esp) %eax]
     [ret]))
 
+(asm-test 2
+  '([movl 4 %ebx]
+    [movl 4 (disp -8 %esp)]
+    [addl %ebx (disp -8 %esp)]
+    [movl (disp -8 %esp) %eax]
+    [ret]))
+
+(asm-test 2
+  '([movl 4 %eax]
+    [movl 4 (disp -8 %esp)]
+    [addl %eax (disp -8 %esp)]
+    [movl 0 %eax]
+    [movl (disp -8 %esp) %eax]
+    [ret]))
 
 
 

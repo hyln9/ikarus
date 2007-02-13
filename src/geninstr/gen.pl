@@ -48,7 +48,10 @@ sub gen3{
   }
 }
 
-gen1 "addl \$0x12345678, 7(r1)\n";
+#gen1 "addl \$0x12345678, 7(r1)\n";
+
+#gen2 "addl 0x23(r1), r2\n";
+gen2 "addl r1, 0x23(r2)\n";
 
 #gen1 "movb \$0, 4(r1)\n";
 #gen1 "movb -2(r1), %ah\n";

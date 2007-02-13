@@ -67,14 +67,14 @@
     [%ch   8 5]
     [%dh   8 6]
     [%bh   8 7]
-    [/0   0  0]
-    [/1   0  1]
-    [/2   0  2]
-    [/3   0  3]
-    [/4   0  4]
-    [/5   0  5]
-    [/6   0  6]
-    [/7   0  7]
+    [/0    0 0]
+    [/1    0 1]
+    [/2    0 2]
+    [/3    0 3]
+    [/4    0 4]
+    [/5    0 5]
+    [/6    0 6]
+    [/7    0 7]
     ))
   
 (define register-index
@@ -314,15 +314,6 @@
          ac)])))
 
 
-;;(define CODErd
-;;  (lambda (c r1 disp ac)
-;;    (with-args disp
-;;      (lambda (i/r r2)
-;;        (if (reg? i/r)
-;;            (CODE c (RegReg r1 i/r r2 ac))
-;;            (CODErri c r1 r2 i/r ac))))))
-
-
 (define IMM32*2
   (lambda (i1 i2 ac)
     (cond
@@ -365,8 +356,8 @@
            (error 'CODEdi "unsupported2")]
           [else (error 'CODEdi "unhandled ~s" disp)])))))
 
-;              81 /0 id    ADD r/m32,imm32               Valid Valid Add imm32 to 
-(define (CODE/r c /?)
+;              81 /0 id    ADD r/m32,imm32            Valid Add imm32 to 
+(define (CODE/digit c /d)
   (lambda (dst ac)
     (cond
       [(mem? dst) 
@@ -374,9 +365,26 @@
           (lambda (a0 a1)
             (cond
               [(and (imm8? a0) (reg? a1))
-               (CODE c (ModRM 1 /? a1 (IMM8 a0 ac)))]
-              [else (error 'CODE/r "unhandled ~s ~s" a0 a1)])))]
-      [else (error 'CODE/r "unhandled ~s" dst)])))
+               (CODE c (ModRM 1 /d a1 (IMM8 a0 ac)))]
+              [else (error 'CODE/digit "unhandled ~s ~s" a0 a1)])))]
+      [else (error 'CODE/digit "unhandled ~s" dst)])))
+
+;              01 /r      ADD r/m32, r32        Valid Add r32 to r/m32.
+;;;(define (CODE/r c /r)
+;;;  (lambda (dst ac)
+;;;    (cond
+;;;      [(mem? dst) 
+;;;       (with-args dst
+;;;          (lambda (a0 a1)
+;;;            (cond
+;;;              [(and (imm8? a0) (reg? a1))
+;;;               (CODE c (ModRM 1 /r a1 (IMM8 a0 ac)))]
+;;;              [else (error 'CODE/r "unhandled ~s ~s" a0 a1)])))]
+;;;      [else (error 'CODE/r "unhandled ~s" dst)])))
+
+
+
+
 
 (define CODEid
   (lambda (c /? n disp ac)
@@ -501,9 +509,10 @@
       [(and (mem? src) (reg? dst))
        (CODErd #x03 dst src ac)]
       [(and (imm? src) (mem? dst)) 
-       ((CODE/r #x81 '/0) dst (IMM32 src ac))]
+       ((CODE/digit #x81 '/0) dst (IMM32 src ac))]
       [(and (reg? src) (mem? dst))
-       (CODErd #x81 src dst ac)]
+       (printf "code=~s\n" ((CODE/digit #x01 src) dst '()))
+       ((CODE/digit #x01 src) dst ac)]
       [else (error who "invalid ~s" instr)])]
    [(subl src dst)
     (cond   
@@ -526,8 +535,8 @@
        (CODE #xC1 (ModRM 3 '/4 dst (IMM8 src ac)))]
       [(and (imm8? src) (mem? dst))
        (printf "sall ~s ~s\n" src dst)
-       (printf "=> ~s\n" ((CODE/r #xC1 '/4) dst (IMM8 src '())))
-       ((CODE/r #xC1 '/4) dst (IMM8 src ac))]
+       (printf "=> ~s\n" ((CODE/digit #xC1 '/4) dst (IMM8 src '())))
+       ((CODE/digit #xC1 '/4) dst (IMM8 src ac))]
       [(and (eq? src '%cl) (reg? dst))
        (CODE #xD3 (ModRM 3 '/4 dst ac))]
       [else (error who "invalid ~s" instr)])]
@@ -548,8 +557,8 @@
        (CODE #xC1 (ModRM 3 '/7 dst (IMM8 src ac)))]
       [(and (imm8? src) (mem? dst))
        (printf "sarl ~s ~s\n" src dst)
-       (printf "=> ~s\n" ((CODE/r #xC1 '/7) dst (IMM8 src '())))
-       ((CODE/r #xC1 '/7) dst (IMM8 src ac))] 
+       (printf "=> ~s\n" ((CODE/digit #xC1 '/7) dst (IMM8 src '())))
+       ((CODE/digit #xC1 '/7) dst (IMM8 src ac))] 
       [(and (eq? src '%cl) (reg? dst))
        (CODE #xD3 (ModRM 3 '/7 dst ac))]
       [else (error who "invalid ~s" instr)])]
@@ -680,43 +689,43 @@
       [(reg? dst)
        (CODE #xFF (ModRM 3 '/2 dst ac))]
       [else (error who "invalid jmp target ~s" dst)])]
-   [(seta dst)   (conditional-set #x97 dst ac)]
-   [(setae dst)  (conditional-set #x93 dst ac)]
-   [(setb dst)   (conditional-set #x92 dst ac)]
-   [(setbe dst)  (conditional-set #x96 dst ac)]
-   [(setg dst)   (conditional-set #x9F dst ac)]
-   [(setge dst)  (conditional-set #x9D dst ac)]
-   [(setl dst)   (conditional-set #x9C dst ac)]
-   [(setle dst)  (conditional-set #x9E dst ac)]
-   [(sete dst)   (conditional-set #x94 dst ac)]
-   [(setna dst)  (conditional-set #x96 dst ac)]
-   [(setnae dst) (conditional-set #x92 dst ac)]
-   [(setnb dst)  (conditional-set #x93 dst ac)]
-   [(setnbe dst) (conditional-set #x97 dst ac)]
-   [(setng dst)  (conditional-set #x9E dst ac)]
-   [(setnge dst) (conditional-set #x9C dst ac)]
-   [(setnl dst)  (conditional-set #x9D dst ac)]
-   [(setnle dst) (conditional-set #x9F dst ac)]
-   [(setne dst)  (conditional-set #x95 dst ac)]
-   [(ja dst)   (conditional-jump #x87 dst ac)]
-   [(jae dst)  (conditional-jump #x83 dst ac)]
-   [(jb dst)   (conditional-jump #x82 dst ac)]
-   [(jbe dst)  (conditional-jump #x86 dst ac)]
-   [(jg dst)   (conditional-jump #x8F dst ac)]
-   [(jge dst)  (conditional-jump #x8D dst ac)]
-   [(jl dst)   (conditional-jump #x8C dst ac)]
-   [(jle dst)  (conditional-jump #x8E dst ac)]
-   [(je dst)   (conditional-jump #x84 dst ac)]
-   [(jna dst)  (conditional-jump #x86 dst ac)]
-   [(jnae dst) (conditional-jump #x82 dst ac)]
-   [(jnb dst)  (conditional-jump #x83 dst ac)]
-   [(jnbe dst) (conditional-jump #x87 dst ac)]
-   [(jng dst)  (conditional-jump #x8E dst ac)]
-   [(jnge dst) (conditional-jump #x8C dst ac)]
-   [(jnl dst)  (conditional-jump #x8D dst ac)]
-   [(jnle dst) (conditional-jump #x8F dst ac)]
-   [(jne dst)  (conditional-jump #x85 dst ac)]
-   [(jo dst)   (conditional-jump #x80 dst ac)]
+   [(seta dst)   (conditional-set  #x97 dst ac)]
+   [(setae dst)  (conditional-set  #x93 dst ac)]
+   [(setb dst)   (conditional-set  #x92 dst ac)]
+   [(setbe dst)  (conditional-set  #x96 dst ac)]
+   [(setg dst)   (conditional-set  #x9F dst ac)]
+   [(setge dst)  (conditional-set  #x9D dst ac)]
+   [(setl dst)   (conditional-set  #x9C dst ac)]
+   [(setle dst)  (conditional-set  #x9E dst ac)]
+   [(sete dst)   (conditional-set  #x94 dst ac)]
+   [(setna dst)  (conditional-set  #x96 dst ac)]
+   [(setnae dst) (conditional-set  #x92 dst ac)]
+   [(setnb dst)  (conditional-set  #x93 dst ac)]
+   [(setnbe dst) (conditional-set  #x97 dst ac)]
+   [(setng dst)  (conditional-set  #x9E dst ac)]
+   [(setnge dst) (conditional-set  #x9C dst ac)]
+   [(setnl dst)  (conditional-set  #x9D dst ac)]
+   [(setnle dst) (conditional-set  #x9F dst ac)]
+   [(setne dst)  (conditional-set  #x95 dst ac)]
+   [(ja dst)     (conditional-jump #x87 dst ac)]
+   [(jae dst)    (conditional-jump #x83 dst ac)]
+   [(jb dst)     (conditional-jump #x82 dst ac)]
+   [(jbe dst)    (conditional-jump #x86 dst ac)]
+   [(jg dst)     (conditional-jump #x8F dst ac)]
+   [(jge dst)    (conditional-jump #x8D dst ac)]
+   [(jl dst)     (conditional-jump #x8C dst ac)]
+   [(jle dst)    (conditional-jump #x8E dst ac)]
+   [(je dst)     (conditional-jump #x84 dst ac)]
+   [(jna dst)    (conditional-jump #x86 dst ac)]
+   [(jnae dst)   (conditional-jump #x82 dst ac)]
+   [(jnb dst)    (conditional-jump #x83 dst ac)]
+   [(jnbe dst)   (conditional-jump #x87 dst ac)]
+   [(jng dst)    (conditional-jump #x8E dst ac)]
+   [(jnge dst)   (conditional-jump #x8C dst ac)]
+   [(jnl dst)    (conditional-jump #x8D dst ac)]
+   [(jnle dst)   (conditional-jump #x8F dst ac)]
+   [(jne dst)    (conditional-jump #x85 dst ac)]
+   [(jo dst)     (conditional-jump #x80 dst ac)]
    [(byte x)
     (unless (byte? x) (error who "~s is not a byte" x))
     (cons (byte x) ac)]
