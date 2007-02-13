@@ -3692,8 +3692,10 @@
               (xorl ebx ecx)
               (sarl (int (fxsub1 (fx* wordsize 8))) ecx)
               (andl ebx ecx)
-              (cltd)
-              (idivl ebx)
+              (cltd) ;;; sign extend eax into edx:eax
+              (idivl ebx) ;;; divide edx:eax by ebx 
+                          ;;; quotient goes to eax
+                          ;;; remainder to edx
               (movl edx eax)
               (addl ecx eax)
               ac)]
@@ -4067,7 +4069,7 @@
              (subl (int wordsize) ebx)
              ; and store it
              (movl ebx (mem disp-continuation-size apr))
-             ; load next cont
+             ; load next cont     (K 20)
              (movl (pcb-ref 'next-continuation) ebx)
              ; and store it
              (movl ebx (mem disp-continuation-next apr))

@@ -1,4 +1,7 @@
 
+
+
+
 (let ([winders '()])
 
   (define len
@@ -48,15 +51,6 @@
         (unwind* winders tail)
         (rewind* new tail))))
 
-;;;  (define call/cc
-;;;    (lambda (f)
-;;;      (primitive-call/cc
-;;;        (lambda (k)
-;;;          (let ([save winders])
-;;;            (f (lambda v*
-;;;                 (unless (eq? save winders) (do-wind save))
-;;;                 (apply k v*))))))))
-
   (define call/cc
     (lambda (f)
       ($primitive-call/cc
@@ -68,28 +62,6 @@
                  [(v1 v2 . v*)
                   (unless (eq? save winders) (do-wind save))
                   (apply k v1 v2 v*)])))))))
-
-
-
-;;;  (define dynamic-wind
-;;;    (lambda (in body out)
-;;;      (in)
-;;;      (set! winders (cons (cons in out) winders))
-;;;      (let ([v (body)])
-;;;        (set! winders (cdr winders))
-;;;        (out)
-;;;        v)))
-
-;;;  (define dynamic-wind
-;;;    (lambda (in body out)
-;;;      (in)
-;;;      (set! winders (cons (cons in out) winders))
-;;;      (call-with-values
-;;;        body
-;;;        (lambda v*
-;;;          (set! winders (cdr winders))
-;;;          (out)
-;;;          (apply values v*)))))
 
   (define dynamic-wind
     (lambda (in body out)
@@ -104,8 +76,6 @@
            (set! winders (cdr winders))
            (out)
            (apply values v1 v2 v*)]))))
-
-
 
   (primitive-set! 'call/cc call/cc)
   (primitive-set! 'dynamic-wind dynamic-wind)

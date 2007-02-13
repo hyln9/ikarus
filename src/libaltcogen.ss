@@ -140,6 +140,17 @@
       [cons              v]
       [$car              v]
       [$cdr              v]
+      [$fxsll            v]
+      [$fxsra            v]
+      [$fxlogand         v]
+      [$fxmodulo         v]
+      [$fxzero?          p]
+      [$fx>              p]
+      [$fx>=             p]
+      [$fx<              p]
+      [$fx<=             p]
+      [$fx=              p]
+
 
       ;[$char<=           p]
       ;[$char=            p]
@@ -427,16 +438,12 @@
       [(var)     (Predicafy x)]
       [(funcall) (Predicafy x)]
       [(jmpcall) (Predicafy x)]
+      [(forcall) (Predicafy x)]
       [(primcall op rands)
        (case (prim-context op)
          [(v) (Predicafy x)]
          [(p) (make-primcall op (map V rands))]
-         [(e) 
-          (let f ([rands rands])
-            (cond
-              [(null? rands) (make-constant #t)]
-              [else
-               (mkseq (E (car rands)) (f (cdr rands)))]))]
+         [(e) (make-seq (E x) (make-constant #t))] 
          [(not) 
           (make-conditional 
             (P (car rands)) 
@@ -467,6 +474,7 @@
        (make-funcall (V rator) (map V rand*))]
       [(jmpcall label rator rand*) 
        (make-jmpcall label (V rator) (map V rand*))]
+      [(forcall op rands) (make-forcall op (map V rands))]
       [(primcall op rands)
        (case (prim-context op)
          [(p v not) 
@@ -496,16 +504,12 @@
        (make-funcall (V rator) (map V rand*))]
       [(jmpcall label rator rand*) 
        (make-jmpcall label (V rator) (map V rand*))]
+      [(forcall op rands) (make-forcall op (map V rands))]
       [(primcall op rands)
        (case (prim-context op)
          [(v tail) (make-primcall op (map V rands))]
          [(p) (Unpred x)]
-         [(e) 
-          (let f ([rands rands])
-            (cond
-              [(null? rands) (make-constant (void))]
-              [else
-               (mkseq (E (car rands)) (f (cdr rands)))]))]
+         [(e) (make-seq (E x) (make-constant (void)))]
          [(not) 
           (make-conditional 
             (P (car rands)) 
@@ -633,7 +637,7 @@
                   (- disp-vector-data vector-tag))]))]
          [else (error who "invalid effect prim ~s" op)])]
       [(forcall op arg*)
-       (error who "effect forcall not supported" op)]
+       (make-forcall op (map Value arg*))]
       [(funcall rator arg*)
        (make-funcall (Value rator) (map Value arg*))]
       [(jmpcall label rator arg*)
@@ -675,6 +679,7 @@
          [(null?) (prm '= (Value (car arg*)) (K nil))]
          [(eof-object?) (prm '= (Value (car arg*)) (K eof))]
          [(neq?) (make-primcall '!= (map Value arg*))]
+         [($fxzero?) (prm '= (Value (car arg*)) (K 0))]
          [(pair?) 
           (tag-test (Value (car arg*)) pair-mask pair-tag)]
          [(procedure?)
@@ -707,6 +712,16 @@
                     (prm 'mref pcr (K 12)) ;;; PCB FRAME-BASE
                     (K (- wordsize)))
                fpr)]
+         [($fx=) 
+          (prm '= (Value (car arg*)) (Value (cadr arg*)))]
+         [($fx<) 
+          (prm '< (Value (car arg*)) (Value (cadr arg*)))]
+         [($fx>) 
+          (prm '> (Value (car arg*)) (Value (cadr arg*)))]
+         [($fx<=) 
+          (prm '<= (Value (car arg*)) (Value (cadr arg*)))]
+         [($fx>=) 
+          (prm '>= (Value (car arg*)) (Value (cadr arg*)))]
          [else (error who "pred prim ~a not supported" op)])]
       [(mvcall rator x)
        (make-mvcall (Value rator) (Clambda x Pred))]
@@ -761,15 +776,41 @@
                 (prm 'mset! t (K (- disp-car pair-tag)) a)
                 (prm 'mset! t (K (- disp-cdr pair-tag)) d)
                 t)))]
+         [($fxmodulo)
+          (tbind ([a (Value (car arg*))]
+                  [b (Value (cadr arg*))])
+            (tbind ([c (prm 'logand b 
+                          (prm 'sra 
+                             (prm 'logxor b a)
+                             (K (sub1 (* 8 wordsize)))))])
+              (prm 'int+ c (prm 'div a b))))]
+         [($fxsll)
+          (let ([a (car arg*)] [c (cadr arg*)])
+            (record-case c
+              [(constant i) 
+               (if (fixnum? i)
+                   (prm 'sll (Value a) (K i))
+                   (error who "invalid arg to fxsll ~s" i))]
+              [else (error who "nonconst arg to fxsll ~s" c)]))]
+         [($fxsra)
+          (let ([a (car arg*)] [c (cadr arg*)])
+            (record-case c
+              [(constant i) 
+               (if (fixnum? i)
+                   (prm 'sra (Value a) (K i))
+                   (error who "invalid arg to fxsra ~s" i))]
+              [else (error who "nonconst arg to fxsra ~s" c)]))] 
+         [($fxlogand)
+          (prm 'logand (Value (car arg*)) (Value (cadr arg*)))]
          [($current-frame)  ;; PCB NEXT-CONTINUATION
-          (prm 'mref pcr (K 12))]
+          (prm 'mref pcr (K 20))]
          [($seal-frame-and-call) 
           (tbind ([proc (Value (car arg*))])
             (tbind ([k (prm 'alloc 
-                            (K disp-continuation-size)
+                            (K continuation-size)
                             (K vector-tag))])
-              (tbind ([base (prm 'int+
-                                 (prm 'mref pcr (K 28))
+              (tbind ([base (prm 'int+ ;;; PCB BASE
+                                 (prm 'mref pcr (K 12))
                                  (K (- wordsize)))])
                 (tbind ([underflow-handler 
                          (prm 'mref base (K 0))])
@@ -782,11 +823,12 @@
                          fpr)
                     (prm 'mset! k
                          (K (- disp-continuation-next vector-tag))
-                         (prm 'mref pcr (K 12))) ;;; PCB NEXT CONT
+                         (prm 'mref pcr (K 20))) ;;; PCB NEXT CONT
                     (prm 'mset! k
                          (K (- disp-continuation-size vector-tag))
                          (prm 'int- base fpr))
-                    (prm 'mset! pcr (K 12) k)
+                    (prm 'mset! pcr (K 20) k)
+                    (prm 'mset! pcr (K 12) fpr)
                     (make-primcall '$call-with-underflow-handler
                        (list underflow-handler proc k)))))))]
          [($frame->continuation)
@@ -841,7 +883,7 @@
                (K (- disp-code-freevars vector-tag)))]
          [else (error who "value prim ~a not supported" (unparse x))])]
       [(forcall op arg*)
-       (error who "value forcall not supported" op)]
+       (make-forcall op (map Value arg*))]
       [(funcall rator arg*)
        (make-funcall (Value rator) (map Value arg*))]
       [(jmpcall label rator arg*)
@@ -908,6 +950,7 @@
        (cond
          [(or (constant? x) (var? x) (symbol? x)) (k x)]
          [(or (funcall? x) (primcall? x) (jmpcall? x)
+              (forcall? x)
               (conditional? x))
           (let ([t (unique-var 'tmp)])
             (do-bind (list t) (list x)
@@ -992,12 +1035,20 @@
           (S* rands
               (lambda (rands)
                 (make-set d (make-disp (car rands) (cadr rands)))))]
-         [(logand int+ int-)
+         [(logand logxor int+ int-)
           (make-seq
             (V d (car rands))
             (S (cadr rands)
                (lambda (s)
                  (make-asm-instr op d s))))]
+         [(div) 
+          (S* rands
+              (lambda (rands)
+                (seq* 
+                  (make-set eax (car rands))
+                  (make-asm-instr 'cltd edx eax)
+                  (make-asm-instr 'idiv edx (cadr rands))
+                  (make-set d edx))))]
          [(sll sra)
           (let ([a (car rands)] [b (cadr rands)])
             (cond
@@ -1011,7 +1062,14 @@
        (handle-nontail-call rator rands d #f)]
       [(jmpcall label rator rands) 
        (handle-nontail-call rator rands d label)]
-      [else (error who "invalid value ~s" x)]))
+      [(forcall op rands)
+       (handle-nontail-call 
+         (make-constant (make-foreign-label op))
+         rands d op)] 
+      [else 
+       (if (symbol? x) 
+           (make-set d x)
+           (error who "invalid value ~s" x))]))
   ;;;
   (define (assign* lhs* rhs* ac)
     (cond
@@ -1050,6 +1108,10 @@
        (handle-nontail-call rator rands #f #f)]
       [(jmpcall label rator rands) 
        (handle-nontail-call rator rands #f label)]
+      [(forcall op rands)
+       (handle-nontail-call 
+         (make-constant (make-foreign-label op))
+         rands #f op)]
       [else (error who "invalid effect ~s" x)]))
   ;;; impose pred
   (define (P x)
@@ -1098,10 +1160,8 @@
               (make-set (make-fvar 1) handler)
               (make-set (make-fvar 2) k)
               (make-set cpr proc)
-              (make-set argc-register 
-                        (make-constant (argc-convention 1)))
-              (make-asm-instr 'int- fpr
-                    (make-constant wordsize))
+              (make-set argc-register (make-constant (argc-convention 1)))
+              (make-asm-instr 'int- fpr (make-constant wordsize))
               (make-primcall 'indirect-jump
                 (list cpr (make-fvar 1) (make-fvar 2)))))]
          [else (VT x)])]
@@ -1115,6 +1175,7 @@
        (handle-tail-call #f rator rands)]
       [(jmpcall label rator rands)
        (handle-tail-call (make-code-loc label) rator rands)]
+      [(forcall) (VT x)]
       [else (error who "invalid tail ~s" x)]))
   ;;;
   (define (formals-locations args)
@@ -1294,7 +1355,7 @@
               (union (R v) s)]))]
         [(asm-instr op d v)
          (case op
-           [(logand int+ int- logor sll sra)
+           [(logand logxor int+ int- logor sll sra)
             (let ([s (set-rem d s)])
               (record-case d
                 [(nfvar c i) 
@@ -1306,6 +1367,22 @@
                 [else
                  (for-each (lambda (y) (add-edge! g d y)) s)
                  (union (union (R v) (R d)) s)]))]
+           [(cltd)
+            (let ([s (set-rem edx s)])
+              (when (register? edx)
+                (for-each (lambda (y) 
+                            (add-edge! g edx y))
+                          s))
+              (union (R eax) s))]
+           [(idiv) 
+            (let ([s (set-rem eax (set-rem edx s))])
+              (when (register? eax)
+                (for-each (lambda (y) 
+                            (add-edge! g eax y)
+                            (add-edge! g edx y))
+                          s))
+              (union (union (R eax) (R edx))
+                     (union (R d) s)))]
            [(mset)
             (union (R v) (union (R d) s))]
            [else (error who "invalid effect ~s" x)])]
@@ -1788,6 +1865,7 @@
   (define (C x)
     (record-case x
       [(code-loc label) (label-address label)]
+      [(foreign-label L) `(foreign-label ,L)]
       [(closure label free*)
        (unless (null? free*) (error who "nonempty closure"))
        `(obj ,x)]
@@ -1830,6 +1908,21 @@
                (label-address SL_multiple_values_error_rp)
                (label-address SL_multiple_values_ignore_rp)))
          (cond
+           [(string? target) ;; foreign call
+            (list* `(subl ,(* (fxsub1 size) wordsize) ,fpr)
+                   `(movl (foreign-label "ik_foreign_call") %ebx)
+                   `(jmp ,LCALL)
+                   `(byte-vector ,mask)
+                   `(int ,(* size wordsize))
+                   `(current-frame-offset)
+                   (rp-label value)
+                   '(byte 0)
+                   '(byte 0)
+                   '(byte 0)
+                   LCALL
+                   `(call %ebx)
+                   ;;ik_foreign_call adjusts fp back
+                   ac)] 
            [target ;;; known call
             (list* `(subl ,(* (fxsub1 size) wordsize) ,fpr)
                    `(jmp ,LCALL)
@@ -1860,9 +1953,12 @@
          [(int+) (cons `(addl ,(R s) ,(R d)) ac)]
          [(int-) (cons `(subl ,(R s) ,(R d)) ac)]
          [(logor)  (cons `(orl ,(R s) ,(R d)) ac)]
+         [(logxor) (cons `(xorl ,(R s) ,(R d)) ac)]
          [(mset) (cons `(movl ,(R s) ,(R d)) ac)]
          [(sll)  (cons `(sall ,(R s) ,(R d)) ac)]
          [(sra)  (cons `(sarl ,(R s) ,(R d)) ac)]
+         [(idiv) (cons `(idivl ,(R s)) ac)]
+         [(cltd) (cons `(cltd) ac)]
          [else (error who "invalid instr ~s" x)])]
       [(primcall op rands)
        (case op

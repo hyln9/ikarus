@@ -5,14 +5,14 @@
       (if ($fp-at-base)
           (f ($current-frame))
           ($seal-frame-and-call f))))
-  
+  (primitive-set! 'call/cf call-with-current-frame))
+ 
+(let () 
   (define primitive-call/cc
     (lambda (f)
-      (call-with-current-frame
+      (call/cf
         (lambda (frm)
           (f ($frame->continuation frm))))))
-
-  (primitive-set! 'call/cf call-with-current-frame)
   (primitive-set! '$primitive-call/cc primitive-call/cc))
 
 
