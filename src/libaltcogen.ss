@@ -124,7 +124,7 @@
       [vector?           p]
       [null?             p]
       [eof-object?       p]
-      ;[eof-object        v]
+      [eof-object        v]
       [procedure?        p]
       [symbol?           p]
       [boolean?          p]
@@ -140,6 +140,9 @@
       [cons              v]
       [$car              v]
       [$cdr              v]
+
+      [$fx+              v]
+      [$fxadd1           v]
       [$fxsll            v]
       [$fxsra            v]
       [$fxlogand         v]
@@ -152,14 +155,23 @@
       [$fx=              p]
 
 
-      ;[$char<=           p]
-      ;[$char=            p]
-      ;[$char->fixnum     v]
+      [$char<=           p]
+      [$char=            p]
+      [$char->fixnum     v]
 
       [$vector-ref       v]
       [$vector-set!      e]
 
       [$set-symbol-value! e]
+
+      [$record           v]
+      [$record/rtd?      p]
+      [$record-ref       v]
+      [$record-set!      e]
+      [$record?          p]
+      [$record-rtd       v]
+      [$make-record      v]
+
       ;;; ports
       [output-port?      p]
       [input-port?       p]
@@ -184,6 +196,7 @@
       list list*
       not
       car cdr
+      top-level-value
       ))
   (define (must-open-code? x)
     (and (assq x core-prims) #t))
@@ -556,6 +569,7 @@
   (define who 'specify-representation)
   ;;;
   (define fixnum-scale 4)
+  (define fixnum-shift 2)
   (define fixnum-tag 0)
   (define fixnum-mask 3)
   (define pcb-dirty-vector-offset 28)
@@ -627,7 +641,7 @@
           (let ([x (Value (car arg*))] [v (Value (cadr arg*))])
             (mem-assign v x 
                (- disp-symbol-value symbol-tag)))] 
-         [($vector-set!)
+         [($vector-set! $record-set!)
           (let ([x (Value (car arg*))] 
                 [i (cadr arg*)]
                 [v (Value (caddr arg*))])
@@ -652,7 +666,7 @@
        (error who "appcall not supported yet")]
       [(mvcall rator x)
        (make-mvcall (Value rator) (Clambda x Effect))]
-      [else (error who "invalid pred expr ~s" x)]))
+      [else (error who "invalid effect expr ~s" x)]))
   ;;;
   (define (tag-test x mask tag)
     (if mask
@@ -703,6 +717,26 @@
          [(vector?)
           (sec-tag-test (Value (car arg*)) 
              vector-mask vector-tag fixnum-mask fixnum-tag)]
+         [($record?)
+          (sec-tag-test (Value (car arg*)) 
+             vector-mask vector-tag vector-mask vector-tag)]
+         [(input-port?)
+          (sec-tag-test (Value (car arg*)) 
+             vector-mask vector-tag #f input-port-tag)]
+         [(output-port?)
+          (sec-tag-test (Value (car arg*)) 
+             vector-mask vector-tag #f output-port-tag)]
+         [(port?)
+          (sec-tag-test (Value (car arg*)) 
+             vector-mask vector-tag port-mask port-tag)]
+         [($record/rtd?)
+          (tbind ([t (Value (car arg*))])
+            (make-conditional 
+              (tag-test t vector-mask vector-tag)
+              (prm '=
+                   (prm 'mref t (K (- vector-tag))) 
+                   (Value (cadr arg*)))
+              (make-constant #f)))]
          [(output-port?)
           (sec-tag-test (Value (car arg*))
              vector-mask vector-tag #f output-port-tag)]
@@ -718,15 +752,15 @@
                     (prm 'mref pcr (K 12)) ;;; PCB FRAME-BASE
                     (K (- wordsize)))
                fpr)]
-         [($fx=) 
+         [($fx= $char=) 
           (prm '= (Value (car arg*)) (Value (cadr arg*)))]
-         [($fx<) 
+         [($fx< $char<) 
           (prm '< (Value (car arg*)) (Value (cadr arg*)))]
-         [($fx>) 
+         [($fx> $char>) 
           (prm '> (Value (car arg*)) (Value (cadr arg*)))]
-         [($fx<=) 
+         [($fx<= $char<=) 
           (prm '<= (Value (car arg*)) (Value (cadr arg*)))]
-         [($fx>=) 
+         [($fx>= $char>=) 
           (prm '>= (Value (car arg*)) (Value (cadr arg*)))]
          [else (error who "pred prim ~a not supported" op)])]
       [(mvcall rator x)
@@ -755,6 +789,7 @@
       [(primcall op arg*)
        (case op
          [(void) (K void-object)]
+         [(eof-object) (K eof)]
          [($car) 
           (prm 'mref (Value (car arg*)) (K (- disp-car pair-tag)))]
          [($cdr) 
@@ -777,6 +812,61 @@
                         (Value label))
                    t))]
               [else (err x)]))]
+         [($record) 
+          (let ([rtd (car arg*)] [v* (map Value (cdr arg*))])
+            (unless (constant? rtd) 
+              (error who "invalid rtd ~s for $record" rtd))
+            (let ([t* (map (lambda (x) (unique-var 'v)) v*)])
+              (make-bind t* v*
+                (tbind ([t (prm 'alloc 
+                                (K (+ disp-record-data
+                                      (* (length v*) wordsize)))
+                                (K vector-tag))])
+                  (seq*
+                    (prm 'mset! t 
+                         (K (- disp-record-rtd vector-tag))
+                         (Value rtd))
+                    (let f ([t* t*] [i (- disp-record-data vector-tag)])
+                      (cond
+                        [(null? t*) t]
+                        [else
+                         (make-seq 
+                           (prm 'mset! t (K i) (car t*))
+                           (f (cdr t*) (+ i wordsize)))])))))))]
+         [($make-record)
+          (let ([rtd (car arg*)] [len (cadr arg*)])
+            (tbind ([rtd rtd])
+              (record-case len
+                [(constant i) 
+                 (unless (fixnum? i)
+                   (error who "invalid make-rec ~s" len))
+                 (tbind ([t (prm 'alloc
+                                 (K (align (+ (* i wordsize)
+                                              disp-record-data)))
+                                 (K vector-tag))])
+                   (seq* 
+                     (prm 'mset! t 
+                          (K (- disp-record-rtd vector-tag))
+                          rtd)
+                     t))]
+                [else 
+                 (tbind ([len 
+                          (prm 'sll 
+                               (prm 'sra
+                                    (prm 'int+ (Value len) 
+                                         (K (sub1
+                                              object-alignment)))
+                                    (K align-shift))
+                               (K align-shift))])
+                    (tbind ([t (prm 'alloc len (K vector-tag))])
+                      (seq* 
+                        (prm 'mset! t 
+                             (K (- disp-record-rtd vector-tag))
+                             rtd)
+                         t)))])))]
+         [($record-rtd)
+          (prm 'mref (Value (car arg*))
+               (K (- disp-record-rtd vector-tag)))]
          [(cons)
           (tbind ([a (Value (car arg*))]
                   [d (Value (cadr arg*))])
@@ -785,6 +875,12 @@
                 (prm 'mset! t (K (- disp-car pair-tag)) a)
                 (prm 'mset! t (K (- disp-cdr pair-tag)) d)
                 t)))]
+         [($fxadd1)
+          (prm 'int+ (Value (car arg*)) (K (* 1 fixnum-scale)))]
+         [($fxsub1)
+          (prm 'int+ (Value (car arg*)) (K (* -1 fixnum-scale)))]
+         [($fx+)
+          (prm 'int+ (Value (car arg*)) (Value (cadr arg*)))]
          [($fxmodulo)
           (tbind ([a (Value (car arg*))]
                   [b (Value (cadr arg*))])
@@ -811,6 +907,10 @@
               [else (error who "nonconst arg to fxsra ~s" c)]))] 
          [($fxlogand)
           (prm 'logand (Value (car arg*)) (Value (cadr arg*)))]
+         [($char->fixnum)
+          (prm 'sra
+               (Value (car arg*))
+               (K (- char-shift fixnum-shift)))]
          [($current-frame)  ;; PCB NEXT-CONTINUATION
           (prm 'mref pcr (K 20))]
          [($seal-frame-and-call) 
@@ -863,7 +963,7 @@
                   (K (+ (- disp-closure-data closure-tag) 
                         (* i wordsize))))]
               [else (err x)]))]
-         [($vector-ref) 
+         [($vector-ref $record-ref) 
           (let ([a0 (car arg*)] [a1 (cadr arg*)])
             (record-case a1
               [(constant i) 

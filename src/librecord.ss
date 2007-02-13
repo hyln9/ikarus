@@ -97,7 +97,7 @@
          (error 'make-record-type "fields must be a list, got ~s" fields))
        (for-each verify-field fields)
        (cond
-         [(top-level-bound? g) 
+         [(top-level-bound? g)
           (let ([rtd (top-level-value g)])
             (unless (and (string=? name (record-type-name rtd))
                          (equal? fields (record-type-field-names rtd)))

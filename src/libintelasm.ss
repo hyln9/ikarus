@@ -365,12 +365,41 @@
            (error 'CODEdi "unsupported2")]
           [else (error 'CODEdi "unhandled ~s" disp)])))))
 
+;              81 /0 id    ADD r/m32,imm32               Valid Valid Add imm32 to 
+(define (CODE/r c /?)
+  (lambda (dst ac)
+    (cond
+      [(mem? dst) 
+       (with-args dst
+          (lambda (a0 a1)
+            (cond
+              [(and (imm8? a0) (reg? a1))
+               (CODE c (ModRM 1 /? a1 (IMM8 a0 ac)))]
+              [else (error 'CODE/r "unhandled ~s ~s" a0 a1)])))]
+      [else (error 'CODE/r "unhandled ~s" dst)])))
+
+(define CODEid
+  (lambda (c /? n disp ac)
+    (with-args disp
+      (lambda (a1 a2)
+        (cond
+          [(and (reg? a1) (reg? a2)) 
+           (error 'CODEid "unsupported1 ~s" disp)]
+          [(and (imm? a1) (reg? a2))
+           (error 'CODEid "unsupported2")
+           (CODErri c /? a2 a1 (IMM32 n ac))]
+          [(and (imm? a2) (reg? a1))
+           (error 'CODEid "unsupported3")
+           (CODErri c /? a1 a2 (IMM32 n ac))]
+          [(and (imm? a1) (imm? a2))
+           (error 'CODEid "unsupported4")]
+          [else (error 'CODEid "unhandled ~s" disp)])))))
 
 (define CODEdi8
-  (lambda (c disp n ac)
+  (lambda (c /? disp n ac)
     (with-args disp
       (lambda (i r)
-        (CODErri c '/0 r i (IMM8 n ac))))))
+        (CODErri c /? r i (IMM8 n ac))))))
 
 (define *cogen* (gensym "*cogen*"))
 
@@ -411,21 +440,6 @@
                 (error 'convert-instruction "incorrect args in ~s" a))])))]
     [else (error 'convert-instruction "unknown instruction in ~s" a)]))
 
-;;; instr/null is for 1-byte instructions that take no arguments
-;(define (instr/null code ac)
-;  (cons code ac))
-
-;(define (instr/ir arg1 arg2 ac ircode)
-;  (CODE+r ircode arg2 (IMM32 arg1 ac)))
-;
-;(define (instr/im arg1 arg2 ac imcode)
-;  (error 'instr/im "not implemented"))
-;
-;(define (instr/rr arg1 arg2 ac rrcode)
-;  (CODErr rrcode arg1 arg2 ac))
-;
-;(define (instr/rm arg1 arg2 ac rmcode)
-;  (CODErd rmcode arg1 arg2 ac))
 
 
 (define (instr/2 arg1 arg2 ac ircode imcode rrcode rmcode mrcode)
@@ -470,7 +484,7 @@
    [(movl src dst) (instr/2 src dst ac #xB8 #xC7 #x89 #x89 #x8B)]
    [(movb src dst)
     (cond
-      [(and (imm8? src) (mem? dst)) (CODEdi8 #xC6 dst src ac)]
+      [(and (imm8? src) (mem? dst)) (CODEdi8 #xC6 '/0 dst src ac)]
       [(and (reg8? src) (mem? dst)) (CODErd #x88 src dst ac)]
       [(and (mem? src) (reg8? dst)) (CODErd #x8A dst src ac)] 
       [else (error who "invalid ~s" instr)])]
@@ -487,7 +501,11 @@
       [(and (mem? src) (reg? dst))
        (CODErd #x03 dst src ac)]
       [(and (imm? src) (mem? dst)) 
-       (CODEdi #x81 '/0 dst src ac)]
+      ; (printf "addl ~s ~s\n" src dst)
+      ; (printf "=> ~s\n" ((CODE/r #x81 '/0) dst (IMM32 src '())))
+       ((CODE/r #x81 '/0) dst (IMM32 src ac))]
+      [(and (reg? src) (mem? dst))
+       (CODErd #x81 src dst ac)]
       [else (error who "invalid ~s" instr)])]
    [(subl src dst)
     (cond   
@@ -508,6 +526,10 @@
        (CODE #xD1 (ModRM 3 '/4 dst ac))]
       [(and (imm8? src) (reg? dst))
        (CODE #xC1 (ModRM 3 '/4 dst (IMM8 src ac)))]
+      [(and (imm8? src) (mem? dst))
+       (printf "sall ~s ~s\n" src dst)
+       (printf "=> ~s\n" ((CODE/r #xC1 '/4) dst (IMM8 src '())))
+       ((CODE/r #xC1 '/4) dst (IMM8 src ac))]
       [(and (eq? src '%cl) (reg? dst))
        (CODE #xD3 (ModRM 3 '/4 dst ac))]
       [else (error who "invalid ~s" instr)])]
@@ -526,6 +548,10 @@
        (CODE #xD1 (ModRM 3 '/7 dst ac))]
       [(and (imm8? src) (reg? dst))
        (CODE #xC1 (ModRM 3 '/7 dst (IMM8 src ac)))]
+      [(and (imm8? src) (mem? dst))
+       (printf "sarl ~s ~s\n" src dst)
+       (printf "=> ~s\n" ((CODE/r #xC1 '/7) dst (IMM8 src '())))
+       ((CODE/r #xC1 '/7) dst (IMM8 src ac))] 
       [(and (eq? src '%cl) (reg? dst))
        (CODE #xD3 (ModRM 3 '/7 dst ac))]
       [else (error who "invalid ~s" instr)])]
@@ -550,8 +576,6 @@
        (CODE #x0D (IMM32 src ac))]
       [(and (imm? src) (reg? dst))
        (CODE #x81 (ModRM 3 '/1 dst (IMM32 src ac)))]
-      [(and (imm? src) (mem? dst)) 
-       (CODEdi #x81 '/1 dst src ac)]
       [(and (reg? src) (reg? dst))
        (CODE #x09 (ModRM 3 src dst ac))]
       [(and (mem? src) (reg? dst))
