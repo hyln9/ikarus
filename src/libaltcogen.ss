@@ -159,6 +159,7 @@
       [$vector-ref       v]
       [$vector-set!      e]
 
+      [$set-symbol-value! e]
       ;;; ports
       [output-port?      p]
       [input-port?       p]
@@ -170,6 +171,7 @@
       [$closure-code     v]
       [$code-freevars    v]
       [primitive-set!    e]
+      [primitive-ref     v]
 
       [$fp-at-base       p]
       [$current-frame    v]
@@ -621,6 +623,10 @@
           (let ([x (Value (car arg*))] [v (Value (cadr arg*))])
             (mem-assign v x 
                (- disp-symbol-system-value symbol-tag)))]
+         [($set-symbol-value!)
+          (let ([x (Value (car arg*))] [v (Value (cadr arg*))])
+            (mem-assign v x 
+               (- disp-symbol-value symbol-tag)))] 
          [($vector-set!)
           (let ([x (Value (car arg*))] 
                 [i (cadr arg*)]
@@ -753,6 +759,9 @@
           (prm 'mref (Value (car arg*)) (K (- disp-car pair-tag)))]
          [($cdr) 
           (prm 'mref (Value (car arg*)) (K (- disp-cdr pair-tag)))]
+         [(primitive-ref) 
+          (prm 'mref (Value (car arg*)) 
+               (K (- disp-symbol-system-value symbol-tag)))]
          [($make-cp)
           (let ([label (car arg*)] [len (cadr arg*)])
             (record-case len
