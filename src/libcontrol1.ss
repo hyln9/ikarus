@@ -1,18 +1,6 @@
 
 (let ([winders '()])
 
-  (define call-with-current-frame
-    (lambda (f)
-      (if ($fp-at-base)
-          (f ($current-frame))
-          ($seal-frame-and-call f))))
-  
-  (define primitive-call/cc
-    (lambda (f)
-      (call-with-current-frame
-        (lambda (frm)
-          (f ($frame->continuation frm))))))
-
   (define len
     (lambda (ls n)
       (if (null? ls)
@@ -71,7 +59,7 @@
 
   (define call/cc
     (lambda (f)
-      (primitive-call/cc
+      ($primitive-call/cc
         (lambda (k)
           (let ([save winders])
             (f (case-lambda
@@ -80,7 +68,7 @@
                  [(v1 v2 . v*)
                   (unless (eq? save winders) (do-wind save))
                   (apply k v1 v2 v*)])))))))
-                  
+
 
 
 ;;;  (define dynamic-wind
@@ -119,7 +107,6 @@
 
 
 
-  (primitive-set! 'call/cf call-with-current-frame)
   (primitive-set! 'call/cc call/cc)
   (primitive-set! 'dynamic-wind dynamic-wind)
   (void))
