@@ -19,6 +19,7 @@
 ;  [(fxmodulo -17 -9) => "-8\n"]
 )   
 
+#!eof
 (add-tests-with-string-output "write-char"
   [(begin 
     (write-char #\a)

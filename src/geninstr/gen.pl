@@ -33,6 +33,20 @@ sub gen2{
   }
 }
 
+sub gen2_no_esp{
+  my $tmpl = shift;
+  foreach my $r1 (@regs){
+    foreach my $r2 (@regs_no_esp){
+      my $x = $tmpl;
+      $x =~ s/r1/$r1/g;
+      $x =~ s/r2/$r2/g;
+      print $x;
+    }
+  }
+}
+
+
+
 sub gen3{
   my $tmpl = shift;
   foreach my $r1 (@regs){
@@ -51,7 +65,7 @@ sub gen3{
 #gen1 "addl \$0x12345678, 7(r1)\n";
 
 #gen2 "addl 0x23(r1), r2\n";
-gen2 "addl r1, 0x23(r2)\n";
+gen2_no_esp "movb \$24, 0(r1,r2)\n";
 
 #gen1 "movb \$0, 4(r1)\n";
 #gen1 "movb -2(r1), %ah\n";

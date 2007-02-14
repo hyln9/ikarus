@@ -10,6 +10,7 @@
                 `([0 (label ,(gensym)) . ,ls])))])
     (let ([proc (#%$code->closure code)])
       (let ([v (proc)])
+        (printf "running\n")
         (unless (equal? v res)
           (printf "failed!\n")
           (error 'test-asm "expected ~s, got ~s" res v)))))
@@ -65,6 +66,27 @@
     [movl (disp -8 %esp) %eax]
     [ret]))
 
+(asm-test 1
+  '([movl 0 (disp -4 %esp)]
+    [movl %esp %eax]
+    [movl -4 %ebx]
+    [movb 4 (disp %eax %ebx)]
+    [movl (disp -4 %esp) %eax]
+    [ret]))
+
+
+
+(asm-test 3
+  '([movl 4 (disp -4 %esp)]
+    [orl 8 (disp -4 %esp)]
+    [movl (disp -4 %esp) %eax]
+    [ret]))
+
+(asm-test 3
+  '([movl -1 (disp -4 %esp)]
+    [andl 12 (disp -4 %esp)]
+    [movl (disp -4 %esp) %eax]
+    [ret]))
 
 
 (printf "Happy Happy Joy Joy\n")

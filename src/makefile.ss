@@ -17,7 +17,7 @@
 
 (define macros
   '(|#primitive| lambda case-lambda set! quote begin define if letrec
-    foreign-call $apply
+    foreign-call ;$apply
     quasiquote unquote unquote-splicing
     define-syntax identifier-syntax let-syntax letrec-syntax
     fluid-let-syntax alias meta eval-when with-implicit with-syntax
@@ -48,7 +48,7 @@
     make-string string-ref string-set! string-length string
     string->list list->string uuid string-append substring string=?
     string<?  string<=? string>? string>=? remprop putprop getprop
-    property-list apply map for-each andmap ormap memq memv assq
+    property-list $$apply apply map for-each andmap ormap memq memv assq
     assv assoc eq? eqv? equal? reverse string->symbol symbol->string
     top-level-value set-top-level-value!  top-level-bound?
     gensym gensym-count gensym-prefix print-gensym
@@ -325,5 +325,6 @@
   (format "cat ~a > ikarus.boot"
           (join " " (map cadr scheme-library-files))))
 
+(printf "Happy Happy Joy Joy\n")
 ;(#%compiler-giveup-tally)
 ; vim:syntax=scheme

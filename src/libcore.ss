@@ -889,6 +889,15 @@ reference-implementation:
              (race d d x x))
            (error 'last-pair "~s is not a pair" x)))))
 
+
+(primitive-set! '$memq
+  (lambda (x ls)
+    (let f ([x x] [ls ls])
+      (and (pair? ls)
+           (if (eq? x (car ls))
+               ls
+               (f x (cdr ls)))))))
+
 (primitive-set! 'memq
   (letrec ([race
             (lambda (h t ls x)
@@ -1023,6 +1032,7 @@ reference-implementation:
       (error 'list-ref "~s is not a valid index" index))
     (f list index)))
 
+
 (primitive-set! 'apply
   (let ()
     (define (err f ls)
@@ -1035,22 +1045,22 @@ reference-implementation:
          (let ([last ($car d)])
            ($set-cdr! p last)
            (if (and (procedure? f) (list? last))
-               ($apply f a0 a1 ls)
+               ($$apply f a0 a1 ls)
                (err f last)))]
         [else (fixandgo f a0 a1 ls d ($cdr d))]))
     (define apply
       (case-lambda
         [(f ls) 
          (if (and (procedure? f) (list? ls))
-             ($apply f ls)
+             ($$apply f ls)
              (err f ls))]
         [(f a0 ls)
          (if (and (procedure? f) (list? ls))
-             ($apply f a0 ls)
+             ($$apply f a0 ls)
              (err f ls))]
         [(f a0 a1 ls)
          (if (and (procedure? f) (list? ls))
-             ($apply f a0 a1 ls)
+             ($$apply f a0 a1 ls)
              (err f ls))]
         [(f a0 a1 . ls)
          (fixandgo f a0 a1 ls ls ($cdr ls))]))

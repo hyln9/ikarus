@@ -356,6 +356,14 @@
            (error 'CODEdi "unsupported2")]
           [else (error 'CODEdi "unhandled ~s" disp)])))))
 
+(define (SIB s i b ac)
+  (cons (byte
+          (fxlogor
+            (register-index b)
+            (fxlogor 
+              (fxsll (register-index i) 3)
+              (fxsll s 6))))
+        ac))
 ;              81 /0 id    ADD r/m32,imm32            Valid Add imm32 to 
 (define (CODE/digit c /d)
   (lambda (dst ac)
@@ -366,6 +374,8 @@
             (cond
               [(and (imm8? a0) (reg? a1))
                (CODE c (ModRM 1 /d a1 (IMM8 a0 ac)))]
+              [(and (reg? a0) (reg? a1)) 
+               (CODE c (ModRM 1 /d '/4 (SIB 0 a0 a1 (IMM8 0 ac))))]
               [else (error 'CODE/digit "unhandled ~s ~s" a0 a1)])))]
       [else (error 'CODE/digit "unhandled ~s" dst)])))
 
@@ -492,9 +502,10 @@
    [(movl src dst) (instr/2 src dst ac #xB8 #xC7 #x89 #x89 #x8B)]
    [(movb src dst)
     (cond
-      [(and (imm8? src) (mem? dst)) (CODEdi8 #xC6 '/0 dst src ac)]
+      [(and (imm8? src) (mem? dst))
+       ((CODE/digit #xC6 '/0) dst (IMM8 src ac))]
       [(and (reg8? src) (mem? dst)) (CODErd #x88 src dst ac)]
-      [(and (mem? src) (reg8? dst)) (CODErd #x8A dst src ac)] 
+      [(and (mem? src) (reg8? dst)) (CODErd #x8A dst src ac)]
       [else (error who "invalid ~s" instr)])]
    [(addl src dst)
     (cond   
@@ -511,7 +522,6 @@
       [(and (imm? src) (mem? dst)) 
        ((CODE/digit #x81 '/0) dst (IMM32 src ac))]
       [(and (reg? src) (mem? dst))
-       (printf "code=~s\n" ((CODE/digit #x01 src) dst '()))
        ((CODE/digit #x01 src) dst ac)]
       [else (error who "invalid ~s" instr)])]
    [(subl src dst)
@@ -534,8 +544,6 @@
       [(and (imm8? src) (reg? dst))
        (CODE #xC1 (ModRM 3 '/4 dst (IMM8 src ac)))]
       [(and (imm8? src) (mem? dst))
-       (printf "sall ~s ~s\n" src dst)
-       (printf "=> ~s\n" ((CODE/digit #xC1 '/4) dst (IMM8 src '())))
        ((CODE/digit #xC1 '/4) dst (IMM8 src ac))]
       [(and (eq? src '%cl) (reg? dst))
        (CODE #xD3 (ModRM 3 '/4 dst ac))]
@@ -556,14 +564,14 @@
       [(and (imm8? src) (reg? dst))
        (CODE #xC1 (ModRM 3 '/7 dst (IMM8 src ac)))]
       [(and (imm8? src) (mem? dst))
-       (printf "sarl ~s ~s\n" src dst)
-       (printf "=> ~s\n" ((CODE/digit #xC1 '/7) dst (IMM8 src '())))
        ((CODE/digit #xC1 '/7) dst (IMM8 src ac))] 
       [(and (eq? src '%cl) (reg? dst))
        (CODE #xD3 (ModRM 3 '/7 dst ac))]
       [else (error who "invalid ~s" instr)])]
    [(andl src dst) 
     (cond
+      [(and (imm? src) (mem? dst))
+       ((CODE/digit #x81 '/4) dst (IMM32 src ac))]
       [(and (imm8? src) (reg? dst)) 
        (CODE #x83 (ModRM 3 '/4 dst (IMM8 src ac)))]
       [(and (imm? src) (eq? dst '%eax)) 
@@ -577,6 +585,8 @@
       [else (error who "invalid ~s" instr)])]
    [(orl src dst) 
     (cond
+      [(and (imm? src) (mem? dst))
+       ((CODE/digit #x81 '/1) dst (IMM32 src ac))]
       [(and (imm8? src) (reg? dst)) 
        (CODE #x83 (ModRM 3 '/1 dst (IMM8 src ac)))]
       [(and (imm? src) (eq? dst '%eax)) 

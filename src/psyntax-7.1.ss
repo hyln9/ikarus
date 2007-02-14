@@ -777,9 +777,9 @@
 (define-syntax build-foreign-call
   (syntax-rules ()
     [(_ ae name arg*) `(foreign-call ,name . ,arg*)]))
-(define-syntax build-$apply
-  (syntax-rules ()
-    [(_ ae proc arg*) `($apply ,proc . ,arg*)]))
+;;;X (define-syntax build-$apply
+;;;X   (syntax-rules ()
+;;;X     [(_ ae proc arg*) `($apply ,proc . ,arg*)]))
 
 (define-syntax build-data
   (syntax-rules ()
@@ -3370,19 +3370,19 @@
                     (f #'arg*))])))]
       [_ (syntax-error (source-wrap e w ae))])))
 
-(global-extend 'core '$apply
-  (lambda (e r mr w ae m?)
-    (syntax-case e ()
-      [(_ proc arg* ...)
-       (build-$apply ae
-         (chi #'proc r mr w m?)
-         (let f ([arg* #'(arg* ...)])
-           (syntax-case arg* ()
-             [() '()]
-             [(a . arg*)
-              (cons (chi #'a r mr w m?)
-                    (f #'arg*))])))]
-      [_ (syntax-error (source-wrap e w ae))])))
+;;;X (global-extend 'core '$apply
+;;;X   (lambda (e r mr w ae m?)
+;;;X     (syntax-case e ()
+;;;X       [(_ proc arg* ...)
+;;;X        (build-$apply ae
+;;;X          (chi #'proc r mr w m?)
+;;;X          (let f ([arg* #'(arg* ...)])
+;;;X            (syntax-case arg* ()
+;;;X              [() '()]
+;;;X              [(a . arg*)
+;;;X               (cons (chi #'a r mr w m?)
+;;;X                     (f #'arg*))])))]
+;;;X       [_ (syntax-error (source-wrap e w ae))])))
 
 ;;; AZIZ
 (global-extend 'core 'type-descriptor
