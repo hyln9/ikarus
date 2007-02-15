@@ -374,6 +374,8 @@
             (cond
               [(and (imm8? a0) (reg? a1))
                (CODE c (ModRM 1 /d a1 (IMM8 a0 ac)))]
+              [(and (imm8? a1) (reg? a0))
+               (CODE c (ModRM 1 /d a0 (IMM8 a1 ac)))]
               [(and (reg? a0) (reg? a1)) 
                (CODE c (ModRM 1 /d '/4 (SIB 0 a0 a1 (IMM8 0 ac))))]
               [else (error 'CODE/digit "unhandled ~s ~s" a0 a1)])))]
@@ -536,6 +538,8 @@
        (CODE #x29 (ModRM 3 src dst ac))]
       [(and (mem? src) (reg? dst))
        (CODErd #x2B dst src ac)]
+      [(and (reg? src) (mem? dst))
+       ((CODE/digit #x29 src) dst ac)]
       [else (error who "invalid ~s" instr)])]
    [(sall src dst)
     (cond
@@ -872,6 +876,7 @@
   (lambda (thunk?-label code vec)
     (define reloc-idx 0)
     (lambda (r)
+      ;(printf "r=~s\n" r)
       (let ([idx (car r)] [type (cadr r)]
             [v 
              (let ([v (cddr r)])

@@ -11,6 +11,7 @@
 (primitive-set! 'call-with-values 
   ($make-call-with-values-procedure))
 
+
 (primitive-set! 'values 
   ($make-values-procedure))
 
@@ -28,14 +29,20 @@
 (primitive-set! 'eof-object?
   (lambda (x) (eof-object? x)))
 
+
 (primitive-set! 'fxadd1
   (lambda (n)
-    (fxadd1 n)))
+    (if (fixnum? n)
+        ($fxadd1 n)
+        (error 'fxadd1 "~s is not a fixnum" n))))
   
 (primitive-set! 'fxsub1 
   (lambda (n) 
-    (fxsub1 n)))
+    (if (fixnum? n)
+        ($fxsub1 n)
+        (error 'fxsub1 "~s is not a fixnum" n))))
   
+
 (primitive-set! 'integer->char
   (lambda (n)
     (unless (fixnum? n)
@@ -97,6 +104,7 @@
        (fill! ($make-vector n) 0 n fill)]))
   (primitive-set! 'make-vector make-vector))
 
+
 (primitive-set! 'vector-length
   (lambda (x)
     (unless (vector? x) 
@@ -131,6 +139,7 @@
     (unless (string? x)
       (error 'string-length "~s is not a string" x))
     ($string-length x)))
+
 
 (primitive-set! 'string->list
   (lambda (x)
@@ -192,6 +201,35 @@ description:
            (strings=? s s* ($string-length s))
            (err s))])))
 
+
+
+(primitive-set! 'string-ref 
+  (lambda (s i) 
+    (unless (string? s) 
+      (error 'string-ref "~s is not a string" s))
+    (unless (fixnum? i)
+      (error 'string-ref "~s is not a valid index" i))
+    (unless (and ($fx< i ($string-length s))
+                 ($fx<= 0 i))
+      (error 'string-ref "index ~s is out of range for ~s" i s))
+    ($string-ref s i)))
+
+
+
+(primitive-set! 'string-set! 
+  (lambda (s i c) 
+    (unless (string? s) 
+      (error 'string-set! "~s is not a string" s))
+    (unless (fixnum? i)
+      (error 'string-set! "~s is not a valid index" i))
+    (unless (and ($fx< i ($string-length s))
+                 ($fx>= i 0))
+      (error 'string-set! "index ~s is out of range for ~s" i s))
+    (unless (char? c)
+      (error 'string-set! "~s is not a character" c))
+    ($string-set! s i c)))
+
+
 #|procedure:string-append
 synopsis:
   (string-append str ...)
@@ -234,6 +272,9 @@ reference-implementation:
         (let ([s ($make-string n)])
           (fill-strings s s* 0))))))
 
+
+
+
 #|procedure:substring
   (substring str i j)
   Returns a substring of str starting from index i (inclusive)
@@ -267,17 +308,7 @@ reference-implementation:
 (primitive-set! 'not 
   (lambda (x) (if x #f #t)))
   
-(primitive-set! 'symbol->string
-  (lambda (x)
-    (unless (symbol? x)
-      (error 'symbol->string "~s is not a symbol" x))
-    (let ([str ($symbol-string x)])
-      (or str
-          (let ([ct (gensym-count)])
-            (let ([str (string-append (gensym-prefix) (fixnum->string ct))])
-              ($set-symbol-string! x str)
-              (gensym-count ($fxadd1 ct))
-              str))))))
+
 
 (primitive-set! 'gensym?
   (lambda (x)
@@ -285,37 +316,6 @@ reference-implementation:
          (let ([s ($symbol-unique-string x)])
            (and s #t)))))
 
-(let ()
-  (define f
-    (lambda (n i j)
-      (cond
-        [($fxzero? n) 
-         (values (make-string i) j)]
-        [else
-         (let ([q ($fxquotient n 10)])
-           (call-with-values
-             (lambda () (f q ($fxadd1 i) j))
-             (lambda (str j)
-               (let ([r ($fx- n ($fx* q 10))])
-                 (string-set! str j
-                    ($fixnum->char ($fx+ r ($char->fixnum #\0))))
-                 (values str ($fxadd1 j))))))])))
-  (primitive-set! 'fixnum->string
-    (lambda (x)
-      (unless (fixnum? x) (error 'fixnum->string "~s is not a fixnum" x))
-      (cond
-        [($fxzero? x) "0"]
-        [($fx> x 0) 
-         (call-with-values
-           (lambda () (f x 0 0))
-           (lambda (str j) str))]
-        [($fx= x -536870912) "-536870912"]
-        [else
-         (call-with-values
-           (lambda () (f ($fx- 0 x) 1 1))
-           (lambda (str j)
-             ($string-set! str 0 #\-)
-             str))]))))
 
 ;;; OLD (primitive-set! 'top-level-value
 ;;; OLD   (lambda (x)
@@ -366,13 +366,14 @@ reference-implementation:
     (primitive-set! x v)
     (set-top-level-value! x v)))
 
-
-
-
-
 (primitive-set! 'fx+ 
   (lambda (x y) 
-    (fx+ x y)))
+    (unless (fixnum? x)
+      (error 'fx+ "~s is not a fixnum" x))
+    (unless (fixnum? y)
+      (error 'fx+ "~s is not a fixnum" y))
+    ($fx+ x y)))
+
 
 (primitive-set! 'fx-
   (lambda (x y) 
@@ -381,7 +382,8 @@ reference-implementation:
     (unless (fixnum? y)
       (error 'fx- "~s is not a fixnum" y))
     ($fx- x y)))
-  
+
+
 (primitive-set! 'fx*
   (lambda (x y) 
     (unless (fixnum? x)
@@ -390,8 +392,6 @@ reference-implementation:
       (error 'fx* "~s is not a fixnum" y))
     ($fx* x y)))
   
-
-
 (primitive-set! 'fxquotient
   (lambda (x y) 
     (unless (fixnum? x)
@@ -401,7 +401,6 @@ reference-implementation:
     (when ($fxzero? y)
       (error 'fxquotient "zero dividend ~s" y))
     ($fxquotient x y))) 
-
 
 (primitive-set! 'fxremainder
   (lambda (x y) 
@@ -414,7 +413,6 @@ reference-implementation:
     (let ([q ($fxquotient x y)])
       ($fx- x ($fx* q y)))))
  
-
 (primitive-set! 'fxmodulo
   (lambda (x y) 
     (unless (fixnum? x)
@@ -424,7 +422,6 @@ reference-implementation:
     (when ($fxzero? y)
       (error 'fxmodulo "zero dividend ~s" y))
     ($fxmodulo x y)))
-
 
 (primitive-set! 'fxlogor
   (lambda (x y) 
@@ -450,6 +447,7 @@ reference-implementation:
       (error 'fxlogand "~s is not a fixnum" y))
     ($fxlogand x y)))
  
+
 (primitive-set! 'fxsra
   (lambda (x y) 
     (unless (fixnum? x)
@@ -697,6 +695,14 @@ reference-implementation:
                        (err c2)))))
            (err c1))])))
 
+(primitive-set! '$memq
+  (lambda (x ls)
+    (let f ([x x] [ls ls])
+      (and (pair? ls)
+           (if (eq? x (car ls))
+               ls
+               (f x (cdr ls)))))))
+
 (primitive-set! 'char-whitespace?
   (lambda (c)
     (cond 
@@ -765,16 +771,6 @@ reference-implementation:
       (error 'vector-ref "index ~s is out of range for ~s" i v))
     ($vector-ref v i)))
 
-(primitive-set! 'string-ref 
-  (lambda (s i) 
-    (unless (string? s) 
-      (error 'string-ref "~s is not a string" s))
-    (unless (fixnum? i)
-      (error 'string-ref "~s is not a valid index" i))
-    (unless (and ($fx< i ($string-length s))
-                 ($fx<= 0 i))
-      (error 'string-ref "index ~s is out of range for ~s" i s))
-    ($string-ref s i)))
 
 (primitive-set! 'vector-set! 
   (lambda (v i c) 
@@ -788,18 +784,6 @@ reference-implementation:
     ($vector-set! v i c)))
 
 
-(primitive-set! 'string-set! 
-  (lambda (s i c) 
-    (unless (string? s) 
-      (error 'string-set! "~s is not a string" s))
-    (unless (fixnum? i)
-      (error 'string-set! "~s is not a valid index" i))
-    (unless (and ($fx< i ($string-length s))
-                 ($fx>= i 0))
-      (error 'string-set! "index ~s is out of range for ~s" i s))
-    (unless (char? c)
-      (error 'string-set! "~s is not a character" c))
-    ($string-set! s i c)))
 
 (primitive-set! 'vector
   ;;; FIXME: add case-lambda
@@ -888,15 +872,6 @@ reference-implementation:
            (let ([d (cdr x)])
              (race d d x x))
            (error 'last-pair "~s is not a pair" x)))))
-
-
-(primitive-set! '$memq
-  (lambda (x ls)
-    (let f ([x x] [ls ls])
-      (and (pair? ls)
-           (if (eq? x (car ls))
-               ls
-               (f x (cdr ls)))))))
 
 (primitive-set! 'memq
   (letrec ([race
@@ -1033,43 +1008,9 @@ reference-implementation:
     (f list index)))
 
 
-(primitive-set! 'apply
-  (let ()
-    (define (err f ls)
-      (if (procedure? f)
-          (error 'apply "not a list")
-          (error 'apply "~s is not a procedure" f)))
-    (define (fixandgo f a0 a1 ls p d)
-      (cond
-        [(null? ($cdr d))
-         (let ([last ($car d)])
-           ($set-cdr! p last)
-           (if (and (procedure? f) (list? last))
-               ($$apply f a0 a1 ls)
-               (err f last)))]
-        [else (fixandgo f a0 a1 ls d ($cdr d))]))
-    (define apply
-      (case-lambda
-        [(f ls) 
-         (if (and (procedure? f) (list? ls))
-             ($$apply f ls)
-             (err f ls))]
-        [(f a0 ls)
-         (if (and (procedure? f) (list? ls))
-             ($$apply f a0 ls)
-             (err f ls))]
-        [(f a0 a1 ls)
-         (if (and (procedure? f) (list? ls))
-             ($$apply f a0 a1 ls)
-             (err f ls))]
-        [(f a0 a1 . ls)
-         (fixandgo f a0 a1 ls ls ($cdr ls))]))
-    apply))
 
 
-             
-
-   
+ 
 (primitive-set! 'assq
   (letrec ([race
             (lambda (x h t ls)
@@ -1224,7 +1165,6 @@ reference-implementation:
       (f ($symbol-plist x) '()))))
 
 
-
 (let ()
    (define vector-loop
      (lambda (x y i n)
@@ -1258,6 +1198,41 @@ reference-implementation:
          [else #f])))
    (primitive-set! 'equal? equal?))
 
+
+
+
+(primitive-set! 'apply
+  (let ()
+    (define (err f ls)
+      (if (procedure? f)
+          (error 'apply "not a list")
+          (error 'apply "~s is not a procedure" f)))
+    (define (fixandgo f a0 a1 ls p d)
+      (cond
+        [(null? ($cdr d))
+         (let ([last ($car d)])
+           ($set-cdr! p last)
+           (if (and (procedure? f) (list? last))
+               ($$apply f a0 a1 ls)
+               (err f last)))]
+        [else (fixandgo f a0 a1 ls d ($cdr d))]))
+    (define apply
+      (case-lambda
+        [(f ls) 
+         (if (and (procedure? f) (list? ls))
+             ($$apply f ls)
+             (err f ls))]
+        [(f a0 ls)
+         (if (and (procedure? f) (list? ls))
+             ($$apply f a0 ls)
+             (err f ls))]
+        [(f a0 a1 ls)
+         (if (and (procedure? f) (list? ls))
+             ($$apply f a0 a1 ls)
+             (err f ls))]
+        [(f a0 a1 . ls)
+         (fixandgo f a0 a1 ls ls ($cdr ls))]))
+    apply))
 
 (let ()
   (define who 'map)
@@ -1712,7 +1687,7 @@ reference-implementation:
     (let ([us ($symbol-unique-string x)])
       (cond
         [(string? us) us]
-        [(eq? us #t) 
+        [(not us)
          (error 'gensym->unique-string "~s is not a gensym" x)]
         [else
          (let f ([x x])
@@ -1721,6 +1696,9 @@ reference-implementation:
              (cond
                [(foreign-call "ikrt_intern_gensym" x) id]
                [else (f x)])))]))))
+
+
+
 
 (primitive-set! 'gensym-prefix
   (make-parameter
@@ -1746,21 +1724,6 @@ reference-implementation:
         (error 'print-gensym "~s is not in #t|#f|pretty" x))
       x)))
 
-;; X (primitive-set! 'make-hash-table
-;; X   (lambda ()
-;; X     (make-hash-table)))
-;; X 
-;; X (primitive-set! 'hash-table?
-;; X   (lambda (x)
-;; X     (hash-table? x)))
-;; X 
-;; X (primitive-set! 'get-hash-table
-;; X   (lambda (h k v)
-;; X     (foreign-call "ik_get_hash_table" h k v)))
-;; X 
-;; X (primitive-set! 'put-hash-table!
-;; X   (lambda (h k v)
-;; X     (foreign-call "ik_put_hash_table" h k v)))
 
 (primitive-set! 'bwp-object?
   (lambda (x)
@@ -1803,6 +1766,55 @@ reference-implementation:
       (if (and (list? x) (andmap string? x))
           x
           (error 'command-list "invalid command-line-arguments ~s\n" x)))))
+
+
+
+(let ()
+  (define f
+    (lambda (n i j)
+      (cond
+        [($fxzero? n) 
+         (values (make-string i) j)]
+        [else
+         (let ([q ($fxquotient n 10)])
+           (call-with-values
+             (lambda () (f q ($fxadd1 i) j))
+             (lambda (str j)
+               (let ([r ($fx- n ($fx* q 10))])
+                 (string-set! str j
+                    ($fixnum->char ($fx+ r ($char->fixnum #\0))))
+                 (values str ($fxadd1 j))))))])))
+  (primitive-set! 'fixnum->string
+    (lambda (x)
+      (unless (fixnum? x) (error 'fixnum->string "~s is not a fixnum" x))
+      (cond
+        [($fxzero? x) "0"]
+        [($fx> x 0) 
+         (call-with-values
+           (lambda () (f x 0 0))
+           (lambda (str j) str))]
+        [($fx= x -536870912) "-536870912"]
+        [else
+         (call-with-values
+           (lambda () (f ($fx- 0 x) 1 1))
+           (lambda (str j)
+             ($string-set! str 0 #\-)
+             str))]))))
+
+
+
+(primitive-set! 'symbol->string
+  (lambda (x)
+    (unless (symbol? x)
+      (error 'symbol->string "~s is not a symbol" x))
+    (let ([str ($symbol-string x)])
+      (or str
+          (let ([ct (gensym-count)])
+            (let ([str (string-append (gensym-prefix) (fixnum->string ct))])
+              ($set-symbol-string! x str)
+              (gensym-count ($fxadd1 ct))
+              str))))))
+
 
 (primitive-set! 'string->number
   (lambda (x)
@@ -1849,3 +1861,4 @@ reference-implementation:
        (convert-sign x ($string-length x))]
       [else (error 'string->number "~s is not a string" x)])))
 
+#!eof

@@ -40,6 +40,15 @@
     [ret]))
 
 (asm-test 1
+  '([movl 8 %eax]
+    [movl %eax (disp -4 %esp)]
+    [movl 4 %eax]
+    [subl %eax (disp -4 %esp)]
+    [movl -4 %eax]
+    [movl (disp -4 %esp) %eax]
+    [ret]))
+
+(asm-test 1
   '([movl 1 (disp -4 %esp)]
     [sall 2 (disp -4 %esp)]
     [movl (disp -4 %esp) %eax]
