@@ -4127,11 +4127,11 @@
               (movl (int dirty-word) (mem 0 ebx))
               ac)]
       [($code-set!) 
-       (list* (movl (Simple (cadr arg*)) eax)
-              (sarl (int fx-shift) eax)
-              (addl (Simple (car arg*)) eax)
-              (movl (Simple (caddr arg*)) ebx)
-              (sall (int (fx- 8 fx-shift)) ebx)
+       (list* (movl (Simple (cadr arg*)) eax)   ;;; index
+              (sarl (int fx-shift) eax)         ;;; unfixed
+              (addl (Simple (car arg*)) eax)    ;;; + code
+              (movl (Simple (caddr arg*)) ebx)  ;;; value (fixnum)
+              (sall (int (fx- 8 fx-shift)) ebx) ;;; move to high byte
               (movb bh (mem (fx- disp-code-data vector-tag) eax))
               ac)]
       [($string-set!) 
@@ -4266,7 +4266,7 @@
        (list* (movl (int 0) (pcb-ref 'interrupted))
               ac)]
       [(cons pair? void $fxadd1 $fxsub1 $record-ref $fx=
-             symbol?)
+             symbol? eq?)
        (let f ([arg* arg*])
          (cond
            [(null? arg*) ac]

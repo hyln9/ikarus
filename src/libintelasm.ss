@@ -374,6 +374,8 @@
             (cond
               [(and (imm8? a0) (reg? a1))
                (CODE c (ModRM 1 /d a1 (IMM8 a0 ac)))]
+              [(and (imm? a0) (reg? a1))
+               (CODE c (ModRM 2 /d a1 (IMM32 a0 ac)))]
               [(and (imm8? a1) (reg? a0))
                (CODE c (ModRM 1 /d a0 (IMM8 a1 ac)))]
               [(and (reg? a0) (reg? a1)) 

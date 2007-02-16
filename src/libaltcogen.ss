@@ -170,6 +170,7 @@
       [$char->fixnum     v]
       [$fixnum->char     v]
 
+      [vector            v]
       [$make-vector      v]
       [$vector-length    v]
       [$vector-ref       v]
@@ -201,15 +202,34 @@
       [$make-record      v]
 
       ;;; ports
-      [output-port?      p]
-      [input-port?       p]
-      [port?             p]
+      [output-port?             p]
+      [input-port?              p]
+      [port?                    p]
+      [$make-port/input         v]
+      [$make-port/output        v]
+      [$make-port/both          v]
+      [$port-handler            v]
+      [$port-input-buffer       v]
+      [$port-input-index        v]
+      [$port-input-size         v]
+      [$port-output-buffer      v]
+      [$port-output-index       v]
+      [$port-output-size        v]
+      [$set-port-input-index!   e]
+      [$set-port-input-size!    e]
+      [$set-port-output-index!  e]
+      [$set-port-output-size!   e]
 
+      [$code?             p]
+      [$code-size         v]
+      [$code-reloc-vector v]
+      [$code-freevars     v]
+      [$code-ref          v]
+      [$code-set!         e]
+      [$code->closure     v]
+      [$closure-code      v]
+      
       [$cpref            v]
-      [$cpset!           e]
-      [$make-cp          v]
-      [$closure-code     v]
-      [$code-freevars    v]
       [primitive-set!    e]
       [primitive-ref     v]
 
@@ -218,10 +238,13 @@
       [$current-frame    v]
       [$seal-frame-and-call tail]
       [$frame->continuation v]
+      [$forward-ptr?   p]
 
       [$make-call-with-values-procedure v]
       [$make-values-procedure v]
       [$arg-list v]
+      [$interrupted?       p]
+      [$unset-interrupted! e]
 
       ))
   (define library-prims
@@ -346,39 +369,6 @@
           [(eq? x (car free*))
            (make-primcall '$cpref (list cpvar (make-constant i)))]
           [else (f (cdr free*) (fxadd1 i))])))
-    ;;;
-    ;;; (define (make-closure x)
-    ;;;   (record-case x
-    ;;;     [(closure code free*)
-    ;;;      (cond
-    ;;;        [(null? free*) x]
-    ;;;        [else 
-    ;;;         (make-primcall '$make-cp 
-    ;;;           (list code (make-constant (length free*))))])]))
-    ;;; ;;;
-    ;;; (define (closure-sets var x ac)
-    ;;;   (record-case x 
-    ;;;     [(closure code free*)
-    ;;;      (let f ([i 0] [free* free*])
-    ;;;        (cond
-    ;;;          [(null? free*) ac]
-    ;;;          [else
-    ;;;           (make-seq 
-    ;;;             (make-primcall '$cpset! 
-    ;;;               (list var (make-constant i) 
-    ;;;                     (Var (car free*))))
-    ;;;             (f (fxadd1 i) (cdr free*)))]))]))
-
-    ;;; (define (do-fix lhs* rhs* body)
-    ;;;   (make-bind 
-    ;;;      lhs* (map make-closure rhs*)
-    ;;;     (let f ([lhs* lhs*] [rhs* rhs*])
-    ;;;       (cond
-    ;;;         [(null? lhs*) body]
-    ;;;         [else
-    ;;;          (closure-sets (car lhs*) (car rhs*)
-    ;;;            (f (cdr lhs*) (cdr rhs*)))]))))
-    
     (define (do-fix lhs* rhs* body)
       (define (handle-closure x)
         (record-case x
@@ -741,18 +731,6 @@
       [(primcall op arg*)
        (case op
          [(nop) nop]
-         ;;;X[($cpset!)
-         ;;;X (let ([x (Value (car arg*))] 
-         ;;;X       [i (cadr arg*)]
-         ;;;X       [v (Value (caddr arg*))])
-         ;;;X   (record-case i
-         ;;;X     [(constant i) 
-         ;;;X      (unless (fixnum? i) (err x))
-         ;;;X      (prm 'mset x 
-         ;;;X         (K (+ (* i wordsize) 
-         ;;;X               (- disp-closure-data closure-tag)))
-         ;;;X         v)]
-         ;;;X     [else (err x)]))]
          [(primitive-set!)
           (let ([x (Value (car arg*))] [v (Value (cadr arg*))])
             (mem-assign v x 
@@ -840,6 +818,28 @@
                                 (prm 'sra i (K fixnum-shift))
                                 (K (- disp-string-data string-tag)))
                            c))]))])))]
+         [($code-set!) 
+          (tbind ([x (Value (car arg*))]
+                  [i (Value (cadr arg*))]
+                  [v (Value (caddr arg*))])
+            (prm 'bset/h x
+                 (prm 'int+ 
+                      (prm 'sra i (K fixnum-shift))
+                      (K (- disp-code-data vector-tag)))
+                 (prm 'sll v (K (- 8 fixnum-shift)))))]
+         [($unset-interrupted!) ;;; PCB INTERRUPT
+          (prm 'mset pcr (K 40) (K 0))]
+         [($set-port-input-index!  $set-port-output-index!
+           $set-port-input-size!   $set-port-output-size!)
+          (let ([off (case op
+                       [($set-port-input-index!)   disp-port-input-index]
+                       [($set-port-input-size!)    disp-port-input-size]
+                       [($set-port-output-index!)  disp-port-output-index]
+                       [($set-port-output-size!)   disp-port-output-size]
+                       [else (err x)])])
+            (tbind ([p (Value (car arg*))]
+                    [v (Value (cadr arg*))])
+               (prm 'mset p (K (- off vector-tag)) v)))]
          [else (error who "invalid effect prim ~s" op)])]
       [(forcall op arg*)
        (make-forcall op (map Value arg*))]
@@ -904,9 +904,14 @@
          [(vector?)
           (sec-tag-test (Value (car arg*)) 
              vector-mask vector-tag fixnum-mask fixnum-tag)]
+         [($forward-ptr?)
+          (tbind ([x (Value (car arg*))]) (prm '= x (K -1)))]
          [($record?)
           (sec-tag-test (Value (car arg*))
              vector-mask vector-tag vector-mask vector-tag)]
+         [($code?)
+          (sec-tag-test (Value (car arg*))
+             vector-mask vector-tag #f code-tag)]
          [(input-port?)
           (sec-tag-test (Value (car arg*)) 
              vector-mask vector-tag #f input-port-tag)]
@@ -935,6 +940,8 @@
                     (prm 'mref pcr (K 12)) ;;; PCB FRAME-BASE
                     (K (- wordsize)))
                fpr)]
+         [($interrupted?)
+          (prm '!= (prm 'mref pcr (K 40)) (K 0))]
          [($fx= $char=) 
           (prm '= (Value (car arg*)) (Value (cadr arg*)))]
          [($fx< $char<) 
@@ -1036,21 +1043,24 @@
                      (K (- disp-symbol-system-plist symbol-tag))
                      (K nil))
                 x)))]
-         ;;;X[($make-cp)
-         ;;;X (let ([label (car arg*)] [len (cadr arg*)])
-         ;;;X   (record-case len
-         ;;;X     [(constant i)
-         ;;;X      (unless (fixnum? i) (err x))
-         ;;;X      (tbind ([t (prm 'alloc 
-         ;;;X                      (K (align (+ disp-closure-data
-         ;;;X                                   (* i wordsize))))
-         ;;;X                      (K closure-tag))])
-         ;;;X        (seq*
-         ;;;X          (prm 'mset t 
-         ;;;X               (K (- disp-closure-code closure-tag))
-         ;;;X               (Value label))
-         ;;;X          t))]
-         ;;;X     [else (err x)]))]
+         [(vector)
+          (let ([t* (map (lambda (x) (unique-var 't)) arg*)])
+            (make-bind t* (map Value arg*)
+              (tbind ([v (prm 'alloc
+                              (K (align (+ disp-vector-data
+                                           (* (length t*)
+                                              wordsize))))
+                              (K vector-tag))])
+                (seq*
+                  (prm 'mset v (K (- disp-vector-length vector-tag))
+                       (K (* (length t*) wordsize)))
+                  (let f ([t* t*] [i (- disp-vector-data vector-tag)])
+                    (cond
+                      [(null? t*) v]
+                      [else
+                       (make-seq
+                         (prm 'mset v (K i) (car t*))
+                         (f (cdr t*) (+ i wordsize)))]))))))]
          [($record) 
           (let ([rtd (car arg*)] [v* (map Value (cdr arg*))])
             (tbind ([rtd (Value rtd)])
@@ -1124,7 +1134,7 @@
                  (tbind ([i (Value i)])
                    (prm 'logor
                      (prm 'sll
-                       (prm 'logand 
+                       (prm 'logand ;;; FIXME: bref
                           (prm 'mref s
                                (prm 'int+
                                   (prm 'sra i (K fixnum-shift))
@@ -1395,6 +1405,91 @@
                      (make-funcall 
                        (make-primref 'top-level-value-error)
                        (list sym)))))]))]
+         [($make-port/input $make-port/output $make-port/both)
+          (unless (= (length arg*) 7) (err x))
+          (let ([tag
+                 (case op
+                   [($make-port/input)  input-port-tag]
+                   [($make-port/output) output-port-tag]
+                   [($make-port/both)   input/output-port-tag]
+                   [else (err x)])]
+                [t* (map (lambda (x) (unique-var 'tmp)) arg*)])
+            (make-bind t* (map Value arg*)
+              (apply
+                 (lambda (handler buf/i idx/i sz/i buf/o idx/o sz/o)
+                   (tbind ([p (prm 'alloc 
+                                (K (align port-size)) 
+                                (K vector-tag))])
+                     (seq*
+                       (prm 'mset p 
+                            (K (- vector-tag))
+                            (K tag))
+                       (prm 'mset p
+                            (K (- disp-port-handler vector-tag)) 
+                            handler)
+                       (prm 'mset p
+                            (K (- disp-port-input-buffer vector-tag)) 
+                            buf/i)
+                       (prm 'mset p
+                            (K (- disp-port-input-index vector-tag)) 
+                            idx/i)
+                       (prm 'mset p
+                            (K (- disp-port-input-size vector-tag)) 
+                            sz/i)
+                       (prm 'mset p
+                            (K (- disp-port-output-buffer vector-tag)) 
+                            buf/o)
+                       (prm 'mset p
+                            (K (- disp-port-output-index vector-tag)) 
+                            idx/o)
+                       (prm 'mset p
+                            (K (- disp-port-output-size vector-tag)) 
+                            sz/o)
+                       p)))
+                 t*)))]
+         [($port-handler
+           $port-input-buffer $port-output-buffer
+           $port-input-index  $port-output-index
+           $port-input-size   $port-output-size)
+          (let ([off (case op
+                       [($port-handler)       disp-port-handler]
+                       [($port-input-buffer)  disp-port-input-buffer]
+                       [($port-input-index)   disp-port-input-index]
+                       [($port-input-size)    disp-port-input-size]
+                       [($port-output-buffer) disp-port-output-buffer]
+                       [($port-output-index)  disp-port-output-index]
+                       [($port-output-size)   disp-port-output-size]
+                       [else (err x)])])
+            (tbind ([p (Value (car arg*))])
+               (prm 'mref p (K (- off vector-tag)))))]
+         [($code-reloc-vector)
+          (tbind ([x (Value (car arg*))])
+            (prm 'mref x (K (- disp-code-relocsize vector-tag))))]
+         [($code-size)
+          (tbind ([x (Value (car arg*))])
+            (prm 'mref x (K (- disp-code-instrsize vector-tag))))]
+         [($code->closure)
+          (tbind ([x (Value (car arg*))])
+            (tbind ([v (prm 'alloc
+                            (K (align (+ 0 disp-closure-data)))
+                            (K closure-tag))])
+              (seq*
+                (prm 'mset v 
+                     (K (- disp-closure-code closure-tag))
+                     (prm 'int+ x 
+                       (K (- disp-code-data vector-tag))))
+                v)))]
+         [($code-ref)
+          (tbind ([x (Value (car arg*))]
+                  [i (Value (cadr arg*))])
+            (prm 'sll
+              (prm 'logand
+                   (prm 'mref x
+                        (prm 'int+
+                             (prm 'sra i (K fixnum-shift))
+                             (K (- disp-code-data vector-tag))))
+                   (K 255))
+              (K fixnum-shift)))]
          [else (error who "value prim ~a not supported" (unparse x))])]
       [(forcall op arg*)
        (make-forcall op (map Value arg*))]
@@ -2792,7 +2887,7 @@
          [foo (printf "6")]
          ;[foo (print-code x)]
          [ls (flatten-codes x)])
-    (when #f
+    (when #t
       (parameterize ([gensym-prefix "L"]
                      [print-gensym #f])
         (for-each 

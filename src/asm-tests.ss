@@ -39,6 +39,13 @@
     [movl (disp -4 %esp) %eax]
     [ret]))
 
+(asm-test 12
+  '([movl 16 %eax]
+    [movl %eax (disp -200 %esp)]
+    [addl 32 (disp -200 %esp)]
+    [movl (disp -200 %esp) %eax]
+    [ret]))
+
 (asm-test 1
   '([movl 8 %eax]
     [movl %eax (disp -4 %esp)]

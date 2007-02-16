@@ -1,7 +1,3 @@
-
-
-
-
 (let ([winders '()])
 
   (define len
