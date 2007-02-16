@@ -90,7 +90,12 @@
     [movl (disp -4 %esp) %eax]
     [ret]))
 
-
+(asm-test 2
+  '([movl 12 (disp -8 %esp)] ;;; 12 = 001100
+    [movl 24 %eax]           ;;; 24 = 011000
+    [andl %eax (disp -8 %esp)]
+    [movl (disp -8 %esp) %eax]
+    [ret]))
 
 (asm-test 3
   '([movl 4 (disp -4 %esp)]

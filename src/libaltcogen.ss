@@ -229,6 +229,14 @@
       [$code->closure     v]
       [$closure-code      v]
       
+      [$make-tcbucket        v]
+      [$tcbucket-key         v]
+      [$tcbucket-val         v]
+      [$tcbucket-next        v]
+      [$set-tcbucket-tconc!  e]
+      [$set-tcbucket-val!    e]
+      [$set-tcbucket-next!   e]
+      
       [$cpref            v]
       [primitive-set!    e]
       [primitive-ref     v]
@@ -731,27 +739,18 @@
       [(primcall op arg*)
        (case op
          [(nop) nop]
-         [(primitive-set!)
-          (let ([x (Value (car arg*))] [v (Value (cadr arg*))])
-            (mem-assign v x 
-               (- disp-symbol-system-value symbol-tag)))]
-         [($set-symbol-value!)
-          (tbind ([x (Value (car arg*))] 
-                  [v (Value (cadr arg*))])
-            (mem-assign v x 
-               (- disp-symbol-value symbol-tag)))]
-         [($set-symbol-string!)
-          (tbind ([x (Value (car arg*))] [v (Value (cadr arg*))])
-            (mem-assign v x 
-               (- disp-symbol-string symbol-tag)))] 
-         [($set-symbol-unique-string!)
-          (tbind ([x (Value (car arg*))] [v (Value (cadr arg*))])
-            (mem-assign v x 
-               (- disp-symbol-unique-string symbol-tag)))]
-         [($set-symbol-plist!)
-          (tbind ([x (Value (car arg*))] [v (Value (cadr arg*))])
-            (mem-assign v x 
-               (- disp-symbol-plist symbol-tag)))] 
+         [(primitive-set! $set-symbol-value! $set-symbol-string!
+           $set-symbol-unique-string! $set-symbol-plist!)
+          (let ([off
+                 (case op
+                   [(primitive-set!) disp-symbol-system-value]
+                   [($set-symbol-value!) disp-symbol-value]
+                   [($set-symbol-string!) disp-symbol-string]
+                   [($set-symbol-unique-string!) disp-symbol-unique-string]
+                   [($set-symbol-plist) disp-symbol-plist]
+                   [else (err x)])])
+            (tbind ([x (Value (car arg*))] [v (Value (cadr arg*))])
+              (mem-assign v x (- off symbol-tag))))]
          [($vector-set! $record-set!)
           (tbind ([x (Value (car arg*))] 
                   [v (Value (caddr arg*))])
@@ -829,17 +828,39 @@
                  (prm 'sll v (K (- 8 fixnum-shift)))))]
          [($unset-interrupted!) ;;; PCB INTERRUPT
           (prm 'mset pcr (K 40) (K 0))]
-         [($set-port-input-index!  $set-port-output-index!
-           $set-port-input-size!   $set-port-output-size!)
+         [($set-port-input-index!  $set-port-output-index!)
           (let ([off (case op
-                       [($set-port-input-index!)   disp-port-input-index]
-                       [($set-port-input-size!)    disp-port-input-size]
-                       [($set-port-output-index!)  disp-port-output-index]
-                       [($set-port-output-size!)   disp-port-output-size]
+                       [($set-port-input-index!)  disp-port-input-index]
+                       [($set-port-output-index!) disp-port-output-index]
                        [else (err x)])])
-            (tbind ([p (Value (car arg*))]
+            (tbind ([x (Value (car arg*))]
                     [v (Value (cadr arg*))])
-               (prm 'mset p (K (- off vector-tag)) v)))]
+               (prm 'mset x (K (- off vector-tag)) v)))]
+         [($set-port-input-size!   $set-port-output-size!)
+          (let-values ([(sz-off idx-off)
+                        (case op
+                          [($set-port-input-size!) 
+                           (values disp-port-input-size
+                                   disp-port-input-index)]
+                          [($set-port-output-size!) 
+                           (values disp-port-output-size
+                                   disp-port-output-index)]
+                          [else (err x)])])
+            (tbind ([x (Value (car arg*))]
+                    [v (Value (cadr arg*))])
+               (seq*
+                 (prm 'mset x (K (- idx-off vector-tag)) (K 0))
+                 (prm 'mset x (K (- sz-off vector-tag)) v))))]
+         [($set-tcbucket-next! $set-tcbucket-val! $set-tcbucket-tconc!)
+          (tbind ([x (Value (car arg*))]
+                  [v (Value (cadr arg*))])
+            (mem-assign v x
+              (- (case op
+                   [($set-tcbucket-tconc!) disp-tcbucket-tconc]
+                   [($set-tcbucket-next!)  disp-tcbucket-next]
+                   [($set-tcbucket-val!)   disp-tcbucket-val]
+                   [else (err 'tcbucket!)])
+                 vector-tag)))]
          [else (error who "invalid effect prim ~s" op)])]
       [(forcall op arg*)
        (make-forcall op (map Value arg*))]
@@ -854,12 +875,10 @@
   (define (tag-test x mask tag)
     (tbind ([x x])
       (if mask
-          (make-primcall '= 
-            (list (make-primcall 'logand 
-                    (list x (make-constant mask)))
-                  (make-constant tag)))
-          (make-primcall '=
-             (list x (make-constant tag))))))
+          (prm '= 
+             (prm 'logand x (K mask))
+             (K tag))
+          (prm '= x (K tag)))))
   (define (sec-tag-test x pmask ptag smask stag)
     (tbind ([t x])
       (make-conditional 
@@ -1418,7 +1437,7 @@
               (apply
                  (lambda (handler buf/i idx/i sz/i buf/o idx/o sz/o)
                    (tbind ([p (prm 'alloc 
-                                (K (align port-size)) 
+                                (K (align port-size))
                                 (K vector-tag))])
                      (seq*
                        (prm 'mset p 
@@ -1490,6 +1509,37 @@
                              (K (- disp-code-data vector-tag))))
                    (K 255))
               (K fixnum-shift)))]
+         [($make-tcbucket)
+          (tbind ([tconc (Value (car arg*))]
+                  [key (Value (cadr arg*))]
+                  [val (Value (caddr arg*))]
+                  [next (Value (cadddr arg*))])
+            (tbind ([x (prm 'alloc
+                            (K (align tcbucket-size))
+                            (K vector-tag))])
+              (seq*
+                (prm 'mset x 
+                     (K (- disp-tcbucket-tconc vector-tag))
+                     tconc)
+                (prm 'mset x 
+                     (K (- disp-tcbucket-key vector-tag))
+                     key)
+                (prm 'mset x 
+                     (K (- disp-tcbucket-val vector-tag))
+                     val)
+                (prm 'mset x 
+                     (K (- disp-tcbucket-next vector-tag))
+                     next)
+                x)))]
+         [($tcbucket-key)
+          (tbind ([x (Value (car arg*))])
+            (prm 'mref x (K (- disp-tcbucket-key vector-tag))))]
+         [($tcbucket-val)
+          (tbind ([x (Value (car arg*))])
+            (prm 'mref x (K (- disp-tcbucket-val vector-tag))))]
+         [($tcbucket-next)
+          (tbind ([x (Value (car arg*))])
+            (prm 'mref x (K (- disp-tcbucket-next vector-tag))))]
          [else (error who "value prim ~a not supported" (unparse x))])]
       [(forcall op arg*)
        (make-forcall op (map Value arg*))]

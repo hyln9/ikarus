@@ -90,6 +90,7 @@
          ($make-port/both handler
                     input-buffer 0 ($string-length input-buffer)
                     output-buffer 0 ($string-length output-buffer))))
+    ;;;
     (primitive-set! 'make-input/output-port
       (lambda (handler input-buffer output-buffer)
         (if (procedure? handler)

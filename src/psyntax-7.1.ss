@@ -613,6 +613,8 @@
   (lambda (symbol)
     (getprop symbol '*sc-expander*)))
 
+
+
 (define put-global-definition-hook
   (lambda (symbol x)
     (if (not x)
@@ -777,9 +779,6 @@
 (define-syntax build-foreign-call
   (syntax-rules ()
     [(_ ae name arg*) `(foreign-call ,name . ,arg*)]))
-;;;X (define-syntax build-$apply
-;;;X   (syntax-rules ()
-;;;X     [(_ ae proc arg*) `($apply ,proc . ,arg*)]))
 
 (define-syntax build-data
   (syntax-rules ()
@@ -800,7 +799,6 @@
     (if (null? vars)
         body-exp
         `(letrec ,(map list vars val-exps) ,body-exp))))
-
 
 (define build-body
   (lambda (ae vars val-exps body-exp)
@@ -1734,7 +1732,8 @@
       (let dobody ((body body))
         (if (null? body)
             '()
-            (let ((first (chi-top (car body) r w ctem rtem meta? ribcage meta-residualize! #f)))
+            (let ((first (chi-top (car body) r w ctem rtem meta? ribcage
+                            meta-residualize! #f)))
               (cons first (dobody (cdr body)))))))))
 
 (define chi-top
