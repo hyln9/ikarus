@@ -221,7 +221,7 @@
 (define-record constant (value))
 (define-record code-loc (label))
 (define-record foreign-label (label))
-(define-record var (name assigned referenced))
+(define-record var (name assigned referenced reg-conf frm-conf var-conf loc))
 (define-record cp-var (idx))
 (define-record frame-var (idx))
 (define-record new-frame (base-idx size body))
@@ -254,11 +254,10 @@
 
 
 (define-record fvar (idx))
-(define-record set (lhs rhs))
 (define-record object (val))
 (define-record locals (vars body))
 (define-record nframe (vars live body))
-(define-record nfvar (conf loc))
+(define-record nfv (conf loc var-conf frm-conf nfv-conf))
 (define-record ntcall (target value args mask size))
 (define-record asm-instr (op dst src))
 (define-record disp (s0 s1))
@@ -277,7 +276,7 @@
         [else (error 'mkfvar "~s is not a fixnum" i)]))))
 
 (define (unique-var x)
-  (make-var (gensym x) #f #f))
+  (make-var (gensym x) #f #f #f #f #f #f))
 
 (define (recordize x)
   (define *cookie* (gensym))
@@ -468,13 +467,18 @@
        `(tailcall-cp ,convention ,label ,arg-count)]
       [(foreign-label x) `(foreign-label ,x)]
       [(mvcall prod cons) `(mvcall ,(E prod) ,(E cons))]
-      [(set lhs rhs) `(set ,(E lhs) ,(E rhs))]
       [(fvar idx) (string->symbol (format "fv.~a" idx))]
+      [(nfv idx) 'nfv]
       [(locals vars body) `(locals ,(map E vars) ,(E body))]
-      [(nframe vars live body) `(nframe [vars: ,(map E vars)]
-                                        [live: ,(map E live)]
+      [(asm-instr op d s)
+       `(asm ,op ,(E d) ,(E s))]
+      [(nframe vars live body) `(nframe ;[vars: ,(map E vars)]
+                                        ;[live: ,(map E live)]
                                   ,(E body))]
-      [else x]))
+      [else
+       (if (symbol? x) 
+           x
+           "#<unknown>")]))
   (E x))
 
 (define open-mvcalls (make-parameter #t))

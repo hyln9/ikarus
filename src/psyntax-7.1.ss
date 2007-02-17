@@ -3861,14 +3861,25 @@
   (lambda (x)
     ((current-expand) x)))
 
-(primitive-set! '$make-environment
-  (lambda (token mutable?)
-    (let ((top-ribcage (make-top-ribcage token mutable?)))
-      (make-env
-        top-ribcage
-        (make-wrap
-          (wrap-marks top-wrap)
-          (cons top-ribcage (wrap-subst top-wrap)))))))
+;(primitive-set! '$make-environment
+;  (lambda (token mutable?)
+;    (let ((top-ribcage (make-top-ribcage token mutable?)))
+;      (make-env
+;        top-ribcage
+;        (make-wrap
+;          (wrap-marks top-wrap)
+;          (cons top-ribcage (wrap-subst top-wrap)))))))
+
+(let ([make-env
+       (lambda (token mutable?)
+         (let ((top-ribcage (make-top-ribcage token mutable?)))
+           (make-env
+             top-ribcage
+             (make-wrap
+               (wrap-marks top-wrap)
+               (cons top-ribcage (wrap-subst top-wrap))))))])
+  (primitive-set! '$make-environment make-env))
+
 
 (primitive-set! 'environment?
   (lambda (x)
@@ -3888,6 +3899,7 @@
           x
           (error 'interaction-environment "~s is not an environment" x)))))
 
+(printf "ENV=~s\n" (interaction-environment))
 
 (primitive-set! 'identifier?
   (lambda (x)

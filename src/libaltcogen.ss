@@ -1638,6 +1638,8 @@
             (values (cons (car regs) r*)
                     (cons (car args) rl*)
                     f*))])))
+  (define (make-set lhs rhs)
+    (make-asm-instr 'move lhs rhs))
   (define (do-bind-frmt* nf* v* ac)
     (cond
       [(null? nf*) ac]
@@ -1652,7 +1654,8 @@
     (let-values ([(reg-locs reg-args frm-args)
                   (nontail-locations (cons rator rands))])
       (let ([regt* (map (lambda (x) (unique-var 'rt)) reg-args)]
-            [frmt* (map (lambda (x) (make-nfvar 'unset-conflicts #f)) frm-args)])
+            [frmt* (map (lambda (x) (make-nfv 'unset-conflicts #f #f #f #f))
+                        frm-args)])
         (let* ([call 
                 (make-ntcall call-targ value-dest 
                   (cons argc-register (append reg-locs frmt*))
@@ -1838,9 +1841,11 @@
                      (argc-convention (length rands))))
                  (cond
                    [target 
-                    (make-primcall 'direct-jump (cons target locs))]
+                    (make-primcall 'direct-jump 
+                      (cons target (cons argc-register locs)))]
                    [else 
-                    (make-primcall 'indirect-jump locs)]))))))))
+                    (make-primcall 'indirect-jump 
+                      (cons argc-register locs))]))))))))
   (define (Tail x)
     (record-case x 
       [(constant) (VT x)]
@@ -1926,6 +1931,12 @@
   (Program x))
 
 
+
+
+
+
+
+
 (module ListyGraphs 
   (empty-graph add-edge! empty-graph? print-graph node-neighbors
    delete-node!)
@@ -1989,6 +2000,9 @@
   #|ListyGraphs|#)
 
 (begin
+  (define empty-set '())
+  (define (set-member? x s) (memq x s))
+
   (define (set-add x s)
     (cond
       [(memq x s) s]
@@ -2012,6 +2026,578 @@
       [else (cons (car s1) (set-union (cdr s1) s2))])))
 
 
+
+(module (assign-frame-sizes)
+  ;;; assign-frame-sizes module
+  (define (has-nontail-call? x)
+    (define who 'has-nontail-call?)
+    (define (E x)
+      (record-case x
+        [(seq e0 e1) (or (E e0) (E e1))]
+        [(conditional e0 e1 e2)
+         (or (P e0) (E e1) (E e2))]
+        [(nframe) #t]
+        [(asm-instr) #f]
+        [(primcall op args)
+         (case op
+           [(nop) #f]
+           [else (error who "invalid effect ~s" (unparse x))])]
+        [else (error who "invalid effect ~s" x)]))
+    (define (P x)
+      (record-case x
+        [(seq e0 e1) (or (E e0) (P e1))]
+        [(conditional e0 e1 e2)
+         (or (P e0) (P e1) (P e2))]
+        [(asm-instr) #f]
+        [(constant) #f]
+        [else (error who "invalid pred ~s" x)]))
+    (define (T x)
+      (record-case x
+        [(seq e0 e1) 
+         (or (E e0) (T e1))]
+        [(conditional e0 e1 e2)
+         (or (P e0) (T e1) (T e2))]
+        [(primcall) #f]
+        [else (error who "invalid tail ~s" x)]))
+    (T x))
+  ;;;
+  (begin
+    (define (init-var-conf! x)
+      (set-var-var-conf! x (empty-var-set))
+      (set-var-reg-conf! x (empty-reg-set))
+      (set-var-frm-conf! x (empty-frm-set)))
+    (define (init-nfv! x)
+      (set-nfv-frm-conf! x (empty-frm-set))
+      (set-nfv-nfv-conf! x (empty-nfv-set))
+      (set-nfv-var-conf! x (empty-var-set)))
+    (define (reg? x) (symbol? x))
+    (define (empty-frm-set) empty-set)
+    (define (empty-nfv-set) empty-set)
+    (define (empty-var-set) empty-set)
+    (define (add-var x s) (set-add x s))
+    (define (rem-var x s) (set-rem x s))
+    (define (union-vars s1 s2) (union s1 s2))
+    (define (empty-reg-set) empty-set)
+    (define (add-reg x s) (set-add x s))
+    (define (rem-reg x s) (set-rem x s))
+    (define (mem-reg? x s) (set-member? x s))
+    (define (union-regs s1 s2) (union s1 s2))
+    (define (add-frm x s) (set-add x s))
+    (define (rem-frm x s) (set-rem x s))
+    (define (union-frms s1 s2) (union s1 s2))
+    (define (for-each-var s f) (for-each f s))
+    (define (add-nfv x s) (set-add x s))
+    (define (rem-nfv x s) (set-rem x s))
+    (define (union-nfvs s1 s2) (union s1 s2))
+    (define (for-each-nfv s f) (for-each f s)))
+  ;;;
+  (define (uncover-frame-conflicts x)
+    (define who 'uncover-frame-conflicts)
+    (define spill-set '())
+    (define-syntax assert
+      (syntax-rules ()
+        [(_ p0 p1 v0 v1)
+         (unless (and (p0 v0)
+                      (andmap p1 v1))
+           (error 'assert "failed in ~s" '(assert p0 p1 v0 v1)))]))
+    (define (mark-reg/vars-conf! r vs)
+      (assert reg? var? r vs)
+      (for-each-var vs
+        (lambda (v)
+          (set-var-reg-conf! v 
+            (add-reg r (var-reg-conf v))))))
+    (define (mark-frm/vars-conf! f vs) 
+      (assert fvar? var? f vs)
+      (for-each-var vs
+        (lambda (v)
+          (set-var-frm-conf! v 
+            (add-frm f (var-frm-conf v))))))
+    (define (mark-frm/nfvs-conf! f ns) 
+      (assert fvar? nfv? f ns)
+      (for-each-nfv ns
+        (lambda (n)
+          (set-nfv-frm-conf! n
+            (add-frm f (nfv-frm-conf n))))))
+    (define (mark-var/vars-conf! v vs) 
+      (assert var? var? v vs)
+      (for-each-var vs
+        (lambda (w)
+          (set-var-var-conf! w
+            (add-var v (var-var-conf w)))))
+      (set-var-var-conf! v
+        (union-vars vs (var-var-conf v))))
+    (define (mark-var/frms-conf! v fs) 
+      (assert var? fvar? v fs)
+      (set-var-frm-conf! v
+        (union-frms fs (var-frm-conf v))))
+    (define (mark-var/regs-conf! v rs) 
+      (assert var? reg? v rs)
+      (set-var-reg-conf! v
+        (union-regs rs (var-reg-conf v))))
+    (define (mark-var/nfvs-conf! v ns) 
+      (assert var? nfv? v ns)
+      (for-each-nfv ns
+        (lambda (n)
+          (set-nfv-var-conf! n
+            (add-var v (nfv-var-conf n))))))
+    (define (mark-nfv/vars-conf! n vs)
+      (assert nfv? var? n vs)
+      (set-nfv-var-conf! n
+        (union-vars vs (nfv-var-conf n))))
+    (define (mark-nfv/frms-conf! n fs)
+      (assert nfv? fvar? n fs)
+      (set-nfv-frm-conf! n
+        (union-frms fs (nfv-frm-conf n))))
+    (define (mark-nfv/nfvs-conf! n ns)
+      (assert nfv? nfv? n ns)
+      (set-nfv-nfv-conf! n
+        (union-nfvs ns (nfv-nfv-conf n)))
+      (for-each-nfv ns
+        (lambda (m)
+          (set-nfv-nfv-conf! m
+            (add-nfv n (nfv-nfv-conf m))))))
+    (define (const? x)
+      (or (constant? x)
+          (code-loc? x)))
+    (define (R x vs rs fs ns)
+      (cond
+        [(const? x) (values vs rs fs ns)]
+        [(reg? x) 
+         (values vs (add-reg x rs) fs ns)]
+        [(fvar? x)
+         (values vs rs (add-frm x fs) ns)]
+        [(var? x)
+         (values (add-var x vs) rs fs ns)]
+        [(nfv? x)
+         (values vs rs fs (add-nfv x ns))]
+        [(disp? x)
+         (let-values ([(vs rs fs ns) (R (disp-s0 x) vs rs fs ns)])
+            (R (disp-s1 x) vs rs fs ns))]
+        [else (error who "invalid R ~s" x)]))
+    (define (R* ls vs rs fs ns)
+      (cond
+        [(null? ls) (values vs rs fs ns)]
+        [else 
+         (let-values ([(vs rs fs ns) (R (car ls) vs rs fs ns)])
+            (R* (cdr ls) vs rs fs ns))]))
+    (define (E x vs rs fs ns)
+      (record-case x
+        [(seq e0 e1) 
+         (let-values ([(vs rs fs ns) (E e1 vs rs fs ns)])
+           (E e0 vs rs fs ns))]
+        [(conditional e0 e1 e2)
+         (let-values ([(vs1 rs1 fs1 ns1) (E e1 vs rs fs ns)]
+                      [(vs2 rs2 fs2 ns2) (E e2 vs rs fs ns)])
+           (P e0
+              vs1 rs1 fs1 ns1
+              vs2 rs2 fs2 ns2
+              (union-vars vs1 vs2)
+              (union-regs rs1 rs2)
+              (union-frms fs1 fs2)
+              (union-nfvs ns1 ns2)))]
+        [(asm-instr op d s)
+         (case op
+           [(move)
+            (cond
+              [(reg? d)
+               (cond
+                 [(not (mem-reg? d rs)) (error who "dead register")]
+                 [(or (const? s) (disp? s))
+                  (let ([rs (rem-reg d rs)])
+                    (mark-reg/vars-conf! d vs)
+                    (R s vs rs fs ns))]
+                 [(var? s)
+                  (let ([rs (rem-reg d rs)]
+                        [vs (rem-var s vs)])
+                    (mark-reg/vars-conf! d vs)
+                    (values (add-var s vs) rs fs ns))]
+                 [else (error who "invalid rs ~s" s)])]
+              [(fvar? d) 
+               (cond
+                 [(var? s) 
+                  (let ([fs (rem-frm d fs)]
+                        [vs (rem-var s vs)])
+                    (mark-frm/vars-conf! d vs)
+                    (mark-frm/nfvs-conf! d ns)
+                    (values (add-var s vs) rs fs ns))]
+                 [else (error who "invalid fs ~s" s)])]
+              [(var? d)
+               (cond
+                 [(or (disp? s) (constant? s))
+                  (let ([vs (rem-var d vs)])
+                    (mark-var/vars-conf! d vs)
+                    (mark-var/frms-conf! d fs)
+                    (mark-var/regs-conf! d rs)
+                    (mark-var/nfvs-conf! d ns)
+                    (R s vs rs fs ns))]
+                 [(reg? s) 
+                  (let ([vs (rem-var d vs)]
+                        [rs (rem-reg s rs)])
+                    (mark-var/vars-conf! d vs)
+                    (mark-var/frms-conf! d fs)
+                    (mark-var/regs-conf! d rs)
+                    (mark-var/nfvs-conf! d ns)
+                    (values vs (add-reg s rs) fs ns))]
+                 [(var? s) 
+                  (let ([vs (rem-var d (rem-var s vs))])
+                    (mark-var/vars-conf! d vs)
+                    (mark-var/frms-conf! d fs)
+                    (mark-var/regs-conf! d rs)
+                    (mark-var/nfvs-conf! d ns)
+                    (values (add-var s vs) rs fs ns))]
+                 [(fvar? s) 
+                  (let ([vs (rem-var d vs)]
+                        [fs (rem-frm s fs)])
+                    (mark-var/vars-conf! d vs)
+                    (mark-var/frms-conf! d fs)
+                    (mark-var/regs-conf! d rs)
+                    (mark-var/nfvs-conf! d ns)
+                    (values vs rs (add-var s fs) ns))]
+                 [else (error who "invalid vs ~s" s)])]
+              [(nfv? d)
+               (cond
+                 [(var? s)
+                  (let ([ns (rem-nfv d ns)]
+                        [vs (rem-var s vs)])
+                    (mark-nfv/vars-conf! d vs)
+                    (mark-nfv/frms-conf! d fs)
+                    (values (add-var s vs) rs fs ns))]
+                 [else (error who "invalid ns ~s" s)])]
+              [else (error who "invalid d ~s" d)])]
+           [(logand logor sll sra int+) 
+            (cond
+              [(var? d) 
+               (let ([vs (rem-var d vs)])
+                 (mark-var/vars-conf! d vs)
+                 (mark-var/frms-conf! d fs)
+                 (mark-var/nfvs-conf! d ns)
+                 (mark-var/regs-conf! d rs)
+                 (R s (set-add d vs) rs fs ns))]
+              [(reg? d) 
+               (let ([rs (rem-reg d rs)])
+                 (mark-reg/vars-conf! d vs)
+                 (R s vs (set-add d rs) fs ns))]
+              [else (error who "invalid op d ~s" (unparse x))])]
+           [(mset) 
+            (R* (list s d) vs rs fs ns)]
+           [else (error who "invalid effect op ~s" (unparse x))])]
+        [(ntcall target value args mask size)
+         (set! spill-set (union-vars vs spill-set))
+         (R* args vs (empty-reg-set) fs ns)]
+        [(nframe nfvs live body)
+         (for-each init-nfv! nfvs)
+         (set-nframe-live! x (vector vs fs ns))
+         (E body vs rs fs ns)]
+        [(primcall op args)
+         (case op
+           [(nop) (values vs rs fs ns)]
+           [else (error who "invalid effect op ~s" op)])]
+        [else (error who "invalid effect ~s" (unparse x))]))
+    (define (P x vst rst fst nst 
+                 vsf rsf fsf nsf
+                 vsu rsu fsu nsu)
+      (record-case x
+        [(seq e0 e1) 
+         (let-values ([(vs rs fs ns) 
+                       (P e1 vst rst fst nst 
+                          vsf rsf fsf nsf
+                          vsu rsu fsu nsu)])
+           (E e0 vs rs fs ns))]
+        [(conditional e0 e1 e2)
+         (let-values ([(vs1 rs1 fs1 ns1)
+                       (P e1 vst rst fst nst 
+                          vsf rsf fsf nsf
+                          vsu rsu fsu nsu)]
+                      [(vs2 rs2 fs2 ns2) 
+                       (P e2 vst rst fst nst 
+                          vsf rsf fsf nsf
+                          vsu rsu fsu nsu)])
+           (P e0
+              vs1 rs1 fs1 ns1
+              vs2 rs2 fs2 ns2
+              (union-vars vs1 vs2)
+              (union-regs rs1 rs2)
+              (union-frms fs1 fs2)
+              (union-nfvs ns1 ns2)))] 
+        [(constant t)
+         (if t
+             (values vst rst fst nst)
+             (values vsf rsf fsf nsf))]
+        [(asm-instr op d s)
+         (R* (list d s) vsu rsu fsu nsu)]
+        [else (error who "invalid pred ~s" (unparse x))]))
+    (define (T x)
+      (record-case x
+        [(seq e0 e1) 
+         (let-values ([(vs rs fs ns) (T e1)])
+           (E e0 vs rs fs ns))]
+        [(conditional e0 e1 e2)
+         (let-values ([(vs1 rs1 fs1 ns1) (T e1)]
+                      [(vs2 rs2 fs2 ns2) (T e2)])
+           (P e0
+              vs1 rs1 fs1 ns1
+              vs2 rs2 fs2 ns2
+              (union-vars vs1 vs2)
+              (union-regs rs1 rs2)
+              (union-frms fs1 fs2)
+              (union-nfvs ns1 ns2)))]
+        [(primcall op arg*) 
+         (case op
+           [(return indirect-jump direct-jump) 
+            (R* arg* (empty-var-set)
+                (empty-reg-set) 
+                (empty-frm-set)
+                (empty-nfv-set))]
+           [else (error who "invalid tail op ~s" x)])]
+        [else (error who "invalid tail ~s" x)]))
+    (T x)
+    spill-set)
+  ;;;
+  ;(define (frm-loc x) 
+  ;  (unless (fvar? x)
+  ;    (error 'frm-loc "invalid ~s" (unparse x)))
+  ;  (fvar-idx x))
+  (define-syntax frm-loc
+    (syntax-rules ()
+      [(_ x)
+       (let ([t x])
+         (if (fvar? t)
+             (fvar-idx t)
+             (error 'frm-loc "in ~s ~s" (unparse t) '(frm-loc x))))]))
+  (define (frame-conflict? i vs fs)
+    (define (frm-conf x)
+      (unless (fvar? x) (error 'here3 "herea"))
+      (fx= i (frm-loc x)))
+    (define (var-conf x)
+      (let ([loc (var-loc x)])
+        (and loc
+             (if (fvar? loc) #t
+                 (error 'frame-conflict "non-fvar"))
+             (fx= i (frm-loc loc)))))
+    (unless (andmap fvar? fs) (error 'frame-conflict? "nonfvars"))
+    (or (ormap frm-conf fs)
+        (ormap var-conf vs)))
+  ;;;
+  (define (assign-locations! ls)
+    (define (assign x)
+      (unless (var? x) (error 'assign "not a var"))
+      (when (var-loc x) (error 'assign "already assigned"))
+      (let ([frms (var-frm-conf x)]
+            [vars (var-var-conf x)])
+        (let f ([i 1])
+          (cond
+            [(frame-conflict? i vars frms) (f (fxadd1 i))]
+            [else 
+             (let ([fv (mkfvar i)])
+               (set-var-loc! x fv)
+               (for-each
+                 (lambda (var)
+                   (set-var-var-conf! var
+                     (rem-var x (var-var-conf var)))
+                   (set-var-frm-conf! var
+                     (add-frm fv (var-frm-conf var))))
+                 vars))]))))
+    (for-each assign ls))
+  (define (rewrite x)
+    (define who 'rewrite)
+    (define (NFE idx mask x)
+      (record-case x
+        [(seq e0 e1) (make-seq (E e0) (NFE idx mask e1))]
+        [(ntcall target value args mask^ size)
+         (make-ntcall target value 
+            (map (lambda (x) 
+                   (cond
+                     [(symbol? x) x]
+                     [(nfv? x) (nfv-loc x)]
+                     [else (error who "invalid arg")]))
+                 args)
+            mask idx)]
+        [else (error who "invalid NF effect ~s" x)]))
+    (define (R x)
+      (cond
+        [(or (constant? x) (reg? x) (fvar? x)) x]
+        [(nfv? x)
+         (or (nfv-loc x)
+             (error who "unassigned nfv"))]
+        [(var? x)
+         (or (var-loc x) x)]
+        [(disp? x)
+         (make-disp (R (disp-s0 x)) (R (disp-s1 x)))]
+        [else (error who "invalid R ~s" (unparse x))]))
+    (define (E x)
+      (record-case x
+        [(seq e0 e1) 
+         (make-seq (E e0) (E e1))]
+        [(conditional e0 e1 e2)
+         (make-conditional (P e0) (E e1) (E e2))]
+        [(asm-instr op d s)
+         (case op
+           [(move) 
+            (let ([d (R d)] [s (R s)])
+              (cond
+                [(eq? d s) (make-primcall 'nop '())]
+                [else
+                 (make-asm-instr 'move d s)]))]
+           [(logand logor int+ mset sll sra)
+            (make-asm-instr op (R d) (R s))]
+           [else (error who "invalid op ~s" op)])]
+        [(nframe vars live body)
+         (let ([live-vars (vector-ref live 0)]
+               [live-frms (vector-ref live 1)]
+               [live-nfvs (vector-ref live 2)])
+           (define (max-frm ls i)
+             (cond
+               [(null? ls) i]
+               [else 
+                (max-frm (cdr ls) 
+                  (max i (fvar-idx (car ls))))]))
+           (define (max-nfv ls i)
+             (cond
+               [(null? ls) i]
+               [else
+                (let ([loc (nfv-loc (car ls))])
+                  (unless loc (error 'max-nfv "not assigned"))
+                  (max-nfv (cdr ls) (max i (frm-loc loc))))]))
+           (define (max-var ls i)
+             (cond
+               [(null? ls) i]
+               [else
+                (max-var (cdr ls)
+                  (let ([loc (var-loc (car ls))])
+                    (if loc
+                        (max i (fvar-idx loc))
+                        (error who "unspilled var"))))]))
+           (define (actual-frame-size vars i)
+             (define (frame-size-ok? i vars)
+               (or (null? vars)
+                   (and (let ([x (car vars)])
+                          (not (frame-conflict? i 
+                                 (nfv-var-conf x)
+                                 (nfv-frm-conf x))))
+                        (frame-size-ok? (fxadd1 i) (cdr vars)))))
+              (cond
+                [(frame-size-ok? i vars) i]
+                [else (actual-frame-size vars (fxadd1 i))]))
+           (define (assign-frame-vars! vars i)
+             (unless (null? vars)
+               (let ([v (car vars)] [fv (mkfvar i)])
+                 (set-nfv-loc! v fv)
+                 (for-each
+                   (lambda (x) 
+                     (when (fx= (frm-loc x) i)
+                       (error who "invalid assignment")))
+                   (nfv-frm-conf v))
+                 (for-each
+                   (lambda (x)
+                     (let ([loc (nfv-loc x)])
+                       (cond
+                         [loc
+                          (when (fx= (frm-loc loc) i)
+                            (error who "invalid assignment"))]
+                         [else
+                          (set-nfv-nfv-conf! x
+                            (rem-nfv v (nfv-nfv-conf x)))
+                          (set-nfv-frm-conf! x
+                            (add-frm fv (nfv-frm-conf x)))])))
+                   (nfv-nfv-conf v))
+                 (for-each
+                   (lambda (x)
+                     (let ([loc (var-loc x)])
+                       (cond
+                         [loc
+                          (when (fx= (frm-loc loc) i)
+                            (error who "invalid assignment"))]
+                         [else
+                          (set-var-frm-conf! x
+                            (add-frm fv (var-frm-conf x)))])))
+                   (nfv-var-conf v)))
+               (assign-frame-vars! (cdr vars) (fxadd1 i))))
+           (define (make-mask n)
+             (let ([v (make-vector (fxsra (fx+ n 7) 3) 0)])
+               (define (set-bit idx)
+                 (let ([q (fxsra idx 3)]
+                       [r (fxlogand idx 7)])
+                   (vector-set! v q
+                     (fxlogor (vector-ref v q) (fxsll 1 r)))))
+               (for-each (lambda (x) (set-bit (fvar-idx x))) live-frms)
+               (for-each (lambda (x) 
+                           (let ([loc (nfv-loc x)])
+                             (when loc 
+                               (set-bit (fvar-idx loc))))) 
+                         live-nfvs)
+               (for-each (lambda (x) 
+                           (let ([loc (var-loc x)])
+                             (when loc
+                               (set-bit (fvar-idx loc))))) 
+                         live-vars)
+               v))
+           (let ([i (actual-frame-size vars
+                      (fx+ 2 
+                        (max-var live-vars
+                          (max-nfv live-nfvs
+                            (max-frm live-frms 0)))))])
+             (assign-frame-vars! vars i)
+             (NFE (fxsub1 i) (make-mask (fxsub1 i)) body)))]
+        [(primcall op args)
+         (case op
+           [(nop) x]
+           [else (error who "invalid effect prim ~s" op)])]
+        [else (error who "invalid effect ~s" (unparse x))]))
+    (define (P x)
+      (record-case x
+        [(seq e0 e1) (make-seq (E e0) (P e1))]
+        [(conditional e0 e1 e2)
+         (make-conditional (P e0) (P e1) (P e2))]
+        [(asm-instr op d s) (make-asm-instr op (R d) (R s))]
+        [(constant) x]
+        [else (error who "invalid pred ~s" (unparse x))]))
+    (define (T x)
+      (record-case x
+        [(seq e0 e1) 
+         (make-seq (E e0) (T e1))]
+        [(conditional e0 e1 e2)
+         (make-conditional (P e0) (T e1) (T e2))]
+        [(primcall op args) x]
+        [else (error who "invalid tail ~s" (unparse x))]))
+    (T x))
+  ;;;
+  (define (Main x)
+    (record-case x 
+      [(locals vars body)
+       (cond
+         [(has-nontail-call? body)
+          (for-each init-var-conf! vars)
+          (printf "a")
+          (let ([call-live* (uncover-frame-conflicts body)])
+            (printf "b")
+            (assign-locations! call-live*)
+            (printf "c")
+            (let ([body (rewrite body)])
+              (make-locals (set-difference vars call-live*) body)))]
+         [else x])]
+      [else (error 'assign-frame-sizes "invalid main ~s" x)]))
+  ;;;
+  (define (ClambdaCase x) 
+    (record-case x
+      [(clambda-case info body)
+       (make-clambda-case info (Main body))]))
+  ;;;
+  (define (Clambda x)
+    (record-case x
+      [(clambda label case* free*)
+       (make-clambda label (map ClambdaCase case*) free*)]))
+  ;;;
+  (define (Program x)
+    (record-case x 
+      [(codes code* body)
+       (make-codes (map Clambda code*) (Main body))]))
+  ;;;
+  (define (assign-frame-sizes x)
+    (Program x)))
+
+
+
+
 (module (color-by-chaitin)
   (import ListyGraphs)
   ;;;
@@ -2027,7 +2613,7 @@
         [(constant) '()]
         [(var) (list x)]
         [(disp s0 s1) (union (R s0) (R s1))]
-        [(nfvar) (list x)]
+        [(nfv) (list x)]
         [(fvar) (if (reg? x) (list x) '())]
         [(code-loc) '()]
         [else
@@ -2037,28 +2623,27 @@
     ;;; build effect
     (define (E x s)
       (record-case x
-        [(set x v) 
-         (let ([s (set-rem x s)])
-           (record-case x
-             [(nfvar c i) 
-              (if (list? c)
-                  (set-nfvar-conf! x 
-                     (set-union c s))
-                  (set-nfvar-conf! x s))
-              (union (R v) s)]
-             [else
-              (for-each (lambda (y) (add-edge! g x y)) s)
-              (union (R v) s)]))]
         [(asm-instr op d v)
          (case op
+           [(move)
+            (let ([s (set-rem d s)])
+              (record-case d
+                [(nfv c i) 
+                 (if (list? c)
+                     (set-nfv-conf! d
+                        (set-union c s))
+                     (set-nfv-conf! d s))
+                 (union (R v) s)]
+                [else
+                 (for-each (lambda (y) (add-edge! g d y)) s)
+                 (union (R v) s)]))] 
            [(logand logxor int+ int- int* logor sll sra)
             (let ([s (set-rem d s)])
               (record-case d
-                [(nfvar c i) 
+                [(nfv c i)
                  (if (list? c)
-                     (set-nfvar-conf! d
-                        (set-union c s))
-                     (set-nfvar-conf! d s))
+                     (set-nfv-conf! d (set-union c s))
+                     (set-nfv-conf! d s))
                  (union (union (R v) (R d)) s)]
                 [else
                  (for-each (lambda (y) (add-edge! g d y)) s)
@@ -2094,17 +2679,6 @@
         [(conditional e0 e1 e2)
          (let ([s1 (E e1 s)] [s2 (E e2 s)])
            (P e0 s1 s2 (set-union s1 s2)))]
-        [(nframe vars live body)
-         (when (reg? return-value-register)
-           (for-each 
-             (lambda (x)
-               (for-each (lambda (r)
-                           (add-edge! g x r))
-                         all-registers))
-             s))
-         (let ([s (set-difference s all-registers)])
-           (set-nframe-live! x s)
-           (E body s))]
         [(ntcall targ value args mask size)
          (union (R* args) s)]
         [(primcall op arg*)
@@ -2193,44 +2767,6 @@
   ;;;
   (define (substitute env x frm-graph)
     (define who 'substitute)
-    (define (max-live vars i)
-      (cond
-        [(null? vars) i]
-        [else (max-live (cdr vars)
-                (record-case (car vars)
-                  [(fvar j) (max i j)]
-                  [else i]))]))
-    (define (actual-frame-size vars i)
-      (define (conflicts? i ls)
-        (and (not (null? ls))
-             (or (let f ([x (car ls)])
-                   (record-case x
-                     [(fvar j) (eq? i j)]
-                     [(var) 
-                      (cond
-                        [(assq x env) => (lambda (x) (f (cdr x)))]
-                        [else #f])]
-                     [(nfvar conf loc) (f loc)]
-                     [else #f]))
-                 (conflicts? i (cdr ls)))))
-      (define (frame-size-ok? i vars)
-        (or (null? vars)
-            (and (not (conflicts? i (nfvar-conf (car vars))))
-                 (frame-size-ok? (fxadd1 i) (cdr vars)))))
-      (cond
-        [(frame-size-ok? i vars) i]
-        [else (actual-frame-size vars (fxadd1 i))]))
-    (define (assign-frame-vars! vars i)
-      (unless (null? vars)
-        (let ([v (car vars)]
-              [fv (mkfvar i)])
-          (set-nfvar-loc! v fv)
-          (for-each
-            (lambda (x)
-              (when (var? x)
-                (add-edge! frm-graph x fv)))
-            (nfvar-conf v)))
-        (assign-frame-vars! (cdr vars) (fxadd1 i))))
     (define (Var x)
       (cond
         [(assq x env) => cdr]
@@ -2248,34 +2784,9 @@
     (define (Lhs x)
       (record-case x
         [(var) (Var x)]
-        [(nfvar confs loc) 
+        [(nfv confs loc) 
          (or loc (error who "LHS not set ~s" x))]
         [else x]))
-    (define (NFE idx mask x)
-      (record-case x
-        [(seq e0 e1) (make-seq (E e0) (NFE idx mask e1))]
-        [(ntcall target value args mask^ size)
-         (make-ntcall target value 
-            (map (lambda (x) 
-                   (if (symbol? x)
-                       x
-                       (Lhs x)))
-                 args)
-            mask idx)]
-        [else (error who "invalid NF effect ~s" x)]))
-    (define (make-mask n live*)
-      (let ([v (make-vector (fxsra (fx+ n 7) 3) 0)])
-        (for-each 
-          (lambda (x)
-            (record-case x
-              [(fvar idx) 
-               (let ([q (fxsra idx 3)]
-                     [r (fxlogand idx 7)])
-                 (vector-set! v q
-                   (fxlogor (vector-ref v q) (fxsll 1 r))))]
-              [else (void)]))
-          live*)
-        v))
     (define (D x)
       (record-case x
         [(constant) x]
@@ -2288,24 +2799,14 @@
         [(constant) x]
         [(var) (Var x)]
         [(fvar)     x]
-        [(nfvar c loc)
-         (or loc (error who "unset nfvar ~s in R" x))]
+        [(nfv c loc)
+         (or loc (error who "unset nfv ~s in R" x))]
         [(disp s0 s1) (make-disp (D s0) (D s1))]
         [else
          (if (symbol? x) x (error who "invalid R ~s" x))]))
     ;;; substitute effect
     (define (E x)
       (record-case x
-        [(set lhs rhs) 
-         (let ([lhs (R lhs)] [rhs (R rhs)])
-           (cond
-             [(or (eq? lhs rhs) 
-                  (and (fvar? lhs) (fvar? rhs)
-                       (fixnum? (fvar-idx lhs))
-                       (fixnum? (fvar-idx rhs))
-                       (fx= (fvar-idx lhs) (fvar-idx rhs))))
-                  (make-primcall 'nop '())]
-             [else (make-set lhs rhs)]))]
         [(seq e0 e1) (make-seq (E e0) (E e1))]
         [(conditional e0 e1 e2) 
          (make-conditional (P e0) (E e1) (E e2))]
@@ -2313,25 +2814,6 @@
          (make-asm-instr op (R x) (R v))]
         [(primcall op rands) 
          (make-primcall op (map R rands))]
-        [(nframe vars live body)
-         (let ([live-fv* 
-                (map (lambda (x)
-                       (record-case x
-                         [(var) 
-                          (let ([l (Var x)])
-                            (if (fvar? l)
-                                l
-                                (error who "unspilled live-after ~s"
-                                       x)))]
-                         [(nfvar c loc)
-                          (or loc (error who "unspilled live-after ~s" x))]
-                         [else 
-                          (error who "invalid live-after ~s" x)]))
-                     live)])
-           (let ([i (actual-frame-size vars
-                      (fx+ 2 (max-live live-fv* 0)))])
-             (assign-frame-vars! vars i)
-             (NFE (fxsub1 i) (make-mask (fxsub1 i) live-fv*) body)))]
         [(ntcall) x]
         [else (error who "invalid effect ~s" x)]))
     (define (P x)
@@ -2385,7 +2867,7 @@
          (k x)]
         [else
          (let ([u (mku)])
-           (make-seq (E (make-set u x)) (k u)))]))
+           (make-seq (E (make-asm-instr 'move u x)) (k u)))]))
     (define (S* ls k)
       (cond
         [(null? ls) (k '())]
@@ -2400,35 +2882,17 @@
     ;;; unspillable effect
     (define (E x)
       (record-case x
-        [(set lhs rhs) 
-         (cond
-           [(or (constant? rhs) (var? rhs) (symbol? rhs)) x]
-           [(fvar? lhs) 
-            (cond
-              [else 
-               (let ([u (mku)])
-                 (make-seq
-                   (E (make-set u rhs))
-                   (make-set lhs u)))])]
-           [(fvar? rhs) x]
-           [(disp? rhs)
-            (S (disp-s0 rhs)
-               (lambda (s0)
-                 (S (disp-s1 rhs)
-                    (lambda (s1)
-                      (make-set lhs (make-disp s0 s1))))))]
-           [else (error who "invalid set in ~s" x)])]
         [(seq e0 e1) (make-seq (E e0) (E e1))]
         [(conditional e0 e1 e2)
          (make-conditional (P e0) (E e1) (E e2))]
         [(asm-instr op a b) 
          (case op
-           [(logor logxor logand int+ int- int*)
+           [(logor logxor logand int+ int- int* move)
             (cond
               [(and (mem? a) (mem? b)) 
                (let ([u (mku)])
                  (make-seq
-                   (E (make-set u b))
+                   (E (make-asm-instr 'move  u b))
                    (E (make-asm-instr op a u))))]
               [else x])]
            [(cltd) 
@@ -2452,7 +2916,7 @@
               [(mem? b) 
                (let ([u (mku)])
                  (make-seq
-                   (E (make-set u b))
+                   (E (make-asm-instr 'move  u b))
                    (E (make-asm-instr op a u))))]
               [else
                (let ([s1 (disp-s0 a)] [s2 (disp-s1 a)])
@@ -2461,7 +2925,7 @@
                     (let ([u (mku)])
                       (make-seq
                         (make-seq
-                          (E (make-set u s1))
+                          (E (make-asm-instr 'move u s1))
                           (E (make-asm-instr 'int+ u s2)))
                         (make-asm-instr op 
                            (make-disp u (make-constant 0))
@@ -2469,12 +2933,12 @@
                    [(mem? s1)
                     (let ([u (mku)])
                       (make-seq
-                        (E (make-set u s1))
+                        (E (make-asm-instr 'move u s1))
                         (make-asm-instr op (make-disp u s2) b)))]
                    [(mem? s2)
                     (let ([u (mku)])
                       (make-seq
-                        (E (make-set u s2))
+                        (E (make-asm-instr 'move u s2))
                         (make-asm-instr op (make-disp u s1) b)))]
                    [else x]))])]
            [else (error who "invalid effect ~s" op)])]
@@ -2497,7 +2961,7 @@
              [(and (fvar? a0) (fvar? a1))
               (let ([u (mku)])
                 (make-seq 
-                  (make-set u a0)
+                  (make-asm-instr 'move  u a0)
                   (make-primcall op (list u a1))))]
              [else x]))]
         [(conditional e0 e1 e2)
@@ -2508,7 +2972,7 @@
            [(and (mem? a) (mem? b)) 
             (let ([u (mku)])
               (make-seq
-                (E (make-set u b))
+                (E (make-asm-instr 'move u b))
                 (make-asm-instr op a u)))]
            [else x])]
         [else (error who "invalid pred ~s" x)]))
@@ -2528,28 +2992,18 @@
       [(locals sp* body)
        (let ([frame-g (build-graph body fvar?)])
          (let loop ([sp* sp*] [un* '()] [body body])
-             (printf "a")
-           (let ([g (build-graph body 
-                        (lambda (x) 
-                          (and (symbol? x)
-                               (memq x all-registers))))])
-                  ;  (printf "loop:\n")
-                  ;  (print-code body)
-             ;(print-graph g)
-             (printf "b")
-             (let-values ([(spills sp* env) (color-graph sp* un* g)])
-             (printf "c")
-               (cond
-                 [(null? spills) (substitute env body frame-g)]
-                 [else 
-             (printf "d")
-                  (let* ([env (do-spill spills frame-g)]
-                         [body (substitute env body frame-g)])
-             (printf "e")
-                    (let-values ([(un* body)
-                                  (add-unspillables un* body)])
-             (printf "f")
-                       (loop sp* un* body)))])))))]))
+           (let-values ([(un* body) (add-unspillables un* body)])
+             (let ([g (build-graph body 
+                          (lambda (x) 
+                            (and (symbol? x)
+                                 (memq x all-registers))))])
+               (let-values ([(spills sp* env) (color-graph sp* un* g)])
+                 (cond
+                   [(null? spills) (substitute env body frame-g)]
+                   [else 
+                    (let* ([env (do-spill spills frame-g)]
+                           [body (substitute env body frame-g)])
+                      (loop sp* un* body))]))))))]))
   ;;;
   (define (color-by-chaitin x)
     ;;;
@@ -2632,8 +3086,6 @@
   (define (E x ac)
     (record-case x
       [(seq e0 e1) (E e0 (E e1 ac))]
-      [(set lhs rhs) 
-       (cons `(movl ,(R rhs) ,(R lhs)) ac)]
       [(conditional e0 e1 e2)
        (let ([lf (unique-label)] [le (unique-label)])
          (P e0 #f lf
@@ -2695,6 +3147,7 @@
          [(logor)  (cons `(orl ,(R s) ,(R d)) ac)]
          [(logxor) (cons `(xorl ,(R s) ,(R d)) ac)]
          [(mset) (cons `(movl ,(R s) ,(R d)) ac)]
+         [(move) (cons `(movl ,(R s) ,(R d)) ac)]
          [(bset/c) (cons `(movb ,(BYTE s) ,(R d)) ac)]
          [(bset/h) (cons `(movb ,(reg/h s) ,(R d)) ac)]
          [(sll)  (cons `(sall ,(R/cl s) ,(R d)) ac)]
@@ -2933,6 +3386,8 @@
          ;[foo (print-code x)]
          [x (impose-calling-convention/evaluation-order x)]
          [foo (printf "5")]
+         [x (assign-frame-sizes x)]
+         [foo (printf "5.5")]
          [x (color-by-chaitin x)]
          [foo (printf "6")]
          ;[foo (print-code x)]
