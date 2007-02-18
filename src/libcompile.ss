@@ -472,6 +472,8 @@
       [(locals vars body) `(locals ,(map E vars) ,(E body))]
       [(asm-instr op d s)
        `(asm ,op ,(E d) ,(E s))]
+      [(disp s0 s1)
+       `(disp ,(E s0) ,(E s1))]
       [(nframe vars live body) `(nframe ;[vars: ,(map E vars)]
                                         ;[live: ,(map E live)]
                                   ,(E body))]

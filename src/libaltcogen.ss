@@ -747,7 +747,7 @@
                    [($set-symbol-value!) disp-symbol-value]
                    [($set-symbol-string!) disp-symbol-string]
                    [($set-symbol-unique-string!) disp-symbol-unique-string]
-                   [($set-symbol-plist) disp-symbol-plist]
+                   [($set-symbol-plist!) disp-symbol-plist]
                    [else (err x)])])
             (tbind ([x (Value (car arg*))] [v (Value (cadr arg*))])
               (mem-assign v x (- off symbol-tag))))]
@@ -1658,7 +1658,9 @@
                         frm-args)])
         (let* ([call 
                 (make-ntcall call-targ value-dest 
-                  (cons argc-register (append reg-locs frmt*))
+                  (list* argc-register 
+                         pcr esp apr
+                         (append reg-locs frmt*))
                   #f #f)]
                [body
                 (make-nframe frmt* #f
@@ -1842,10 +1844,15 @@
                  (cond
                    [target 
                     (make-primcall 'direct-jump 
-                      (cons target (cons argc-register locs)))]
+                      (cons target 
+                       (list* argc-register
+                              pcr esp apr
+                              locs)))]
                    [else 
                     (make-primcall 'indirect-jump 
-                      (cons argc-register locs))]))))))))
+                      (list* argc-register 
+                             pcr esp apr
+                             locs))]))))))))
   (define (Tail x)
     (record-case x 
       [(constant) (VT x)]
@@ -2075,6 +2082,7 @@
     (define (empty-nfv-set) empty-set)
     (define (empty-var-set) empty-set)
     (define (add-var x s) (set-add x s))
+    (define (mem-var? x s) (set-member? x s))
     (define (rem-var x s) (set-rem x s))
     (define (union-vars s1 s2) (union s1 s2))
     (define (empty-reg-set) empty-set)
@@ -2083,11 +2091,13 @@
     (define (mem-reg? x s) (set-member? x s))
     (define (union-regs s1 s2) (union s1 s2))
     (define (add-frm x s) (set-add x s))
+    (define (mem-frm? x s) (set-member? x s))
     (define (rem-frm x s) (set-rem x s))
     (define (union-frms s1 s2) (union s1 s2))
     (define (for-each-var s f) (for-each f s))
     (define (add-nfv x s) (set-add x s))
     (define (rem-nfv x s) (set-rem x s))
+    (define (mem-nfv? x s) (set-member? x s))
     (define (union-nfvs s1 s2) (union s1 s2))
     (define (for-each-nfv s f) (for-each f s)))
   ;;;
@@ -2201,8 +2211,10 @@
             (cond
               [(reg? d)
                (cond
-                 [(not (mem-reg? d rs)) (error who "dead register")]
-                 [(or (const? s) (disp? s))
+                 [(not (mem-reg? d rs)) 
+                  (set-asm-instr-op! x 'nop)
+                  (values vs rs fs ns)]
+                 [(or (const? s) (disp? s) (reg? s))
                   (let ([rs (rem-reg d rs)])
                     (mark-reg/vars-conf! d vs)
                     (R s vs rs fs ns))]
@@ -2211,9 +2223,12 @@
                         [vs (rem-var s vs)])
                     (mark-reg/vars-conf! d vs)
                     (values (add-var s vs) rs fs ns))]
-                 [else (error who "invalid rs ~s" s)])]
+                 [else (error who "invalid rs ~s" (unparse x))])]
               [(fvar? d) 
                (cond
+                 [(not (mem-frm? d fs)) 
+                  (set-asm-instr-op! x 'nop)
+                  (values vs rs fs ns)]
                  [(var? s) 
                   (let ([fs (rem-frm d fs)]
                         [vs (rem-var s vs)])
@@ -2223,6 +2238,9 @@
                  [else (error who "invalid fs ~s" s)])]
               [(var? d)
                (cond
+                 [(not (mem-var? d vs)) 
+                  (set-asm-instr-op! x 'nop)
+                  (values vs rs fs ns)]
                  [(or (disp? s) (constant? s))
                   (let ([vs (rem-var d vs)])
                     (mark-var/vars-conf! d vs)
@@ -2256,6 +2274,7 @@
                  [else (error who "invalid vs ~s" s)])]
               [(nfv? d)
                (cond
+                 [(not (mem-nfv? d ns)) (error who "dead nfv")]
                  [(var? s)
                   (let ([ns (rem-nfv d ns)]
                         [vs (rem-var s vs)])
@@ -2264,21 +2283,37 @@
                     (values (add-var s vs) rs fs ns))]
                  [else (error who "invalid ns ~s" s)])]
               [else (error who "invalid d ~s" d)])]
-           [(logand logor sll sra int+) 
+           [(logand logor logxor sll sra int+ int- int*) 
             (cond
               [(var? d) 
-               (let ([vs (rem-var d vs)])
-                 (mark-var/vars-conf! d vs)
-                 (mark-var/frms-conf! d fs)
-                 (mark-var/nfvs-conf! d ns)
-                 (mark-var/regs-conf! d rs)
-                 (R s (set-add d vs) rs fs ns))]
+               (cond
+                 [(not (mem-var? d vs)) 
+                  (set-asm-instr-op! x 'nop)
+                  (values vs rs fs ns)]
+                 [else
+                  (let ([vs (rem-var d vs)])
+                    (mark-var/vars-conf! d vs)
+                    (mark-var/frms-conf! d fs)
+                    (mark-var/nfvs-conf! d ns)
+                    (mark-var/regs-conf! d rs)
+                    (R s (set-add d vs) rs fs ns))])]
               [(reg? d) 
-               (let ([rs (rem-reg d rs)])
-                 (mark-reg/vars-conf! d vs)
-                 (R s vs (set-add d rs) fs ns))]
+               (cond
+                 [(not (mem-reg? d rs))
+                  (values vs rs fs ns)]
+                 [else
+                  (let ([rs (rem-reg d rs)])
+                    (mark-reg/vars-conf! d vs)
+                    (R s vs (set-add d rs) fs ns))])]
               [else (error who "invalid op d ~s" (unparse x))])]
-           [(mset) 
+           [(idiv) 
+            (mark-reg/vars-conf! eax vs)
+            (mark-reg/vars-conf! edx vs)
+            (R s vs (add-reg eax (add-reg edx rs)) fs ns)]
+           [(cltd) 
+            (mark-reg/vars-conf! edx vs)
+            (R s vs (rem-reg edx rs) fs ns)]
+           [(mset bset/c bset/h) 
             (R* (list s d) vs rs fs ns)]
            [else (error who "invalid effect op ~s" (unparse x))])]
         [(ntcall target value args mask size)
@@ -2438,8 +2473,10 @@
                 [(eq? d s) (make-primcall 'nop '())]
                 [else
                  (make-asm-instr 'move d s)]))]
-           [(logand logor int+ mset sll sra)
+           [(logand logor logxor int+ int- int* mset bset/c bset/h sll sra
+              cltd idiv)
             (make-asm-instr op (R d) (R s))]
+           [(nop) (make-primcall 'nop '())]
            [else (error who "invalid op ~s" op)])]
         [(nframe vars live body)
          (let ([live-vars (vector-ref live 0)]
@@ -2892,8 +2929,36 @@
               [(and (mem? a) (mem? b)) 
                (let ([u (mku)])
                  (make-seq
-                   (E (make-asm-instr 'move  u b))
+                   (E (make-asm-instr 'move u b))
                    (E (make-asm-instr op a u))))]
+              [(disp? a) 
+               (let ([s0 (disp-s0 a)] [s1 (disp-s1 a)])
+                 (cond
+                   [(mem? s0)
+                    (let ([u (mku)])
+                      (make-seq
+                        (E (make-asm-instr 'move u s0))
+                        (E (make-asm-instr op (make-disp u s1) b))))]
+                   [(mem? s1)
+                    (let ([u (mku)])
+                      (make-seq
+                        (E (make-asm-instr 'move u s1))
+                        (E (make-asm-instr op (make-disp s0 u) b))))]
+                   [else x]))]
+              [(disp? b) 
+               (let ([s0 (disp-s0 b)] [s1 (disp-s1 b)])
+                 (cond
+                   [(mem? s0)
+                    (let ([u (mku)])
+                      (make-seq
+                        (E (make-asm-instr 'move u s0))
+                        (E (make-asm-instr op a (make-disp u s1)))))]
+                   [(mem? s1)
+                    (let ([u (mku)])
+                      (make-seq
+                        (E (make-asm-instr 'move u s1))
+                        (E (make-asm-instr op a (make-disp s0 u)))))]
+                   [else x]))] 
               [else x])]
            [(cltd) 
             (unless (and (symbol? a) (symbol? b)) 
@@ -2916,7 +2981,7 @@
               [(mem? b) 
                (let ([u (mku)])
                  (make-seq
-                   (E (make-asm-instr 'move  u b))
+                   (E (make-asm-instr 'move u b))
                    (E (make-asm-instr op a u))))]
               [else
                (let ([s1 (disp-s0 a)] [s2 (disp-s1 a)])
@@ -2934,12 +2999,12 @@
                     (let ([u (mku)])
                       (make-seq
                         (E (make-asm-instr 'move u s1))
-                        (make-asm-instr op (make-disp u s2) b)))]
+                        (E (make-asm-instr op (make-disp u s2) b))))]
                    [(mem? s2)
                     (let ([u (mku)])
                       (make-seq
                         (E (make-asm-instr 'move u s2))
-                        (make-asm-instr op (make-disp u s1) b)))]
+                        (E (make-asm-instr op (make-disp u s1) b))))]
                    [else x]))])]
            [else (error who "invalid effect ~s" op)])]
         [(primcall op rands) 
@@ -3365,6 +3430,7 @@
                     (T body '()))
              (map Clambda code*))]))
   ;;;
+  ;;; (print-code x)
   (Program x))
 
 (define (print-code x)
@@ -3392,7 +3458,7 @@
          [foo (printf "6")]
          ;[foo (print-code x)]
          [ls (flatten-codes x)])
-    (when #t
+    (when #f
       (parameterize ([gensym-prefix "L"]
                      [print-gensym #f])
         (for-each 
