@@ -1,11 +1,15 @@
 ;INSERTCODE
 ;------------------------------------------------------------------------------
 
+(current-eval alt-compile)
+
 (define (run-bench name count ok? run)
   (let loop ((i 0) (result (list 'undefined)))
     (if (< i count)
       (loop (+ i 1) (run))
       result)))
+
+;(define-syntax if-fixflo (syntax-rules () ((if-fixflo yes no) no)))
 
 (define (run-benchmark name count ok? run-maker . args)
   (newline)

@@ -3899,8 +3899,6 @@
           x
           (error 'interaction-environment "~s is not an environment" x)))))
 
-(printf "ENV=~s\n" (interaction-environment))
-
 (primitive-set! 'identifier?
   (lambda (x)
     (nonsymbol-id? x)))

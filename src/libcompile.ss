@@ -221,7 +221,10 @@
 (define-record constant (value))
 (define-record code-loc (label))
 (define-record foreign-label (label))
-(define-record var (name assigned referenced reg-conf frm-conf var-conf loc))
+(define-record var 
+   (name assigned referenced 
+         reg-conf frm-conf var-conf reg-move frm-move var-move
+         loc))
 (define-record cp-var (idx))
 (define-record frame-var (idx))
 (define-record new-frame (base-idx size body))
@@ -276,7 +279,7 @@
         [else (error 'mkfvar "~s is not a fixnum" i)]))))
 
 (define (unique-var x)
-  (make-var (gensym x) #f #f #f #f #f #f))
+  (make-var (gensym x) #f #f #f #f #f #f #f #f #f))
 
 (define (recordize x)
   (define *cookie* (gensym))
@@ -5220,7 +5223,6 @@
                (parameterize ([expand-mode 'eval])
                  (alt-compile-expr x)))])
       (let ([proc ($code->closure code)])
-        (printf "running ...\n")
         (proc)))))
 
 
