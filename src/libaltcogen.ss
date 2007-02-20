@@ -198,6 +198,7 @@
       [top-level-value            v]
       [$symbol-value              v]
 
+      [$memq                     pv]
 
       [$record           vt]
       [$record/rtd?      p]
@@ -494,6 +495,26 @@
              (case (length rands)
                [(1) (P (car rands))]
                [else (make-seq (E x) (make-constant #t))])]
+            [($memq) 
+             (record-case (cadr rands)
+               [(constant ls)
+                (unless (list? ls) (error who "invalid call to $memq"))
+                (cond
+                  [(null? ls) 
+                   (make-seq (E (car rands)) (make-constant #f))]
+                  [else
+                   (let ([t (unique-var 'tmp)])
+                     (make-bind (list t) (list (V (car rands)))
+                        (let f ([ls ls])
+                          (cond
+                            [(null? (cdr ls)) 
+                             (make-primcall 'eq? (list t (make-constant (car ls))))]
+                            [else
+                             (make-conditional 
+                               (make-primcall 'eq? (list t (make-constant (car ls))))
+                               (make-constant #t)
+                               (f (cdr ls)))]))))])]
+               [else (Predicafy x)])]
             [(not)
              (make-conditional 
                (P (car rands)) 
@@ -567,6 +588,26 @@
          [(e) (make-seq (E x) (make-constant (void)))]
          [(pv)
           (case op
+            [($memq) 
+             (record-case (cadr rands)
+               [(constant ls)
+                (unless (list? ls) (error who "invalid call to $memq"))
+                (cond
+                  [(null? ls) 
+                   (make-seq (E (car rands)) (make-constant #f))]
+                  [else
+                   (let ([t (unique-var 'tmp)])
+                     (make-bind (list t) (list (V (car rands)))
+                        (let f ([ls ls])
+                          (cond
+                            [(null? ls) 
+                             (make-constant #f)]
+                            [else
+                             (make-conditional 
+                               (make-primcall 'eq? (list t (make-constant (car ls))))
+                               (make-constant ls)
+                               (f (cdr ls)))]))))])]
+               [else (make-funcall (make-primref '$memq) (map V rands))])]
             [(list*) 
              (case (length rands)
                [(0) (make-funcall (make-primref 'list*) '())]
@@ -1767,11 +1808,9 @@
     (cond
       [(null? nf*) ac]
       [else
-       (let ([t (unique-var 't)])
-         (do-bind (list t) (list (car v*))
-           (make-seq
-             (make-set (car nf*) t)
-             (do-bind-frmt* (cdr nf*) (cdr v*) ac))))]))
+       (make-seq
+         (V (car nf*) (car v*))
+         (do-bind-frmt* (cdr nf*) (cdr v*) ac))]))
   ;;;
   (define (handle-nontail-call rator rands value-dest call-targ)
     (let-values ([(reg-locs reg-args frm-args)
@@ -2466,6 +2505,11 @@
               [(nfv? d)
                (cond
                  [(not (mem-nfv? d ns)) (error who "dead nfv")]
+                 [(or (disp? s) (constant? s) (reg? s))
+                  (let ([ns (rem-nfv d ns)])
+                    (mark-nfv/vars-conf! d vs)
+                    (mark-nfv/frms-conf! d fs)
+                    (R s vs rs fs ns))]
                  [(var? s)
                   (let ([ns (rem-nfv d ns)]
                         [vs (rem-var s vs)])
@@ -2496,6 +2540,14 @@
                   (let ([rs (rem-reg d rs)])
                     (mark-reg/vars-conf! d vs)
                     (R s vs (set-add d rs) fs ns))])]
+              [(nfv? d) 
+               (cond
+                 [(not (mem-nfv? d ns)) (error who "dead nfv")]
+                 [else
+                  (let ([ns (rem-nfv d ns)])
+                    (mark-nfv/vars-conf! d vs)
+                    (mark-nfv/frms-conf! d fs)
+                    (R s vs rs fs (add-nfv d ns)))])]
               [else (error who "invalid op d ~s" (unparse x))])]
            [(idiv) 
             (mark-reg/vars-conf! eax vs)

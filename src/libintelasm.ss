@@ -540,6 +540,8 @@
        (CODE #x29 (ModRM 3 src dst ac))]
       [(and (mem? src) (reg? dst))
        (CODErd #x2B dst src ac)]
+      [(and (imm? src) (mem? dst)) 
+       ((CODE/digit #x81 '/5) dst (IMM32 src ac))]
       [(and (reg? src) (mem? dst))
        ((CODE/digit #x29 src) dst ac)]
       [else (error who "invalid ~s" instr)])]
