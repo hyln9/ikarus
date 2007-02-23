@@ -1538,9 +1538,13 @@
                 [(constant i)
                  (if (fixnum? i)
                      (tbind ([b (Value b)])
-                       (make-shortcut^
-                         (tag-test b fixnum-mask fixnum-tag)
-                         (prm 'int+/overflow (Value a) b)
+                       (make-shortcut
+                         (make-seq
+                           (make-conditional
+                             (tag-test b fixnum-mask fixnum-tag)
+                             (make-primcall 'nop '())
+                             (make-primcall 'interrupt '()))
+                           (prm 'int+/overflow (Value a) b))
                          (make-funcall (Value (make-primref '+))
                             (list (Value a) b))))
                      (make-funcall (Value (make-primref '+)) 
@@ -1550,19 +1554,27 @@
                    [(constant i)
                     (if (fixnum? i)
                         (tbind ([a (Value a)])
-                          (make-shortcut^
-                            (tag-test a fixnum-mask fixnum-tag)
-                            (prm 'int+/overflow a (Value b))
+                          (make-shortcut
+                            (make-seq
+                              (make-conditional
+                                (tag-test a fixnum-mask fixnum-tag)
+                                (make-primcall 'nop '())
+                                (make-primcall 'interrupt '()))
+                              (prm 'int+/overflow a (Value b)))
                             (make-funcall (Value (make-primref '+))
-                                (list a (Value b)))))
+                               (list a (Value b)))))
                         (make-funcall (Value (make-primref '+))
                            (list a (Value b))))]
                    [else
                     (tbind ([a (Value a)]
                             [b (Value b)])
-                      (make-shortcut^
-                        (tag-test (prm 'logor a b) fixnum-mask fixnum-tag)
-                        (prm 'int+/overflow a b)
+                      (make-shortcut
+                        (make-seq
+                          (make-conditional
+                            (tag-test (prm 'logor a b) fixnum-mask fixnum-tag)
+                            (make-primcall 'nop '())
+                            (make-primcall 'interrupt '()))
+                          (prm 'int+/overflow a b))
                         (make-funcall (Value (make-primref '+))
                            (list a b))))])]))
             (cond
@@ -1591,9 +1603,13 @@
                 [(constant i)
                  (if (fixnum? i)
                      (tbind ([b (Value b)])
-                       (make-shortcut^
-                         (tag-test b fixnum-mask fixnum-tag)
-                         (prm 'int-/overflow (Value a) b)
+                       (make-shortcut
+                         (make-seq
+                           (make-conditional
+                             (tag-test b fixnum-mask fixnum-tag)
+                             (make-primcall 'nop '())
+                             (make-primcall 'interrupt '()))
+                           (prm 'int-/overflow (Value a) b))
                          (make-funcall (Value (make-primref '-))
                             (list (Value a) b))))
                      (make-funcall (Value (make-primref '-)) 
@@ -1603,19 +1619,27 @@
                    [(constant i)
                     (if (fixnum? i)
                         (tbind ([a (Value a)])
-                          (make-shortcut^
-                            (tag-test a fixnum-mask fixnum-tag)
-                            (prm 'int-/overflow a (Value b))
+                          (make-shortcut
+                            (make-seq
+                              (make-conditional
+                                (tag-test a fixnum-mask fixnum-tag)
+                                (make-primcall 'nop '())
+                                (make-primcall 'interrupt '()))
+                              (prm 'int-/overflow a (Value b)))
                             (make-funcall (Value (make-primref '-))
-                                (list a (Value b)))))
+                               (list a (Value b)))))
                         (make-funcall (Value (make-primref '-))
                            (list a (Value b))))]
                    [else
                     (tbind ([a (Value a)]
                             [b (Value b)])
-                      (make-shortcut^
-                        (tag-test (prm 'logor a b) fixnum-mask fixnum-tag)
-                        (prm 'int-/overflow a b)
+                      (make-shortcut
+                        (make-seq
+                          (make-conditional
+                            (tag-test (prm 'logor a b) fixnum-mask fixnum-tag)
+                            (make-primcall 'nop '())
+                            (make-primcall 'interrupt '()))
+                          (prm 'int-/overflow a b))
                         (make-funcall (Value (make-primref '-))
                            (list a b))))])]))
             (cond
@@ -2144,10 +2168,10 @@
        (handle-nontail-call 
          (make-constant (make-foreign-label op))
          rands d op)] 
-      [(shortcut^ test body handler)
-       (make-shortcut^ (P test) 
+      [(shortcut body handler)
+       (make-shortcut 
           (V d body)
-          (V d handler))]
+          (V d handler))] 
       [else 
        (if (symbol? x) 
            (make-set d x)
@@ -2181,7 +2205,7 @@
                 (make-asm-instr op
                   (make-disp (car s*) (cadr s*)) 
                   (caddr s*))))]
-         [(nop) x]
+         [(nop interrupt) x]
          [else (error 'impose-effect "invalid instr ~s" x)])]
       [(funcall rator rands)
        (handle-nontail-call rator rands #f #f)]
@@ -2290,8 +2314,8 @@
         [(jmpcall label rator rands)
          (handle-tail-call (make-code-loc label) rator rands)]
         [(forcall) (VT x)]
-        [(shortcut^ test body handler)
-         (make-shortcut^ (P test) (Tail body) (Tail handler))]
+        [(shortcut body handler)
+         (make-shortcut  (Tail body) (Tail handler))]
         [else (error who "invalid tail ~s" x)]))
     Tail)
   ;;;
@@ -2458,10 +2482,10 @@
         [(asm-instr) #f]
         [(primcall op args)
          (case op
-           [(nop) #f]
+           [(interrupt nop) #f]
            [else (error who "invalid effect ~s" (unparse x))])]
-        [(shortcut^ test body handler) 
-         (or (P test) (E body) (E handler))]
+        [(shortcut body handler) 
+         (or (E body) (E handler))]
         [else (error who "invalid effect ~s" x)]))
     (define (P x)
       (record-case x
@@ -2478,8 +2502,8 @@
         [(conditional e0 e1 e2)
          (or (P e0) (T e1) (T e2))]
         [(primcall) #f]
-        [(shortcut^ test body handler) 
-         (or (P test) (T body) (T handler))]
+        [(shortcut body handler) 
+         (or (T body) (T handler))]
         [else (error who "invalid tail ~s" x)]))
     (T x))
   ;;;
@@ -2816,20 +2840,20 @@
         [(primcall op args)
          (case op
            [(nop) (values vs rs fs ns)]
+           [(interrupt) 
+            (let ([v (exception-live-set)])
+              (unless (vector? v)
+                (error who "unbound exception"))
+              (values (vector-ref v 0)
+                      (vector-ref v 1)
+                      (vector-ref v 2)
+                      (vector-ref v 3)))]
            [else (error who "invalid effect op ~s" op)])]
-        [(shortcut^ pred body handler)
+        [(shortcut body handler)
          (let-values ([(vsh rsh fsh nsh) (E handler vs rs fs ns)])
-           (let-values ([(vsb rsb fsb nsb)
-                         (parameterize ([exception-live-set
-                                         (vector vsh rsh fsh nsh)])
-                           (E body vs rs fs ns))])
-             (P pred 
-                vsb rsb fsb nsb
-                vsh rsh fsh nsh
-                (union-vars vsb vsh)
-                (union-regs rsb rsh)
-                (union-frms fsb fsh)
-                (union-nfvs nsb nsh))))] 
+            (parameterize ([exception-live-set
+                            (vector vsh rsh fsh nsh)])
+              (E body vs rs fs ns)))]
         [else (error who "invalid effect ~s" (unparse x))]))
     (define (P x vst rst fst nst 
                  vsf rsf fsf nsf
@@ -2887,19 +2911,11 @@
                 (empty-frm-set)
                 (empty-nfv-set))]
            [else (error who "invalid tail op ~s" x)])]
-        [(shortcut^ pred body handler)
+        [(shortcut body handler)
          (let-values ([(vsh rsh fsh nsh) (T handler)])
-           (let-values ([(vsb rsb fsb nsb)
-                         (parameterize ([exception-live-set
-                                         (vector vsh rsh fsh nsh)])
-                           (T body))])
-             (P pred 
-                vsb rsb fsb nsb
-                vsh rsh fsh nsh
-                (union-vars vsb vsh)
-                (union-regs rsb rsh)
-                (union-frms fsb fsh)
-                (union-nfvs nsb nsh))))]
+            (parameterize ([exception-live-set
+                            (vector vsh rsh fsh nsh)])
+               (T body)))]
         [else (error who "invalid tail ~s" x)]))
     (define exception-live-set 
       (make-parameter #f))
@@ -3115,10 +3131,10 @@
              (NFE (fxsub1 i) (make-mask (fxsub1 i)) body)))]
         [(primcall op args)
          (case op
-           [(nop) x]
+           [(nop interrupt) x]
            [else (error who "invalid effect prim ~s" op)])]
-        [(shortcut^ test body handler)
-         (make-shortcut^ (P test) (E body) (E handler))]
+        [(shortcut body handler)
+         (make-shortcut (E body) (E handler))]
         [else (error who "invalid effect ~s" (unparse x))]))
     (define (P x)
       (record-case x
@@ -3138,8 +3154,8 @@
         [(conditional e0 e1 e2)
          (make-conditional (P e0) (T e1) (T e2))]
         [(primcall op args) x]
-        [(shortcut^ test body handler)
-         (make-shortcut^ (P test) (T body) (T handler))]
+        [(shortcut body handler)
+         (make-shortcut (T body) (T handler))]
         [else (error who "invalid tail ~s" (unparse x))]))
     (T x))
   ;;;
@@ -3276,12 +3292,13 @@
         [(primcall op arg*)
          (case op
            [(nop) s]
+           [(interrupt) 
+            (or (exception-live-set) (error who "uninitialized exception"))]
            [else (error who "invalid effect primcall ~s" op)])]
-        [(shortcut^ test body handler)
+        [(shortcut body handler)
          (let ([s2 (E handler s)])
-           (let ([s1 (parameterize ([exception-live-set s2])
-                        (E body s))])
-             (P test s1 s2 (set-union s1 s2))))]
+           (parameterize ([exception-live-set s2])
+             (E body s)))]
         [else (error who "invalid effect ~s" (unparse x))]))
     (define (P x st sf su)
       (record-case x
@@ -3302,11 +3319,10 @@
         [(primcall op rands) 
          (R* rands)]
         [(seq e0 e1) (E e0 (T e1))]
-        [(shortcut^ test body handler)
+        [(shortcut body handler)
          (let ([s2 (T handler)])
-           (let ([s1 (parameterize ([exception-live-set s2])
-                        (T body))])
-             (P test s1 s2 (set-union s1 s2))))]
+           (parameterize ([exception-live-set s2])
+              (T body)))]
         [else (error who "invalid tail ~s" (unparse x))]))
     (define exception-live-set (make-parameter #f))
     (let ([s (T x)])
@@ -3418,8 +3434,8 @@
         [(primcall op rands) 
          (make-primcall op (map R rands))]
         [(ntcall) x]
-        [(shortcut^ test body handler)
-         (make-shortcut^ (P test) (E body) (E handler))]
+        [(shortcut body handler)
+         (make-shortcut (E body) (E handler))]
         [else (error who "invalid effect ~s" (unparse x))]))
     (define (P x)
       (record-case x
@@ -3436,8 +3452,8 @@
         [(conditional e0 e1 e2) 
          (make-conditional (P e0) (T e1) (T e2))]
         [(seq e0 e1) (make-seq (E e0) (T e1))]
-        [(shortcut^ test body handler)
-         (make-shortcut^ (P test) (T body) (T handler))]
+        [(shortcut body handler)
+         (make-shortcut (T body) (T handler))]
         [else (error who "invalid tail ~s" (unparse x))]))
     ;(print-code x)
     (T x))
@@ -3582,16 +3598,12 @@
            [else (error who "invalid effect ~s" op)])]
         [(primcall op rands) 
          (case op
-           [(nop) x]
-           [(record-effect)
-            (S* rands
-                (lambda (s*)
-                  (make-primcall op s*)))]
+           [(nop interrupt) x]
            [else (error who "invalid op in ~s" (unparse x))])]
         [(ntcall) x]
-        [(shortcut^ test body handler)
+        [(shortcut body handler)
          (let ([body (E body)])
-           (make-shortcut^ (P test) body (E handler)))]
+           (make-shortcut body (E handler)))]
         [else (error who "invalid effect ~s" (unparse x))]))
     (define (P x)
       (record-case x
@@ -3623,8 +3635,8 @@
         [(conditional e0 e1 e2)
          (make-conditional (P e0) (T e1) (T e2))]
         [(seq e0 e1) (make-seq (E e0) (T e1))]
-        [(shortcut^ test body handler)
-         (make-shortcut^ (P test) (T body) (T handler))]
+        [(shortcut body handler)
+         (make-shortcut (T body) (T handler))]
         [else (error who "invalid tail ~s" (unparse x))]))
     (let ([x (T x)])
       (values un* x)))
@@ -3817,22 +3829,16 @@
       [(primcall op rands)
        (case op
          [(nop) ac]
-         [(record-effect) 
-          (let ([a (car rands)])
-            (unless (symbol? a) 
-              (error who "invalid arg to record-effect ~s" a))
-            (list* `(shrl ,pageshift ,a)
-                   `(sall ,wordshift ,a)
-                   `(addl ,(pcb-ref 'dirty-vector) ,a)
-                   `(movl ,dirty-word (disp 0 ,a))
-                   ac))]
+         [(interrupt) 
+          (let ([l (or (exception-label)
+                       (error who "no exception label"))])
+            (cons `(jmp ,l) ac))]
          [else (error who "invalid effect ~s" (unparse x))])]
-      [(shortcut^ test body handler) 
+      [(shortcut body handler) 
        (let ([L (unique-label)] [L2 (unique-label)])
-         (let ([ac (cons L (E handler (cons L2  ac)))])
-           (let ([ac (parameterize ([exception-label L])
-                        (E body (cons `(jmp ,L2) ac)))])
-             (P test #f L ac))))]
+         (let ([ac (cons L (E handler (cons L2 ac)))])
+           (parameterize ([exception-label L])
+              (E body (cons `(jmp ,L2) ac)))))]
       [else (error who "invalid effect ~s" (unparse x))]))
   ;;;
   (define (unique-label)
@@ -3926,12 +3932,11 @@
         [(direct-jump)
          (cons `(jmp (label ,(code-loc-label (car rands)))) ac)]
         [else (error who "invalid tail ~s" x)])]
-      [(shortcut^ test body handler) 
+      [(shortcut body handler) 
        (let ([L (unique-label)])
          (let ([ac (cons L (T handler ac))])
-           (let ([ac (parameterize ([exception-label L])
-                        (T body ac))])
-             (P test #f L ac))))]
+           (parameterize ([exception-label L])
+             (T body ac))))]
       [else (error who "invalid tail ~s" x)]))
   (define exception-label (make-parameter #f))
   ;;;
