@@ -232,7 +232,6 @@
     ["libcontrol1.ss"   "libcontrol1.fasl"  p0 onepass]
     ["libcollect.ss"    "libcollect.fasl"   p0 onepass]
     ["librecord.ss"     "librecord.fasl"    p0 onepass]
-    ;["libcxr.ss"        "libcxr.fasl"       p0 chaitin]
     ["libcxr.ss"        "libcxr.fasl"       p0 onepass]
     ["libnumerics.ss"   "libnumerics.fasl"  p0 onepass]
     ["libguardians.ss"  "libguardians.fasl" p0 onepass]
@@ -282,7 +281,7 @@
 
 
 
-(let ()
+#;(let ()
   (define (compile-all who)
     (for-each
       (lambda (x)
@@ -299,10 +298,9 @@
       (time (compile-all 'p0))
       (exit))))
 
-#;(for-each 
+(for-each 
   (lambda (x)
-    (when (cadr x)
-      (compile-library (car x) (cadr x))))
+    (compile-library (car x) (cadr x) (cadddr x)))
   scheme-library-files)
 
 (define (join s ls)

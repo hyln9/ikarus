@@ -7,12 +7,13 @@ all: ikarus
 
 ikarus: ikarus-collect.o ikarus-runtime.o ikarus-main.o ikarus-fasl.o \
   ikarus-exec.o ikarus-print.o ikarus-enter.o ikarus-symbol-table.o  \
-  ikarus-weak-pairs.o ikarus-numerics.o ikarus-flonums.o
+  ikarus-weak-pairs.o ikarus-numerics.o ikarus-flonums.o \
+  verify-integrity.o
 	$(CC)  $(LDFLAGS) -o ikarus \
 	ikarus-main.o ikarus-runtime.o \
 	ikarus-fasl.o ikarus-exec.o ikarus-print.o ikarus-enter.o \
 	ikarus-symbol-table.o ikarus-collect.o ikarus-weak-pairs.o \
-	ikarus-numerics.o ikarus-flonums.o
+	ikarus-numerics.o ikarus-flonums.o verify-integrity.o
 
 ikarus-main.o: ikarus-main.c ikarus.h
 	$(CC) $(CFLAGS) -c ikarus-main.c
@@ -26,6 +27,9 @@ ikarus-runtime.o: ikarus-runtime.c ikarus.h
 
 ikarus-fasl.o: ikarus-fasl.c ikarus.h
 	$(CC) $(CFLAGS) -c ikarus-fasl.c
+
+verify-integrity.o: verify-integrity.c ikarus.h
+	$(CC) $(CFLAGS) -c verify-integrity.c
 
 ikarus-exec.o: ikarus-exec.c ikarus.h
 	$(CC) $(CFLAGS) -c ikarus-exec.c

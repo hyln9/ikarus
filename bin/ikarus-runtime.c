@@ -725,9 +725,11 @@ ik_dump_dirty_vector(ikpcb* pcb){
 
 ikp 
 ikrt_make_code(ikp codesizeptr, ikp freevars, ikp rvec, ikpcb* pcb){
+  assert((fx_mask & (int)codesizeptr) == 0);
   int code_size = unfix(codesizeptr);
   int memreq = align_to_next_page(code_size + disp_code_data);
   ikp mem = ik_mmap_code(memreq, 0, pcb);
+  bzero(mem, memreq);
   ref(mem, 0) = code_tag;
   ref(mem, disp_code_code_size) = codesizeptr;
   ref(mem, disp_code_freevars) = freevars;
@@ -918,7 +920,7 @@ ikrt_fork(){
 ikp 
 ikrt_waitpid(ikp pid){
   int status;
-  pid_t t = waitpid(unfix(pid), &status, 0);
+  /*pid_t t = */ waitpid(unfix(pid), &status, 0);
   return fix(status);
 }
 

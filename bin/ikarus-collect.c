@@ -51,9 +51,9 @@ typedef struct{
 #define meta_count 5
 
 static int extension_amount[meta_count] = {
-  4 * pagesize,
   1 * pagesize,
-  4 * pagesize,
+  1 * pagesize,
+  1 * pagesize,
   1 * pagesize,
   1 * pagesize
 };
@@ -187,6 +187,7 @@ gc_alloc_new_data(int size, int old_gen, gc_t* gc){
 
 static inline ikp 
 gc_alloc_new_code(int size, int old_gen, gc_t* gc){
+  assert(size == align(size));
   if(size < pagesize){
     return meta_alloc(size, old_gen, gc, meta_code);
   } else {
@@ -196,6 +197,7 @@ gc_alloc_new_code(int size, int old_gen, gc_t* gc){
     qupages_t* p = ik_malloc(sizeof(qupages_t));
     p->p = mem;
     p->q = mem+size;
+    bzero(mem+size, memreq-size);
     p->next = gc->queues[meta_code];
     gc->queues[meta_code] = p;
     return mem;
@@ -285,10 +287,13 @@ static void deallocate_unused_pages(gc_t*);
 
 static void fix_new_pages(gc_t* gc);
 
+extern void verify_integrity(ikpcb* pcb, char*);
 
 ikpcb* 
 ik_collect(int mem_req, ikpcb* pcb){
-
+#ifndef NDEBUG
+  verify_integrity(pcb, "entry");
+#endif
   { /* ACCOUNTING */
     int bytes = ((int)pcb->allocation_pointer) -
                 ((int)pcb->heap_base);
@@ -440,6 +445,9 @@ ik_collect(int mem_req, ikpcb* pcb){
     ref(x, 0) = (ikp)(0x1234FFFF);
     x+=wordsize;
   }
+#endif
+#ifndef NDEBUG
+  verify_integrity(pcb, "exit");
 #endif
   return pcb;
 }
@@ -893,12 +901,7 @@ add_object_proc(gc_t* gc, ikp x)
   if(is_fixnum(x)){ 
     return x;
   } 
-#ifndef NDEBUG
-  if(x == forward_ptr){
-    fprintf(stderr, "GOTCHA\n");
-    exit(-1);
-  }
-#endif
+  assert(x != forward_ptr);
   int tag = tagof(x);
   if(tag == immediate_tag){
     return x;
@@ -907,6 +910,9 @@ add_object_proc(gc_t* gc, ikp x)
   if(fst == forward_ptr){
     /* already moved */
     return ref(x, wordsize-tag);
+  }
+  if(x == (ikp)0x07a3f035){
+    fprintf(stderr, "FST=0x%08x\n", (int)fst);
   }
   unsigned int t = gc->segment_vector[page_index(x)];
   int gen = t & gen_mask;
@@ -954,6 +960,7 @@ add_object_proc(gc_t* gc, ikp x)
   else if(tag == vector_tag){
     if(is_fixnum(fst)){
       /* real vector */
+      //fprintf(stderr, "X=0x%08x, FST=0x%08x\n", (int)x, (int)fst);
       int size = (int)fst;
       assert(size >= 0);
       int memreq = align(size + disp_vector_data);
@@ -1063,6 +1070,7 @@ add_object_proc(gc_t* gc, ikp x)
     }
     else {
       fprintf(stderr, "unhandled vector with fst=0x%08x\n", (int)fst);
+      assert(0);
       exit(-1);
     }
   }
@@ -1095,7 +1103,7 @@ add_object_proc(gc_t* gc, ikp x)
 static void
 relocate_new_code(ikp x, gc_t* gc){
   ikp relocvector = ref(x, disp_code_reloc_vector);
-  relocvector = add_object(gc, relocvector, "reloc");
+  relocvector = add_object(gc, relocvector, "relocvec");
   ref(x, disp_code_reloc_vector) = relocvector;
   int relocsize = (int)ref(relocvector, off_vector_length);
   ikp p = relocvector + off_vector_data;
@@ -1107,8 +1115,12 @@ relocate_new_code(ikp x, gc_t* gc){
     int code_off = r >> 2;
     if(tag == 0){
       /* undisplaced pointer */
+#ifndef NDEBUG
+     // fprintf(stderr, "r=0x%08x code_off=%d reloc_size=0x%08x\n",
+     //     r, code_off, relocsize);
+#endif
       ikp old_object = ref(p, wordsize);
-      ikp new_object = add_object(gc, old_object, "reloc");
+      ikp new_object = add_object(gc, old_object, "reloc1");
       ref(code, code_off) = new_object;
       p += (2*wordsize);
     }
@@ -1116,14 +1128,19 @@ relocate_new_code(ikp x, gc_t* gc){
       /* displaced pointer */
       int obj_off = unfix(ref(p, wordsize));
       ikp old_object = ref(p, 2*wordsize);
-      ikp new_object = add_object(gc, old_object, "reloc");
+      ikp new_object = add_object(gc, old_object, "reloc2");
       ref(code, code_off) = new_object + obj_off;
       p += (3 * wordsize);
     } 
     else if(tag == 3){
       /* displaced relative pointer */
       int obj_off = unfix(ref(p, wordsize));
-      ikp obj = add_object(gc, ref(p, 2*wordsize), "reloc");
+      ikp obj = ref(p, 2*wordsize);
+#ifndef NDEBUG
+      //fprintf(stderr, "obj=0x%08x, obj_off=0x%08x\n", (int)obj,
+      //    obj_off);
+#endif
+      obj = add_object(gc, obj, "reloc3");
       ikp displaced_object = obj + obj_off;
       ikp next_word = code + code_off + wordsize;
       ikp relative_distance = displaced_object - (int)next_word;
@@ -1137,7 +1154,7 @@ relocate_new_code(ikp x, gc_t* gc){
     else {
       fprintf(stderr, "invalid rtag %d in 0x%08x\n", tag, r);
       exit(-1);
-    } 
+    }
   }
 }
 
@@ -1610,16 +1627,22 @@ fix_new_pages(gc_t* gc){
               if(is_fixnum(x) || (tagof(x) == immediate_tag)){
                 /* do nothing */
               } else {
-                code_d = code_d || segment_vec[page_index(x)];
+                code_d = code_d | segment_vec[page_index(x)];
               }
               vp += wordsize;
             }
             code_d = (code_d & meta_dirty_mask) >> meta_dirty_shift;
             int j = ((int)p - (int)page_base)/cardsize;
+            assert(j < cards_per_page);
             d = d | (code_d<<(j*meta_dirty_shift));
             p += align(disp_code_data + unfix(ref(p, disp_code_code_size)));
           }
         }
+#ifndef NDEBUG
+        fprintf(stderr, " %p = 0x%08x & 0x%08x = 0x%08x\n",
+            page_base, d, cleanup_mask[page_gen], d &
+            cleanup_mask[page_gen]);
+#endif
         dirty_vec[i] = d & cleanup_mask[page_gen];
       }
       else {

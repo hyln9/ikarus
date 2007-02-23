@@ -256,6 +256,9 @@
 
 
 
+(define-record shortcut^ (test body handler))
+(define-record shortcut (body handler))
+
 (define-record fvar (idx))
 (define-record object (val))
 (define-record locals (vars body))
@@ -480,6 +483,10 @@
       [(nframe vars live body) `(nframe ;[vars: ,(map E vars)]
                                         ;[live: ,(map E live)]
                                   ,(E body))]
+      [(shortcut^ pred body handler)
+       `(shortcut ,(E pred) ,(E body) ,(E handler))]
+      [(shortcut body handler)
+       `(exceptional ,(E body) ,(E handler))]
       [else
        (if (symbol? x) 
            x

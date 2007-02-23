@@ -564,6 +564,8 @@
        (CODE #xC1 (ModRM 3 '/5 dst (IMM8 src ac)))]
       [(and (eq? src '%cl) (reg? dst))
        (CODE #xD3 (ModRM 3 '/5 dst ac))]
+      [(and (imm8? src) (mem? dst))
+       ((CODE/digit #xC1 '/5) dst (IMM8 src ac))]
       [else (error who "invalid ~s" instr)])]
    [(sarl src dst)
     (cond
@@ -873,7 +875,7 @@
                 (case (car x)
                   [(reloc-word foreign-label)        (fx+ ac 2)]
                   [(relative reloc-word+ label-addr) (fx+ ac 3)]
-                  [(word byte label current-frame-offset local-relative)    ac]
+                  [(word byte label current-frame-offset local-relative) ac]
                   [else (error 'compute-reloc-size "unknown instr ~s" x)])))
           0 
           ls)))
@@ -937,6 +939,9 @@
           [(relative)
            (let ([loc (label-loc v)])
              (let ([obj (car loc)] [disp (cadr loc)])
+               (unless (and (code? obj) (fixnum? disp))
+                 (error 'whack-reloc "invalid relative jump obj=~s  disp=~s\n" 
+                        obj disp))
                (vector-set! vec reloc-idx (fxlogor 3 (fxsll idx 2)))
                (vector-set! vec (fx+ reloc-idx 1) (fx+ disp 11))
                (vector-set! vec (fx+ reloc-idx 2) obj)))
@@ -971,6 +976,9 @@
                 (lambda (foo reloc*)
                   (for-each (whack-reloc thunk?-label (car foo) (cdr foo)) reloc*))
                 (map cons code* relv*) reloc**)
+              ;(for-each (lambda (x)
+              ;            (printf "RV=~s\n" x))
+              ;          relv*)
               (for-each set-code-reloc-vector! code* relv*)
               code*)))))))
 
