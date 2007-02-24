@@ -340,7 +340,12 @@ reference-implementation:
   (lambda (x v)
     (unless (symbol? x)
       (error 'set-top-level-value! "~s is not a symbol" x))
-    ($set-symbol-value! x v)))
+    ($set-symbol-value! x v)
+    (if (procedure? v)
+        ($set-symbol-function! x v)
+        ($set-symbol-function! x
+          (lambda args
+            (error 'apply "~s is not a procedure" v))))))
  
 (primitive-set! 'symbol? (lambda (x) (symbol? x)))
   

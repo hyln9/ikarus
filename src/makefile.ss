@@ -116,7 +116,7 @@
     $make-string $string-ref $string-set!  $string-length $string
     $symbol-string $symbol-unique-string $symbol-value
     $set-symbol-string! $set-symbol-unique-string!
-    $set-symbol-value!  $make-symbol $set-symbol-plist!
+    $set-symbol-value! $set-symbol-function! $make-symbol $set-symbol-plist!
     $symbol-plist $sc-put-cte $record? $record/rtd? $record-set!
     $record-ref $record-rtd $make-record $record $base-rtd $code?
     $code-reloc-vector $code-freevars $code-size $code-ref

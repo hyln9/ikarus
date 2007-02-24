@@ -130,6 +130,7 @@
     [$symbol-string     1   value]
     [$symbol-unique-string     1   value]
     [$set-symbol-value! 2   effect]
+    [$set-symbol-function! 2   effect]
     [$set-symbol-string! 2   effect]
     [$set-symbol-unique-string! 2   effect]
     [$symbol-plist      1   value]
@@ -1608,6 +1609,10 @@
       [else (error who "invalid expression ~s" (unparse x))]))
   (Expr x))
 
+
+
+
+
 (define (optimize-for-direct-jumps x)
   (define who 'optimize-for-direct-jumps)
   (define (init-var x)
@@ -1696,6 +1701,59 @@
       [else (error who "invalid expression ~s" (unparse x))]))
   (Expr x))
 
+
+(define (insert-funcall-error-checks x)
+  (define who 'insert-funcall-error-checks)
+  (define called-symbols '())
+  (define (R x)
+    (record-case x
+      [(constant p) 
+       (if (procedure? p)
+           x
+           (make-primcall '$procedure-check (list x)))]
+      [(primref)  x]
+      [(clambda g cls* ?) (E x)]
+      [else (make-primcall '$procedure-check (list (E x)))]))
+  (define (E x)
+    (record-case x
+      [(constant) x]
+      [(var)      x]
+      [(primref)  x]
+      [(bind lhs* rhs* body)
+       (make-bind lhs* (map E rhs*) (E body))]
+      [(fix lhs* rhs* body)
+       (make-fix lhs* (map E rhs*) (E body))]
+      [(conditional test conseq altern)
+       (make-conditional (E test) (E conseq) (E altern))]
+      [(seq e0 e1) (make-seq (E e0) (E e1))]
+      [(clambda g cls* ?) 
+       (make-clambda g
+         (map (lambda (cls)
+                (record-case cls
+                  [(clambda-case info body)
+                   (make-clambda-case info (E body))]))
+              cls*)
+         ?)]
+      [(primcall op rand*)
+       (make-primcall op (map E rand*))]
+      [(forcall op rand*)
+       (make-forcall op (map E rand*))]
+      [(funcall rator rand*)
+       (make-funcall (R rator) (map E rand*))]
+      [(jmpcall label rator rand*)
+       (make-jmpcall label (E rator) (map E rand*))]
+      [(mvcall p c) (make-mvcall (E p) (E c))]
+      [else (error who "invalid expression ~s" (unparse x))]))
+  (let ([x (E x)])
+    (if (null? called-symbols)
+        x
+        (make-seq
+          (make-funcall
+            (make-primref 'for-each)
+            (list (make-primref '$reset-symbol-function!)
+                  (make-constant called-symbols)))
+          x))))
+ 
 
 (define (convert-closures prog)
   (define who 'convert-closures)
@@ -1789,6 +1847,12 @@
       (error 'convert-closures "free vars ~s encountered in ~a"
           free (unparse prog)))
    prog))
+
+
+ 
+
+
+
 
 (define (optimize-closures/lift-codes x)
   (define who 'optimize-closures/lift-codes)
@@ -1936,7 +2000,6 @@
     (make-codes all-codes x)))
 
 
-
 (include "libcogen1.ss")
 
 
@@ -2057,7 +2120,7 @@
       [($symbol-string $symbol-unique-string)
        (andmap (check op symbol?) rand*)]
       [($constant-ref $set-constant! $intern $pcb-set! $pcb-ref $make-symbol
-        $symbol-value $set-symbol-value! $symbol-plist $set-symbol-plist!
+        $symbol-value $set-symbol-value! $set-symbol-function! $symbol-plist $set-symbol-plist!
         $set-symbol-system-value! $set-symbol-system-value!
         $set-symbol-unique-string!
         $set-symbol-string!
@@ -3036,7 +3099,7 @@
   (define disp-symbol-value          8)
   (define disp-symbol-plist         12)
   (define disp-symbol-system-value  16)
-  (define disp-symbol-system-plist  20)
+  (define disp-symbol-function      20)
   (define symbol-size 24)
   (define vector-tag 5)
   (define vector-mask 7)
@@ -3932,7 +3995,7 @@
               (movl (int unbound) (mem disp-symbol-value apr))
               (movl (int nil) (mem disp-symbol-plist apr))
               (movl (int unbound) (mem disp-symbol-system-value apr))
-              (movl (int nil) (mem disp-symbol-system-plist apr))
+              (movl (int nil) (mem disp-symbol-function apr))
               (movl apr eax)
               (addl (int symbol-tag) eax)
               (addl (int (align symbol-size)) apr)
@@ -4055,7 +4118,7 @@
         (list* (addl (int (fx- vector-tag disp-code-data)) eax)
                ac))]
      [($set-car! $set-cdr! $vector-set! $string-set! $exit
-       $set-symbol-value! $set-symbol-plist! 
+       $set-symbol-value! $set-symbol-function! $set-symbol-plist! 
        $code-set!  primitive-set! 
        $set-code-object! $set-code-object+offset! $set-code-object+offset/rel!
        $record-set!
@@ -4214,6 +4277,17 @@
               (movl ebx (mem (fx- disp-symbol-value symbol-tag) eax))
                ;;; record side effect
                (addl (int (fx- disp-symbol-value symbol-tag)) eax)
+               (shrl (int pageshift) eax)
+               (sall (int wordshift) eax)
+               (addl (pcb-ref 'dirty-vector) eax)
+               (movl (int dirty-word) (mem 0 eax))
+              ac)]
+      [($set-symbol-function!) 
+       (list* (movl (Simple (car arg*)) eax)
+              (movl (Simple (cadr arg*)) ebx)
+              (movl ebx (mem (fx- disp-symbol-function symbol-tag) eax))
+               ;;; record side effect
+               (addl (int (fx- disp-symbol-function symbol-tag)) eax)
                (shrl (int pageshift) eax)
                (sall (int wordshift) eax)
                (addl (pcb-ref 'dirty-vector) eax)
@@ -5159,6 +5233,7 @@
          [p (copy-propagate p)]
          [p (rewrite-assignments p)]
          [p (optimize-for-direct-jumps p)]
+         [p (insert-funcall-error-checks p)]
          [p (convert-closures p)]
          [p (optimize-closures/lift-codes p)])
     (let ([ls* (alt-cogen p)])
