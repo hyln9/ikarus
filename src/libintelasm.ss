@@ -154,13 +154,7 @@
 (define mem?
   (lambda (x)
     (and (pair? x)
-         ;(fx= (length x) 3)
-         (eq? (car x) 'disp)
-         ;(or (imm? (cadr x))
-         ;    (reg? (cadr x)))
-         ;(or (imm? (caddr x))
-         ;    (reg? (caddr x)))
-         )))
+         (eq? (car x) 'disp))))
 
 (define small-disp?
   (lambda (x)
@@ -353,7 +347,7 @@
           [(and (imm? a2) (reg? a1))
            (CODErri c /? a1 a2 (IMM32 n ac))]
           [(and (imm? a1) (imm? a2))
-           (error 'CODEdi "unsupported2")]
+           (error 'CODEdi "unsupported2 ~s" disp)]
           [else (error 'CODEdi "unhandled ~s" disp)])))))
 
 (define (SIB s i b ac)

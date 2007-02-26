@@ -113,14 +113,18 @@
 #define disp_symbol_value         8
 #define disp_symbol_plist        12 
 #define disp_symbol_system_value 16
-#define disp_symbol_system_plist 20
-#define symbol_size  24
+#define disp_symbol_code 20
+#define disp_symbol_errcode 24
+#define disp_symbol_unused 28
+#define symbol_size  32
 #define off_symbol_string (disp_symbol_string - symbol_tag)
 #define off_symbol_ustring (disp_symbol_ustring - symbol_tag)
 #define off_symbol_value (disp_symbol_value - symbol_tag)
 #define off_symbol_plist (disp_symbol_plist - symbol_tag)
 #define off_symbol_system_value (disp_symbol_system_value - symbol_tag)
-#define off_symbol_system_plist (disp_symbol_system_plist - symbol_tag)
+#define off_symbol_code (disp_symbol_code - symbol_tag)
+#define off_symbol_errcode (disp_symbol_errcode - symbol_tag)
+#define off_symbol_unused (disp_symbol_unused - symbol_tag)
 
 #define closure_tag  3
 #define closure_mask 7

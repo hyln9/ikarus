@@ -48,9 +48,11 @@ typedef struct{
 #define meta_data 2
 #define meta_weak 3
 #define meta_pair 4
-#define meta_count 5
+#define meta_symbol 5
+#define meta_count 6
 
 static int extension_amount[meta_count] = {
+  1 * pagesize,
   1 * pagesize,
   1 * pagesize,
   1 * pagesize,
@@ -63,10 +65,9 @@ static unsigned int meta_mt[meta_count] = {
   code_mt,
   data_mt,
   weak_pairs_mt,
-  pointers_mt
+  pointers_mt,
+  symbols_mt
 };
-
-
 
 typedef struct gc_t{
   meta_t meta[generation_count][meta_count];
@@ -112,7 +113,6 @@ meta_alloc_extending(int size, int old_gen, gc_t* gc, int meta_id){
       x += wordsize;
     }
   }
-
   ikp mem = ik_mmap_typed(
       mapsize, 
       meta_mt[meta_id] | next_gen_tag[old_gen],
@@ -147,6 +147,12 @@ static inline ikp
 gc_alloc_new_ptr(int size, int old_gen, gc_t* gc){
   assert(size == align(size));
   return meta_alloc(size, old_gen, gc, meta_ptrs);
+}
+
+static inline ikp 
+gc_alloc_new_symbol(int old_gen, gc_t* gc){
+  assert(symbol_size == align(symbol_size));
+  return meta_alloc(symbol_size, old_gen, gc, meta_symbol);
 }
 
 static inline ikp 
@@ -911,9 +917,6 @@ add_object_proc(gc_t* gc, ikp x)
     /* already moved */
     return ref(x, wordsize-tag);
   }
-  if(x == (ikp)0x07a3f035){
-    fprintf(stderr, "FST=0x%08x\n", (int)fst);
-  }
   unsigned int t = gc->segment_vector[page_index(x)];
   int gen = t & gen_mask;
   if(gen > gc->collect_gen){
@@ -925,13 +928,16 @@ add_object_proc(gc_t* gc, ikp x)
     return y;
   }
   else if(tag == symbol_tag){
-    ikp y = gc_alloc_new_ptr(symbol_size, gen, gc) + symbol_tag;
-    ref(y, off_symbol_string) = ref(x, off_symbol_string);
-    ref(y, off_symbol_ustring) = ref(x, off_symbol_ustring);
-    ref(y, off_symbol_value) = ref(x, off_symbol_value);
-    ref(y, off_symbol_plist) = ref(x, off_symbol_plist);
+    //ikp y = gc_alloc_new_ptr(align(symbol_size),gen, gc) + symbol_tag;
+    ikp y = gc_alloc_new_symbol(gen, gc) + symbol_tag;
+    ref(y, off_symbol_string)       = ref(x, off_symbol_string);
+    ref(y, off_symbol_ustring)      = ref(x, off_symbol_ustring);
+    ref(y, off_symbol_value)        = ref(x, off_symbol_value);
+    ref(y, off_symbol_plist)        = ref(x, off_symbol_plist);
     ref(y, off_symbol_system_value) = ref(x, off_symbol_system_value);
-    ref(y, off_symbol_system_plist) = ref(x, off_symbol_system_plist);
+    ref(y, off_symbol_code)         = ref(x, off_symbol_code);
+    ref(y, off_symbol_errcode)      = ref(x, off_symbol_errcode);
+    ref(y, off_symbol_unused)       = 0;
     ref(x, -symbol_tag) = forward_ptr;
     ref(x, wordsize-symbol_tag) = y;
 #if accounting
@@ -1202,6 +1208,26 @@ collect_loop(gc_t* gc){
         } while(qu);
       }
     }
+
+    { /* scan the pending symbol pages */
+      qupages_t* qu = gc->queues[meta_symbol];
+      if(qu){
+        done = 0;
+        gc->queues[meta_symbol] = 0;
+        do{
+          ikp p = qu->p;
+          ikp q = qu->q;
+          while(p < q){
+            ref(p,0) = add_object(gc, ref(p,0), "symbols");
+            p += wordsize;
+          }
+          qupages_t* next = qu->next;
+          ik_free(qu, sizeof(qupages_t));
+          qu = next;
+        } while(qu);
+      }
+    }
+
     { /* scan the pending code objects */
       qupages_t* codes = gc->queues[meta_code];
       if(codes){
@@ -1234,6 +1260,23 @@ collect_loop(gc_t* gc){
             while(p < q){
               ref(p,0) = add_object(gc, ref(p,0), "rem");
               p += (2*wordsize);
+            }
+            p = meta->aq;
+            q = meta->ap;
+          } while (p < q);
+        }
+      }
+      for(i=0; i<=gc->collect_gen; i++){
+        meta_t* meta = &gc->meta[i][meta_symbol];
+        ikp p = meta->aq;
+        ikp q = meta->ap;
+        if(p < q){
+          done = 0;
+          do{
+            meta->aq = q;
+            while(p < q){
+              ref(p,0) = add_object(gc, ref(p,0), "sym");
+              p += wordsize;
             }
             p = meta->aq;
             q = meta->ap;
@@ -1282,6 +1325,15 @@ collect_loop(gc_t* gc){
     int i;
     for(i=0; i<=gc->collect_gen; i++){
       meta_t* meta = &gc->meta[i][meta_pair];
+      ikp p = meta->ap;
+      ikp q = meta->ep;
+      while(p < q){
+        ref(p, 0) = 0;
+        p += wordsize;
+      }
+    }
+    for(i=0; i<=gc->collect_gen; i++){
+      meta_t* meta = &gc->meta[i][meta_symbol];
       ikp p = meta->ap;
       ikp q = meta->ep;
       while(p < q){
@@ -1508,6 +1560,11 @@ scan_dirty_pages(gc_t* gc){
           dirty_vec = pcb->dirty_vector;
           segment_vec = pcb->segment_vector;
         }
+        else if(type == symbols_type){
+          scan_dirty_pointers_page(gc, i, mask);
+          dirty_vec = pcb->dirty_vector;
+          segment_vec = pcb->segment_vector;
+        }
         else if (type == weak_pairs_type){
           if((t & gen_mask) > collect_gen){
             scan_dirty_weak_pointers_page(gc, i, mask);
@@ -1580,7 +1637,8 @@ fix_new_pages(gc_t* gc){
       segment_vec[i] = t & ~new_gen_mask;
       int page_gen = t & old_gen_mask;
       if(((t & type_mask) == pointers_type) ||
-         ((t & type_mask) == weak_pairs_type)){
+         ((t & type_mask) == symbols_type) ||
+         ((t & type_mask) == weak_pairs_type) ){
         ikp p = (ikp)(i << pageshift);
         unsigned int d = 0;
         int j;

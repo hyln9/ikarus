@@ -109,6 +109,42 @@
     [movl (disp -4 %esp) %eax]
     [ret]))
 
+(asm-test 1
+  '([movl (obj (1 2)) (disp -4 %esp)]
+    [movl (obj car) %eax]
+    [movl (disp 14 %eax) %edi] ;;; symbol-value 
+    [movl -4 %eax]
+    [jmp (disp -3 %edi)])) 
+
+(asm-test 1
+  '([movl (obj (1 2)) (disp -4 %esp)]
+    [movl (obj car) %eax]
+    [movl (disp 14 %eax) %edi] ;;; symbol-value 
+    [movl (disp -3 %edi) %eax]
+    [movl %eax (disp 26 (obj car))]
+    [movl -4 %eax]
+    [jmp (disp 26 (obj car))]))
+
+(asm-test 1
+  '([movl (obj (1 2)) (disp -4 %esp)]
+    [movl (obj car) %eax]
+    [movl (disp 14 %eax) %eax] ;;; symbol-value 
+    [movl (disp -3 %eax) %eax]
+    [movl %eax (disp 26 (obj car))]
+    [movl -4 %eax]
+    [jmp (disp 26 (obj car))]))
+
+
+(asm-test 1
+  '([movl (obj (1 2)) (disp -4 %esp)]
+    [movl -4 %eax]
+    [jmp (disp 26 (obj car))]))
+
+(asm-test 1
+  '([movl (obj (1 2)) (disp -8 %esp)]
+    [movl -4 %eax]
+    [call (disp 26 (obj car))]
+    [ret]))
 
 (printf "Happy Happy Joy Joy\n")
 (exit)

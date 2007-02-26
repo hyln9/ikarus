@@ -1,14 +1,4 @@
 
-
-(primitive-set! '$reset-symbol-function!
-  (lambda (x)
-    (let ([v ($symbol-value x)])
-      (if (procedure? v)
-          ($set-symbol-function! x v)
-          ($set-symbol-function! x 
-            (lambda args
-              (error 'apply "~s is not a procedure" v)))))))
-
 (primitive-set! 'make-parameter
   (case-lambda
     [(x) 

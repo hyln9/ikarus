@@ -50,7 +50,9 @@ ik_make_symbol(ikp str, ikp ustr, ikpcb* pcb){
   ref(sym, off_symbol_value)   = unbound_object;
   ref(sym, off_symbol_plist)   = null_object;
   ref(sym, off_symbol_system_value) = str;
-  ref(sym, off_symbol_system_plist) = null_object;
+  ref(sym, off_symbol_code) = 0;
+  ref(sym, off_symbol_errcode) = 0;
+  ref(sym, off_symbol_unused) = 0;
   return sym;
 }
 

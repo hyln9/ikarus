@@ -1375,6 +1375,7 @@
   (define (mk-seq e0 e1)  ;;; keep e1 seq-free.
     (cond
       [(and (primcall? e0) (eq? (primcall-op e0) 'void)) e1]
+      [(primref? e0) e1]
       [(seq? e1)
        (make-seq (make-seq e0 (seq-e0 e1)) (seq-e1 e1))]
       [else
@@ -1702,57 +1703,6 @@
   (Expr x))
 
 
-(define (insert-funcall-error-checks x)
-  (define who 'insert-funcall-error-checks)
-  (define called-symbols '())
-  (define (R x)
-    (record-case x
-      [(constant p) 
-       (if (procedure? p)
-           x
-           (make-primcall '$procedure-check (list x)))]
-      [(primref)  x]
-      [(clambda g cls* ?) (E x)]
-      [else (make-primcall '$procedure-check (list (E x)))]))
-  (define (E x)
-    (record-case x
-      [(constant) x]
-      [(var)      x]
-      [(primref)  x]
-      [(bind lhs* rhs* body)
-       (make-bind lhs* (map E rhs*) (E body))]
-      [(fix lhs* rhs* body)
-       (make-fix lhs* (map E rhs*) (E body))]
-      [(conditional test conseq altern)
-       (make-conditional (E test) (E conseq) (E altern))]
-      [(seq e0 e1) (make-seq (E e0) (E e1))]
-      [(clambda g cls* ?) 
-       (make-clambda g
-         (map (lambda (cls)
-                (record-case cls
-                  [(clambda-case info body)
-                   (make-clambda-case info (E body))]))
-              cls*)
-         ?)]
-      [(primcall op rand*)
-       (make-primcall op (map E rand*))]
-      [(forcall op rand*)
-       (make-forcall op (map E rand*))]
-      [(funcall rator rand*)
-       (make-funcall (R rator) (map E rand*))]
-      [(jmpcall label rator rand*)
-       (make-jmpcall label (E rator) (map E rand*))]
-      [(mvcall p c) (make-mvcall (E p) (E c))]
-      [else (error who "invalid expression ~s" (unparse x))]))
-  (let ([x (E x)])
-    (if (null? called-symbols)
-        x
-        (make-seq
-          (make-funcall
-            (make-primref 'for-each)
-            (list (make-primref '$reset-symbol-function!)
-                  (make-constant called-symbols)))
-          x))))
  
 
 (define (convert-closures prog)
@@ -3094,13 +3044,15 @@
   
   (define symbol-mask 7)
   (define symbol-tag 2)
-  (define disp-symbol-string         0)
-  (define disp-symbol-unique-string  4)
-  (define disp-symbol-value          8)
-  (define disp-symbol-plist         12)
-  (define disp-symbol-system-value  16)
-  (define disp-symbol-function      20)
-  (define symbol-size 24)
+  (define disp-symbol-string          0)
+  (define disp-symbol-unique-string   4)
+  (define disp-symbol-value           8)
+  (define disp-symbol-plist          12)
+  (define disp-symbol-system-value   16)
+  (define disp-symbol-function       20)
+  (define disp-symbol-error-function 24)
+  (define disp-symbol-unused         28)
+  (define symbol-size                32)
   (define vector-tag 5)
   (define vector-mask 7)
   (define disp-vector-length 0)
@@ -3995,7 +3947,9 @@
               (movl (int unbound) (mem disp-symbol-value apr))
               (movl (int nil) (mem disp-symbol-plist apr))
               (movl (int unbound) (mem disp-symbol-system-value apr))
-              (movl (int nil) (mem disp-symbol-function apr))
+              (movl (int 0) (mem disp-symbol-function apr))
+              (movl (int 0) (mem disp-symbol-error-function apr))
+              (movl (int 0) (mem disp-symbol-unused apr))
               (movl apr eax)
               (addl (int symbol-tag) eax)
               (addl (int (align symbol-size)) apr)
@@ -4118,7 +4072,7 @@
         (list* (addl (int (fx- vector-tag disp-code-data)) eax)
                ac))]
      [($set-car! $set-cdr! $vector-set! $string-set! $exit
-       $set-symbol-value! $set-symbol-function! $set-symbol-plist! 
+       $set-symbol-value! $set-symbol-plist! 
        $code-set!  primitive-set! 
        $set-code-object! $set-code-object+offset! $set-code-object+offset/rel!
        $record-set!
@@ -4275,19 +4229,10 @@
        (list* (movl (Simple (car arg*)) eax)
               (movl (Simple (cadr arg*)) ebx)
               (movl ebx (mem (fx- disp-symbol-value symbol-tag) eax))
-               ;;; record side effect
-               (addl (int (fx- disp-symbol-value symbol-tag)) eax)
-               (shrl (int pageshift) eax)
-               (sall (int wordshift) eax)
-               (addl (pcb-ref 'dirty-vector) eax)
-               (movl (int dirty-word) (mem 0 eax))
-              ac)]
-      [($set-symbol-function!) 
-       (list* (movl (Simple (car arg*)) eax)
-              (movl (Simple (cadr arg*)) ebx)
+              (movl (mem (fx- disp-symbol-error-function symbol-tag) eax) ebx)
               (movl ebx (mem (fx- disp-symbol-function symbol-tag) eax))
                ;;; record side effect
-               (addl (int (fx- disp-symbol-function symbol-tag)) eax)
+               (addl (int (fx- disp-symbol-value symbol-tag)) eax)
                (shrl (int pageshift) eax)
                (sall (int wordshift) eax)
                (addl (pcb-ref 'dirty-vector) eax)
@@ -5233,7 +5178,6 @@
          [p (copy-propagate p)]
          [p (rewrite-assignments p)]
          [p (optimize-for-direct-jumps p)]
-         [p (insert-funcall-error-checks p)]
          [p (convert-closures p)]
          [p (optimize-closures/lift-codes p)])
     (let ([ls* (alt-cogen p)])
