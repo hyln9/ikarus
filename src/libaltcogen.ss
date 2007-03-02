@@ -195,13 +195,16 @@
       [vector            vt]
       [$make-vector      vt]
       [$vector-length    vt]
+      [vector-length     vt]
       [$vector-ref       v]
       [vector-ref        v]
+      [vector-set!       e]
       [$vector-set!      e]
 
       [$make-string      vt]
       [$string-length    vt]
       [$string-ref       vt]
+      [string-ref        vt]
       [$string-set!      e]
 
       [$make-symbol               vt]
@@ -666,13 +669,117 @@
 
 
 
+(define (remove-complex-operands x)
+  (define who 'remove-complex-operands)
+  (define (mkbind lhs* rhs* body)
+    (if (null? lhs*) body (make-bind lhs* rhs* body)))
+  (define (simplify* arg* op)
+    (define (partition arg*)
+      (if (null? arg*)
+          (values '() '() '())
+          (let ([a (car arg*)])
+            (let-values ([(lhs* rhs* arg*) (partition (cdr arg*))])
+              (record-case a
+                [(constant) (values lhs* rhs* (cons a arg*))]
+                [(var)      (values lhs* rhs* (cons a arg*))]
+                [(code-loc) (values lhs* rhs* (cons a arg*))]
+                [(closure)  (values lhs* rhs* (cons a arg*))]
+                [else 
+                 (let ([t (unique-var 'tmp)])
+                   (values (cons t lhs*)
+                           (cons a rhs*)
+                           (cons t arg*)))])))))
+    (let ([arg* (map V arg*)])
+      (let-values ([(lhs* rhs* arg*) (partition arg*)])
+        (mkbind lhs* rhs* (make-primcall op arg*)))))
+  (define (E x)
+    (record-case x
+      [(bind lhs* rhs* body)
+       (mkbind lhs* (map V rhs*) (E body))]
+      [(fix lhs* rhs* body) 
+       (make-fix lhs* rhs* (E body))]
+      [(conditional e0 e1 e2) 
+       (make-conditional (P e0) (E e1) (E e2))]
+      [(seq e0 e1)
+       (make-seq (E e0) (E e1))]
+      [(primcall op arg*) (simplify* arg* op)]
+      [(forcall op arg*)
+       (make-forcall op (map V arg*))]
+      [(funcall rator arg*)
+       (make-funcall (V rator) (map V arg*))]
+      [(jmpcall label rator arg*)
+       (make-jmpcall label (V rator) (map V arg*))]
+      [else (error who "invalid effect expr ~s" x)]))  
+  (define (P x)
+    (record-case x
+      [(constant) x]
+      [(bind lhs* rhs* body)
+       (mkbind lhs* (map V rhs*) (P body))]
+      [(fix lhs* rhs* body) 
+       (make-fix lhs* rhs* (P body))]
+      [(conditional e0 e1 e2) 
+       (make-conditional (P e0) (P e1) (P e2))]
+      [(seq e0 e1)
+       (make-seq (E e0) (P e1))]
+      [(primcall op arg*) (simplify* arg* op)]
+      [else (error who "invalid pred expr ~s" x)])) 
+  (define (V x)
+    (record-case x
+      [(constant) x]
+      [(var)      x]
+      [(primref name) x] 
+      [(code-loc) x]
+      [(closure)  x]
+      [(bind lhs* rhs* body)
+       (mkbind lhs* (map V rhs*) (V body))]
+      [(fix lhs* rhs* body) 
+       (make-fix lhs* rhs* (V body))]
+      [(conditional e0 e1 e2) 
+       (make-conditional (P e0) (V e1) (V e2))]
+      [(seq e0 e1)
+       (make-seq (E e0) (V e1))]
+      [(primcall op arg*) (simplify* arg* op)]
+      [(forcall op arg*)
+       (make-forcall op (map V arg*))]
+      [(funcall rator arg*)
+       (make-funcall (V rator) (map V arg*))]
+      [(jmpcall label rator arg*)
+       (make-jmpcall label (V rator) (map V arg*))]
+      [else (error who "invalid value expr ~s" x)])) 
+  (define (ClambdaCase x)
+    (record-case x
+      [(clambda-case info body)
+       (make-clambda-case info (V body))]
+      [else (error who "invalid clambda-case ~s" x)]))
+  ;;;
+  (define (Clambda x)
+    (record-case x
+      [(clambda label case* free*)
+       (make-clambda label 
+          (map ClambdaCase case*)
+          free*)]
+      [else (error who "invalid clambda ~s" x)]))
+  ;;;
+  (define (Program x)
+    (record-case x 
+      [(codes code* body)
+       (make-codes 
+         (map Clambda code*)
+         (V body))]
+      [else (error who "invalid program ~s" x)]))
+  (Program x))
+
+
 (define-syntax seq*
   (syntax-rules ()
     [(_ e) e]
     [(_ e* ... e) 
      (make-seq (seq* e* ...) e)]))
 
-(define (specify-representation x)
+
+(include "pass-specify-rep.ss")
+
+#;(define (specify-representation x)
   (define who 'specify-representation)
   ;;;
   (define fixnum-scale 4)
@@ -683,6 +790,7 @@
   ;;;
   (define nop (make-primcall 'nop '()))
   ;;;
+  (import primops)
   (define (handle-fix lhs* rhs* body)
     (define (closure-size x)
       (record-case x
@@ -804,6 +912,13 @@
           (make-seq 
             (prm 'mset t (K 0) q)
             (dirty-vector-set t)))))
+    (define (smart-mem-assign what v x i)
+      (record-case what
+        [(constant t) 
+         (if (or (fixnum? t) (immediate? t))
+             (prm 'mset x (K i) v)
+             (mem-assign v x i))]
+        [else (mem-assign v x i)]))
     (record-case x
       [(bind lhs* rhs* body)
        (make-bind lhs* (map Value rhs*) (Effect body))]
@@ -857,6 +972,64 @@
                    (mem-assign v 
                       (prm 'int+ x i)
                       (- disp-vector-data vector-tag)))])))]
+         [(vector-set!)
+          (tbind ([a0 (Value (car arg*))]
+                  [val (Value (caddr arg*))])
+            (let ([a1 (cadr arg*)])
+              (record-case a1
+                [(constant i)
+                 (if (and (fixnum? i) (fx>= i 0))
+                     (make-shortcut
+                       (seq*
+                         (make-conditional
+                           (tag-test a0 vector-mask vector-tag)
+                           (prm 'nop)
+                           (prm 'interrupt))
+                         (tbind ([t (prm 'mref a0
+                                      (K (- disp-vector-length vector-tag)))])
+                           (seq* 
+                              (make-conditional
+                                (prm '< (K (* i fixnum-scale)) t)
+                                (prm 'nop)
+                                (prm 'interrupt))
+                              (make-conditional
+                                (tag-test t fixnum-mask fixnum-tag)
+                                (prm 'nop)
+                                (prm 'interrupt))
+                              (smart-mem-assign (caddr arg*) val a0 
+                                (+ (* i wordsize)
+                                   (- disp-vector-data vector-tag))))))
+                       (Effect
+                         (make-funcall (make-primref 'vector-set!)
+                           (list a0 (Value a1) val))))
+                     (Effect 
+                       (make-funcall (make-primref 'vector-set!)
+                         (list a0 (Value a1) val))))]
+                [else
+                 (tbind ([a1 (Value a1)])
+                   (make-shortcut
+                      (seq*
+                        (make-conditional
+                          (tag-test a0 vector-mask vector-tag)
+                          (prm 'nop)
+                          (prm 'interrupt))
+                        (tbind ([t (prm 'mref a0
+                                       (K (- disp-vector-length vector-tag)))])
+                          (seq* 
+                             (make-conditional
+                               (prm 'u< a1 t)
+                               (prm 'nop)
+                               (prm 'interrupt))
+                             (make-conditional
+                               (tag-test (prm 'logor t a1) fixnum-mask fixnum-tag)
+                               (prm 'nop)
+                               (prm 'interrupt))
+                             (mem-assign val 
+                               (prm 'int+ a0 a1)
+                               (- disp-vector-data vector-tag)))))
+                      (Effect
+                        (make-funcall (make-primref 'vector-set!)
+                          (list a0 a1 val)))))])))] 
          [($set-car! $set-cdr!)
           (let ([off (if (eq? op '$set-car!) 
                          (- disp-car pair-tag)
@@ -972,7 +1145,10 @@
                    [($set-tcbucket-val!)   disp-tcbucket-val]
                    [else (err 'tcbucket!)])
                  vector-tag)))]
-         [else (error who "invalid effect prim ~s" op)])]
+         [else
+          (if (primop? op)
+              (cogen-primop op 'E arg*)
+              (error who "invalid effect prim ~s" op))])]
       [(forcall op arg*)
        (make-forcall op (map Value arg*))]
       [(funcall rator arg*)
@@ -1468,6 +1644,57 @@
                           (K (* (- wordsize 1) 8)))
                        (K char-shift))
                      (K char-tag)))])))]
+         [(string-ref)
+          (tbind ([s (Value (car arg*))])
+            (let ([idx (cadr arg*)])
+              (record-case idx
+                [(constant i)
+                 (cond
+                   [(and (fixnum? i) (fx>= i 0))
+                    (make-shortcut
+                      (seq*
+                        (make-conditional
+                          (tag-test s string-mask string-tag)
+                          (prm 'nop)
+                          (prm 'interrupt))
+                        (tbind ([len 
+                                 (prm 'mref s
+                                    (K (- disp-string-length string-tag)))])
+                          (make-conditional
+                            (prm 'u< (K (* i fixnum-scale)) len)
+                            (prm 'nop)
+                            (prm 'interrupt)))
+                        (Value (prm '$string-ref s idx)))
+                      (Value
+                        (make-funcall (make-primref 'string-ref) 
+                          (list s idx))))]
+                   [else 
+                    (Value 
+                      (make-funcall (make-primref 'string-ref) 
+                        (list s idx)))])]
+                [else
+                 (tbind ([i (Value idx)])
+                   (make-shortcut
+                     (seq*
+                       (make-conditional
+                         (tag-test i fixnum-mask fixnum-tag)
+                         (prm 'nop)
+                         (prm 'interrupt)) 
+                       (make-conditional
+                         (tag-test s string-mask string-tag)
+                         (prm 'nop)
+                         (prm 'interrupt))
+                       (tbind ([len 
+                                (prm 'mref s
+                                   (K (- disp-string-length string-tag)))])
+                         (make-conditional
+                           (prm 'u< i len)
+                           (prm 'nop)
+                           (prm 'interrupt)))
+                       (Value (prm '$string-ref s i)))
+                     (Value
+                       (make-funcall (make-primref 'string-ref) 
+                         (list s i)))))])))]
          [($make-string)
           (unless (= (length arg*) 1) (err x))
           (let ([n (car arg*)])
@@ -1827,54 +2054,6 @@
                (tbind ([a0 (Value a0)] [a1 (Value a1)])
                  (prm 'mref (prm 'int+ a0 a1)
                     (K (- disp-vector-data vector-tag))))]))]
-         [(vector-ref)
-          (tbind ([a0 (Value (car arg*))])
-            (let ([a1 (cadr arg*)])
-              (define (do-err who str . args)
-                (make-funcall 
-                  (Value (make-primref 'error))
-                  (list* (Value (K who))
-                         (Value (K str))
-                         args)))
-              (define (vector-range-check/fixnum x i)
-                (make-conditional 
-                  (tag-test x vector-mask vector-tag)
-                  (tbind ([sec (prm 'mref x (K (- vector-tag)))])
-                    (make-conditional
-                      (tag-test sec fixnum-mask fixnum-tag)
-                      (prm '< (K (* i fixnum-scale)) sec)
-                      (make-constant #f)))
-                  (make-constant #f)))
-              (define (vector-range-check/var x i)
-                (make-conditional 
-                  (tag-test x vector-mask vector-tag)
-                  (tbind ([sec (prm 'mref x (K (- vector-tag)))])
-                    (make-conditional
-                      (tag-test (prm 'logor sec i) fixnum-mask fixnum-tag)
-                      (prm 'u< i sec)
-                      (make-constant #f)))
-                  (make-constant #f)))
-              (record-case a1
-                [(constant i) 
-                 (if (and (fixnum? i) (>= i 0))
-                     (make-conditional
-                       (vector-range-check/fixnum a0 i)
-                       (prm 'mref a0 
-                         (K (+ (- disp-vector-data vector-tag)
-                               (* i wordsize))))
-                       (do-err 'vector-ref "~s is not a valid index for ~s"
-                               (Value a1) a0))
-                     (do-err 'vector-ref "~s is not a valid index for ~s"
-                             (Value a1) a0))]
-                                
-                [else 
-                 (tbind ([a0 (Value a0)] [a1 (Value a1)])
-                   (make-conditional
-                     (vector-range-check/var a0 a1)
-                     (prm 'mref (prm 'int+ a0 a1)
-                         (K (- disp-vector-data vector-tag)))
-                     (do-err 'vector-ref "~s is not a valid index for ~s"
-                             a1 a0)))])))]
          [($closure-code)
           (tbind ([x (Value (car arg*))])
             (prm 'int+ 
@@ -2060,7 +2239,10 @@
                   (list (make-constant 'apply)
                         (make-constant "~s is not a procedure")
                         x)))))]
-         [else (error who "value prim ~a not supported" (unparse x))])]
+         [else
+          (if (primop? op)
+              (cogen-primop op 'V arg*)
+              (error who "invalid value prim ~s" op))])]
       [(forcall op arg*)
        (make-forcall op (map Value arg*))]
       [(funcall rator arg*)
@@ -3455,7 +3637,7 @@
                             (add-edge! g edx y))
                           s))
               (union (union (R eax) (R edx))
-                     (union (R d) s)))]
+                     (union (R v) s)))]
            [(mset)
             (union (R v) (union (R d) s))]
            [else (error who "invalid effect ~s" x)])]
@@ -3506,6 +3688,7 @@
         [else (error who "invalid tail ~s" (unparse x))]))
     (define exception-live-set (make-parameter #f))
     (let ([s (T x)])
+      ;(pretty-print (unparse x))
       ;(print-graph g)
       g))
   ;;;
@@ -4094,19 +4277,19 @@
          (define (notop x)
            (cond
              [(assq x '([= !=] [!= =] [< >=] [<= >] [> <=] [>= <]
-                        [u< u>=]))
+                        [u< u>=] [u<= u>] [u> u<=] [u>= u<]))
               => cadr]
              [else (error who "invalid op ~s" x)]))
          (define (jmpname x)
            (cond
              [(assq x '([= je] [!= jne] [< jl] [<= jle] [> jg] [>= jge]
-                        [u< jb]))
+                        [u< jb] [u<= jbe] [u> ja] [u>= jae]))
               => cadr]
              [else (error who "invalid jmpname ~s" x)]))
          (define (revjmpname x)
            (cond
              [(assq x '([= je] [!= jne] [< jg] [<= jge] [> jl] [>= jle]
-                        [u< ja]))
+                        [u< ja] [u<= jae] [u> jb] [u>= jbe]))
               => cadr]
              [else (error who "invalid jmpname ~s" x)]))
          (define (cmp op a0 a1 lab ac)
@@ -4291,6 +4474,7 @@
          ;[foo (printf "2")]
          [x (normalize-context x)]
          ;[foo (printf "3")]
+         [x (remove-complex-operands x)]
          [x (specify-representation x)]
          ;[foo (printf "4")]
          [x (impose-calling-convention/evaluation-order x)]

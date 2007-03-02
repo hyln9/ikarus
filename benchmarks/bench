@@ -77,6 +77,10 @@ setup ()
         APPS="/opt/bin"
         LARCENY="/Users/aghuloum/.opt/larceny-0.93-bin-native-ia32-macosx/larceny"
         PETITE_CHEZ="/usr/bin/petite"
+        CHICKEN="/Users/ikarus/.opt/bin/csc"
+        CHICKEN_INIT="/Users/ikarus/.opt/bin/csi"
+        GSI="/Users/ikarus/.opt/4.0b20/bin/gsi"
+        GSC="/Users/ikarus/.opt/4.0b20/bin/gsc"
         ;;
   esac
 

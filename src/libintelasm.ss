@@ -317,7 +317,6 @@
       [(and (int? i2) (obj? i1)) (IMM32*2 i2 i1 ac)]
       [else (error 'assemble "IMM32*2 ~s ~s" i1 i2)])))
 
-
 (define CODErd
   (lambda (c r1 disp ac)
     (with-args disp
@@ -376,22 +375,6 @@
                (CODE c (ModRM 1 /d '/4 (SIB 0 a0 a1 (IMM8 0 ac))))]
               [else (error 'CODE/digit "unhandled ~s ~s" a0 a1)])))]
       [else (error 'CODE/digit "unhandled ~s" dst)])))
-
-;              01 /r      ADD r/m32, r32        Valid Add r32 to r/m32.
-;;;(define (CODE/r c /r)
-;;;  (lambda (dst ac)
-;;;    (cond
-;;;      [(mem? dst) 
-;;;       (with-args dst
-;;;          (lambda (a0 a1)
-;;;            (cond
-;;;              [(and (imm8? a0) (reg? a1))
-;;;               (CODE c (ModRM 1 /r a1 (IMM8 a0 ac)))]
-;;;              [else (error 'CODE/r "unhandled ~s ~s" a0 a1)])))]
-;;;      [else (error 'CODE/r "unhandled ~s" dst)])))
-
-
-
 
 
 (define CODEid
@@ -633,8 +616,10 @@
       [(and (mem? src) (reg? dst))
        (CODErd #x3B dst src ac)]
       [(and (imm8? src) (mem? dst))
+       ;;; maybe error 
        (CODErd #x83 '/7 dst (IMM8 src ac))]
       [(and (imm? src) (mem? dst))
+       ;;; maybe error 
        (CODErd #x81 '/7 dst (IMM32 src ac))]
       [else (error who "invalid ~s" instr)])]
    [(imull src dst)
@@ -653,6 +638,7 @@
       [(reg? dst)
        (CODErr #xF7 '/7 dst ac)]
       [(mem? dst)
+       ;;; maybe error 
        (CODErd #xF7 '/7 dst ac)]
       [else (error who "invalid ~s" instr)])]
    [(pushl dst)
@@ -664,6 +650,7 @@
       [(reg? dst)
        (CODE+r #x50 dst ac)]
       [(mem? dst)
+       ;;; maybe error 
        (CODErd #xFF '/6 dst ac)]
       [else (error who "invalid ~s" instr)])] 
    [(popl dst)
@@ -671,6 +658,7 @@
       [(reg? dst)
        (CODE+r #x58 dst ac)]
       [(mem? dst)
+       ;;; maybe error 
        (CODErd #x8F '/0 dst ac)]
       [else (error who "invalid ~s" instr)])] 
    [(notl dst)
@@ -678,6 +666,7 @@
       [(reg? dst)
        (CODE #xF7 (ModRM 3 '/2 dst ac))]
       [(mem? dst)
+       ;;; maybe error 
        (CODErd #xF7 '/7 dst ac)]
       [else (error who "invalid ~s" instr)])]
    [(negl dst)
@@ -692,6 +681,7 @@
       [(imm? dst) 
        (CODE #xE9 (IMM32 dst ac))]
       [(mem? dst)
+       ;;; maybe error 
        (CODErd #xFF '/4 dst ac)]
       [else (error who "invalid jmp target ~s" dst)])]
    [(call dst)
@@ -701,6 +691,7 @@
       [(label? dst)
        (CODE #xE8 (cons (cons 'relative (label-name dst)) ac))]
       [(mem? dst)
+       ;;; maybe error 
        (CODErd #xFF '/2 dst ac)]
       [(reg? dst)
        (CODE #xFF (ModRM 3 '/2 dst ac))]
