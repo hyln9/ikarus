@@ -196,6 +196,10 @@ ik_mmap(int size){
     exit(-1);
   }
   memset(mem, -1, mapsize);
+#ifndef NDEBUG
+  fprintf(stderr, "MMAP 0x%08x .. 0x%08x\n", (int)mem,
+      ((int)(mem))+mapsize-1);
+#endif
   return mem;
 }
 
@@ -211,6 +215,10 @@ ik_munmap(void* mem, int size){
     fprintf(stderr, "ik_munmap failed: %s\n", strerror(errno));
     exit(-1);
   }
+#ifndef NDEBUG
+  fprintf(stderr, "UNMAP 0x%08x .. 0x%08x\n", (int)mem,
+      ((int)(mem))+mapsize-1);
+#endif
 }
 
 int total_malloced = 0;
