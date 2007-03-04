@@ -1,7 +1,5 @@
 
 (let ()
-  (define (flonum? x)
-    (foreign-call "ikrt_is_flonum" x))
   (define (flonum->string x)
     (or (foreign-call "ikrt_flonum_to_string" x)
         (error 'flonum->string "~s is not a flonum" x)))
@@ -11,7 +9,8 @@
       [else 
        (error 'string->flonum "~s is not a string" x)]))
 
-  (primitive-set! 'flonum? flonum?)
+  (primitive-set! 'flonum? 
+    (lambda (x) (flonum? x)))
   (primitive-set! 'flonum->string flonum->string)
   (primitive-set! 'string->flonum string->flonum)
 )
@@ -819,5 +818,5 @@
   (primitive-set! 'integer? integer?)
   (primitive-set! 'exact->inexact exact->inexact)
   (primitive-set! 'modulo modulo)
-
+  (primitive-set! 'bignum? bignum?)
   )

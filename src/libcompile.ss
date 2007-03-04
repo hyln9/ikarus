@@ -56,6 +56,8 @@
     [$pcb-set!          2   effect]
     ;;; type predicates
     [fixnum?            1   pred]
+    [bignum?            1   pred]
+    [flonum?            1   pred]
     [immediate?         1   pred]
     [boolean?           1   pred]
     [char?              1   pred]
@@ -2031,7 +2033,7 @@
     (and (fixnum? n) (fx<= 0 n) (fx<= n 127)))
   (define (valid-arg-types? op rand*)
     (case op
-      [(fixnum? immediate? boolean? char? vector? string? procedure?
+      [(fixnum? flonum? bignum? immediate? boolean? char? vector? string? procedure?
         null? pair? not cons eq? vector symbol? error eof-object eof-object? 
         void $unbound-object? $code? $forward-ptr? bwp-object?
         pointer-value top-level-value car cdr list* list $record
@@ -3037,6 +3039,18 @@
   (define disp-car  0)
   (define disp-cdr  4)
   (define pair-size 8)
+
+  (define flonum-tag    #x17)
+  (define flonum-size     16)
+  (define disp-flonum-data 8)
+
+  (define bignum-mask        #b111)
+  (define bignum-tag         #b011)
+  (define bignum-sign-mask  #b1000)
+  (define bignum-sign-shift   3)
+  (define bignum-length-shift 4) 
+  (define disp-bignum-data    4)
+
   (define pagesize 4096)
   (define pageshift 12)
   (define wordsize  4)
@@ -3348,6 +3362,12 @@
      [(port?)
       (indirect-type-pred 
         vector-mask vector-tag port-mask port-tag rand* Lt Lf ac)] 
+     [(bignum?)
+      (indirect-type-pred 
+        vector-mask vector-tag bignum-mask bignum-tag rand* Lt Lf ac)] 
+     [(flonum?)
+      (indirect-type-pred 
+        vector-mask vector-tag #f flonum-tag rand* Lt Lf ac)] 
      [($record/rtd?)
       (cond
         [Lf
@@ -4080,7 +4100,8 @@
        $set-port-output-index! $set-port-output-size!) 
       (do-effect-prim op arg*
         (cons (movl (int void-object) eax) ac))]
-     [(fixnum? immediate? $fxzero? boolean? char? pair? vector? string? symbol?
+     [(fixnum? bignum? flonum? immediate? $fxzero? boolean? char? pair? 
+       vector? string? symbol?
        procedure? null? not eof-object? $fx= $fx< $fx<= $fx> $fx>= eq?
        $char= $char< $char<= $char> $char>= $unbound-object? $code? 
        $record? $record/rtd? bwp-object? port? input-port? output-port?) 

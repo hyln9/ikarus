@@ -6,6 +6,7 @@
 #include <math.h>
 
 
+#if 0
 ikp 
 ikrt_is_flonum(ikp x){
   if(tagof(x) == vector_tag){
@@ -15,6 +16,7 @@ ikrt_is_flonum(ikp x){
   }
   return false_object;
 }
+#endif
 
 ikp
 ikrt_string_to_flonum(ikp x, ikpcb* pcb){
