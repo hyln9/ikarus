@@ -19,11 +19,11 @@
 
 (let ()
   
-  (define bignum? 
-    ; FIXME: temporary definition.  Compiler should be made aware
-    ; of numeric representation once it's stable enough.
-    (lambda (x)
-      (foreign-call "ikrt_isbignum" x)))
+  ;;; (define bignum? 
+  ;;;   ; FIXME: temporary definition.  Compiler should be made aware
+  ;;;   ; of numeric representation once it's stable enough.
+  ;;;   (lambda (x)
+  ;;;     (foreign-call "ikrt_isbignum" x)))
 
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))
@@ -818,5 +818,7 @@
   (primitive-set! 'integer? integer?)
   (primitive-set! 'exact->inexact exact->inexact)
   (primitive-set! 'modulo modulo)
-  (primitive-set! 'bignum? bignum?)
+  (primitive-set! 'bignum? 
+    (lambda (x) (bignum? x)))
+
   )

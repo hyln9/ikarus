@@ -34,7 +34,7 @@
 (define public-primitives
   '(
     
-    null? pair? char? fixnum? symbol? gensym? string? vector? list?
+    null? pair? char? fixnum? bignum? symbol? gensym? string? vector? list?
     boolean? procedure?  not eof-object eof-object? bwp-object?
     void fx= fx< fx<= fx> fx>= fxzero?  fx+ fx- fx* fxadd1 fxsub1
     fxquotient fxremainder fxmodulo fxsll fxsra fxlognot fxlogor

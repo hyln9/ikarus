@@ -65,6 +65,7 @@ verify_bignum(ikp x, char* caller){
 
 #define BN(x) verify_bignum(x,"BN")
 
+#if 0
 ikp 
 ikrt_isbignum(ikp x){
   if(tagof(x) == vector_tag){
@@ -75,6 +76,7 @@ ikrt_isbignum(ikp x){
   }
   return false_object;
 }
+#endif
 
 ikp
 ikrt_positive_bn(ikp x){
