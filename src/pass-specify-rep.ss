@@ -17,7 +17,7 @@
   (define fixnum-tag 0)
   (define fixnum-mask 3))
 
-(module (specify-representation)
+(module (specify-representation primop?)
   (import object-representation)
   (define cookie (gensym))
   (define (primop? x)
@@ -34,7 +34,8 @@
       [(not (PH-interruptable? p))
        (parameterize ([interrupt-handler 
                        (lambda ()
-                         (error 'cogen "~s is uninterruptable" x))])
+                         (error 'cogen "~s ~s is uninterruptable in ~s" 
+                                x args ctxt))])
           (k))]
       [else
        (let ([interrupted? #f])
@@ -44,14 +45,28 @@
                    (k))])
            (cond
              [(not interrupted?) body]
-             [(or (eq? ctxt 'V) (eq? ctxt 'E))
-              (make-shortcut body 
-                (make-funcall (V (K x)) args))]
+             [(eq? ctxt 'V)
+              (let ([h (make-funcall (V (make-primref x)) args)])
+                (if (record-case body
+                      [(primcall op) (eq? op 'interrupt)]
+                      [else #f])
+                     h
+                     (make-shortcut body h)))]
+             [(eq? ctxt 'E)
+              (let ([h (make-funcall (V (make-primref x)) args)])
+                (if (record-case body
+                      [(primcall op) (eq? op 'interrupt)]
+                      [else #f])
+                     h
+                     (make-shortcut body h)))]
              [(eq? ctxt 'P)
-              (make-shortcut body
-                (prm '!=
-                     (make-funcall (V (K x)) args) 
-                     (K bool-f)))]
+              (let ([h (prm '!= (make-funcall (V (make-primref x)) args)
+                            (K bool-f))])
+                (if (record-case body
+                      [(primcall op) (eq? op 'interrupt)]
+                      [else #f])
+                     h
+                     (make-shortcut body h)))]
              [else (error 'with-interrupt-handler "invalid context ~s" ctxt)])))]))
   (define-syntax with-tmp
     (lambda (x)
@@ -141,8 +156,7 @@
                        (with-tmp ([t (apply (PH-v-handler p) args)])
                          (prm 'nop))]
                       [else (error 'cogen-primop "~s is not handled" x)])]
-                   [else (error 'cogen-primop "invalid context ~s"
-                                ctxt)]))))))]
+                   [else (error 'cogen-primop "invalid context ~s" ctxt)]))))))]
       [else (error 'cogen-primop "~s is not a prim" x)]))
   
   (define-syntax define-primop
@@ -315,7 +329,10 @@
 
   (define (P x)
     (record-case x
-      [(constant) x]
+      [(constant c) (if c (K #t) (K #f))]
+      [(primref)  (K #t)]
+      [(code-loc) (K #t)]
+      [(closure)  (K #t)]
       [(bind lhs* rhs* body)
        (make-bind lhs* (map V rhs*) (P body))]
       [(conditional e0 e1 e2) 
@@ -326,10 +343,19 @@
        (handle-fix lhs* rhs* (P body))]
       [(primcall op arg*)
        (cogen-primop op 'P arg*)]
+      [(var)     (prm '!= (V x) (V (K #f)))]
+      [(funcall) (prm '!= (V x) (V (K #f)))]
+      [(jmpcall) (prm '!= (V x) (V (K #f)))]
+      [(forcall) (prm '!= (V x) (V (K #f)))]
       [else (error 'cogen-P "invalid pred expr ~s" x)])) 
   
   (define (E x)
     (record-case x
+      [(constant) (nop)]
+      [(var)      (nop)]
+      [(primref)  (nop)]
+      [(code-loc) (nop)]
+      [(closure)  (nop)]
       [(bind lhs* rhs* body)
        (make-bind lhs* (map V rhs*) (E body))]
       [(conditional e0 e1 e2) 
@@ -468,7 +494,8 @@
       [else (error 'specify-rep "invalid program ~s" x)]))
 
   (define (specify-representation x)
-    (Program x))
+    (let ([x (Program x)])
+      x))
 
 
 

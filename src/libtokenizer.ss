@@ -794,7 +794,6 @@
           (unless (eof-object? x)
             (eval x)
             (read-and-eval p eval)))))
-
     (primitive-set! 'load
       (case-lambda
         [(x) (load x eval)]

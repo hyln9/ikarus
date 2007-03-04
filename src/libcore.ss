@@ -317,18 +317,14 @@ reference-implementation:
            (and s #t)))))
 
 
-;;; OLD (primitive-set! 'top-level-value
-;;; OLD   (lambda (x)
-;;; OLD     (unless (symbol? x)
-;;; OLD       (error 'top-level-value "~s is not a symbol" x))
-;;; OLD     (let ([v ($symbol-value x)])
-;;; OLD       (when ($unbound-object? v)
-;;; OLD         (error 'top-level-value "unbound variable ~s" x))
-;;; OLD       v)))
-
 (primitive-set! 'top-level-value
   (lambda (x)
-    (top-level-value x)))
+    (unless (symbol? x)
+      (error 'top-level-value "~s is not a symbol" x))
+    (let ([v ($symbol-value x)])
+      (when ($unbound-object? v)
+        (error 'top-level-value "unbound variable ~s" x))
+      v)))
 
 (primitive-set! 'top-level-bound?
   (lambda (x)
@@ -1861,4 +1857,3 @@ reference-implementation:
        (convert-sign x ($string-length x))]
       [else (error 'string->number "~s is not a string" x)])))
 
-#!eof

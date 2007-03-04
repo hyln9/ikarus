@@ -240,6 +240,12 @@
          (cond
            [(flonum? y)
             (foreign-call "ikrt_fl_div" (fixnum->flonum x) y)]
+           [(fixnum? y) 
+            (let ([q (fxquotient x y)]
+                  [r (fxremainder x y)])
+              (if (fxzero? r)
+                  q
+                  (error '/ "no ratnum for ~s/~s" x y)))]
            [else (error '/ "unsupported ~s ~s" x y)])]
         [else (error '/ "unsupported ~s ~s" x y)])))
 
@@ -345,8 +351,13 @@
         [(flonum? x) #f]
         [else (error 'rational? "~s is not a number" x)])))
 
-  (define integer?
-    (lambda (x) (number? x)))
+  (define integer? 
+    (lambda (x) 
+      (cond
+        [(fixnum? x) #t]
+        [(bignum? x) #t]
+        [(flonum? x) (error 'integer "dunno for ~s" x)]
+        [else #f])))
 
   (define exact?
     (lambda (x) 
@@ -706,7 +717,12 @@
       (cond
         [(fixnum? x) (eq? x 0)]
         [(bignum? x) #f]
-        [else (error 'zero? "~s is not a number" x)])))
+        [(flonum? x) (= x (exact->inexact 0))]
+        [else (error 'zero? "tag=~s / ~s  is not a number" 
+                     (#%$fxlogand 255 
+                      (#%$fxsll x 2))
+                     (#%$fxlogand x -1)
+                     )])))
 
   (primitive-set! 'expt
     (lambda (n m)

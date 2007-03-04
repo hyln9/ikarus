@@ -10,6 +10,7 @@
 
 (define (simplex a m1 m2 m3)
  (define *epsilon* 1e-6)
+ ;(define *epsilon* 0.000001)
  (if (not (and (>= m1 0)
                (>= m2 0)
                (>= m3 0)

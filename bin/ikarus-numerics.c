@@ -708,12 +708,12 @@ ikrt_bnbnminus(ikp x, ikp y, ikpcb* pcb){
             ref(x, -vector_tag+disp_bignum_data+(xlimbs-1)*wordsize))){
           s1 = y; n1 = ylimbs;
           s2 = x; n2 = xlimbs;
-          result_sign = (1 << bignum_length_shift) - ysign;
+          result_sign = (1 << bignum_sign_shift) - ysign;
         }
       } else {
         s1 = y; n1 = ylimbs;
         s2 = x; n2 = xlimbs;
-        result_sign = (1 << bignum_length_shift) - ysign;
+        result_sign = (1 << bignum_sign_shift) - ysign;
       }
     }
     /* |s1| > |s2| */
