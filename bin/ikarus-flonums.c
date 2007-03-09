@@ -6,18 +6,6 @@
 #include <math.h>
 
 
-#if 0
-ikp 
-ikrt_is_flonum(ikp x){
-  if(tagof(x) == vector_tag){
-    if (ref(x, -vector_tag) == flonum_tag){
-      return true_object;
-    }
-  }
-  return false_object;
-}
-#endif
-
 ikp
 ikrt_string_to_flonum(ikp x, ikpcb* pcb){
   double v = strtod(string_data(x), NULL);
@@ -76,12 +64,70 @@ ikrt_fl_sin(ikp x, ikpcb* pcb){
 }
 
 ikp
+ikrt_fl_cos(ikp x, ikpcb* pcb){
+  ikp r = ik_alloc(pcb, flonum_size) + vector_tag;
+  ref(r, -vector_tag) = (ikp)flonum_tag;
+  flonum_data(r) = cos(flonum_data(x));
+  return r;
+}
+
+
+ikp
+ikrt_fl_sqrt(ikp x, ikpcb* pcb){
+  ikp r = ik_alloc(pcb, flonum_size) + vector_tag;
+  ref(r, -vector_tag) = (ikp)flonum_tag;
+  flonum_data(r) = sqrt(flonum_data(x));
+  return r;
+}
+
+
+
+
+ikp
+ikrt_fl_atan(ikp x, ikpcb* pcb){
+  ikp r = ik_alloc(pcb, flonum_size) + vector_tag;
+  ref(r, -vector_tag) = (ikp)flonum_tag;
+  flonum_data(r) = atan(flonum_data(x));
+  return r;
+}
+
+
+
+ikp
 ikrt_fx_sin(ikp x, ikpcb* pcb){
   ikp r = ik_alloc(pcb, flonum_size) + vector_tag;
   ref(r, -vector_tag) = (ikp)flonum_tag;
   flonum_data(r) = sin(unfix(x));
   return r;
 }
+
+ikp
+ikrt_fx_cos(ikp x, ikpcb* pcb){
+  ikp r = ik_alloc(pcb, flonum_size) + vector_tag;
+  ref(r, -vector_tag) = (ikp)flonum_tag;
+  flonum_data(r) = cos(unfix(x));
+  return r;
+}
+
+ikp
+ikrt_fx_sqrt(ikp x, ikpcb* pcb){
+  ikp r = ik_alloc(pcb, flonum_size) + vector_tag;
+  ref(r, -vector_tag) = (ikp)flonum_tag;
+  flonum_data(r) = sqrt(unfix(x));
+  return r;
+}
+
+
+
+ikp
+ikrt_fx_atan(ikp x, ikpcb* pcb){
+  ikp r = ik_alloc(pcb, flonum_size) + vector_tag;
+  ref(r, -vector_tag) = (ikp)flonum_tag;
+  flonum_data(r) = atan(unfix(x));
+  return r;
+}
+
+
 
 
 
@@ -124,8 +170,34 @@ ikrt_fixnum_to_flonum(ikp x, ikpcb* pcb){
 
 ikp
 ikrt_bignum_to_flonum(ikp x, ikpcb* pcb){
-  fprintf(stderr, "ERR in bignum_to_flonum\n");
-  exit(-1);
+  ikp r = ik_alloc(pcb, flonum_size) + vector_tag;
+  ref(r, -vector_tag) = (ikp)flonum_tag;
+  unsigned int fst = (unsigned int) ref(x, -vector_tag);
+  int limbs = (fst >> bignum_length_shift);
+  double fl;
+  if(limbs == 1){
+    fl = ((unsigned int)ref(x, disp_bignum_data - vector_tag));
+  } else if(limbs == 2){
+    fl = ((unsigned int)ref(x, wordsize+disp_bignum_data - vector_tag));
+    fl *= exp2(32);
+    fl += ((unsigned int)ref(x, disp_bignum_data - vector_tag));
+  } else {
+    fl = 
+      ((unsigned int)ref(x, limbs * wordsize - wordsize + 
+                            disp_bignum_data - vector_tag));
+    fl *= exp2(32);
+    fl += ((unsigned int)ref(x, limbs * wordsize - (wordsize*2) +
+                                disp_bignum_data - vector_tag));
+    fl *= exp2(32);
+    fl += ((unsigned int)ref(x, limbs * wordsize - (wordsize*3) +
+                                disp_bignum_data - vector_tag));
+    fl *= exp2(limbs*wordsize*8-wordsize*8*3);
+  }
+  if((fst & bignum_sign_mask) != 0){
+    fl = -fl;
+  }
+  flonum_data(r) = fl;
+  return r;
 }
 
 ikp

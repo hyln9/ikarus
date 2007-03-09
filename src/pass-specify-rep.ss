@@ -100,8 +100,10 @@
          (let-values ([(lhs* rhs* arg*) (S* (cdr ls))])
            (let ([a (car ls)])
              (cond
-               [(or (constant? a) (var? a)) 
+               [(constant? a) 
                 (values lhs* rhs* (cons a arg*))]
+               ;[(var? a)
+               ; (values lhs* rhs* (cons a arg*))]
                [else
                 (let ([t (unique-var 'tmp)])
                   (values (cons t lhs*) (cons (V a) rhs*) (cons t arg*)))])))]))
@@ -110,8 +112,11 @@
         [(null? lhs*) (k args)]
         [else
          (make-bind lhs* rhs* (k args))])))
-
   (define (cogen-primop x ctxt args)
+    (define (interrupt? x)
+      (record-case x
+        [(primcall x) (eq? x 'interrupt)]
+        [else #f]))
     (cond
       [(getprop x cookie) => 
        (lambda (p) 
@@ -125,36 +130,39 @@
                       [(PH-p-handled? p) 
                        (apply (PH-p-handler p) args)]
                       [(PH-v-handled? p)
-                       (prm '!= 
-                            (apply (PH-v-handler p) args) 
-                            (K bool-f))]
+                       (let ([e (apply (PH-v-handler p) args)])
+                         (if (interrupt? e) e (prm '!= e (K bool-f))))]
                       [(PH-e-handled? p)
-                       (make-seq (apply (PH-e-handler p) args) (K #t))]
+                       (let ([e (apply (PH-e-handler p) args)])
+                         (if (interrupt? e) e (make-seq e (K #t))))]
                       [else (error 'cogen-primop "~s is not handled" x)])]
                    [(V) 
                     (cond
                       [(PH-v-handled? p) 
                        (apply (PH-v-handler p) args)]
                       [(PH-p-handled? p) 
-                       (make-conditional
-                         (apply (PH-p-handler p) args) 
-                         (K bool-t)
-                         (K bool-f))]
+                       (let ([e (apply (PH-p-handler p) args)])
+                         (if (interrupt? e)
+                             e 
+                             (make-conditional e (K bool-t) (K bool-f))))]
                       [(PH-e-handled? p)
-                       (make-seq (apply (PH-e-handler p) args) (K void-object))]
+                       (let ([e (apply (PH-e-handler p) args)])
+                         (if (interrupt? e) e (make-seq e (K void-object))))]
                       [else (error 'cogen-primop "~s is not handled" x)])]
                    [(E) 
                     (cond
                       [(PH-e-handled? p) 
                        (apply (PH-e-handler p) args)]
                       [(PH-p-handled? p) 
-                       (make-conditional
-                         (apply (PH-p-handler p) args) 
-                         (prm 'nop)
-                         (prm 'nop))]
+                       (let ([e (apply (PH-p-handler p) args)])
+                         (if (interrupt? e)
+                             e 
+                             (make-conditional e (prm 'nop) (prm 'nop))))]
                       [(PH-v-handled? p)
-                       (with-tmp ([t (apply (PH-v-handler p) args)])
-                         (prm 'nop))]
+                       (let ([e (apply (PH-v-handler p) args)])
+                         (if (interrupt? e)
+                             e
+                             (with-tmp ([t e]) (prm 'nop))))]
                       [else (error 'cogen-primop "~s is not handled" x)])]
                    [else (error 'cogen-primop "invalid context ~s" ctxt)]))))))]
       [else (error 'cogen-primop "~s is not a prim" x)]))

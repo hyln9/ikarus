@@ -17,7 +17,7 @@
 
 (define macros
   '(|#primitive| lambda case-lambda set! quote begin define if letrec
-    foreign-call ;$apply
+    foreign-call 
     quasiquote unquote unquote-splicing
     define-syntax identifier-syntax let-syntax letrec-syntax
     fluid-let-syntax alias meta eval-when with-implicit with-syntax
@@ -34,7 +34,7 @@
 (define public-primitives
   '(
     
-    null? pair? char? fixnum? bignum? symbol? gensym? string? vector? list?
+    null? pair? char? fixnum? symbol? gensym? string? vector? list?
     boolean? procedure?  not eof-object eof-object? bwp-object?
     void fx= fx< fx<= fx> fx>= fxzero?  fx+ fx- fx* fxadd1 fxsub1
     fxquotient fxremainder fxmodulo fxsll fxsra fxlognot fxlogor
@@ -104,7 +104,6 @@
 
 (define system-primitives
   '(
-
     $primitive-call/cc
     $closure-code immediate? $unbound-object? $forward-ptr?
     pointer-value primitive-ref primitive-set!  $fx= $fx< $fx<= $fx>
@@ -116,7 +115,7 @@
     $make-string $string-ref $string-set!  $string-length $string
     $symbol-string $symbol-unique-string $symbol-value
     $set-symbol-string! $set-symbol-unique-string!
-    $set-symbol-value! $set-symbol-function! $make-symbol $set-symbol-plist!
+    $set-symbol-value!  $make-symbol $set-symbol-plist!
     $symbol-plist $sc-put-cte $record? $record/rtd? $record-set!
     $record-ref $record-rtd $make-record $record $base-rtd $code?
     $code-reloc-vector $code-freevars $code-size $code-ref
@@ -227,30 +226,30 @@
 (whack-system-env #t)
 
 (define scheme-library-files
-  '(["libhandlers.ss"   "libhandlers.fasl"  p0 onepass]
-    ["libcontrol0.ss"   "libcontrol0.fasl"  p0 onepass]
-    ["libcontrol1.ss"   "libcontrol1.fasl"  p0 onepass]
-    ["libcollect.ss"    "libcollect.fasl"   p0 onepass]
-    ["librecord.ss"     "librecord.fasl"    p0 onepass]
-    ["libcxr.ss"        "libcxr.fasl"       p0 onepass]
-    ["libnumerics.ss"   "libnumerics.fasl"  p0 onepass]
-    ["libguardians.ss"  "libguardians.fasl" p0 onepass]
-    ["libcore.ss"       "libcore.fasl"      p0 onepass]
-    ["libchezio.ss"     "libchezio.fasl"    p0 onepass]
-    ["libhash.ss"       "libhash.fasl"      p0 onepass]
-    ["libwriter.ss"     "libwriter.fasl"    p0 onepass]
-    ["libtokenizer.ss"  "libtokenizer.fasl" p0 onepass]
-    ["libassembler.ss"  "libassembler.fasl" p0 onepass]
-    ["libintelasm.ss"   "libintelasm.fasl"  p0 onepass]
-    ["libfasl.ss"       "libfasl.fasl"      p0 onepass]
-    ["libtrace.ss"      "libtrace.fasl"     p0 onepass]
-    ["libcompile.ss"    "libcompile.fasl"   p1 onepass]
-    ["psyntax-7.1.ss"   "psyntax.fasl"      p0 onepass]
-    ["libpp.ss"         "libpp.fasl"        p0 onepass]
-    ["libcafe.ss"       "libcafe.fasl"      p0 onepass]
-    ["libposix.ss"      "libposix.fasl"     p0 onepass]
-    ["libtimers.ss"     "libtimers.fasl"    p0 onepass]
-    ["libtoplevel.ss"   "libtoplevel.fasl"  p0 onepass]
+  '(["libhandlers.ss"   "libhandlers.fasl"  p0 chaitin]
+    ["libcontrol0.ss"   "libcontrol0.fasl"  p0 chaitin] 
+    ["libcontrol1.ss"   "libcontrol1.fasl"  p0 chaitin]
+    ["libcollect.ss"    "libcollect.fasl"   p0 chaitin]
+    ["librecord.ss"     "librecord.fasl"    p0 chaitin]
+    ["libcxr.ss"        "libcxr.fasl"       p0 chaitin]
+    ["libnumerics.ss"   "libnumerics.fasl"  p0 chaitin]
+    ["libguardians.ss"  "libguardians.fasl" p0 chaitin]
+    ["libcore.ss"       "libcore.fasl"      p0 chaitin]
+    ["libchezio.ss"     "libchezio.fasl"    p0 chaitin]
+    ["libhash.ss"       "libhash.fasl"      p0 chaitin]
+    ["libwriter.ss"     "libwriter.fasl"    p0 chaitin]
+    ["libtokenizer.ss"  "libtokenizer.fasl" p0 chaitin]
+    ["libassembler.ss"  "libassembler.fasl" p0 chaitin]
+    ["libintelasm.ss"   "libintelasm.fasl"  p0 chaitin]
+    ["libfasl.ss"       "libfasl.fasl"      p0 chaitin]
+    ["libtrace.ss"      "libtrace.fasl"     p0 chaitin]
+    ["libcompile.ss"    "libcompile.fasl"   p1 chaitin]
+    ["psyntax-7.1.ss"   "psyntax.fasl"      p0 chaitin]
+    ["libpp.ss"         "libpp.fasl"        p0 chaitin]
+    ["libcafe.ss"       "libcafe.fasl"      p0 chaitin] 
+    ["libposix.ss"      "libposix.fasl"     p0 chaitin]
+    ["libtimers.ss"     "libtimers.fasl"    p0 chaitin] 
+    ["libtoplevel.ss"   "libtoplevel.fasl"  p0 chaitin]
     ))
 
 
@@ -281,22 +280,22 @@
 
 
 
-#;(let ()
-  (define (compile-all who)
-    (for-each
-      (lambda (x)
-        (when (eq? who (caddr x))
-          (compile-library (car x) (cadr x) (cadddr x))))
-      scheme-library-files))
-  (define (time x) x)
-  (fork
-    (lambda (pid) 
-      (time (compile-all 'p1))
-      (unless (fxzero? (waitpid pid))
-        (exit -1)))
-    (lambda ()
-      (time (compile-all 'p0))
-      (exit))))
+;(let ()
+;  (define (compile-all who)
+;    (for-each
+;      (lambda (x)
+;        (when (eq? who (caddr x))
+;          (compile-library (car x) (cadr x) (cadddr x))))
+;      scheme-library-files))
+;  (define (time x) x)
+;  (fork
+;    (lambda (pid) 
+;      (time (compile-all 'p1))
+;      (unless (fxzero? (waitpid pid))
+;        (exit -1)))
+;    (lambda ()
+;      (time (compile-all 'p0))
+;      (exit))))
 
 (for-each 
   (lambda (x)
@@ -323,6 +322,6 @@
   (format "cat ~a > ikarus.boot"
           (join " " (map cadr scheme-library-files))))
 
-(printf "Happy Happy Joy Joy\n")
+(printf "Happy Happy Joy Joy!\n")
 ;(#%compiler-giveup-tally)
 ; vim:syntax=scheme

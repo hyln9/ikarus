@@ -1,3 +1,10 @@
+
+(define-syntax section
+  (syntax-rules (/section)
+    [(section e* ... /section) (begin e* ...)]))
+
+(section ;;; helpers
+
 (define (prm op . arg*)
   (make-primcall op arg*))
 
@@ -21,7 +28,6 @@
   (seq*
     (interrupt-unless (tag-test x mask tag))
     (prm 'mref x (K (- disp tag)))))
-
 
 (define (dirty-vector-set address)
   (prm 'mset 
@@ -53,7 +59,6 @@
          (mem-assign v x i))]
     [else (mem-assign v x i)]))
 
-
 (define (align-code unknown-amt known-amt)
   (prm 'sll 
      (prm 'sra
@@ -61,11 +66,7 @@
                (K (+ known-amt (sub1 object-alignment))))
           (K align-shift))
      (K align-shift)))
-
-
-(define-syntax section
-  (syntax-rules (/section)
-    [(section e* ... /section) (begin e* ...)]))
+/section)
 
 (section ;;; simple objects section
 
@@ -659,7 +660,23 @@
 
 /section)
 
-(section ;;; numbers
+(section ;;; bignums
+
+(define-primop bignum? safe
+  [(P x) (sec-tag-test (T x) vector-mask vector-tag bignum-mask bignum-tag)]
+  [(E x) (nop)])
+
+/section)
+
+(section ;;; flonums
+
+(define-primop flonum? safe
+  [(P x) (sec-tag-test (T x) vector-mask vector-tag #f flonum-tag)]
+  [(E x) (nop)])
+
+/section)
+
+(section ;;; generic arithmetic
 
 (define (non-fixnum? x)
   (record-case x
@@ -1323,140 +1340,4 @@
 
 /section)
 
-#!eof
-
-
-
-         [($procedure-check)
-          (tbind ([x (Value (car arg*))])
-            (make-shortcut
-              (make-seq
-                (make-conditional 
-                  (tag-test x closure-mask closure-tag)
-                  (prm 'nop)
-                  (prm 'interrupt))
-                x)
-              (Value 
-                (make-funcall (make-primref 'error)
-                  (list (make-constant 'apply)
-                        (make-constant "~s is not a procedure")
-                        x)))))]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(include "libprimops.ss")
-
-(define (specify-representation x)
-  (define who 'specify-representation)
-  ;;;
-  (define fixnum-scale 4)
-  (define fixnum-shift 2)
-  (define fixnum-tag 0)
-  (define fixnum-mask 3)
-  (define pcb-dirty-vector-offset 28)
-  ;;;
-  (define nop (make-primcall 'nop '()))
-  ;;;
-  (define (Effect x)
-       ]
-      [(forcall op arg*)
-       (make-forcall op (map Value arg*))]
-      [(funcall rator arg*)
-       (make-funcall (Function rator) (map Value arg*))]
-      [(jmpcall label rator arg*)
-       (make-jmpcall label (Value rator) (map Value arg*))]
-      [(mvcall rator x)
-       (make-mvcall (Value rator) (Clambda x Effect))]
-      [else (error who "invalid effect expr ~s" x)]))
-  ;;;
-  ;;;
-  ;;;
-  ;;;
-  ;;; value
-  ;;;
-  (define (ClambdaCase x k)
-    (record-case x
-      [(clambda-case info body)
-       (make-clambda-case info (k body))]
-      [else (error who "invalid clambda-case ~s" x)]))
-  ;;;
-  (define (Clambda x k)
-    (record-case x
-      [(clambda label case* free*)
-       (make-clambda label 
-          (map (lambda (x) (ClambdaCase x k)) case*)
-          free*)]
-      [else (error who "invalid clambda ~s" x)]))
-  ;;;
-  (define (error-codes)
-    (define (code-list symbol)
-      (define L1 (gensym))
-      (define L2 (gensym))
-      `(0
-        [movl (disp ,(- disp-symbol-value symbol-tag) (obj ,symbol)) ,cp-register]
-        [andl ,closure-mask ,cp-register]
-        [cmpl ,closure-tag ,cp-register]
-        [jne (label ,L1)]
-        [movl (disp ,(- disp-symbol-value symbol-tag) (obj ,symbol)) ,cp-register]
-        [movl ,cp-register (disp ,(- disp-symbol-function symbol-tag) (obj ,symbol))]
-        [jmp (disp ,(- disp-closure-code closure-tag) ,cp-register)]
-        [label ,L1]
-        [movl (disp ,(- disp-symbol-value symbol-tag) (obj ,symbol)) %eax]
-        [cmpl ,unbound %eax]
-        [je (label ,L2)]
-        [movl (obj apply) (disp -4 %esp)]
-        [movl (obj "~s is not a procedure") (disp -8 %esp)]
-        [movl %eax (disp -12 %esp)]
-        [movl (obj error) ,cp-register]
-        [movl (disp ,(- disp-symbol-system-value symbol-tag)
-                    ,cp-register) ,cp-register]
-        [movl ,(argc-convention 3) %eax]
-        [jmp (disp ,(- disp-closure-code closure-tag) ,cp-register)]
-        [label ,L2]
-        [movl (obj ,symbol) (disp -4 %esp)]
-        [movl (obj top-level-value) ,cp-register]
-        [movl (disp ,(- disp-symbol-system-value symbol-tag)
-                    ,cp-register) ,cp-register]
-        [movl ,(argc-convention 1) %eax]
-        [jmp (disp ,(- disp-closure-code closure-tag) ,cp-register)]))
-    (let ([ls encountered-symbol-calls])
-      (let ([c* (map code-list ls)])
-        (let ([c* (list*->code* (lambda (x) #f) c*)])
-          (let ([p* (map (lambda (x) ($code->closure x)) c*)])
-            (let f ([ls ls] [p* p*])
-              (cond
-                [(null? ls) (prm 'nop)]
-                [else 
-                 (make-seq
-                   (tbind ([p (Value (K (car p*)))] [s (Value (K (car ls)))])
-                       (Effect (prm '$init-symbol-function! s p)))
-                   (f (cdr ls) (cdr p*)))])))))))
-  (define (Program x)
-    (record-case x 
-      [(codes code* body)
-       (let ([code* (map (lambda (x) (Clambda x Value)) code*)]
-             [body (Value body)])
-         (make-codes code*
-           (make-seq (error-codes) body)))]
-      [else (error who "invalid program ~s" x)]))
-  ;;;
-  ;(print-code x)
-  (Program x))
 

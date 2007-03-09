@@ -156,7 +156,7 @@ ikrt_fxbnplus(ikp x, ikp y, ikpcb* pcb){
       }
     }
     else {
-      fprintf(stderr, "this case 0x%08x\n", intx);
+      //fprintf(stderr, "this case 0x%08x\n", intx);
       /* positive fx + negative bn = smaller negative bn */
       ikp r = ik_alloc(pcb, align(disp_bignum_data+limb_count*wordsize));
       int borrow = mpn_sub_1((mp_limb_t*)(r+disp_bignum_data), 

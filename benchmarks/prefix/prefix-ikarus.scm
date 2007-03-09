@@ -1,7 +1,14 @@
 ;INSERTCODE
 ;------------------------------------------------------------------------------
 
-(current-eval alt-compile)
+;(define depth (make-parameter 0))
+;(current-eval 
+;  (lambda (x)
+;    (parameterize ([depth (+ (depth) 1)])
+;      (printf "[~s] compiling \n" (depth))
+;      (pretty-print x)
+;      (alt-compile x))))
+;(current-eval alt-compile)
 
 (define (run-bench name count ok? run)
   (let loop ((i 0) (result (list 'undefined)))

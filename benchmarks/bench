@@ -1204,10 +1204,10 @@ chicken-int) NAME='Chicken-int'
             SUFFIXCODE="; %s %s"
             case "$setting" in
               r5rs)
-                REPLCOMMANDS="(begin (load \"%s.scm\") (main))"
+                REPLCOMMANDS="(begin (time (load \"%s.scm\")) (main))"
                 ;;
               r6rs)
-                REPLCOMMANDS="(begin (import scheme) (load \"%s.scm\") (main))"
+                REPLCOMMANDS="(begin (import scheme) (time (load \"%s.scm\")) (main))"
                 ;;
             esac
             ;;

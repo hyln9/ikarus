@@ -19,12 +19,6 @@
 
 (let ()
   
-  ;;; (define bignum? 
-  ;;;   ; FIXME: temporary definition.  Compiler should be made aware
-  ;;;   ; of numeric representation once it's stable enough.
-  ;;;   (lambda (x)
-  ;;;     (foreign-call "ikrt_isbignum" x)))
-
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))
   (define (bignum->flonum x)
@@ -805,6 +799,27 @@
         [(flonum? x) (foreign-call "ikrt_fl_sin" x)]
         [(fixnum? x) (foreign-call "ikrt_fx_sin" x)]
         [else (error 'sin "unsupported ~s" x)])))
+
+  (primitive-set! 'cos
+    (lambda (x)
+      (cond
+        [(flonum? x) (foreign-call "ikrt_fl_cos" x)]
+        [(fixnum? x) (foreign-call "ikrt_fx_cos" x)]
+        [else (error 'cos "unsupported ~s" x)])))
+
+  (primitive-set! 'atan
+    (lambda (x)
+      (cond
+        [(flonum? x) (foreign-call "ikrt_fl_atan" x)]
+        [(fixnum? x) (foreign-call "ikrt_fx_atan" x)]
+        [else (error 'atan "unsupported ~s" x)])))
+
+  (primitive-set! 'sqrt
+    (lambda (x)
+      (cond
+        [(flonum? x) (foreign-call "ikrt_fl_sqrt" x)]
+        [(fixnum? x) (foreign-call "ikrt_fx_sqrt" x)]
+        [else (error 'sqrt "unsupported ~s" x)])))
 
   (primitive-set! 'even? even?)
   (primitive-set! 'odd? odd?)
