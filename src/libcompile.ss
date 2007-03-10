@@ -227,7 +227,7 @@
 (define-record var 
    (name assigned referenced 
          reg-conf frm-conf var-conf reg-move frm-move var-move
-         loc))
+         loc index))
 (define-record cp-var (idx))
 (define-record frame-var (idx))
 (define-record new-frame (base-idx size body))
@@ -284,7 +284,7 @@
         [else (error 'mkfvar "~s is not a fixnum" i)]))))
 
 (define (unique-var x)
-  (make-var (gensym x) #f #f #f #f #f #f #f #f #f))
+  (make-var (gensym x) #f #f #f #f #f #f #f #f #f #f))
 
 (define (recordize x)
   (define *cookie* (gensym))

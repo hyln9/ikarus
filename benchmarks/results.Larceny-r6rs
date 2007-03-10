@@ -5520,3 +5520,23 @@ Words allocated: 151779492
 Words reclaimed: 0
 Elapsed time...: 4582 ms (User: 3117 ms; System: 1461 ms)
 Elapsed GC time: 255 ms (CPU: 259 in 579 collections.)
+
+****************************
+Benchmarking Larceny-r6rs on Sat Mar 10 01:01:29 EST 2007 under Darwin adsl-70-239-90-255.dsl.bltnin.sbcglobal.net 8.8.3 Darwin Kernel Version 8.8.3: Wed Oct 18 21:57:10 PDT 2006; root:xnu-792.15.4.obj~4/RELEASE_I386 i386 i386
+
+Testing parsing under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 100923902
+Words reclaimed: 0
+Elapsed time...: 6575 ms (User: 6505 ms; System: 70 ms)
+Elapsed GC time: 276 ms (CPU: 293 in 385 collections.)
