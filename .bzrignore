@@ -4,3 +4,4 @@
 .gdb_history
 .vimview
 .DS_Store
+benchmarks/sys/*

@@ -8,7 +8,7 @@
 ;      (printf "[~s] compiling \n" (depth))
 ;      (pretty-print x)
 ;      (alt-compile x))))
-;(current-eval alt-compile)
+(current-eval alt-compile)
 
 (define (run-bench name count ok? run)
   (let loop ((i 0) (result (list 'undefined)))

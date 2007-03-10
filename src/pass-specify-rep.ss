@@ -17,12 +17,23 @@
   (define fixnum-tag 0)
   (define fixnum-mask 3))
 
-(module (specify-representation primop?)
-  (import object-representation)
+(module primops (primop? get-primop set-primop!)
+
   (define cookie (gensym))
   (define (primop? x)
     (and (getprop x cookie) #t))
-  (define-record PH
+  (define (get-primop x)
+    (or (getprop x cookie)
+        (error 'getprimop "~s is not a primitive" x)))
+  (define (set-primop! x v)
+    (putprop x cookie v))
+  )
+
+
+(module (specify-representation)
+  (import object-representation)
+  (import primops)
+   (define-record PH
     (interruptable? p-handler p-handled? v-handler v-handled? e-handler e-handled?))
   (define interrupt-handler
     (make-parameter (lambda () (error 'interrupt-handler "uninitialized"))))
@@ -117,55 +128,53 @@
       (record-case x
         [(primcall x) (eq? x 'interrupt)]
         [else #f]))
-    (cond
-      [(getprop x cookie) => 
-       (lambda (p) 
-         (simplify* args
-           (lambda (args)
-             (with-interrupt-handler p x ctxt (map T args)
-               (lambda ()
-                 (case ctxt
-                   [(P) 
-                    (cond
-                      [(PH-p-handled? p) 
-                       (apply (PH-p-handler p) args)]
-                      [(PH-v-handled? p)
-                       (let ([e (apply (PH-v-handler p) args)])
-                         (if (interrupt? e) e (prm '!= e (K bool-f))))]
-                      [(PH-e-handled? p)
-                       (let ([e (apply (PH-e-handler p) args)])
-                         (if (interrupt? e) e (make-seq e (K #t))))]
-                      [else (error 'cogen-primop "~s is not handled" x)])]
-                   [(V) 
-                    (cond
-                      [(PH-v-handled? p) 
-                       (apply (PH-v-handler p) args)]
-                      [(PH-p-handled? p) 
-                       (let ([e (apply (PH-p-handler p) args)])
-                         (if (interrupt? e)
-                             e 
-                             (make-conditional e (K bool-t) (K bool-f))))]
-                      [(PH-e-handled? p)
-                       (let ([e (apply (PH-e-handler p) args)])
-                         (if (interrupt? e) e (make-seq e (K void-object))))]
-                      [else (error 'cogen-primop "~s is not handled" x)])]
-                   [(E) 
-                    (cond
-                      [(PH-e-handled? p) 
-                       (apply (PH-e-handler p) args)]
-                      [(PH-p-handled? p) 
-                       (let ([e (apply (PH-p-handler p) args)])
-                         (if (interrupt? e)
-                             e 
-                             (make-conditional e (prm 'nop) (prm 'nop))))]
-                      [(PH-v-handled? p)
-                       (let ([e (apply (PH-v-handler p) args)])
-                         (if (interrupt? e)
-                             e
-                             (with-tmp ([t e]) (prm 'nop))))]
-                      [else (error 'cogen-primop "~s is not handled" x)])]
-                   [else (error 'cogen-primop "invalid context ~s" ctxt)]))))))]
-      [else (error 'cogen-primop "~s is not a prim" x)]))
+    (let ([p (get-primop x)])
+       (simplify* args
+         (lambda (args)
+           (with-interrupt-handler p x ctxt (map T args)
+             (lambda ()
+               (case ctxt
+                 [(P) 
+                  (cond
+                    [(PH-p-handled? p) 
+                     (apply (PH-p-handler p) args)]
+                    [(PH-v-handled? p)
+                     (let ([e (apply (PH-v-handler p) args)])
+                       (if (interrupt? e) e (prm '!= e (K bool-f))))]
+                    [(PH-e-handled? p)
+                     (let ([e (apply (PH-e-handler p) args)])
+                       (if (interrupt? e) e (make-seq e (K #t))))]
+                    [else (error 'cogen-primop "~s is not handled" x)])]
+                 [(V) 
+                  (cond
+                    [(PH-v-handled? p) 
+                     (apply (PH-v-handler p) args)]
+                    [(PH-p-handled? p) 
+                     (let ([e (apply (PH-p-handler p) args)])
+                       (if (interrupt? e)
+                           e 
+                           (make-conditional e (K bool-t) (K bool-f))))]
+                    [(PH-e-handled? p)
+                     (let ([e (apply (PH-e-handler p) args)])
+                       (if (interrupt? e) e (make-seq e (K void-object))))]
+                    [else (error 'cogen-primop "~s is not handled" x)])]
+                 [(E) 
+                  (cond
+                    [(PH-e-handled? p) 
+                     (apply (PH-e-handler p) args)]
+                    [(PH-p-handled? p) 
+                     (let ([e (apply (PH-p-handler p) args)])
+                       (if (interrupt? e)
+                           e 
+                           (make-conditional e (prm 'nop) (prm 'nop))))]
+                    [(PH-v-handled? p)
+                     (let ([e (apply (PH-v-handler p) args)])
+                       (if (interrupt? e)
+                           e
+                           (with-tmp ([t e]) (prm 'nop))))]
+                    [else (error 'cogen-primop "~s is not handled" x)])]
+                 [else 
+                  (error 'cogen-primop "invalid context ~s" ctxt)])))))))
   
   (define-syntax define-primop
     (lambda (x)
@@ -209,7 +218,7 @@
                (define cogen-v v-handler)
                (define cogen-e e-handler)
                (module ()
-                 (putprop 'name cookie 
+                 (set-primop! 'name
                     (make-PH interruptable? 
                        cogen-p phandled? 
                        cogen-v vhandled?
@@ -505,44 +514,4 @@
     (let ([x (Program x)])
       x))
 
-
-
-  (include "pass-specify-rep-primops.ss")
-
-  )
-
-
-#!eof
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  ;;;
-  (define (sec-tag-test x pmask ptag smask stag)
-    (tbind ([t x])
-      (make-conditional 
-        (tag-test t pmask ptag)
-        (tag-test (prm 'mref t (K (- ptag))) smask stag)
-        (make-constant #f))))
-  ;;;
-  ;;;
-  ;;;
-  (define encountered-symbol-calls '())
-  ;;; value
-  ;;;
-
+  (include "pass-specify-rep-primops.ss"))

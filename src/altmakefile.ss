@@ -98,7 +98,7 @@
     exact? inexact? integer?
     string->number exact->inexact
 
-    flonum? flonum->string string->flonum
+    flonum? flonum->string string->flonum bignum?
     sin cos atan sqrt
     ))
 

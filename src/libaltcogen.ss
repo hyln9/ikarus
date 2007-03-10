@@ -325,6 +325,7 @@
       [else (error who "invalid closure ~s" x)]))
   ;;;
   (define (mkfuncall op arg*)
+    (import primops)
     (record-case op
       [(primref name)
        (cond
