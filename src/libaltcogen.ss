@@ -964,8 +964,9 @@
 
 (module IntegerSet
   (make-empty-set set-member? set-add set-rem set-difference
-   set-union empty-set? set->list list->set set-map set-for-each
-   set-ormap set-andmap)
+   set-union empty-set? set->list list->set
+   ;set-map set-for-each set-ormap set-andmap
+   )
   
   (begin
     (define-syntax car      (identifier-syntax #%$car))
@@ -981,10 +982,9 @@
       (syntax-rules ()
         [(_ x) (#%$fxzero? (#%$fxlogand x 1))])))
 
-  (define shift      4)
-  (define mask     #xF)
-  (define (index-of n) (fxsra n shift))
-  (define (mask-of n)  (fxsll 1 (fxlogand n mask)))
+  (define bits 28)
+  (define (index-of n) (fxquotient n bits))
+  (define (mask-of n)  (fxsll 1 (fxremainder n bits)))
 
   (define (make-empty-set) 0)
   (define (empty-set? s) (eqv? s 0))
@@ -1091,87 +1091,87 @@
         [else (f (cdr ls) (set-add (car ls) s))])))
 
   (define (set->list s)
-    (let f ([i 0] [j (fxsll 1 shift)] [s s] [ac '()])
+    (let f ([i 0] [j 1] [s s] [ac '()])
       (cond
         [(pair? s)
          (f i (fxsll j 1) (car s)
             (f (fxlogor i j) (fxsll j 1) (cdr s) ac))]
         [else
-         (let f ([i i] [m s] [ac ac])
+         (let f ([i (fx* i bits)] [m s] [ac ac])
            (cond
-             [(fxeven? m) 
-              (if (fxzero? m) 
+             [(fxeven? m)
+              (if (fxzero? m)
                   ac
                   (f (fx+ i 1) (fxsra m 1) ac))]
              [else 
               (f (fx+ i 1) (fxsra m 1) (cons i ac))]))])))
 
 
-  (define (set-map proc s)
-    (let f ([i 0] [j (fxsll 1 shift)] [s s] [ac '()])
-      (cond
-        [(pair? s)
-         (f i (fxsll j 1) (car s)
-            (f (fxlogor i j) (fxsll j 1) (cdr s) ac))]
-        [else
-         (let f ([i i] [m s] [ac ac])
-           (cond
-             [(fxeven? m) 
-              (if (fxzero? m) 
-                  ac
-                  (f (fx+ i 1) (fxsra m 1) ac))]
-             [else 
-              (f (fx+ i 1) (fxsra m 1) (cons (proc i) ac))]))])))
-
-  (define (set-for-each proc s)
-    (let f ([i 0] [j (fxsll 1 shift)] [s s])
-      (cond
-        [(pair? s)
-         (f i (fxsll j 1) (car s))
-         (f (fxlogor i j) (fxsll j 1) (cdr s))]
-        [else
-         (let f ([i i] [m s])
-           (cond
-             [(fxeven? m) 
-              (unless (fxzero? m) 
-                (f (fx+ i 1) (fxsra m 1)))]
-             [else 
-              (proc i)
-              (f (fx+ i 1) (fxsra m 1))]))])))
-
-  (define (set-ormap proc s)
-    (let f ([i 0] [j (fxsll 1 shift)] [s s])
-      (cond
-        [(pair? s)
-         (or (f i (fxsll j 1) (car s))
-             (f (fxlogor i j) (fxsll j 1) (cdr s)))]
-        [else
-         (let f ([i i] [m s])
-           (cond
-             [(fxeven? m) 
-              (if (fxzero? m) 
-                  #f
-                  (f (fx+ i 1) (fxsra m 1)))]
-             [else 
-              (or (proc i)
-                  (f (fx+ i 1) (fxsra m 1)))]))])))
-
-  (define (set-andmap proc s)
-    (let f ([i 0] [j (fxsll 1 shift)] [s s])
-      (cond
-        [(pair? s)
-         (and (f i (fxsll j 1) (car s))
-              (f (fxlogor i j) (fxsll j 1) (cdr s)))]
-        [else
-         (let f ([i i] [m s])
-           (cond
-             [(fxeven? m) 
-              (if (fxzero? m) 
-                  #t
-                  (f (fx+ i 1) (fxsra m 1)))]
-             [else 
-              (and (proc i)
-                   (f (fx+ i 1) (fxsra m 1)))]))])))
+;;;  (define (set-map proc s)
+;;;    (let f ([i 0] [j (fxsll 1 shift)] [s s] [ac '()])
+;;;      (cond
+;;;        [(pair? s)
+;;;         (f i (fxsll j 1) (car s)
+;;;            (f (fxlogor i j) (fxsll j 1) (cdr s) ac))]
+;;;        [else
+;;;         (let f ([i i] [m s] [ac ac])
+;;;           (cond
+;;;             [(fxeven? m) 
+;;;              (if (fxzero? m) 
+;;;                  ac
+;;;                  (f (fx+ i 1) (fxsra m 1) ac))]
+;;;             [else 
+;;;              (f (fx+ i 1) (fxsra m 1) (cons (proc i) ac))]))])))
+;;;
+;;;  (define (set-for-each proc s)
+;;;    (let f ([i 0] [j (fxsll 1 shift)] [s s])
+;;;      (cond
+;;;        [(pair? s)
+;;;         (f i (fxsll j 1) (car s))
+;;;         (f (fxlogor i j) (fxsll j 1) (cdr s))]
+;;;        [else
+;;;         (let f ([i i] [m s])
+;;;           (cond
+;;;             [(fxeven? m) 
+;;;              (unless (fxzero? m) 
+;;;                (f (fx+ i 1) (fxsra m 1)))]
+;;;             [else 
+;;;              (proc i)
+;;;              (f (fx+ i 1) (fxsra m 1))]))])))
+;;;
+;;;  (define (set-ormap proc s)
+;;;    (let f ([i 0] [j (fxsll 1 shift)] [s s])
+;;;      (cond
+;;;        [(pair? s)
+;;;         (or (f i (fxsll j 1) (car s))
+;;;             (f (fxlogor i j) (fxsll j 1) (cdr s)))]
+;;;        [else
+;;;         (let f ([i i] [m s])
+;;;           (cond
+;;;             [(fxeven? m) 
+;;;              (if (fxzero? m) 
+;;;                  #f
+;;;                  (f (fx+ i 1) (fxsra m 1)))]
+;;;             [else 
+;;;              (or (proc i)
+;;;                  (f (fx+ i 1) (fxsra m 1)))]))])))
+;;;
+;;;  (define (set-andmap proc s)
+;;;    (let f ([i 0] [j (fxsll 1 shift)] [s s])
+;;;      (cond
+;;;        [(pair? s)
+;;;         (and (f i (fxsll j 1) (car s))
+;;;              (f (fxlogor i j) (fxsll j 1) (cdr s)))]
+;;;        [else
+;;;         (let f ([i i] [m s])
+;;;           (cond
+;;;             [(fxeven? m) 
+;;;              (if (fxzero? m) 
+;;;                  #t
+;;;                  (f (fx+ i 1) (fxsra m 1)))]
+;;;             [else 
+;;;              (and (proc i)
+;;;                   (f (fx+ i 1) (fxsra m 1)))]))])))
 #|IntegerSet|#)
 
 (module ListyGraphs 
