@@ -491,13 +491,6 @@
 (define (impose-calling-convention/evaluation-order x)
   (define who 'impose-calling-convention/evaluation-order)
   ;;;
-  (define-syntax car
-    (syntax-rules ()
-      [(_ x)
-       (let ([t x])
-         (if (pair? t)
-             (#%car t)
-             (error 'car "not a pair ~s in ~s" t '(car x))))]))
   ;;;
   (define (S* x* k)
     (cond
@@ -517,7 +510,11 @@
        (make-seq (E e0) (S e1 k))]
       [else
        (cond
-         [(or (constant? x) (var? x) (symbol? x)) (k x)]
+         [(or (constant? x) (symbol? x)) (k x)]
+         [(var? x) 
+          (cond
+            [(var-loc x) => k]
+            [else (k x)])]
          [(or (funcall? x) (primcall? x) (jmpcall? x)
               (forcall? x) (shortcut? x)
               (conditional? x))
@@ -598,7 +595,10 @@
   (define (V d x)
     (record-case x 
       [(constant) (make-set d x)]
-      [(var)      (make-set d x)]
+      [(var)      
+       (cond
+         [(var-loc x) => (lambda (loc) (make-set d loc))]
+         [else (make-set d x)])]
       [(bind lhs* rhs* e)
        (do-bind lhs* rhs* (V d e))]
       [(seq e0 e1)
@@ -608,7 +608,6 @@
       [(primcall op rands)
        (case op
          [(alloc) 
-          (unless (pair? rands) (error 'car "h1"))
           (S (car rands)
              (lambda (size)
                (make-seq
@@ -623,11 +622,9 @@
          [(mref) 
           (S* rands
               (lambda (rands)
-                (unless (pair? rands) (error 'car "h2"))
                 (make-set d (make-disp (car rands) (cadr rands)))))]
          [(logand logxor logor int+ int- int*
                   int-/overflow int+/overflow int*/overflow)
-          (unless (pair? rands) (error 'car "h3"))
           (make-seq
             (V d (car rands))
             (S (cadr rands)
@@ -636,7 +633,6 @@
          [(remainder)
           (S* rands
               (lambda (rands)
-                (unless (pair? rands) (error 'car "h4"))
                 (seq* 
                   (make-set eax (car rands))
                   (make-asm-instr 'cltd edx eax)
@@ -645,14 +641,12 @@
          [(quotient) 
           (S* rands
               (lambda (rands)
-                (unless (pair? rands) (error 'car "h5"))
                 (seq* 
                   (make-set eax (car rands))
                   (make-asm-instr 'cltd edx eax)
                   (make-asm-instr 'idiv edx (cadr rands))
                   (make-set d edx))))]
          [(sll sra srl)
-                (unless (pair? rands) (error 'car "h6 ~s" x))
           (let ([a (car rands)] [b (cadr rands)])
             (cond
               [(constant? b)
@@ -753,86 +747,88 @@
          (make-shortcut (P body) (P handler))]
       [else (error who "invalid pred ~s" x)]))
   ;;;
-  (define (Tail env)
-    (define (handle-tail-call target rator rands)
-      (let* ([args (cons rator rands)]
-             [locs (formals-locations args)]
-             [rest 
+  (define (handle-tail-call target rator rands)
+    (let* ([args (cons rator rands)]
+           [locs (formals-locations args)]
+           [rest 
+            (make-seq
+              (make-set argc-register 
+                (make-constant
+                  (argc-convention (length rands))))
+              (cond
+                [target 
+                 (make-primcall 'direct-jump 
+                   (cons target 
+                    (list* argc-register
+                           pcr esp apr
+                           locs)))]
+                [else 
+                 (make-primcall 'indirect-jump 
+                   (list* argc-register 
+                          pcr esp apr
+                          locs))]))])
+       (let f ([args (reverse args)] 
+               [locs (reverse locs)] 
+               [targs '()]
+               [tlocs '()])
+         (cond
+           [(null? args) (assign* tlocs targs rest)]
+           [(constant? (car args))
+            (f (cdr args) (cdr locs)
+               (cons (car args) targs) 
+               (cons (car locs) tlocs))]
+           [(and (fvar? (car locs)) 
+                 (var? (car args))
+                 (eq? (car locs) (var-loc (car args))))
+            (f (cdr args) (cdr locs) targs tlocs)]
+           [else
+            (let ([t (unique-var 'tmp)])
+              (set! locals (cons t locals))
               (make-seq
-                (make-set argc-register 
-                  (make-constant
-                    (argc-convention (length rands))))
-                (cond
-                  [target 
-                   (make-primcall 'direct-jump 
-                     (cons target 
-                      (list* argc-register
-                             pcr esp apr
-                             locs)))]
-                  [else 
-                   (make-primcall 'indirect-jump 
-                     (list* argc-register 
-                            pcr esp apr
-                            locs))]))])
-         (let f ([args (reverse args)] 
-                 [locs (reverse locs)] 
-                 [targs '()]
-                 [tlocs '()])
-           (cond
-             [(null? args) (assign* tlocs targs rest)]
-             [(constant? (car args))
-              (f (cdr args) (cdr locs)
-                 (cons (car args) targs) 
-                 (cons (car locs) tlocs))]
-             [(and (fvar? (car locs)) 
-                   (cond
-                     [(and (var? (car args)) (assq (car args) env))
-                      => (lambda (p) (eq? (cdr p) (car locs)))]
-                     [else #f]))
-              (f (cdr args) (cdr locs) targs tlocs)]
-             [else
-              (let ([t (unique-var 'tmp)])
-                (set! locals (cons t locals))
-                (make-seq
-                  (V t (car args))
-                  (f (cdr args) (cdr locs) 
-                     (cons t targs) (cons (car locs) tlocs))))]))))
-    (define (Tail x)
-      (record-case x 
-        [(constant) (VT x)]
-        [(var)      (VT x)]
-        [(primcall op rands) 
-         (case op
-           [($call-with-underflow-handler) 
-                (unless (pair? rands) (error 'car "h6"))
-            (let ([handler (car rands)]
-                  [proc (cadr rands)]
-                  [k (caddr rands)])
-              (seq*
-                (make-set (mkfvar 1) handler)
-                (make-set (mkfvar 2) k)
-                (make-set cpr proc)
-                (make-set argc-register (make-constant (argc-convention 1)))
-                (make-asm-instr 'int- fpr (make-constant wordsize))
-                (make-primcall 'indirect-jump
-                  (list argc-register cpr pcr esp apr
-                        (mkfvar 1) (mkfvar 2)))))]
-           [else (VT x)])]
-        [(bind lhs* rhs* e)
-         (do-bind lhs* rhs* (Tail e))]
-        [(seq e0 e1)
-         (make-seq (E e0) (Tail e1))]
-        [(conditional e0 e1 e2)
-         (make-conditional (P e0) (Tail e1) (Tail e2))]
-        [(funcall rator rands)
-         (handle-tail-call #f rator rands)]
-        [(jmpcall label rator rands)
-         (handle-tail-call (make-code-loc label) rator rands)]
-        [(forcall) (VT x)]
-        [(shortcut body handler)
-         (make-shortcut  (Tail body) (Tail handler))]
-        [else (error who "invalid tail ~s" x)]))
-    Tail)
+                (V t (car args))
+                (f (cdr args) (cdr locs) 
+                   (cons t targs) (cons (car locs) tlocs))))]))))
+  (define (Tail x)
+    (record-case x 
+      [(constant) (VT x)]
+      [(var)      (VT x)]
+      [(primcall op rands) 
+       (case op
+         [($call-with-underflow-handler) 
+          (let ([t0 (unique-var 't)]
+                [t1 (unique-var 't)]
+                [t2 (unique-var 't)]
+                [handler (car rands)]
+                [proc (cadr rands)]
+                [k (caddr rands)])
+            (set! locals (list* t0 t1 t2 locals))
+            (seq*
+              (V t0 handler)
+              (V t1 k)
+              (V t2 proc)
+              (make-set (mkfvar 1) t0)
+              (make-set (mkfvar 2) t1)
+              (make-set cpr t2)
+              (make-set argc-register (make-constant (argc-convention 1)))
+              (make-asm-instr 'int- fpr (make-constant wordsize))
+              (make-primcall 'indirect-jump
+                (list argc-register cpr pcr esp apr
+                      (mkfvar 1) (mkfvar 2)))))]
+         [else (VT x)])]
+      [(bind lhs* rhs* e)
+       (do-bind lhs* rhs* (Tail e))]
+      [(seq e0 e1)
+       (make-seq (E e0) (Tail e1))]
+      [(conditional e0 e1 e2)
+       (make-conditional (P e0) (Tail e1) (Tail e2))]
+      [(funcall rator rands)
+       (handle-tail-call #f rator rands)]
+      [(jmpcall label rator rands)
+       (handle-tail-call (make-code-loc label) rator rands)]
+      [(forcall) (VT x)]
+      [(shortcut body handler)
+       (make-shortcut (Tail body) (Tail handler))]
+      [else (error who "invalid tail ~s" x)]))
   ;;;
   (define (formals-locations args)
     (let f ([regs parameter-registers] [args args])
@@ -849,25 +845,44 @@
          (cons (car regs) (f (cdr regs) (cdr args)))])))
   ;;;
   (define locals '())
+  (define (partition-formals ls)
+    (let f ([regs parameter-registers] [ls ls])
+      (cond
+        [(null? regs)
+         (let ([flocs 
+                (let f ([i 1] [ls ls])
+                  (cond
+                    [(null? ls) '()]
+                    [else (cons (mkfvar i) (f (fxadd1 i) (cdr ls)))]))])
+           (values '() '() ls flocs))]
+        [(null? ls) 
+         (values '() '() '() '())]
+        [else 
+         (let-values ([(rargs rlocs fargs flocs)
+                       (f (cdr regs) (cdr ls))])
+           (values (cons (car ls) rargs)
+                   (cons (car regs) rlocs)
+                   fargs flocs))])))
   ;;;
   (define (ClambdaCase x) 
     (record-case x
       [(clambda-case info body)
        (record-case info
          [(case-info label args proper)
-          (set! locals args)
-          (let* ([locs (formals-locations args)]
-                 [env (map cons args locs)]
-                 [body (let f ([args args] [locs locs])
-                          (cond
-                            [(null? args) ((Tail env) body)]
-                            [else
-                             (make-seq
-                               (make-set (car args) (car locs))
-                               (f (cdr args) (cdr locs)))]))])
-            (make-clambda-case
-              (make-case-info label locs proper)
-              (make-locals locals body)))])]))
+          (let-values ([(rargs rlocs fargs flocs)
+                        (partition-formals args)])
+            (set! locals rargs)
+            (for-each set-var-loc! fargs flocs)
+            (let ([body (let f ([args rargs] [locs rlocs])
+                           (cond
+                             [(null? args) (Tail body)]
+                             [else
+                              (make-seq
+                                (make-set (car args) (car locs))
+                                (f (cdr args) (cdr locs)))]))])
+              (make-clambda-case
+                (make-case-info label (append rlocs flocs) proper)
+                (make-locals locals body))))])]))
   ;;;
   (define (Clambda x)
     (record-case x
@@ -876,7 +891,7 @@
   ;;;
   (define (Main x)
     (set! locals '())
-    (let ([x ((Tail '()) x)])
+    (let ([x (Tail x)])
       (make-locals locals x)))
   ;;;
   (define (Program x)
@@ -1158,171 +1173,6 @@
               (and (proc i)
                    (f (fx+ i 1) (fxsra m 1)))]))])))
 #|IntegerSet|#)
-
-(module IntegerSet-list
-  (make-empty-set set-member? set-add set-rem set-difference set-union
-   empty-set?
-   set->list list->set)
-  ;;;
-  (define-record set (v))
-
-  (define (make-empty-set) (make-set '()))
-  (define (set-member? x s) 
-    (unless (set? s) (error 'set-member? "~s is not a set" s))
-    (unless (fixnum? x) (error 'set-member? "~s is not a fixnum" x))
-    (memq x (set-v s)))
-
-  (define (empty-set? s)
-    (unless (set? s) (error 'empty-set? "~s is not a set" s))
-    (null? (set-v s)))
-    
-  (define (set->list s)
-    (unless (set? s) (error 'set->list "~s is not a set" s))
-    (set-v s))
-    
-  (define (set-add x s)
-    (unless (set? s) (error 'set-add "~s is not a set" s))
-    (unless (fixnum? x) (error 'set-add "~s is not a fixnum" x))
-    (cond
-      [(memq x (set-v s)) s]
-      [else (make-set (cons x (set-v s)))]))
-             
-  (define (rem x s)
-    (cond
-      [(null? s) '()]
-      [(eq? x (car s)) (cdr s)]
-      [else (cons (car s) (rem x (cdr s)))])) 
-
-  (define (set-rem x s)
-    (unless (set? s) (error 'set-rem "~s is not a set" s))
-    (unless (fixnum? x) (error 'set-rem "~s is not a fixnum" x))
-    (make-set (rem x (set-v s))))
-  
-  (define (difference s1 s2)
-    (cond
-      [(null? s2) s1]
-      [else (difference (rem (car s2) s1) (cdr s2))]))
-
-  (define (set-difference s1 s2)
-    (unless (set? s1) (error 'set-difference "~s is not a set" s1))
-    (unless (set? s2) (error 'set-difference "~s is not a set" s2))
-    (make-set (difference (set-v s1) (set-v s2))))
-    
-  (define (set-union s1 s2)
-    (unless (set? s1) (error 'set-union "~s is not a set" s1))
-    (unless (set? s2) (error 'set-union "~s is not a set" s2))
-    (make-set (union (set-v s1) (set-v s2))))
-
-  (define (list->set ls)
-    (unless (andmap fixnum? ls)
-      (error 'list->set "~s is not a list of fixnums" ls))
-    (make-set ls))
-
-  (define (union s1 s2)
-    (cond
-      [(null? s1) s2]
-      [(memq (car s1) s2) (union (cdr s1) s2)]
-      [else (cons (car s1) (union (cdr s1) s2))])))
-
-;;;(module IntegerSet
-;;;  (make-empty-set set-member? set-add set-rem set-difference set-union
-;;;   empty-set? set->list list->set)
-;;;
-;;;  (define-syntax L
-;;;    (lambda (x)
-;;;      (syntax-case x ()
-;;;        [(L expr)
-;;;         (with-syntax ([w 
-;;;                        (datum->syntax-object #'L
-;;;                          '(import IntegerSet-list))])
-;;;           #'(let () w expr))])))
-;;;
-;;;  (define-syntax T
-;;;    (lambda (x)
-;;;      (syntax-case x ()
-;;;        [(L expr)
-;;;         (with-syntax ([w 
-;;;                        (datum->syntax-object #'L
-;;;                          '(import IntegerSet-tree))])
-;;;           #'(let () w expr))])))
-;;;
-;;;  (define-record set (ls tr))
-;;;
-;;;  (define (make-empty-set)
-;;;    (make-set (L (make-empty-set))
-;;;              (T (make-empty-set))))
-;;;
-;;;  (define (set-member? x s)
-;;;    (if (L (set-member? x (set-ls s)))
-;;;        (if (T (set-member? x (set-tr s)))
-;;;            #t
-;;;            (error "mismatch member ~s in ~s" x s))
-;;;        (if (T (set-member? x (set-tr s)))
-;;;            (error "mismatch member ~s in ~s" x s)
-;;;            #f)))
-;;;
-;;;  (define (set-add x s)
-;;;    (verify-set 'set-add 
-;;;       (make-set (L (set-add x (set-ls s))) 
-;;;         (T (set-add x (set-tr s))))))
-;;;
-;;;  (define (set-rem x s)
-;;;    (verify-set 'set-rem 
-;;;      (make-set (L (set-rem x (set-ls s)))
-;;;                (T (set-rem x (set-tr s))))))
-;;;
-;;;  (define (set-difference s1 s2)
-;;;    (verify-set 'set-difference
-;;;      (make-set (L (set-difference (set-ls s1) (set-ls s2)))
-;;;        (T (set-difference (set-tr s1) (set-tr s2))))))
-;;;
-;;;
-;;;  (define (set-union s1 s2)
-;;;    (verify-set 'set-union
-;;;      (make-set (L (set-union (set-ls s1) (set-ls s2)))
-;;;        (T (set-union (set-tr s1) (set-tr s2))))))
-;;;
-;;;  (define (empty-set? s)
-;;;    (if (L (empty-set? (set-ls s)))
-;;;        (if (T (empty-set? (set-tr s)))
-;;;            #t
-;;;            (error "mismatch empty-set in ~s" s))
-;;;        (if (T (empty-set? (set-tr s)))
-;;;            (error "mismatch empty-set in ~s" s)
-;;;            #f)))
-;;;
-;;;  (define (verify-set who s)
-;;;    (let ([ls1 (L (set->list (set-ls s)))]
-;;;          [ls2 (T (set->list (set-tr s)))])
-;;;      (for-each (lambda (i) 
-;;;                  (unless (memq i ls2)
-;;;                    (error who "mismatch ~s ~s ~s" s ls1 ls2)))
-;;;                ls1)
-;;;      (for-each (lambda (i) 
-;;;                  (unless (memq i ls1)
-;;;                    (error who "mismatch ~s ~s ~s" s ls2 ls2)))
-;;;                ls2))
-;;;    s)
-;;;
-;;;  (define (set->list s)
-;;;    (let ([ls1 (L (set->list (set-ls s)))]
-;;;          [ls2 (T (set->list (set-tr s)))])
-;;;      (for-each (lambda (i) 
-;;;                  (unless (memq i ls2)
-;;;                    (error 'set->list "mismatch ~s" s)))
-;;;                ls1)
-;;;      (for-each (lambda (i) 
-;;;                  (unless (memq i ls1)
-;;;                    (error 'set->list "mismatch ~s" s)))
-;;;                ls2)
-;;;      ls1))
-;;;
-;;;  (define (list->set ls)
-;;;    (verify-set 'list->set 
-;;;      (make-set (L (list->set ls)) 
-;;;        (T (list->set ls)))))
-;;;
-;;;  )
 
 (module ListyGraphs 
   (empty-graph add-edge! empty-graph? print-graph node-neighbors
@@ -1625,6 +1475,10 @@
                     (mark-var/reg-move! s d)
                     (mark-reg/vars-conf! d vs)
                     (values (add-var s vs) rs fs ns))]
+                 [(fvar? s)
+                  (let ([rs (rem-reg d rs)])
+                    (mark-reg/vars-conf! d vs)
+                    (values vs rs (add-frm s fs) ns))]
                  [else (error who "invalid rs ~s" (unparse x))])]
               [(fvar? d) 
                (cond
@@ -1697,6 +1551,12 @@
                     (mark-nfv/vars-conf! d vs)
                     (mark-nfv/frms-conf! d fs)
                     (values (add-var s vs) rs fs ns))]
+                 [(fvar? s) 
+                  (let ([ns (rem-nfv d ns)]
+                        [fs (rem-frm s fs)])
+                    (mark-nfv/vars-conf! d vs)
+                    (mark-nfv/frms-conf! d fs)
+                    (values vs rs (add-frm s fs) ns))]
                  [else (error who "invalid ns ~s" s)])]
               [else (error who "invalid d ~s" d)])]
            [(int-/overflow int+/overflow int*/overflow)
@@ -3092,9 +2952,9 @@
        ;[foo (printf "4")]
         [x (impose-calling-convention/evaluation-order x)]
        ;[foo (printf "5")]
-        [x (assign-frame-sizes x)]
+        [x (time (assign-frame-sizes x))]
        ;[foo (printf "6")]
-        [x (color-by-chaitin x)]
+        [x (time (color-by-chaitin x))]
        ;[foo (printf "7")]
         [ls (flatten-codes x)]
        ;[foo (printf "8")]
