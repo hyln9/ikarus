@@ -124,9 +124,6 @@
            (error 'with-args "too few args")))]))
 
 
-;(define byte
-;  (lambda (x)
-;    (cons 'byte (fxlogand x 255))))
 
 (define-syntax byte
   (syntax-rules ()
@@ -532,6 +529,8 @@
        ((CODE/digit #xC1 '/4) dst (IMM8 src ac))]
       [(and (eq? src '%cl) (reg? dst))
        (CODE #xD3 (ModRM 3 '/4 dst ac))]
+      [(and (eq? src '%cl) (mem? dst))
+       ((CODE/digit #xD3 '/4) dst ac)]
       [else (error who "invalid ~s" instr)])]
    [(shrl src dst)
     (cond
@@ -543,6 +542,8 @@
        (CODE #xD3 (ModRM 3 '/5 dst ac))]
       [(and (imm8? src) (mem? dst))
        ((CODE/digit #xC1 '/5) dst (IMM8 src ac))]
+      [(and (eq? src '%cl) (mem? dst))
+       ((CODE/digit #xD3 '/5) dst ac)]
       [else (error who "invalid ~s" instr)])]
    [(sarl src dst)
     (cond
@@ -554,6 +555,8 @@
        ((CODE/digit #xC1 '/7) dst (IMM8 src ac))] 
       [(and (eq? src '%cl) (reg? dst))
        (CODE #xD3 (ModRM 3 '/7 dst ac))]
+      [(and (eq? src '%cl) (mem? dst))
+       ((CODE/digit #xD3 '/7) dst ac)]
       [else (error who "invalid ~s" instr)])]
    [(andl src dst) 
     (cond
@@ -576,6 +579,8 @@
     (cond
       [(and (imm? src) (mem? dst))
        ((CODE/digit #x81 '/1) dst (IMM32 src ac))]
+      [(and (reg? src) (mem? dst))
+       ((CODE/digit #x09 src) dst ac)]
       [(and (imm8? src) (reg? dst)) 
        (CODE #x83 (ModRM 3 '/1 dst (IMM8 src ac)))]
       [(and (imm? src) (eq? dst '%eax)) 

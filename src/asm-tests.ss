@@ -1,6 +1,9 @@
 #!/usr/bin/env ikarus --script 
+
+(define counter 0)
 (define (asm-test res ls)
-  (printf "Testing:\n")
+  (set! counter (add1 counter))
+  (printf "[~s] Testing:\n" counter)
   (for-each (lambda (x)
               (printf "    ~s\n" x))
             ls)
@@ -103,6 +106,22 @@
     [movl (disp -4 %esp) %eax]
     [ret]))
 
+
+(asm-test 3
+  '([movl 4 (disp -4 %esp)]
+    [movl 8 %eax]
+    [orl %eax (disp -4 %esp)]
+    [movl (disp -4 %esp) %eax]
+    [ret]))
+
+(asm-test 3
+  '([movl 4 (disp -4 %esp)]
+    [movl 8 %ebx]
+    [orl %ebx (disp -4 %esp)]
+    [movl (disp -4 %esp) %eax]
+    [ret]))
+
+
 (asm-test 3
   '([movl -1 (disp -4 %esp)]
     [andl 12 (disp -4 %esp)]
@@ -145,6 +164,28 @@
     [movl -4 %eax]
     [call (disp 26 (obj car))]
     [ret]))
+
+(asm-test 8
+  '([movl (obj 1) (disp -8 %esp)]
+    [movl 3 %ecx]
+    [sall %cl (disp -8 %esp)]
+    [movl (disp -8 %esp) %eax]
+    [ret]))
+
+(asm-test 1
+  '([movl (obj 8) (disp -8 %esp)]
+    [movl 3 %ecx]
+    [sarl %cl (disp -8 %esp)]
+    [movl (disp -8 %esp) %eax]
+    [ret]))
+
+(asm-test 1
+  '([movl (obj 8) (disp -8 %esp)]
+    [movl 3 %ecx]
+    [shrl %cl (disp -8 %esp)]
+    [movl (disp -8 %esp) %eax]
+    [ret]))
+
 
 (printf "Happy Happy Joy Joy\n")
 (exit)

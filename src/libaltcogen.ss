@@ -887,8 +887,6 @@
 ;  (print-code x)
   (Program x))
 
-
-
 (module ListySet 
   (make-empty-set set-member? set-add set-rem set-difference set-union
    empty-set?
@@ -949,13 +947,219 @@
       [(memq (car s1) s2) (union (cdr s1) s2)]
       [else (cons (car s1) (union (cdr s1) s2))])))
 
-;(module IntegerSet
-;  (make-empty-set set-member? set-add set-rem set-difference
-;   set-union empty-set? set->list list->set)
-;
-;  )
+(module IntegerSet
+  (make-empty-set set-member? set-add set-rem set-difference
+   set-union empty-set? set->list list->set set-map set-for-each
+   set-ormap set-andmap)
+  
+  (begin
+    (define-syntax car      (identifier-syntax #%$car))
+    (define-syntax cdr      (identifier-syntax #%$cdr))
+    (define-syntax fxsll    (identifier-syntax #%$fxsll))
+    (define-syntax fxsra    (identifier-syntax #%$fxsra))
+    (define-syntax fxlogor  (identifier-syntax #%$fxlogor))
+    (define-syntax fxlogand (identifier-syntax #%$fxlogand))
+    (define-syntax fxlognot (identifier-syntax #%$fxlognot))
+    (define-syntax fx+      (identifier-syntax #%$fx+))
+    (define-syntax fxzero?  (identifier-syntax #%$fxzero?))
+    (define-syntax fxeven?
+      (syntax-rules ()
+        [(_ x) (#%$fxzero? (#%$fxlogand x 1))])))
 
-(module IntegerSet 
+  (define shift      4)
+  (define mask     #xF)
+  (define (index-of n) (fxsra n shift))
+  (define (mask-of n)  (fxsll 1 (fxlogand n mask)))
+
+  (define (make-empty-set) 0)
+  (define (empty-set? s) (eqv? s 0))
+  
+  (define (set-member? n s) 
+    (let f ([s s] [i (index-of n)] [j (mask-of n)])
+      (cond
+        [(pair? s)
+         (if (fxeven? i)
+             (f (car s) (fxsra i 1) j)
+             (f (cdr s) (fxsra i 1) j))]
+        [(eq? i 0) (eq? j (fxlogand s j))]
+        [else #f])))
+
+  (define (set-add n s)
+    (let f ([s s] [i (index-of n)] [j (mask-of n)])
+      (cond
+        [(pair? s)
+         (if (fxeven? i)
+             (let ([a0 (car s)])
+               (let ([a1 (f a0 (fxsra i 1) j)])
+                 (if (eq? a0 a1) s (cons a1 (cdr s)))))
+             (let ([d0 (cdr s)])
+               (let ([d1 (f d0 (fxsra i 1) j)])
+                 (if (eq? d0 d1) s (cons (car s) d1)))))]
+        [(eq? i 0) (fxlogor s j)]
+        [else
+         (if (fxeven? i) 
+             (cons (f s (fxsra i 1) j) 0)
+             (cons s (f 0 (fxsra i 1) j)))])))
+
+  (define (cons^ a d)
+    (if (and (eq? d 0) (fixnum? a))
+        a
+        (cons a d)))
+
+  (define (set-rem n s)
+    (let f ([s s] [i (index-of n)] [j (mask-of n)])
+      (cond
+        [(pair? s)
+         (if (fxeven? i)
+             (let ([a0 (car s)])
+               (let ([a1 (f a0 (fxsra i 1) j)])
+                 (if (eq? a0 a1) s (cons^ a1 (cdr s)))))
+             (let ([d0 (cdr s)])
+               (let ([d1 (f d0 (fxsra i 1) j)])
+                 (if (eq? d0 d1) s (cons^ (car s) d1)))))]
+        [(eq? i 0) (fxlogand s (fxlognot j))]
+        [else s])))
+ 
+  (define (set-union^ s1 m2)
+    (if (pair? s1)
+        (let ([a0 (car s1)])
+          (let ([a1 (set-union^ a0 m2)])
+            (if (eq? a0 a1) s1 (cons a1 (cdr s1)))))
+        (fxlogor s1 m2)))
+
+  (define (set-union s1 s2)
+    (if (pair? s1)
+        (if (pair? s2)
+            (if (eq? s1 s2)
+                s1
+                (cons (set-union (car s1) (car s2))
+                      (set-union (cdr s1) (cdr s2))))
+            (let ([a0 (car s1)])
+              (let ([a1 (set-union^ a0 s2)])
+                (if (eq? a0 a1) s1 (cons a1 (cdr s1))))))
+        (if (pair? s2)
+            (let ([a0 (car s2)])
+              (let ([a1 (set-union^ a0 s1)])
+                (if (eq? a0 a1) s2 (cons a1 (cdr s2)))))
+            (fxlogor s1 s2))))
+
+  (define (set-difference^ s1 m2)
+    (if (pair? s1)
+        (let ([a0 (car s1)])
+          (let ([a1 (set-difference^ a0 m2)])
+            (if (eq? a0 a1) s1 (cons^ a1 (cdr s1)))))
+        (fxlogand s1 (fxlognot m2))))
+  
+  (define (set-difference^^ m1 s2)
+    (if (pair? s2)
+        (set-difference^^ m1 (car s2))
+        (fxlogand m1 (fxlognot s2))))
+
+  (define (set-difference s1 s2)
+    (if (pair? s1)
+        (if (pair? s2)
+            (if (eq? s1 s2)
+                0
+                (cons^ (set-difference (car s1) (car s2))
+                       (set-difference (cdr s1) (cdr s2))))
+            (let ([a0 (car s1)])
+              (let ([a1 (set-difference^ a0 s2)])
+                (if (eq? a0 a1) s1 (cons^ a1 (cdr s1))))))
+        (if (pair? s2) 
+            (set-difference^^ s1 (car s2)) 
+            (fxlogand s1 (fxlognot s2)))))
+
+  (define (list->set ls)
+    (let f ([ls ls] [s 0])
+      (cond
+        [(null? ls) s]
+        [else (f (cdr ls) (set-add (car ls) s))])))
+
+  (define (set->list s)
+    (let f ([i 0] [j (fxsll 1 shift)] [s s] [ac '()])
+      (cond
+        [(pair? s)
+         (f i (fxsll j 1) (car s)
+            (f (fxlogor i j) (fxsll j 1) (cdr s) ac))]
+        [else
+         (let f ([i i] [m s] [ac ac])
+           (cond
+             [(fxeven? m) 
+              (if (fxzero? m) 
+                  ac
+                  (f (fx+ i 1) (fxsra m 1) ac))]
+             [else 
+              (f (fx+ i 1) (fxsra m 1) (cons i ac))]))])))
+
+
+  (define (set-map proc s)
+    (let f ([i 0] [j (fxsll 1 shift)] [s s] [ac '()])
+      (cond
+        [(pair? s)
+         (f i (fxsll j 1) (car s)
+            (f (fxlogor i j) (fxsll j 1) (cdr s) ac))]
+        [else
+         (let f ([i i] [m s] [ac ac])
+           (cond
+             [(fxeven? m) 
+              (if (fxzero? m) 
+                  ac
+                  (f (fx+ i 1) (fxsra m 1) ac))]
+             [else 
+              (f (fx+ i 1) (fxsra m 1) (cons (proc i) ac))]))])))
+
+  (define (set-for-each proc s)
+    (let f ([i 0] [j (fxsll 1 shift)] [s s])
+      (cond
+        [(pair? s)
+         (f i (fxsll j 1) (car s))
+         (f (fxlogor i j) (fxsll j 1) (cdr s))]
+        [else
+         (let f ([i i] [m s])
+           (cond
+             [(fxeven? m) 
+              (unless (fxzero? m) 
+                (f (fx+ i 1) (fxsra m 1)))]
+             [else 
+              (proc i)
+              (f (fx+ i 1) (fxsra m 1))]))])))
+
+  (define (set-ormap proc s)
+    (let f ([i 0] [j (fxsll 1 shift)] [s s])
+      (cond
+        [(pair? s)
+         (or (f i (fxsll j 1) (car s))
+             (f (fxlogor i j) (fxsll j 1) (cdr s)))]
+        [else
+         (let f ([i i] [m s])
+           (cond
+             [(fxeven? m) 
+              (if (fxzero? m) 
+                  #f
+                  (f (fx+ i 1) (fxsra m 1)))]
+             [else 
+              (or (proc i)
+                  (f (fx+ i 1) (fxsra m 1)))]))])))
+
+  (define (set-andmap proc s)
+    (let f ([i 0] [j (fxsll 1 shift)] [s s])
+      (cond
+        [(pair? s)
+         (and (f i (fxsll j 1) (car s))
+              (f (fxlogor i j) (fxsll j 1) (cdr s)))]
+        [else
+         (let f ([i i] [m s])
+           (cond
+             [(fxeven? m) 
+              (if (fxzero? m) 
+                  #t
+                  (f (fx+ i 1) (fxsra m 1)))]
+             [else 
+              (and (proc i)
+                   (f (fx+ i 1) (fxsra m 1)))]))])))
+#|IntegerSet|#)
+
+(module IntegerSet-list
   (make-empty-set set-member? set-add set-rem set-difference set-union
    empty-set?
    set->list list->set)
@@ -1019,6 +1223,106 @@
       [(null? s1) s2]
       [(memq (car s1) s2) (union (cdr s1) s2)]
       [else (cons (car s1) (union (cdr s1) s2))])))
+
+;;;(module IntegerSet
+;;;  (make-empty-set set-member? set-add set-rem set-difference set-union
+;;;   empty-set? set->list list->set)
+;;;
+;;;  (define-syntax L
+;;;    (lambda (x)
+;;;      (syntax-case x ()
+;;;        [(L expr)
+;;;         (with-syntax ([w 
+;;;                        (datum->syntax-object #'L
+;;;                          '(import IntegerSet-list))])
+;;;           #'(let () w expr))])))
+;;;
+;;;  (define-syntax T
+;;;    (lambda (x)
+;;;      (syntax-case x ()
+;;;        [(L expr)
+;;;         (with-syntax ([w 
+;;;                        (datum->syntax-object #'L
+;;;                          '(import IntegerSet-tree))])
+;;;           #'(let () w expr))])))
+;;;
+;;;  (define-record set (ls tr))
+;;;
+;;;  (define (make-empty-set)
+;;;    (make-set (L (make-empty-set))
+;;;              (T (make-empty-set))))
+;;;
+;;;  (define (set-member? x s)
+;;;    (if (L (set-member? x (set-ls s)))
+;;;        (if (T (set-member? x (set-tr s)))
+;;;            #t
+;;;            (error "mismatch member ~s in ~s" x s))
+;;;        (if (T (set-member? x (set-tr s)))
+;;;            (error "mismatch member ~s in ~s" x s)
+;;;            #f)))
+;;;
+;;;  (define (set-add x s)
+;;;    (verify-set 'set-add 
+;;;       (make-set (L (set-add x (set-ls s))) 
+;;;         (T (set-add x (set-tr s))))))
+;;;
+;;;  (define (set-rem x s)
+;;;    (verify-set 'set-rem 
+;;;      (make-set (L (set-rem x (set-ls s)))
+;;;                (T (set-rem x (set-tr s))))))
+;;;
+;;;  (define (set-difference s1 s2)
+;;;    (verify-set 'set-difference
+;;;      (make-set (L (set-difference (set-ls s1) (set-ls s2)))
+;;;        (T (set-difference (set-tr s1) (set-tr s2))))))
+;;;
+;;;
+;;;  (define (set-union s1 s2)
+;;;    (verify-set 'set-union
+;;;      (make-set (L (set-union (set-ls s1) (set-ls s2)))
+;;;        (T (set-union (set-tr s1) (set-tr s2))))))
+;;;
+;;;  (define (empty-set? s)
+;;;    (if (L (empty-set? (set-ls s)))
+;;;        (if (T (empty-set? (set-tr s)))
+;;;            #t
+;;;            (error "mismatch empty-set in ~s" s))
+;;;        (if (T (empty-set? (set-tr s)))
+;;;            (error "mismatch empty-set in ~s" s)
+;;;            #f)))
+;;;
+;;;  (define (verify-set who s)
+;;;    (let ([ls1 (L (set->list (set-ls s)))]
+;;;          [ls2 (T (set->list (set-tr s)))])
+;;;      (for-each (lambda (i) 
+;;;                  (unless (memq i ls2)
+;;;                    (error who "mismatch ~s ~s ~s" s ls1 ls2)))
+;;;                ls1)
+;;;      (for-each (lambda (i) 
+;;;                  (unless (memq i ls1)
+;;;                    (error who "mismatch ~s ~s ~s" s ls2 ls2)))
+;;;                ls2))
+;;;    s)
+;;;
+;;;  (define (set->list s)
+;;;    (let ([ls1 (L (set->list (set-ls s)))]
+;;;          [ls2 (T (set->list (set-tr s)))])
+;;;      (for-each (lambda (i) 
+;;;                  (unless (memq i ls2)
+;;;                    (error 'set->list "mismatch ~s" s)))
+;;;                ls1)
+;;;      (for-each (lambda (i) 
+;;;                  (unless (memq i ls1)
+;;;                    (error 'set->list "mismatch ~s" s)))
+;;;                ls2)
+;;;      ls1))
+;;;
+;;;  (define (list->set ls)
+;;;    (verify-set 'list->set 
+;;;      (make-set (L (list->set ls)) 
+;;;        (T (list->set ls)))))
+;;;
+;;;  )
 
 (module ListyGraphs 
   (empty-graph add-edge! empty-graph? print-graph node-neighbors
