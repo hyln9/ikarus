@@ -1899,7 +1899,7 @@
       (or (ormap frm-conf (set->list fs))
           (ormap var-conf (set->list vs))))
     (define (assign x)
-      (let (#;[x (vector-ref varvec xi)])
+      (let ()
         (define (assign-any)
           (let ([frms (var-frm-conf x)]
                 [vars (var-var-conf x)])
