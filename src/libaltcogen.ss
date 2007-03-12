@@ -1765,7 +1765,7 @@
                 [vars (var-var-conf x)])
             (let f ([i 1])
               (cond
-                [(frame-conflict? i vars frms) (f (fxadd1 i))]
+                [(set-member? i frms) (f (fxadd1 i))]
                 [else 
                  (let ([fv (mkfvar i)])
                    (set-var-loc! x fv)
@@ -1795,9 +1795,9 @@
                  (for-each-var (var-var-move x) varvec
                    (lambda (var)
                      (set-var-var-move! var
-                        (rem-var x (var-var-move var)))
+                       (rem-var x (var-var-move var)))
                      (set-var-frm-move! var
-                        (add-frm fv (var-frm-move var)))
+                       (add-frm fv (var-frm-move var)))
                      (let ([loc (var-loc var)])
                        (when (and loc (not (fvar? loc)))
                          (assign-move var)))))

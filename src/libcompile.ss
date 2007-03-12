@@ -487,6 +487,8 @@
                                   ,(E body))]
       [(shortcut body handler)
        `(shortcut ,(E body) ,(E handler))]
+      [(ntcall target valuw args mask size)
+       `(ntcall ,target ,size)]
       [else
        (if (symbol? x) 
            x
@@ -2230,7 +2232,7 @@
   (define (simplify arg lhs* rhs* k)
     (if (simple? arg)
         (k arg lhs* rhs*)
-        (let ([v (unique-var 'tmp)])
+        (let ([v (unique-var 'tp)])
           (k v (cons v lhs*) (cons (Expr arg) rhs*)))))
   (define (simplify* arg* lhs* rhs* k)
     (cond
