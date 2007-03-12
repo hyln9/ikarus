@@ -1750,14 +1750,6 @@
   ;;;
   (define (rewrite x varvec)
     (define who 'rewrite)
-    (define (frame-conflict? i vs fs)
-      (define (frm-conf x) (fx= i x))
-      (define (var-conf xi)
-        (let ([loc (var-loc (vector-ref varvec xi))])
-          (and (fvar? loc)
-               (fx= i (frm-loc loc)))))
-      (or (ormap frm-conf (set->list fs))
-          (ormap var-conf (set->list vs))))
     (define (assign x)
       (let ()
         (define (assign-any)
@@ -1771,8 +1763,6 @@
                    (set-var-loc! x fv)
                    (for-each-var vars varvec
                      (lambda (var)
-                       ;(set-var-var-conf! var
-                       ;  (rem-var x (var-var-conf var)))
                        (set-var-frm-conf! var
                          (add-frm fv (var-frm-conf var)))))
                    fv)]))))
@@ -1788,19 +1778,18 @@
                  (set-var-loc! x fv)
                  (for-each-var (var-var-conf x) varvec
                      (lambda (var)
-                       (set-var-var-conf! var
-                         (rem-var x (var-var-conf var)))
                        (set-var-frm-conf! var
                          (add-frm fv (var-frm-conf var)))))
                  (for-each-var (var-var-move x) varvec
                    (lambda (var)
-                     (set-var-var-move! var
-                       (rem-var x (var-var-move var)))
+                     ;(set-var-var-move! var
+                     ;  (rem-var x (var-var-move var)))
                      (set-var-frm-move! var
                        (add-frm fv (var-frm-move var)))
-                     (let ([loc (var-loc var)])
-                       (when (and loc (not (fvar? loc)))
-                         (assign-move var)))))
+                     ;(let ([loc (var-loc var)])
+                     ;  (when (and loc (not (fvar? loc)))
+                     ;    (assign-move var)))
+                     ))
                  fv)])))
         (or (assign-move x)
             (assign-any))))
@@ -1884,13 +1873,18 @@
                   (unless (fvar? loc) (error 'max-nfv "not assigned"))
                   (max-nfv (cdr ls) (max i (frm-loc loc))))]))
            (define (actual-frame-size vars i)
+             (define (var-conflict? i vs)
+               (ormap (lambda (xi)
+                         (let ([loc (var-loc (vector-ref varvec xi))])
+                          (and (fvar? loc)
+                               (fx= i (frm-loc loc)))))
+                      (set->list vs)))
              (define (frame-size-ok? i vars)
                (or (null? vars)
-                   (and (let ([x (car vars)])
-                          (not (frame-conflict? i 
-                                 (nfv-var-conf x)
-                                 (nfv-frm-conf x))))
-                        (frame-size-ok? (fxadd1 i) (cdr vars)))))
+                   (let ([x (car vars)])
+                     (and (not (set-member? i (nfv-frm-conf x)))
+                          (not (var-conflict? i (nfv-var-conf x)))
+                          (frame-size-ok? (fxadd1 i) (cdr vars))))))
               (cond
                 [(frame-size-ok? i vars) i]
                 [else (actual-frame-size vars (fxadd1 i))]))
@@ -1898,11 +1892,11 @@
              (unless (null? vars)
                (let ([v (car vars)] [fv (mkfvar i)])
                  (set-nfv-loc! v fv)
-                 (for-each
-                   (lambda (j) 
-                     (when (fx= j i)
-                       (error who "invalid assignment")))
-                   (set->list (nfv-frm-conf v)))
+                 ;(for-each
+                 ;  (lambda (j) 
+                 ;    (when (fx= j i)
+                 ;      (error who "invalid assignment")))
+                 ;  (set->list (nfv-frm-conf v)))
                  (for-each
                    (lambda (x)
                      (let ([loc (nfv-loc x)])
