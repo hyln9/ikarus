@@ -1771,8 +1771,8 @@
                    (set-var-loc! x fv)
                    (for-each-var vars varvec
                      (lambda (var)
-                       (set-var-var-conf! var
-                         (rem-var x (var-var-conf var)))
+                       ;(set-var-var-conf! var
+                       ;  (rem-var x (var-var-conf var)))
                        (set-var-frm-conf! var
                          (add-frm fv (var-frm-conf var)))))
                    fv)]))))
