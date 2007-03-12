@@ -1782,14 +1782,8 @@
                          (add-frm fv (var-frm-conf var)))))
                  (for-each-var (var-var-move x) varvec
                    (lambda (var)
-                     ;(set-var-var-move! var
-                     ;  (rem-var x (var-var-move var)))
                      (set-var-frm-move! var
-                       (add-frm fv (var-frm-move var)))
-                     ;(let ([loc (var-loc var)])
-                     ;  (when (and loc (not (fvar? loc)))
-                     ;    (assign-move var)))
-                     ))
+                       (add-frm fv (var-frm-move var)))))
                  fv)])))
         (or (assign-move x)
             (assign-any))))
@@ -2946,9 +2940,9 @@
        ;[foo (printf "4")]
         [x (impose-calling-convention/evaluation-order x)]
        ;[foo (printf "5")]
-        [x (time (assign-frame-sizes x))]
+        [x (assign-frame-sizes x)]
        ;[foo (printf "6")]
-        [x (time (color-by-chaitin x))]
+        [x (color-by-chaitin x)]
        ;[foo (printf "7")]
         [ls (flatten-codes x)]
        ;[foo (printf "8")]
