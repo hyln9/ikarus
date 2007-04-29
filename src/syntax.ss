@@ -20,7 +20,12 @@
     ;  (syntax-rules ()
     ;    [(_ f ls ls* ...)
     ;     (my-map '(map f ls ls* ...) f ls ls* ...)]))
-
+    (define-syntax build-let
+      (syntax-rules ()
+        [(_ ae lhs* rhs* body)
+         (build-application ae
+           (build-lambda ae lhs* body)
+           rhs*)]))
     (define who 'chi-top-library)
     (define-syntax assert
       (syntax-rules ()
@@ -281,22 +286,27 @@
                       (values 'other #f #f)))])))
     (define parse-library 
       (lambda (e)
-        (syntax-case e ()
+        (syntax-match e 
           [(_ (name name* ...)
               (export exp* ...)
               (import (scheme))
               b* ...)
-           (and (eq? #'export 'export)
-                (eq? #'import 'import)
-                (eq? #'scheme 'scheme)
-                (symbol? #'name)
-                (andmap symbol? #'(name* ...))
-                (andmap symbol? #'(exp* ...)))
-           (values #'(name name* ...) #'(exp* ...) #'(b* ...))]
+           (if (and (eq? export 'export)
+                    (eq? import 'import)
+                    (eq? scheme 'scheme)
+                    (symbol? name)
+                    (andmap symbol? name*)
+                    (andmap symbol? exp*))
+               (values (cons name name*) exp* b*)
+               (error who "malformed library ~s" e))]
           [_ (error who "malformed library ~s" e)])))
-    (define stx-error
-      (lambda (stx . args)
-        (error 'chi "invalid syntax ~s" (strip stx '()))))
+    (define-syntax stx-error 
+      (syntax-rules ()
+        [(_ stx) (error 'chi "invalid syntax ~s" (strip stx '()))]
+        [(_ stx msg) (error 'chi "~a: ~s" msg (strip stx '()))]))
+    ;(define stx-error
+    ;  (lambda (stx . args)
+    ;    (error 'chi "invalid syntax ~s" (strip stx '()))))
     (define-syntax syntax-match-test
       (lambda (stx)
         (define dots?
@@ -466,11 +476,13 @@
            (if (id? id) 
                (values id (cons 'expr val))
                (stx-error x))])))
-    (define scheme-env
+    (define scheme-env ; the-env
       '([define     define-label     (define)]
         [quote      quote-label      (core-macro . quote)]
+        [lambda     lambda-label     (core-macro . lambda)]
         [let-values let-values-label (core-macro . let-values)]
         [let        let-label        (core-macro . let)]
+        [let*       let*-label       (core-macro . let*)]
         [cond       cond-label       (core-macro . cond)]
         [cons       cons-label       (core-prim . cons)]
         [values     values-label     (core-prim . values)]
@@ -482,8 +494,19 @@
         [new-cafe   new-cafe-label   (core-prim . new-cafe)]
         [load       load-label       (core-prim . load)]
         [for-each   for-each-label   (core-prim . for-each)]
+        [map        map-label        (core-prim . map)]
         [display    display-label    (core-prim . display)]
+        [gensym     gensym-label     (core-prim . gensym)]
+        [getprop    getprop-label    (core-prim . getprop)]
+        [putprop    putprop-label    (core-prim . putprop)]
+        [vector     vector-label     (core-prim . vector)]
+        [list       list-label       (core-prim . list)]
+        [append     append-label     (core-prim . append)]
+        [list->vector list->vector-label (core-prim . list->vector)]
+        [symbol->string symbol->string-label (core-prim .  symbol->string)]
         [current-eval current-eval-label (core-prim . current-eval)]
+        [primitive-ref primitive-ref-label (core-prim .  primitive-ref)]
+        [$set-symbol-value! $set-symbol-value!-label (core-prim .  $set-symbol-value!)]
         [compile    compile-label    (core-prim . compile)]
         [printf     printf-label     (core-prim . printf)]
         [string=?   string=?-label   (core-prim . string=?)]
@@ -538,6 +561,36 @@
                            (build-lambda no-source '() (car rhs*))
                            (build-lambda no-source (car lex**) 
                              (f (cdr lex**) (cdr rhs*)))))])))))])))
+    (define let*-transformer
+      (lambda (e r mr)
+        (syntax-match e
+          [(_ ([lhs* rhs*] ...) b b* ...)
+           (let f ([lhs* lhs*] [rhs* rhs*]
+                   [subst-lhs* '()] [subst-lab* '()]
+                   [r r])
+             (cond
+               [(null? lhs*) 
+                (chi-internal
+                  (add-subst 
+                    (id/label-rib subst-lhs* subst-lab*)
+                    (cons b b*))
+                  r mr)]
+               [else
+                (let ([lhs (car lhs*)]
+                      [rhs (chi-expr
+                             (add-subst
+                               (id/label-rib subst-lhs* subst-lab*)
+                               (car rhs*))
+                             r mr)])
+                  (unless (id? lhs)
+                    (stx-error lhs "invalid binding"))
+                  (let ([lex (gen-lexical lhs)]
+                        [lab (gen-label lhs)])
+                    (build-let no-source (list lex) (list rhs)
+                      (f (cdr lhs*) (cdr rhs*)
+                         (cons lhs subst-lhs*) 
+                         (cons lab subst-lab*)
+                         (add-lexicals (list lab) (list lex) r)))))]))])))
     (define let-transformer
       (lambda (e r mr)
         (syntax-match e
@@ -628,12 +681,22 @@
       (lambda (e r mr)
         (syntax-match e
           [(_ datum) (build-data no-source (strip datum '()))])))
+    (define lambda-transformer
+      (lambda (e r mr)
+        (syntax-match e
+          [(_ fmls b b* ...)
+           (let-values ([(fmls body) 
+                         (chi-lambda-clause fmls 
+                            (cons b b*) r mr)])
+             (build-lambda no-source fmls body))])))
     (define core-macro-transformer
       (lambda (name)
         (case name
           [(quote)      quote-transformer]
+          [(lambda)     lambda-transformer]
           [(let-values) let-values-transformer]
           [(let)        let-transformer]
+          [(let*)       let*-transformer]
           [(cond)       cond-transformer]
           [else (error 'macro-transformer "cannot find ~s" name)])))
     ;;; chi procedures
@@ -664,13 +727,62 @@
                (build-data no-source datum))]
             [else (error 'chi-expr "invalid type ~s for ~s" type
                          (strip e '())) (stx-error e)]))))
+    (define chi-lambda-clause
+      (lambda (fmls body* r mr)
+        (syntax-match fmls
+          [(x* ...) 
+           (if (valid-bound-ids? x*) 
+               (let ([lex* (map gen-lexical x*)]
+                     [lab* (map gen-label x*)])
+                 (values
+                   lex*
+                   (chi-internal 
+                     (add-subst 
+                       (id/label-rib x* lab*)
+                       body*)
+                     (add-lexicals lab* lex* r)
+                     mr)))
+               (stx-error fmls "invalid fmls"))]
+          [(x* ... . x)
+           (if (valid-bound-ids? (cons rest x*)) 
+               (let ([lex* (map gen-lexical x*)]
+                     [lab* (map gen-label x*)]
+                     [lex (gen-lexical x)]
+                     [lab (gen-label x)])
+                 (values
+                   (append lex* lex)
+                   (chi-internal 
+                     (add-subst 
+                       (id/label-rib (cons x x*) (cons lab lab*))
+                       body*)
+                     (add-lexicals (cons lab lab*)
+                                   (cons lex lex*)
+                                   r)
+                     mr)))
+               (stx-error fmls "invalid fmls"))]
+          [_ (stx-error fmls "invalid fmls")])))
+    (define chi-rhs*
+      (lambda (rhs* r mr)
+        (map (lambda (rhs) 
+               (case (car rhs)
+                 [(defun) 
+                  (let ([x (cdr rhs)])
+                    (let ([fmls (car x)] [body* (cdr x)])
+                      (let-values ([(fmls body) 
+                                    (chi-lambda-clause fmls body* r mr)])
+                        (build-lambda no-source fmls body))))]
+                 [(expr) 
+                  (let ([expr (cdr rhs)])
+                    (chi-expr expr r mr))]
+                 [else (error 'chi-rhs "invalid rhs ~s" rhs)]))
+             rhs*)))
     (define chi-internal
       (lambda (e* r mr)
         (define return
           (lambda (init* r mr lhs* lex* rhs*)
             (unless (valid-bound-ids? lhs*) 
               (error 'chi-internal "multiple definitions"))
-            (let ([rhs* (chi-expr* rhs* r mr)]
+            (let ([rhs* (chi-rhs* rhs* r mr)]
                   [init* (chi-expr* init* r mr)])
               (build-letrec no-source 
                  (reverse lex*) (reverse rhs*) 
@@ -691,10 +803,10 @@
                           (when (bound-id-member? id kwd*) 
                             (stx-error id "undefined identifier"))
                           (let ([lex (gen-lexical id)]
-                                [label   (gen-label)])
-                            (extend-rib! rib id label)
+                                [lab  (gen-label id)])
+                            (extend-rib! rib id lab)
                             (f (cdr e*)
-                               (cons (cons label (cons 'lexical lex)) r)
+                               (cons (cons lab (cons 'lexical lex)) r)
                                mr 
                                (cons id lhs*)
                                (cons lex lex*)
@@ -705,11 +817,11 @@
     (define chi-library-internal 
       (lambda (e* r rib)
         (define return
-          (lambda (init* r mr lhs* rhs*)
-            (values init* r mr (reverse lhs*) (reverse rhs*))))
-        (let f ([e* e*] [r r] [mr r] [lhs* '()] [rhs* '()] [kwd* '()])
+          (lambda (init* r mr lhs* lex* rhs*)
+            (values init* r mr (reverse lhs*) (reverse lex*) (reverse rhs*))))
+        (let f ([e* e*] [r r] [mr r] [lhs* '()] [lex* '()] [rhs* '()] [kwd* '()])
           (cond
-            [(null? e*) (return e* r mr lhs* rhs*)]
+            [(null? e*) (return e* r mr lhs* lex* rhs*)]
             [else
              (let ([e (car e*)])
                (let-values ([(type value kwd) (syntax-type e r)])
@@ -719,27 +831,31 @@
                       (let-values ([(id rhs) (parse-define e)])
                         (when (bound-id-member? id kwd*) 
                           (stx-error id "undefined identifier"))
-                        (let ([lexical (gen-lexical (id->sym id))]
-                              [label   (gen-label)])
-                          (extend-rib! rib id label)
-                          (f (cdr e*) r mr (cons id lhs*) (cons rhs rhs*)
+                        (let ([lex (gen-lexical id)]
+                              [lab (gen-label id)])
+                          (extend-rib! rib id lab)
+                          (f (cdr e*)
+                             (cons (cons lab (cons 'lexical lex)) r)
+                             mr 
+                             (cons id lhs*) (cons lex lex*) (cons rhs rhs*)
                              kwd*)))]
                      [else 
-                      (return e* r mr lhs* rhs*)]))))]))))
+                      (return e* r mr lhs* lex* rhs*)]))))]))))
     (define chi-top-library
       (lambda (e)
         (let-values ([(name exp* b*) (parse-library e)])
           (let ([rib (make-scheme-rib)]
                 [r (make-scheme-env)])
             (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)])
-              (let-values ([(init* r mr lhs* rhs*)
+              (let-values ([(init* r mr lhs* lex* rhs*)
                             (chi-library-internal b* r rib)])
-                (unless (null? lhs*)
-                  (error who "cannot handle definitions yet"))
-                (if (null? init*) 
-                    (chi-void)
-                    (build-sequence no-source 
-                      (chi-expr* init* r mr)))))))))
+                (build-letrec no-source
+                  lex* 
+                  (chi-rhs* rhs* r mr)
+                  (if (null? init*) 
+                      (chi-void)
+                      (build-sequence no-source 
+                        (chi-expr* init* r mr))))))))))
     (lambda (x) 
       (let ([x (chi-top-library x)])
     ;    (pretty-print x)
