@@ -1,8 +1,10 @@
 
-(let ()
+(library (ikarus timers)
+  (export)
+  (import (scheme))
+
   (define-record stats 
-    (user-secs user-usecs sys-secs sys-usecs real-secs real-usecs
-     collection-id))
+    (user-secs user-usecs sys-secs sys-usecs real-secs real-usecs collection-id))
 
   (define (mk-stats)
     (make-stats #f #f #f #f #f #f #f))
@@ -94,7 +96,7 @@
                            t1 t0)
               (apply values v*)])))]))
                        
-
+  (begin)
   (define (bytes-minor)
     (foreign-call "ikrt_bytes_allocated"))
   (define (bytes-major)
