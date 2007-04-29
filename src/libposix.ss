@@ -1,11 +1,17 @@
 
-(primitive-set! 'posix-fork
+(library (ikarus posix)
+  (export)
+  (import (scheme))
+
+(define ikarus-posix-fork
   (lambda ()
     (foreign-call "ikrt_fork")))
 
+(primitive-set! 'posix-fork ikarus-posix-fork)
+
 (primitive-set! 'fork
   (lambda (parent-proc child-proc)
-    (let ([pid (posix-fork)])
+    (let ([pid (ikarus-posix-fork)])
       (cond
         [(fx= pid 0) (child-proc)]
         [(fx= pid -1) 
@@ -103,3 +109,4 @@
                       (substring s (fxadd1 i) n)
                       "")))))
       (foreign-call "ikrt_environ"))))
+)
