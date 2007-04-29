@@ -21,7 +21,11 @@ description:
   operations of the cafe resume as normal.|#
 #|FIXME:new-cafe
   Be specific about what the error-port is |#
-(let ()
+
+(library (ikarus cafe)
+  (export)
+  (import (scheme))
+
   (define with-error-handler
     (lambda (p thunk)
       (let ([old-error-handler (error-handler)])
@@ -97,7 +101,7 @@ description:
     (case-lambda
       [() (new-cafe eval)]
       [(p)
-       (unless (procedure? p) 
+       (unless (procedure? p)
          (error 'new-cafe "~s is not a procedure" p))
        (new-cafe p)]))
   )

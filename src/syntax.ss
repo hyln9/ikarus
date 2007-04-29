@@ -284,7 +284,8 @@
                         [b (label->binding label r)]
                         [type (binding-type b)])
                    (case type
-                     [(define define-syntax core-macro begin macro)
+                     [(define define-syntax core-macro begin macro
+                        set!)
                       (values type (binding-value b) id)]
                      [else 
                       (values 'call #f #f)]))
@@ -507,6 +508,7 @@
       '([define     define-label     (define)]
         [define-syntax define-syntax-label (define-syntax)]
         [begin      begin-label      (begin)]
+        [set!       set!-label       (set!)]
         [define-record define-record-label (macro .  define-record)]
         [case          case-label          (core-macro .  case)]
         [foreign-call foreign-call-label (core-macro .  foreign-call)]
@@ -520,38 +522,40 @@
         [if         if-label         (core-macro . if)]
         [when       when-label       (core-macro . when)]
         [unless     unless-label     (core-macro . unless)]
-
+        [parameterize parameterize-label (core-macro . parameterize)]
+        ;;; prims
         [void       void-label       (core-prim . void)]
-
+        [boolean?   boolean-label    (core-prim . boolean?)]
+        [null?      null?-label      (core-prim . null?)]
+        [procedure? procedure?-label (core-prim . procedure?)]
+        [eof-object? eof-object?-label (core-prim . eof-object?)]
+        ;;; comparison
+        [eq?        eq?-label        (core-prim . eq?)]
+        [eqv?       eqv?-label       (core-prim . eqv?)]
+        [equal?     equal?-label     (core-prim . equal?)]
+        ;;; pairs/lists
         [cons       cons-label       (core-prim . cons)]
         [car        car-label        (core-prim . car)]
         [cdr        cdr-label        (core-prim . cdr)]
-
-        [null?      null?-label      (core-prim . null?)]
-        [boolean?   boolean-label    (core-prim . boolean?)]
+        [list       list-label       (core-prim . list)]
+        [append     append-label     (core-prim . append)]
+        ;;; chars
         [char=?     char=?-label     (core-prim . char=?)]
-
+        ;;; strings
         [string?    string?-label    (core-prim . string?)]
         [string-ref string-ref-label (core-prim . string-ref)]
         [string-length string-length-label (core-prim . string-length)]
         [string=?   string=?-label   (core-prim . string=?)]
         [substring  substring-label  (core-prim . substring)]
-
-        [new-cafe   new-cafe-label   (core-prim . new-cafe)]
-        [load       load-label       (core-prim . load)]
+        ;;; vectors
+        [vector     vector-label     (core-prim . vector)]
+        [list->vector list->vector-label (core-prim . list->vector)]
+        ;;; iterators
         [for-each   for-each-label   (core-prim . for-each)]
         [map        map-label        (core-prim . map)]
-        [display    display-label    (core-prim . display)]
-        [gensym     gensym-label     (core-prim . gensym)]
-        [getprop    getprop-label    (core-prim . getprop)]
-        [putprop    putprop-label    (core-prim . putprop)]
-        [vector     vector-label     (core-prim . vector)]
-        [list       list-label       (core-prim . list)]
-        [append     append-label     (core-prim . append)]
-        [apply      apply-label      (core-prim . apply)]
-        [values     values-label     (core-prim . values)]
-        [call-with-values cwv-label  (core-prim . call-with-values)]
-        [procedure? procedure?-label (core-prim . procedure?)]
+        [andmap     andmap-label     (core-prim . andmap)]
+        [ormap      ormap-label      (core-prim . ormap)]
+        ;;; fixnums
         [fixnum?    fixnum-label     (core-prim . fixnum?)]
         [fx<        fx<-label        (core-prim . fx<)]
         [fx<=       fx<=-label       (core-prim . fx<=)]
@@ -562,30 +566,57 @@
         [fx+        fx+-label        (core-prim . fx+)]
         [fxadd1     fxadd1-label     (core-prim . fxadd1)]
         [fxsub1     fxsub1-label     (core-prim . fxsub1)]
+        [fxquotient fxquotient-label (core-prim . fxquotient)]
+        [fxremainder fxremainder-label (core-prim . fxremainder)]
+        ;;; generic arithmetic
         [-          minus-label      (core-prim . -)]
         [*          *-label          (core-prim . *)]
         [+          plus-label       (core-prim . +)]
         [quotient   quotient-label   (core-prim . quotient)]
-        [fxquotient fxquotient-label (core-prim . fxquotient)]
-        [fxremainder fxremainder-label (core-prim . fxremainder)]
-        [list->vector list->vector-label (core-prim . list->vector)]
+        ;;; symbols/gensyms
+        [gensym     gensym-label     (core-prim . gensym)]
+        [getprop    getprop-label    (core-prim . getprop)]
+        [putprop    putprop-label    (core-prim . putprop)]
         [symbol->string symbol->string-label (core-prim .  symbol->string)]
-        [current-eval current-eval-label (core-prim . current-eval)]
-        [error      error-label      (core-prim . error)]
-        [exit       exit-label       (core-prim . exit)]
-        [primitive-ref primitive-ref-label (core-prim .  primitive-ref)]
         [$set-symbol-value! $set-symbol-value!-label (core-prim .  $set-symbol-value!)]
-        [compile    compile-label    (core-prim . compile)]
+        ;;; IO/ports
+        [console-input-port console-input-port-label (core-prim .  console-input-port)]
+        [console-output-port console-output-port-label (core-prim .  console-output-port)]
+        [flush-output-port flush-output-port-label (core-prim .  flush-output-port)]
+        [reset-input-port! reset-input-port!-label (core-prim .  reset-input-port!)]
+        ;;; IO/high-level
+        [display    display-label    (core-prim . display)]
+        [write      write-label      (core-prim . write)]
+        [read       read-label       (core-prim . read)]
+        [newline    newline-label    (core-prim . newline)]
         [printf     printf-label     (core-prim . printf)]
+        [pretty-print pretty-print-label (core-prim . pretty-print)]
+        ;;; evaluation / control
+        [apply      apply-label      (core-prim . apply)]
+        [values     values-label     (core-prim . values)]
+        [call-with-values cwv-label  (core-prim . call-with-values)]
+        [current-eval current-eval-label (core-prim . current-eval)]
+        [call/cc     call/cc-label   (core-prim . call/cc)]
+        [dynamic-wind dynamic-wind-label (core-prim . dynamic-wind)]
+        [error      error-label      (core-prim . error)]
+        [print-error print-error-label (core-prim . print-error)]
+        [error-handler error-handler-label (core-prim .  error-handler)]
+        [interrupt-handler interrupt-handler-label (core-prim .  interrupt-handler)]
+        [exit       exit-label       (core-prim . exit)]
+        [compile    compile-label    (core-prim . compile)]
+        [eval       eval-label       (core-prim . eval)]
+        [load       load-label       (core-prim . load)]
+        [new-cafe   new-cafe-label   (core-prim . new-cafe)]
+        [command-line-arguments command-line-arguments-label (core-prim .  command-line-arguments)]
+        ;;; records/low-level 
         [$record-set! $record-set!-label (core-prim . $record-set!)]
         [$record-ref  $record-ref-label  (core-prim . $record-ref)]
         [$record      $record-label      (core-prim . $record)]
         [$record?     $record?-label     (core-prim . $record?)]
         [$record/rtd? $record/rtd?-label (core-prim . $record/rtd?)]
-
-
+        ;;; misc
         [primitive-set! primitive-set!-label (core-prim .  primitive-set!)]
-        [command-line-arguments command-line-arguments-label (core-prim .  command-line-arguments)]
+        [primitive-ref primitive-ref-label (core-prim .  primitive-ref)]
         ))
     (define make-scheme-rib
       (lambda ()
@@ -756,7 +787,8 @@
               [((d* ...) e e* ...)
                (build-one t cls (chi-void))]
               [(else-kwd x x* ...)
-               (if (free-id=? else-kwd (sym->free-id 'else))
+               (if (and (id? else-kwd)
+                        (free-id=? else-kwd (sym->free-id 'else)))
                    (build-sequence no-source
                      (chi-expr* (cons x x*) r mr))
                    (stx-error e))]
@@ -792,7 +824,8 @@
           (lambda (e)
             (syntax-match e
               [(e0 e1 e2* ...)
-               (if (free-id=? e0 (sym->free-id 'else))
+               (if (and (id? e0) 
+                        (free-id=? e0 (sym->free-id 'else)))
                    (build-sequence no-source 
                      (chi-expr* (cons e1 e2*) r mr))
                    (chi-one e (chi-void)))]
@@ -811,7 +844,8 @@
                   [_ (stx-error expr)])))
             (syntax-match e
               [(e0 e1 e2) 
-               (if (free-id=? e1 (sym->free-id '=>))
+               (if (and (id? e1) 
+                        (free-id=? e1 (sym->free-id '=>)))
                    (handle-arrow e0 e2 rest)
                    (chi-test e rest))]
               [_ (chi-test e rest)])))
@@ -906,6 +940,42 @@
                                             "~s is not a record of type ~s"
                                             x ',rtd)))))
                          setters i*))))])))
+    (define parameterize-transformer
+      (lambda (e r mr)
+        (syntax-match e
+          [(_ () b b* ...) 
+           (chi-internal (cons b b*) r mr)]
+          [(_ ([olhs* orhs*] ...) b b* ...)
+           (let ([lhs* (map (lambda (x) (gen-lexical 'lhs)) olhs*)]
+                 [rhs* (map (lambda (x) (gen-lexical 'rhs)) olhs*)]
+                 [t*   (map (lambda (x) (gen-lexical 't)) olhs*)]
+                 [swap (gen-lexical 'swap)])
+             (build-let no-source 
+               (append lhs* rhs*)
+               (append (chi-expr* olhs* r mr) (chi-expr* orhs* r mr))
+               (build-let no-source 
+                 (list swap)
+                 (list (build-lambda no-source '() 
+                         (build-sequence no-source 
+                           (map (lambda (t lhs rhs) 
+                                  (build-let no-source 
+                                    (list t) 
+                                    (list (build-application no-source
+                                            (build-lexical-reference no-source lhs)
+                                            '()))
+                                    (build-sequence no-source 
+                                      (list (build-application no-source 
+                                              (build-lexical-reference no-source lhs)
+                                              (list (build-lexical-reference no-source rhs)))
+                                            (build-lexical-assignment no-source rhs 
+                                              (build-lexical-reference no-source t))))))
+                                t* lhs* rhs*))))
+                 (build-application no-source
+                   (build-primref no-source 'dynamic-wind)
+                   (list (build-lexical-reference no-source swap)
+                         (build-lambda no-source '() 
+                           (chi-internal (cons b b*) r mr))
+                         (build-lexical-reference no-source swap))))))])))
     (define foreign-call-transformer
       (lambda (e r mr)
         (syntax-match e
@@ -927,6 +997,7 @@
           [(if)            if-transformer]
           [(when)          when-transformer]
           [(unless)        unless-transformer]
+          [(parameterize)  parameterize-transformer]
           [(foreign-call)  foreign-call-transformer]
           [else (error 'macro-transformer "cannot find ~s" name)])))
     (define macro-transformer
@@ -972,8 +1043,27 @@
             [(constant)
              (let ([datum value])
                (build-data no-source datum))]
+            [(set!) (chi-set! e r mr)]
+            [(begin) 
+             (syntax-match e
+               [(_ x x* ...)
+                (build-sequence no-source
+                  (chi-expr* (cons x x*) r mr))])]
             [else (error 'chi-expr "invalid type ~s for ~s" type
                          (strip e '())) (stx-error e)]))))
+    (define chi-set!
+      (lambda (e r mr)
+        (syntax-match e
+          [(_ x v)
+           (if (id? x)
+               (let-values ([(type value kwd) (syntax-type x r)])
+                 (case type
+                   [(lexical) 
+                    (build-lexical-assignment no-source 
+                      value 
+                      (chi-expr v r mr))]
+                   [else (stx-error e)]))
+               (stx-error e))])))
     (define chi-lambda-clause
       (lambda (fmls body* r mr)
         (syntax-match fmls
