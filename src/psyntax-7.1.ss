@@ -684,6 +684,7 @@
 
 (define-syntax build-lexical-reference
   (syntax-rules ()
+    ((_ ae var) var)
     ((_ type ae var)
      var)))
 
@@ -1701,6 +1702,7 @@
                  (($import) (values '$import-form #f e w ae))
                  ((eval-when) (values 'eval-when-form #f e w ae))
                  ((meta) (values 'meta-form #f e w ae))
+                 ((library) (values 'library-form #f e w ae))
                  ((local-syntax)
                   (values 'local-syntax-form (binding-value b) e w ae))
                  (else (values 'call #f e w ae))))
@@ -1735,6 +1737,8 @@
             (let ((first (chi-top (car body) r w ctem rtem meta? ribcage
                             meta-residualize! #f)))
               (cons first (dobody (cdr body)))))))))
+
+
 
 (define chi-top
   (lambda (e r w ctem rtem meta? top-ribcage meta-residualize! meta-seen?)
@@ -1817,6 +1821,7 @@
                              (lambda ()
                                (build-global-definition ae valsym (chi rhs r r w #f)))))))))
              ))))
+        ((library-form) (chi-top-library e))
         (($module-form)
          (let ((ribcage (make-empty-ribcage)))
            (let-values (((orig id exports forms)
@@ -2044,6 +2049,10 @@
                                            rest))))
                                     (else (error 'sc-expand-internal "unexpected module binding type ~s" t)))))
                             (loop bs))))))))))))
+
+
+(include "syntax.ss")
+
 
 (define id-set-diff
   (lambda (exports defs)
@@ -3402,6 +3411,8 @@
 
 (global-extend 'alias 'alias '())
 (global-extend 'begin 'begin '())
+
+(global-extend 'library 'library '())
 
 (global-extend '$module-key '$module '())
 (global-extend '$import '$import '())

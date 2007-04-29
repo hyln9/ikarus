@@ -68,35 +68,38 @@
 
 
 ;;; Finally, we're ready to evaluate the files and enter the cafe.
-(let-values ([(files script args)
-              (let f ([args (command-line-arguments)])
-                (cond
-                  [(null? args) (values '() #f '())]
-                  [(string=? (car args) "--")
-                   (values '() #f (cdr args))]
-                  [(string=? (car args) "--script")
-                   (let ([d (cdr args)])
-                     (cond
-                       [(null? d) 
-                        (error #f "--script requires a script name")]
-                       [else
-                        (values '() (car d) (cdr d))]))]
-                  [else
-                   (let-values ([(f* script a*) (f (cdr args))])
-                     (values (cons (car args) f*) script a*))]))])
-  (current-eval compile)
-  (cond
-    [script ; no greeting, no cafe
-     (command-line-arguments (cons script args))
-     (for-each load files)
-     (load script)
-     (exit 0)]
-    [else
-     (printf "Ikarus Scheme (Build ~a)\n" (compile-time-date-string))
-     (display "Copyright (c) 2006-2007 Abdulaziz Ghuloum\n\n")
-     (command-line-arguments args)
-     (for-each load files)
-     (new-cafe)
-     (exit 0)]))
-
+(library (ikarus interaction)
+  (export)
+  (import (scheme))
+  (let-values ([(files script args)
+                (let f ([args (command-line-arguments)])
+                  (cond
+                    [(null? args) (values '() #f '())]
+                    [(string=? (car args) "--")
+                     (values '() #f (cdr args))]
+                    [(string=? (car args) "--script")
+                     (let ([d (cdr args)])
+                       (cond
+                         [(null? d) 
+                          (error #f "--script requires a script name")]
+                         [else
+                          (values '() (car d) (cdr d))]))]
+                    [else
+                     (let-values ([(f* script a*) (f (cdr args))])
+                       (values (cons (car args) f*) script a*))]))])
+    (current-eval compile)
+    (cond
+      [script ; no greeting, no cafe
+       (command-line-arguments (cons script args))
+       (for-each load files)
+       (load script)
+       (exit 0)]
+      [else
+       (printf "Ikarus Scheme (Build ~a)\n" "NO TIME STRING")
+       ;(printf "Ikarus Scheme (Build ~a)\n" (compile-time-date-string))
+       (display "Copyright (c) 2006-2007 Abdulaziz Ghuloum\n\n")
+       (command-line-arguments args)
+       (for-each load files)
+       (new-cafe)
+       (exit 0)])))
 

@@ -26,7 +26,7 @@
     syntax quasisyntax unsyntax unsyntax-splicing datum
     let let* let-values cond case define-record or and when unless do
     include parameterize trace untrace trace-lambda trace-define
-    rec
+    rec library
     time))
 
 
@@ -153,6 +153,7 @@
     *current-output-port* *standard-input-port* *current-input-port*
     
     ;;; 
+    compile-core-expr-to-port
     compiler-giveup-tally
     ))
  
@@ -266,42 +267,6 @@
 (define (expand-file ifile)
   (map sc-expand (read-file ifile)))
 
-(define (compile-library ifile ofile which-compile)
-  (parameterize ([assembler-output #f] 
-                 [expand-mode 'bootstrap]
-                 [interaction-environment system-env])
-     (let ([proc 
-            (case which-compile
-              [(onepass) compile-file]
-              [(chaitin) alt-compile-file]
-              [else (error 'compile-library "unknown compile ~s"
-                           which-compile)])])
-      (printf "compiling ~a ... \n" ifile)
-      (proc ifile ofile 'replace))))
-
-
-
-#;(let ()
-  (define (compile-all who)
-    (for-each
-      (lambda (x)
-        (when (eq? who (caddr x))
-          (compile-library (car x) (cadr x) (cadddr x))))
-      scheme-library-files))
-  (define (time x) x)
-  (fork
-    (lambda (pid) 
-      (time (compile-all 'p1))
-      (unless (fxzero? (waitpid pid))
-        (exit -1)))
-    (lambda ()
-      (time (compile-all 'p0))
-      (exit))))
-
-(for-each 
-  (lambda (x)
-    (compile-library (car x) (cadr x) (cadddr x)))
-  scheme-library-files)
 
 (define (join s ls)
   (cond
@@ -317,11 +282,55 @@
             (display a str)
             (display s str)
             (f (car d) (cdr d))])))]))
-   
 
-(system
-  (format "cat ~a > ikarus.boot"
-          (join " " (map cadr scheme-library-files))))
+(define (compile-all)
+  (define (compile-library ifile ofile which-compile)
+    (parameterize ([assembler-output #f] 
+                   [expand-mode 'bootstrap]
+                   [interaction-environment system-env])
+       (let ([proc 
+              (case which-compile
+                [(onepass) compile-file]
+                [(chaitin) alt-compile-file]
+                [else (error 'compile-library "unknown compile ~s"
+                             which-compile)])])
+        (printf "compiling ~a ... \n" ifile)
+        (proc ifile ofile 'replace))))
+  
+  (for-each 
+    (lambda (x)
+      (compile-library (car x) (cadr x) (cadddr x)))
+    scheme-library-files)
+  (system
+    (format "cat ~a > ikarus.boot"
+            (join " " (map cadr scheme-library-files)))))
+
+(define (new-compile-all)
+  (define (slurp-file file)
+    (with-input-from-file file
+      (lambda ()
+        (let f ()
+          (let ([x (read)])
+            (if (eof-object? x)
+                '()
+                (cons x (f))))))))
+  (define (expand-library ifile)
+    (parameterize ([expand-mode 'bootstrap]
+                   [interaction-environment system-env])
+       (expand (cons 'begin (slurp-file ifile)))))
+  (define (expand-all ls)
+    (map (lambda (x) (expand-library (car x))) ls))
+  (printf "expanding ...\n")
+  (let ([core* (expand-all scheme-library-files)])
+  (printf "compiling ...\n")
+    (let ([p (open-output-file "ikarus.boot" 'replace)])
+      (for-each 
+        (lambda (x) (#%compile-core-expr-to-port x p))
+        core*)
+      (close-output-port p))))
+
+;(compile-all)
+(new-compile-all)
 
 (printf "Happy Happy Joy Joy\n")
 ;(#%compiler-giveup-tally)

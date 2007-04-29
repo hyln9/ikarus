@@ -551,7 +551,8 @@
         [(funcall) #t]
         [(conditional) #f]
         [(bind lhs* rhs* body) (valid-mv-producer? body)]
-        [else (error 'valid-mv-producer? "unhandles ~s"
+        [else #f] ;; FIXME BUG
+        #;[else (error 'valid-mv-producer? "unhandles ~s"
                      (unparse x))]))
     (record-case rator
       [(clambda g cls*)
@@ -5223,6 +5224,12 @@
                ls*)])
         (car code*)))))
 
+
+(define compile-core-expr-to-port
+  (lambda (expr port)
+    (parameterize ([current-expand (lambda (x) x)])
+      (fasl-write (compile-expr expr) port))))
+
 (define compile-file
   (lambda (input-file output-file . rest)
     (let ([ip (open-input-file input-file)]
@@ -5247,6 +5254,8 @@
       (close-input-port ip)
       (close-output-port op))))
 
+
+(primitive-set! 'compile-core-expr-to-port compile-core-expr-to-port)
 
 (primitive-set! 'compile-file compile-file)
 (primitive-set! 'alt-compile-file alt-compile-file)
