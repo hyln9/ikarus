@@ -742,6 +742,6 @@
                       (chi-expr* init* r mr)))))))))
     (lambda (x) 
       (let ([x (chi-top-library x)])
-        (pretty-print x)
+    ;    (pretty-print x)
         x))
     ))

@@ -333,5 +333,6 @@
 (new-compile-all)
 
 (printf "Happy Happy Joy Joy\n")
+(exit)
 ;(#%compiler-giveup-tally)
 ; vim:syntax=scheme
