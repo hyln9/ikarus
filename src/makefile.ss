@@ -233,7 +233,7 @@
       ["libcontrol1.ss"   "libcontrol1.fasl"  p0 onepass]
       ["libcollect.ss"    "libcollect.fasl"   p0 onepass]
       ["librecord.ss"     "librecord.fasl"    p0 onepass]
-      ["libcxr.ss"        "libcxr.fasl"       p0 onepass]
+    ["libcxr.ss"        "libcxr.fasl"       p0 onepass]
       ["libnumerics.ss"   "libnumerics.fasl"  p0 onepass]
     ["libguardians.ss"  "libguardians.fasl" p0 onepass]
     ["libcore.ss"       "libcore.fasl"      p0 onepass]

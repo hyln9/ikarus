@@ -3,8 +3,14 @@
 ;(primitive-set! 'cdr (lambda (x) (cdr x)))
 ;(primitive-set! 'cadr (lambda (x) (cadr x)))
 
-(let ([err (lambda (who x)
-             (error who "invalid list structure ~s" x))])
+(library (ikarus cxr)
+  (export)
+  (import (scheme))
+
+  (define err
+    (lambda (who x)
+      (error who "invalid list structure ~s" x)))
+
   (primitive-set!
     'car
     (lambda (orig)
