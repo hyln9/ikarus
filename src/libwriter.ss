@@ -1,9 +1,9 @@
 
-;;; 6.2: * added a printer for bwp-objects
 
-;;; WRITER provides display and write.
+(library (ikarus writer)
+  (export)
+  (import (scheme))
 
-(let ()
   (define char-table ; first nonprintable chars
     '#("nul" "soh" "stx" "etx" "eot" "enq" "ack" "bel" "bs" "tab" "newline"
        "vt" "ff" "return" "so" "si" "dle" "dc1" "dc2" "dc3" "dc4" "nak" 
@@ -124,7 +124,7 @@
                    (string=? str "..."))]))))
       (or (normal-symbol-string? str)
           (peculiar-symbol-string? str))))
-
+  
   (define write-symbol-esc-loop
     (lambda (x i n p)
       (unless ($fx= i n)
@@ -349,9 +349,9 @@
         [else 
          (write-char* "#<unknown>" p)
          i])))
-
+  
   (define print-graph (make-parameter #f))
-
+  
   (define (hasher x h)
     (define (vec-graph x i j h)
       (unless (fx= i j)
@@ -413,14 +413,14 @@
     (if (print-graph) 
         (graph x h)
         (dynamic x h)))
-
-  (define (write x p)
+  
+  (define (write-to-port x p)
     (let ([h (make-hash-table)])
       (hasher x h)
       (writer x p #t h 0))
     (flush-output-port p))
   ;;;
-  (define (display x p)
+  (define (display-to-port x p)
     (let ([h (make-hash-table)])
       (hasher x h)
       (writer x p #f h 0))
@@ -447,12 +447,12 @@
                     [($char= c #\a)
                      (when (null? args)
                        (error who "insufficient arguments"))
-                     (display (car args) p)
+                     (display-to-port (car args) p)
                      (f (fxadd1 i) (cdr args))]
                     [($char= c #\s)
                      (when (null? args)
                        (error who "insufficient arguments"))
-                     (write (car args) p)
+                     (write-to-port (car args) p)
                      (f (fxadd1 i) (cdr args))]
                     [else
                      (error who "invalid sequence ~~~a" c)])))]
@@ -460,7 +460,7 @@
                (write-char c p)
                (f (fxadd1 i) args)]))))
       (flush-output-port p)))
-
+  
   (define fprintf
     (lambda (port fmt . args)
       (unless (output-port? port) 
@@ -468,21 +468,8 @@
       (unless (string? fmt)
         (error 'fprintf "~s is not a string" fmt))
       (formatter 'fprintf port fmt args)))
-
-  (define printf
-    (lambda (fmt . args)
-      (unless (string? fmt)
-        (error 'printf "~s is not a string" fmt))
-      (formatter 'printf (current-output-port) fmt args)))
-
-  (define format
-    (lambda (fmt . args)
-      (unless (string? fmt)
-        (error 'format "~s is not a string" fmt))
-      (let ([p (open-output-string)])
-        (formatter 'format p fmt args)
-        (get-output-string p))))
-
+  
+    
   (define display-error
     (lambda (errname who fmt args)
       (unless (string? fmt)
@@ -494,27 +481,37 @@
         (formatter 'print-error p fmt args)
         (write-char #\. p)
         (newline p))))
-
-  
   ;;;
-  (primitive-set! 'format format)
-  (primitive-set! 'printf printf)
+  (primitive-set! 'format
+    (lambda (fmt . args)
+      (unless (string? fmt)
+        (error 'format "~s is not a string" fmt))
+      (let ([p (open-output-string)])
+        (formatter 'format p fmt args)
+        (get-output-string p))))
+   
+  (primitive-set! 'printf 
+    (lambda (fmt . args)
+      (unless (string? fmt)
+        (error 'printf "~s is not a string" fmt))
+      (formatter 'printf (current-output-port) fmt args)))
+  
   (primitive-set! 'fprintf fprintf)
   (primitive-set! 'print-graph print-graph)
   (primitive-set! 'write 
     (case-lambda
-      [(x) (write x (current-output-port))]
+      [(x) (write-to-port x (current-output-port))]
       [(x p)
        (unless (output-port? p) 
          (error 'write "~s is not an output port" p))
-       (write x p)]))
+       (write-to-port x p)]))
   (primitive-set! 'display 
     (case-lambda
-      [(x) (display x (current-output-port))]
+      [(x) (display-to-port x (current-output-port))]
       [(x p)
        (unless (output-port? p) 
          (error 'display "~s is not an output port" p))
-       (display x p)]))
+       (display-to-port x p)]))
   (primitive-set! 'print-error 
     (lambda (who fmt . args)
       (display-error "Error" who fmt args)))

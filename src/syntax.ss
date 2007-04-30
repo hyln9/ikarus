@@ -533,6 +533,7 @@
         [null?        null?-label       (core-prim . null?)]
         [procedure?   procedure?-label  (core-prim . procedure?)]
         [eof-object?  eof-object?-label (core-prim . eof-object?)]
+        [bwp-object?  bwp-object?-label (core-prim . bwp-object?)]
         [eof-object   eof-object-label  (core-prim . eof-object)]
         ;;; comparison
         [eq?        eq?-label        (core-prim . eq?)]
@@ -562,6 +563,8 @@
         [memq       memq-label       (core-prim . memq)]
         [memv       memv-label       (core-prim . memv)]
         [member     member-label     (core-prim . member)]
+        [$car       $car-label       (core-prim . $car)]
+        [$cdr       $cdr-label       (core-prim . $cdr)]
         ;;; chars
         [char?     char?-label     (core-prim . char?)]
         [char=?     char=?-label     (core-prim . char=?)]
@@ -572,6 +575,7 @@
         [$char<=    $char<=-label    (core-prim . $char<=)]
         [$char=    $char=-label    (core-prim . $char=)]
         [$char->fixnum $char->fixnum-label (core-prim . $char->fixnum)]
+        [$fixnum->char $fixnum->char-label (core-prim . $fixnum->char)]
         ;;; strings
         [string?    string?-label    (core-prim . string?)]
         [make-string make-string-label (core-prim . make-string)]
@@ -581,6 +585,9 @@
         [string=?   string=?-label   (core-prim . string=?)]
         [substring  substring-label  (core-prim . substring)]
         [list->string list->string-label (core-prim . list->string)]
+        [$string-ref $string-ref-label (core-prim . $string-ref)]
+        [$string-set! $string-set!-label (core-prim . $string-set!)]
+        [$string-length $string-length-label (core-prim . $string-length)]
         ;;; vectors
         [vector      vector-label      (core-prim . vector)]
         [make-vector make-vector-label (core-prim . make-vector)]
@@ -615,7 +622,11 @@
         [fxlogand    fxlogand-label    (core-prim . fxlogand)]
         [fxlogor    fxlogor-label    (core-prim . fxlogor)]
         [fxlognot    fxlognot-label    (core-prim . fxlognot)]
+        [$fxadd1        $fxadd1-label        (core-prim . $fxadd1)]
         [$fx>=       $fx>=-label       (core-prim . $fx>=)]
+        [$fx=        $fx=-label        (core-prim . $fx=)]
+        [$fx+        $fx+-label        (core-prim . $fx+)]
+        [$fx-        $fx--label        (core-prim . $fx-)]
         [$fx<        $fx<-label        (core-prim . $fx<)]
         ;;; flonum
         [string->flonum string->flonum-label (core-prim . string->flonum)]
@@ -623,7 +634,9 @@
         [-          minus-label      (core-prim . -)]
         [*          *-label          (core-prim . *)]
         [+          plus-label       (core-prim . +)]
+        [number?   number?-label   (core-prim . number?)]
         [quotient   quotient-label   (core-prim . quotient)]
+        [number->string   number->string-label   (core-prim . number->string)]
         ;;; symbols/gensyms
         [symbol?    symbol?-label    (core-prim . symbol?)]
         [gensym?    gensym?-label    (core-prim . gensym?)]
@@ -641,12 +654,20 @@
         ;;; IO/ports
         [output-port?        output-port?-label        (core-prim .  output-port?)]
         [input-port?        input-port?-label        (core-prim .  input-port?)]
+        [input-port-name        input-port-name-label        (core-prim .  input-port-name)]
+        [output-port-name        output-port-name-label        (core-prim .  output-port-name)]
         [open-input-file  open-input-file-label  (core-prim .  open-input-file)]
+        [open-output-file  open-output-file-label  (core-prim .  open-output-file)]
+        [open-output-string  open-output-string-label  (core-prim .  open-output-string)]
+        [get-output-string  get-output-string-label  (core-prim .  get-output-string)]
         [close-input-port  close-input-port-label  (core-prim .  close-input-port)]
         [console-input-port  console-input-port-label  (core-prim .  console-input-port)]
         [console-output-port console-output-port-label (core-prim .  console-output-port)]
         [current-input-port  current-input-port-label  (core-prim .  current-input-port)]
         [current-output-port current-output-port-label (core-prim .  current-output-port)]
+        [standard-input-port  standard-input-port-label  (core-prim .  standard-input-port)]
+        [standard-output-port standard-output-port-label (core-prim .  standard-output-port)]
+        [standard-error-port  standard-error-port-label  (core-prim .  standard-error-port)]
         [flush-output-port   flush-output-port-label   (core-prim .  flush-output-port)]
         [reset-input-port!   reset-input-port!-label   (core-prim .  reset-input-port!)]
         ;;; IO/high-level
@@ -663,8 +684,10 @@
         [format     format-label     (core-prim . format)]
         [pretty-print pretty-print-label (core-prim . pretty-print)]
         [comment-handler comment-handler-label (core-prim . comment-handler)]
+        [print-gensym print-gensym-label (core-prim . print-gensym)]
         ;;; hash tables
         [make-hash-table make-hash-table-label (core-prim . make-hash-table)]
+        [hash-table?      hash-table?-label      (core-prim . hash-table?)]
         [get-hash-table get-hash-table-label (core-prim . get-hash-table)]
         [put-hash-table! put-hash-table!-label (core-prim . put-hash-table!)]
         ;;; evaluation / control
@@ -692,6 +715,10 @@
         [record-type-field-names record-type-field-names-label (core-prim . record-type-field-names)]
         [record-type-symbol      record-type-symbol-label      (core-prim . record-type-symbol)]
         [record-type-name        record-type-name-label        (core-prim . record-type-name)]
+        [record-name             record-name-label             (core-prim . record-name)]
+        [record-length             record-length-label             (core-prim . record-length)]
+        [record-printer             record-printer-label             (core-prim . record-printer)]
+        [record-ref             record-ref-label             (core-prim . record-ref)]
         [record-field-accessor   record-field-accessor-label   (core-prim . record-field-accessor)]
         [record-field-mutator    record-field-mutator-label    (core-prim . record-field-mutator)]
         ;;; records/low-level 
@@ -719,6 +746,8 @@
         [immediate?     immediate?-label    (core-prim . immediate?)]
         [primitive-set! primitive-set!-label (core-prim . primitive-set!)]
         [primitive-ref primitive-ref-label (core-prim .  primitive-ref)]
+        [$forward-ptr?     $forward-ptr?-label    (core-prim . $forward-ptr?)]
+        [$unbound-object?     $unbound-object?-label    (core-prim . $unbound-object?)]
         ))
     (define make-scheme-rib
       (lambda ()
