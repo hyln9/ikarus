@@ -1,12 +1,14 @@
 
-;(primitive-set! 'do-overflow
-;  (lambda ()
-;    ($do-overflow 4096)))
+(library (ikarus collect)
+  (export)
+  (import (scheme))
 
-(primitive-set! 'do-overflow
+(define do-overflow
   (lambda (n)
     (foreign-call "ik_collect" n)
     (void)))
+
+(primitive-set! 'do-overflow do-overflow)
 
 (primitive-set! 'do-overflow-words
   (lambda (n)
@@ -33,4 +35,4 @@
 (primitive-set! 'dump-dirty-vector
   (lambda ()
     (foreign-call "ik_dump_dirty_vector")))
-
+)
