@@ -1,8 +1,8 @@
 
-;;; 9.1: bignum reader
-;;; 9.0: graph marks/refs
-;;;
-(let ()
+(library (ikarus tokenizer)
+  (export)
+  (import (scheme))
+
   (define delimiter?
     (lambda (c)
       (or (char-whitespace? c)
@@ -459,7 +459,8 @@
                      (error 'tokenize
                         "invalid char ~a inside gensym" c)])))]))]
         [($char= #\@ c)
-         (cons 'datum ($fasl-read p))]
+         (error 'read "FIXME: fasl read disabled")
+         '(cons 'datum ($fasl-read p))]
         [else 
          (unread-char c p)
          (error 'tokenize "invalid syntax #~a" c)])))
@@ -738,7 +739,7 @@
                          h1)))
                  h))))))
        
-  (define read
+  (define my-read
     (lambda (p)
       (let-values ([(expr locs k) (read-expr p '() void)])
         (cond
@@ -775,10 +776,10 @@
            (error 'read-token "~s is not an input port" p))]))
   (primitive-set! 'read
     (case-lambda
-      [() (read (current-input-port))]
+      [() (my-read (current-input-port))]
       [(p)
        (if (input-port? p)
-           (read p)
+           (my-read p)
            (error 'read "~s is not an input port" p))]))
   (primitive-set! 'comment-handler
     (make-parameter
@@ -790,7 +791,7 @@
   (let ()
     (define read-and-eval
       (lambda (p eval)
-        (let ([x (read p)])
+        (let ([x (my-read p)])
           (unless (eof-object? x)
             (eval x)
             (read-and-eval p eval)))))
