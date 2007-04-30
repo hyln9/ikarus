@@ -2,8 +2,10 @@
 ;;; The procedure make-guardian is coped en verbatim 
 ;;; from Dybvig et al. Guardians paper.
 
-(let ()
-  (define make-guardian
+(library (ikarus guardians)
+  (export)
+  (import (scheme))
+  (primitive-set! 'make-guardian 
     (lambda ()
       (let ([tc
              (let ([x (cons #f #f)])
@@ -19,5 +21,4 @@
                     y)))]
           [(obj) 
            (foreign-call "ikrt_register_guardian" tc obj)
-           (void)]))))
-  (primitive-set! 'make-guardian make-guardian))
+           (void)])))))
