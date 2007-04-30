@@ -542,6 +542,8 @@
         [pair?      pair?-label      (core-prim . pair?)]
         [car        car-label        (core-prim . car)]
         [cdr        cdr-label        (core-prim . cdr)]
+        [set-car!   set-car!-label   (core-prim . set-car!)]
+        [set-cdr!   set-cdr!-label   (core-prim . set-cdr!)]
         [caar       caar-label       (core-prim . caar)]
         [cdar       cdar-label       (core-prim . cdar)]
         [cadr       cadr-label       (core-prim . cadr)]
@@ -553,6 +555,9 @@
         [assq       assq-label       (core-prim . assq)]
         [assv       assv-label       (core-prim . assv)]
         [assoc      assoc-label      (core-prim . assoc)]
+        [memq       memq-label       (core-prim . memq)]
+        [memv       memv-label       (core-prim . memv)]
+        [member     member-label     (core-prim . member)]
         ;;; chars
         [char=?     char=?-label     (core-prim . char=?)]
         [integer->char integer->char-label (core-prim . integer->char)]
@@ -603,6 +608,10 @@
         [putprop    putprop-label    (core-prim . putprop)]
         [symbol->string symbol->string-label (core-prim .  symbol->string)]
         [$set-symbol-value! $set-symbol-value!-label (core-prim .  $set-symbol-value!)]
+        ;;; top-level
+        [top-level-bound?     top-level-bound-label      (core-prim . top-level-bound?)]
+        [top-level-value      top-level-value-label      (core-prim .  top-level-value)]
+        [set-top-level-value! set-top-level-value!-label (core-prim .  set-top-level-value!)]
         ;;; IO/ports
         [output-port?        output-port?-label        (core-prim .  output-port?)]
         [console-input-port  console-input-port-label  (core-prim .  console-input-port)]
@@ -614,6 +623,7 @@
         ;;; IO/high-level
         [display    display-label    (core-prim . display)]
         [write      write-label      (core-prim . write)]
+        [write-char write-char-label (core-prim . write-char)]
         [read       read-label       (core-prim . read)]
         [newline    newline-label    (core-prim . newline)]
         [printf     printf-label     (core-prim . printf)]
@@ -625,6 +635,7 @@
         [call-with-values cwv-label  (core-prim . call-with-values)]
         [current-eval current-eval-label (core-prim . current-eval)]
         [call/cc     call/cc-label   (core-prim . call/cc)]
+        [call/cf     call/cf-label   (core-prim . call/cf)]
         [dynamic-wind dynamic-wind-label (core-prim . dynamic-wind)]
         [error      error-label      (core-prim . error)]
         [print-error print-error-label (core-prim . print-error)]

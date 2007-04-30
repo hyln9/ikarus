@@ -1,5 +1,8 @@
 
-(let ()
+(library (ikarus trace)
+  (export)
+  (import (scheme))
+
   (define k* '())
   
   (define display-prefix
