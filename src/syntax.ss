@@ -789,7 +789,9 @@
         [$base-rtd    $base-rtd-label    (core-prim . $base-rtd)]
         [$record-set! $record-set!-label (core-prim . $record-set!)]
         [$record-ref  $record-ref-label  (core-prim . $record-ref)]
+        [$record-rtd  $record-rtd-label  (core-prim . $record-rtd)]
         [$record      $record-label      (core-prim . $record)]
+        [$make-record $make-record-label (core-prim . $make-record)]
         [$record?     $record?-label     (core-prim . $record?)]
         [$record/rtd? $record/rtd?-label (core-prim . $record/rtd?)]
         ;;; codes

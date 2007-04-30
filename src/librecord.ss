@@ -1,5 +1,8 @@
 
 
+(library (ikarus records)
+  (export)
+  (import (scheme))
 
 (let ()
 
@@ -48,21 +51,9 @@
     (lambda (rtd symbol)
       ($record-set! rtd 4 symbol)))
 
- ; (define make-rtd
- ;   (lambda (name fields printer symbol)
- ;     (let ([rtd ($make-record $base-rtd 5)])
- ;        ($record-set! rtd 0 name)
- ;        ($record-set! rtd 1 (length fields))
- ;        ($record-set! rtd 2 fields)
- ;        ($record-set! rtd 3 printer)
- ;        ($record-set! rtd 4 symbol)
- ;        rtd)))
-
-
   (define make-rtd
     (lambda (name fields printer symbol)
       ($record $base-rtd name (length fields) fields printer symbol)))
-
 
   (define verify-field
     (lambda (x)
@@ -275,5 +266,4 @@
       (display (rtd-name x) p)
       (display " rtd>" p)))
 
-  )
-
+  ))
