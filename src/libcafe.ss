@@ -87,7 +87,7 @@ description:
                            v*))))]))))))
       (wait eval escape-k)))
 
-  (define new-cafe
+  (define do-new-cafe
     (lambda (eval)
       (dynamic-wind
         (lambda () (set! eval-depth (fxadd1 eval-depth)))
@@ -99,10 +99,10 @@ description:
 
   (primitive-set! 'new-cafe
     (case-lambda
-      [() (new-cafe eval)]
+      [() (do-new-cafe eval)]
       [(p)
        (unless (procedure? p)
          (error 'new-cafe "~s is not a procedure" p))
-       (new-cafe p)]))
+       (do-new-cafe p)]))
   )
 

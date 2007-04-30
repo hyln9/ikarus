@@ -1363,11 +1363,11 @@
                                  "cannot handle ~s"
                                  type)]))))]))))))
     (define chi-library-internal 
-      (lambda (e* r rib)
+      (lambda (e* r rib kwd*)
         (define return
           (lambda (init* r mr lhs* lex* rhs*)
             (values init* r mr (reverse lhs*) (reverse lex*) (reverse rhs*))))
-        (let f ([e* e*] [r r] [mr r] [lhs* '()] [lex* '()] [rhs* '()] [kwd* '()])
+        (let f ([e* e*] [r r] [mr r] [lhs* '()] [lex* '()] [rhs* '()] [kwd* kwd*])
           (cond
             [(null? e*) (return e* r mr lhs* lex* rhs*)]
             [else
@@ -1379,7 +1379,9 @@
                      [(define) 
                       (let-values ([(id rhs) (parse-define e)])
                         (when (bound-id-member? id kwd*) 
-                          (stx-error id "undefined identifier"))
+                          (stx-error id "cannt redefine identifier"))
+                        (when (bound-id-member? id lhs*) 
+                          (stx-error id "multiple definition"))
                         (let ([lex (gen-lexical id)]
                               [lab (gen-label id)])
                           (extend-rib! rib id lab)
@@ -1415,9 +1417,11 @@
         (let-values ([(name exp* b*) (parse-library e)])
           (let ([rib (make-scheme-rib)]
                 [r (make-scheme-env)])
-            (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)])
+            (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]
+                  [kwd* (map (lambda (sym mark*) (stx sym mark* (list rib)))
+                             (rib-sym* rib) (rib-mark** rib))])
               (let-values ([(init* r mr lhs* lex* rhs*)
-                            (chi-library-internal b* r rib)])
+                            (chi-library-internal b* r rib kwd*)])
                 (build-letrec no-source
                   lex* 
                   (chi-rhs* rhs* r mr)
