@@ -1,4 +1,8 @@
 
+(library (ikarus hash-tables)
+   (export)
+   (import (scheme))
+
 (let ([hash-rtd (make-record-type '"hash-table" '(hash-vec count tc))])
   ;;; accessors
   (define get-vec (record-field-accessor hash-rtd 0))
@@ -231,3 +235,5 @@
       (if (hash-table? h)
           (put-hash! h x v)
           (error 'put-hash-table! "~s is not a hash table" h)))))
+
+)
