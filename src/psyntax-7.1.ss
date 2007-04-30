@@ -586,6 +586,10 @@
   (lambda (x)
     (eval `(,noexpand ,x))))
 
+(define compile-time-eval-hook
+  (lambda (x)
+    (eval `(,noexpand ,x))))
+
 (define define-top-level-value-hook
   (lambda (sym val)
     (top-level-eval-hook
@@ -2050,9 +2054,11 @@
                                     (else (error 'sc-expand-internal "unexpected module binding type ~s" t)))))
                             (loop bs))))))))))))
 
-
-(include "syntax.ss")
-
+(define chi-top-library
+  (let ()
+    (include "syntax.ss")
+    (primitive-set! 'chi-top-library library-expander)
+    library-expander))
 
 (define id-set-diff
   (lambda (exports defs)
@@ -3077,6 +3083,7 @@
                  (else (syntax-error id "unknown module"))))))
          (else (put-cte id binding top-token))))
      ))
+
 
 
 ;;; core transformers

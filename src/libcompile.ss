@@ -1293,6 +1293,7 @@
      (make-bind lhs* rhs* (mk-mvcall body c))]
     [else (error 'mk-mvcall "invalid producer ~s" (unparse p))]))
 
+
 (define (copy-propagate x)
   (define who 'copy-propagate)
   (define the-void (make-primcall 'void '()))
@@ -5292,6 +5293,16 @@
 (primitive-set! 'eval
   (lambda (x)
     ((current-eval) x)))
+
+(primitive-set! 'compile-time-core-eval
+  (make-parameter 
+    (lambda (x) 
+      (parameterize ([current-expand (lambda (x) x)])
+        (compile-expr x)))
+    (lambda (f)
+      (unless (procedure? f) 
+        (error 'compile-time-core-eval "~s is not a procedure" f))
+      f)))
 
 
 )

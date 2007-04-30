@@ -100,6 +100,8 @@
 
     flonum? flonum->string string->flonum
     sin cos atan sqrt
+
+    chi-top-library compile-time-core-eval
     ))
 
 (define system-primitives
@@ -228,7 +230,7 @@
 (whack-system-env #t)
 
 (define scheme-library-files
-  '(  ["libhandlers.ss"   "libhandlers.fasl"  p0 onepass]
+  '(["libhandlers.ss"   "libhandlers.fasl"  p0 onepass]
     ["libcontrol.ss"   "libcontrol.fasl"  p0 onepass]
     ["libcollect.ss"    "libcollect.fasl"   p0 onepass]
     ["librecord.ss"     "librecord.fasl"    p0 onepass]

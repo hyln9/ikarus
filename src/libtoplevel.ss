@@ -88,6 +88,8 @@
     string->number exact->inexact
     flonum? flonum->string string->flonum
     sin cos atan sqrt
+    chi-top-library
+    compile-time-core-eval
     ))
 
 (define (system-primitives)
@@ -231,7 +233,10 @@
        (load script)
        (exit 0)]
       [else
-       (printf "Ikarus Scheme (Build ~a)\n" "NO TIME STRING")
+       (let ()
+         (define-syntax compile-time-string
+           (lambda (x) (date-string)))
+         (printf "Ikarus Scheme (Build ~a)\n" (compile-time-string)))
        ;(printf "Ikarus Scheme (Build ~a)\n" (compile-time-date-string))
        (display "Copyright (c) 2006-2007 Abdulaziz Ghuloum\n\n")
        (command-line-arguments args)
