@@ -29,7 +29,11 @@
 ;;;   "T" : Thunk; followed by code.
 
 
-(let ()
+
+(library (ikarus fasl write)
+  (export)
+  (import (scheme))
+
   (define write-fixnum 
     (lambda (x p)
       (unless (fixnum? x) (error 'write-fixnum "not a fixnum ~s" x))
@@ -44,7 +48,7 @@
       (write-char (integer->char (fxlogand (fxsra x 8) #xFF)) p)
       (write-char (integer->char (fxlogand (fxsra x 16) #xFF)) p)
       (write-char (integer->char (fxlogand (fxsra x 24) #xFF)) p)))
-
+  
   (define fasl-write-immediate
     (lambda (x p)
       (cond
@@ -60,7 +64,7 @@
         [(eof-object? x) (write-char #\E p)]
         [(eq? x (void)) (write-char #\U p)]
         [else (error 'fasl-write "~s is not a fasl-writable immediate" x)])))
-
+  
   (define do-write
     (lambda (x p h m)
       (cond
@@ -105,7 +109,7 @@
         [(record? x)
          (let ([rtd (record-type-descriptor x)])
            (cond
-             [(eq? rtd #%$base-rtd)
+             [(eq? rtd $base-rtd)
               ;;; rtd record
               (write-char #\R p)
               (let ([names (record-type-field-names x)]
@@ -182,11 +186,11 @@
              [(code? x) 
               (make-graph (code-reloc-vector x) h)]
              [(record? x)
-              (when (eq? x #%$base-rtd) 
+              (when (eq? x $base-rtd) 
                 (error 'fasl-write "$base-rtd is not writable"))
               (let ([rtd (record-type-descriptor x)])
                 (cond
-                  [(eq? rtd #%$base-rtd)
+                  [(eq? rtd $base-rtd)
                    ;;; this is an rtd
                    (make-graph (record-type-name x) h)
                    (make-graph (record-type-symbol x) h)
@@ -201,10 +205,10 @@
                      (record-type-field-names rtd))]))]
              [(procedure? x)
               (let ([code ($closure-code x)])
-                (unless (fxzero? ($code-freevars code))
+                (unless (fxzero? (code-freevars code))
                   (error 'fasl-write
                          "Cannot write a non-thunk procedure; the one given has ~s free vars"
-                         ($code-freevars code)))
+                         (code-freevars code)))
                 (make-graph code h))]
              [else (error 'fasl-write "~s is not fasl-writable" x)])]))))
   (define do-fasl-write 
@@ -228,7 +232,17 @@
         (do-fasl-write x port)])))
 
 
-(let ()
+
+#!eof
+
+#not working yet
+
+
+
+(library (ikarus fasl read)
+  (export)
+  (import (scheme))
+
   (define who 'fasl-read)
   (define (assert-eq? x y)
     (unless (eq? x y)

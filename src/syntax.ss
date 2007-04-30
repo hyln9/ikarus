@@ -527,12 +527,12 @@
         [or         or-label         (core-macro . or)]
         [parameterize parameterize-label (core-macro . parameterize)]
         ;;; prims
-        [void       void-label       (core-prim . void)]
-        [not        not-label        (core-prim . not)]
-        [boolean?   boolean-label    (core-prim . boolean?)]
-        [null?      null?-label      (core-prim . null?)]
-        [procedure? procedure?-label (core-prim . procedure?)]
-        [eof-object? eof-object?-label (core-prim . eof-object?)]
+        [void         void-label        (core-prim . void)]
+        [not          not-label         (core-prim . not)]
+        [boolean?     boolean-label     (core-prim . boolean?)]
+        [null?        null?-label       (core-prim . null?)]
+        [procedure?   procedure?-label  (core-prim . procedure?)]
+        [eof-object?  eof-object?-label (core-prim . eof-object?)]
         ;;; comparison
         [eq?        eq?-label        (core-prim . eq?)]
         [eqv?       eqv?-label       (core-prim . eqv?)]
@@ -559,6 +559,7 @@
         [memv       memv-label       (core-prim . memv)]
         [member     member-label     (core-prim . member)]
         ;;; chars
+        [char?     char?-label     (core-prim . char?)]
         [char=?     char=?-label     (core-prim . char=?)]
         [integer->char integer->char-label (core-prim . integer->char)]
         [char->integer char->integer-label (core-prim . char->integer)]
@@ -596,6 +597,11 @@
         [fxsub1     fxsub1-label     (core-prim . fxsub1)]
         [fxquotient fxquotient-label (core-prim . fxquotient)]
         [fxremainder fxremainder-label (core-prim . fxremainder)]
+        [fxsll       fxsll-label       (core-prim . fxsll)]
+        [fxsra       fxsra-label       (core-prim . fxsra)]
+        [fxlogand    fxlogand-label    (core-prim . fxlogand)]
+        [fxlogor    fxlogor-label    (core-prim . fxlogor)]
+        [fxlognot    fxlognot-label    (core-prim . fxlognot)]
         ;;; generic arithmetic
         [-          minus-label      (core-prim . -)]
         [*          *-label          (core-prim . *)]
@@ -603,11 +609,13 @@
         [quotient   quotient-label   (core-prim . quotient)]
         ;;; symbols/gensyms
         [symbol?    symbol?-label    (core-prim . symbol?)]
+        [gensym?    gensym?-label    (core-prim . gensym?)]
         [gensym     gensym-label     (core-prim . gensym)]
         [getprop    getprop-label    (core-prim . getprop)]
         [putprop    putprop-label    (core-prim . putprop)]
-        [symbol->string symbol->string-label (core-prim .  symbol->string)]
-        [$set-symbol-value! $set-symbol-value!-label (core-prim .  $set-symbol-value!)]
+        [symbol->string symbol->string-label (core-prim . symbol->string)]
+        [gensym->unique-string gensym->unique-string-label (core-prim . gensym->unique-string)]
+        [$set-symbol-value! $set-symbol-value!-label (core-prim . $set-symbol-value!)]
         ;;; top-level
         [top-level-bound?     top-level-bound-label      (core-prim . top-level-bound?)]
         [top-level-value      top-level-value-label      (core-prim .  top-level-value)]
@@ -625,10 +633,15 @@
         [write      write-label      (core-prim . write)]
         [write-char write-char-label (core-prim . write-char)]
         [read       read-label       (core-prim . read)]
+        [read-char  read-char-label  (core-prim . read-char)]
         [newline    newline-label    (core-prim . newline)]
         [printf     printf-label     (core-prim . printf)]
         [format     format-label     (core-prim . format)]
         [pretty-print pretty-print-label (core-prim . pretty-print)]
+        ;;; hash tables
+        [make-hash-table make-hash-table-label (core-prim . make-hash-table)]
+        [get-hash-table get-hash-table-label (core-prim . get-hash-table)]
+        [put-hash-table! put-hash-table!-label (core-prim . put-hash-table!)]
         ;;; evaluation / control
         [apply      apply-label      (core-prim . apply)]
         [values     values-label     (core-prim . values)]
@@ -647,14 +660,35 @@
         [load       load-label       (core-prim . load)]
         [new-cafe   new-cafe-label   (core-prim . new-cafe)]
         [command-line-arguments command-line-arguments-label (core-prim .  command-line-arguments)]
+        ;;; record/mid-level
+        [record?                 record?-label                 (core-prim . record?)]
+        [record-type-descriptor  record-type-descriptor-label  (core-prim . record-type-descriptor)]
+        [record-type-field-names record-type-field-names-label (core-prim . record-type-field-names)]
+        [record-type-symbol      record-type-symbol-label      (core-prim . record-type-symbol)]
+        [record-type-name        record-type-name-label        (core-prim . record-type-name)]
+        [record-field-accessor   record-field-accessor-label   (core-prim . record-field-accessor)]
+        [record-field-mutator    record-field-mutator-label    (core-prim . record-field-mutator)]
         ;;; records/low-level 
+        [$base-rtd    $base-rtd-label    (core-prim . $base-rtd)]
         [$record-set! $record-set!-label (core-prim . $record-set!)]
         [$record-ref  $record-ref-label  (core-prim . $record-ref)]
         [$record      $record-label      (core-prim . $record)]
         [$record?     $record?-label     (core-prim . $record?)]
         [$record/rtd? $record/rtd?-label (core-prim . $record/rtd?)]
+        ;;; codes
+        [$closure-code  $closure-code-label (core-prim . $closure-code)]
+        [code? code?-label (core-prim . code?)]
+        [code-reloc-vector code-reloc-vector-label (core-prim . code-reloc-vector)]
+        [code-size code-size-label (core-prim . code-size)]
+        [code-freevars code-freevars-label (core-prim . code-freevars)]
+        [code-ref code-ref-label (core-prim . code-ref)]
+       ; [X X-label (core-prim . X)]
+       ; [X X-label (core-prim . X)]
+       ; [X X-label (core-prim . X)]
+       ; [X X-label (core-prim . X)]
         ;;; misc
-        [primitive-set! primitive-set!-label (core-prim .  primitive-set!)]
+        [immediate?     immediate?-label    (core-prim . immediate?)]
+        [primitive-set! primitive-set!-label (core-prim . primitive-set!)]
         [primitive-ref primitive-ref-label (core-prim .  primitive-ref)]
         ))
     (define make-scheme-rib
@@ -1188,19 +1222,25 @@
                (values (cons a a*) (cons b b*))))])))
     (define chi-rhs*
       (lambda (rhs* r mr)
-        (map (lambda (rhs) 
-               (case (car rhs)
-                 [(defun) 
-                  (let ([x (cdr rhs)])
-                    (let ([fmls (car x)] [body* (cdr x)])
-                      (let-values ([(fmls body) 
-                                    (chi-lambda-clause fmls body* r mr)])
-                        (build-lambda no-source fmls body))))]
-                 [(expr) 
-                  (let ([expr (cdr rhs)])
-                    (chi-expr expr r mr))]
-                 [else (error 'chi-rhs "invalid rhs ~s" rhs)]))
-             rhs*)))
+        (define chi-rhs
+          (lambda (rhs) 
+            (case (car rhs)
+              [(defun) 
+               (let ([x (cdr rhs)])
+                 (let ([fmls (car x)] [body* (cdr x)])
+                   (let-values ([(fmls body) 
+                                 (chi-lambda-clause fmls body* r mr)])
+                     (build-lambda no-source fmls body))))]
+              [(expr) 
+               (let ([expr (cdr rhs)])
+                 (chi-expr expr r mr))]
+              [else (error 'chi-rhs "invalid rhs ~s" rhs)])))
+        (let f ([ls rhs*])
+          (cond ;;; chi in order
+            [(null? ls) '()]
+            [else
+             (let ([a (chi-rhs (car ls))])
+               (cons a (f (cdr ls))))]))))
     (define find-bound=?
       (lambda (x lhs* rhs*)
         (cond
