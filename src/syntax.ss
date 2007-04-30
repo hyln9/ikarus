@@ -829,6 +829,11 @@
         [primitive-ref primitive-ref-label (core-prim .  primitive-ref)]
         [$$apply     $$apply-label    (core-prim . $$apply)]
         [$arg-list     $arg-list-label    (core-prim . $arg-list)]
+        [$fp-at-base     $fp-at-base-label    (core-prim . $fp-at-base)]
+        [$primitive-call/cc     $primitive-call/cc-label    (core-prim . $primitive-call/cc)]
+        [$frame->continuation     $frame->continuation-label    (core-prim . $frame->continuation)]
+        [$current-frame     $current-frame-label    (core-prim . $current-frame)]
+        [$seal-frame-and-call     $seal-frame-and-call-label    (core-prim . $seal-frame-and-call)]
         ))
     (define make-scheme-rib
       (lambda ()
