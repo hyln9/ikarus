@@ -229,7 +229,7 @@
 
 (define scheme-library-files
   '(  ["libhandlers.ss"   "libhandlers.fasl"  p0 onepass]
-      ["libcontrol.ss"   "libcontrol.fasl"  p0 onepass]
+    ["libcontrol.ss"   "libcontrol.fasl"  p0 onepass]
     ["libcollect.ss"    "libcollect.fasl"   p0 onepass]
     ["librecord.ss"     "librecord.fasl"    p0 onepass]
     ["libcxr.ss"        "libcxr.fasl"       p0 onepass]

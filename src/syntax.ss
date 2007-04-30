@@ -829,6 +829,8 @@
         [primitive-ref primitive-ref-label (core-prim .  primitive-ref)]
         [$$apply     $$apply-label    (core-prim . $$apply)]
         [$arg-list     $arg-list-label    (core-prim . $arg-list)]
+        [$interrupted? $interrupted?-label (core-prim .  $interrupted?)]
+        [$unset-interrupted!     $unset-interrupted!-label    (core-prim . $unset-interrupted!)]
         [$fp-at-base     $fp-at-base-label    (core-prim . $fp-at-base)]
         [$primitive-call/cc     $primitive-call/cc-label    (core-prim . $primitive-call/cc)]
         [$frame->continuation     $frame->continuation-label    (core-prim . $frame->continuation)]
