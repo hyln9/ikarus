@@ -1,4 +1,8 @@
 
+(library (ikarus assembler)
+  (export)
+  (import (scheme))
+
 (primitive-set! 'make-code
   (lambda (code-size freevars)
     (unless (and (fixnum? code-size) ($fx>= code-size 0))
@@ -54,3 +58,6 @@
     (unless (vector? v)
       (error 'set-code-reloc-vector! "~s is not a vector" v))
     (foreign-call "ikrt_set_code_reloc_vector" x v)))
+
+)
+
