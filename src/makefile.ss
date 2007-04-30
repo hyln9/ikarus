@@ -67,7 +67,7 @@
     record-field-mutator record-predicate record-constructor
     record-type-name record-type-symbol record-type-field-names
     hash-table? make-hash-table get-hash-table put-hash-table!
-    assembler-output $make-environment features
+    assembler-output $make-environment 
     command-line-arguments port? input-port? output-port?
     make-input-port make-output-port make-input/output-port
     port-handler port-input-buffer port-input-index port-input-size
@@ -238,7 +238,7 @@
       ["libguardians.ss"  "libguardians.fasl" p0 onepass]
       ["libcore.ss"       "libcore.fasl"      p0 onepass]
       ["libchezio.ss"     "libchezio.fasl"    p0 onepass]
-      ["libhash.ss"       "libhash.fasl"      p0 onepass]
+    ["libhash.ss"       "libhash.fasl"      p0 onepass]
     ["libwriter.ss"     "libwriter.fasl"    p0 onepass]
     ["libtokenizer.ss"  "libtokenizer.fasl" p0 onepass]
     ["libassembler.ss"  "libassembler.fasl" p0 onepass]

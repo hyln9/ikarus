@@ -518,6 +518,7 @@
         [case-lambda case-lambda-label (core-macro . case-lambda)]
         [let-values let-values-label (core-macro . let-values)]
         [let        let-label        (core-macro . let)]
+        [letrec     letrec-label     (core-macro . letrec)]
         [let*       let*-label       (core-macro . let*)]
         [cond       cond-label       (core-macro . cond)]
         [if         if-label         (core-macro . if)]
@@ -533,7 +534,6 @@
         [null?        null?-label       (core-prim . null?)]
         [procedure?   procedure?-label  (core-prim . procedure?)]
         [eof-object?  eof-object?-label (core-prim . eof-object?)]
-        [bwp-object?  bwp-object?-label (core-prim . bwp-object?)]
         [eof-object   eof-object-label  (core-prim . eof-object)]
         ;;; comparison
         [eq?        eq?-label        (core-prim . eq?)]
@@ -551,10 +551,12 @@
         [cadr       cadr-label       (core-prim . cadr)]
         [cddr       cddr-label       (core-prim . cddr)]
         [list       list-label       (core-prim . list)]
+        [list-ref       list-ref-label       (core-prim . list-ref)]
         [make-list make-list-label (core-prim . make-list)]
         [list*       list*-label       (core-prim . list*)]
         [list?      list?-label      (core-prim . list?)]
         [append     append-label     (core-prim . append)]
+        [last-pair     last-pair-label     (core-prim . last-pair)]
         [reverse     reverse-label     (core-prim . reverse)]
         [length     length-label     (core-prim . length)]
         [assq       assq-label       (core-prim . assq)]
@@ -567,26 +569,45 @@
         [$cdr       $cdr-label       (core-prim . $cdr)]
         [$set-car!       $set-car!-label       (core-prim . $set-car!)]
         [$set-cdr!       $set-cdr!-label       (core-prim . $set-cdr!)]
+        [$memq       $memq-label       (core-prim . $memq)]
+        [$memv       $memv-label       (core-prim . $memv)]
+        ;;; weak conses
+        [bwp-object?  bwp-object?-label (core-prim . bwp-object?)]
+        [weak-cons       weak-cons-label       (core-prim . weak-cons)]
+        [weak-pair?       weak-pair?-label       (core-prim . weak-pair?)]
         ;;; chars
         [char?     char?-label     (core-prim . char?)]
         [char=?     char=?-label     (core-prim . char=?)]
+        [char<?     char<?-label     (core-prim . char<?)]
+        [char>?     char>?-label     (core-prim . char>?)]
+        [char<=?     char<=?-label     (core-prim . char<=?)]
+        [char>=?     char>=?-label     (core-prim . char>=?)]
         [integer->char integer->char-label (core-prim . integer->char)]
         [char->integer char->integer-label (core-prim . char->integer)]
         [char-whitespace? char-whitespace?-label (core-prim . char-whitespace?)]
         [$char?     $char?-label     (core-prim . $char?)]
-        [$char<=    $char<=-label    (core-prim . $char<=)]
         [$char=    $char=-label    (core-prim . $char=)]
+        [$char<    $char<-label    (core-prim . $char<)]
+        [$char>    $char>-label    (core-prim . $char>)]
+        [$char<=    $char<=-label    (core-prim . $char<=)]
+        [$char>=    $char>=-label    (core-prim . $char>=)]
         [$char->fixnum $char->fixnum-label (core-prim . $char->fixnum)]
         [$fixnum->char $fixnum->char-label (core-prim . $fixnum->char)]
         ;;; strings
         [string?    string?-label    (core-prim . string?)]
+        [string    string-label    (core-prim . string)]
         [make-string make-string-label (core-prim . make-string)]
         [string-ref string-ref-label (core-prim . string-ref)]
         [string-set! string-set!-label (core-prim . string-set!)]
         [string-length string-length-label (core-prim . string-length)]
         [string=?   string=?-label   (core-prim . string=?)]
         [substring  substring-label  (core-prim . substring)]
+        [string-append string-append-label (core-prim . string-append)]
+        [string->list string->list-label (core-prim . string->list)]
         [list->string list->string-label (core-prim . list->string)]
+        [uuid    uuid-label    (core-prim . uuid)]
+        [date-string    date-string-label    (core-prim . date-string)]
+        [$make-string $make-string-label (core-prim . $make-string)]
         [$string-ref $string-ref-label (core-prim . $string-ref)]
         [$string-set! $string-set!-label (core-prim . $string-set!)]
         [$string-length $string-length-label (core-prim . $string-length)]
@@ -599,6 +620,7 @@
         [vector-length vector-length-label (core-prim . vector-length)]
         [list->vector list->vector-label (core-prim . list->vector)]
         [vector->list vector->list-label (core-prim . vector->list)]
+        [$make-vector $make-vector-label (core-prim . $make-vector)]
         [$vector-length $vector-length-label (core-prim . $vector-length)]
         [$vector-ref $vector-ref-label (core-prim . $vector-ref)]
         [$vector-set! $vector-set!-label (core-prim . $vector-set!)]
@@ -622,42 +644,68 @@
         [fxsub1     fxsub1-label     (core-prim . fxsub1)]
         [fxquotient fxquotient-label (core-prim . fxquotient)]
         [fxremainder fxremainder-label (core-prim . fxremainder)]
+        [fxmodulo fxmodulo-label (core-prim . fxmodulo)]
         [fxsll       fxsll-label       (core-prim . fxsll)]
         [fxsra       fxsra-label       (core-prim . fxsra)]
         [fxlogand    fxlogand-label    (core-prim . fxlogand)]
+        [fxlogxor    fxlogxor-label    (core-prim . fxlogxor)]
         [fxlogor    fxlogor-label    (core-prim . fxlogor)]
         [fxlognot    fxlognot-label    (core-prim . fxlognot)]
+        [fixnum->string fixnum->string-label (core-prim . fixnum->string)]
+        [$fxzero?    $fxzero?-label    (core-prim . $fxzero?)]
         [$fxadd1        $fxadd1-label        (core-prim . $fxadd1)]
+        [$fxsub1        $fxsub1-label        (core-prim . $fxsub1)]
         [$fx>=       $fx>=-label       (core-prim . $fx>=)]
+        [$fx<=       $fx<=-label       (core-prim . $fx<=)]
+        [$fx>       $fx>-label       (core-prim . $fx>)]
+        [$fx<       $fx<-label       (core-prim . $fx<)]
         [$fx=        $fx=-label        (core-prim . $fx=)]
         [$fxsll        $fxsll-label        (core-prim . $fxsll)]
         [$fxsra        $fxsra-label        (core-prim . $fxsra)]
+        [$fxquotient $fxquotient-label (core-prim . $fxquotient)]
+        [$fxmodulo $fxmodulo-label (core-prim . $fxmodulo)]
         [$fxlogxor        $fxlogxor-label        (core-prim . $fxlogxor)]
+        [$fxlogor        $fxlogor-label        (core-prim . $fxlogor)]
         [$fxlognot        $fxlognot-label        (core-prim . $fxlognot)]
         [$fxlogand        $fxlogand-label        (core-prim . $fxlogand)]
         [$fx+        $fx+-label        (core-prim . $fx+)]
+        [$fx*        $fx*-label        (core-prim . $fx*)]
         [$fx-        $fx--label        (core-prim . $fx-)]
-        [$fx<        $fx<-label        (core-prim . $fx<)]
-        [$fx>        $fx>-label        (core-prim . $fx>)]
         ;;; flonum
         [string->flonum string->flonum-label (core-prim . string->flonum)]
         ;;; generic arithmetic
         [-          minus-label      (core-prim . -)]
+        [=          =-label          (core-prim . =)]
+        [<          <-label          (core-prim . <)]
+        [>          >-label          (core-prim . >)]
+        [<=          <=-label          (core-prim . <=)]
+        [>=          >=-label          (core-prim . >=)]
         [*          *-label          (core-prim . *)]
         [+          plus-label       (core-prim . +)]
         [number?   number?-label   (core-prim . number?)]
         [quotient   quotient-label   (core-prim . quotient)]
         [number->string   number->string-label   (core-prim . number->string)]
+        [string->number   string->number-label   (core-prim . string->number)]
         ;;; symbols/gensyms
         [symbol?    symbol?-label    (core-prim . symbol?)]
         [gensym?    gensym?-label    (core-prim . gensym?)]
         [gensym     gensym-label     (core-prim . gensym)]
         [getprop    getprop-label    (core-prim . getprop)]
         [putprop    putprop-label    (core-prim . putprop)]
+        [remprop    remprop-label    (core-prim . remprop)]
+        [property-list    property-list-label    (core-prim . property-list)]
         [string->symbol string->symbol-label (core-prim . string->symbol)]
         [symbol->string symbol->string-label (core-prim . symbol->string)]
         [gensym->unique-string gensym->unique-string-label (core-prim . gensym->unique-string)]
+        [$make-symbol     $make-symbol-label     (core-prim . $make-symbol)]
+        [$symbol-unique-string $symbol-unique-string-label (core-prim . $symbol-unique-string)]
+        [$symbol-value $symbol-value-label (core-prim . $symbol-value)]
+        [$symbol-string $symbol-string-label (core-prim . $symbol-string)]
+        [$symbol-plist $symbol-plist-label (core-prim . $symbol-plist)]
         [$set-symbol-value! $set-symbol-value!-label (core-prim . $set-symbol-value!)]
+        [$set-symbol-string! $set-symbol-string!-label (core-prim . $set-symbol-string!)]
+        [$set-symbol-unique-string! $set-symbol-unique-string!-label (core-prim . $set-symbol-unique-string!)]
+        [$set-symbol-plist! $set-symbol-plist!-label (core-prim . $set-symbol-plist!)]
         ;;; top-level
         [top-level-bound?     top-level-bound-label      (core-prim . top-level-bound?)]
         [top-level-value      top-level-value-label      (core-prim .  top-level-value)]
@@ -696,6 +744,8 @@
         [pretty-print pretty-print-label (core-prim . pretty-print)]
         [comment-handler comment-handler-label (core-prim . comment-handler)]
         [print-gensym print-gensym-label (core-prim . print-gensym)]
+        [gensym-count       gensym-count-label       (core-prim . gensym-count)]
+        [gensym-prefix       gensym-prefix-label       (core-prim . gensym-prefix)]
         ;;; hash tables
         [make-hash-table make-hash-table-label (core-prim . make-hash-table)]
         [hash-table?      hash-table?-label      (core-prim . hash-table?)]
@@ -764,14 +814,19 @@
         [$set-tcbucket-val! $set-tcbucket-val!-label (core-prim . $set-tcbucket-val!)]
         [$set-tcbucket-next! $set-tcbucket-next!-label (core-prim . $set-tcbucket-next!)]
         [$set-tcbucket-tconc! $set-tcbucket-tconc!-label (core-prim . $set-tcbucket-tconc!)]
-        
         ;;; misc
         [immediate?     immediate?-label    (core-prim . immediate?)]
         [pointer-value     pointer-value-label    (core-prim . pointer-value)]
-        [primitive-set! primitive-set!-label (core-prim . primitive-set!)]
-        [primitive-ref primitive-ref-label (core-prim .  primitive-ref)]
         [$forward-ptr?     $forward-ptr?-label    (core-prim . $forward-ptr?)]
+        ;;; junk that should go away
         [$unbound-object?     $unbound-object?-label    (core-prim . $unbound-object?)]
+        [$make-call-with-values-procedure $make-cwv-procedure (core-prim . $make-call-with-values-procedure)]
+        [$make-values-procedure $make-values-procedure (core-prim . $make-values-procedure)]
+        [primitive-set! primitive-set!-label (core-prim . primitive-set!)]
+        [primitive? primitive?-label (core-prim .  primitive?)]
+        [primitive-ref primitive-ref-label (core-prim .  primitive-ref)]
+        [$$apply     $$apply-label    (core-prim . $$apply)]
+        [$arg-list     $arg-list-label    (core-prim . $arg-list)]
         ))
     (define make-scheme-rib
       (lambda ()
@@ -852,6 +907,26 @@
                          (cons lhs subst-lhs*) 
                          (cons lab subst-lab*)
                          (add-lexicals (list lab) (list lex) r)))))]))])))
+    (define letrec-transformer
+      (lambda (e r mr)
+        (syntax-match e
+          [(_ ([lhs* rhs*] ...) b b* ...) 
+           (if (not (valid-bound-ids? lhs*))
+               (stx-error e)
+               (let ([lex* (map gen-lexical lhs*)]
+                     [lab* (map gen-label lhs*)])
+                 (let ([rib (id/label-rib lhs* lab*)]
+                       [r (add-lexicals lab* lex* r)])
+                   (let ([body (chi-internal 
+                                 (add-subst rib (cons b b*))
+                                 r mr)]
+                         [rhs* (chi-expr* 
+                                 (map (lambda (x) 
+                                        (add-subst rib x))
+                                      rhs*)
+                                 r mr)])
+                     (build-letrec no-source 
+                       lex* rhs* body)))))])))
     (define let-transformer
       (lambda (e r mr)
         (syntax-match e
@@ -1176,6 +1251,7 @@
           [(case-lambda)   case-lambda-transformer]
           [(let-values)    let-values-transformer]
           [(let)           let-transformer]
+          [(letrec)        letrec-transformer]
           [(let*)          let*-transformer]
           [(cond)          cond-transformer]
           [(case)          case-transformer]

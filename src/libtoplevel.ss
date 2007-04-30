@@ -56,7 +56,7 @@
     record-field-mutator record-predicate record-constructor
     record-type-name record-type-symbol record-type-field-names
     hash-table? make-hash-table get-hash-table put-hash-table!
-    assembler-output $make-environment features
+    assembler-output $make-environment 
     command-line-arguments port? input-port? output-port?
     make-input-port make-output-port make-input/output-port
     port-handler port-input-buffer port-input-index port-input-size

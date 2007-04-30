@@ -1,12 +1,8 @@
 
-;;; 6.9: * removed uuid
-;;;      * top-level-value is now open-coded.
-;;;
-;;; 6.2: * added bwp-object?, weak-cons, weak-pair?
-;;;      * pointer-value
-;;; 6.1: * added uses of case-lambda to replace the ugly code 
-;;; 6.0: * basic version working
 
+(library (ikarus core)
+  (export)
+  (import (scheme))
 
 (primitive-set! 'call-with-values 
   ($make-call-with-values-procedure))
@@ -1744,10 +1740,6 @@ reference-implementation:
       (foreign-call "ikrt_strftime" s "%F")
       s)))
 
-(primitive-set! 'features
-  (lambda ()
-    (append (macros) (public-primitives) '())))
-
 (primitive-set! 'list*
   (lambda (fst . rest)
     (let f ([fst fst] [rest rest])
@@ -1857,3 +1849,4 @@ reference-implementation:
        (convert-sign x ($string-length x))]
       [else (error 'string->number "~s is not a string" x)])))
 
+)
