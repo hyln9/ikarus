@@ -1,5 +1,8 @@
 
-(let ()
+(library (ikarus pretty-print)
+  (export)
+  (import (scheme))
+
   (define (pretty-width) 80)
   (define (pretty-indent) 1)
   (define-record cbox (length boxes))
@@ -119,6 +122,7 @@
                  (define (skip-fmt x)
                    (let-values ([(tab subfmt dots fmt) (parse-fmt x)])
                       fmt)))
+               ;(import M)
                (define (boxify/fmt fmt x) 
                  (cond
                    [(and (pair? fmt) (pair? x) (list? x))
