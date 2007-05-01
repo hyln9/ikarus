@@ -551,8 +551,8 @@
         [(funcall) #t]
         [(conditional) #f]
         [(bind lhs* rhs* body) (valid-mv-producer? body)]
-        [else #f] ;; FIXME BUG
-        #;[else (error 'valid-mv-producer? "unhandles ~s"
+        [#t #f] ;; FIXME BUG
+        [else (error 'valid-mv-producer? "unhandles ~s"
                      (unparse x))]))
     (record-case rator
       [(clambda g cls*)
