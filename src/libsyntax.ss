@@ -112,32 +112,8 @@
       (if (rib? x)
           (vector-ref x 3)
           (error 'rib-label* "~s is not a rib" x))))
-  #;(module (make-stx stx? stx-expr stx-mark* stx-subst*)
-    (define-record stx (expr mark* subst*)))
   (module (make-stx stx? stx-expr stx-mark* stx-subst*)
-    (define make-stx
-      (lambda (e m* s*)
-        (vector 'stx e m* s*)))
-    (define stx?
-      (lambda (x)
-        (and (vector? x) 
-             (= (vector-length x) 4)
-             (eq? (vector-ref x 0) 'stx))))
-    (define stx-expr 
-      (lambda (x)
-        (if (stx? x)
-            (vector-ref x 1)
-            (error 'stx-expr "~s is not a syntax object" x))))
-    (define stx-mark* 
-      (lambda (x)
-        (if (stx? x)
-            (vector-ref x 2)
-            (error 'stx-mark* "~s is not a syntax object" x))))
-    (define stx-subst* 
-      (lambda (x)
-        (if (stx? x)
-            (vector-ref x 3)
-            (error 'stx-subst* "~s is not a syntax object" x)))))
+    (define-record stx (expr mark* subst*)))
   (define datum->stx
     (lambda (id datum)
       (make-stx datum (stx-mark* id) (stx-subst* id))))
@@ -2456,3 +2432,33 @@
   (primitive-set! 'syntax-dispatch syntax-dispatch)
   (primitive-set! 'chi-top-library library-expander))
 
+
+
+
+
+#!eof junk
+
+  (module (make-stx stx? stx-expr stx-mark* stx-subst*)
+    (define make-stx
+      (lambda (e m* s*)
+        (vector 'stx e m* s*)))
+    (define stx?
+      (lambda (x)
+        (and (vector? x) 
+             (= (vector-length x) 4)
+             (eq? (vector-ref x 0) 'stx))))
+    (define stx-expr 
+      (lambda (x)
+        (if (stx? x)
+            (vector-ref x 1)
+            (error 'stx-expr "~s is not a syntax object" x))))
+    (define stx-mark* 
+      (lambda (x)
+        (if (stx? x)
+            (vector-ref x 2)
+            (error 'stx-mark* "~s is not a syntax object" x))))
+    (define stx-subst* 
+      (lambda (x)
+        (if (stx? x)
+            (vector-ref x 3)
+            (error 'stx-subst* "~s is not a syntax object" x)))))

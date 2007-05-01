@@ -28,7 +28,7 @@
            #'(i . i*))]))
     (define (generate-body ctxt cls*)
       (syntax-case cls* (else)
-        [() (with-syntax ([x x]) #'(error #f "unmatched ~s in ~s" v #'x))]
+        [() (with-syntax ([x x]) #'(error #f "unmatched ~s in ~s" v 'x))]
         [([else b b* ...])  #'(begin b b* ...)]
         [([(rec-name rec-field* ...) b b* ...] . rest) (identifier? #'rec-name)
          (with-syntax ([altern (generate-body ctxt #'rest)]
