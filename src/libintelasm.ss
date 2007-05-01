@@ -37,7 +37,9 @@
    ;;;      setg
 
 
-(let ()
+(library (ikarus intel-assember)
+  (export)
+  (import (scheme))
 
 (define fold
   (lambda (f init ls)

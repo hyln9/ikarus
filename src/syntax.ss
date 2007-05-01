@@ -179,6 +179,16 @@
     (lambda (x y)
       (and (eq? (id->sym x) (id->sym y))
            (same-marks? (stx-mark* x) (stx-mark* y)))))
+  (define-syntax bound-id-member?
+    (lambda (x)
+      (syntax-case x ()
+        [x (identifier? #'x) #'bound-id-member?^]
+        [(_ id id*)
+         #'(let ([t1 id] [t2 id*])
+             (unless (and (id? t1) (andmap id? t2))
+               (error 'bound-id-member? "~s ~s is not an id in ~s" t1 t2
+                      '(_ id id*)))
+             (bound-id-member?^ t1 t2))])))
   (define free-id=?
     (lambda (i j)
       (let ((t0 (id->label i)) (t1 (id->label j)))
@@ -194,11 +204,11 @@
       (or (null? id*)
           (and (not (bound-id-member? (car id*) (cdr id*)))
                (distinct-bound-ids? (cdr id*))))))
-  (define bound-id-member? 
+  (define bound-id-member?^ 
     (lambda (id id*)
       (and (pair? id*)
            (or (bound-id=? id (car id*))
-               (bound-id-member? id (cdr id*))))))
+               (bound-id-member?^ id (cdr id*))))))
   (define self-evaluating?
     (lambda (x) 
       (or (number? x) (string? x) (char? x) (boolean? x))))
@@ -211,6 +221,11 @@
   (define extend-env* 
     (lambda (lab* b* r)
       (append (map cons lab* b*) r)))
+  (define cons-id
+    (lambda (kwd kwd*)
+      (if (id? kwd)
+          (cons kwd kwd*)
+          kwd*)))
   (define strip
     (lambda (x m*)
       (if (top-marked? m*) 
@@ -567,6 +582,14 @@
       [cdar       cdar-label       (core-prim . cdar)]
       [cadr       cadr-label       (core-prim . cadr)]
       [cddr       cddr-label       (core-prim . cddr)]
+      [caaar       caaar-label       (core-prim . caaar)]
+      [cdaar       cdaar-label       (core-prim . cdaar)]
+      [cadar       cadar-label       (core-prim . cadar)]
+      [cddar       cddar-label       (core-prim . cddar)]
+      [caadr       caadr-label       (core-prim . caadr)]
+      [cdadr       cdadr-label       (core-prim . cdadr)]
+      [caddr       caddr-label       (core-prim . caddr)]
+      [cdddr       cdddr-label       (core-prim . cdddr)]
       [list       list-label       (core-prim . list)]
       [list-ref       list-ref-label       (core-prim . list-ref)]
       [make-list make-list-label (core-prim . make-list)]
@@ -700,7 +723,9 @@
       [*          *-label          (core-prim . *)]
       [+          plus-label       (core-prim . +)]
       [number?   number?-label   (core-prim . number?)]
+      [integer?   integer?-label   (core-prim . integer?)]
       [quotient   quotient-label   (core-prim . quotient)]
+      [remainder   remainder-label   (core-prim . remainder)]
       [number->string   number->string-label   (core-prim . number->string)]
       [string->number   string->number-label   (core-prim . string->number)]
       ;;; symbols/gensyms
@@ -876,13 +901,16 @@
       ;;; codes
       [$closure-code  $closure-code-label (core-prim . $closure-code)]
       [$code? $code?-label (core-prim . $code?)]
+      [$code->closure $code->closure-label (core-prim . $code->closure)]
       [$code-reloc-vector $code-reloc-vector-label (core-prim . $code-reloc-vector)]
       [$code-freevars $code-freevars-label (core-prim . $code-freevars)]
       [$code-size $code-size-label (core-prim . $code-size)]
       [$code-ref $code-ref-label (core-prim . $code-ref)]
       [$code-set! $code-set!-label (core-prim . $code-set!)]
       [code? code?-label (core-prim . code?)]
+      [make-code make-code-label (core-prim . make-code)]
       [code-reloc-vector code-reloc-vector-label (core-prim . code-reloc-vector)]
+      [set-code-reloc-vector! set-code-reloc-vector!-label (core-prim . set-code-reloc-vector!)]
       [code-size code-size-label (core-prim . code-size)]
       [code-freevars code-freevars-label (core-prim . code-freevars)]
       [code-ref code-ref-label (core-prim . code-ref)]
@@ -2026,7 +2054,7 @@
             [else
              (let ([e (car e*)])
                (let-values ([(type value kwd) (syntax-type e r)])
-                 (let ([kwd* (cons kwd kwd*)])
+                 (let ([kwd* (cons-id kwd kwd*)])
                    (case type
                      [(define) 
                       (let-values ([(id rhs) (parse-define e)])
@@ -2111,7 +2139,7 @@
               [else 
                (let ([e (car e*)])
                  (let-values ([(type value kwd) (syntax-type e r)])
-                   (let ([kwd* (cons kwd kwd*)])
+                   (let ([kwd* (cons-id kwd kwd*)])
                      (case type
                        [(define) 
                         (let-values ([(id rhs) (parse-define e)])
@@ -2127,23 +2155,29 @@
                                (cons lex lex*)
                                (cons rhs rhs*)
                                kwd*)))]
-                       [else 
-                        (error 'chi-internal-module
-                               "cannot handle ~s"
-                               type)]))))]))))))
+                       [(begin)
+                        (syntax-match e ()
+                          [(_ x* ...)
+                           (f (append x* (cdr e*)) r mr lhs* lex* rhs* kwd*)])]
+                       [(macro)
+                        (f (cons (add-subst rib (chi-macro value e)) (cdr e*))
+                           r mr lhs* lex* rhs* kwd*)]
+                       [else (return e* r mr lhs* lex* rhs* kwd*)]))))]))))))
   (define chi-library-internal 
     (lambda (e* r rib kwd*)
       (define return
-        (lambda (init* r mr lhs* lex* rhs*)
-          (values init* r mr (reverse lhs*) (reverse lex*) (reverse rhs*))))
-      (let f ([e* e*] [r r] [mr r] [lhs* '()] [lex* '()] [rhs* '()] [kwd* kwd*])
+        (lambda (init* module-init** r mr lhs* lex* rhs*)
+          (let ([module-init* (apply append (reverse module-init**))])
+            (values (append module-init* init*)
+              r mr (reverse lhs*) (reverse lex*) (reverse rhs*)))))
+      (let f ([e* e*] [module-init** '()] [r r] [mr r] [lhs* '()] [lex* '()] [rhs* '()] [kwd* kwd*])
         (cond
-          [(null? e*) (return e* r mr lhs* lex* rhs*)]
+          [(null? e*) (return e* module-init** r mr lhs* lex* rhs*)]
           [else
            (let ([e (car e*)])
              ;(printf "chi ~s\n" e)
              (let-values ([(type value kwd) (syntax-type e r)])
-               (let ([kwd* (cons kwd kwd*)])
+               (let ([kwd* (cons-id kwd kwd*)])
                  (case type
                    [(define) 
                     (let-values ([(id rhs) (parse-define e)])
@@ -2155,6 +2189,7 @@
                             [lab (gen-label id)])
                         (extend-rib! rib id lab)
                         (f (cdr e*)
+                           module-init**
                            (cons (cons lab (cons 'lexical lex)) r)
                            mr 
                            (cons id lhs*) (cons lex lex*) (cons rhs rhs*)
@@ -2168,19 +2203,34 @@
                           (extend-rib! rib id lab)
                           (let ([b (make-eval-transformer expanded-rhs)])
                             (f (cdr e*) 
+                               module-init**
                                (cons (cons lab b) r)
                                (cons (cons lab b) mr) 
                                lhs* lex* rhs* kwd*)))))] 
+                   [(module)
+                    (let-values ([(m-lhs* m-lex* m-rhs* m-init* m-exp-id* m-exp-lab* r mr kwd*)
+                                  (chi-internal-module e r mr kwd*)])
+                      (for-each
+                        (lambda (id lab) (extend-rib! rib id lab))
+                        m-exp-id* m-exp-lab*)
+                      (f (cdr e*)
+                         (cons m-init* module-init**)
+                         r mr 
+                         (append m-lhs* lhs*)
+                         (append m-lex* lex*)
+                         (append m-rhs* rhs*)
+                         kwd*))]
                    [(begin)
                     (syntax-match e ()
                       [(_ x* ...)
-                       (f (append x* (cdr e*)) r mr lhs* lex* rhs*
+                       (f (append x* (cdr e*)) module-init** r mr lhs* lex* rhs*
                           kwd*)])]
                    [(macro)
                     (f (cons (add-subst rib (chi-macro value e)) (cdr e*))
+                       module-init**
                        r mr lhs* lex* rhs* kwd*)]
                    [else 
-                    (return e* r mr lhs* lex* rhs*)]))))]))))
+                    (return e* module-init** r mr lhs* lex* rhs*)]))))]))))
   (define library-expander^
     (lambda (e)
       (let-values ([(name exp* b*) (parse-library e)])
