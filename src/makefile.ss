@@ -13,7 +13,9 @@
 ;;; 6.1: * added case-lambda, dropped lambda
 ;;; 6.0: * basic compiler
 
-
+(library (ikarus makefile)
+   (export)
+   (import (scheme))
 
 (define macros
   '(|#primitive| lambda case-lambda set! quote begin define if letrec
@@ -160,75 +162,6 @@
     ))
  
 
-
-(define (whack-system-env setenv?)
-  (define add-prim
-    (lambda (x)
-      (let ([g (gensym (symbol->string x))])
-        (putprop x '|#system| g)
-        (putprop g '*sc-expander* (cons 'core-primitive x)))))
-  (define add-macro
-    (lambda (x)
-      (let ([g (gensym (symbol->string x))]
-            [e (getprop x '*sc-expander*)])
-        (when e 
-          (putprop x '|#system| g)
-          (putprop g '*sc-expander* e)))))
-  (define (foo)
-    (eval 
-      `(begin
-         (define-syntax compile-time-date-string
-           (lambda (x)
-             #'(quote ,(date-string))))
-         (define-syntax public-primitives
-           (lambda (x)
-             #'(quote ,public-primitives)))
-         (define-syntax system-primitives
-           (lambda (x)
-             #'(quote ,system-primitives))) 
-         (define-syntax macros
-           (lambda (x)
-             #'(quote ,macros))))))
-  (set! system-env ($make-environment '|#system| #t))
-  (for-each add-macro macros)
-  (for-each add-prim public-primitives)
-  (for-each add-prim system-primitives)
-  (if setenv?
-      (parameterize ([interaction-environment system-env])
-        (foo))
-      (foo)))
-
-
-
-(when (eq? "" "")
-  (error #f "SEVERELY OUT OF DATE!\n")
-  (load "chez-compat.ss")
-  (set! primitive-ref top-level-value)
-  (set! primitive-set! set-top-level-value!)
-  (set! chez-expand sc-expand)
-  (set! chez-current-expand current-expand)
-  (printf "loading psyntax.pp ...\n")
-  (load "psyntax-7.1.pp")
-  (chez-current-expand
-    (lambda (x . args)
-      (apply chez-expand (sc-expand x) args)))
-  (whack-system-env #f)
-  (printf "loading psyntax.ss ...\n")
-  (load "psyntax-7.1-6.9.ss")
-  (chez-current-expand
-    (lambda (x . args)
-      (apply chez-expand (sc-expand x) args)))
-  (whack-system-env #t)
-  (printf "ok\n")
-  (load "libassembler-compat-6.7.ss") ; defines make-code etc.
-  (load "libintelasm-6.9.ss") ; uses make-code, etc.
-  (load "libfasl-6.7.ss") ; uses code? etc.
-  (load "libcompile-8.1.ss") ; uses fasl-write
-)
-
-
-(whack-system-env #t)
-
 (define scheme-library-files
   '(["libhandlers.ss"   "libhandlers.fasl"  p0 onepass]
     ["libcontrol.ss"    "libcontrol.fasl"   p0 onepass]
@@ -247,15 +180,13 @@
     ["libfasl.ss"       "libfasl.fasl"      p0 onepass]
     ["libtrace.ss"      "libtrace.fasl"     p0 onepass]
     ["libcompile.ss"    "libcompile.fasl"   p1 onepass]
-      ["psyntax-7.1.ss"   "psyntax.fasl"      p0 onepass]
-      ["syntax.ss"      "syntax.fasl"       p0 onepass]
+    ["syntax.ss"        "syntax.fasl"       p0 onepass]
     ["libpp.ss"         "libpp.fasl"        p0 onepass]
     ["libcafe.ss"       "libcafe.fasl"      p0 onepass]
     ["libposix.ss"      "libposix.fasl"     p0 onepass]
     ["libtimers.ss"     "libtimers.fasl"    p0 onepass]
     ["libtoplevel.ss"   "libtoplevel.fasl"  p0 onepass]
     ))
-
 
 (define (read-file ifile)
   (with-input-from-file ifile
@@ -265,9 +196,6 @@
           (if (eof-object? x)
               '()
               (cons x (f))))))))
-
-(define (expand-file ifile)
-  (map sc-expand (read-file ifile)))
 
 
 (define (join s ls)
@@ -285,27 +213,6 @@
             (display s str)
             (f (car d) (cdr d))])))]))
 
-(define (compile-all)
-  (define (compile-library ifile ofile which-compile)
-    (parameterize ([assembler-output #f] 
-                   [expand-mode 'bootstrap]
-                   [interaction-environment system-env])
-       (let ([proc 
-              (case which-compile
-                [(onepass) compile-file]
-                [(chaitin) alt-compile-file]
-                [else (error 'compile-library "unknown compile ~s"
-                             which-compile)])])
-        (printf "compiling ~a ... \n" ifile)
-        (proc ifile ofile 'replace))))
-  
-  (for-each 
-    (lambda (x)
-      (compile-library (car x) (cadr x) (cadddr x)))
-    scheme-library-files)
-  (system
-    (format "cat ~a > ikarus.boot"
-            (join " " (map cadr scheme-library-files)))))
 
 
 ;;; ;;; NEW ARCHITECTURE
@@ -340,24 +247,21 @@
                 '()
                 (cons x (f))))))))
   (define (expand-library ifile)
-    (parameterize ([expand-mode 'bootstrap]
-                   [interaction-environment system-env])
-       (expand (cons 'begin (slurp-file ifile)))))
+     (map chi-top-library (slurp-file ifile)))
   (define (expand-all ls)
-    (map (lambda (x) (expand-library (car x))) ls))
+    (apply append (map (lambda (x) (expand-library (car x))) ls)))
   (printf "expanding ...\n")
   (let ([core* (expand-all scheme-library-files)])
   (printf "compiling ...\n")
     (let ([p (open-output-file "ikarus.boot" 'replace)])
       (for-each 
-        (lambda (x) (#%compile-core-expr-to-port x p))
+        (lambda (x) (compile-core-expr-to-port x p))
         core*)
       (close-output-port p))))
 
-;(compile-all)
 (new-compile-all)
 
 (printf "Happy Happy Joy Joy\n")
 (exit)
-;(#%compiler-giveup-tally)
+)
 ; vim:syntax=scheme

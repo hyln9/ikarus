@@ -976,6 +976,7 @@
       [interrupt-handler interrupt-handler-label (core-prim .  interrupt-handler)]
       [exit       exit-label       (core-prim . exit)]
       [compile    compile-label    (core-prim . compile)]
+      [compile-core-expr-to-port    compile-core-expr-to-port-label    (core-prim . compile-core-expr-to-port)]
       [eval       eval-label       (core-prim . eval)]
       [load       load-label       (core-prim . load)]
       [expand-mode       expand-mode-label       (core-prim . expand-mode)]
@@ -1015,6 +1016,7 @@
       [syntax-error             syntax-error-label             (core-prim . syntax-error)]
       [generate-temporaries generate-temporaries-label (core-prim . x:generate-temporaries)]
       [free-identifier=?    free-identifier=?-label    (core-prim . x:free-identifier=?)]
+      [chi-top-library    chi-top-library-label    (core-prim . chi-top-library)]
       ;;; codes
       [$closure-code  $closure-code-label (core-prim . $closure-code)]
       [$code? $code?-label (core-prim . $code?)]
