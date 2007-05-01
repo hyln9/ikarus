@@ -953,32 +953,33 @@
 ;;;           (make-code-executable! x)
 ;;;           x)))))
 
-(define list*->code*
-  (lambda (thunk?-label ls*)
-    (let ([closure-size* (map car ls*)]
-          [ls* (map cdr ls*)])
-      (let* ([ls* (map convert-instructions ls*)]
-             [ls* (map optimize-local-jumps ls*)])
-        (let ([n* (map compute-code-size ls*)]
-              [m* (map compute-reloc-size ls*)])
-          (let ([code* (map make-code n* closure-size*)]
-                [relv* (map make-vector m*)])
-            (let ([reloc** (map whack-instructions code* ls*)])
-              (for-each
-                (lambda (foo reloc*)
-                  (for-each (whack-reloc thunk?-label (car foo) (cdr foo)) reloc*))
-                (map cons code* relv*) reloc**)
-              ;(for-each (lambda (x)
-              ;            (printf "RV=~s\n" x))
-              ;          relv*)
-              (for-each set-code-reloc-vector! code* relv*)
-              code*)))))))
-
-;(define list->code
-;  (lambda (ls)
-;    (car (list*->code* (list ls)))))
-
-(primitive-set! 'list*->code* list*->code*)
+(let ()
+  (define list*->code*
+    (lambda (thunk?-label ls*)
+      (let ([closure-size* (map car ls*)]
+            [ls* (map cdr ls*)])
+        (let* ([ls* (map convert-instructions ls*)]
+               [ls* (map optimize-local-jumps ls*)])
+          (let ([n* (map compute-code-size ls*)]
+                [m* (map compute-reloc-size ls*)])
+            (let ([code* (map make-code n* closure-size*)]
+                  [relv* (map make-vector m*)])
+              (let ([reloc** (map whack-instructions code* ls*)])
+                (for-each
+                  (lambda (foo reloc*)
+                    (for-each (whack-reloc thunk?-label (car foo) (cdr foo)) reloc*))
+                  (map cons code* relv*) reloc**)
+                ;(for-each (lambda (x)
+                ;            (printf "RV=~s\n" x))
+                ;          relv*)
+                (for-each set-code-reloc-vector! code* relv*)
+                code*)))))))
+  
+  ;(define list->code
+  ;  (lambda (ls)
+  ;    (car (list*->code* (list ls)))))
+  
+  (primitive-set! 'list*->code* list*->code*))
 
 )
 

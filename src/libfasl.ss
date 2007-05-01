@@ -70,8 +70,8 @@
       (cond
         [(pair? x)   
          (write-char #\P p)
-         (fasl-write (cdr x) p h
-           (fasl-write (car x) p h m))]
+         (fasl-write-object (cdr x) p h
+           (fasl-write-object (car x) p h m))]
         [(vector? x)
          (write-char #\V p)
          (write-int (vector-length x) p)
@@ -80,7 +80,7 @@
              [(fx= i n) m]
              [else
               (f x (fxadd1 i) n
-                 (fasl-write (vector-ref x i) p h m))]))]
+                 (fasl-write-object (vector-ref x i) p h m))]))]
         [(string? x) 
          (write-char #\S p)
          (write-int (string-length x) p)
@@ -92,11 +92,11 @@
               (f x (fxadd1 i) n)]))]
         [(gensym? x)
          (write-char #\G p)
-         (fasl-write (gensym->unique-string x) p h
-           (fasl-write (symbol->string x) p h m))]
+         (fasl-write-object (gensym->unique-string x) p h
+           (fasl-write-object (symbol->string x) p h m))]
         [(symbol? x) 
          (write-char #\M p)
-         (fasl-write (symbol->string x) p h m)]
+         (fasl-write-object (symbol->string x) p h m)]
         [(code? x)
          (write-char #\x p)
          (write-int (code-size x) p)
@@ -105,7 +105,7 @@
            (unless (fx= i n)
              (write-char (integer->char (code-ref x i)) p)
              (f (fxadd1 i) n)))
-         (fasl-write (code-reloc-vector x) p h m)]
+         (fasl-write-object (code-reloc-vector x) p h m)]
         [(record? x)
          (let ([rtd (record-type-descriptor x)])
            (cond
@@ -114,33 +114,33 @@
               (write-char #\R p)
               (let ([names (record-type-field-names x)]
                     [m 
-                     (fasl-write (record-type-symbol x) p h
-                       (fasl-write (record-type-name x) p h m))])
+                     (fasl-write-object (record-type-symbol x) p h
+                       (fasl-write-object (record-type-name x) p h m))])
                 (write-int (length names) p)
                 (let f ([names names] [m m])
                   (cond
                     [(null? names) m]
                     [else
                      (f (cdr names)
-                        (fasl-write (car names) p h m))])))]
+                        (fasl-write-object (car names) p h m))])))]
              [else
               ;;; non-rtd record
               (write-char #\{ p)
               (write-int (length (record-type-field-names rtd)) p)
               (let f ([names (record-type-field-names rtd)] 
-                      [m (fasl-write rtd p h m)])
+                      [m (fasl-write-object rtd p h m)])
                 (cond
                   [(null? names) m]
                   [else
                    (f (cdr names) 
-                      (fasl-write 
+                      (fasl-write-object 
                          ((record-field-accessor rtd (car names)) x)
                          p h m))]))]))]
         [(procedure? x)
          (write-char #\Q p)
-         (fasl-write ($closure-code x) p h m)]
+         (fasl-write-object ($closure-code x) p h m)]
         [else (error 'fasl-write "~s is not fasl-writable" x)])))
-  (define fasl-write 
+  (define fasl-write-object 
     (lambda (x p h m)
       (cond
         [(immediate? x) (fasl-write-immediate x p) m]
@@ -211,7 +211,7 @@
                          (code-freevars code)))
                 (make-graph code h))]
              [else (error 'fasl-write "~s is not fasl-writable" x)])]))))
-  (define do-fasl-write 
+  (define fasl-write-to-port
     (lambda (x port)
       (let ([h (make-hash-table)])
          (make-graph x h)
@@ -221,15 +221,15 @@
          (write-char #\K port)
          (write-char #\0 port)
          (write-char #\1 port)
-         (fasl-write x port h 1)
+         (fasl-write-object x port h 1)
          (void))))
   (primitive-set! 'fasl-write
      (case-lambda 
-       [(x) (do-fasl-write x (current-output-port))]
+       [(x) (fasl-write-to-port x (current-output-port))]
        [(x port)
         (unless (output-port? port)
           (error 'fasl-write "~s is not an output port" port))
-        (do-fasl-write x port)])))
+        (fasl-write-to-port x port)])))
 
 
 
