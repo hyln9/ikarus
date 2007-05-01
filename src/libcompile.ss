@@ -5298,7 +5298,7 @@
   (make-parameter 
     (lambda (x) 
       (parameterize ([current-expand (lambda (x) x)])
-        (compile-expr x)))
+        (compile x)))
     (lambda (f)
       (unless (procedure? f) 
         (error 'compile-time-core-eval "~s is not a procedure" f))

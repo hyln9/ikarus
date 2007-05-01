@@ -306,6 +306,29 @@
     (format "cat ~a > ikarus.boot"
             (join " " (map cadr scheme-library-files)))))
 
+
+;;; ;;; NEW ARCHITECTURE
+;;;
+;;; (define expander-input-env
+;;;   '(;[prim-name      label       (core-prim . prim-name)]
+;;;     [car            car-label    (core-prim . car)]))
+;;; 
+;;; (define expander-output-env 
+;;;   '(;[export-name    export-loc]
+;;;     [ikarus-car      #{ikarus-car |174V9RJ/FjzvmJVu|}]))
+;;; 
+;;; (define bootstrap-knot
+;;;   '(;[prim-name      export-name]
+;;;     [car             ikarus-car]))
+;;; 
+;;; (define compile-input-env
+;;;   '(;[prim-name      export-loc]
+;;;     [car             #{ikarus-car |174V9RJ/FjzvmJVu|}]))
+
+
+
+
+
 (define (new-compile-all)
   (define (slurp-file file)
     (with-input-from-file file

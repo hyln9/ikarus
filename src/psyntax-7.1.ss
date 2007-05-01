@@ -586,9 +586,6 @@
   (lambda (x)
     (eval `(,noexpand ,x))))
 
-(define compile-time-eval-hook
-  (lambda (x)
-    (eval `(,noexpand ,x))))
 
 (define define-top-level-value-hook
   (lambda (sym val)
