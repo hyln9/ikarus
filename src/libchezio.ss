@@ -1,6 +1,9 @@
-(let ()
+(library (ikarus chez-io)
+  (export)
+  (import (scheme))
+
   (define-syntax message-case
-    (syntax-rules  (else)
+    (syntax-rules (else)
       [(_ msg args 
           [(msg-name msg-arg* ...) b b* ...] ... 
           [else else1 else2 ...])
@@ -669,7 +672,9 @@
         [(filename options)
          (if (string? filename)
              (open-output-file filename options)
-             (error 'open-output-file "~s is not a string" filename))])))
+             (error 'open-output-file "~s is not a string" filename))]))
+
+    )
   
   (let () ;;; OUTPUT STRINGS
     ;;;
@@ -750,74 +755,77 @@
             (error 'get-output-string "~s is not an output port" p))))
   )
   
-  (primitive-set! 'with-output-to-string
-    (lambda (f)
-      (unless (procedure? f)
-        (error 'with-output-to-string "~s is not a procedure" f))
-      (let ([p (open-output-string)])
-        (parameterize ([current-output-port p]) (f))
-        (get-output-string p))))
-
-  (primitive-set! 'with-output-to-file
-     (lambda (name proc . args)
-       (unless (string? name) 
-         (error 'with-output-to-file "~s is not a string" name))
-       (unless (procedure? proc)
-         (error 'with-output-to-file "~s is not a procedure" proc))
-       (let ([p (apply open-output-file name args)]
-             [shot #f])
-         (call-with-values 
-           (lambda () 
-             (parameterize ([current-output-port p])
-               (proc)))
-           (case-lambda
-             [(v) (close-output-port p) v]
-             [v*
-              (close-output-port p)
-              (apply values v*)])))))
+  (let () ;;; MISC
+    (primitive-set! 'with-output-to-string
+      (lambda (f)
+        (unless (procedure? f)
+          (error 'with-output-to-string "~s is not a procedure" f))
+        (let ([p (open-output-string)])
+          (parameterize ([current-output-port p]) (f))
+          (get-output-string p))))
   
-  (primitive-set! 'call-with-output-file
-     (lambda (name proc . args)
-       (unless (string? name) 
-         (error 'call-with-output-file "~s is not a string" name))
-       (unless (procedure? proc)
-         (error 'call-with-output-file "~s is not a procedure" proc))
-       (let ([p (apply open-output-file name args)])
-         (call-with-values (lambda () (proc p))
-            (case-lambda
-              [(v) (close-output-port p) v]
-              [v*
-               (close-output-port p)
-               (apply values v*)])))))
-  
-  (primitive-set! 'with-input-from-file
-     (lambda (name proc)
-       (unless (string? name) 
-         (error 'with-input-from-file "~s is not a string" name))
-       (unless (procedure? proc)
-         (error 'with-input-from-file "~s is not a procedure" proc))
-       (let ([p (open-input-file name)])
-         (call-with-values 
-           (lambda () 
-             (parameterize ([current-input-port p])
-               (proc)))
-           (case-lambda
-             [(v) (close-input-port p) v]
-             [v*
-              (close-input-port p)
-              (apply values v*)])))))
+    (primitive-set! 'with-output-to-file
+       (lambda (name proc . args)
+         (unless (string? name) 
+           (error 'with-output-to-file "~s is not a string" name))
+         (unless (procedure? proc)
+           (error 'with-output-to-file "~s is not a procedure" proc))
+         (let ([p (apply open-output-file name args)]
+               [shot #f])
+           (call-with-values 
+             (lambda () 
+               (parameterize ([current-output-port p])
+                 (proc)))
+             (case-lambda
+               [(v) (close-output-port p) v]
+               [v*
+                (close-output-port p)
+                (apply values v*)])))))
     
-  (primitive-set! 'call-with-input-file
-     (lambda (name proc)
-       (unless (string? name) 
-         (error 'call-with-input-file "~s is not a string" name))
-       (unless (procedure? proc)
-         (error 'call-with-input-file "~s is not a procedure" proc))
-       (let ([p (open-input-file name)])
-         (call-with-values (lambda () (proc p))
-            (case-lambda
-              [(v) (close-input-port p) v]
-              [v*
-               (close-input-port p)
-               (apply values v*)])))))
+    (primitive-set! 'call-with-output-file
+       (lambda (name proc . args)
+         (unless (string? name) 
+           (error 'call-with-output-file "~s is not a string" name))
+         (unless (procedure? proc)
+           (error 'call-with-output-file "~s is not a procedure" proc))
+         (let ([p (apply open-output-file name args)])
+           (call-with-values (lambda () (proc p))
+              (case-lambda
+                [(v) (close-output-port p) v]
+                [v*
+                 (close-output-port p)
+                 (apply values v*)])))))
+    
+    (primitive-set! 'with-input-from-file
+       (lambda (name proc)
+         (unless (string? name) 
+           (error 'with-input-from-file "~s is not a string" name))
+         (unless (procedure? proc)
+           (error 'with-input-from-file "~s is not a procedure" proc))
+         (let ([p (open-input-file name)])
+           (call-with-values 
+             (lambda () 
+               (parameterize ([current-input-port p])
+                 (proc)))
+             (case-lambda
+               [(v) (close-input-port p) v]
+               [v*
+                (close-input-port p)
+                (apply values v*)])))))
+      
+    (primitive-set! 'call-with-input-file
+       (lambda (name proc)
+         (unless (string? name) 
+           (error 'call-with-input-file "~s is not a string" name))
+         (unless (procedure? proc)
+           (error 'call-with-input-file "~s is not a procedure" proc))
+         (let ([p (open-input-file name)])
+           (call-with-values (lambda () (proc p))
+              (case-lambda
+                [(v) (close-input-port p) v]
+                [v*
+                 (close-input-port p)
+                 (apply values v*)])))))
+    )
+
 )

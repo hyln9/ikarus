@@ -238,7 +238,7 @@
       ["libnumerics.ss"   "libnumerics.fasl"  p0 onepass]
     ["libguardians.ss"  "libguardians.fasl" p0 onepass]
     ["libcore.ss"       "libcore.fasl"      p0 onepass]
-      ["libchezio.ss"     "libchezio.fasl"    p0 onepass]
+    ["libchezio.ss"     "libchezio.fasl"    p0 onepass]
     ["libhash.ss"       "libhash.fasl"      p0 onepass]
     ["libwriter.ss"     "libwriter.fasl"    p0 onepass]
     ["libtokenizer.ss"  "libtokenizer.fasl" p0 onepass]

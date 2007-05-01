@@ -524,6 +524,7 @@
       [set!          set!-label          (set!)]
       [define-record define-record-label (macro . define-record)]
       [include       include-label       (macro . include)]
+      [syntax-rules  syntax-rules-macro  (macro . syntax-rules)]
       [with-syntax   with-syntax-label   (macro . with-syntax)]
       [case          case-label          (core-macro .  case)]
       [foreign-call  foreign-call-label  (core-macro .  foreign-call)]
@@ -726,9 +727,58 @@
       [top-level-bound?     top-level-bound-label      (core-prim . top-level-bound?)]
       [top-level-value      top-level-value-label      (core-prim .  top-level-value)]
       [set-top-level-value! set-top-level-value!-label (core-prim .  set-top-level-value!)]
+      ;;; guardians
+      [make-guardian     make-guardian-label     (core-prim . make-guardian)]
+      ;;; IO/low-level
+      [$make-port/input        $make-port/input-label        (core-prim .  $make-port/input)]
+      [$make-port/output        $make-port/output-label        (core-prim .  $make-port/output)]
+      [$make-port/both        $make-port/both-label        (core-prim .  $make-port/both)]
+      [$port-handler        $port-handler-label        (core-prim .  $port-handler)]
+      [$port-input-buffer        $port-input-buffer-label        (core-prim .  $port-input-buffer)]
+      [$port-input-index        $port-input-index-label        (core-prim .  $port-input-index)]
+      [$port-input-size        $port-input-size-label        (core-prim .  $port-input-size)]
+      [$port-output-buffer        $port-output-buffer-label        (core-prim .  $port-output-buffer)]
+      [$port-output-index        $port-output-index-label        (core-prim .  $port-output-index)]
+      [$port-output-size        $port-output-size-label        (core-prim .  $port-output-size)]
+      [$set-port-input-index!        $set-port-input-index!-label        (core-prim .  $set-port-input-index!)]
+      [$set-port-input-size!        $set-port-input-size!-label        (core-prim .  $set-port-input-size!)]
+      [$set-port-output-index!        $set-port-output-index!-label        (core-prim .  $set-port-output-index!)]
+      [$set-port-output-size!        $set-port-output-size!-label        (core-prim .  $set-port-output-size!)]
+      [make-input-port        make-input-port-label        (core-prim .  make-input-port)]
+      [make-output-port        make-output-port-label        (core-prim .  make-output-port)]
+      [make-input/output-port        make-input/output-port-label        (core-prim .  make-input/output-port)]
+      [$make-input-port        $make-input-port-label        (core-prim .  $make-input-port)]
+      [$make-output-port        $make-output-port-label        (core-prim .  $make-output-port)]
+      [$make-input/output-port        $make-input/output-port-label        (core-prim .  $make-input/output-port)]
+      [port-output-index        port-output-index-label        (core-prim .  port-output-index)]
+      [port-output-size        port-output-size-label        (core-prim .  port-output-size)]
+      [port-output-buffer        port-output-buffer-label        (core-prim .  port-output-buffer)]
+      [set-port-output-index!        set-port-output-index!-label        (core-prim .  set-port-output-index!)]
+      [set-port-output-size!        set-port-output-size!-label        (core-prim .  set-port-output-size!)]
+      [port-input-buffer        port-input-buffer-label        (core-prim .  port-input-buffer)]
+      [port-input-index        port-input-index-label        (core-prim .  port-input-index)]
+      [port-input-size        port-input-size-label        (core-prim .  port-input-size)]
+      [set-port-input-index!        set-port-input-index!-label        (core-prim .  set-port-input-index!)]
+      [set-port-input-size!        set-port-input-size!-label        (core-prim .  set-port-input-size!)]
+      [*standard-input-port*        *standard-input-port*-label        (core-prim .  *standard-input-port*)]
+      [*standard-output-port*        *standard-output-port*-label        (core-prim .  *standard-output-port*)]
+      [*standard-error-port*        *standard-error-port*-label        (core-prim .  *standard-error-port*)]
+      [*current-input-port*        *current-input-port*-label        (core-prim .  *current-input-port*)]
+      [*current-output-port*        *current-output-port*-label        (core-prim .  *current-output-port*)]
+      ;[port        port-label        (core-prim .  port)]
+      ;[port        port-label        (core-prim .  port)]
+      ;[port        port-label        (core-prim .  port)]
+      ;[port        port-label        (core-prim .  port)]
+      ;[port        port-label        (core-prim .  port)]
+      ;[port        port-label        (core-prim .  port)]
+      ;[port        port-label        (core-prim .  port)]
+      ;[port        port-label        (core-prim .  port)]
+      ;[port        port-label        (core-prim .  port)]
       ;;; IO/ports
       [output-port?        output-port?-label        (core-prim .  output-port?)]
       [input-port?        input-port?-label        (core-prim .  input-port?)]
+      [port?        port?-label        (core-prim .  port?)]
+      [port-name        port-name-label        (core-prim .  port-name)]
       [input-port-name        input-port-name-label        (core-prim .  input-port-name)]
       [output-port-name        output-port-name-label        (core-prim .  output-port-name)]
       [open-input-file  open-input-file-label  (core-prim .  open-input-file)]
@@ -736,6 +786,7 @@
       [open-output-string  open-output-string-label  (core-prim .  open-output-string)]
       [get-output-string  get-output-string-label  (core-prim .  get-output-string)]
       [close-input-port  close-input-port-label  (core-prim .  close-input-port)]
+      [close-output-port  close-output-port-label  (core-prim .  close-output-port)]
       [console-input-port  console-input-port-label  (core-prim .  console-input-port)]
       [console-output-port console-output-port-label (core-prim .  console-output-port)]
       [current-input-port  current-input-port-label  (core-prim .  current-input-port)]
@@ -745,6 +796,10 @@
       [standard-error-port  standard-error-port-label  (core-prim .  standard-error-port)]
       [flush-output-port   flush-output-port-label   (core-prim .  flush-output-port)]
       [reset-input-port!   reset-input-port!-label   (core-prim .  reset-input-port!)]
+      [$flush-output-port   $flush-output-port-label   (core-prim .  $flush-output-port)]
+      [$reset-input-port!   $reset-input-port!-label   (core-prim .  $reset-input-port!)]
+      [$close-input-port  $close-input-port-label  (core-prim .  $close-input-port)]
+      [$close-output-port  $close-output-port-label  (core-prim .  $close-output-port)]
       ;;; IO/high-level
       [display    display-label    (core-prim . display)]
       [write      write-label      (core-prim . write)]
@@ -762,6 +817,10 @@
       [print-gensym print-gensym-label (core-prim . print-gensym)]
       [gensym-count       gensym-count-label       (core-prim . gensym-count)]
       [gensym-prefix       gensym-prefix-label       (core-prim . gensym-prefix)]
+      [$write-char $write-char-label (core-prim . $write-char)]
+      [$read-char  $read-char-label  (core-prim . $read-char)]
+      [$peek-char  $peek-char-label  (core-prim . $peek-char)]
+      [$unread-char  $unread-char-label  (core-prim . $unread-char)]
       ;;; hash tables
       [make-hash-table make-hash-table-label (core-prim . make-hash-table)]
       [hash-table?      hash-table?-label      (core-prim . hash-table?)]
@@ -1167,6 +1226,23 @@
                       (cons (bless 'begin) 
                         (datum->stx id (reverse ls)))]
                      [else (f (cons x ls))]))))))])))
+  (define syntax-rules-macro
+    (lambda (e)
+      (syntax-match e ()
+        [(_ (lits ...) 
+            [pat* tmp*] ...)
+         (unless (andmap
+                   (lambda (x) 
+                     (and (id? x) 
+                          (not (free-id=? x (sym->free-id '...)))
+                          (not (free-id=? x (sym->free-id '_)))))
+                   lits)
+           (stx-error e "invalid literals"))
+         (bless `(lambda (x) 
+                   (syntax-case x ,lits
+                     ,@(map (lambda (pat tmp)
+                              `[,pat (syntax ,tmp)])
+                            pat* tmp*))))])))
   (define define-record-macro
     (lambda (e)
       (define enumerate
@@ -1792,6 +1868,7 @@
          (case x
            [(define-record) define-record-macro]
            [(include)       include-macro]
+           [(syntax-rules)  syntax-rules-macro]
            [(with-syntax)   with-syntax-macro]
            [else (error 'macro-transformer 
                         "invalid macro ~s" x)])]
@@ -2104,7 +2181,7 @@
                        r mr lhs* lex* rhs* kwd*)]
                    [else 
                     (return e* r mr lhs* lex* rhs*)]))))]))))
-  (define library-expander
+  (define library-expander^
     (lambda (e)
       (let-values ([(name exp* b*) (parse-library e)])
         (let ([rib (make-scheme-rib)]
@@ -2121,6 +2198,11 @@
                     (chi-void)
                     (build-sequence no-source 
                       (chi-expr* init* r mr))))))))))
+  (define library-expander
+    (lambda (x)
+      (let ([v (library-expander^ x)])
+        ;(pretty-print v)
+        v)))
   (primitive-set! 'x:identifier? id?)
   (primitive-set! 'x:generate-temporaries
     (lambda (ls)
