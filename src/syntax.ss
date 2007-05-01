@@ -723,11 +723,17 @@
       [*          *-label          (core-prim . *)]
       [+          plus-label       (core-prim . +)]
       [number?   number?-label   (core-prim . number?)]
+      [bignum?   bignum?-label   (core-prim . bignum?)]
       [integer?   integer?-label   (core-prim . integer?)]
+      [flonum?   flonum?-label   (core-prim . flonum?)]
       [quotient   quotient-label   (core-prim . quotient)]
       [remainder   remainder-label   (core-prim . remainder)]
+      [quotient+remainder   quotient+remainder-label   (core-prim . quotient+remainder)]
       [number->string   number->string-label   (core-prim . number->string)]
       [string->number   string->number-label   (core-prim . string->number)]
+      ;;; other numerics
+      [flonum->string   flonum->string-label   (core-prim . flonum->string)]
+      [string->flonum   string->flonum-label   (core-prim . string->flonum)]
       ;;; symbols/gensyms
       [symbol?    symbol?-label    (core-prim . symbol?)]
       [gensym?    gensym?-label    (core-prim . gensym?)]
@@ -2084,6 +2090,11 @@
                                  (cons (cons lab b) r)
                                  (cons (cons lab b) mr) 
                                  lhs* lex* rhs* kwd*)))))] 
+                     [(begin)
+                      (syntax-match e ()
+                        [(_ x* ...)
+                         (f (append x* (cdr e*)) module-init** 
+                            r mr lhs* lex* rhs* kwd*)])]
                      [(macro)
                       (f (cons (add-subst rib (chi-macro value e)) (cdr e*))
                          module-init** r mr lhs* lex* rhs* kwd*)]

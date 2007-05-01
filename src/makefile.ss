@@ -243,7 +243,7 @@
     ["libwriter.ss"     "libwriter.fasl"    p0 onepass]
     ["libtokenizer.ss"  "libtokenizer.fasl" p0 onepass]
     ["libassembler.ss"  "libassembler.fasl" p0 onepass]
-      ["libintelasm.ss"   "libintelasm.fasl"  p0 onepass]
+    ["libintelasm.ss"   "libintelasm.fasl"  p0 onepass]
     ["libfasl.ss"       "libfasl.fasl"      p0 onepass]
     ["libtrace.ss"      "libtrace.fasl"     p0 onepass]
       ["libcompile.ss"    "libcompile.fasl"   p1 onepass]

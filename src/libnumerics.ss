@@ -1,4 +1,8 @@
 
+(library (ikarus flonums)
+  (export)
+  (import (scheme))
+
 (let ()
   (define (flonum->string x)
     (or (foreign-call "ikrt_flonum_to_string" x)
@@ -13,8 +17,11 @@
     (lambda (x) (flonum? x)))
   (primitive-set! 'flonum->string flonum->string)
   (primitive-set! 'string->flonum string->flonum)
-)
+))
 
+(library (ikarus flonums)
+  (export)
+  (import (scheme))
 
 
 (let ()
@@ -70,7 +77,7 @@
       (cond
         [(fixnum? x)
          (cond
-           [(fixnum? y) (#%$fxlogand x y)]
+           [(fixnum? y) ($fxlogand x y)]
            [(bignum? y)
             (foreign-call "ikrt_fxbnlogand" x y)]
            [else 
@@ -258,11 +265,11 @@
   (define expt
     (lambda (n m)
       (cond
-        [(#%$fxzero? m) 1]
-        [(#%$fxzero? (#%$fxlogand m 1))
-         (expt (binary* n n) (#%$fxsra m 1))]
+        [($fxzero? m) 1]
+        [($fxzero? ($fxlogand m 1))
+         (expt (binary* n n) ($fxsra m 1))]
         [else
-         (binary* n (expt (binary* n n) (#%$fxsra m 1)))])))
+         (binary* n (expt (binary* n n) ($fxsra m 1)))])))
 
   (define max
     (case-lambda
@@ -626,11 +633,11 @@
     (syntax-rules ()
       [(_ x y cmp)
        (cmp (foreign-call "ikrt_bnbncomp" x y) 0)]))
-  (define-syntax bnbn= (syntax-rules () [(_ x y) (bnbncmp x y #%$fx=)]))
-  (define-syntax bnbn< (syntax-rules () [(_ x y) (bnbncmp x y #%$fx<)]))
-  (define-syntax bnbn> (syntax-rules () [(_ x y) (bnbncmp x y #%$fx>)]))
-  (define-syntax bnbn<= (syntax-rules () [(_ x y) (bnbncmp x y #%$fx<=)]))
-  (define-syntax bnbn>= (syntax-rules () [(_ x y) (bnbncmp x y #%$fx>=)]))
+  (define-syntax bnbn= (syntax-rules () [(_ x y) (bnbncmp x y $fx=)]))
+  (define-syntax bnbn< (syntax-rules () [(_ x y) (bnbncmp x y $fx<)]))
+  (define-syntax bnbn> (syntax-rules () [(_ x y) (bnbncmp x y $fx>)]))
+  (define-syntax bnbn<= (syntax-rules () [(_ x y) (bnbncmp x y $fx<=)]))
+  (define-syntax bnbn>= (syntax-rules () [(_ x y) (bnbncmp x y $fx>=)]))
   (define-syntax fxbn< (syntax-rules () [(_ x y) (positive-bignum? y)]))
   (define-syntax bnfx< (syntax-rules () [(_ x y) (not (positive-bignum? x))]))
   (define-syntax fxbn> (syntax-rules () [(_ x y) (not (positive-bignum? y))]))
@@ -673,15 +680,15 @@
   (primitive-set! '- -)
   (primitive-set! '* *)
   (primitive-set! '/ /)
-  (primitive-set! '= (mk< = #%$fx= false false bnbn= 
+  (primitive-set! '= (mk< = $fx= false false bnbn= 
                           fxfl= flfx= bnfl= flbn= flfl=))
-  (primitive-set! '< (mk< < #%$fx< fxbn< bnfx< bnbn<
+  (primitive-set! '< (mk< < $fx< fxbn< bnfx< bnbn<
                           fxfl< flfx< bnfl< flbn< flfl<))
-  (primitive-set! '> (mk< > #%$fx> fxbn> bnfx> bnbn>
+  (primitive-set! '> (mk< > $fx> fxbn> bnfx> bnbn>
                           fxfl> flfx> bnfl> flbn> flfl>))
-  (primitive-set! '<= (mk< <= #%$fx<= fxbn< bnfx< bnbn<=
+  (primitive-set! '<= (mk< <= $fx<= fxbn< bnfx< bnbn<=
                           fxfl<= flfx<= bnfl<= flbn<= flfl<=))
-  (primitive-set! '>= (mk< >= #%$fx>= fxbn> bnfx> bnbn>=
+  (primitive-set! '>= (mk< >= $fx>= fxbn> bnfx> bnbn>=
                           fxfl>= flfx>= bnfl>= flbn>= flfl>=))
   (primitive-set! 'logand logand)
   (primitive-set! 'number? number?)
@@ -712,9 +719,9 @@
         [(bignum? x) #f]
         [(flonum? x) (= x (exact->inexact 0))]
         [else (error 'zero? "tag=~s / ~s  is not a number" 
-                     (#%$fxlogand 255 
-                      (#%$fxsll x 2))
-                     (#%$fxlogand x -1)
+                     ($fxlogand 255 
+                      ($fxsll x 2))
+                     ($fxlogand x -1)
                      )])))
 
   (primitive-set! 'expt
@@ -723,7 +730,7 @@
         (error 'expt "~s is not a numebr" n))
       (cond
         [(fixnum? m) 
-         (if (#%$fx>= m 0)
+         (if ($fx>= m 0)
              (expt n m)
              (error 'expt "power should be positive, got ~s" m))]
         [(bignum? m) 
@@ -782,14 +789,14 @@
   (primitive-set! 'positive?
     (lambda (x)
       (cond
-        [(fixnum? x) (#%$fx> x 0)]
+        [(fixnum? x) ($fx> x 0)]
         [(bignum? x) (positive-bignum? x)]
         [else (error 'positive? "~s is not a number" x)])))
 
   (primitive-set! 'negative?
     (lambda (x)
       (cond
-        [(fixnum? x) (#%$fx< x 0)]
+        [(fixnum? x) ($fx< x 0)]
         [(bignum? x) (not (positive-bignum? x))]
         [else (error 'negative? "~s is not a number" x)])))
 
@@ -836,4 +843,4 @@
   (primitive-set! 'bignum? 
     (lambda (x) (bignum? x)))
 
-  )
+  ))
