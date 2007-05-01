@@ -1998,11 +1998,11 @@
                                     (else (error 'sc-expand-internal "unexpected module binding type ~s" t)))))
                             (loop bs))))))))))))
 
-(define chi-top-library
-  (let ()
-    (include "syntax.ss")
-    (primitive-set! 'chi-top-library library-expander)
-    library-expander))
+;(define chi-top-library
+;  (let ()
+;    (include "syntax.ss")
+;    (primitive-set! 'chi-top-library library-expander)
+;    library-expander))
 
 (define id-set-diff
   (lambda (exports defs)

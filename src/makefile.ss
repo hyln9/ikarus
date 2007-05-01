@@ -248,6 +248,7 @@
     ["libtrace.ss"      "libtrace.fasl"     p0 onepass]
     ["libcompile.ss"    "libcompile.fasl"   p1 onepass]
       ["psyntax-7.1.ss"   "psyntax.fasl"      p0 onepass]
+      ["syntax.ss"      "syntax.fasl"       p0 onepass]
     ["libpp.ss"         "libpp.fasl"        p0 onepass]
     ["libcafe.ss"       "libcafe.fasl"      p0 onepass]
     ["libposix.ss"      "libposix.fasl"     p0 onepass]

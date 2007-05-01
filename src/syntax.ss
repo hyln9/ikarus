@@ -1,4 +1,7 @@
 
+(library (ikarus syntax)
+  (export)
+  (import (scheme))
 
   (define who 'chi-top-library)
   (define noexpand "noexpand")
@@ -2517,4 +2520,6 @@
              (apply string-append args) 
              (strip x '()))))
   (primitive-set! 'x:syntax-dispatch syntax-dispatch)
+  (primitive-set! 'chi-top-library library-expander))
+
 
