@@ -669,61 +669,58 @@
     (if name (gensym name) (gensym))))
 )
 
-
-
-;;; output constructors
-(begin
+(begin ;;; GOOD ONES
 (define-syntax build-application
   (syntax-rules ()
-    ((_ ae fun-exp arg-exps)
-     `(,fun-exp . ,arg-exps))))
-
+    ((_ ae fun-exp arg-exps) `(,fun-exp . ,arg-exps))))
 (define-syntax build-conditional
   (syntax-rules ()
-    ((_ ae test-exp then-exp else-exp)
-     `(if ,test-exp ,then-exp ,else-exp))))
-
+    ((_ ae test-exp then-exp else-exp) `(if ,test-exp ,then-exp ,else-exp))))
 (define-syntax build-lexical-reference
   (syntax-rules ()
-    ((_ ae var) var)
-    ((_ type ae var)
-     var)))
-
+    ((_ ae var) var) ((_ type ae var) var)))
 (define-syntax build-lexical-assignment
   (syntax-rules ()
-    ((_ ae var exp)
-     `(set! ,var ,exp))))
-
-;;; AZIZ
-;;; (define-syntax build-global-reference
-;;;   (syntax-rules ()
-;;;     ((_ ae var)
-;;;      var)))
+    ((_ ae var exp) `(set! ,var ,exp))))
 (define-syntax build-global-reference
   (syntax-rules ()
-    [(_ ae var)
-     `(top-level-value ',var)]))
-
-;;; AZIZ
-;;; (define-syntax build-global-assignment
-;;;   (syntax-rules ()
-;;;     ((_ ae var exp)
-;;;      `(set! ,var ,exp))))
+    [(_ ae var) `(top-level-value ',var)]))
 (define-syntax build-global-assignment
   (syntax-rules ()
-    [(_ ae var exp)
-     `(set-top-level-value! ',var ,exp)]))
-
-;;; AZIZ
-;;; (define-syntax build-global-definition
-;;;   (syntax-rules ()
-;;;     ((_ ae var exp)
-;;;      `(define ,var ,exp))))
+    [(_ ae var exp) `(set-top-level-value! ',var ,exp)]))
 (define-syntax build-global-definition
   (syntax-rules ()
-    [(_ ae var exp)
-     (build-global-assignment ae var exp)]))
+    [(_ ae var exp) (build-global-assignment ae var exp)]))
+(define-syntax build-lambda
+  (syntax-rules ()
+    [(_ ae vars exp) `(case-lambda [,vars ,exp])]))
+(define build-case-lambda
+  (lambda (ae vars* exp*)
+    `(case-lambda . ,(map list vars* exp*))))
+(define-syntax build-primref
+  (syntax-rules ()
+    [(_ ae name)   (build-primref ae 1 name)]
+    [(_ ae level name) `(|#primitive| ,name)]))
+(define-syntax build-foreign-call
+  (syntax-rules ()
+    [(_ ae name arg*) `(foreign-call ,name . ,arg*)]))
+(define-syntax build-data
+  (syntax-rules ()
+    ((_ ae exp) `',exp)))
+(define build-sequence
+  (lambda (ae exps)
+    (let loop ((exps exps))
+      (if (null? (cdr exps))
+          (car exps)
+          (if (equal? (car exps) '(#%void))
+              (loop (cdr exps))
+              `(begin ,@exps))))))
+(define build-letrec
+  (lambda (ae vars val-exps body-exp)
+    (if (null? vars) body-exp `(letrec ,(map list vars val-exps) ,body-exp)))))
 
+(begin ;;; PSYNTAX ONES
+;;; output constructors
 
 (define-syntax build-cte-install
  ; should build a call that has the same effect as calling put-cte-hook
@@ -744,20 +741,6 @@
     ((_ exp) exp)))
 
 ;;; AZIZ
-;;; (define-syntax build-lambda
-;;;   (syntax-rules ()
-;;;     ((_ ae vars exp)
-;;;      `(lambda ,vars ,exp))))
-(define-syntax build-lambda
-  (syntax-rules ()
-    [(_ ae vars exp)
-     `(case-lambda [,vars ,exp])]))
-
-(define build-case-lambda
-  (lambda (ae vars* exp*)
-    `(case-lambda . ,(map list vars* exp*))))
-
-;;; AZIZ
 ;;; (define built-lambda?
 ;;;   (lambda (x)
 ;;;     (and (pair? x) (eq? (car x) 'lambda))))
@@ -765,42 +748,6 @@
   (lambda (x)
     (and (pair? x) (eq? (car x) 'case-lambda))))
 
-;;; AZIZ
-;;; (define-syntax build-primref
-;;;   (syntax-rules ()
-;;;     ((_ ae name) name)
-;;;     ((_ ae level name) name)))
-(define-syntax build-primref
-  (syntax-rules ()
-    [(_ ae name)   (build-primref ae 1 name)]
-    [(_ ae level name)
-     `(|#primitive| ,name)]))
-
-
-;;; AZIZ
-(define-syntax build-foreign-call
-  (syntax-rules ()
-    [(_ ae name arg*) `(foreign-call ,name . ,arg*)]))
-
-(define-syntax build-data
-  (syntax-rules ()
-    ((_ ae exp) `',exp)))
-
-(define build-sequence
-  (lambda (ae exps)
-    (let loop ((exps exps))
-      (if (null? (cdr exps))
-          (car exps)
-         ; weed out leading void calls, assuming ordinary list representation
-          (if (equal? (car exps) '(#%void))
-              (loop (cdr exps))
-              `(begin ,@exps))))))
-
-(define build-letrec
-  (lambda (ae vars val-exps body-exp)
-    (if (null? vars)
-        body-exp
-        `(letrec ,(map list vars val-exps) ,body-exp))))
 
 (define build-body
   (lambda (ae vars val-exps body-exp)

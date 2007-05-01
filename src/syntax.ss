@@ -1,13 +1,66 @@
 
 
   (define who 'chi-top-library)
-  (define-syntax build-let
-    (lambda (x)
-      (syntax-case x ()
-        [(_ ae lhs* rhs* body)
-         #'(build-application ae
-             (build-lambda ae lhs* body)
-             rhs*)])))
+  (define noexpand "noexpand")
+  (define-syntax no-source 
+    (lambda (x) #f))
+  (begin ;;; GOOD ONES
+    (define-syntax build-application
+      (syntax-rules ()
+        ((_ ae fun-exp arg-exps)
+         `(,fun-exp . ,arg-exps))))
+    (define-syntax build-conditional
+      (syntax-rules ()
+        ((_ ae test-exp then-exp else-exp)
+         `(if ,test-exp ,then-exp ,else-exp))))
+    (define-syntax build-lexical-reference
+      (syntax-rules ()
+        ((_ ae var) var)
+        ((_ type ae var) var)))
+    (define-syntax build-lexical-assignment
+      (syntax-rules ()
+        ((_ ae var exp) `(set! ,var ,exp))))
+    (define-syntax build-global-reference
+      (syntax-rules ()
+        [(_ ae var) `(top-level-value ',var)]))
+    (define-syntax build-global-assignment
+      (syntax-rules ()
+        [(_ ae var exp) `(set-top-level-value! ',var ,exp)]))
+    (define-syntax build-global-definition
+      (syntax-rules ()
+        [(_ ae var exp) (build-global-assignment ae var exp)]))
+    (define-syntax build-lambda
+      (syntax-rules ()
+        [(_ ae vars exp) `(case-lambda [,vars ,exp])]))
+    (define build-case-lambda
+      (lambda (ae vars* exp*)
+        `(case-lambda . ,(map list vars* exp*))))
+    (define build-let
+      (lambda (ae lhs* rhs* body)
+        `((case-lambda [,lhs* ,body]) . ,rhs*)))
+    (define-syntax build-primref
+      (syntax-rules ()
+        [(_ ae name)   (build-primref ae 1 name)]
+        [(_ ae level name) `(|#primitive| ,name)]))
+    (define-syntax build-foreign-call
+      (syntax-rules ()
+        [(_ ae name arg*) `(foreign-call ,name . ,arg*)]))
+    (define-syntax build-data
+      (syntax-rules ()
+        ((_ ae exp) `',exp)))
+    (define build-sequence
+      (lambda (ae exps)
+        (let loop ((exps exps))
+          (if (null? (cdr exps))
+              (car exps)
+              (if (equal? (car exps) '(#%void))
+                  (loop (cdr exps))
+                  `(begin ,@exps))))))
+    (define build-void
+      (lambda () '(#%void)))
+    (define build-letrec
+      (lambda (ae vars val-exps body-exp)
+        (if (null? vars) body-exp `(letrec ,(map list vars val-exps) ,body-exp)))))
   (define-syntax assert
     (lambda (x)
       (syntax-case x ()
@@ -291,7 +344,7 @@
              (unless label 
                (stx-error e "unbound identifier"))
              (case type
-               [(lexical core-prim)
+               [(lexical core-prim macro)
                 (values type (binding-value b) id)]
                [else (values 'other #f #f)])))]
         [(syntax-pair? e)
@@ -860,6 +913,7 @@
       [input-port-name        input-port-name-label        (core-prim .  input-port-name)]
       [output-port-name        output-port-name-label        (core-prim .  output-port-name)]
       [open-input-file  open-input-file-label  (core-prim .  open-input-file)]
+      [with-input-from-file  with-input-from-file-label  (core-prim .  with-input-from-file)]
       [open-output-file  open-output-file-label  (core-prim .  open-output-file)]
       [open-output-string  open-output-string-label  (core-prim .  open-output-string)]
       [get-output-string  get-output-string-label  (core-prim .  get-output-string)]
@@ -955,6 +1009,7 @@
       [$record/rtd? $record/rtd?-label (core-prim . $record/rtd?)]
       ;;; syntax-case
       [identifier?          identifier?-label          (core-prim . x:identifier?)]
+      [syntax-error             syntax-error-label             (core-prim . syntax-error)]
       [generate-temporaries generate-temporaries-label (core-prim . x:generate-temporaries)]
       [free-identifier=?    free-identifier=?-label    (core-prim . x:free-identifier=?)]
       ;;; codes
@@ -1162,14 +1217,14 @@
            (chi-expr test r mr)
            (build-sequence no-source
              (chi-expr* (cons e e*) r mr))
-           (chi-void))])))
+           (build-void))])))
   (define unless-transformer
     (lambda (e r mr)
       (syntax-match e ()
         [(_ test e e* ...) 
          (build-conditional no-source
            (chi-expr test r mr)
-           (chi-void) 
+           (build-void) 
            (build-sequence no-source
              (chi-expr* (cons e e*) r mr)))])))
   (define if-transformer
@@ -1184,7 +1239,7 @@
          (build-conditional no-source
            (chi-expr e0 r mr)
            (chi-expr e1 r mr)
-           (chi-void))])))
+           (build-void))])))
   (define case-transformer
     (lambda (e r mr)
       (define build-one 
@@ -1203,7 +1258,7 @@
         (lambda (t cls)
           (syntax-match cls ()
             [((d* ...) e e* ...)
-             (build-one t cls (chi-void))]
+             (build-one t cls (build-void))]
             [(else-kwd x x* ...)
              (if (and (id? else-kwd)
                       (free-id=? else-kwd (scheme-stx 'else)))
@@ -1214,7 +1269,7 @@
       (syntax-match e ()
         [(_ expr) 
          (build-sequence no-source 
-           (list (chi-expr expr r mr) (chi-void)))]
+           (list (chi-expr expr r mr) (build-void)))]
         [(_ expr cls cls* ...)
          (let ([t (gen-lexical 't)])
            (build-let no-source 
@@ -1769,6 +1824,16 @@
                 (build-application no-source
                   (build-primref no-source 'apply)
                   (list (build-lambda no-source new-vars body) y)))))))
+      (define invalid-ids-error
+        (lambda (id* e class)
+          (let find ((id* id*) (ok* '()))
+            (if (null? id*)
+                (stx-error e) ; shouldn't happen
+                (if (id? (car id*))
+                    (if (bound-id-member? (car id*) ok*)
+                        (syntax-error (car id*) "duplicate " class)
+                        (find (cdr id*) (cons (car id*) ok*)))
+                    (syntax-error (car id*) "invalid " class))))))
       (define gen-clause
         (lambda (x keys clauses r mr pat fender expr)
           (let-values (((p pvars) (convert-pattern pat keys)))
@@ -1935,7 +2000,7 @@
                         ((assq outer-var (car maps)) =>
                          (lambda (b) (values (cdr b) maps)))
                         (else
-                         (let ((inner-var (gen-var 'tmp)))
+                         (let ((inner-var (gen-lexical 'tmp)))
                            (values
                              inner-var
                              (cons
@@ -2023,7 +2088,6 @@
         [(let)           let-transformer]
         [(letrec)        letrec-transformer]
         [(let*)          let*-transformer]
-        [(cond)          cond-transformer]
         [(case)          case-transformer]
         [(if)            if-transformer]
         [(when)          when-transformer]
@@ -2424,7 +2488,7 @@
                 lex* 
                 (chi-rhs* rhs* r mr)
                 (if (null? init*) 
-                    (chi-void)
+                    (build-void)
                     (build-sequence no-source 
                       (chi-expr* init* r mr))))))))))
   (define library-expander
