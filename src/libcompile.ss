@@ -11,6 +11,11 @@
 ;;; 6.1: * added case-lambda, dropped lambda
 ;;; 6.0: * basic compiler
 
+(library (ikarus compiler)
+  (export)
+  (import (scheme))
+
+
 (let ()
 
 (define-syntax record-case
@@ -5195,6 +5200,7 @@
   (lambda args
     (error 'alt-cogen "disabled for now")))
 
+
 (define (alt-compile-expr expr)
   (let* ([p (parameterize ([assembler-output #f])
               (expand expr))]
@@ -5308,5 +5314,5 @@
       f)))
 
 
-)
+))
 
