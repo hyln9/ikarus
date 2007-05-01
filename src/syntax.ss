@@ -2039,13 +2039,20 @@
         [(null? lhs*) #f]
         [(bound-id=? x (car lhs*)) (car rhs*)]
         [else (find-bound=? x (cdr lhs*) (cdr rhs*))])))
+  (define (find-dups ls)
+    (let f ([ls ls] [dups '()])
+      (cond
+        [(null? ls) dups]
+        [(find-bound=? (car ls) (cdr ls) (cdr ls)) =>
+         (lambda (x) (f (cdr ls) (cons (list (car ls) x) dups)))]
+        [else (f (cdr ls) dups)])))
   (define chi-internal
     (lambda (e* r mr)
       (define return
         (lambda (init* module-init** r mr lhs* lex* rhs*)
           (let ([mod-init* (apply append (reverse module-init**))])
             (unless (valid-bound-ids? lhs*)
-              (error 'chi-internal "multiple definitions"))
+              (stx-error (find-dups lhs*) "multiple definitions in internal"))
             (let ([rhs* (chi-rhs* rhs* r mr)]
                   [init* (chi-expr* (append mod-init* init*) r mr)])
               (build-letrec no-source 
@@ -2064,7 +2071,7 @@
                    (case type
                      [(define) 
                       (let-values ([(id rhs) (parse-define e)])
-                        (when (bound-id-member? id kwd*) 
+                        (when (bound-id-member? id kwd*)
                           (stx-error id "undefined identifier"))
                         (let ([lex (gen-lexical id)]
                               [lab  (gen-label id)])
@@ -2089,7 +2096,7 @@
                                  module-init**
                                  (cons (cons lab b) r)
                                  (cons (cons lab b) mr) 
-                                 lhs* lex* rhs* kwd*)))))] 
+                                 lhs* lex* rhs* kwd*)))))]
                      [(begin)
                       (syntax-match e ()
                         [(_ x* ...)
@@ -2107,7 +2114,7 @@
                         (f (cdr e*)
                            (cons m-init* module-init**)
                            r mr 
-                           (append m-lhs* lhs*)
+                           (append m-exp-id* lhs*)
                            (append m-lex* lex*)
                            (append m-rhs* rhs*)
                            kwd*))]
@@ -2126,9 +2133,12 @@
              (values name export* b*)])))
       (let-values ([(name exp-id* e*) (parse-module e)])
         (let* ([rib (make-empty-rib)]
-               [e* (map (lambda (x) (add-subst rib x)) (syntax->list e*))])
+               [e* (map (lambda (x) (add-subst rib x))
+                        (syntax->list e*))])
           (define return
             (lambda (init* r mr lhs* lex* rhs* kwd*)
+              (unless (valid-bound-ids? lhs*)
+                (stx-error (find-dups lhs*) "multiple definitions in module"))
               (let ([exp-lab* 
                      (map (lambda (x) 
                              (or (id->label (add-subst rib x))
@@ -2181,7 +2191,8 @@
           (let ([module-init* (apply append (reverse module-init**))])
             (values (append module-init* init*)
               r mr (reverse lhs*) (reverse lex*) (reverse rhs*)))))
-      (let f ([e* e*] [module-init** '()] [r r] [mr r] [lhs* '()] [lex* '()] [rhs* '()] [kwd* kwd*])
+      (let f ([e* e*] [module-init** '()] [r r] [mr r]
+              [lhs* '()] [lex* '()] [rhs* '()] [kwd* kwd*])
         (cond
           [(null? e*) (return e* module-init** r mr lhs* lex* rhs*)]
           [else
@@ -2227,7 +2238,7 @@
                       (f (cdr e*)
                          (cons m-init* module-init**)
                          r mr 
-                         (append m-lhs* lhs*)
+                         (append m-exp-id* lhs*)
                          (append m-lex* lex*)
                          (append m-rhs* rhs*)
                          kwd*))]

@@ -1245,24 +1245,6 @@
 (module (assign-frame-sizes)
   ;;; assign-frame-sizes module
   (define indent (make-parameter 0))
-  #;(define-syntax define
-    (lambda (x) 
-      (import scheme)
-      (syntax-case x ()
-        [(_ (name . args) b b* ...)
-         #'(module (name)
-             (define name (lambda args b b* ...))
-             (when (procedure? name)
-               (let ([t name])
-                 (set! name
-                   (lambda argv
-                     (parameterize ([indent (+ (indent) 1)])
-                       (printf "[~s]enter ~s\n" (indent) 'name)
-                       (call-with-values (lambda () (apply t argv))
-                         (lambda vals
-                           (printf "[~s] exit ~s\n" (indent) 'name)
-                           (apply values vals)))))))))]
-        [(_ name body) #'(define name body)])))
   (import IntegerSet)
   (define (has-nontail-call? x)
     (define who 'has-nontail-call?)
