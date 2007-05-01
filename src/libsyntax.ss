@@ -1012,10 +1012,10 @@
       [$record?     $record?-label     (core-prim . $record?)]
       [$record/rtd? $record/rtd?-label (core-prim . $record/rtd?)]
       ;;; syntax-case
-      [identifier?          identifier?-label          (core-prim . x:identifier?)]
+      [identifier?          identifier?-label          (core-prim . identifier?)]
       [syntax-error             syntax-error-label             (core-prim . syntax-error)]
-      [generate-temporaries generate-temporaries-label (core-prim . x:generate-temporaries)]
-      [free-identifier=?    free-identifier=?-label    (core-prim . x:free-identifier=?)]
+      [generate-temporaries generate-temporaries-label (core-prim . generate-temporaries)]
+      [free-identifier=?    free-identifier=?-label    (core-prim . free-identifier=?)]
       [chi-top-library    chi-top-library-label    (core-prim . chi-top-library)]
       ;;; codes
       [$closure-code  $closure-code-label (core-prim . $closure-code)]
@@ -1871,7 +1871,7 @@
                             (build-conditional no-source test conseq altern))
                           (list
                             (build-application no-source
-                              (build-primref no-source 'x:syntax-dispatch)
+                              (build-primref no-source 'syntax-dispatch)
                               (list
                                 (build-lexical-reference no-source x)
                                 (build-data no-source p))))))))))))))
@@ -1879,7 +1879,7 @@
         (lambda (x keys clauses r mr)
           (if (null? clauses)
               (build-application no-source
-                (build-primref no-source 'x:syntax-error)
+                (build-primref no-source 'syntax-error)
                 (list (build-lexical-reference no-source x)))
               (syntax-match (car clauses) ()
                 [(pat expr)
@@ -2501,27 +2501,28 @@
       (let ([v (library-expander^ x)])
         ;(pretty-print v)
         v)))
-  (primitive-set! 'x:identifier? id?)
-  (primitive-set! 'x:generate-temporaries
+
+  (primitive-set! 'identifier? id?)
+  (primitive-set! 'generate-temporaries
     (lambda (ls)
       (unless (list? ls) 
         (error 'generate-temporaries "~s is not a list"))
       (map (lambda (x) (stx (gensym 't) top-mark* '())) ls)))
-  (primitive-set! 'x:free-identifier=? 
+  (primitive-set! 'free-identifier=? 
     (lambda (x y)
       (if (id? x)
           (if (id? y)
               (free-id=? x y)
               (error 'free-identifier=? "~s is not an identifier" y))
           (error 'free-identifier=? "~s is not an identifier" x))))
-  (primitive-set! 'x:syntax-error
+  (primitive-set! 'syntax-error
     (lambda (x . args)
       (unless (andmap string? args)
         (error 'syntax-error "invalid argument ~s" args))
       (error #f "~a: ~s" 
              (apply string-append args) 
              (strip x '()))))
-  (primitive-set! 'x:syntax-dispatch syntax-dispatch)
+  (primitive-set! 'syntax-dispatch syntax-dispatch)
   (primitive-set! 'chi-top-library library-expander))
 
 
