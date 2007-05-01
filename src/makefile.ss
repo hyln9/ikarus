@@ -252,7 +252,11 @@
     (apply append (map (lambda (x) (expand-library (car x))) ls)))
   (printf "expanding ...\n")
   (let ([core* (expand-all scheme-library-files)])
-  (printf "compiling ...\n")
+ ;   (with-output-to-file "ikarus.pp"
+ ;     (lambda ()
+ ;       (for-each pretty-print core*))
+ ;     'replace)
+    (printf "compiling ...\n")
     (let ([p (open-output-file "ikarus.boot" 'replace)])
       (for-each 
         (lambda (x) (compile-core-expr-to-port x p))

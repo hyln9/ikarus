@@ -902,6 +902,7 @@
       [output-port-name        output-port-name-label        (core-prim .  output-port-name)]
       [open-input-file  open-input-file-label  (core-prim .  open-input-file)]
       [with-input-from-file  with-input-from-file-label  (core-prim .  with-input-from-file)]
+      [with-output-to-file  with-output-to-file-label  (core-prim .  with-output-to-file)]
       [open-output-file  open-output-file-label  (core-prim .  open-output-file)]
       [open-output-string  open-output-string-label  (core-prim .  open-output-string)]
       [get-output-string  get-output-string-label  (core-prim .  get-output-string)]
