@@ -2,7 +2,6 @@
 (library (ikarus syntax)
   (export)
   (import (scheme))
-
   (define who 'chi-top-library)
   (define noexpand "noexpand")
   (define-syntax no-source 
@@ -64,12 +63,6 @@
     (define build-letrec
       (lambda (ae vars val-exps body-exp)
         (if (null? vars) body-exp `(letrec ,(map list vars val-exps) ,body-exp)))))
-  (define-syntax assert
-    (lambda (x)
-      (syntax-case x ()
-        [(_ name pred* ...)
-         #'(unless (and pred* ...)
-             (error 'name "assertion ~s failed" '(pred* ...)))])))
   (define top-mark* '(top))
   (define top-marked?
     (lambda (m*) (memq 'top m*)))
@@ -119,29 +112,32 @@
       (if (rib? x)
           (vector-ref x 3)
           (error 'rib-label* "~s is not a rib" x))))
-  (define make-stx
-    (lambda (e m* s*)
-      (vector 'stx e m* s*)))
-  (define stx?
-    (lambda (x)
-      (and (vector? x) 
-           (= (vector-length x) 4)
-           (eq? (vector-ref x 0) 'stx))))
-  (define stx-expr 
-    (lambda (x)
-      (if (stx? x)
-          (vector-ref x 1)
-          (error 'stx-expr "~s is not a syntax object" x))))
-  (define stx-mark* 
-    (lambda (x)
-      (if (stx? x)
-          (vector-ref x 2)
-          (error 'stx-mark* "~s is not a syntax object" x))))
-  (define stx-subst* 
-    (lambda (x)
-      (if (stx? x)
-          (vector-ref x 3)
-          (error 'stx-subst* "~s is not a syntax object" x))))
+  #;(module (make-stx stx? stx-expr stx-mark* stx-subst*)
+    (define-record stx (expr mark* subst*)))
+  (module (make-stx stx? stx-expr stx-mark* stx-subst*)
+    (define make-stx
+      (lambda (e m* s*)
+        (vector 'stx e m* s*)))
+    (define stx?
+      (lambda (x)
+        (and (vector? x) 
+             (= (vector-length x) 4)
+             (eq? (vector-ref x 0) 'stx))))
+    (define stx-expr 
+      (lambda (x)
+        (if (stx? x)
+            (vector-ref x 1)
+            (error 'stx-expr "~s is not a syntax object" x))))
+    (define stx-mark* 
+      (lambda (x)
+        (if (stx? x)
+            (vector-ref x 2)
+            (error 'stx-mark* "~s is not a syntax object" x))))
+    (define stx-subst* 
+      (lambda (x)
+        (if (stx? x)
+            (vector-ref x 3)
+            (error 'stx-subst* "~s is not a syntax object" x)))))
   (define datum->stx
     (lambda (id datum)
       (make-stx datum (stx-mark* id) (stx-subst* id))))
@@ -241,16 +237,6 @@
     (lambda (x y)
       (and (eq? (id->sym x) (id->sym y))
            (same-marks? (stx-mark* x) (stx-mark* y)))))
-  (define-syntax bound-id-member?
-    (lambda (x)
-      (syntax-case x ()
-        [x (identifier? #'x) #'bound-id-member?^]
-        [(_ id id*)
-         #'(let ([t1 id] [t2 id*])
-             (unless (and (id? t1) (andmap id? t2))
-               (error 'bound-id-member? "~s ~s is not an id in ~s" t1 t2
-                      '(_ id id*)))
-             (bound-id-member?^ t1 t2))])))
   (define free-id=?
     (lambda (i j)
       (let ((t0 (id->label i)) (t1 (id->label j)))
@@ -266,11 +252,11 @@
       (or (null? id*)
           (and (not (bound-id-member? (car id*) (cdr id*)))
                (distinct-bound-ids? (cdr id*))))))
-  (define bound-id-member?^ 
+  (define bound-id-member?
     (lambda (id id*)
       (and (pair? id*)
            (or (bound-id=? id (car id*))
-               (bound-id-member?^ id (cdr id*))))))
+               (bound-id-member? id (cdr id*))))))
   (define self-evaluating?
     (lambda (x) 
       (or (number? x) (string? x) (char? x) (boolean? x))))
@@ -309,7 +295,6 @@
               [else x])))))
   (define id->label
     (lambda (id)
-      (assert id->label (id? id))
       (let ([sym (id->sym id)])
         (let search ([subst* (stx-subst* id)] [mark* (stx-mark* id)])
           (cond
@@ -625,6 +610,11 @@
       [syntax-rules  syntax-rules-macro  (macro . syntax-rules)]
       [quasiquote    quasiquote-macro    (macro . quasiquote)]
       [with-syntax   with-syntax-label   (macro . with-syntax)]
+      [let           let-label           (macro . let)]
+      [let*          let*-label          (macro . let*)]
+      [cond          cond-label          (macro . cond)]
+      [and           and-label           (macro . and)]
+      [or            or-label            (macro . or)]
       [case          case-label          (core-macro .  case)]
       [foreign-call  foreign-call-label  (core-macro .  foreign-call)]
       [quote         quote-label         (core-macro . quote)]
@@ -633,16 +623,11 @@
       [lambda        lambda-label        (core-macro . lambda)]
       [case-lambda   case-lambda-label   (core-macro . case-lambda)]
       [let-values    let-values-label    (core-macro . let-values)]
-      [let           let-label           (core-macro . let)]
       [type-descriptor           type-descriptor-label           (core-macro . type-descriptor)]
       [letrec        letrec-label        (core-macro . letrec)]
-      [let*          let*-label          (core-macro . let*)]
-      [cond          cond-label          (macro . cond)]
       [if            if-label            (core-macro . if)]
       [when          when-label          (core-macro . when)]
       [unless        unless-label        (core-macro . unless)]
-      [and           and-label           (core-macro . and)]
-      [or            or-label            (core-macro . or)]
       [parameterize  parameterize-label  (core-macro . parameterize)]
       ;;; prims
       [void         void-label        (core-prim . void)]
@@ -1086,7 +1071,7 @@
                      (cons lab (cons 'lexical lex)))
                    lab* lex*)
               r)))
-  (define let-values-transformer
+  (define let-values-transformer ;;; go away
     (lambda (e r mr) 
       (syntax-match e ()
         [(_ ([(fml** ...) rhs*] ...) b b* ...)
@@ -1112,36 +1097,6 @@
                          (build-lambda no-source '() (car rhs*))
                          (build-lambda no-source (car lex**) 
                            (f (cdr lex**) (cdr rhs*)))))])))))])))
-  (define let*-transformer
-    (lambda (e r mr)
-      (syntax-match e ()
-        [(_ ([lhs* rhs*] ...) b b* ...)
-         (let f ([lhs* lhs*] [rhs* rhs*]
-                 [subst-lhs* '()] [subst-lab* '()]
-                 [r r])
-           (cond
-             [(null? lhs*) 
-              (chi-internal
-                (add-subst 
-                  (make-full-rib subst-lhs* subst-lab*)
-                  (cons b b*))
-                r mr)]
-             [else
-              (let ([lhs (car lhs*)]
-                    [rhs (chi-expr
-                           (add-subst
-                             (make-full-rib subst-lhs* subst-lab*)
-                             (car rhs*))
-                           r mr)])
-                (unless (id? lhs)
-                  (stx-error lhs "invalid binding"))
-                (let ([lex (gen-lexical lhs)]
-                      [lab (gen-label lhs)])
-                  (build-let no-source (list lex) (list rhs)
-                    (f (cdr lhs*) (cdr rhs*)
-                       (cons lhs subst-lhs*) 
-                       (cons lab subst-lab*)
-                       (add-lexicals (list lab) (list lex) r)))))]))])))
   (define letrec-transformer
     (lambda (e r mr)
       (syntax-match e ()
@@ -1175,46 +1130,7 @@
              [($rtd)
               (build-data no-source (binding-value b))]
              [else (stx-error e "invalid type")]))])))
-  (define let-transformer
-    (lambda (e r mr)
-      (syntax-match e ()
-        [(_ ([lhs* rhs*] ...) b b* ...) 
-         (if (not (valid-bound-ids? lhs*))
-             (stx-error e)
-             (let ([rhs* (chi-expr* rhs* r mr)]
-                   [lex* (map gen-lexical lhs*)]
-                   [lab* (map gen-label lhs*)])
-               (let ([body (chi-internal 
-                             (add-subst 
-                               (make-full-rib lhs* lab*)
-                               (cons b b*))
-                             (add-lexicals lab* lex* r)
-                             mr)])
-                 (build-application no-source 
-                   (build-lambda no-source lex* body)
-                   rhs*))))]
-        [(_ loop ([lhs* rhs*] ...) b b* ...)
-         (if (and (id? loop) (valid-bound-ids? lhs*))
-             (let ([rhs* (chi-expr* rhs* r mr)]
-                   [lex* (map gen-lexical lhs*)]
-                   [lab* (map gen-label lhs*)]
-                   [looplex (gen-lexical loop)]
-                   [looplab (gen-label loop)])
-               (let ([b* (add-subst (make-full-rib (list loop) (list looplab))
-                           (add-subst (make-full-rib lhs* lab*)
-                             (cons b b*)))]
-                     [r (add-lexicals 
-                          (cons looplab lab*)
-                          (cons looplex lex*)
-                          r)])
-                 (let ([body (chi-internal b* r mr)])
-                   (build-letrec no-source 
-                      (list looplex)
-                      (list (build-lambda no-source lex* body))
-                      (build-application no-source 
-                        looplex rhs*)))))
-             (stx-error e))])))
-  (define when-transformer
+  (define when-transformer ;;; go away
     (lambda (e r mr)
       (syntax-match e ()
         [(_ test e e* ...) 
@@ -1223,7 +1139,7 @@
            (build-sequence no-source
              (chi-expr* (cons e e*) r mr))
            (build-void))])))
-  (define unless-transformer
+  (define unless-transformer ;;; go away
     (lambda (e r mr)
       (syntax-match e ()
         [(_ test e e* ...) 
@@ -1245,7 +1161,7 @@
            (chi-expr e0 r mr)
            (chi-expr e1 r mr)
            (build-void))])))
-  (define case-transformer
+  (define case-transformer ;;; go away
     (lambda (e r mr)
       (define build-one 
         (lambda (t cls rest)
@@ -1307,11 +1223,13 @@
            (build-lambda no-source fmls body))])))
   (define bless
     (lambda (x)
-      (let f ([x x])
-        (cond
-          [(pair? x) (cons (f (car x)) (f (cdr x)))]
-          [(symbol? x) (scheme-stx x)]
-          [else x]))))
+      (stx 
+        (let f ([x x])
+          (cond
+            [(pair? x) (cons (f (car x)) (f (cdr x)))]
+            [(symbol? x) (scheme-stx x)]
+            [else x]))
+        '() '())))
   (define with-syntax-macro
     (lambda (e)
       (syntax-match e ()
@@ -1319,6 +1237,51 @@
          (bless
            `(syntax-case (list . ,expr*) ()
               [,fml* (begin ,b . ,b*)]))])))
+  (define let-macro
+    (lambda (stx)
+      (syntax-match stx ()
+        [(_ ([lhs* rhs*] ...) b b* ...)
+         (if (valid-bound-ids? lhs*)
+             (bless `((lambda ,lhs* ,b . ,b*) . ,rhs*))
+             (stx-error stx "invalid syntax"))]
+        [(_ f ([lhs* rhs*] ...) b b* ...)
+         (if (and (id? f) (valid-bound-ids? lhs*))
+             (bless `(letrec ([,f (lambda ,lhs* ,b . ,b*)])
+                        (,f . ,rhs*)))
+             (stx-error stx "invalid syntax"))])))
+  (define let*-macro
+    (lambda (stx)
+      (syntax-match stx ()
+        [(_ ([lhs* rhs*] ...) b b* ...)
+         (if (andmap id? lhs*)
+             (bless
+               (let f ([x* (map list lhs* rhs*)])
+                 (cond
+                   [(null? x*) `(let () ,b . ,b*)]
+                   [else `(let (,(car x*)) ,(f (cdr x*)))])))
+             (stx-error stx "invalid bindings"))])))
+  (define or-macro
+    (lambda (stx)
+      (syntax-match stx ()
+        [(_) #f]
+        [(_ e e* ...)
+         (bless 
+           (let f ([e e] [e* e*])
+             (cond
+               [(null? e*) `(begin #f ,e)]
+               [else
+                `(let ([t ,e])
+                   (if t t ,(f (car e*) (cdr e*))))])))])))
+  (define and-macro
+    (lambda (stx)
+      (syntax-match stx ()
+        [(_) #t]
+        [(_ e e* ...)
+         (bless
+           (let f ([e e] [e* e*])
+             (cond
+               [(null? e*) `(begin #f ,e)]
+               [else `(if ,e ,(f (car e*) (cdr e*)) #f)])))])))
   (define cond-macro
     (lambda (stx)
       (syntax-match stx ()
@@ -1532,7 +1495,7 @@
                                           "~s is not a record of type ~s"
                                           x ',rtd)))))
                        setters i*))))])))
-  (define parameterize-transformer
+  (define parameterize-transformer ;;; go away
     (lambda (e r mr)
       (syntax-match e ()
         [(_ () b b* ...) 
@@ -1568,36 +1531,6 @@
                        (build-lambda no-source '() 
                          (chi-internal (cons b b*) r mr))
                        (build-lexical-reference no-source swap))))))])))
-  (define and-transformer
-    (lambda (e r mr)
-      (syntax-match e ()
-        [(_) (build-data no-source #t)]
-        [(_ e e* ...) 
-         (let f ([e e] [e* e*])
-           (cond
-             [(null? e*) (chi-expr e r mr)]
-             [else 
-              (build-conditional no-source
-                (chi-expr e r mr)
-                (f (car e*) (cdr e*))
-                (build-data no-source #f))]))])))
-  (define or-transformer
-    (lambda (e r mr)
-      (syntax-match e  ()
-        [(_) (build-data no-source #f)]
-        [(_ e e* ...)
-         (let f ([e e] [e* e*])
-           (cond
-             [(null? e*) (chi-expr e r mr)]
-             [else
-              (let ([t (gen-lexical 't)])
-                (build-let no-source 
-                  (list t)
-                  (list (chi-expr e r mr))
-                  (build-conditional no-source
-                    (build-lexical-reference no-source t)
-                    (build-lexical-reference no-source t)
-                    (f (car e*) (cdr e*)))))]))])))
   (define foreign-call-transformer
     (lambda (e r mr)
       (syntax-match e ()
@@ -2090,15 +2023,11 @@
         [(lambda)        lambda-transformer]
         [(case-lambda)   case-lambda-transformer]
         [(let-values)    let-values-transformer]
-        [(let)           let-transformer]
         [(letrec)        letrec-transformer]
-        [(let*)          let*-transformer]
         [(case)          case-transformer]
         [(if)            if-transformer]
         [(when)          when-transformer]
         [(unless)        unless-transformer]
-        [(and)           and-transformer]
-        [(or)            or-transformer]
         [(parameterize)  parameterize-transformer]
         [(foreign-call)  foreign-call-transformer]
         [(syntax-case)   syntax-case-transformer]
@@ -2113,14 +2042,16 @@
          (case x
            [(define-record) define-record-macro]
            [(include)       include-macro]
-           [(cond)       cond-macro]
+           [(cond)          cond-macro]
+           [(let)           let-macro]
+           [(or)            or-macro]
+           [(and)           and-macro]
+           [(let*)          let*-macro]
            [(syntax-rules)  syntax-rules-macro]
            [(quasiquote)    quasiquote-macro]
            [(with-syntax)   with-syntax-macro]
-           [else (error 'macro-transformer 
-                        "invalid macro ~s" x)])]
-        [else (error 'core-macro-transformer 
-                     "invalid macro ~s" x)])))
+           [else (error 'macro-transformer "invalid macro ~s" x)])]
+        [else (error 'core-macro-transformer "invalid macro ~s" x)])))
   ;;; chi procedures
   (define chi-macro 
     (lambda (p e)
@@ -2501,7 +2432,6 @@
       (let ([v (library-expander^ x)])
         ;(pretty-print v)
         v)))
-
   (primitive-set! 'identifier? id?)
   (primitive-set! 'generate-temporaries
     (lambda (ls)
@@ -2524,5 +2454,4 @@
              (strip x '()))))
   (primitive-set! 'syntax-dispatch syntax-dispatch)
   (primitive-set! 'chi-top-library library-expander))
-
 

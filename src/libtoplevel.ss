@@ -1,8 +1,3 @@
-
-
-
-
-
 ;;; Finally, we're ready to evaluate the files and enter the cafe.
 (library (ikarus interaction)
   (export)
@@ -56,10 +51,8 @@
          (define-syntax compile-time-string
            (lambda (x) (date-string)))
          (printf "Ikarus Scheme (Build ~a)\n" (compile-time-string)))
-       ;(printf "Ikarus Scheme (Build ~a)\n" (compile-time-date-string))
        (display "Copyright (c) 2006-2007 Abdulaziz Ghuloum\n\n")
        (command-line-arguments args)
        (for-each load files)
        (new-cafe)
        (exit 0)])))
-
