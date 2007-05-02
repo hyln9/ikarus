@@ -4,7 +4,7 @@
   (import (scheme))
 
   (define-record library 
-    (id name ver imp* vis* inv* exp-subst exp-env visit-state invoke-state))
+    (id name ver imp* vis* inv* subst env visit-state invoke-state))
 
   (define (find-dependencies ls)
     (cond
@@ -20,12 +20,12 @@
         [(pred (car ls)) (car ls)]
         [else (f (cdr ls))])))
 
-  (define (find-library-by-name name)
+  (define (lm:find-library-by-name name)
     (find-library-by
       (lambda (x) (equal? (library-name x) name))))
 
   (define (find-library-by-name/die name)
-    (or (find-library-by-name name)
+    (or (lm:find-library-by-name name)
         (error #f "cannot find library ~s" name)))
 
   (define (lm:install-library id name ver
@@ -35,7 +35,7 @@
           [inv-lib* (map find-library-by-name/die inv*)])
       (unless (and (symbol? id) (list? name) (list? ver))
         (error 'install-library "invalid spec ~s ~s ~s" id name ver))
-      (when (find-library-by-name name)
+      (when (lm:find-library-by-name name)
         (error 'install-library "~s is already installed" name))
       (let ([lib (make-library id name ver imp-lib* vis-lib* inv-lib* 
                     exp-subst exp-env visit-code invoke-code)])
@@ -485,6 +485,8 @@
       [$current-frame     $current-frame-label    (core-prim . $current-frame)]
       [$seal-frame-and-call     $seal-frame-and-call-label    (core-prim . $seal-frame-and-call)]
       [installed-libraries     installed-libraries-label (core-prim . installed-libraries)]
+      [library-subst/env     library-subst/env-label (core-prim . library-subst/env)]
+      [find-library-by-name     find-library-by-name-label (core-prim . find-library-by-name)]
       ))
 
   (let ([subst
@@ -500,4 +502,10 @@
 
   (primitive-set! 'installed-libraries 
     (lambda () *all-libraries*))
+  (primitive-set! 'library-subst/env
+    (lambda (x) 
+      (unless (library? x)
+        (error 'library-subst/env "~s is not a library" x))
+      (values (library-subst x) (library-env x))))
+  (primitive-set! 'find-library-by-name lm:find-library-by-name)
   (primitive-set! 'install-library lm:install-library))
