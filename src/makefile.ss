@@ -73,7 +73,10 @@
       (let ([subst (map cons name* label*)]
             [env (map (lambda (name label type loc)
                         (case type
-                          [(global) (cons label (cons type loc))]
+                          [(global) 
+                           ;;; install the new exports as prims
+                           ;;; of the new system
+                           (cons label (cons 'core-prim name))]
                           [else (error 'make-system-library 
                                   "invalid export type ~s for ~s" 
                                   type name)]))
@@ -88,8 +91,8 @@
               '()                   ;;; import libs 
               '()                   ;;; visit libs
               '()                   ;;; invoke libs
-              ',subst
-              ',env
+              ',subst               ;;; substitution
+              ',env                 ;;; environment
               void void)))))
 
   (define (expand-all ls)

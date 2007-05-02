@@ -484,32 +484,20 @@
       [$frame->continuation     $frame->continuation-label    (core-prim . $frame->continuation)]
       [$current-frame     $current-frame-label    (core-prim . $current-frame)]
       [$seal-frame-and-call     $seal-frame-and-call-label    (core-prim . $seal-frame-and-call)]
-      [foo                      foo-label       (core-prim . foo)]
+      [installed-libraries     installed-libraries-label (core-prim . installed-libraries)]
       ))
 
-  ;;; install a null environment that has nothing and gets generated
-  ;;; afresh everytime ikarus is run.  just for the heck of it
-  (lm:install-library  (gensym)   ;;; id
-                      '(one-shot) ;;; name
-                      '()         ;;; version
-                      '()         ;;; import libs 
-                      '()         ;;; visit libs
-                      '()         ;;; invoke libs
-                      '()         ;;; subst
-                      '()         ;;; env
-                      void void)
+  (let ([subst
+         (map (lambda (x) (cons (car x) (cadr x))) scheme-env)]
+        [env 
+         (map (lambda (x) (cons (cadr x) (caddr x))) scheme-env)])
+    (lm:install-library 'scheme-id   ;;; id
+                        '(scheme)    ;;; name        
+                        '()          ;;; version
+                        '() '() '()  ;;; req
+                        subst env
+                        void void))
 
-  ;;; we also install the system library that has all the junk that
-  ;;; the system provides. 
-  (lm:install-library 'systemlib  ;;; id          
-                      '(scheme)   ;;; name        
-                      '()         ;;; version     
-                      '()         ;;; import libs 
-                      '()         ;;; visit libs  
-                      '()         ;;; invoke libs 
-                      '()         ;;; subst       
-                      '()         ;;; env         
-                      void void)
-
-
+  (primitive-set! 'installed-libraries 
+    (lambda () *all-libraries*))
   (primitive-set! 'install-library lm:install-library))

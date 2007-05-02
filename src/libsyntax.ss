@@ -926,6 +926,7 @@
       [list*->code*       list*->code*-label       (core-prim . list*->code*)]
       ;[primitive-location        primitive-location-label        (core-prim .  primitive-location)]
       [install-library         install-library-label         (core-prim . install-library)]
+      [installed-libraries     installed-libraries-label (core-prim . installed-libraries)]
       ;;; record/mid-level
       [record?                 record?-label                 (core-prim . record?)]
       [make-record-type        make-record-type-label        (core-prim . make-record-type)]
