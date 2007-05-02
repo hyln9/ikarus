@@ -562,18 +562,6 @@
                  (make-rib (list name) (list top-mark*) (list label))
                  (stx sym top-mark* '()))))]
           [else (stx sym top-mark* '())]))))
-  (define make-scheme-rib
-    (lambda ()
-      (let ([rib (make-empty-rib)])
-        (let-values ([(subst env) 
-                      (library-subst/env 
-                        (find-library-by-name '(scheme)))])
-          (for-each 
-            (lambda (x)
-              (let ([name (car x)] [label (cdr x)])
-                (extend-rib! rib (stx name top-mark* '()) label)))
-            subst))
-        rib)))
   (define make-scheme-env
     (lambda ()
       (let-values ([(subst env) 
@@ -1941,22 +1929,86 @@
              (values (cons name name*) exp* imp* b*)
              (error who "malformed library ~s" e))]
         [_ (error who "malformed library ~s" e)])))
+  (define (set-cons x ls)
+    (cond
+      [(memq x ls) ls]
+      [else (cons x ls)]))
+  (define (get-import-subst/libs imp*)
+    (define (merge-substs s subst)
+      (cond
+        [(null? s) subst]
+        [else
+         (let ([a (car s)])
+           (let ([name (car a)] [label (cdr a)])
+             (cond
+               [(assq name subst) =>
+                (lambda (x)
+                  (cond
+                    [(eq? (cdr x) label)
+                     (merge-substs (cdr s) subst)]
+                    [else
+                     (error 'import 
+                        "two imports of ~s with different bindings"
+                        name)]))]
+               [else 
+                (cons a (merge-substs (cdr s) subst))])))]))
+    (cond
+      [(null? imp*) (values '() '())]
+      [else
+       (let-values ([(subst lib*)
+                     (get-import-subst/libs (cdr imp*))])
+         (let ([lib (find-library-by-name (car imp*))])
+           (unless lib
+             (error 'import "cannot find imported library ~s" (car imp*)))
+           (let-values ([(s _r) (library-subst/env lib)])
+             (values (merge-substs s subst)
+                     (set-cons lib lib*)))))]))
+  (define (make-top-rib subst)
+    (let ([rib (make-empty-rib)])
+      (for-each 
+        (lambda (x)
+          (let ([name (car x)] [label (cdr x)])
+            (extend-rib! rib (stx name top-mark* '()) label)))
+        subst)
+      rib))
   (define library-expander
     (lambda (e)
       (let-values ([(name exp* imp* b*) (parse-library e)])
-        (let ([rib (make-scheme-rib)]
-              [r (make-scheme-env)])
-          (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]
-                [kwd* (map (lambda (sym mark*) (stx sym mark* (list rib)))
-                           (rib-sym* rib) (rib-mark** rib))])
-            (let-values ([(init* r mr lex* rhs*)
-                          (chi-library-internal b* r rib kwd*)])
-              (let ([rhs* (chi-rhs* rhs* r mr)])
-                (let ([body (if (null? init*) 
-                                (build-void)
-                                (build-sequence no-source 
-                                  (chi-expr* init* r mr)))])
-                  (build-letrec no-source lex* rhs* body)))))))))
+        (let-values ([(subst lib*) (get-import-subst/libs imp*)])
+          (let ([rib (make-top-rib subst)]
+                [r (make-scheme-env)])
+            (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]
+                  [kwd* (map (lambda (sym mark*) (stx sym mark* (list rib)))
+                             (rib-sym* rib) (rib-mark** rib))])
+              (let-values ([(init* r mr lex* rhs*)
+                            (chi-library-internal b* r rib kwd*)])
+                (let ([rhs* (chi-rhs* rhs* r mr)])
+                  (let ([body (if (null? init*) 
+                                  (build-void)
+                                  (build-sequence no-source 
+                                    (chi-expr* init* r mr)))])
+                    (build-letrec no-source lex* rhs* body))))))))))
+  (define boot-library-expander
+    (lambda (e)
+      (let-values ([(name exp* imp* b*) (parse-library e)])
+        (let-values ([(subst lib*) (get-import-subst/libs imp*)])
+          (let ([rib (make-top-rib subst)]
+                [r (make-scheme-env)])
+            (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]
+                  [kwd* (map (lambda (sym mark*) (stx sym mark* (list rib)))
+                             (rib-sym* rib) (rib-mark** rib))])
+              (let-values ([(init* r mr lex* rhs*)
+                            (chi-library-internal b* r rib kwd*)])
+                (let ([rhs* (chi-rhs* rhs* r mr)])
+                  (let ([body (if (and (null? init*) (null? lex*)) 
+                                  (build-void)
+                                  (build-sequence no-source 
+                                    (append
+                                      (map build-export lex*)
+                                      (chi-expr* init* r mr))))])
+                    (values
+                      (build-letrec no-source lex* rhs* body)
+                      (map (find-export rib r) exp*)))))))))))
   (define build-export
     (lambda (x)
       ;;; exports use the same gensym
@@ -1975,26 +2027,6 @@
              ;;; exports use the same gensym
              (list sym label 'global (binding-value b))]
             [else (error 'chi-library "cannot export ~s" sym)])))))
-  (define boot-library-expander
-    (lambda (e)
-      (let-values ([(name exp* imp* b*) (parse-library e)])
-        (let ([rib (make-scheme-rib)]
-              [r (make-scheme-env)])
-          (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]
-                [kwd* (map (lambda (sym mark*) (stx sym mark* (list rib)))
-                           (rib-sym* rib) (rib-mark** rib))])
-            (let-values ([(init* r mr lex* rhs*)
-                          (chi-library-internal b* r rib kwd*)])
-              (let ([rhs* (chi-rhs* rhs* r mr)])
-                (let ([body (if (and (null? init*) (null? lex*)) 
-                                (build-void)
-                                (build-sequence no-source 
-                                  (append
-                                    (map build-export lex*)
-                                    (chi-expr* init* r mr))))])
-                  (values
-                    (build-letrec no-source lex* rhs* body)
-                    (map (find-export rib r) exp*))))))))))
   (primitive-set! 'identifier? id?)
   (primitive-set! 'generate-temporaries
     (lambda (ls)
