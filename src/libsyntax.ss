@@ -293,6 +293,7 @@
       (cond
         [(not x) (cons 'unbound #f)]
         [(assq x r) => cdr]
+        [(imported-label->binding x)]
         [else (cons 'displaced-lexical #f)])))
   (define make-binding cons)
   (define binding-type car)
@@ -562,12 +563,6 @@
                  (make-rib (list name) (list top-mark*) (list label))
                  (stx sym top-mark* '()))))]
           [else (stx sym top-mark* '())]))))
-  (define make-scheme-env
-    (lambda ()
-      (let-values ([(subst env) 
-                    (library-subst/env 
-                      (find-library-by-name '(scheme)))])
-         env)))
   ;;; macros
   (define add-lexicals
     (lambda (lab* lex* r)
@@ -1975,13 +1970,12 @@
     (lambda (e)
       (let-values ([(name exp* imp* b*) (parse-library e)])
         (let-values ([(subst lib*) (get-import-subst/libs imp*)])
-          (let ([rib (make-top-rib subst)]
-                [r (make-scheme-env)])
+          (let ([rib (make-top-rib subst)])
             (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]
                   [kwd* (map (lambda (sym mark*) (stx sym mark* (list rib)))
                              (rib-sym* rib) (rib-mark** rib))])
               (let-values ([(init* r mr lex* rhs*)
-                            (chi-library-internal b* r rib kwd*)])
+                            (chi-library-internal b* '() rib kwd*)])
                 (let ([rhs* (chi-rhs* rhs* r mr)])
                   (let ([body (if (null? init*) 
                                   (build-void)
@@ -1992,13 +1986,12 @@
     (lambda (e)
       (let-values ([(name exp* imp* b*) (parse-library e)])
         (let-values ([(subst lib*) (get-import-subst/libs imp*)])
-          (let ([rib (make-top-rib subst)]
-                [r (make-scheme-env)])
+          (let ([rib (make-top-rib subst)])
             (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]
                   [kwd* (map (lambda (sym mark*) (stx sym mark* (list rib)))
                              (rib-sym* rib) (rib-mark** rib))])
               (let-values ([(init* r mr lex* rhs*)
-                            (chi-library-internal b* r rib kwd*)])
+                            (chi-library-internal b* '() rib kwd*)])
                 (let ([rhs* (chi-rhs* rhs* r mr)])
                   (let ([body (if (and (null? init*) (null? lex*)) 
                                   (build-void)
