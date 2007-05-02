@@ -1985,47 +1985,46 @@
           (let ([rib (make-top-rib subst)])
             (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]
                   [kwd* (map (lambda (sym mark*) (stx sym mark* (list rib)))
-                             (rib-sym* rib) (rib-mark** rib))])
-              (let-values ([(init* r mr lex* rhs*)
-                            (chi-library-internal b* rib kwd*)])
-                (let ([rhs* (chi-rhs* rhs* r mr)])
-                  (let ([body (if (and (null? init*) (null? lex*)) 
-                                  (build-void)
-                                  (build-sequence no-source 
-                                    (append
-                                      (map build-export lex*)
-                                      (chi-expr* init* r mr))))])
-                    (values
-                      name imp*
-                      (build-letrec no-source lex* rhs* body)
-                      (map (find-export rib r) exp*)))))))))))
+                             (rib-sym* rib) (rib-mark** rib))]
+                  [rtc (make-collector)])
+              (parameterize ([run-collector rtc])
+                (let-values ([(init* r mr lex* rhs*)
+                              (chi-library-internal b* rib kwd*)])
+                  (let ([rhs* (chi-rhs* rhs* r mr)])
+                    (let ([body (if (and (null? init*) (null? lex*)) 
+                                    (build-void)
+                                    (build-sequence no-source 
+                                      (append
+                                        (map build-export lex*)
+                                        (chi-expr* init* r mr))))])
+                      (values
+                        name imp* (rtc)
+                        (build-letrec no-source lex* rhs* body)
+                        (map (find-export rib r) exp*))))))))))))
   (define run-library-expander
     (lambda (x) 
-      (let ([rtc (make-collector)])
-        (parameterize ([run-collector rtc])
-          (let-values ([(name imp* invoke-code exp*)
-                        (core-library-expander x)])
-            ;;; we need: name/ver/id, 
-            ;;;    imports, visit, invoke  name/ver/id
-            ;;;    export-subst, export-env
-            ;;;    visit-code, invoke-code
-            (let ([id (gensym)]
-                  [ver '()]
-                  [exp-subst
-                   (map (lambda (x) (cons (car x) (cadr x))) exp*)]
-                  [exp-env 
-                   (map (lambda (x) 
-                          (let ([label (cadr x)] [type (caddr x)] [val (cadddr x)])
-                            (cons label (cons type val))))
-                        exp*)])
-              invoke-code))))))
+      (let-values ([(name imp* run* invoke-code exp*)
+                    (core-library-expander x)])
+        ;;; we need: name/ver/id, 
+        ;;;    imports, visit, invoke  name/ver/id
+        ;;;    export-subst, export-env
+        ;;;    visit-code, invoke-code
+        (let ([id (gensym)]
+              [name name]
+              [ver '()]
+              [exp-subst
+               (map (lambda (x) (cons (car x) (cadr x))) exp*)]
+              [exp-env 
+               (map (lambda (x) 
+                      (let ([label (cadr x)] [type (caddr x)] [val (cadddr x)])
+                        (cons label (cons type val))))
+                    exp*)])
+          invoke-code))))
   (define boot-library-expander
     (lambda (x)
-      (let ([rtc (make-collector)])
-        (parameterize ([run-collector rtc])
-          (let-values ([(name imp* invoke-code exp*) 
-                        (core-library-expander x)])
-            (values invoke-code exp*))))))
+      (let-values ([(name imp* run* invoke-code exp*) 
+                    (core-library-expander x)])
+        (values invoke-code exp*))))
   (define build-export
     (lambda (x)
       ;;; exports use the same gensym

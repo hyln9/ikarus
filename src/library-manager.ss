@@ -488,6 +488,9 @@
       [library-subst/env     library-subst/env-label (core-prim . library-subst/env)]
       [find-library-by-name     find-library-by-name-label (core-prim . find-library-by-name)]
       [imported-label->binding  imported-label->binding-label (core-prim . imported-label->binding)] 
+      [xlibrary-id xlibrary-id-label (core-prim . xlibrary-id)]
+      [xlibrary-name xlibrary-name-label (core-prim . xlibrary-name)]
+      [xlibrary-version xlibrary-version-label (core-prim . xlibrary-version)]
       ))
   (define (lm:imported-label->binding lab)
     (let f ([ls *all-libraries*])
@@ -513,6 +516,10 @@
       (unless (library? x)
         (error 'library-subst/env "~s is not a library" x))
       (values (library-subst x) (library-env x))))
+  (primitive-set! 'xlibrary-id       library-id)
+  (primitive-set! 'xlibrary-name     library-name)
+  (primitive-set! 'xlibrary-version  library-ver)
   (primitive-set! 'find-library-by-name lm:find-library-by-name)
   (primitive-set! 'imported-label->binding lm:imported-label->binding)
   (primitive-set! 'install-library lm:install-library))
+
