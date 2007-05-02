@@ -1996,21 +1996,36 @@
                                       (map build-export lex*)
                                       (chi-expr* init* r mr))))])
                     (values
-                      name
+                      name imp*
                       (build-letrec no-source lex* rhs* body)
                       (map (find-export rib r) exp*)))))))))))
-  (define library-expander
+  (define run-library-expander
     (lambda (x) 
       (let ([rtc (make-collector)])
         (parameterize ([run-collector rtc])
-          (let-values ([(name invoke-code export-subst)
+          (let-values ([(name imp* invoke-code exp*)
                         (core-library-expander x)])
-            invoke-code)))))
+            ;;; we need: name/ver/id, 
+            ;;;    imports, visit, invoke  name/ver/id
+            ;;;    export-subst, export-env
+            ;;;    visit-code, invoke-code
+            (let ([id (gensym)]
+                  [ver '()]
+                  [exp-subst
+                   (map (lambda (x) (cons (car x) (cadr x))) exp*)]
+                  [exp-env 
+                   (map (lambda (x) 
+                          (let ([label (cadr x)] [type (caddr x)] [val (cadddr x)])
+                            (cons label (cons type val))))
+                        exp*)])
+              invoke-code))))))
   (define boot-library-expander
     (lambda (x)
-      (let-values ([(name invoke-code exp*) 
-                    (core-library-expander x)])
-        (values invoke-code exp*))))
+      (let ([rtc (make-collector)])
+        (parameterize ([run-collector rtc])
+          (let-values ([(name imp* invoke-code exp*) 
+                        (core-library-expander x)])
+            (values invoke-code exp*))))))
   (define build-export
     (lambda (x)
       ;;; exports use the same gensym
@@ -2051,7 +2066,7 @@
              (strip x '()))))
   (primitive-set! 'syntax-dispatch syntax-dispatch)
   (primitive-set! 'boot-library-expand boot-library-expander)
-  (primitive-set! 'chi-top-library library-expander))
+  (primitive-set! 'chi-top-library run-library-expander))
 
 
 
