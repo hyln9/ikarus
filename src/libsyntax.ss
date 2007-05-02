@@ -328,22 +328,6 @@
                 (if (self-evaluating? d)
                     (values 'constant d #f)
                     (values 'other #f #f)))])))
-  (define parse-library 
-    (lambda (e)
-      (syntax-match e ()
-        [(_ (name name* ...)
-            (export exp* ...)
-            (import (scheme))
-            b* ...)
-         (if (and (eq? export 'export)
-                  (eq? import 'import)
-                  (eq? scheme 'scheme)
-                  (symbol? name)
-                  (andmap symbol? name*)
-                  (andmap symbol? exp*))
-             (values (cons name name*) exp* b*)
-             (error who "malformed library ~s" e))]
-        [_ (error who "malformed library ~s" e)])))
   (define-syntax stx-error 
     (lambda (x)
       (syntax-case x ()
@@ -2382,9 +2366,24 @@
                        r mr lhs* lex* rhs* kwd*)]
                    [else 
                     (return e* module-init** r mr lhs* lex* rhs*)]))))]))))
+  (define parse-library 
+    (lambda (e)
+      (syntax-match e ()
+        [(_ (name name* ...)
+            (export exp* ...)
+            (import imp* ...)
+            b* ...)
+         (if (and (eq? export 'export)
+                  (eq? import 'import)
+                  (symbol? name)
+                  (andmap symbol? name*)
+                  (andmap symbol? exp*))
+             (values (cons name name*) exp* imp* b*)
+             (error who "malformed library ~s" e))]
+        [_ (error who "malformed library ~s" e)])))
   (define library-expander
     (lambda (e)
-      (let-values ([(name exp* b*) (parse-library e)])
+      (let-values ([(name exp* imp* b*) (parse-library e)])
         (let ([rib (make-scheme-rib)]
               [r (make-scheme-env)])
           (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]
@@ -2418,7 +2417,7 @@
             [else (error 'chi-library "cannot export ~s" sym)])))))
   (define boot-library-expander
     (lambda (e)
-      (let-values ([(name exp* b*) (parse-library e)])
+      (let-values ([(name exp* imp* b*) (parse-library e)])
         (let ([rib (make-scheme-rib)]
               [r (make-scheme-env)])
           (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]

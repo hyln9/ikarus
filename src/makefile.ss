@@ -65,26 +65,32 @@
              (make-library code env)))
          (read-file filename)))
 
-  (define (make-primloc-library env)
-    `(library (ikarus primlocs)
-       (export)
-       (import (scheme))
-       (primitive-set! 'primitive-location
-         (make-parameter
-           (lambda (x)
-             (cond
-               [(assq x ',env) =>
-                (lambda (x)
-                  (let ([type (caddr x)] [loc (cadddr x)])
-                    (case type
-                      [(global) (cons type loc)]
-                      [else #f])))]
-               [else #f]))
-           (lambda (x)
-             (if (procedure? x) 
-                 x 
-                 (error 'primitive-location 
-                   "~s is not a procedure" x)))))))
+  (define (make-system-library defined-list)
+    (let ([name*  (map car defined-list)]
+          [label* (map cadr defined-list)]
+          [type*  (map caddr defined-list)]
+          [loc*   (map cadddr defined-list)])
+      (let ([subst (map cons name* label*)]
+            [env (map (lambda (name label type loc)
+                        (case type
+                          [(global) (cons label (cons type loc))]
+                          [else (error 'make-system-library 
+                                  "invalid export type ~s for ~s" 
+                                  type name)]))
+                      name* label* type* loc*)])
+        `(library (ikarus primlocs)
+           (export)
+           (import (scheme))
+           (install-library 
+              ',(gensym "system")   ;;; id
+              '(system)             ;;; name
+              '()                   ;;; version
+              '()                   ;;; import libs 
+              '()                   ;;; visit libs
+              '()                   ;;; invoke libs
+              ',subst
+              ',env
+              void void)))))
 
   (define (expand-all ls)
     (define (insert x ls)
@@ -98,7 +104,7 @@
       (let ([env (apply append (map library-env libs))])
         (let-values ([(code _)
                       (boot-library-expand 
-                        (make-primloc-library env))])
+                        (make-system-library env))])
           (printf "ENV=~s\n" env)
           (values (insert code libs) env)))))
 
