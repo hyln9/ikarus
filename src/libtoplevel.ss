@@ -5,10 +5,10 @@
 ;;; Finally, we're ready to evaluate the files and enter the cafe.
 
 (library (ikarus interaction)
-  (export foo)
+  (export bar)
   (import (scheme))
 
-  (define foo 'i-am-an-exported-primitive-named-foo)
+  (define bar 'i-am-an-exported-primitive-named-foo)
   (define sc-expand
     (lambda (x)
       (if (and (pair? x) (equal? (car x) "noexpand"))

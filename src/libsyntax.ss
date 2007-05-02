@@ -940,7 +940,8 @@
       [new-cafe   new-cafe-label   (core-prim . new-cafe)]
       [command-line-arguments command-line-arguments-label (core-prim .  command-line-arguments)]
       [list*->code*       list*->code*-label       (core-prim . list*->code*)]
-      [primitive-location        primitive-location-label        (core-prim .  primitive-location)]
+      ;[primitive-location        primitive-location-label        (core-prim .  primitive-location)]
+      [install-library         install-library-label         (core-prim . install-library)]
       ;;; record/mid-level
       [record?                 record?-label                 (core-prim . record?)]
       [make-record-type        make-record-type-label        (core-prim . make-record-type)]
@@ -1017,6 +1018,7 @@
       [$frame->continuation     $frame->continuation-label    (core-prim . $frame->continuation)]
       [$current-frame     $current-frame-label    (core-prim . $current-frame)]
       [$seal-frame-and-call     $seal-frame-and-call-label    (core-prim . $seal-frame-and-call)]
+      [foo                      foo-label       (core-prim . foo)]
       ))
   (define make-scheme-rib
     (lambda ()

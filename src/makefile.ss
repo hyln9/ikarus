@@ -43,6 +43,7 @@
       "libcafe.ss"
       "libposix.ss"
       "libtimers.ss"
+      "library-manager.ss"
       "libtoplevel.ss"))
 
   (define (read-file file)
@@ -80,7 +81,8 @@
                       [else #f])))]
                [else #f]))
            (lambda (x)
-             (if (procedure? x) x 
+             (if (procedure? x) 
+                 x 
                  (error 'primitive-location 
                    "~s is not a procedure" x)))))))
 
