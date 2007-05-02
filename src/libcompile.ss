@@ -5313,6 +5313,5 @@
         (error 'compile-time-core-eval "~s is not a procedure" f))
       f)))
 
-
 ))
 

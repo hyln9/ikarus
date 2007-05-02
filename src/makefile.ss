@@ -53,35 +53,56 @@
             (if (eof-object? x)
                 '()
                 (cons x (f))))))))
+
+  (define-record library (code env))
   
-  (define (expand-file filename codes env)
-    (with-input-from-file filename
-      (lambda ()
-        (let f ()
-          (let ([x (read)])
-            (cond
-              [(eof-object? x) (values codes env)]
-              [else 
-               (let-values ([(code e) 
-                             (boot-library-expand x)])
-                 (let-values ([(codes e*) (f)])
-                   (values (cons code codes) (append e e*))))]))))))
 
-  (define (expand-files ls)
-    (cond
-      [(null? ls) (values '() '())]
-      [else 
-       (let-values ([(codes env) (expand-files (cdr ls))])
-         (expand-file (car ls) codes env))]))
+  (define (expand-file filename)
+    (map (lambda (x)
+           (let-values ([(code env) 
+                         (boot-library-expand x)])
+             (make-library code env)))
+         (read-file filename)))
 
+  (define (make-primloc-library env)
+    `(library (ikarus primlocs)
+       (export)
+       (import (scheme))
+       (primitive-set! 'primitive-location
+         (make-parameter
+           (lambda (x)
+             (cond
+               [(assq x ',env) =>
+                (lambda (x)
+                  (let ([type (caddr x)] [loc (cadddr x)])
+                    (case type
+                      [(global) (cons type loc)]
+                      [else #f])))]
+               [else #f]))
+           (lambda (x)
+             (if (procedure? x) x 
+                 (error 'primitive-location 
+                   "~s is not a procedure" x)))))))
 
   (define (expand-all ls)
-    (let-values ([(codes env) (expand-files ls)])
-      codes))
+    (define (insert x ls)
+      (cond ;;; insert before last library
+        [(null? (cdr ls))
+         (list x (library-code (car ls)))]
+        [else
+         (cons (library-code (car ls)) 
+           (insert x (cdr ls)))]))
+    (let ([libs (apply append (map expand-file ls))])
+      (let ([env (apply append (map library-env libs))])
+        (let-values ([(code _)
+                      (boot-library-expand 
+                        (make-primloc-library env))])
+          (printf "ENV=~s\n" env)
+          (values (insert code libs) env)))))
 
   (printf "expanding ...\n")
   
-  (let ([core* (expand-all scheme-library-files)])
+  (let-values ([(core* env) (expand-all scheme-library-files)])
     (printf "compiling ...\n")
     (let ([p (open-output-file "ikarus.boot" 'replace)])
       (for-each 
