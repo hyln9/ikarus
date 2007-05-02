@@ -27,7 +27,7 @@
         [(_ ae var) `(top-level-value ',var)]))
     (define-syntax build-global-assignment
       (syntax-rules ()
-        [(_ ae var exp) `(set-top-level-value! ',var ,exp)]))
+        [(_ ae var exp) `(#%set-top-level-value! ',var ,exp)]))
     (define-syntax build-global-definition
       (syntax-rules ()
         [(_ ae var exp) (build-global-assignment ae var exp)]))
@@ -860,15 +860,6 @@
       [*standard-error-port*        *standard-error-port*-label        (core-prim .  *standard-error-port*)]
       [*current-input-port*        *current-input-port*-label        (core-prim .  *current-input-port*)]
       [*current-output-port*        *current-output-port*-label        (core-prim .  *current-output-port*)]
-      ;[port        port-label        (core-prim .  port)]
-      ;[port        port-label        (core-prim .  port)]
-      ;[port        port-label        (core-prim .  port)]
-      ;[port        port-label        (core-prim .  port)]
-      ;[port        port-label        (core-prim .  port)]
-      ;[port        port-label        (core-prim .  port)]
-      ;[port        port-label        (core-prim .  port)]
-      ;[port        port-label        (core-prim .  port)]
-      ;[port        port-label        (core-prim .  port)]
       ;;; IO/ports
       [output-port?        output-port?-label        (core-prim .  output-port?)]
       [input-port?        input-port?-label        (core-prim .  input-port?)]
@@ -949,6 +940,7 @@
       [new-cafe   new-cafe-label   (core-prim . new-cafe)]
       [command-line-arguments command-line-arguments-label (core-prim .  command-line-arguments)]
       [list*->code*       list*->code*-label       (core-prim . list*->code*)]
+      [primitive-location        primitive-location-label        (core-prim .  primitive-location)]
       ;;; record/mid-level
       [record?                 record?-label                 (core-prim . record?)]
       [make-record-type        make-record-type-label        (core-prim . make-record-type)]
@@ -2325,7 +2317,7 @@
         (lambda (init* module-init** r mr lhs* lex* rhs*)
           (let ([module-init* (apply append (reverse module-init**))])
             (values (append module-init* init*)
-              r mr (reverse lhs*) (reverse lex*) (reverse rhs*)))))
+              r mr (reverse lex*) (reverse rhs*)))))
       (let f ([e* e*] [module-init** '()] [r r] [mr r]
               [lhs* '()] [lex* '()] [rhs* '()] [kwd* kwd*])
         (cond
@@ -2396,15 +2388,52 @@
           (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]
                 [kwd* (map (lambda (sym mark*) (stx sym mark* (list rib)))
                            (rib-sym* rib) (rib-mark** rib))])
-            (let-values ([(init* r mr lhs* lex* rhs*)
+            (let-values ([(init* r mr lex* rhs*)
                           (chi-library-internal b* r rib kwd*)])
-              (build-letrec no-source
-                lex* 
-                (chi-rhs* rhs* r mr)
-                (if (null? init*) 
-                    (build-void)
-                    (build-sequence no-source 
-                      (chi-expr* init* r mr))))))))))
+              (let ([rhs* (chi-rhs* rhs* r mr)])
+                (let ([body (if (null? init*) 
+                                (build-void)
+                                (build-sequence no-source 
+                                  (chi-expr* init* r mr)))])
+                  (build-letrec no-source lex* rhs* body)))))))))
+  (define build-export
+    (lambda (x)
+      ;;; exports use the same gensym
+      `(#%$set-symbol-value! ',x ,x)))
+  (define find-export
+    (lambda (rib r)
+      (lambda (sym)
+        (let* ([id (stx sym top-mark* (list rib))]
+               [label (id->label id)]
+               [b (label->binding label r)]
+               [type (binding-type b)])
+          (unless label 
+            (stx-error id "cannot export unbound identifier"))
+          (case type
+            [(lexical)
+             ;;; exports use the same gensym
+             (list sym label 'global (binding-value b))]
+            [else (error 'chi-library "cannot export ~s" sym)])))))
+  (define boot-library-expander
+    (lambda (e)
+      (let-values ([(name exp* b*) (parse-library e)])
+        (let ([rib (make-scheme-rib)]
+              [r (make-scheme-env)])
+          (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]
+                [kwd* (map (lambda (sym mark*) (stx sym mark* (list rib)))
+                           (rib-sym* rib) (rib-mark** rib))])
+            (let-values ([(init* r mr lex* rhs*)
+                          (chi-library-internal b* r rib kwd*)])
+              (let ([rhs* (chi-rhs* rhs* r mr)])
+                (let ([body (if (and (null? init*) (null? lex*)) 
+                                (build-void)
+                                (build-sequence no-source 
+                                  (append
+                                    (map build-export lex*)
+                                    (chi-expr* init* r mr))))])
+                  (values
+                    (build-letrec no-source lex* rhs* body)
+                    (map (find-export rib r) exp*))))))))))
   (primitive-set! 'identifier? id?)
   (primitive-set! 'generate-temporaries
     (lambda (ls)
@@ -2426,7 +2455,7 @@
              (apply string-append args) 
              (strip x '()))))
   (primitive-set! 'syntax-dispatch syntax-dispatch)
-  (primitive-set! 'boot-library-expand library-expander)
+  (primitive-set! 'boot-library-expand boot-library-expander)
   (primitive-set! 'chi-top-library library-expander))
 
 

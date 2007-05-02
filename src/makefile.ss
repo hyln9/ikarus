@@ -54,11 +54,30 @@
                 '()
                 (cons x (f))))))))
   
-  (define (expand-library-file ifile)
-    (map boot-library-expand (read-file ifile)))
+  (define (expand-file filename codes env)
+    (with-input-from-file filename
+      (lambda ()
+        (let f ()
+          (let ([x (read)])
+            (cond
+              [(eof-object? x) (values codes env)]
+              [else 
+               (let-values ([(code e) 
+                             (boot-library-expand x)])
+                 (let-values ([(codes e*) (f)])
+                   (values (cons code codes) (append e e*))))]))))))
+
+  (define (expand-files ls)
+    (cond
+      [(null? ls) (values '() '())]
+      [else 
+       (let-values ([(codes env) (expand-files (cdr ls))])
+         (expand-file (car ls) codes env))]))
+
 
   (define (expand-all ls)
-    (apply append (map expand-library-file ls)))
+    (let-values ([(codes env) (expand-files ls)])
+      codes))
 
   (printf "expanding ...\n")
   

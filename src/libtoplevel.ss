@@ -1,8 +1,9 @@
 ;;; Finally, we're ready to evaluate the files and enter the cafe.
 (library (ikarus interaction)
-  (export)
+  (export foo)
   (import (scheme))
-  
+
+  (define foo 12)
   (define sc-expand
     (lambda (x)
       (if (and (pair? x) (equal? (car x) "noexpand"))
