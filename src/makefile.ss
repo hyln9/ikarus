@@ -5,30 +5,46 @@
   (import (scheme))
   
   (define scheme-library-files
-    '("libhandlers.ss"  
-      "libcontrol.ss"   
-      "libcollect.ss"   
-      "librecord.ss"    
-      "libcxr.ss"       
-      "libnumerics.ss"  
-      "libguardians.ss" 
-      "libcore.ss"      
-      "libchezio.ss"    
-      "libhash.ss"      
-      "libwriter.ss"    
-      "libtokenizer.ss" 
-      "libassembler.ss" 
-      "libintelasm.ss"  
-      "libfasl.ss"      
-      "libtrace.ss"     
-      "libcompile.ss"   
-      "libsyntax.ss"    
-      "libpp.ss"        
-      "libcafe.ss"      
-      "libposix.ss"     
-      "libtimers.ss"    
+    ;;; Listed in the order in which they're loaded.
+    ;;;
+    ;;; Loading of the boot file may segfault if a library is
+    ;;; loaded before its dependencies are loaded first.
+    ;;;
+    ;;; reason is that the base libraries are not a hierarchy of
+    ;;; dependencies but rather an eco system in which every
+    ;;; part depends on the other.
+    ;;;
+    ;;; For example, the printer may call error if it finds
+    ;;;  an error (e.g. "not an output port"), while the error
+    ;;;  procedure may call the printer to display the message.
+    ;;;  This works fine as long as error does not itself cause
+    ;;;  an error (which may lead to the infamous Error: Error: 
+    ;;;  Error: Error: Error: Error: Error: Error: Error: ...).
+    ;;;
+    '("libhandlers.ss"
+      "libcontrol.ss"
+      "libcollect.ss"
+      "librecord.ss"
+      "libcxr.ss"
+      "libnumerics.ss"
+      "libguardians.ss"
+      "libcore.ss"
+      "libchezio.ss"
+      "libhash.ss"
+      "libwriter.ss"
+      "libtokenizer.ss"
+      "libassembler.ss"
+      "libintelasm.ss"
+      "libfasl.ss"
+      "libtrace.ss"
+      "libcompile.ss"
+      "libsyntax.ss"
+      "libpp.ss"
+      "libcafe.ss"
+      "libposix.ss"
+      "libtimers.ss"
       "libtoplevel.ss"))
-  
+
   (define (read-file file)
     (with-input-from-file file
       (lambda ()
@@ -39,12 +55,13 @@
                 (cons x (f))))))))
   
   (define (expand-library-file ifile)
-     (map chi-top-library (read-file ifile)))
+    (map boot-library-expand (read-file ifile)))
 
   (define (expand-all ls)
     (apply append (map expand-library-file ls)))
 
   (printf "expanding ...\n")
+  
   (let ([core* (expand-all scheme-library-files)])
     (printf "compiling ...\n")
     (let ([p (open-output-file "ikarus.boot" 'replace)])
@@ -52,6 +69,7 @@
         (lambda (x) (compile-core-expr-to-port x p))
         core*)
       (close-output-port p)))
+
   (printf "Happy Happy Joy Joy\n"))
 
 

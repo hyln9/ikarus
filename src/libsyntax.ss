@@ -979,6 +979,7 @@
       [generate-temporaries generate-temporaries-label (core-prim . generate-temporaries)]
       [free-identifier=?    free-identifier=?-label    (core-prim . free-identifier=?)]
       [chi-top-library    chi-top-library-label    (core-prim . chi-top-library)]
+      [boot-library-expand boot-library-expand-label (core-prim . boot-library-expand)]
       ;;; codes
       [$closure-code  $closure-code-label (core-prim . $closure-code)]
       [$code? $code?-label (core-prim . $code?)]
@@ -2387,7 +2388,7 @@
                        r mr lhs* lex* rhs* kwd*)]
                    [else 
                     (return e* module-init** r mr lhs* lex* rhs*)]))))]))))
-  (define library-expander^
+  (define library-expander
     (lambda (e)
       (let-values ([(name exp* b*) (parse-library e)])
         (let ([rib (make-scheme-rib)]
@@ -2404,11 +2405,6 @@
                     (build-void)
                     (build-sequence no-source 
                       (chi-expr* init* r mr))))))))))
-  (define library-expander
-    (lambda (x)
-      (let ([v (library-expander^ x)])
-        ;(pretty-print v)
-        v)))
   (primitive-set! 'identifier? id?)
   (primitive-set! 'generate-temporaries
     (lambda (ls)
@@ -2430,6 +2426,7 @@
              (apply string-append args) 
              (strip x '()))))
   (primitive-set! 'syntax-dispatch syntax-dispatch)
+  (primitive-set! 'boot-library-expand library-expander)
   (primitive-set! 'chi-top-library library-expander))
 
 
