@@ -1841,19 +1841,18 @@
                            r mr lhs* lex* rhs* kwd*)]
                        [else (return e* r mr lhs* lex* rhs* kwd*)]))))]))))))
   (define chi-library-internal 
-    (lambda (e* r rib kwd*)
+    (lambda (e* rib kwd*)
       (define return
         (lambda (init* module-init** r mr lhs* lex* rhs*)
           (let ([module-init* (apply append (reverse module-init**))])
             (values (append module-init* init*)
               r mr (reverse lex*) (reverse rhs*)))))
-      (let f ([e* e*] [module-init** '()] [r r] [mr r]
+      (let f ([e* e*] [module-init** '()] [r '()] [mr '()]
               [lhs* '()] [lex* '()] [rhs* '()] [kwd* kwd*])
         (cond
           [(null? e*) (return e* module-init** r mr lhs* lex* rhs*)]
           [else
            (let ([e (car e*)])
-             ;(printf "chi ~s\n" e)
              (let-values ([(type value kwd) (syntax-type e r)])
                (let ([kwd* (cons-id kwd kwd*)])
                  (case type
@@ -1966,7 +1965,20 @@
             (extend-rib! rib (stx name top-mark* '()) label)))
         subst)
       rib))
-  (define library-expander
+  (define (make-collector)
+    (let ([ls '()])
+      (case-lambda
+        [() ls]
+        [(x) (set! ls (set-cons x ls))])))
+  (define run-collector
+    (make-parameter 
+      (lambda args 
+        (error 'run-collector "not initialized"))
+      (lambda (x)
+        (unless (procedure? x) 
+          (error 'run-collector "~s is not a procedure" x))
+        x)))
+  (define core-library-expander
     (lambda (e)
       (let-values ([(name exp* imp* b*) (parse-library e)])
         (let-values ([(subst lib*) (get-import-subst/libs imp*)])
@@ -1975,23 +1987,7 @@
                   [kwd* (map (lambda (sym mark*) (stx sym mark* (list rib)))
                              (rib-sym* rib) (rib-mark** rib))])
               (let-values ([(init* r mr lex* rhs*)
-                            (chi-library-internal b* '() rib kwd*)])
-                (let ([rhs* (chi-rhs* rhs* r mr)])
-                  (let ([body (if (null? init*) 
-                                  (build-void)
-                                  (build-sequence no-source 
-                                    (chi-expr* init* r mr)))])
-                    (build-letrec no-source lex* rhs* body))))))))))
-  (define boot-library-expander
-    (lambda (e)
-      (let-values ([(name exp* imp* b*) (parse-library e)])
-        (let-values ([(subst lib*) (get-import-subst/libs imp*)])
-          (let ([rib (make-top-rib subst)])
-            (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]
-                  [kwd* (map (lambda (sym mark*) (stx sym mark* (list rib)))
-                             (rib-sym* rib) (rib-mark** rib))])
-              (let-values ([(init* r mr lex* rhs*)
-                            (chi-library-internal b* '() rib kwd*)])
+                            (chi-library-internal b* rib kwd*)])
                 (let ([rhs* (chi-rhs* rhs* r mr)])
                   (let ([body (if (and (null? init*) (null? lex*)) 
                                   (build-void)
@@ -2000,8 +1996,21 @@
                                       (map build-export lex*)
                                       (chi-expr* init* r mr))))])
                     (values
+                      name
                       (build-letrec no-source lex* rhs* body)
                       (map (find-export rib r) exp*)))))))))))
+  (define library-expander
+    (lambda (x) 
+      (let ([rtc (make-collector)])
+        (parameterize ([run-collector rtc])
+          (let-values ([(name invoke-code export-subst)
+                        (core-library-expander x)])
+            invoke-code)))))
+  (define boot-library-expander
+    (lambda (x)
+      (let-values ([(name invoke-code exp*) 
+                    (core-library-expander x)])
+        (values invoke-code exp*))))
   (define build-export
     (lambda (x)
       ;;; exports use the same gensym
