@@ -487,14 +487,20 @@
       [installed-libraries     installed-libraries-label (core-prim . installed-libraries)]
       [library-subst/env     library-subst/env-label (core-prim . library-subst/env)]
       [find-library-by-name     find-library-by-name-label (core-prim . find-library-by-name)]
+      [imported-label->binding  imported-label->binding-label (core-prim . imported-label->binding)] 
       ))
-
+  (define (lm:imported-label->binding lab)
+    (let f ([ls *all-libraries*])
+      (cond
+        [(null? ls) #f]
+        [(assq lab (library-env (car ls))) => cdr]
+        [else (f (cdr ls))])))
   (let ([subst
          (map (lambda (x) (cons (car x) (cadr x))) scheme-env)]
         [env 
          (map (lambda (x) (cons (cadr x) (caddr x))) scheme-env)])
     (lm:install-library 'scheme-id   ;;; id
-                        '(scheme)    ;;; name        
+                        '(scheme)    ;;; name
                         '()          ;;; version
                         '() '() '()  ;;; req
                         subst env
@@ -508,4 +514,5 @@
         (error 'library-subst/env "~s is not a library" x))
       (values (library-subst x) (library-env x))))
   (primitive-set! 'find-library-by-name lm:find-library-by-name)
+  (primitive-set! 'imported-label->binding lm:imported-label->binding)
   (primitive-set! 'install-library lm:install-library))
