@@ -38,7 +38,7 @@
 
 
 (library (ikarus intel-assember)
-  (export)
+  (export assemble-sources)
   (import (scheme))
 
 (define fold
@@ -953,8 +953,7 @@
 ;;;           (make-code-executable! x)
 ;;;           x)))))
 
-(let ()
-  (define list*->code*
+  (define assemble-sources
     (lambda (thunk?-label ls*)
       (let ([closure-size* (map car ls*)]
             [ls* (map cdr ls*)])
@@ -979,7 +978,7 @@
   ;  (lambda (ls)
   ;    (car (list*->code* (list ls)))))
   
-  (primitive-set! 'list*->code* list*->code*))
+  (primitive-set! 'list*->code* assemble-sources)
 
 )
 

@@ -2000,13 +2000,14 @@
                                       (append
                                         (map build-export lex*)
                                         (chi-expr* init* r mr))))])
-                      (values
-                        name imp* (rtc)
-                        (build-letrec no-source lex* rhs* body)
-                        (map (find-export rib r) exp*))))))))))))
+                      (let-values ([(export-subst export-env) (find-exports rib r exp*)])
+                        (values
+                          name imp* (rtc)
+                          (build-letrec no-source lex* rhs* body)
+                          export-subst export-env))))))))))))
   (define run-library-expander
     (lambda (x) 
-      (let-values ([(name imp* run* invoke-code exp*)
+      (let-values ([(name imp* run* invoke-code export-subst export-env)
                     (core-library-expander x)])
         ;;; we need: name/ver/id, 
         ;;;    imports, visit, invoke  name/ver/id
@@ -2017,23 +2018,16 @@
               [ver '()]  ;;; FIXME
               [imp* (map library-spec imp*)]
               [vis* '()] ;;; FIXME
-              [inv* (map library-spec run*)]
-              [exp-subst
-               (map (lambda (x) (cons (car x) (cadr x))) exp*)]
-              [exp-env 
-               (map (lambda (x) 
-                      (let ([label (cadr x)] [type (caddr x)] [val (cadddr x)])
-                        (cons label (cons type val))))
-                    exp*)])
+              [inv* (map library-spec run*)])
           (install-library id name ver
-             imp* vis* inv* exp-subst exp-env
+             imp* vis* inv* export-subst export-env
              void ;;; FIXME
              (lambda () (eval-core invoke-code)))))))
   (define boot-library-expander
     (lambda (x)
-      (let-values ([(name imp* run* invoke-code exp*) 
+      (let-values ([(name imp* run* invoke-code export-subst export-env) 
                     (core-library-expander x)])
-        (values invoke-code exp*))))
+        (values invoke-code export-subst export-env))))
   (define build-export
     (lambda (x)
       ;;; exports use the same gensym
@@ -2051,7 +2045,26 @@
             [(lexical)
              ;;; exports use the same gensym
              (list sym label 'global (binding-value b))]
-            [else (error 'chi-library "cannot export ~s" sym)])))))
+            [else (error #f "cannot export ~s of type ~s" sym type)])))))
+  (define (find-exports rib r sym*)
+    ;;; FIXME: check unique exports
+    (let f ([sym* sym*] [subst '()] [env '()])
+      (cond
+        [(null? sym*) (values subst env)]
+        [else
+         (let* ([sym (car sym*)]
+                [id (stx sym top-mark* (list rib))]
+                [label (id->label id)]
+                [b (label->binding label r)]
+                [type (binding-type b)])
+           (unless label 
+             (stx-error id "cannot export unbound identifier"))
+           (case type
+             [(lexical) 
+              (f (cdr sym*) 
+                 (cons (cons sym label) subst)
+                 (cons (cons label (cons 'global (binding-value b))) env))]
+             [else (error #f "cannot export ~s of type ~s" sym type)]))])))
   (primitive-set! 'identifier? id?)
   (primitive-set! 'generate-temporaries
     (lambda (ls)

@@ -46,6 +46,37 @@
       "library-manager.ss"
       "libtoplevel.ss"))
 
+  (define ikarus-environment-map
+    '([define            (define)]
+      [define-syntax     (define-syntax)]
+      [module            (module)]
+      [begin             (begin)]
+      [set!              (set!)]
+      [foreign-call      (core-macro . foreign-call)]
+      [quote             (core-macro . quote)]
+      [syntax-case       (core-macro . syntax-case)]
+      [syntax            (core-macro . syntax)]
+      [lambda            (core-macro . lambda)]
+      [case-lambda       (core-macro . case-lambda)]
+      [type-descriptor   (core-macro . type-descriptor)]
+      [letrec            (core-macro . letrec)]
+      [if                (core-macro . if)]
+      [when              (core-macro . when)]         
+      [unless            (core-macro . unless)]
+      [parameterize      (core-macro . parameterize)]
+      [case              (core-macro . case)]
+      [let-values        (core-macro . let-values)]
+      [define-record     (macro . define-record)]
+      [include           (macro . include)]
+      [syntax-rules      (macro . syntax-rules)]
+      [quasiquote        (macro . quasiquote)]
+      [with-syntax       (macro . with-syntax)]
+      [let               (macro . let)]
+      [let*              (macro . let*)]
+      [cond              (macro . cond)]
+      [and               (macro . and)]
+      [or                (macro . or)]))
+ 
   (define (read-file file)
     (with-input-from-file file
       (lambda ()
@@ -55,45 +86,58 @@
                 '()
                 (cons x (f))))))))
 
-  (define-record library (code env))
+  (define-record library (code export-subst export-env))
   
+  (define must-export-primitives '())
 
   (define (expand-file filename)
     (map (lambda (x)
-           (let-values ([(code env) 
+           (let-values ([(code export-subst export-env) 
                          (boot-library-expand x)])
-             (make-library code env)))
+             (make-library code export-subst export-env)))
          (read-file filename)))
 
-  (define (make-system-library defined-list)
-    (let ([name*  (map car defined-list)]
-          [label* (map cadr defined-list)]
-          [type*  (map caddr defined-list)]
-          [loc*   (map cadddr defined-list)])
-      (let ([subst (map cons name* label*)]
-            [env (map (lambda (name label type loc)
-                        (case type
-                          [(global) 
-                           ;;; install the new exports as prims
-                           ;;; of the new system
-                           (cons label (cons 'core-prim name))]
-                          [else (error 'make-system-library 
-                                  "invalid export type ~s for ~s" 
-                                  type name)]))
-                      name* label* type* loc*)])
-        `(library (ikarus primlocs)
-           (export)
-           (import (scheme))
-           (install-library 
-              ',(gensym "system")   ;;; id
-              '(system)             ;;; name
-              '()                   ;;; version
-              '()                   ;;; import libs 
-              '()                   ;;; visit libs
-              '()                   ;;; invoke libs
-              ',subst               ;;; substitution
-              ',env                 ;;; environment
-              void void)))))
+  (define (inv-assq x ls)
+    (cond
+      [(null? ls) #f]
+      [(eq? x (cdar ls)) (car ls)]
+      [else (inv-assq x (cdr ls))]))
+
+  (define (sanitize-export-env subst r)
+    (define (add x r)
+      (let ([label (car x)] [b (cdr x)])
+        (let ([type (car b)] [val (cdr b)])
+          (case type
+            [(global) 
+             (cond
+               [(inv-assq label subst) =>
+                (lambda (v)
+                  (let ([name (car v)])
+                    (cond 
+                      [(memq name must-export-primitives) 
+                       (cons (cons label (cons 'core-prim name)) r)]
+                      [else r])))]
+               [else (error #f "cannot find binding for ~s" x)])]
+            [else (error #f "cannot handle export for ~s" x)]))))
+    (let f ([r r])
+      (cond
+        [(null? r) '()]
+        [else (add (car r) (f (cdr r)))])))
+
+  (define (make-system-library export-subst export-env)
+    `(library (ikarus primlocs)
+       (export)
+       (import (scheme))
+       (install-library 
+          ',(gensym "system")   ;;; id
+          '(system)             ;;; name
+          '()                   ;;; version
+          '()                   ;;; import libs 
+          '()                   ;;; visit libs
+          '()                   ;;; invoke libs
+          ',export-subst        ;;; substitution
+          ',export-env          ;;; environment
+          void void)))
 
   (define (expand-all ls)
     (define (insert x ls)
@@ -104,16 +148,20 @@
          (cons (library-code (car ls)) 
            (insert x (cdr ls)))]))
     (let ([libs (apply append (map expand-file ls))])
-      (let ([env (apply append (map library-env libs))])
-        (let-values ([(code _)
+      (let* ([export-subst 
+              (apply append (map library-export-subst libs))]
+             [export-env
+              (sanitize-export-env export-subst
+                (apply append (map library-export-env libs)))])
+        (let-values ([(code _subst _env) ; both must be empty
                       (boot-library-expand 
-                        (make-system-library env))])
-          (printf "ENV=~s\n" env)
-          (values (insert code libs) env)))))
+                        (make-system-library export-subst export-env))])
+          (printf "EXP:~s\n" (map car export-subst))
+          (values (insert code libs) #f)))))
 
   (printf "expanding ...\n")
   
-  (let-values ([(core* env) (expand-all scheme-library-files)])
+  (let-values ([(core* ??env) (expand-all scheme-library-files)])
     (printf "compiling ...\n")
     (let ([p (open-output-file "ikarus.boot" 'replace)])
       (for-each 
