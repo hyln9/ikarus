@@ -2075,8 +2075,27 @@
              (strip x '()))))
   (primitive-set! 'syntax-dispatch syntax-dispatch)
   (primitive-set! 'boot-library-expand boot-library-expander)
-  (primitive-set! 'eval-top-level  run-library-expander))
-
+  (primitive-set! 'eval-top-level 
+    (lambda (x)
+      (unless (pair? x)
+        (error #f "invalid expression at top-level ~s" x))
+      (case (car x)
+        [(library) (run-library-expander x)]
+        [(invoke)
+         (syntax-match x ()
+           [(_ (id** ...) ...)
+            (unless (andmap (lambda (id*) (andmap symbol? id*)) id**)
+              (error #f "invalid invoke form ~s" x))
+            (let ([lib* 
+                   (map (lambda (x)
+                          (or (find-library-by-name x)
+                              (error #f "cannot find library ~s"
+                                     x)))
+                        id**)])
+              (for-each invoke-library lib*))]
+           [else (error #f "invalid invoke form ~s" x)])]
+        [else (error #f "invalid top-level form ~s" x)])))
+)
 
 
 
