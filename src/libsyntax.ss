@@ -2,7 +2,7 @@
 (library (ikarus syntax)
   (export)
   (import (scheme))
-  (define who 'chi-top-library)
+  (define who 'expander)
   (define-syntax no-source 
     (lambda (x) #f))
   (begin ;;; GOOD ONES
@@ -2075,7 +2075,6 @@
              (strip x '()))))
   (primitive-set! 'syntax-dispatch syntax-dispatch)
   (primitive-set! 'boot-library-expand boot-library-expander)
-  (primitive-set! 'chi-top-library run-library-expander)
   (primitive-set! 'eval-top-level  run-library-expander))
 
 

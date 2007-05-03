@@ -439,7 +439,6 @@
       [syntax-error             syntax-error-label             (core-prim . syntax-error)]
       [generate-temporaries generate-temporaries-label (core-prim . generate-temporaries)]
       [free-identifier=?    free-identifier=?-label    (core-prim . free-identifier=?)]
-      [chi-top-library    chi-top-library-label    (core-prim . chi-top-library)]
       [boot-library-expand boot-library-expand-label (core-prim . boot-library-expand)]
       ;;; codes
       [$closure-code  $closure-code-label (core-prim . $closure-code)]
