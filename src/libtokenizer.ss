@@ -791,7 +791,7 @@
   (let ()
     (define load-handler
       (lambda (x)
-        (chi-top-library x)))
+        (eval-top-level x)))
     (define read-and-eval
       (lambda (p eval-proc)
         (let ([x (my-read p)])
