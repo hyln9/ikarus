@@ -3,7 +3,6 @@
   (export)
   (import (scheme))
   (define who 'chi-top-library)
-  (define noexpand "noexpand")
   (define-syntax no-source 
     (lambda (x) #f))
   (begin ;;; GOOD ONES
@@ -342,12 +341,9 @@
          x]
         [(and (pair? x) (eq? (car x) '$rtd)) x]
         [else (error 'expand "invalid transformer ~s" x)])))
-  (define compile-time-eval-hook
-    (lambda (x)
-      (eval `(,noexpand ,x))))
   (define make-eval-transformer
     (lambda (x)
-      (sanitize-binding (compile-time-eval-hook x))))
+      (sanitize-binding (eval-core x))))
   (module (syntax-match) 
     (define-syntax syntax-match-test
       (lambda (ctx)
@@ -2025,7 +2021,7 @@
           (install-library id name ver
              imp* vis* inv* exp-subst exp-env
              void ;;; FIXME
-             (lambda () (compile-time-eval-hook invoke-code)))
+             (lambda () (eval-core invoke-code)))
           (invoke-library (find-library-by-name name))
           (build-void)))))
   (define boot-library-expander
