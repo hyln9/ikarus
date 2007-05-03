@@ -45,7 +45,8 @@
         (error 'install-library "~s is already installed" name))
       (let ([lib (make-library id name ver imp-lib* vis-lib* inv-lib* 
                     exp-subst exp-env visit-code invoke-code)])
-        (set! *all-libraries* (cons lib *all-libraries*)))))
+        (set! *all-libraries* (cons lib *all-libraries*))
+        )))
 
   (define scheme-env ; the-env
     '([define        define-label        (define)]

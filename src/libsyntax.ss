@@ -2022,20 +2022,12 @@
                       (let ([label (cadr x)] [type (caddr x)] [val (cadddr x)])
                         (cons label (cons type val))))
                     exp*)])
-          (build-application no-source
-            (build-primref no-source 'install-library)
-            (list (build-data no-source id)
-                  (build-data no-source name)
-                  (build-data no-source ver)
-                  (build-data no-source imp*)
-                  (build-data no-source vis*)
-                  (build-data no-source inv*)
-                  (build-data no-source exp-subst)
-                  (build-data no-source exp-env)
-                  (build-primref no-source 'void)
-                  (build-sequence no-source
-                    (list invoke-code 
-                          (build-primref no-source 'void)))))))))
+          (install-library id name ver
+             imp* vis* inv* exp-subst exp-env
+             void
+             (lambda () (compile-time-eval-hook invoke-code)))
+          (invoke-library (find-library-by-name name))
+          (build-void)))))
   (define boot-library-expander
     (lambda (x)
       (let-values ([(name imp* run* invoke-code exp*) 
@@ -2088,6 +2080,22 @@
 
 
 #!eof junk
+
+(build-application no-source
+            (build-primref no-source 'install-library)
+            (list (build-data no-source id)
+                  (build-data no-source name)
+                  (build-data no-source ver)
+                  (build-data no-source imp*)
+                  (build-data no-source vis*)
+                  (build-data no-source inv*)
+                  (build-data no-source exp-subst)
+                  (build-data no-source exp-env)
+                  (build-primref no-source 'void)
+                  (build-sequence no-source
+                    (list invoke-code 
+                          (build-primref no-source 'void)))))
+
 
   (module (make-stx stx? stx-expr stx-mark* stx-subst*)
     (define make-stx
