@@ -5290,15 +5290,6 @@
   (lambda (x)
     (compile x)))
 
-(primitive-set! 'compile-time-core-eval
-  (make-parameter 
-    (lambda (x) 
-      (parameterize ([current-expand (lambda (x) x)])
-        (compile x)))
-    (lambda (f)
-      (unless (procedure? f) 
-        (error 'compile-time-core-eval "~s is not a procedure" f))
-      f)))
 
 ))
 
