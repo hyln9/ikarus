@@ -392,7 +392,6 @@
       [apply      apply-label      (core-prim . apply)]
       [values     values-label     (core-prim . values)]
       [call-with-values cwv-label  (core-prim . call-with-values)]
-      [current-eval current-eval-label (core-prim . current-eval)]
       [call/cc     call/cc-label   (core-prim . call/cc)]
       [call/cf     call/cf-label   (core-prim . call/cf)]
       [dynamic-wind dynamic-wind-label (core-prim . dynamic-wind)]

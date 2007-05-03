@@ -42,7 +42,6 @@
                     [else
                      (let-values ([(f* script a*) (f (cdr args))])
                        (values (cons (car args) f*) script a*))]))])
-    (current-eval compile)
     (cond
       [script ; no greeting, no cafe
        (command-line-arguments (cons script args))
