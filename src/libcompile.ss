@@ -5192,12 +5192,84 @@
     (parameterize ([assembler-output #f])
       (expand x))))
 
+(define compile-core-expr-to-port
+  (lambda (expr port)
+    (fasl-write (compile-core-expr->code expr) port)))
+
+(define (compile-core-expr x)
+  (let ([code (compile-core-expr->code x)])
+    ($code->closure code)))
+
+(primitive-set! 'compile-core-expr-to-port compile-core-expr-to-port)
+
+(primitive-set! 'assembler-output (make-parameter #f))
+(primitive-set! 'compile
+  (lambda (x)
+    (let ([code 
+           (if (code? x)
+               x
+               (compile-expr->code x))])
+      (let ([proc ($code->closure code)])
+        (proc)))))
+
+
+(primitive-set! 'eval-core
+  (lambda (x) ((compile-core-expr x))))
+
+(primitive-set! 'eval
+  (lambda (x)
+    (compile x)))
+
+(primitive-set! 'load-handler
+  (lambda (x)
+    (chi-top-library x)
+    (void)))
+
+))
+
+#!eof junk
+
+(define compile-file
+  (lambda (input-file output-file . rest)
+    (let ([ip (open-input-file input-file)]
+          [op (apply open-output-file output-file rest)])
+      (let f ()
+        (let ([x (read ip)])
+          (unless (eof-object? x)
+            (fasl-write (compile-expr->code x) op)
+            (f))))
+      (close-input-port ip)
+      (close-output-port op))))
+(primitive-set! 'compile-file compile-file)
 
 ;(include "libaltcogen.ss")
 (define alt-cogen
   (lambda args
     (error 'alt-cogen "disabled for now")))
 
+(define alt-compile-file
+  (lambda (input-file output-file . rest)
+    (let ([ip (open-input-file input-file)]
+          [op (apply open-output-file output-file rest)])
+      (let f ()
+        (let ([x (read ip)])
+          (unless (eof-object? x)
+            (fasl-write (alt-compile-expr x) op)
+            (f))))
+      (close-input-port ip)
+      (close-output-port op))))
+
+
+(primitive-set! 'alt-compile-file alt-compile-file)
+
+(primitive-set! 'alt-compile
+  (lambda (x)
+    (let ([code 
+           (if (code? x)
+               x
+               (alt-compile-expr x))])
+      (let ([proc ($code->closure code)])
+        (proc)))))
 
 (define (alt-compile-expr expr)
   (let* ([p (parameterize ([assembler-output #f])
@@ -5231,70 +5303,3 @@
                      #f))
                ls*)])
         (car code*)))))
-
-
-(define compile-core-expr-to-port
-  (lambda (expr port)
-    (fasl-write (compile-core-expr->code expr) port)))
-
-(define compile-file
-  (lambda (input-file output-file . rest)
-    (let ([ip (open-input-file input-file)]
-          [op (apply open-output-file output-file rest)])
-      (let f ()
-        (let ([x (read ip)])
-          (unless (eof-object? x)
-            (fasl-write (compile-expr->code x) op)
-            (f))))
-      (close-input-port ip)
-      (close-output-port op))))
-
-(define alt-compile-file
-  (lambda (input-file output-file . rest)
-    (let ([ip (open-input-file input-file)]
-          [op (apply open-output-file output-file rest)])
-      (let f ()
-        (let ([x (read ip)])
-          (unless (eof-object? x)
-            (fasl-write (alt-compile-expr x) op)
-            (f))))
-      (close-input-port ip)
-      (close-output-port op))))
-
-(define (compile-core-expr x)
-  (let ([code (compile-core-expr->code x)])
-    ($code->closure code)))
-
-(primitive-set! 'compile-core-expr-to-port compile-core-expr-to-port)
-
-(primitive-set! 'compile-file compile-file)
-(primitive-set! 'alt-compile-file alt-compile-file)
-(primitive-set! 'assembler-output (make-parameter #f))
-(primitive-set! 'compile
-  (lambda (x)
-    (let ([code 
-           (if (code? x)
-               x
-               (compile-expr->code x))])
-      (let ([proc ($code->closure code)])
-        (proc)))))
-
-(primitive-set! 'alt-compile
-  (lambda (x)
-    (let ([code 
-           (if (code? x)
-               x
-               (alt-compile-expr x))])
-      (let ([proc ($code->closure code)])
-        (proc)))))
-
-(primitive-set! 'eval-core
-  (lambda (x) ((compile-core-expr x))))
-
-(primitive-set! 'eval
-  (lambda (x)
-    (compile x)))
-
-
-))
-
