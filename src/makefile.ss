@@ -124,44 +124,50 @@
         [(null? r) '()]
         [else (add (car r) (f (cdr r)))])))
 
-  (define (make-system-library export-subst export-env)
-    `(library (ikarus primlocs)
-       (export)
-       (import (scheme))
-       (install-library 
-          ',(gensym "system")   ;;; id
-          '(system)             ;;; name
-          '()                   ;;; version
-          '()                   ;;; import libs 
-          '()                   ;;; visit libs
-          '()                   ;;; invoke libs
-          ',export-subst        ;;; substitution
-          ',export-env          ;;; environment
-          void void)))
+  (define (build-system-library export-subst export-env)
+    (let-values ([(code empty-subst empty-env)
+                  (boot-library-expand
+                    `(library (ikarus primlocs)
+                       (export) ;;; must be empty
+                       (import (scheme))
+                       (install-library 
+                          ',(gensym "system")   ;;; id
+                          '(system)             ;;; name
+                          '()                   ;;; version
+                          '()                   ;;; import libs 
+                          '()                   ;;; visit libs
+                          '()                   ;;; invoke libs
+                          ',export-subst        ;;; substitution
+                          ',export-env          ;;; environment
+                          void void             ;;; visit/invoke codes
+                          )))])
+       (pretty-print code)
+       code))
 
-  (define (expand-all ls)
-    (define (insert x ls)
-      (cond ;;; insert before last library
-        [(null? (cdr ls))
-         (list x (library-code (car ls)))]
-        [else
-         (cons (library-code (car ls)) 
-           (insert x (cdr ls)))]))
-    (let ([libs (apply append (map expand-file ls))])
-      (let* ([export-subst 
-              (apply append (map library-export-subst libs))]
-             [export-env
-              (sanitize-export-env export-subst
-                (apply append (map library-export-env libs)))])
-        (let-values ([(code _subst _env) ; both must be empty
-                      (boot-library-expand 
-                        (make-system-library export-subst export-env))])
-          (printf "EXP:~s\n" (map car export-subst))
-          (values (insert code libs) #f)))))
+
+  (define (expand-all files)
+    (let ([code* '()]
+          [subst '()]
+          [env   '()])
+      (for-each
+        (lambda (file)
+          (load file
+            (lambda (x) 
+              (let-values ([(code export-subst export-env)
+                            (boot-library-expand x)])
+                 (set! code* (cons code code*))
+                 (set! subst (append export-subst subst))
+                 (set! env (append export-env env))))))
+        files)
+      (let ([env (sanitize-export-env subst env)])
+        (let ([code (build-system-library subst env)])
+          (values 
+            (reverse (list* (car code*) code (cdr code*)))
+            subst env)))))
 
   (printf "expanding ...\n")
   
-  (let-values ([(core* ??env) (expand-all scheme-library-files)])
+  (let-values ([(core* subst env) (expand-all scheme-library-files)])
     (printf "compiling ...\n")
     (let ([p (open-output-file "ikarus.boot" 'replace)])
       (for-each 
@@ -172,21 +178,3 @@
   (printf "Happy Happy Joy Joy\n"))
 
 (invoke (ikarus makefile))
-
-;;; ;;; NEW ARCHITECTURE
-;;;
-;;; (define expander-input-env
-;;;   '(;[prim-name      label       (core-prim . prim-name)]
-;;;     [car            car-label    (core-prim . car)]))
-;;; 
-;;; (define expander-output-env 
-;;;   '(;[export-name    export-loc]
-;;;     [ikarus-car      #{ikarus-car |174V9RJ/FjzvmJVu|}]))
-;;; 
-;;; (define bootstrap-knot
-;;;   '(;[prim-name      export-name]
-;;;     [car             ikarus-car]))
-;;; 
-;;; (define compile-input-env
-;;;   '(;[prim-name      export-loc]
-;;;     [car             #{ikarus-car |174V9RJ/FjzvmJVu|}]))

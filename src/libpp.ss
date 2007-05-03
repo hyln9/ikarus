@@ -2,7 +2,13 @@
 (library (ikarus pretty-print)
   (export)
   (import (scheme))
-
+  (define (map1ltr f ls)
+    ;;; ltr so that gensym counts get assigned properly
+    (cond
+      [(null? ls) '()]
+      [else
+       (let ([a (f (car ls))])
+         (cons a (map1ltr f (cdr ls))))]))
   (define (pretty-width) 80)
   (define (pretty-indent) 1)
   (define-record cbox (length boxes))
@@ -138,7 +144,7 @@
                   (conc (cdr fmt) (boxify (cadr ls)))]
                  [(fmt-dots? fmt) 
                   (return (fmt-tab fmt) 
-                          (map (lambda (x) (boxify/fmt (sub-fmt fmt) x))
+                          (map1ltr (lambda (x) (boxify/fmt (sub-fmt fmt) x))
                                ls))]
                  [else
                   (let-values ([(sep* ls)
@@ -148,7 +154,7 @@
                                      (values '() '())]
                                     [(fmt-dots? fmt) 
                                      (values (fmt-tab fmt) 
-                                             (map (lambda (x)
+                                             (map1ltr (lambda (x)
                                                     (boxify/fmt (sub-fmt fmt) x))
                                                   ls))]
                                     [else
@@ -161,7 +167,7 @@
                                                      l^)))]))])
                     (return sep* (cons (boxify/fmt (sub-fmt fmt) a) ls)))])))]
             [else 
-             (return (gensep*-default ls) (map boxify ls))])))
+             (return (gensep*-default ls) (map1ltr boxify ls))])))
     (define (boxify-string x)
       (define (count s i j n)
         (cond
@@ -202,7 +208,7 @@
                        (fx+ (fxadd1 n) (box-length (car ls))))]))])
           (make-pbox (fx+ n (box-length last)) ls last))))
     (define (boxify-vector x)
-      (let ([ls (map boxify (vector->list x))])
+      (let ([ls (map1ltr boxify (vector->list x))])
         (let ([n
                (let f ([ls ls] [n 0])
                  (cond
