@@ -5261,6 +5261,9 @@
       (close-input-port ip)
       (close-output-port op))))
 
+(define (compile-core-expr x)
+  (let ([code (compile-core-expr->code x)])
+    ($code->closure code)))
 
 (primitive-set! 'compile-core-expr-to-port compile-core-expr-to-port)
 
@@ -5285,6 +5288,8 @@
       (let ([proc ($code->closure code)])
         (proc)))))
 
+(primitive-set! 'eval-core
+  (lambda (x) ((compile-core-expr x))))
 
 (primitive-set! 'eval
   (lambda (x)
