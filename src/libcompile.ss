@@ -5212,18 +5212,9 @@
       (let ([proc ($code->closure code)])
         (proc)))))
 
-
 (primitive-set! 'eval-core
   (lambda (x) ((compile-core-expr x))))
 
-(primitive-set! 'eval
-  (lambda (x)
-    (compile x)))
-
-(primitive-set! 'load-handler
-  (lambda (x)
-    (chi-top-library x)
-    (void)))
 
 ))
 

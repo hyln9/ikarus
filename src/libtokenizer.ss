@@ -789,6 +789,10 @@
           (error 'comment-handler "~s is not a procedure" x))
         x)))
   (let ()
+    (define load-handler
+      (lambda (x)
+        (chi-top-library x)
+        (void)))
     (define read-and-eval
       (lambda (p eval-proc)
         (let ([x (my-read p)])
