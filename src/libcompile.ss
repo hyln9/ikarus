@@ -5203,14 +5203,6 @@
 (primitive-set! 'compile-core-expr-to-port compile-core-expr-to-port)
 
 (primitive-set! 'assembler-output (make-parameter #f))
-(primitive-set! 'compile
-  (lambda (x)
-    (let ([code 
-           (if (code? x)
-               x
-               (compile-expr->code x))])
-      (let ([proc ($code->closure code)])
-        (proc)))))
 
 (primitive-set! 'eval-core
   (lambda (x) ((compile-core-expr x))))
@@ -5219,6 +5211,17 @@
 ))
 
 #!eof junk
+
+
+
+(primitive-set! 'compile
+  (lambda (x)
+    (let ([code 
+           (if (code? x)
+               x
+               (compile-expr->code x))])
+      (let ([proc ($code->closure code)])
+        (proc)))))
 
 (define compile-file
   (lambda (input-file output-file . rest)
