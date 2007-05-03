@@ -5150,12 +5150,9 @@
               ))
         ))))
 
-(define (compile-expr expr)
-  (let* ([p (parameterize ([assembler-output #f])
-              (expand expr))]
-         [p (recordize p)]
+(define (compile-core-expr->code p)
+  (let* ([p (recordize p)]
          [p (optimize-direct-calls p)]
-         ;[p^ (analyze-cwv p)]
          [p (optimize-letrec p)]
          [p (uncover-assigned/referenced p)]
          [p (copy-propagate p)]
@@ -5163,8 +5160,6 @@
          [p (optimize-for-direct-jumps p)]
          [p (convert-closures p)]
          [p (optimize-closures/lift-codes p)] 
-
-         ;[p^ (new-cogen p)]
          [p (introduce-primcalls p)]
          [p (simplify-operands p)]
          [p (insert-stack-overflow-checks p)]
@@ -5191,6 +5186,11 @@
                      #f))
                ls*)])
         (car code*)))))
+
+(define (compile-expr->code x)
+  (compile-core-expr->code
+    (parameterize ([assembler-output #f])
+      (expand x))))
 
 
 ;(include "libaltcogen.ss")
@@ -5235,8 +5235,7 @@
 
 (define compile-core-expr-to-port
   (lambda (expr port)
-    (parameterize ([current-expand (lambda (x) x)])
-      (fasl-write (compile-expr expr) port))))
+    (fasl-write (compile-core-expr->code expr) port)))
 
 (define compile-file
   (lambda (input-file output-file . rest)
@@ -5245,7 +5244,7 @@
       (let f ()
         (let ([x (read ip)])
           (unless (eof-object? x)
-            (fasl-write (compile-expr x) op)
+            (fasl-write (compile-expr->code x) op)
             (f))))
       (close-input-port ip)
       (close-output-port op))))
@@ -5273,7 +5272,7 @@
     (let ([code 
            (if (code? x)
                x
-               (compile-expr x))])
+               (compile-expr->code x))])
       (let ([proc ($code->closure code)])
         (proc)))))
 
