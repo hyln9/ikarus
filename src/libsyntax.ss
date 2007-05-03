@@ -2011,9 +2011,9 @@
         ;;;    visit-code, invoke-code
         (let ([id (gensym)]
               [name name]
-              [ver '()]
+              [ver '()]  ;;; FIXME
               [imp* (map library-spec imp*)]
-              [vis* '()]
+              [vis* '()] ;;; FIXME
               [inv* (map library-spec run*)]
               [exp-subst
                (map (lambda (x) (cons (car x) (cadr x))) exp*)]
@@ -2024,7 +2024,7 @@
                     exp*)])
           (install-library id name ver
              imp* vis* inv* exp-subst exp-env
-             void
+             void ;;; FIXME
              (lambda () (compile-time-eval-hook invoke-code)))
           (invoke-library (find-library-by-name name))
           (build-void)))))

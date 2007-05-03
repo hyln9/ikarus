@@ -15,9 +15,6 @@
           (cadr x)
           (chi-top-library x))))
 
-  (primitive-set! 'expand-mode
-    (make-parameter 'eval))
-  
   (primitive-set! 'current-expand
     (make-parameter sc-expand
       (lambda (f)

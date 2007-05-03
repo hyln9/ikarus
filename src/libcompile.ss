@@ -385,11 +385,9 @@
             (make-primref var))]
          [(top-level-value)
           (let ([var (quoted-sym (cadr x))])
-            (if (eq? (expand-mode) 'bootstrap)
-                (error 'compile "reference to ~s in bootstrap mode" var)
-                (make-funcall
-                  (make-primref 'top-level-value)
-                  (list (make-constant var)))))]
+             (make-funcall
+               (make-primref 'top-level-value)
+               (list (make-constant var))))]
          [(set-top-level-value!)
           (make-funcall (make-primref 'set-top-level-value!)
                         (map E (cdr x)))]
@@ -5275,8 +5273,7 @@
     (let ([code 
            (if (code? x)
                x
-               (parameterize ([expand-mode 'eval])
-                 (compile-expr x)))])
+               (compile-expr x))])
       (let ([proc ($code->closure code)])
         (proc)))))
 
@@ -5285,8 +5282,7 @@
     (let ([code 
            (if (code? x)
                x
-               (parameterize ([expand-mode 'eval])
-                 (alt-compile-expr x)))])
+               (alt-compile-expr x))])
       (let ([proc ($code->closure code)])
         (proc)))))
 

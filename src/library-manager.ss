@@ -405,7 +405,6 @@
       [compile-core-expr-to-port    compile-core-expr-to-port-label    (core-prim . compile-core-expr-to-port)]
       [eval       eval-label       (core-prim . eval)]
       [load       load-label       (core-prim . load)]
-      [expand-mode       expand-mode-label       (core-prim . expand-mode)]
       [assembler-output       assembler-output-label       (core-prim . assembler-output)]
       [current-expand       current-expand-label       (core-prim . current-expand)]
       [expand       expand-label       (core-prim . expand)]
