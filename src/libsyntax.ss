@@ -1981,7 +1981,7 @@
   (define core-library-expander
     (lambda (e)
       (let-values ([(name exp* imp* b*) (parse-library e)])
-        (let-values ([(subst lib*) (get-import-subst/libs imp*)])
+        (let-values ([(subst imp*) (get-import-subst/libs imp*)])
           (let ([rib (make-top-rib subst)])
             (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]
                   [kwd* (map (lambda (sym mark*) (stx sym mark* (list rib)))
@@ -2012,6 +2012,9 @@
         (let ([id (gensym)]
               [name name]
               [ver '()]
+              [imp* (map library-spec imp*)]
+              [vis* '()]
+              [inv* (map library-spec run*)]
               [exp-subst
                (map (lambda (x) (cons (car x) (cadr x))) exp*)]
               [exp-env 
@@ -2019,7 +2022,20 @@
                       (let ([label (cadr x)] [type (caddr x)] [val (cadddr x)])
                         (cons label (cons type val))))
                     exp*)])
-          invoke-code))))
+          (build-application no-source
+            (build-primref no-source 'install-library)
+            (list (build-data no-source id)
+                  (build-data no-source name)
+                  (build-data no-source ver)
+                  (build-data no-source imp*)
+                  (build-data no-source vis*)
+                  (build-data no-source inv*)
+                  (build-data no-source exp-subst)
+                  (build-data no-source exp-env)
+                  (build-primref no-source 'void)
+                  (build-sequence no-source
+                    (list invoke-code 
+                          (build-primref no-source 'void)))))))))
   (define boot-library-expander
     (lambda (x)
       (let-values ([(name imp* run* invoke-code exp*) 

@@ -28,11 +28,17 @@
     (or (lm:find-library-by-name name)
         (error #f "cannot find library ~s" name)))
 
+  (define (find-library-by-spec/die spec)
+    (let ([id (car spec)])
+      (or (find-library-by
+            (lambda (x) (eq? id (library-id x))))
+          (error #f "cannot find library with spec ~s" spec))))
+
   (define (lm:install-library id name ver
              imp* vis* inv* exp-subst exp-env visit-code invoke-code)
-    (let ([imp-lib* (map find-library-by-name/die imp*)]
-          [vis-lib* (map find-library-by-name/die vis*)]
-          [inv-lib* (map find-library-by-name/die inv*)])
+    (let ([imp-lib* (map find-library-by-spec/die imp*)]
+          [vis-lib* (map find-library-by-spec/die vis*)]
+          [inv-lib* (map find-library-by-spec/die inv*)])
       (unless (and (symbol? id) (list? name) (list? ver))
         (error 'install-library "invalid spec ~s ~s ~s" id name ver))
       (when (lm:find-library-by-name name)
@@ -489,6 +495,7 @@
       [find-library-by-name     find-library-by-name-label (core-prim . find-library-by-name)]
       [imported-label->binding  imported-label->binding-label (core-prim . imported-label->binding)] 
       [library-spec library-spec-label (core-prim . library-spec)]
+      [invoke-library invoke-library-label (core-prim . invoke-library)]
       ))
   (define (lm:imported-label->binding lab)
     (let f ([ls *all-libraries*])
@@ -496,6 +503,22 @@
         [(null? ls) #f]
         [(assq lab (library-env (car ls))) => cdr]
         [else (f (cdr ls))])))
+
+  (define (lm:invoke-library lib)
+    (let ([invoke (library-invoke-state lib)])
+      (when (procedure? invoke)
+        (set-library-invoke-state! lib 
+          (lambda () (error 'invoke "circularity detected for ~s" lib)))
+        (for-each lm:invoke-library (library-inv* lib))
+        (set-library-invoke-state! lib 
+          (lambda () (error 'invoke "first invoke did not return for ~s" lib)))
+        (invoke)
+        (set-library-invoke-state! lib #t))))
+
+  (define (lm:invoke-library-by-spec spec)
+    (lm:invoke-library (find-library-by-spec/die spec)))
+
+  ;;; init
   (let ([subst
          (map (lambda (x) (cons (car x) (cadr x))) scheme-env)]
         [env 
@@ -521,5 +544,6 @@
       (list (library-id x) (library-name x) (library-ver x))))
   (primitive-set! 'find-library-by-name lm:find-library-by-name)
   (primitive-set! 'imported-label->binding lm:imported-label->binding)
+  (primitive-set! 'invoke-library lm:invoke-library)
   (primitive-set! 'install-library lm:install-library))
 
