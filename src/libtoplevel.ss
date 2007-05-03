@@ -10,10 +10,6 @@
 
   (define bar 'i-am-an-exported-primitive-named-foo)
 
-  (primitive-set! 'expand
-    (lambda (x)
-      (chi-top-library x)))
-
   (let-values ([(files script args)
                 (let f ([args (command-line-arguments)])
                   (cond
