@@ -308,7 +308,7 @@
              (unless label 
                (stx-error e "unbound identifier"))
              (case type
-               [(lexical core-prim macro)
+               [(lexical core-prim macro global)
                 (values type (binding-value b) id)]
                [else (values 'other #f #f)])))]
         [(syntax-pair? e)
@@ -2022,8 +2022,7 @@
              imp* vis* inv* exp-subst exp-env
              void ;;; FIXME
              (lambda () (eval-core invoke-code)))
-          (invoke-library (find-library-by-name name))
-          (build-void)))))
+          (invoke-library (find-library-by-name name))))))
   (define boot-library-expander
     (lambda (x)
       (let-values ([(name imp* run* invoke-code exp*) 

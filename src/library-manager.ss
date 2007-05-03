@@ -490,6 +490,7 @@
       [library-subst/env     library-subst/env-label (core-prim . library-subst/env)]
       [find-library-by-name     find-library-by-name-label (core-prim . find-library-by-name)]
       [imported-label->binding  imported-label->binding-label (core-prim . imported-label->binding)] 
+      [imported-loc->library  imported-loc->library-label (core-prim . imported-loc->library)] 
       [library-spec library-spec-label (core-prim . library-spec)]
       [invoke-library invoke-library-label (core-prim . invoke-library)]
       ))
@@ -498,6 +499,20 @@
       (cond
         [(null? ls) #f]
         [(assq lab (library-env (car ls))) => cdr]
+        [else (f (cdr ls))])))
+
+  (define (lm:imported-loc->library loc)
+    (define (loc-in-env? ls)
+      (and (pair? ls)
+           (let ([a (car ls)])
+             (let ([binding (cdr a)])
+               (or (and (eq? (car binding) 'global)
+                        (eq? (cdr binding) loc))
+                   (loc-in-env? (cdr ls)))))))
+    (let f ([ls *all-libraries*])
+      (cond
+        [(null? ls) #f]
+        [(loc-in-env? (library-env (car ls))) (car ls)]
         [else (f (cdr ls))])))
 
   (define (lm:invoke-library lib)
@@ -540,6 +555,7 @@
       (list (library-id x) (library-name x) (library-ver x))))
   (primitive-set! 'find-library-by-name lm:find-library-by-name)
   (primitive-set! 'imported-label->binding lm:imported-label->binding)
+  (primitive-set! 'imported-loc->library lm:imported-loc->library)
   (primitive-set! 'invoke-library lm:invoke-library)
   (primitive-set! 'install-library lm:install-library))
 
