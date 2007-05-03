@@ -61,7 +61,7 @@ description:
          (read (console-input-port)))))
 
   (define wait
-    (lambda (eval escape-k)
+    (lambda (eval-proc escape-k)
       (call/cc
         (lambda (k)
           (with-error-handler
@@ -78,28 +78,33 @@ description:
                    (escape-k (void))]
                   [else
                    (call-with-values
-                     (lambda () (eval x))
+                     (lambda () (eval-proc x))
                      (lambda v*
                        (unless (andmap (lambda (v) (eq? v (void))) v*)
                          (for-each
                            (lambda (v)
                              (pretty-print v (console-output-port)))
                            v*))))]))))))
-      (wait eval escape-k)))
+      (wait eval-proc escape-k)))
 
   (define do-new-cafe
-    (lambda (eval)
+    (lambda (eval-proc)
       (dynamic-wind
         (lambda () (set! eval-depth (fxadd1 eval-depth)))
         (lambda ()
           (call/cc 
             (lambda (k)
-              (wait eval k))))
+              (wait eval-proc k))))
         (lambda () (set! eval-depth (fxsub1 eval-depth))))))
+
+  (define default-cafe-eval
+    (lambda (x) 
+      (chi-top-library x)
+      (void)))
 
   (primitive-set! 'new-cafe
     (case-lambda
-      [() (do-new-cafe eval)]
+      [() (do-new-cafe default-cafe-eval)]
       [(p)
        (unless (procedure? p)
          (error 'new-cafe "~s is not a procedure" p))
