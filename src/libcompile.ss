@@ -5187,10 +5187,6 @@
                ls*)])
         (car code*)))))
 
-(define (compile-expr->code x)
-  (compile-core-expr->code
-    (parameterize ([assembler-output #f])
-      (expand x))))
 
 (define compile-core-expr-to-port
   (lambda (expr port)
@@ -5213,6 +5209,10 @@
 #!eof junk
 
 
+(define (compile-expr->code x)
+  (compile-core-expr->code
+    (parameterize ([assembler-output #f])
+      (expand x))))
 
 (primitive-set! 'compile
   (lambda (x)
