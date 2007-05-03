@@ -406,7 +406,6 @@
       [eval-core  eval-core-label  (core-prim . eval-core)]
       [load       load-label       (core-prim . load)]
       [assembler-output       assembler-output-label       (core-prim . assembler-output)]
-      [current-expand       current-expand-label       (core-prim . current-expand)]
       [expand       expand-label       (core-prim . expand)]
       [fasl-write       fasl-write-label       (core-prim . fasl-write)]
       [new-cafe   new-cafe-label   (core-prim . new-cafe)]

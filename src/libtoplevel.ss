@@ -15,16 +15,9 @@
           (cadr x)
           (chi-top-library x))))
 
-  (primitive-set! 'current-expand
-    (make-parameter sc-expand
-      (lambda (f)
-        (if (procedure? f)
-            f
-            (error 'current-expand "~s is not a procedure" f)))))
-
   (primitive-set! 'expand
     (lambda (x)
-      ((current-expand) x)))
+      (sc-expand x)))
 
   (let-values ([(files script args)
                 (let f ([args (command-line-arguments)])
