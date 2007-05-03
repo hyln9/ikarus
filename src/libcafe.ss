@@ -99,8 +99,7 @@ description:
 
   (define default-cafe-eval
     (lambda (x) 
-      (chi-top-library x)
-      (void)))
+      (chi-top-library x)))
 
   (primitive-set! 'new-cafe
     (case-lambda

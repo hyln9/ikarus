@@ -410,6 +410,7 @@
       [command-line-arguments command-line-arguments-label (core-prim .  command-line-arguments)]
       [list*->code*       list*->code*-label       (core-prim . list*->code*)]
       [install-library         install-library-label         (core-prim . install-library)]
+      [eval-top-level   eval-top-level-label   (core-prim . eval-top-level)]
       ;;; record/mid-level
       [record?                 record?-label                 (core-prim . record?)]
       [make-record-type        make-record-type-label        (core-prim . make-record-type)]

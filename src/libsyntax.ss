@@ -1575,6 +1575,13 @@
           [(core-macro)
            (let ([transformer (core-macro-transformer value)])
              (transformer e r mr))]
+          [(global) 
+           (let* ([loc value]
+                  [lib (imported-loc->library loc)])
+             (unless lib 
+               (syntax-error e "BUG: cannot find defining library"))
+             ((run-collector) lib)
+             (build-global-reference no-source loc))]
           [(core-prim) 
            (let ([name value])
              (build-primref no-source name))]
@@ -2068,7 +2075,8 @@
              (strip x '()))))
   (primitive-set! 'syntax-dispatch syntax-dispatch)
   (primitive-set! 'boot-library-expand boot-library-expander)
-  (primitive-set! 'chi-top-library run-library-expander))
+  (primitive-set! 'chi-top-library run-library-expander)
+  (primitive-set! 'eval-top-level  run-library-expander))
 
 
 
