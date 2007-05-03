@@ -2028,8 +2028,7 @@
           (install-library id name ver
              imp* vis* inv* exp-subst exp-env
              void ;;; FIXME
-             (lambda () (eval-core invoke-code)))
-          #;(invoke-library (find-library-by-name name))))))
+             (lambda () (eval-core invoke-code)))))))
   (define boot-library-expander
     (lambda (x)
       (let-values ([(name imp* run* invoke-code exp*) 
