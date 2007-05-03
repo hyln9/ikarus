@@ -123,6 +123,7 @@
 
   (printf "Happy Happy Joy Joy\n"))
 
+(invoke (ikarus makefile))
 
 ;;; ;;; NEW ARCHITECTURE
 ;;;
