@@ -9,15 +9,10 @@
   (import (scheme))
 
   (define bar 'i-am-an-exported-primitive-named-foo)
-  (define sc-expand
-    (lambda (x)
-      (if (and (pair? x) (equal? (car x) "noexpand"))
-          (cadr x)
-          (chi-top-library x))))
 
   (primitive-set! 'expand
     (lambda (x)
-      (sc-expand x)))
+      (chi-top-library x)))
 
   (let-values ([(files script args)
                 (let f ([args (command-line-arguments)])
