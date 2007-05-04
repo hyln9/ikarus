@@ -21,7 +21,8 @@
     ;;;  an error (which may lead to the infamous Error: Error: 
     ;;;  Error: Error: Error: Error: Error: Error: Error: ...).
     ;;;
-    '("libhandlers.ss"
+    '(;"libhandlers.ss"
+      "ikarus.handlers.ss"
       "libcontrol.ss"
       "libcollect.ss"
       "librecord.ss"
