@@ -1,21 +1,27 @@
 
+(library (ikarus system parameters)
+  (export make-parameter)
+  (import (except (ikarus) make-parameter))
+  (define make-parameter
+    (case-lambda
+      [(x) 
+       (case-lambda
+         [() x]
+         [(v) (set! x v)])]
+      [(x guard)
+       (unless (procedure? guard)
+         (error 'make-parameter "~s is not a procedure" guard))
+       (set! x (guard x))
+       (case-lambda
+         [() x]
+         [(v) (set! x (guard v))])])))
+
+
+
 (library (ikarus handlers)
   (export)
   (import (scheme))
 
-(primitive-set! 'make-parameter
-  (case-lambda
-    [(x) 
-     (case-lambda
-       [() x]
-       [(v) (set! x v)])]
-    [(x guard)
-     (unless (procedure? guard)
-       (error 'make-parameter "~s is not a procedure" guard))
-     (set! x (guard x))
-     (case-lambda
-       [() x]
-       [(v) (set! x (guard v))])]))
 
 
 (primitive-set! 'error
