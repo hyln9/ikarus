@@ -5203,6 +5203,8 @@
 (primitive-set! 'eval-core
   (lambda (x) ((compile-core-expr x))))
 
+(primitive-set! 'current-primitive-locations
+  (make-parameter '()))
 
 ))
 
