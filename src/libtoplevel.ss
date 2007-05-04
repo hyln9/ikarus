@@ -1,12 +1,23 @@
 
 
+;;; this is here to test that we can import things from other
+;;; libraries within the compiler itself.
+
+(library (ikarus greeting)
+  (export print-greeting)
+  (import (scheme))
+  (define (print-greeting)
+    (define-syntax compile-time-string
+      (lambda (x) (date-string)))
+    (printf "Ikarus Scheme (Build ~a)\n" (compile-time-string))
+    (display "Copyright (c) 2006-2007 Abdulaziz Ghuloum\n\n")))
 
 
 ;;; Finally, we're ready to evaluate the files and enter the cafe.
 
 (library (ikarus interaction)
   (export bar)
-  (import (scheme))
+  (import (scheme) (ikarus greeting))
 
   (define bar 'i-am-an-exported-primitive-named-foo)
 
@@ -33,11 +44,7 @@
        (load script)
        (exit 0)]
       [else
-       (let ()
-         (define-syntax compile-time-string
-           (lambda (x) (date-string)))
-         (printf "Ikarus Scheme (Build ~a)\n" (compile-time-string)))
-       (display "Copyright (c) 2006-2007 Abdulaziz Ghuloum\n\n")
+       (print-greeting)
        (command-line-arguments args)
        (for-each load files)
        (new-cafe)
