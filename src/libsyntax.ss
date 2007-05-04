@@ -1951,75 +1951,107 @@
       [(null? ls1) ls2]
       [(memq (car ls1) ls2) (set-union (cdr ls1) ls2)]
       [else (cons (car ls1) (set-union (cdr ls1) ls2))]))
-  (define (get-import-subst/libs-old imp*)
-    (define (merge-substs s subst)
-      (cond
-        [(null? s) subst]
-        [else
-         (let ([a (car s)])
-           (let ([name (car a)] [label (cdr a)])
-             (cond
-               [(assq name subst) =>
-                (lambda (x)
-                  (cond
-                    [(eq? (cdr x) label)
-                     (merge-substs (cdr s) subst)]
-                    [else
-                     (error 'import 
-                        "two imports of ~s with different bindings"
-                        name)]))]
-               [else 
-                (cons a (merge-substs (cdr s) subst))])))]))
-    (cond
-      [(null? imp*) (values '() '())]
-      [else
-       (let-values ([(subst lib*)
-                     (get-import-subst/libs (cdr imp*))])
-         (let ([lib (find-library-by-name (car imp*))])
-           (unless lib
-             (error 'import "cannot find imported library ~s" (car imp*)))
-           (let-values ([(s _r) (library-subst/env lib)])
-             (values (merge-substs s subst)
-                     (set-cons lib lib*)))))]))
   (define (get-import-subst/libs imp*)
+    (define (insert-to-subst a subst)
+      (let ([name (car a)] [label (cdr a)])
+        (cond
+          [(assq name subst) =>
+           (lambda (x)
+             (cond
+               [(eq? (cdr x) label) subst]
+               [else
+                (error 'import 
+                   "two imports of ~s with different bindings"
+                   name)]))]
+          [else 
+           (cons a subst)])))
     (define (merge-substs s subst)
       (cond
         [(null? s) subst]
         [else
-         (let ([a (car s)])
-           (let ([name (car a)] [label (cdr a)])
+         (insert-to-subst (car s) 
+           (merge-substs (cdr s) subst))]))
+    (define (exclude* sym* subst)
+      (define (exclude sym subst)
+        (cond
+          [(null? subst) 
+           (error 'import "cannot rename unbound identifier ~s" sym)]
+          [(eq? sym (caar subst)) 
+           (values (cdar subst) (cdr subst))]
+          [else
+           (let ([a (car subst)])
+             (let-values ([(old subst) (exclude sym (cdr subst))])
+               (values old (cons a subst))))]))
+      (cond
+        [(null? sym*) (values '() subst)]
+        [else
+         (let-values ([(old subst) (exclude (car sym*) subst)])
+           (let-values ([(old* subst) (exclude* (cdr sym*) subst)])
+             (values (cons old old*) subst)))]))
+    (define (find* sym* subst)
+      (map (lambda (x)
              (cond
-               [(assq name subst) =>
-                (lambda (x)
-                  (cond
-                    [(eq? (cdr x) label)
-                     (merge-substs (cdr s) subst)]
-                    [else
-                     (error 'import 
-                        "two imports of ~s with different bindings"
-                        name)]))]
-               [else 
-                (cons a (merge-substs (cdr s) subst))])))]))
+               [(assq x subst) => cdr]
+               [else (error 'import "cannot find identifier ~s" x)]))
+           sym*))
+    (define (rem* sym* subst)
+      (let f ([subst subst])
+        (cond
+          [(null? subst) '()]
+          [(memq (caar subst) sym*) (f (cdr subst))]
+          [else (cons (car subst) (f (cdr subst)))])))
     (define (get-import spec)
+      (define (remove-dups ls)
+        (cond
+          [(null? ls) '()]
+          [(memq (car ls) (cdr ls)) (remove-dups (cdr ls))]
+          [else (cons (car ls) (remove-dups (cdr ls)))]))
       (unless (pair? spec)
         (error 'import "invalid import spec ~s" spec))
       (case (car spec)
-        [(rename) (error #f "rename found")]
-        [(except) (error #f "except found")]
-        [(only)   (error #f "only found")]
+        [(rename) 
+         (syntax-match spec ()
+           [(_ isp (old* new*) ...)
+            (unless (and (andmap symbol? old*) (andmap symbol? new*))
+              (error 'import "invalid import spec ~s" spec))
+            (let-values ([(subst lib) (get-import isp)])
+              (let ([old-label* (find* old* subst)])
+                (let ([subst (rem* old* subst)])
+                  ;;; FIXME: make sure map is valid
+                  (values (merge-substs (map cons new* old-label*) subst)
+                          lib))))]
+           [_ (error 'import "invalid rename spec ~s" spec)])]
+        [(except) 
+         (syntax-match spec ()
+           [(_ isp sym* ...)
+            (unless (andmap symbol? sym*) 
+              (error 'import "invalid import spec ~s" spec))
+            (let-values ([(subst lib) (get-import isp)])
+              (values (rem* sym* subst) lib))]
+           [_ (error 'import "invalid import spec ~s" spec)])]
+        [(only)  
+         (syntax-match spec ()
+           [(_ isp sym* ...)
+            (unless (andmap symbol? sym*) 
+              (error 'import "invalid import spec ~s" spec))
+            (let-values ([(subst lib) (get-import isp)])
+              (let ([sym* (remove-dups sym*)])
+                (let ([lab* (find* sym* subst)])
+                  (values (map cons sym* lab*) lib))))]
+           [_ (error 'import "invalid import spec ~s" spec)])]
         [(prefix) (error #f "prefix found")]
         [else 
          (let ([lib (find-library-by-name spec)])
            (let-values ([(s _r) (library-subst/env lib)])
-              (values s (list lib))))]))
+              (values s lib)))]))
     (cond
       [(null? imp*) (values '() '())]
       [else
        (let-values ([(subst1 lib1*)
                      (get-import-subst/libs (cdr imp*))])
-         (let-values ([(subst2 lib2*) (get-import (car imp*))])
+         (let-values ([(subst2 lib2) (get-import (car imp*))])
            (values (merge-substs subst1 subst2)
-                   (set-union lib1* lib2*))))]))
+                   (set-cons lib2 lib1*))))]))
   (define (make-top-rib subst)
     (let ([rib (make-empty-rib)])
       (for-each 
