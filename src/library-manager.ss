@@ -1,7 +1,29 @@
 
+
+
+
 (library (ikarus library-manager)
   (export)
   (import (scheme))
+
+
+  (define (make-collection)
+    (let ([set '()])
+      (define (set-cons x ls)
+        (cond
+          [(memq x ls) ls]
+          [else (cons x ls)]))
+      (case-lambda
+        [() set]
+        [(x) (set! set (set-cons x set))])))
+
+  (define lm:current-library-collection
+    (make-parameter (make-collection) 
+      (lambda (x)
+        (unless (procedure? x)
+          (error 'current-library-collection 
+            "~s is not a procedure" x))
+        x)))
 
   (define-record library 
     (id name ver imp* vis* inv* subst env visit-state invoke-state))
@@ -11,10 +33,8 @@
       [(null? ls) '()]
       [else (error 'find-dependencies "cannot handle deps yet")]))
 
-  (define *all-libraries* '())
-
   (define (find-library-by pred)
-    (let f ([ls *all-libraries*])
+    (let f ([ls ((lm:current-library-collection))])
       (cond
         [(null? ls) #f]
         [(pred (car ls)) (car ls)]
@@ -45,8 +65,7 @@
         (error 'install-library "~s is already installed" name))
       (let ([lib (make-library id name ver imp-lib* vis-lib* inv-lib* 
                     exp-subst exp-env visit-code invoke-code)])
-        (set! *all-libraries* (cons lib *all-libraries*))
-        )))
+        ((lm:current-library-collection) lib))))
 
   (define scheme-env ; the-env
     '([define        define-label        (define)]
@@ -491,10 +510,11 @@
       [imported-label->binding  imported-label->binding-label (core-prim . imported-label->binding)] 
       [imported-loc->library  imported-loc->library-label (core-prim . imported-loc->library)] 
       [library-spec library-spec-label (core-prim . library-spec)]
+      [current-library-collection current-library-collection-label (core-prim . current-library-collection)]
       [invoke-library invoke-library-label (core-prim . invoke-library)]
       ))
   (define (lm:imported-label->binding lab)
-    (let f ([ls *all-libraries*])
+    (let f ([ls ((lm:current-library-collection))])
       (cond
         [(null? ls) #f]
         [(assq lab (library-env (car ls))) => cdr]
@@ -508,7 +528,7 @@
                (or (and (eq? (car binding) 'global)
                         (eq? (cdr binding) loc))
                    (loc-in-env? (cdr ls)))))))
-    (let f ([ls *all-libraries*])
+    (let f ([ls ((lm:current-library-collection))])
       (cond
         [(null? ls) #f]
         [(loc-in-env? (library-env (car ls))) (car ls)]
@@ -541,7 +561,7 @@
                         void void))
 
   (primitive-set! 'installed-libraries 
-    (lambda () *all-libraries*))
+    (lambda () ((lm:current-library-collection))))
   (primitive-set! 'library-subst/env
     (lambda (x) 
       (unless (library? x)
@@ -556,5 +576,6 @@
   (primitive-set! 'imported-label->binding lm:imported-label->binding)
   (primitive-set! 'imported-loc->library lm:imported-loc->library)
   (primitive-set! 'invoke-library lm:invoke-library)
+  (primitive-set! 'current-library-collection lm:current-library-collection)
   (primitive-set! 'install-library lm:install-library))
 

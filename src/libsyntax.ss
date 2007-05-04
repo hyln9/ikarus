@@ -2018,7 +2018,7 @@
                                         (map build-export lex*)
                                         (chi-expr* init* r mr))))])
                       (let-values ([(export-subst export-env) 
-                                    (find-exports rib r exp-int* exp-ext*)])
+                                    (find-exports exp-int* exp-ext* rib r)])
                         (values
                           name imp* (rtc)
                           (build-letrec no-source lex* rhs* body)
@@ -2027,10 +2027,6 @@
     (lambda (x) 
       (let-values ([(name imp* run* invoke-code export-subst export-env)
                     (core-library-expander x)])
-        ;;; we need: name/ver/id, 
-        ;;;    imports, visit, invoke  name/ver/id
-        ;;;    export-subst, export-env
-        ;;;    visit-code, invoke-code
         (let ([id (gensym)]
               [name name]
               [ver '()]  ;;; FIXME
@@ -2050,22 +2046,7 @@
     (lambda (x)
       ;;; exports use the same gensym
       `(#%$set-symbol-value! ',x ,x)))
-  (define find-export
-    (lambda (rib r)
-      (lambda (sym)
-        (let* ([id (stx sym top-mark* (list rib))]
-               [label (id->label id)]
-               [b (label->binding label r)]
-               [type (binding-type b)])
-          (unless label 
-            (stx-error id "cannot export unbound identifier"))
-          (case type
-            [(lexical)
-             ;;; exports use the same gensym
-             (list sym label 'global (binding-value b))]
-            [else (error #f "cannot export ~s of type ~s" sym type)])))))
-  (define (find-exports rib r int* ext*)
-    ;;; FIXME: check unique exports
+  (define (find-exports int* ext* rib r)
     (let f ([int* int*] [ext* ext*] [subst '()] [env '()])
       (cond
         [(null? int*) (values subst env)]
