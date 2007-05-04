@@ -3216,10 +3216,16 @@
       [(interrupted)        (mem 40 pcr)]
       [else (error 'pcb-ref "invalid arg ~s" x)])))
 
+
 (define (primref-loc op)
   (unless (symbol? op) (error 'primref-loc "not a symbol ~s" op))
-  (mem (fx- disp-symbol-system-value symbol-tag)
-        (obj op)))
+  (cond
+    ;[(assq op (current-primitive-locations)) =>
+    ; (lambda (x)
+    ;   (mem (fx- disp-symbol-value symbol-tag) (obj (cdr x))))]
+    [else
+     (mem (fx- disp-symbol-system-value symbol-tag)
+          (obj op))]))
 
 
 (define (generate-code x)
@@ -4901,7 +4907,7 @@
   (define SL_apply (gensym "SL_apply"))
   (define SL_values (gensym "SL_values"))
   (define SL_call_with_values (gensym "SL_call_with_values"))
-  (module ()
+  (define (initialize-system)
     (list*->code* (lambda (x) #f)
       (list
         (list 0
@@ -5196,12 +5202,14 @@
 (primitive-set! 'compile-core-expr-to-port compile-core-expr-to-port)
 
 (primitive-set! 'assembler-output (make-parameter #f))
+(primitive-set! 'current-primitive-locations
+  (make-parameter '()))
 
+(initialize-system)
 (primitive-set! 'eval-core
   (lambda (x) ((compile-core-expr x))))
 
-(primitive-set! 'current-primitive-locations
-  (make-parameter '()))
+
 
 ))
 
