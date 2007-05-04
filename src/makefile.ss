@@ -88,7 +88,7 @@
 
   (define-record library (code export-subst export-env))
   
-  (define must-export-primitives '())
+  (define must-export-primitives '(bar))
 
   (define (expand-file filename)
     (map (lambda (x)

@@ -1911,6 +1911,23 @@
                        r mr lhs* lex* rhs* kwd*)]
                    [else 
                     (return e* module-init** r mr lhs* lex* rhs*)]))))]))))
+  (define (parse-exports exp*)
+    (let f ([exp* exp*] [int* '()] [ext* '()])
+      (cond
+        [(null? exp*)
+         (let ([id* (map (lambda (x) (stx x top-mark* '())) ext*)])
+           (unless (valid-bound-ids? id*)
+             (error #f "duplicate exports of ~s" (find-dups id*))))
+         (values int* ext*)]
+        [else
+         (syntax-match (car exp*) ()
+           [(rename (i* e*) ...)
+            (unless (and (eq? rename 'rename) (andmap symbol? i*) (andmap symbol? e*))
+              (error #f "invalid export specifier ~s" (car exp*)))
+            (f (cdr exp*) (append i* int*) (append e* ext*))]
+           [ie 
+            (unless (symbol? ie) (error #f "invalid export ~s" ie))
+            (f (cdr exp*) (cons ie int*) (cons ie ext*))])])))
   (define parse-library 
     (lambda (e)
       (syntax-match e ()
@@ -1921,9 +1938,9 @@
          (if (and (eq? export 'export)
                   (eq? import 'import)
                   (symbol? name)
-                  (andmap symbol? name*)
-                  (andmap symbol? exp*))
-             (values (cons name name*) exp* imp* b*)
+                  (andmap symbol? name*))
+             (let-values ([(exp-int* exp-ext*) (parse-exports exp*)])
+               (values (cons name name*) exp-int* exp-ext* imp* b*))
              (error who "malformed library ~s" e))]
         [_ (error who "malformed library ~s" e)])))
   (define (set-cons x ls)
@@ -1983,7 +2000,7 @@
         x)))
   (define core-library-expander
     (lambda (e)
-      (let-values ([(name exp* imp* b*) (parse-library e)])
+      (let-values ([(name exp-int* exp-ext* imp* b*) (parse-library e)])
         (let-values ([(subst imp*) (get-import-subst/libs imp*)])
           (let ([rib (make-top-rib subst)])
             (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]
@@ -2000,7 +2017,8 @@
                                       (append
                                         (map build-export lex*)
                                         (chi-expr* init* r mr))))])
-                      (let-values ([(export-subst export-env) (find-exports rib r exp*)])
+                      (let-values ([(export-subst export-env) 
+                                    (find-exports rib r exp-int* exp-ext*)])
                         (values
                           name imp* (rtc)
                           (build-letrec no-source lex* rhs* body)
@@ -2046,23 +2064,23 @@
              ;;; exports use the same gensym
              (list sym label 'global (binding-value b))]
             [else (error #f "cannot export ~s of type ~s" sym type)])))))
-  (define (find-exports rib r sym*)
+  (define (find-exports rib r int* ext*)
     ;;; FIXME: check unique exports
-    (let f ([sym* sym*] [subst '()] [env '()])
+    (let f ([int* int*] [ext* ext*] [subst '()] [env '()])
       (cond
-        [(null? sym*) (values subst env)]
+        [(null? int*) (values subst env)]
         [else
-         (let* ([sym (car sym*)]
+         (let* ([sym (car int*)]
                 [id (stx sym top-mark* (list rib))]
                 [label (id->label id)]
                 [b (label->binding label r)]
                 [type (binding-type b)])
-           (unless label 
+           (unless label
              (stx-error id "cannot export unbound identifier"))
            (case type
              [(lexical) 
-              (f (cdr sym*) 
-                 (cons (cons sym label) subst)
+              (f (cdr int*) (cdr ext*) 
+                 (cons (cons (car ext*) label) subst)
                  (cons (cons label (cons 'global (binding-value b))) env))]
              [else (error #f "cannot export ~s of type ~s" sym type)]))])))
   (primitive-set! 'identifier? id?)
