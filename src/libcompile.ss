@@ -3601,7 +3601,7 @@
                           (movl eax ebx)
                           (andl (int fx-mask) ebx)
                           ;;; arg in eax
-                          (jne (label SL_fx+_type))
+                          (jne (label (sl-fx+-type-label)))
                           (addl (Simple a1) eax)
                           (jo L)
                           ac)))]
@@ -3610,7 +3610,7 @@
                       (list*
                         (movl (Simple a1) eax)
                         ;;; arg in eax
-                        (jmp (label SL_fx+_type))
+                        (jmp (label (sl-fx+-type-label)))
                         ac))]))]
               [else
                (NonTail a0
@@ -4918,9 +4918,19 @@
             (tail-indirect-cpr-call))))
     SL_apply))
 
+(define (sl-fx+-type-label)
+  (define SL_fx+_type (gensym "SL_fx+_type"))
+  (list*->code* (lambda (x) #f)
+    (list
+      (list 0
+            (label SL_fx+_type)
+            (movl eax (mem (fx- 0 wordsize) fpr))
+            (movl (primref-loc 'fx+-type-error) cpr)
+            (movl (int (argc-convention 1)) eax)
+            (tail-indirect-cpr-call))))
+  SL_fx+_type)
 
 (begin ;;; ASSEMBLY HELPERS
-  (define SL_fx+_type (gensym "SL_fx+_type"))
   (define SL_fx+_types (gensym "SL_fx+_types"))
   (define SL_fx+_overflow (gensym "SL_fx+_overflow"))
   (define SL_fxadd1_error (gensym "SL_fxadd1_error"))
@@ -4949,12 +4959,6 @@
               (movl (primref-loc 'fxadd1-error) cpr)
               (movl (int (argc-convention 1)) eax)
               (tail-indirect-cpr-call))
-        (list 0
-              (label SL_fx+_type)
-              (movl eax (mem (fx- 0 wordsize) fpr))
-              (movl (primref-loc 'fx+-type-error) cpr)
-              (movl (int (argc-convention 1)) eax)
-              (tail-indirect-cpr-call)) 
         (list 0
               (label SL_fx+_overflow)
               (movl eax (mem (fx- 0 wordsize) fpr))
