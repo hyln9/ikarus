@@ -76,54 +76,24 @@
       [cond              (macro . cond)]
       [and               (macro . and)]
       [or                (macro . or)]))
- 
-  (define (read-file file)
-    (with-input-from-file file
-      (lambda ()
-        (let f ()
-          (let ([x (read)])
-            (if (eof-object? x)
-                '()
-                (cons x (f))))))))
 
-  (define-record library (code export-subst export-env))
-  
-  (define export-as-primitive '())
-
-  (define (expand-file filename)
-    (map (lambda (x)
-           (let-values ([(code export-subst export-env) 
-                         (boot-library-expand x)])
-             (make-library code export-subst export-env)))
-         (read-file filename)))
-
-  (define (inv-assq x ls)
-    (cond
-      [(null? ls) #f]
-      [(eq? x (cdar ls)) (car ls)]
-      [else (inv-assq x (cdr ls))]))
-
-  (define (sanitize-export-env subst r)
-    (define (add x r)
-      (let ([label (car x)] [b (cdr x)])
-        (let ([type (car b)] [val (cdr b)])
-          (case type
-            [(global) 
-             (cond
-               [(inv-assq label subst) =>
-                (lambda (v)
-                  (let ([name (car v)])
-                    (cond 
-                      [(memq name export-as-primitive) 
-                       (cons (cons label (cons 'core-prim name)) r)]
-                      [else 
-                       (cons (cons label (cons 'global val)) r)])))]
-               [else (error #f "cannot find binding for ~s" x)])]
-            [else (error #f "cannot handle export for ~s" x)]))))
-    (let f ([r r])
+  (define (make-system-data subst env)
+    (define (add x s r l)
+      (let ([name (car x)] [binding (cadr x)])
+        (case (car binding)
+          [(core-prim) 
+           (error 'make-system-subst/env "cannot handle ~s" x)]
+          [else 
+           (let ([label (gensym)])
+             (values (cons (cons name label) s)
+                     (cons (cons label binding) r)
+                     l))])))
+    (let f ([ls ikarus-environment-map])
       (cond
-        [(null? r) '()]
-        [else (add (car r) (f (cdr r)))])))
+        [(null? ls) (values '() '() '())]
+        [else
+         (let-values ([(subst env primlocs) (f (cdr ls))])
+           (add (car ls) subst env primlocs))])))
 
   (define (build-system-library export-subst export-env primlocs)
     (let-values ([(code empty-subst empty-env)
@@ -150,6 +120,16 @@
        (pretty-print code)
        code))
 
+;  (define (env->primlocs env)
+;    (let f ([ls env])
+;      (cond
+;        [(null? ls) '()]
+;        [else
+;         (let ([x (car ls)])
+;           (let ([label (car x)] [binding (cdr x)])
+;             (let ([type (car binding)] [value (cdr binding)])
+;               (case type
+;                 [(global) 
 
   (define (expand-all files)
     (let ([code* '()]
@@ -165,21 +145,27 @@
                  (set! subst (append export-subst subst))
                  (set! env (append export-env env))))))
         files)
-      (let ([env (sanitize-export-env subst env)])
-        (let ([code (build-system-library subst env '())])
+      (let-values ([(export-subst export-env export-locs)
+                    (make-system-data subst env)])
+        (let ([code (build-system-library export-subst export-env export-locs)])
           (values 
             (reverse (list* (car code*) code (cdr code*)))
-            subst env)))))
+            export-locs)))))
 
   (printf "expanding ...\n")
   
-  (let-values ([(core* subst env) (expand-all scheme-library-files)])
+  (let-values ([(core* locs) (expand-all scheme-library-files)])
     (printf "compiling ...\n")
-    (let ([p (open-output-file "ikarus.boot" 'replace)])
-      (for-each 
-        (lambda (x) (compile-core-expr-to-port x p))
-        core*)
-      (close-output-port p)))
+    (parameterize ([current-primitive-locations
+                    (lambda (x)
+                      (cond
+                        [(assq x locs) => cdr]
+                        [else #f]))])
+      (let ([p (open-output-file "ikarus.boot" 'replace)])
+        (for-each 
+          (lambda (x) (compile-core-expr-to-port x p))
+          core*)
+        (close-output-port p))))
 
   (printf "Happy Happy Joy Joy\n"))
 
