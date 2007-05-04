@@ -503,8 +503,22 @@
       [current-library-collection       s i]
       [invoke-library                   s i]
       [$apply-nonprocedure-error-handler s]
-      ))
+      [$incorrect-args-error-handler     s]
+      [$multiple-values-error            s]
+      [$debug                            s]
+      [$underflow-misaligned-error       s]
+      [top-level-value-error             s]
+      [car-error                         s]
+      [cdr-error                         s]
+      [fxadd1-error                      s]
+      [fxsub1-error                      s]
+      [cadr-error                        s]
+      [fx+-type-error                    s]
+      [fx+-types-error                   s]
+      [fx+-overflow-error                s]
+      [$do-event                         s]
 
+      ))
 
 
   (define scheme-env-junk
