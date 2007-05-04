@@ -4895,18 +4895,35 @@
                     body)
              (map CodeExpr ls)))]))
 
-
-
 (module ;assembly-labels
 
-  (sl-apply-label sl-fx+-type-label sl-fx+-types-label
+  (refresh-cached-labels!
+   sl-apply-label sl-fx+-type-label sl-fx+-types-label
    sl-continuation-code-label sl-invalid-args-label
    sl-mv-ignore-rp-label sl-mv-error-rp-label sl-values-label 
    sl-cwv-label sl-top-level-value-error-label sl-cadr-error-label
    sl-cdr-error-label sl-car-error-label sl-nonprocedure-error-label
    sl-fxsub1-error-label sl-fxadd1-error-label sl-fx+-overflow-label)
 
-  (define (sl-apply-label)
+  (define-syntax define-cached
+    (lambda (x)
+      (syntax-case x ()
+        [(_ refresh [(name*) b* b** ...] ...)
+         (with-syntax ([(v* ...) (generate-temporaries #'(name* ...))])
+           #'(begin
+               (define v* #f) ...
+               (define (name*)
+                 (or v* (error 'name* "uninitialized label"))) ...
+               (define (refresh)
+                 (define-syntax name* 
+                   (lambda (stx) (syntax-error stx "cannot use label before it is defined")))
+                 ...
+                 (let* ([name* (let ([label (let () b* b** ...)])
+                                 (set! v* label)
+                                 (lambda () label))] ...)
+                   (void)))))])))
+  (define-cached refresh-cached-labels!
+   [(sl-apply-label)
     (let ([SL_apply (gensym "SL_apply")]
           [L_apply_done (gensym)]
           [L_apply_loop (gensym)])
@@ -4927,8 +4944,8 @@
               (label L_apply_done)
               (addl (int wordsize) eax)
               (tail-indirect-cpr-call))))
-      SL_apply))
-  (define (sl-fx+-type-label)
+      SL_apply)]
+   [(sl-fx+-type-label)
     (define SL_fx+_type (gensym "SL_fx+_type"))
     (list*->code* (lambda (x) #f)
       (list
@@ -4938,8 +4955,8 @@
               (movl (primref-loc 'fx+-type-error) cpr)
               (movl (int (argc-convention 1)) eax)
               (tail-indirect-cpr-call))))
-    SL_fx+_type)
-  (define (sl-fx+-types-label)
+    SL_fx+_type]
+   [(sl-fx+-types-label)
     (define SL_fx+_types (gensym "SL_fx+_types"))
     (list*->code* (lambda (x) #f)
       (list
@@ -4950,8 +4967,8 @@
           (movl (primref-loc 'fx+-types-error) cpr)
           (movl (int (argc-convention 2)) eax)
           (tail-indirect-cpr-call))))
-    SL_fx+_types)
-  (define (sl-continuation-code-label)
+    SL_fx+_types]
+   [(sl-continuation-code-label)
     (define SL_continuation_code (gensym "SL_continuation_code"))
     (list*->code* (lambda (x) #f)
       (list
@@ -4996,8 +5013,8 @@
               (movl ebx fpr)
               (movl (mem 0 ebx) ebx)
               (jmp (mem disp-multivalue-rp ebx))))))
-    SL_continuation_code)
-  (define (sl-invalid-args-label)
+    SL_continuation_code]
+   [(sl-invalid-args-label)
     (define SL_invalid_args (gensym "SL_invalid_args"))
     (list*->code* (lambda (x) #f)
       (list
@@ -5010,16 +5027,16 @@
           (movl (primref-loc '$incorrect-args-error-handler) cpr)
           (movl (int (argc-convention 2)) eax)
           (tail-indirect-cpr-call))))
-    SL_invalid_args)
-  (define (sl-mv-ignore-rp-label)
+    SL_invalid_args]
+   [(sl-mv-ignore-rp-label)
     (define SL_multiple_values_ignore_rp (gensym "SL_multiple_ignore_error_rp"))
     (list*->code* (lambda (x) #f)
       (list
         (list 0
            (label SL_multiple_values_ignore_rp)
            (ret))))
-    SL_multiple_values_ignore_rp)
-  (define (sl-mv-error-rp-label)
+    SL_multiple_values_ignore_rp]
+   [(sl-mv-error-rp-label)
     (define SL_multiple_values_error_rp (gensym "SL_multiple_values_error_rp"))
     (list*->code* (lambda (x) #f)
       (list
@@ -5027,8 +5044,8 @@
           (label SL_multiple_values_error_rp)
           (movl (primref-loc '$multiple-values-error) cpr)
           (tail-indirect-cpr-call))))
-    SL_multiple_values_error_rp)
-  (define (sl-values-label)
+    SL_multiple_values_error_rp]
+   [(sl-values-label)
     (define SL_values (gensym "SL_values"))
     (list*->code* (lambda (x) #f)
       (list
@@ -5044,8 +5061,19 @@
               (label L_values_one_value)
               (movl (mem (fx- 0 wordsize) fpr) eax)
               (ret)))))
-    SL_values)
-  (define (sl-cwv-label)
+    SL_values]
+   [(sl-nonprocedure-error-label)
+    (define SL_nonprocedure (gensym "SL_nonprocedure"))
+    (list*->code* (lambda (x) #f)
+      (list
+        (list 0
+          (label SL_nonprocedure)
+          (movl cpr (mem (fx- 0 wordsize) fpr)) ; first arg
+          (movl (primref-loc '$apply-nonprocedure-error-handler) cpr)
+          (movl (int (argc-convention 1)) eax)
+          (tail-indirect-cpr-call))))
+    SL_nonprocedure]
+   [(sl-cwv-label)
     (define SL_call_with_values (gensym "SL_call_with_values"))
     (list*->code* (lambda (x) #f)
       (list
@@ -5109,8 +5137,8 @@
               (cmpl (int closure-tag) ebx)
               (jne (label (sl-nonprocedure-error-label)))
               (tail-indirect-cpr-call)))))
-    SL_call_with_values)
-  (define (sl-top-level-value-error-label)
+    SL_call_with_values]
+   [(sl-top-level-value-error-label)
     (define SL_top_level_value_error (gensym "SL_top_level_value_error"))
     (list*->code* (lambda (x) #f)
       (list
@@ -5120,8 +5148,8 @@
           (movl (primref-loc 'top-level-value-error) cpr)
           (movl (int (argc-convention 1)) eax)
           (tail-indirect-cpr-call))))
-    SL_top_level_value_error)
-  (define (sl-cadr-error-label)
+    SL_top_level_value_error]
+   [(sl-cadr-error-label)
     (define SL_cadr_error (gensym "SL_cadr_error"))
     (list*->code* (lambda (x) #f)
       (list
@@ -5131,8 +5159,8 @@
           (movl (primref-loc 'cadr-error) cpr)
           (movl (int (argc-convention 1)) eax)
           (tail-indirect-cpr-call))))
-    SL_cadr_error)
-  (define (sl-cdr-error-label)
+    SL_cadr_error]
+   [(sl-cdr-error-label)
     (define SL_cdr_error (gensym "SL_cdr_error"))
     (list*->code* (lambda (x) #f)
       (list
@@ -5142,8 +5170,8 @@
           (movl (primref-loc 'cdr-error) cpr)
           (movl (int (argc-convention 1)) eax)
           (tail-indirect-cpr-call))))
-    SL_cdr_error)
-  (define (sl-car-error-label)
+    SL_cdr_error]
+   [(sl-car-error-label)
     (define SL_car_error (gensym "SL_car_error"))
     (list*->code* (lambda (x) #f)
       (list
@@ -5153,19 +5181,8 @@
           (movl (primref-loc 'car-error) cpr)
           (movl (int (argc-convention 1)) eax)
           (tail-indirect-cpr-call))))
-    SL_car_error)
-  (define (sl-nonprocedure-error-label)
-    (define SL_nonprocedure (gensym "SL_nonprocedure"))
-    (list*->code* (lambda (x) #f)
-      (list
-        (list 0
-          (label SL_nonprocedure)
-          (movl cpr (mem (fx- 0 wordsize) fpr)) ; first arg
-          (movl (primref-loc '$apply-nonprocedure-error-handler) cpr)
-          (movl (int (argc-convention 1)) eax)
-          (tail-indirect-cpr-call))))
-    SL_nonprocedure)
-  (define (sl-fxsub1-error-label)
+    SL_car_error]
+   [(sl-fxsub1-error-label)
     (define SL_fxsub1_error (gensym "SL_fxsub1_error"))
     (list*->code* (lambda (x) #f)
       (list
@@ -5175,8 +5192,8 @@
           (movl (primref-loc 'fxsub1-error) cpr)
           (movl (int (argc-convention 1)) eax)
           (tail-indirect-cpr-call))))
-    SL_fxsub1_error)
-  (define (sl-fxadd1-error-label)
+    SL_fxsub1_error]
+   [(sl-fxadd1-error-label)
     (define SL_fxadd1_error (gensym "SL_fxadd1_error"))
     (list*->code* (lambda (x) #f)
       (list
@@ -5186,8 +5203,8 @@
           (movl (primref-loc 'fxadd1-error) cpr)
           (movl (int (argc-convention 1)) eax)
           (tail-indirect-cpr-call))))
-    SL_fxadd1_error)
-  (define (sl-fx+-overflow-label)
+    SL_fxadd1_error]
+   [(sl-fx+-overflow-label)
     (define SL_fx+_overflow (gensym "SL_fx+_overflow"))
     (list*->code* (lambda (x) #f)
       (list
@@ -5198,7 +5215,7 @@
           (movl (primref-loc 'fx+-overflow-error) cpr)
           (movl (int (argc-convention 2)) eax)
           (tail-indirect-cpr-call))))
-    SL_fx+_overflow)
+    SL_fx+_overflow])
 )
 
 (define (compile-core-expr->code p)
@@ -5250,15 +5267,20 @@
 (primitive-set! 'compile-core-expr-to-port compile-core-expr-to-port)
 
 (primitive-set! 'assembler-output (make-parameter #f))
-(primitive-set! 'current-primitive-locations
-  (make-parameter 
-    (lambda (x) #f)
-    (lambda (x)
-      (if (procedure? x)
-          x
-          (error 'current-primitive-locations "~s is not a procedure" x)))))
 
-;(initialize-system)
+(primitive-set! 'current-primitive-locations
+  (let ([plocs (lambda (x) #f)])
+    (case-lambda
+      [() plocs]
+      [(p)
+       (if (procedure? p)
+           (begin 
+             (set! plocs p) 
+             (refresh-cached-labels!))
+           (error 'current-primitive-locations "~s is not a procedure" p))])))
+
+(refresh-cached-labels!)
+
 (primitive-set! 'eval-core
   (lambda (x) ((compile-core-expr x))))
 
