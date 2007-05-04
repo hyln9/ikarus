@@ -2023,25 +2023,24 @@
                           name imp* (rtc)
                           (build-letrec no-source lex* rhs* body)
                           export-subst export-env))))))))))))
-  (define run-library-expander
-    (lambda (x) 
-      (let-values ([(name imp* run* invoke-code export-subst export-env)
+  (define (library-expander x)
+    (let-values ([(name imp* run* invoke-code export-subst export-env)
                     (core-library-expander x)])
-        (let ([id (gensym)]
-              [name name]
-              [ver '()]  ;;; FIXME
-              [imp* (map library-spec imp*)]
-              [vis* '()] ;;; FIXME
-              [inv* (map library-spec run*)])
-          (install-library id name ver
-             imp* vis* inv* export-subst export-env
-             void ;;; FIXME
-             (lambda () (eval-core invoke-code)))))))
-  (define boot-library-expander
-    (lambda (x)
-      (let-values ([(name imp* run* invoke-code export-subst export-env) 
-                    (core-library-expander x)])
+      (let ([id (gensym)]
+            [name name]
+            [ver '()]  ;;; FIXME
+            [imp* (map library-spec imp*)]
+            [vis* '()] ;;; FIXME
+            [inv* (map library-spec run*)])
+        (install-library id name ver
+           imp* vis* inv* export-subst export-env
+           void ;;; FIXME
+           (lambda () (eval-core invoke-code)))
         (values invoke-code export-subst export-env))))
+  (define (boot-library-expander x)
+    (let-values ([(invoke-code export-subst export-env)
+                  (library-expander x)])
+      (values invoke-code export-subst export-env)))
   (define build-export
     (lambda (x)
       ;;; exports use the same gensym
@@ -2091,7 +2090,9 @@
       (unless (pair? x)
         (error #f "invalid expression at top-level ~s" x))
       (case (car x)
-        [(library) (run-library-expander x)]
+        [(library) 
+         (library-expander x)
+         (void)]
         [(invoke)
          (syntax-match x ()
            [(_ (id** ...) ...)

@@ -19,7 +19,7 @@
   (primitive-set! 'string->flonum string->flonum)
 ))
 
-(library (ikarus flonums)
+(library (ikarus generic-arithmetic)
   (export)
   (import (scheme))
 
