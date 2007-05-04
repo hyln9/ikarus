@@ -1702,7 +1702,7 @@
               (optimize c rator (map Expr rand*)))]
            [(and (primref? rator)
                  (eq? (primref-name rator) '$$apply))
-            (make-jmpcall SL_apply 
+            (make-jmpcall (sl-apply-label) 
                           (Expr (car rand*))
                           (map Expr (cdr rand*)))]
            [else
@@ -3216,6 +3216,12 @@
       [(interrupted)        (mem 40 pcr)]
       [else (error 'pcb-ref "invalid arg ~s" x)])))
 
+(define do-warn
+  (let ([ls '()])
+    (lambda (x) 
+      (unless (memq x ls)
+        (printf "[ERR ~s] " x)
+        (set! ls (cons x ls))))))
 
 (define (primref-loc op)
   (unless (symbol? op) (error 'primref-loc "not a symbol ~s" op))
@@ -3227,6 +3233,7 @@
             "~s is not a valid location for ~s" x op))
        (mem (fx- disp-symbol-value symbol-tag) (obj x)))]
     [else
+     (do-warn op)
      (mem (fx- disp-symbol-system-value symbol-tag)
           (obj op))]))
 
@@ -4675,7 +4682,7 @@
         [(apply)  
          (list*
            (movl (int (argc-convention argc)) eax)
-           (jmp (label SL_apply))
+           (jmp (label (sl-apply-label)))
            ac)]
         [(direct) 
          (list* 
@@ -4888,6 +4895,30 @@
                     body)
              (map CodeExpr ls)))]))
 
+(define (sl-apply-label)
+  (let ([SL_apply (gensym "SL_apply")]
+        [L_apply_done (gensym)]
+        [L_apply_loop (gensym)])
+    (list*->code* (lambda (x) #f)
+      (list
+        (list 0 
+            (label SL_apply)
+            (movl (mem fpr eax) ebx)
+            (cmpl (int nil) ebx)
+            (je (label L_apply_done))
+            (label L_apply_loop)
+            (movl (mem (fx- disp-car pair-tag) ebx) ecx)
+            (movl (mem (fx- disp-cdr pair-tag) ebx) ebx)
+            (movl ecx (mem fpr eax))
+            (subl (int wordsize) eax)
+            (cmpl (int nil) ebx)
+            (jne (label L_apply_loop))
+            (label L_apply_done)
+            (addl (int wordsize) eax)
+            (tail-indirect-cpr-call))))
+    SL_apply))
+
+
 (begin ;;; ASSEMBLY HELPERS
   (define SL_fx+_type (gensym "SL_fx+_type"))
   (define SL_fx+_types (gensym "SL_fx+_types"))
@@ -4907,7 +4938,6 @@
   (define SL_underflow_multiple_values (gensym "SL_underflow_multiple_values"))
   (define SL_underflow_handler (gensym "SL_underflow_handler"))
   (define SL_scheme_exit (gensym "SL_scheme_exit"))
-  (define SL_apply (gensym "SL_apply"))
   (define SL_values (gensym "SL_values"))
   (define SL_call_with_values (gensym "SL_call_with_values"))
   (define (initialize-system)
@@ -5045,23 +5075,6 @@
               (movl (mem (fx- 0 wordsize) fpr) eax)
               (ret)))
         
-        (let ([L_apply_done (gensym)]
-              [L_apply_loop (gensym)])
-          (list 0 
-              (label SL_apply)
-              (movl (mem fpr eax) ebx)
-              (cmpl (int nil) ebx)
-              (je (label L_apply_done))
-              (label L_apply_loop)
-              (movl (mem (fx- disp-car pair-tag) ebx) ecx)
-              (movl (mem (fx- disp-cdr pair-tag) ebx) ebx)
-              (movl ecx (mem fpr eax))
-              (subl (int wordsize) eax)
-              (cmpl (int nil) ebx)
-              (jne (label L_apply_loop))
-              (label L_apply_done)
-              (addl (int wordsize) eax)
-              (tail-indirect-cpr-call)))
         
         (list 0
               (label SL_nonprocedure)
