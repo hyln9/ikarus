@@ -125,14 +125,17 @@
         [(null? r) '()]
         [else (add (car r) (f (cdr r)))])))
 
-  (define (build-system-library export-subst export-env)
+  (define (build-system-library export-subst export-env primlocs)
     (let-values ([(code empty-subst empty-env)
                   (boot-library-expand
                     `(library (ikarus primlocs)
                        (export) ;;; must be empty
                        (import (scheme))
                        (current-primitive-locations 
-                         (lambda (x) #f))
+                         (lambda (x) 
+                           (cond
+                             [(assq x ',primlocs) => cdr]
+                             [else #f])))
                        (install-library 
                           ',(gensym "system")   ;;; id
                           '(system)             ;;; name
@@ -163,7 +166,7 @@
                  (set! env (append export-env env))))))
         files)
       (let ([env (sanitize-export-env subst env)])
-        (let ([code (build-system-library subst env)])
+        (let ([code (build-system-library subst env '())])
           (values 
             (reverse (list* (car code*) code (cdr code*)))
             subst env)))))
