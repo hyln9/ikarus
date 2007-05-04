@@ -142,7 +142,6 @@
     [$set-symbol-unique-string! 2   effect]
     [$symbol-plist      1   value]
     [$set-symbol-plist! 2   effect]
-    [primitive-ref 1 value]
     [primitive-set! 2 effect]
     [top-level-value      1   value]
     ;;; ports
@@ -2089,7 +2088,7 @@
         $code-size $code-reloc-vector $code-freevars 
         $code-ref $code-set!
         $make-record $record? $record/rtd? $record-rtd $record-ref $record-set!
-        primitive-set! primitive-ref
+        primitive-set! 
         $make-tcbucket $tcbucket-key $tcbucket-val $tcbucket-next
         $set-tcbucket-val! 
         $set-tcbucket-next! $set-tcbucket-tconc!)
@@ -3766,8 +3765,6 @@
        (indirect-ref arg* (fx- disp-symbol-unique-string symbol-tag) ac)]
       [($symbol-value) 
        (indirect-ref arg* (fx- disp-symbol-value symbol-tag) ac)]
-      [(primitive-ref) 
-       (indirect-ref arg* (fx- disp-symbol-system-value symbol-tag) ac)]
       [($tcbucket-key) 
        (indirect-ref arg* (fx- disp-tcbucket-key vector-tag) ac)]
       [($tcbucket-val) 
