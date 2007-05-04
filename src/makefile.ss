@@ -46,7 +46,7 @@
       "library-manager.ss"
       "libtoplevel.ss"))
 
-  (define ikarus-environment-map
+  (define ikarus-system-macros
     '([define            (define)]
       [define-syntax     (define-syntax)]
       [module            (module)]
@@ -77,23 +77,52 @@
       [and               (macro . and)]
       [or                (macro . or)]))
 
+  (define ikarus-system-primitives
+    '())
+
+  (define (make-collection)
+    (let ([set '()])
+      (define (set-cons x ls)
+        (cond
+          [(memq x ls) ls]
+          [else (cons x ls)]))
+      (case-lambda
+        [() set]
+        [(x) (set! set (set-cons x set))])))
+
   (define (make-system-data subst env)
-    (define (add x s r l)
-      (let ([name (car x)] [binding (cadr x)])
-        (case (car binding)
-          [(core-prim) 
-           (error 'make-system-subst/env "cannot handle ~s" x)]
-          [else 
-           (let ([label (gensym)])
-             (values (cons (cons name label) s)
-                     (cons (cons label binding) r)
-                     l))])))
-    (let f ([ls ikarus-environment-map])
-      (cond
-        [(null? ls) (values '() '() '())]
-        [else
-         (let-values ([(subst env primlocs) (f (cdr ls))])
-           (add (car ls) subst env primlocs))])))
+    (let ([export-subst    (make-collection)] 
+          [export-env      (make-collection)]
+          [export-primlocs (make-collection)])
+      (for-each
+        (lambda (x)
+          (let ([name (car x)] [binding (cadr x)])
+            (let ([label (gensym)])
+              (export-subst (cons name label))
+              (export-env   (cons label binding)))))
+        ikarus-system-macros)
+      (for-each
+        (lambda (x)
+          (cond
+            [(assq x subst) =>
+             (lambda (p)
+               (let ([label (cdr p)])
+                 (cond
+                   [(assq label env) =>
+                    (lambda (p)
+                      (let ([binding (cdr p)])
+                        (case (car binding)
+                          [(global) 
+                           (export-subst (cons x label))
+                           (export-env   (cons label (cons 'core-prim x)))
+                           (export-primlocs (cons x (cdr binding)))]
+                          [else 
+                           (error #f "invalid binding ~s for ~s" p x)])))]
+                   [else (error #f "cannot find binding for ~s" x)])))]
+            [else (error #f "cannot find export for ~s" x)]))
+        ikarus-system-primitives)
+      (values (export-subst) (export-env) (export-primlocs))))
+
 
   (define (build-system-library export-subst export-env primlocs)
     (let-values ([(code empty-subst empty-env)
@@ -120,16 +149,15 @@
        (pretty-print code)
        code))
 
-;  (define (env->primlocs env)
-;    (let f ([ls env])
-;      (cond
-;        [(null? ls) '()]
-;        [else
-;         (let ([x (car ls)])
-;           (let ([label (car x)] [binding (cdr x)])
-;             (let ([type (car binding)] [value (cdr binding)])
-;               (case type
-;                 [(global) 
+ ; (define (env->primlocs env)
+ ;   (let ([locs (make-collection)])
+ ;     (for-each 
+ ;       (lambda (x)
+ ;         (let ([label (car x)] [binding (cdr x)])
+ ;           (let ([type (car binding)] [value (cdr binding)])
+ ;             (case type
+ ;               [(global) (locs (cons 
+
 
   (define (expand-all files)
     (let ([code* '()]
