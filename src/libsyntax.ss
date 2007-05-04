@@ -1946,7 +1946,12 @@
     (cond
       [(memq x ls) ls]
       [else (cons x ls)]))
-  (define (get-import-subst/libs imp*)
+  (define (set-union ls1 ls2)
+    (cond
+      [(null? ls1) ls2]
+      [(memq (car ls1) ls2) (set-union (cdr ls1) ls2)]
+      [else (cons (car ls1) (set-union (cdr ls1) ls2))]))
+  (define (get-import-subst/libs-old imp*)
     (define (merge-substs s subst)
       (cond
         [(null? s) subst]
@@ -1976,6 +1981,45 @@
            (let-values ([(s _r) (library-subst/env lib)])
              (values (merge-substs s subst)
                      (set-cons lib lib*)))))]))
+  (define (get-import-subst/libs imp*)
+    (define (merge-substs s subst)
+      (cond
+        [(null? s) subst]
+        [else
+         (let ([a (car s)])
+           (let ([name (car a)] [label (cdr a)])
+             (cond
+               [(assq name subst) =>
+                (lambda (x)
+                  (cond
+                    [(eq? (cdr x) label)
+                     (merge-substs (cdr s) subst)]
+                    [else
+                     (error 'import 
+                        "two imports of ~s with different bindings"
+                        name)]))]
+               [else 
+                (cons a (merge-substs (cdr s) subst))])))]))
+    (define (get-import spec)
+      (unless (pair? spec)
+        (error 'import "invalid import spec ~s" spec))
+      (case (car spec)
+        [(rename) (error #f "rename found")]
+        [(except) (error #f "except found")]
+        [(only)   (error #f "only found")]
+        [(prefix) (error #f "prefix found")]
+        [else 
+         (let ([lib (find-library-by-name spec)])
+           (let-values ([(s _r) (library-subst/env lib)])
+              (values s (list lib))))]))
+    (cond
+      [(null? imp*) (values '() '())]
+      [else
+       (let-values ([(subst1 lib1*)
+                     (get-import-subst/libs (cdr imp*))])
+         (let-values ([(subst2 lib2*) (get-import (car imp*))])
+           (values (merge-substs subst1 subst2)
+                   (set-union lib1* lib2*))))]))
   (define (make-top-rib subst)
     (let ([rib (make-empty-rib)])
       (for-each 
