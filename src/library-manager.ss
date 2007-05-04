@@ -587,5 +587,15 @@
   (primitive-set! 'imported-loc->library lm:imported-loc->library)
   (primitive-set! 'invoke-library lm:invoke-library)
   (primitive-set! 'current-library-collection lm:current-library-collection)
-  (primitive-set! 'install-library lm:install-library))
+  (primitive-set! 'install-library lm:install-library)
+  ((record-field-mutator (record-type-descriptor (type-descriptor library)) 'printer)
+    (type-descriptor library)
+    (lambda (x p)
+      (unless (library? x)
+        (error 'record-type-printer "not a library"))
+      (display 
+        (format "#<library ~s>" (append (library-name x) (library-ver x)))
+        p)))
+
+  )
 
