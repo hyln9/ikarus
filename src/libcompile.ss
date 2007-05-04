@@ -3220,9 +3220,9 @@
 (define (primref-loc op)
   (unless (symbol? op) (error 'primref-loc "not a symbol ~s" op))
   (cond
-    ;[(assq op (current-primitive-locations)) =>
-    ; (lambda (x)
-    ;   (mem (fx- disp-symbol-value symbol-tag) (obj (cdr x))))]
+    [(assq op (current-primitive-locations)) =>
+     (lambda (x)
+       (mem (fx- disp-symbol-value symbol-tag) (obj (cdr x))))]
     [else
      (mem (fx- disp-symbol-system-value symbol-tag)
           (obj op))]))
