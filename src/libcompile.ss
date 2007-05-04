@@ -5279,8 +5279,6 @@
              (refresh-cached-labels!))
            (error 'current-primitive-locations "~s is not a procedure" p))])))
 
-(refresh-cached-labels!)
-
 (primitive-set! 'eval-core
   (lambda (x) ((compile-core-expr x))))
 

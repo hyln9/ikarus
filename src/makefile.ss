@@ -131,6 +131,8 @@
                     `(library (ikarus primlocs)
                        (export) ;;; must be empty
                        (import (scheme))
+                       (current-primitive-locations 
+                         (lambda (x) #f))
                        (install-library 
                           ',(gensym "system")   ;;; id
                           '(system)             ;;; name
