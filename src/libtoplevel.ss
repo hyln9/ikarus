@@ -16,11 +16,8 @@
 ;;; Finally, we're ready to evaluate the files and enter the cafe.
 
 (library (ikarus interaction)
-  (export bar)
+  (export)
   (import (scheme) (ikarus greeting))
-
-  (define bar 'i-am-an-exported-primitive-named-foo)
-
   (let-values ([(files script args)
                 (let f ([args (command-line-arguments)])
                   (cond

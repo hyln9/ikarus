@@ -88,7 +88,7 @@
 
   (define-record library (code export-subst export-env))
   
-  (define must-export-primitives '(bar))
+  (define export-as-primitive '())
 
   (define (expand-file filename)
     (map (lambda (x)
@@ -114,9 +114,10 @@
                 (lambda (v)
                   (let ([name (car v)])
                     (cond 
-                      [(memq name must-export-primitives) 
+                      [(memq name export-as-primitive) 
                        (cons (cons label (cons 'core-prim name)) r)]
-                      [else r])))]
+                      [else 
+                       (cons (cons label (cons 'global val)) r)])))]
                [else (error #f "cannot find binding for ~s" x)])]
             [else (error #f "cannot handle export for ~s" x)]))))
     (let f ([r r])

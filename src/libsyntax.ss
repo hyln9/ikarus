@@ -318,8 +318,7 @@
                       [b (label->binding label r)]
                       [type (binding-type b)])
                  (case type
-                   [(define define-syntax core-macro begin macro
-                      module set!)
+                   [(define define-syntax core-macro begin macro module set!)
                     (values type (binding-value b) id)]
                    [else 
                     (values 'call #f #f)]))
