@@ -505,8 +505,6 @@
       [$make-call-with-values-procedure $make-cwv-procedure (core-prim . $make-call-with-values-procedure)]
       [$make-values-procedure $make-values-procedure (core-prim . $make-values-procedure)]
       [primitive-set! primitive-set!-label (core-prim . primitive-set!)]
-      [primitive? primitive?-label (core-prim .  primitive?)]
-      [primitive-ref primitive-ref-label (core-prim .  primitive-ref)]
       [$$apply     $$apply-label    (core-prim . $$apply)]
       [$arg-list     $arg-list-label    (core-prim . $arg-list)]
       [$interrupted? $interrupted?-label (core-prim .  $interrupted?)]

@@ -336,20 +336,20 @@ reference-implementation:
  
 (primitive-set! 'symbol? (lambda (x) (symbol? x)))
   
-(primitive-set! 'primitive?
-  (lambda (x)
-    (unless (symbol? x)
-      (error 'primitive? "~s is not a symbol" x))
-    (procedure? (primitive-ref x))))
-
-(primitive-set! 'primitive-ref
-  (lambda (x)
-    (unless (symbol? x)
-      (error 'primitive-ref "~s is not a symbol" x))
-    (let ([v (primitive-ref x)])
-      (unless (procedure? v)
-        (error 'primitive-ref "~s is not a primitive" x))
-      v)))
+;(primitive-set! 'primitive?
+;  (lambda (x)
+;    (unless (symbol? x)
+;      (error 'primitive? "~s is not a symbol" x))
+;    (procedure? (primitive-ref x))))
+;
+;(primitive-set! 'primitive-ref
+;  (lambda (x)
+;    (unless (symbol? x)
+;      (error 'primitive-ref "~s is not a symbol" x))
+;    (let ([v (primitive-ref x)])
+;      (unless (procedure? v)
+;        (error 'primitive-ref "~s is not a primitive" x))
+;      v)))
 
 (primitive-set! 'primitive-set!
   (lambda (x v)
