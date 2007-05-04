@@ -17,6 +17,26 @@
          [(v) (set! x (guard v))])])))
 
 
+(library (ikarus system handlers)
+  (export interrupt-handler
+          $apply-nonprocedure-error-handler)
+  (import (except (ikarus) interrupt-handler))
+
+  (define interrupt-handler
+    (make-parameter
+      (lambda ()
+        (flush-output-port (console-output-port))
+        (error #f "interrupted"))
+      (lambda (x)
+        (if (procedure? x)
+            x
+            (error 'interrupt-handler "~s is not a procedure" x)))))
+
+  (define $apply-nonprocedure-error-handler
+    (lambda (x)
+      (error 'apply "~s is not a procedure" x)))
+  )
+
 
 (library (ikarus handlers)
   (export)
@@ -28,19 +48,7 @@
   (lambda args
     (foreign-call "ik_error" args)))
 
-(primitive-set! 'interrupt-handler
-  (make-parameter
-    (lambda ()
-      (flush-output-port (console-output-port))
-      (error #f "interrupted"))
-    (lambda (x)
-      (if (procedure? x)
-          x
-          (error 'interrupt-handler "~s is not a procedure" x)))))
 
-(primitive-set! '$apply-nonprocedure-error-handler
-  (lambda (x)
-    (error 'apply "~s is not a procedure" x)))
 
 (primitive-set! '$incorrect-args-error-handler
   (lambda (p n)

@@ -502,6 +502,7 @@
       [library-spec                     s i]
       [current-library-collection       s i]
       [invoke-library                   s i]
+      [$apply-nonprocedure-error-handler s]
       ))
 
 
