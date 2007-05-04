@@ -78,17 +78,13 @@
       [or                (macro . or)]))
 
   (define ikarus-system-primitives
-    '())
+    '(print-greeting))
 
   (define (make-collection)
     (let ([set '()])
-      (define (set-cons x ls)
-        (cond
-          [(memq x ls) ls]
-          [else (cons x ls)]))
       (case-lambda
         [() set]
-        [(x) (set! set (set-cons x set))])))
+        [(x) (set! set (cons x set))])))
 
   (define (make-system-data subst env)
     (let ([export-subst    (make-collection)] 
@@ -148,16 +144,6 @@
                           )))])
        (pretty-print code)
        code))
-
- ; (define (env->primlocs env)
- ;   (let ([locs (make-collection)])
- ;     (for-each 
- ;       (lambda (x)
- ;         (let ([label (car x)] [binding (cdr x)])
- ;           (let ([type (car binding)] [value (cdr binding)])
- ;             (case type
- ;               [(global) (locs (cons 
-
 
   (define (expand-all files)
     (let ([code* '()]
