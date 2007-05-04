@@ -3220,9 +3220,12 @@
 (define (primref-loc op)
   (unless (symbol? op) (error 'primref-loc "not a symbol ~s" op))
   (cond
-    [(assq op (current-primitive-locations)) =>
+    [((current-primitive-locations) op) =>
      (lambda (x)
-       (mem (fx- disp-symbol-value symbol-tag) (obj (cdr x))))]
+       (unless (symbol? x) 
+         (error 'primitive-location 
+            "~s is not a valid location for ~s" x op))
+       (mem (fx- disp-symbol-value symbol-tag) (obj x)))]
     [else
      (mem (fx- disp-symbol-system-value symbol-tag)
           (obj op))]))
@@ -5203,7 +5206,12 @@
 
 (primitive-set! 'assembler-output (make-parameter #f))
 (primitive-set! 'current-primitive-locations
-  (make-parameter '()))
+  (make-parameter 
+    (lambda (x) #f)
+    (lambda (x)
+      (if (procedure? x)
+          x
+          (error 'current-primitive-locations "~s is not a procedure" x)))))
 
 (initialize-system)
 (primitive-set! 'eval-core
