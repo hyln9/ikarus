@@ -65,71 +65,8 @@
 
 
  
-(primitive-set! 'memq
-  (letrec ([race
-            (lambda (h t ls x)
-               (if (pair? h)
-                   (if (eq? ($car h) x)
-                       h
-                       (let ([h ($cdr h)])
-                         (if (pair? h)
-                             (if (eq? ($car h) x)
-                                 h
-                                 (if (not (eq? h t))
-                                     (race ($cdr h) ($cdr t) ls x)
-                                     (error 'memq "circular list ~s" ls)))
-                             (if (null? h)
-                                 '#f
-                                 (error 'memq "~s is not a proper list" ls)))))
-                   (if (null? h)
-                       '#f
-                       (error 'memq "~s is not a proper list" ls))))])
-     (lambda (x ls)
-       (race ls ls ls x))))
 
-(primitive-set! 'memv
-  (letrec ([race
-            (lambda (h t ls x)
-               (if (pair? h)
-                   (if (eqv? ($car h) x)
-                       h
-                       (let ([h ($cdr h)])
-                         (if (pair? h)
-                             (if (eqv? ($car h) x)
-                                 h
-                                 (if (not (eq? h t))
-                                     (race ($cdr h) ($cdr t) ls x)
-                                     (error 'memv "circular list ~s" ls)))
-                             (if (null? h)
-                                 '#f
-                                 (error 'memv "~s is not a proper list" ls)))))
-                   (if (null? h)
-                       '#f
-                       (error 'memv "~s is not a proper list" ls))))])
-     (lambda (x ls)
-       (race ls ls ls x))))
 
-(primitive-set! 'member
-  (letrec ([race
-            (lambda (h t ls x)
-               (if (pair? h)
-                   (if (equal? ($car h) x)
-                       h
-                       (let ([h ($cdr h)])
-                         (if (pair? h)
-                             (if (equal? ($car h) x)
-                                 h
-                                 (if (not (eq? h t))
-                                     (race ($cdr h) ($cdr t) ls x)
-                                     (error 'member "circular list ~s" ls)))
-                             (if (null? h)
-                                 '#f
-                                 (error 'member "~s is not a proper list" ls)))))
-                   (if (null? h)
-                       '#f
-                       (error 'member "~s is not a proper list" ls))))])
-     (lambda (x ls)
-       (race ls ls ls x))))
 
 
 
