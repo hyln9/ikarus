@@ -12,12 +12,14 @@
     (except (ikarus) fixnum? flonum? bignum? number? complex? real?
             rational? integer? exact? eof-object? bwp-object? immediate?
             boolean? char? vector? string?  procedure? null?
-            pair? weak-pair? symbol? not eq? eqv? equal?)
+            pair? weak-pair? symbol? not eq? eqv? equal?
+            port? input-port? output-port?)
     (only (scheme) $fxadd1 $vector-ref $fx= $char= $string-ref
           $string-length $vector-length $car $cdr)
     (rename (only (ikarus) fixnum? flonum? bignum? eof-object?
                   bwp-object? immediate? boolean? char? vector? string?
-                  procedure? null? pair? symbol? eq?)
+                  procedure? null? pair? symbol? eq?
+                  port? input-port? output-port?)
             (fixnum? sys:fixnum?)
             (flonum? sys:flonum?)
             (bignum? sys:bignum?)
@@ -32,7 +34,11 @@
             (null? sys:null?)
             (pair? sys:pair?)
             (symbol? sys:symbol?)
-            (eq? sys:eq?)))
+            (eq? sys:eq?)
+            (port? sys:port?)
+            (input-port? sys:input-port?)
+            (output-port? sys:output-port?)
+            ))
 
   (define fixnum?
     (lambda (x) (sys:fixnum? x)))
@@ -141,5 +147,13 @@
                        (string-loop x y 0 n))))]
           [(number? x) (and (number? y) (= x y))]
           [else #f]))))
+
+  (define port?
+    (lambda (x) (sys:port? x)))
+  (define input-port?
+    (lambda (x) (sys:input-port? x)))
+  (define output-port?
+    (lambda (x) (sys:output-port? x)))
+ 
 
   )

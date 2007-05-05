@@ -55,15 +55,7 @@
     ;;;   (set-port-output-index! port fixnum)
     ;;;   (set-port-output-size! port fixnum)
     ;;;
-    (primitive-set! 'port?
-      (lambda (x) (port? x)))
-    ;;;
-    (primitive-set! 'input-port?
-      (lambda (x) (input-port? x)))
-    ;;;
-    (primitive-set! 'output-port?
-      (lambda (x) (output-port? x)))
-    ;;;
+   ;;;
     (primitive-set! '$make-input-port
       (lambda (handler buffer)
         ($make-port/input handler buffer 0 ($string-length buffer) #f 0 0)))

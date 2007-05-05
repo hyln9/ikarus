@@ -14,12 +14,6 @@
 (primitive-set! 'eof-object
   (lambda () (eof-object)))
 
-  
-  
-
-
-
-
 (primitive-set! 'pointer-value
   (lambda (x)
     (pointer-value x)))
