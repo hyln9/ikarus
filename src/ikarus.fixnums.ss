@@ -1,14 +1,15 @@
 
 (library (ikarus fixnums)
   (export fxzero? fxadd1 fxsub1 fxlognot fx+ fx- fx* fxquotient
-          fxremainder fxmodulo fxlogor fxlogand fxlogxor fxsll fxsra)
+          fxremainder fxmodulo fxlogor fxlogand fxlogxor fxsll fxsra
+          fx= fx< fx<= fx> fx>=)
   (import 
     (only (scheme) $fxadd1 $fxsub1 $fxlognot $fxzero? $fxquotient
           $fxmodulo $fx+ $fx- $fx* $fxlogor $fxlogand $fxlogxor
-          $fxsll $fxsra $fx>=)
+          $fxsll $fxsra $fx= $fx< $fx<= $fx> $fx>=)
     (except (ikarus) fxzero? fxadd1 fxsub1 fxlognot fx+ fx- fx*
             fxquotient fxremainder fxmodulo fxlogor fxlogand
-            fxlogxor fxsll fxsra))
+            fxlogxor fxsll fxsra fx= fx< fx<= fx> fx>=))
 
   (define fxzero?
     (lambda (x)
@@ -58,7 +59,47 @@
       (unless (fixnum? y)
         (error 'fx* "~s is not a fixnum" y))
       ($fx* x y)))
- 
+  
+  (define fx=
+    (lambda (x y) 
+      (unless (fixnum? x)
+        (error 'fx= "~s is not a fixnum" x))
+      (unless (fixnum? y)
+        (error 'fx= "~s is not a fixnum" y))
+      ($fx= x y))) 
+  
+  (define fx<
+    (lambda (x y) 
+      (unless (fixnum? x)
+        (error 'fx< "~s is not a fixnum" x))
+      (unless (fixnum? y)
+        (error 'fx< "~s is not a fixnum" y))
+      ($fx< x y)))
+  
+  (define fx<=
+    (lambda (x y) 
+      (unless (fixnum? x)
+        (error 'fx<= "~s is not a fixnum" x))
+      (unless (fixnum? y)
+        (error 'fx<= "~s is not a fixnum" y))
+      ($fx<= x y)))
+   
+  (define fx>
+    (lambda (x y) 
+      (unless (fixnum? x)
+        (error 'fx> "~s is not a fixnum" x))
+      (unless (fixnum? y)
+        (error 'fx> "~s is not a fixnum" y))
+      ($fx> x y)))
+  
+  (define fx>=
+    (lambda (x y) 
+      (unless (fixnum? x)
+        (error 'fx>= "~s is not a fixnum" x))
+      (unless (fixnum? y)
+        (error 'fx>= "~s is not a fixnum" y))
+      ($fx>= x y)))
+
   (define fxquotient
     (lambda (x y) 
       (unless (fixnum? x)

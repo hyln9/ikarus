@@ -64,46 +64,7 @@
     (set-top-level-value! x v)))
 
  
-(primitive-set! 'fx=
-  (lambda (x y) 
-    (unless (fixnum? x)
-      (error 'fx= "~s is not a fixnum" x))
-    (unless (fixnum? y)
-      (error 'fx= "~s is not a fixnum" y))
-    ($fx= x y))) 
-
-(primitive-set! 'fx<
-  (lambda (x y) 
-    (unless (fixnum? x)
-      (error 'fx< "~s is not a fixnum" x))
-    (unless (fixnum? y)
-      (error 'fx< "~s is not a fixnum" y))
-    ($fx< x y)))
-
-(primitive-set! 'fx<=
-  (lambda (x y) 
-    (unless (fixnum? x)
-      (error 'fx<= "~s is not a fixnum" x))
-    (unless (fixnum? y)
-      (error 'fx<= "~s is not a fixnum" y))
-    ($fx<= x y)))
  
-(primitive-set! 'fx>
-  (lambda (x y) 
-    (unless (fixnum? x)
-      (error 'fx> "~s is not a fixnum" x))
-    (unless (fixnum? y)
-      (error 'fx> "~s is not a fixnum" y))
-    ($fx> x y)))
-
-(primitive-set! 'fx>=
-  (lambda (x y) 
-    (unless (fixnum? x)
-      (error 'fx>= "~s is not a fixnum" x))
-    (unless (fixnum? y)
-      (error 'fx>= "~s is not a fixnum" y))
-    ($fx>= x y)))
-  
 
 (primitive-set! 'char=?
   (let ()
