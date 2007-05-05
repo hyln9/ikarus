@@ -64,37 +64,6 @@
     (set-top-level-value! x v)))
 
  
-(primitive-set! 'fxquotient
-  (lambda (x y) 
-    (unless (fixnum? x)
-      (error 'fxquotient "~s is not a fixnum" x))
-    (unless (fixnum? y)
-      (error 'fxquotient "~s is not a fixnum" y))
-    (when ($fxzero? y)
-      (error 'fxquotient "zero dividend ~s" y))
-    ($fxquotient x y))) 
-
-(primitive-set! 'fxremainder
-  (lambda (x y) 
-    (unless (fixnum? x)
-      (error 'fxremainder "~s is not a fixnum" x))
-    (unless (fixnum? y)
-      (error 'fxremainder "~s is not a fixnum" y))
-    (when ($fxzero? y)
-      (error 'fxremainder "zero dividend ~s" y))
-    (let ([q ($fxquotient x y)])
-      ($fx- x ($fx* q y)))))
- 
-(primitive-set! 'fxmodulo
-  (lambda (x y) 
-    (unless (fixnum? x)
-      (error 'fxmodulo "~s is not a fixnum" x))
-    (unless (fixnum? y)
-      (error 'fxmodulo "~s is not a fixnum" y))
-    (when ($fxzero? y)
-      (error 'fxmodulo "zero dividend ~s" y))
-    ($fxmodulo x y)))
-
 (primitive-set! 'fxlogor
   (lambda (x y) 
     (unless (fixnum? x)
