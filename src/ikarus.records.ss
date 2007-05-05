@@ -1,10 +1,26 @@
 
 
 (library (ikarus records)
-  (export)
-  (import (scheme))
+  (export
+    make-record-type record-type-name record-type-symbol
+    record-type-field-names record-constructor record-predicate
+    record-field-accessor record-field-mutator record?  record-rtd
+    (rename (record-rtd record-type-descriptor)) 
+    record-name record-printer record-length record-ref record-set!)
 
-(let ()
+  (import
+    (except (ikarus)
+      make-record-type record-type-name record-type-symbol
+      record-type-field-names record-constructor record-predicate
+      record-field-accessor record-field-mutator record?  record-rtd
+      record-type-descriptor record-name record-printer record-length
+      record-ref record-set!)
+    (only (scheme) $record? $record-rtd $base-rtd $record-ref
+          $record-set! $record $make-record $car $cdr $fxadd1 
+          $fx< $fx= $fx+ $fx>=
+          set-top-level-value! top-level-value top-level-bound?))
+
+
 
   (define rtd?
     (lambda (x)
@@ -238,24 +254,6 @@
           (error 'record-set! "index ~s is out of range for ~s" i x))
         ($record-set! x i v))))
 
-  (primitive-set! 'make-record-type make-record-type)
-  (primitive-set! 'record-type-name record-type-name)
-  (primitive-set! 'record-type-symbol record-type-symbol)
-  (primitive-set! 'record-type-field-names record-type-field-names)
-  (primitive-set! 'record-constructor record-constructor)
-  (primitive-set! 'record-predicate record-predicate)
-  (primitive-set! 'record-field-accessor record-field-accessor)
-  (primitive-set! 'record-field-mutator record-field-mutator)
-   
-  (primitive-set! 'record? record?)
-  (primitive-set! 'record-rtd record-rtd)
-  (primitive-set! 'record-type-descriptor record-rtd)
-  (primitive-set! 'record-name record-name)
-  (primitive-set! 'record-printer record-printer)
-  (primitive-set! 'record-length record-length)
-  (primitive-set! 'record-ref record-ref)
-  (primitive-set! 'record-set! record-set!)
-
   (set-rtd-fields! $base-rtd '(name fields length printer symbol))
   (set-rtd-name! $base-rtd "base-rtd")
   (set-rtd-printer! $base-rtd
@@ -265,5 +263,4 @@
       (display "#<" p)
       (display (rtd-name x) p)
       (display " rtd>" p)))
-
-  ))
+  )

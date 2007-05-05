@@ -24,7 +24,7 @@
     '("ikarus.handlers.ss"
       "ikarus.control.ss"
       "ikarus.collect.ss"
-      "librecord.ss"
+      "ikarus.records.ss"
       "libcxr.ss"
       "libnumerics.ss"
       "libguardians.ss"
