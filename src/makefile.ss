@@ -27,7 +27,7 @@
       "ikarus.records.ss"
       "ikarus.cxr.ss"
       "ikarus.numerics.ss"
-      "libguardians.ss"
+      "ikarus.guardians.ss"
       "libcore.ss"
       "libchezio.ss"
       "libhash.ss"

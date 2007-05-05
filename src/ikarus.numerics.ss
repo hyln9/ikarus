@@ -75,8 +75,6 @@
        (error 'string->flonum "~s is not a string" x)])))
 
 
-
-
 (library (ikarus generic-arithmetic)
   (export + - * = < <= > >= add1 sub1 quotient remainder
           quotient+remainder number->string)
@@ -849,18 +847,4 @@
         [(flonum? x) (foreign-call "ikrt_fl_sqrt" x)]
         [(fixnum? x) (foreign-call "ikrt_fx_sqrt" x)]
         [else (error 'sqrt "unsupported ~s" x)])))
-
-  ;(primitive-set! 'even? even?)
-  ;(primitive-set! 'odd? odd?)
-  ;(primitive-set! 'max max)
-  ;(primitive-set! 'min min)
-  ;(primitive-set! 'complex? complex?)
-  ;(primitive-set! 'real? real?)
-  ;(primitive-set! 'rational? rational?)
-  ;(primitive-set! 'exact? exact?)
-  ;(primitive-set! 'inexact? inexact?)
-  ;(primitive-set! 'integer? integer?)
-  ;(primitive-set! 'exact->inexact exact->inexact)
-  ;(primitive-set! 'modulo modulo)
-
   )

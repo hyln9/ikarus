@@ -3,9 +3,9 @@
 ;;; from Dybvig et al. Guardians paper.
 
 (library (ikarus guardians)
-  (export)
-  (import (scheme))
-  (primitive-set! 'make-guardian 
+  (export make-guardian)
+  (import (except (ikarus) make-guardian))
+  (define make-guardian 
     (lambda ()
       (let ([tc
              (let ([x (cons #f #f)])
