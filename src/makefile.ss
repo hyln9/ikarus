@@ -26,6 +26,7 @@
       "ikarus.control.ss"
       "ikarus.collect.ss"
       "ikarus.void.ss"
+      "ikarus.apply.ss"
       "ikarus.predicates.ss"
       "ikarus.pairs.ss"
       "ikarus.lists.ss"
