@@ -42,6 +42,8 @@
       "ikarus.command-line.ss"
 
       "ikarus.core.ss"
+      "ikarus.io-ports.ss"
+
       "libchezio.ss"
       "libhash.ss"
       "libwriter.ss"
