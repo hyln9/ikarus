@@ -58,6 +58,17 @@
         [else 
          (error 'exact? "~s is not a number" x)]))))
 
+(library (ikarus fixnums)
+  (export fxzero?)
+  (import 
+    (except (ikarus) fxzero?))
+
+  (define fxzero?
+    (lambda (x)
+      (cond
+        [(eq? x 0) #t]
+        [(fixnum? x) #f]
+        [else (error 'fxzero? "~s is not a fixnum" x)]))))
 
 (library (ikarus flonums)
   (export string->flonum flonum->string)
@@ -73,6 +84,7 @@
       [(string? x) (foreign-call "ikrt_string_to_flonum" x)]
       [else 
        (error 'string->flonum "~s is not a string" x)])))
+
 
 
 (library (ikarus generic-arithmetic)
@@ -688,10 +700,6 @@
   (flcmp flfl>= flfx>= fxfl>= flbn>= bnfl>= $fl>=)
 
 
-;  (primitive-set! '+ +)
-;  (primitive-set! '- -)
-;  (primitive-set! '* *)
-;  (primitive-set! '/ /)
   (define = 
     (mk< = $fx= false false bnbn= fxfl= flfx= bnfl= flbn= flfl=))
   (define < 
@@ -702,9 +710,6 @@
     (mk< <= $fx<= fxbn< bnfx< bnbn<= fxfl<= flfx<= bnfl<= flbn<= flfl<=))
   (define >= 
     (mk< >= $fx>= fxbn> bnfx> bnbn>= fxfl>= flfx>= bnfl>= flbn>= flfl>=))
-  ;(primitive-set! 'logand logand)
-  ;(primitive-set! 'number? number?)
-  ;(primitive-set! 'number->string number->string)
 
   (define add1
     (lambda (x)

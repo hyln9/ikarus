@@ -4,17 +4,6 @@
   (export)
   (import (scheme))
 
-(primitive-set! 'call-with-values 
-  ($make-call-with-values-procedure))
-
-
-(primitive-set! 'values 
-  ($make-values-procedure))
-
-(primitive-set! 'exit
-  (case-lambda
-    [() (exit 0)]
-    [(status) (foreign-call "exit" status)]))
 
 (primitive-set! 'eof-object
   (lambda () (eof-object)))
