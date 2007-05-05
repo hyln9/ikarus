@@ -37,6 +37,8 @@
       "ikarus.numerics.ss"
       "ikarus.guardians.ss"
 
+      "ikarus.command-line.ss"
+
       "ikarus.core.ss"
       "libchezio.ss"
       "libhash.ss"
