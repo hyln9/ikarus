@@ -12,18 +12,7 @@
   (lambda () (void)))
   
 
-(primitive-set! 'fxadd1
-  (lambda (n)
-    (if (fixnum? n)
-        ($fxadd1 n)
-        (error 'fxadd1 "~s is not a fixnum" n))))
-  
-(primitive-set! 'fxsub1 
-  (lambda (n) 
-    (if (fixnum? n)
-        ($fxsub1 n)
-        (error 'fxsub1 "~s is not a fixnum" n))))
-  
+ 
 
 (primitive-set! 'integer->char
   (lambda (n)
