@@ -69,30 +69,6 @@
                ls
                (f x (cdr ls)))))))
 
-(primitive-set! 'vector-ref 
-  (lambda (v i)
-    (unless (vector? v)
-      (error 'vector-ref "~s is not a vector" v))
-    (unless (fixnum? i)
-      (error 'vector-ref "~s is not a valid index" i))
-    (unless (and ($fx< i ($vector-length v))
-                 ($fx<= 0 i))
-      (error 'vector-ref "index ~s is out of range for ~s" i v))
-    ($vector-ref v i)))
-
-
-(primitive-set! 'vector-set! 
-  (lambda (v i c) 
-    (unless (vector? v) 
-      (error 'vector-set! "~s is not a vector" v))
-    (unless (fixnum? i)
-      (error 'vector-set! "~s is not a valid index" i))
-    (unless (and ($fx< i ($vector-length v))
-                 ($fx<= 0 i))
-      (error 'vector-set! "index ~s is out of range for ~s" i v))
-    ($vector-set! v i c)))
-
-
 
 (primitive-set! 'vector
   ;;; FIXME: add case-lambda

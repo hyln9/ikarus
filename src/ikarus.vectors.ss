@@ -1,10 +1,11 @@
 
 (library (ikarus vectors)
-  (export make-vector vector-length)
+  (export make-vector vector-length vector-ref vector-set!)
   (import 
-    (except (ikarus) make-vector vector-length)
+    (except (ikarus) make-vector vector-length vector-ref
+            vector-set!)
     (only (scheme)
-          $fx= $fx>= $fx+ $vector-set! 
+          $fx= $fx>= $fx< $fx<= $fx+ $vector-set! $vector-ref
           $make-vector $vector-length))
 
 
@@ -29,5 +30,31 @@
          (unless (and (fixnum? n) ($fx>= n 0))
            (error 'make-vector "~s is not a valid length" n))
          (fill! ($make-vector n) 0 n fill)])))
+
+  (define vector-ref 
+    (lambda (v i)
+      (unless (vector? v)
+        (error 'vector-ref "~s is not a vector" v))
+      (unless (fixnum? i)
+        (error 'vector-ref "~s is not a valid index" i))
+      (unless (and ($fx< i ($vector-length v))
+                   ($fx<= 0 i))
+        (error 'vector-ref "index ~s is out of range for ~s" i v))
+      ($vector-ref v i)))
+  
+  (define vector-set! 
+    (lambda (v i c) 
+      (unless (vector? v) 
+        (error 'vector-set! "~s is not a vector" v))
+      (unless (fixnum? i)
+        (error 'vector-set! "~s is not a valid index" i))
+      (unless (and ($fx< i ($vector-length v))
+                   ($fx<= 0 i))
+        (error 'vector-set! "index ~s is out of range for ~s" i v))
+      ($vector-set! v i c)))
+  
+
+
+
 
   )
