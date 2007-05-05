@@ -49,14 +49,7 @@
       (error 'fxlognot "~s is not a fixnum" x))
     ($fxlognot x)))
   
-(primitive-set! 'fixnum? (lambda (x) (fixnum? x)))
 (primitive-set! 'immediate? (lambda (x) (immediate? x)))
-
-(primitive-set! 'fxzero? 
-  (lambda (x)
-    (unless (fixnum? x)
-      (error 'fxzero? "~s is not a fixnum" x))
-    ($fxzero? x)))
 
 (primitive-set! 'boolean? (lambda (x) (boolean? x)))
   
