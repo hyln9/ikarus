@@ -123,37 +123,6 @@
           (get-output-string p))))
   
     
-    
-    (primitive-set! 'with-input-from-file
-       (lambda (name proc)
-         (unless (string? name) 
-           (error 'with-input-from-file "~s is not a string" name))
-         (unless (procedure? proc)
-           (error 'with-input-from-file "~s is not a procedure" proc))
-         (let ([p (open-input-file name)])
-           (call-with-values 
-             (lambda () 
-               (parameterize ([current-input-port p])
-                 (proc)))
-             (case-lambda
-               [(v) (close-input-port p) v]
-               [v*
-                (close-input-port p)
-                (apply values v*)])))))
-      
-    (primitive-set! 'call-with-input-file
-       (lambda (name proc)
-         (unless (string? name) 
-           (error 'call-with-input-file "~s is not a string" name))
-         (unless (procedure? proc)
-           (error 'call-with-input-file "~s is not a procedure" proc))
-         (let ([p (open-input-file name)])
-           (call-with-values (lambda () (proc p))
-              (case-lambda
-                [(v) (close-input-port p) v]
-                [v*
-                 (close-input-port p)
-                 (apply values v*)])))))
-    )
+       )
 
 )

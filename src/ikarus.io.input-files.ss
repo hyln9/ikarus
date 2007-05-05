@@ -1,6 +1,7 @@
 
 (library (ikarus io input-files)
-  (export open-input-file current-input-port console-input-port)
+  (export open-input-file current-input-port console-input-port
+          with-input-from-file call-with-input-file)
   (import
     (only (scheme) $set-port-input-size! $set-port-input-index! 
           $string-ref $string-set! $port-input-buffer $port-input-size
@@ -8,6 +9,7 @@
           $fx= $fx< $fx> $fx>= $fxadd1 $fxsub1)
     (except (ikarus)
             open-input-file current-input-port console-input-port
+            with-input-from-file call-with-input-file
             *standard-input-port* *current-input-port*))
 
   (define-syntax message-case
@@ -133,6 +135,37 @@
        (if (string? filename)
            ($open-input-file filename)
            (error 'open-input-file "~s is not a string" filename))))
+
+  (define with-input-from-file
+     (lambda (name proc)
+       (unless (string? name) 
+         (error 'with-input-from-file "~s is not a string" name))
+       (unless (procedure? proc)
+         (error 'with-input-from-file "~s is not a procedure" proc))
+       (let ([p ($open-input-file name)])
+         (call-with-values 
+           (lambda () 
+             (parameterize ([current-input-port p])
+               (proc)))
+           (case-lambda
+             [(v) (close-input-port p) v]
+             [v*
+              (close-input-port p)
+              (apply values v*)])))))
+    
+  (define call-with-input-file
+     (lambda (name proc)
+       (unless (string? name) 
+         (error 'call-with-input-file "~s is not a string" name))
+       (unless (procedure? proc)
+         (error 'call-with-input-file "~s is not a procedure" proc))
+       (let ([p ($open-input-file name)])
+         (call-with-values (lambda () (proc p))
+            (case-lambda
+              [(v) (close-input-port p) v]
+              [v*
+               (close-input-port p)
+               (apply values v*)])))))
 
   (define *standard-input-port* #f)
   (define *current-input-port* #f)
