@@ -1,11 +1,18 @@
 
 (library (ikarus vectors)
-  (export make-vector)
+  (export make-vector vector-length)
   (import 
-    (except (ikarus) make-vector)
+    (except (ikarus) make-vector vector-length)
     (only (scheme)
           $fx= $fx>= $fx+ $vector-set! 
-          $make-vector))
+          $make-vector $vector-length))
+
+
+  (define vector-length
+    (lambda (x)
+      (unless (vector? x) 
+        (error 'vector-length "~s is not a vector" x))
+      ($vector-length x)))
 
   (module (make-vector)
     (define fill!

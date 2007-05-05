@@ -27,23 +27,6 @@
     ($char->fixnum x)))
   
 
-
-(primitive-set! 'vector-length
-  (lambda (x)
-    (unless (vector? x) 
-      (error 'vector-length "~s is not a vector" x))
-    ($vector-length x)))
-
-
-
-
-
-
-
-
-
-(primitive-set! 'not 
-  (lambda (x) (if x #f #t)))
   
 
 
