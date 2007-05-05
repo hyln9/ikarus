@@ -173,41 +173,6 @@
 
 
 
-(let ()
-  (define reverse
-    (lambda (h t ls ac)
-      (if (pair? h)
-          (let ([h ($cdr h)] [a1 ($car h)])
-             (if (pair? h)
-                 (if (not (eq? h t))
-                     (let ([a2 ($car h)])
-                       (reverse ($cdr h) ($cdr t) ls (cons a2 (cons a1 ac))))
-                     (error 'append "circular list ~s" ls))
-                 (if (null? h)
-                     (cons a1 ac)
-                     (error 'append "~s is not a proper list" ls))))
-          (if (null? h)
-              ac 
-              (error 'append "~s is not a proper list" ls)))))
-  (define revcons
-    (lambda (ls ac)
-      (cond
-        [(null? ls) ac]
-        [else
-         (revcons ($cdr ls) (cons ($car ls) ac))])))
-  (define append
-    (lambda (ls ls*)
-      (cond
-        [(null? ls*) ls]
-        [else 
-         (revcons (reverse ls ls ls '())
-            (append ($car ls*) ($cdr ls*)))])))
-  (primitive-set! 'append
-    (case-lambda
-      [() '()]
-      [(ls) ls]
-      [(ls . ls*)
-       (append ls ls*)])))
 
 
 

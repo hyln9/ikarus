@@ -1,11 +1,11 @@
 
 (library (ikarus lists)
-  (export $memq list? length list-ref reverse last-pair 
+  (export $memq list? append length list-ref reverse last-pair 
           memq memv member assq assv assoc
           map for-each andmap ormap)
   (import 
     (only (scheme) $car $cdr $fx+ $fxadd1 $fxsub1 $fxzero? $fx>=)
-    (except (ikarus) list? reverse last-pair length list-ref
+    (except (ikarus) list? append reverse last-pair length list-ref
             memq memv member assq assv assoc
             map for-each andmap ormap))
 
@@ -64,6 +64,42 @@
       (unless (and (fixnum? index) ($fx>= index 0))
         (error 'list-ref "~s is not a valid index" index))
       (f list index)))
+
+  (module (append)
+    (define reverse
+      (lambda (h t ls ac)
+        (if (pair? h)
+            (let ([h ($cdr h)] [a1 ($car h)])
+               (if (pair? h)
+                   (if (not (eq? h t))
+                       (let ([a2 ($car h)])
+                         (reverse ($cdr h) ($cdr t) ls (cons a2 (cons a1 ac))))
+                       (error 'append "circular list ~s" ls))
+                   (if (null? h)
+                       (cons a1 ac)
+                       (error 'append "~s is not a proper list" ls))))
+            (if (null? h)
+                ac 
+                (error 'append "~s is not a proper list" ls)))))
+    (define revcons
+      (lambda (ls ac)
+        (cond
+          [(null? ls) ac]
+          [else
+           (revcons ($cdr ls) (cons ($car ls) ac))])))
+    (define append1
+      (lambda (ls ls*)
+        (cond
+          [(null? ls*) ls]
+          [else 
+           (revcons (reverse ls ls ls '())
+              (append1 ($car ls*) ($cdr ls*)))])))
+    (define append
+      (case-lambda
+        [() '()]
+        [(ls) ls]
+        [(ls . ls*)
+         (append1 ls ls*)])))
 
   (define reverse
     (letrec ([race
