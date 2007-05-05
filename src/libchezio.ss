@@ -33,14 +33,6 @@
   
   (let () ;;; IO PRIMITIVES
     ;;;
-    (primitive-set! '$write-char
-      (lambda (c p)
-        (let ([idx (port-output-index p)])
-          (if ($fx< idx ($port-output-size p))
-              (begin
-                ($string-set! ($port-output-buffer p) idx c)
-                ($set-port-output-index! p ($fxadd1 idx)))
-              (($port-handler p) 'write-char c p)))))
     ;;;
     (primitive-set! 'write-char
       (case-lambda
@@ -74,15 +66,6 @@
             (error 'port-name "~s is not a port" p))))
     (primitive-set! 'input-port-name port-name)
     (primitive-set! 'output-port-name port-name)
-    (primitive-set! '$read-char
-      (lambda (p)
-        (let ([idx ($port-input-index p)])
-          (if ($fx< idx ($port-input-size p))
-              (begin
-                ($set-port-input-index! p ($fxadd1 idx))
-                ($string-ref ($port-input-buffer p) idx))
-              (begin
-                (($port-handler p) 'read-char p))))))
     ;;;
     (primitive-set! 'read-char
       (case-lambda
@@ -92,15 +75,6 @@
              ($read-char p)
              (error 'read-char "~s is not an input-port" p))]))
     ;;;
-    (primitive-set! '$unread-char
-      (lambda (c p)
-        (let ([idx ($fxsub1 ($port-input-index p))])
-          (if (and ($fx>= idx 0)
-                   ($fx< idx ($port-input-size p)))
-              (begin
-                ($set-port-input-index! p idx)
-                ($string-set! ($port-input-buffer p) idx c))
-              (($port-handler p) 'unread-char c p)))))
     ;;;
     (primitive-set! 'unread-char
       (case-lambda
@@ -114,12 +88,6 @@
                  (error 'unread-char "~s is not a character" c))
              (error 'unread-char "~s is not an input-port" p))]))
     ;;;
-    (primitive-set! '$peek-char
-      (lambda (p)
-        (let ([idx ($port-input-index p)])
-          (if ($fx< idx ($port-input-size p))
-              ($string-ref ($port-input-buffer p) idx)
-              (($port-handler p) 'peek-char p)))))
     ;;;
     (primitive-set! 'peek-char
       (case-lambda
@@ -129,19 +97,7 @@
              ($peek-char p)
              (error 'peek-char "~s is not an input-port" p))]))
     ;;;
-    (primitive-set! '$unread-char
-      (lambda (c p)
-        (let ([idx ($fxsub1 ($port-input-index p))])
-          (if (and ($fx>= idx 0)
-                   ($fx< idx ($port-input-size p)))
-              (begin
-                ($set-port-input-index! p idx)
-                ($string-set! ($port-input-buffer p) idx c))
-              (($port-handler p) 'unread-char c p)))))
     ;;;
-    (primitive-set! '$reset-input-port!
-      (lambda (p)
-        ($set-port-input-size! p 0)))
     ;;;
     (primitive-set! 'reset-input-port!
       (case-lambda
@@ -151,9 +107,6 @@
              ($reset-input-port! p)
              (error 'reset-input-port! "~s is not an input-port" p))]))
     ;;;
-    (primitive-set! '$close-input-port
-      (lambda (p)
-        (($port-handler p) 'close-port p)))
     ;;;
     (primitive-set! 'close-input-port
       (case-lambda
@@ -163,9 +116,6 @@
              ($close-input-port p)
              (error 'close-input-port! "~s is not an input-port" p))]))
     ;;;
-    (primitive-set! '$close-output-port
-      (lambda (p)
-        (($port-handler p) 'close-port p)))
     ;;;
     (primitive-set! 'close-output-port
       (case-lambda
@@ -175,9 +125,6 @@
              ($close-output-port p)
              (error 'close-output-port "~s is not an output-port" p))]))
     ;;;
-    (primitive-set! '$flush-output-port
-      (lambda (p)
-        (($port-handler p) 'flush-output-port p)))
     ;;;
     (primitive-set! 'flush-output-port
       (case-lambda

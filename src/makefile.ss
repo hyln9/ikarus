@@ -42,7 +42,9 @@
       "ikarus.command-line.ss"
 
       "ikarus.core.ss"
+
       "ikarus.io-ports.ss"
+      "ikarus.io-primitives.unsafe.ss"
 
       "libchezio.ss"
       "libhash.ss"
