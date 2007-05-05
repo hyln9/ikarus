@@ -1,12 +1,14 @@
 
 (library (ikarus fixnums)
   (export fxzero? fxadd1 fxsub1 fxlognot fx+ fx- fx* fxquotient
-          fxremainder fxmodulo)
+          fxremainder fxmodulo fxlogor fxlogand fxlogxor fxsll fxsra)
   (import 
     (only (scheme) $fxadd1 $fxsub1 $fxlognot $fxzero? $fxquotient
-          $fxmodulo $fx+ $fx- $fx*)
+          $fxmodulo $fx+ $fx- $fx* $fxlogor $fxlogand $fxlogxor
+          $fxsll $fxsra $fx>=)
     (except (ikarus) fxzero? fxadd1 fxsub1 fxlognot fx+ fx- fx*
-            fxquotient fxremainder fxmodulo))
+            fxquotient fxremainder fxmodulo fxlogor fxlogand
+            fxlogxor fxsll fxsra))
 
   (define fxzero?
     (lambda (x)
@@ -88,5 +90,48 @@
         (error 'fxmodulo "zero dividend ~s" y))
       ($fxmodulo x y)))
 
+  (define fxlogor
+    (lambda (x y) 
+      (unless (fixnum? x)
+        (error 'fxlogor "~s is not a fixnum" x))
+      (unless (fixnum? y)
+        (error 'fxlogor "~s is not a fixnum" y))
+      ($fxlogor x y)))
+  
+  (define fxlogxor
+    (lambda (x y) 
+      (unless (fixnum? x)
+        (error 'fxlogxor "~s is not a fixnum" x))
+      (unless (fixnum? y)
+        (error 'fxlogxor "~s is not a fixnum" y))
+      ($fxlogxor x y)))
+    
+  (define fxlogand
+    (lambda (x y) 
+      (unless (fixnum? x)
+        (error 'fxlogand "~s is not a fixnum" x))
+      (unless (fixnum? y)
+        (error 'fxlogand "~s is not a fixnum" y))
+      ($fxlogand x y)))
+   
+  (define fxsra
+    (lambda (x y) 
+      (unless (fixnum? x)
+        (error 'fxsra "~s is not a fixnum" x))
+      (unless (fixnum? y)
+        (error 'fxsra "~s is not a fixnum" y))
+      (unless ($fx>= y 0)
+        (error 'fxsra "negative shift not allowed, got ~s" y))
+      ($fxsra x y)))
+   
+  (define fxsll
+    (lambda (x y) 
+      (unless (fixnum? x)
+        (error 'fxsll "~s is not a fixnum" x))
+      (unless (fixnum? y)
+        (error 'fxsll "~s is not a fixnum" y))
+      (unless ($fx>= y 0)
+        (error 'fxsll "negative shift not allowed, got ~s" y))
+      ($fxsll x y))) 
 
   )

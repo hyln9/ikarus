@@ -64,51 +64,6 @@
     (set-top-level-value! x v)))
 
  
-(primitive-set! 'fxlogor
-  (lambda (x y) 
-    (unless (fixnum? x)
-      (error 'fxlogor "~s is not a fixnum" x))
-    (unless (fixnum? y)
-      (error 'fxlogor "~s is not a fixnum" y))
-    ($fxlogor x y)))
-
-(primitive-set! 'fxlogxor
-  (lambda (x y) 
-    (unless (fixnum? x)
-      (error 'fxlogxor "~s is not a fixnum" x))
-    (unless (fixnum? y)
-      (error 'fxlogxor "~s is not a fixnum" y))
-    ($fxlogxor x y)))
-  
-(primitive-set! 'fxlogand
-  (lambda (x y) 
-    (unless (fixnum? x)
-      (error 'fxlogand "~s is not a fixnum" x))
-    (unless (fixnum? y)
-      (error 'fxlogand "~s is not a fixnum" y))
-    ($fxlogand x y)))
- 
-
-(primitive-set! 'fxsra
-  (lambda (x y) 
-    (unless (fixnum? x)
-      (error 'fxsra "~s is not a fixnum" x))
-    (unless (fixnum? y)
-      (error 'fxsra "~s is not a fixnum" y))
-    (unless ($fx>= y 0)
-      (error 'fxsra "negative shift not allowed, got ~s" y))
-    ($fxsra x y)))
- 
-(primitive-set! 'fxsll
-  (lambda (x y) 
-    (unless (fixnum? x)
-      (error 'fxsll "~s is not a fixnum" x))
-    (unless (fixnum? y)
-      (error 'fxsll "~s is not a fixnum" y))
-    (unless ($fx>= y 0)
-      (error 'fxsll "negative shift not allowed, got ~s" y))
-    ($fxsll x y))) 
-
 (primitive-set! 'fx=
   (lambda (x y) 
     (unless (fixnum? x)
