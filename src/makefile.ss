@@ -47,6 +47,7 @@
       "ikarus.io-primitives.unsafe.ss"
       "ikarus.io-primitives.ss"
       "ikarus.io.input-files.ss"
+      "ikarus.io.output-files.ss"
 
       "libchezio.ss"
       "libhash.ss"
