@@ -23,12 +23,14 @@
 
 (library (ikarus generic-arithmetic)
   (export + - * = < <= > >= add1 sub1 quotient remainder
-          quotient+remainder number->string)
+          quotient+remainder number->string string->number)
   (import 
     (only (scheme) $fxlogand $fx= $fx< $fx<= $fx> $fx>= $fxzero?
-          $fxsll $fxsra $fxmodulo)
+          $fxsll $fxsra $fxmodulo $string-ref $string-length
+          $fxadd1 $fx- 
+          $char->fixnum $char= $char<=)
     (except (ikarus) + - * = < <= > >= add1 sub1 quotient remainder
-            quotient+remainder number->string))
+            quotient+remainder number->string string->number))
 
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))
@@ -786,4 +788,51 @@
         [(flonum? x) (foreign-call "ikrt_fl_sqrt" x)]
         [(fixnum? x) (foreign-call "ikrt_fx_sqrt" x)]
         [else (error 'sqrt "unsupported ~s" x)])))
+
+
+
+  (define string->number
+    (lambda (x)
+      (define (convert-data str len pos? idx ac)
+        (cond
+          [($fx= idx len) (if pos? ac (- 0 ac))]
+          [else
+           (let ([c ($string-ref str idx)])
+             (cond
+               [(and ($char<= #\0 c) ($char<= c #\9))
+                (convert-data str len pos? ($fxadd1 idx) 
+                   (+ (* ac 10)
+                      ($fx- ($char->fixnum c) ($char->fixnum #\0))))]
+               [else #f]))]))
+      (define (convert-data-init str len pos? idx c)
+        (cond
+          [($char= c #\0) 
+           (if ($fx= idx len)
+               0
+               (convert-data-init str len pos? 
+                  ($fxadd1 idx) 
+                  ($string-ref str idx)))]
+          [(and ($char<= #\1 c) ($char<= c #\9))
+           (convert-data str len pos? idx
+              ($fx- ($char->fixnum c) ($char->fixnum #\0)))]
+          [else #f]))
+      (define (convert-num str len pos?)
+        (cond
+          [($fx> len 1)
+           (convert-data-init str len pos? 2 ($string-ref str 1))]
+          [else #f]))
+      (define (convert-sign str len)
+        (cond
+          [($fx> len 0)
+           (let ([c ($string-ref str 0)])
+             (case c
+               [(#\+) (convert-num str len #t)]
+               [(#\-) (convert-num str len #f)]
+               [else
+                (convert-data-init str len #t 1 c)]))]
+          [else #f]))
+      (cond
+        [(string? x) 
+         (convert-sign x ($string-length x))]
+        [else (error 'string->number "~s is not a string" x)])))
   )
