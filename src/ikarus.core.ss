@@ -61,23 +61,6 @@
     (primitive-set! x v)
     (set-top-level-value! x v)))
 
-
-
-
- 
-
-
-
-
-
-
-
-
- 
-
-
-
-
 (primitive-set! 'string->symbol
   (lambda (x)
     (unless (string? x) 
@@ -147,38 +130,6 @@
       (f ($symbol-plist x) '()))))
 
 
-(let ()
-   (define vector-loop
-     (lambda (x y i n)
-       (or ($fx= i n)
-           (and (equal? ($vector-ref x i) ($vector-ref y i))
-                (vector-loop x y ($fxadd1 i) n)))))
-   (define string-loop
-     (lambda (x y i n)
-       (or ($fx= i n)
-           (and ($char= ($string-ref x i) ($string-ref y i))
-                (string-loop x y ($fxadd1 i) n)))))
-   (define equal?
-     (lambda (x y)
-       (cond
-         [(eq? x y) #t]
-         [(pair? x) 
-          (and (pair? y)
-               (equal? ($car x) ($car y))
-               (equal? ($cdr x) ($cdr y)))]
-         [(vector? x)
-          (and (vector? y)
-               (let ([n ($vector-length x)])
-                 (and ($fx= n ($vector-length y))
-                      (vector-loop x y 0 n))))]
-         [(string? x)
-          (and (string? y)
-               (let ([n ($string-length x)])
-                 (and ($fx= n ($string-length y))
-                      (string-loop x y 0 n))))]
-         [(number? x) (and (number? y) (= x y))]
-         [else #f])))
-   (primitive-set! 'equal? equal?))
 
 
 
