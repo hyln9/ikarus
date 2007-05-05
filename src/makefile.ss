@@ -27,6 +27,7 @@
       "ikarus.collect.ss"
       "ikarus.predicates.ss"
       "ikarus.pairs.ss"
+      "ikarus.lists.ss"
       "ikarus.fixnums.ss"
       "ikarus.chars.ss"
       "ikarus.records.ss"
