@@ -3,18 +3,18 @@
 
   (export fixnum? flonum? bignum? number? complex? real? rational?
           integer? exact? eof-object? immediate? boolean? char?
-          vector? string? procedure? null? pair? symbol? not) 
+          vector? string? procedure? null? pair? symbol? not eq?) 
 
   (import 
 
     (except (ikarus) fixnum? flonum? bignum? number? complex? real?
             rational? integer? exact? eof-object?  immediate?
             boolean?  char?  vector?  string?  procedure?  null?
-            pair? symbol? not)
+            pair? symbol? not eq?)
 
     (rename (only (ikarus) fixnum? flonum? bignum? eof-object?
               immediate? boolean? char? vector? string? procedure? 
-              null? pair? symbol?)
+              null? pair? symbol? eq?)
             (fixnum? sys:fixnum?)
             (flonum? sys:flonum?)
             (bignum? sys:bignum?)
@@ -27,7 +27,8 @@
             (procedure? sys:procedure?)
             (null? sys:null?)
             (pair? sys:pair?)
-            (symbol? sys:symbol?)))
+            (symbol? sys:symbol?)
+            (eq? sys:eq?)))
 
   (define fixnum?
     (lambda (x) (sys:fixnum? x)))
@@ -87,4 +88,7 @@
   (define symbol? (lambda (x) (sys:symbol? x)))
 
   (define not (lambda (x) (if x #f #t)))
+
+  (define eq? (lambda (x y) (sys:eq? x y)))
+
   )
