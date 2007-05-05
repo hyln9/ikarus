@@ -70,43 +70,6 @@
 
 
 
-(primitive-set! 'length
-  (letrec ([race
-            (lambda (h t ls n)
-             (if (pair? h)
-                 (let ([h ($cdr h)])
-                    (if (pair? h)
-                        (if (not (eq? h t))
-                            (race ($cdr h) ($cdr t) ls ($fx+ n 2))
-                            (error 'length "circular list ~s" ls))
-                        (if (null? h)
-                            ($fx+ n 1)
-                            (error 'length "~s is not a proper list" ls))))
-                 (if (null? h)
-                     n
-                     (error 'length "~s is not a proper list" ls))))])
-     (lambda (ls)
-       (race ls ls ls 0))))
-
-
-(primitive-set! 'list-ref
-  (lambda (list index)
-    (define f
-      (lambda (ls i)
-        (cond
-          [($fxzero? i) 
-           (if (pair? ls)
-               ($car ls)
-               (error 'list-ref "index ~s is out of range for ~s" index list))]
-          [(pair? ls)
-           (f ($cdr ls) ($fxsub1 i))]
-          [(null? ls) 
-           (error 'list-rec "index ~s is out of range for ~s" index list)]
-          [else (error 'list-ref "~s is not a list" list)])))
-    (unless (and (fixnum? index) ($fx>= index 0))
-      (error 'list-ref "~s is not a valid index" index))
-    (f list index)))
-
 
 
 
