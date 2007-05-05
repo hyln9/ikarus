@@ -1,10 +1,11 @@
 
 (library (ikarus strings)
   (export string-length string-ref string-set! make-string string->list string=?
-          string-append substring string)
+          string-append substring string list->string)
   (import 
     (except (ikarus) string-length string-ref string-set! make-string
-            string->list string=? string-append substring string)
+            string->list string=? string-append substring string
+            list->string)
     (only (scheme) 
           $fx+ $fxsub1 $fxadd1 $char= $car $cdr
           $fxzero? $fx= $fx<= $fx< $fx>= $fx-
@@ -164,6 +165,36 @@
            (let ([i ($fxsub1 i)])
              (f x i (cons ($string-ref x i) ac)))]))))
 
+
+  (define list->string
+    (letrec ([race
+              (lambda (h t ls n)
+               (if (pair? h)
+                   (let ([h ($cdr h)])
+                      (if (pair? h)
+                          (if (not (eq? h t))
+                              (race ($cdr h) ($cdr t) ls ($fx+ n 2))
+                              (error 'reverse "circular list ~s" ls))
+                          (if (null? h)
+                              ($fx+ n 1)
+                              (error 'reverse "~s is not a proper list" ls))))
+                   (if (null? h)
+                       n
+                       (error 'reverse "~s is not a proper list" ls))))]
+              [fill
+               (lambda (s i ls)
+                 (cond
+                   [(null? ls) s]
+                   [else
+                    (let ([c ($car ls)])
+                      (unless (char? c)
+                        (error 'list->string "~s is not a character" c))
+                      ($string-set! s i c)
+                      (fill s ($fxadd1 i) (cdr ls)))]))])
+       (lambda (ls)
+         (let ([n (race ls ls ls 0)])
+           (let ([s ($make-string n)])
+             (fill s 0 ls))))))
 
   (module (string-append)
     ;; FIXME: make nonconsing on 0,1,2, and 3 args
