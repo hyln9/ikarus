@@ -73,54 +73,6 @@
 
 
 
-#|procedure:string=?
-synopsis:
-  (string=? s s* ...)
-description:
-  string=? takes 1 or more strings and returns #t if all strings are
-  equal.  Two strings s1 and s2 are string=? if they have the same 
-  length and if (char=? (string-ref s1 i) (string-ref s2 i)) for all
-  0 <= i < (string-length s1)
-|#
-(let ()
-  (define bstring=?
-    (lambda (s1 s2 i j)
-      (or ($fx= i j)
-          (and ($char= ($string-ref s1 i) ($string-ref s2 i))
-               (bstring=? s1 s2 ($fxadd1 i) j)))))
-  (define check-strings-and-return-false
-    (lambda (s*)
-      (cond
-        [(null? s*) #f]
-        [(string? ($car s*)) 
-         (check-strings-and-return-false ($cdr s*))]
-        [else (err ($car s*))])))
-  (define strings=?
-    (lambda (s s* n)
-      (or (null? s*)
-          (let ([a ($car s*)])
-            (unless (string? a)
-              (error 'string=? "~s is not a string" a))
-            (if ($fx= n ($string-length a))
-                (and (strings=? s ($cdr s*) n)
-                     (bstring=? s a 0 n))
-                (check-strings-and-return-false ($cdr s*)))))))
-  (define (err x)
-    (error 'string=? "~s is not a string" x))
-  (primitive-set! 'string=?
-    (case-lambda
-      [(s s1) 
-       (if (string? s) 
-           (if (string? s1)
-               (let ([n ($string-length s)])
-                 (and ($fx= n ($string-length s1))
-                      (bstring=? s s1 0 n)))
-               (err s1))
-           (err s))]
-      [(s . s*)
-       (if (string? s)
-           (strings=? s s* ($string-length s))
-           (err s))])))
 
 
 

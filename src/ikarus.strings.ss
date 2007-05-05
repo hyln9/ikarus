@@ -1,11 +1,11 @@
 
 (library (ikarus strings)
-  (export string-length string-ref make-string string->list)
+  (export string-length string-ref make-string string->list string=?)
   (import 
     (except (ikarus) string-length string-ref make-string
-            string->list)
+            string->list string=?)
     (only (scheme) 
-          $fx+ $fxsub1 $fxzero? $fx= $fx<= $fx<
+          $fx+ $fxsub1 $fxadd1 $char= $car $cdr $fxzero? $fx= $fx<= $fx<
           $string-length $string-ref 
           $make-string $string-set!))
 
@@ -51,6 +51,46 @@
            (fill! ($make-string n) 0 n c)]))
         make-string))
 
+
+  (module (string=?)
+    (define bstring=?
+      (lambda (s1 s2 i j)
+        (or ($fx= i j)
+            (and ($char= ($string-ref s1 i) ($string-ref s2 i))
+                 (bstring=? s1 s2 ($fxadd1 i) j)))))
+    (define check-strings-and-return-false
+      (lambda (s*)
+        (cond
+          [(null? s*) #f]
+          [(string? ($car s*)) 
+           (check-strings-and-return-false ($cdr s*))]
+          [else (err ($car s*))])))
+    (define strings=?
+      (lambda (s s* n)
+        (or (null? s*)
+            (let ([a ($car s*)])
+              (unless (string? a)
+                (error 'string=? "~s is not a string" a))
+              (if ($fx= n ($string-length a))
+                  (and (strings=? s ($cdr s*) n)
+                       (bstring=? s a 0 n))
+                  (check-strings-and-return-false ($cdr s*)))))))
+    (define (err x)
+      (error 'string=? "~s is not a string" x))
+    (define string=?
+      (case-lambda
+        [(s s1) 
+         (if (string? s) 
+             (if (string? s1)
+                 (let ([n ($string-length s)])
+                   (and ($fx= n ($string-length s1))
+                        (bstring=? s s1 0 n)))
+                 (err s1))
+             (err s))]
+        [(s . s*)
+         (if (string? s)
+             (strings=? s s* ($string-length s))
+             (err s))])))
 
   (define string->list
     (lambda (x)
