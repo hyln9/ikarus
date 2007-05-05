@@ -23,10 +23,11 @@
     ;;;
     '("ikarus.handlers.ss"
       "ikarus.multiple-values.ss"
-      "ikarus.predicates.ss"
-      "ikarus.fixnums.ss"
       "ikarus.control.ss"
       "ikarus.collect.ss"
+      "ikarus.predicates.ss"
+      "ikarus.fixnums.ss"
+      "ikarus.chars.ss"
       "ikarus.records.ss"
       "ikarus.cxr.ss"
       "ikarus.strings.ss"
