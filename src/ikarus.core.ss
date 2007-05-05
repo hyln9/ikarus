@@ -73,18 +73,6 @@
 
 
 
-
-(primitive-set! 'string->list
-  (lambda (x)
-    (unless (string? x)
-      (error 'string->list "~s is not a string" x))
-    (let f ([x x] [i ($string-length x)] [ac '()])
-      (cond
-        [($fxzero? i) ac]
-        [else
-         (let ([i ($fxsub1 i)])
-           (f x i (cons ($string-ref x i) ac)))]))))
-
 #|procedure:string=?
 synopsis:
   (string=? s s* ...)

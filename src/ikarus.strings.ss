@@ -1,10 +1,12 @@
 
 (library (ikarus strings)
-  (export string-length string-ref make-string)
+  (export string-length string-ref make-string string->list)
   (import 
-    (except (ikarus) string-length string-ref make-string)
+    (except (ikarus) string-length string-ref make-string
+            string->list)
     (only (scheme) 
-          $fx+ $fx= $fx<= $fx< $string-length $string-ref 
+          $fx+ $fxsub1 $fxzero? $fx= $fx<= $fx<
+          $string-length $string-ref 
           $make-string $string-set!))
 
 
@@ -48,4 +50,19 @@
              (error 'make-string "~s is not a character" c))
            (fill! ($make-string n) 0 n c)]))
         make-string))
+
+
+  (define string->list
+    (lambda (x)
+      (unless (string? x)
+        (error 'string->list "~s is not a string" x))
+      (let f ([x x] [i ($string-length x)] [ac '()])
+        (cond
+          [($fxzero? i) ac]
+          [else
+           (let ([i ($fxsub1 i)])
+             (f x i (cons ($string-ref x i) ac)))]))))
+
+
+
   )
