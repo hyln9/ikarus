@@ -69,18 +69,6 @@
                ls
                (f x (cdr ls)))))))
 
-(primitive-set! 'set-car!
-  (lambda (x y) 
-    (unless (pair? x)
-      (error 'set-car! "~s is not a pair" x))
-    ($set-car! x y)))
-
-(primitive-set! 'set-cdr! 
-  (lambda (x y)
-    (unless (pair? x)
-      (error 'set-cdr! "~s is not a pair" x))
-    ($set-cdr! x y)))
-
 (primitive-set! 'vector-ref 
   (lambda (v i)
     (unless (vector? v)
