@@ -1,14 +1,16 @@
 
 (library (ikarus predicates)
   (export fixnum? flonum? bignum? number? complex? real? rational? 
-          integer? exact?)
+          integer? exact? eof-object?)
   (import 
     (except (ikarus) fixnum? flonum? bignum? number? complex? real?
-            rational? integer? exact?)
-    (rename (only (ikarus) fixnum? flonum? bignum?) 
+            rational? integer? exact? eof-object?)
+    (rename (only (ikarus) fixnum? flonum? bignum? eof-object?) 
             (fixnum? sys:fixnum?)
             (flonum? sys:flonum?)
-            (bignum? sys:bignum?)))
+            (bignum? sys:bignum?)
+            (eof-object? sys:eof-object?)
+            ))
 
   (define fixnum?
     (lambda (x) (sys:fixnum? x)))
@@ -54,4 +56,10 @@
         [(sys:bignum? x) #t]
         [(sys:flonum? x) #f]
         [else 
-         (error 'exact? "~s is not a number" x)]))))
+         (error 'exact? "~s is not a number" x)])))
+  
+  (define eof-object?
+    (lambda (x)
+      (sys:eof-object? x)))
+
+  )

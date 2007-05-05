@@ -11,9 +11,6 @@
 (primitive-set! 'void
   (lambda () (void)))
   
-(primitive-set! 'eof-object?
-  (lambda (x) (eof-object? x)))
-
 
 (primitive-set! 'fxadd1
   (lambda (n)
