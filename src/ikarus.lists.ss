@@ -1,11 +1,12 @@
 
 (library (ikarus lists)
-  (export $memq list? list make-list append length list-ref reverse last-pair 
-          memq memv member assq assv assoc
+  (export $memq list? list list* make-list append length list-ref reverse
+          last-pair memq memv member assq assv assoc
           map for-each andmap ormap)
   (import 
     (only (scheme) $car $cdr $fx+ $fxadd1 $fxsub1 $fxzero? $fx>=)
-    (except (ikarus) list? list make-list append reverse last-pair length list-ref
+    (except (ikarus) list? list list* make-list append reverse last-pair 
+            length list-ref
             memq memv member assq assv assoc
             map for-each andmap ormap))
 
@@ -18,6 +19,15 @@
                  (f x (cdr ls)))))))
 
   (define list (lambda x x))
+
+
+  (define list*
+    (lambda (fst . rest)
+      (let f ([fst fst] [rest rest])
+        (cond
+          [(null? rest) fst]
+          [else 
+           (cons fst (f ($car rest) ($cdr rest)))]))))
 
   (define list?
     (letrec ([race

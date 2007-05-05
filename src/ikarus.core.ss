@@ -221,13 +221,6 @@
       (foreign-call "ikrt_strftime" s "%F")
       s)))
 
-(primitive-set! 'list*
-  (lambda (fst . rest)
-    (let f ([fst fst] [rest rest])
-      (cond
-        [(null? rest) fst]
-        [else 
-         (cons fst (f ($car rest) ($cdr rest)))]))))
 
 (primitive-set! 'command-line-arguments
   (make-parameter ($arg-list)
