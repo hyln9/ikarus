@@ -2,13 +2,16 @@
 
 (library (ikarus pairs)
   (export
+    cons
     car cdr caar cdar cadr cddr caaar cdaar cadar cddar caadr cdadr
     caddr cdddr caaaar cdaaar cadaar cddaar caadar cdadar caddar
     cdddar caaadr cdaadr cadadr cddadr caaddr cdaddr cadddr cddddr)
   (import 
     (only (ikarus) define if lambda pair? error quote let)
-    (only (scheme) $car $cdr))
+    (rename (only (scheme) cons $car $cdr)
+            (cons sys:cons)))
 
+  (define cons (lambda (x y) (sys:cons x y)))
   (define err
     (lambda (who x)
       (error who "invalid list structure ~s" x)))

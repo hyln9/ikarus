@@ -102,7 +102,6 @@
       [else 
        (error 'char-downcase "~s is not a character" c)])))
 
-(primitive-set! 'cons (lambda (x y) (cons x y)))
 
 (primitive-set! 'eq? (lambda (x y) (eq? x y)))
 
