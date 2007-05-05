@@ -14,6 +14,7 @@
         [(fixnum? x) #f]
         [else (error 'fxzero? "~s is not a fixnum" x)]))))
 
+
 (library (ikarus flonums)
   (export string->flonum flonum->string)
   (import 

@@ -28,6 +28,7 @@
       "ikarus.collect.ss"
       "ikarus.records.ss"
       "ikarus.cxr.ss"
+      "ikarus.strings.ss"
       "ikarus.numerics.ss"
       "ikarus.guardians.ss"
 

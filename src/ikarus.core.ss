@@ -162,16 +162,6 @@ description:
 
 
 
-(primitive-set! 'string-ref 
-  (lambda (s i) 
-    (unless (string? s) 
-      (error 'string-ref "~s is not a string" s))
-    (unless (fixnum? i)
-      (error 'string-ref "~s is not a valid index" i))
-    (unless (and ($fx< i ($string-length s))
-                 ($fx<= 0 i))
-      (error 'string-ref "index ~s is out of range for ~s" i s))
-    ($string-ref s i)))
 
 
 
