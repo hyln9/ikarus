@@ -1,17 +1,73 @@
 
-(library (ikarus flonums)
-  (export string->flonum flonum->string flonum?)
+
+
+(library (ikarus numeric predicates)
+  (export fixnum? flonum? bignum? number? complex? real? rational? 
+          integer? exact?)
   (import 
-    (except (ikarus) flonum->string string->flonum flonum?)
-    (rename (only (ikarus) flonum?) (flonum? sys:flonum?)))
+    (except (ikarus) fixnum? flonum? bignum? number? complex? real?
+            rational? integer? exact?)
+    (rename (only (ikarus) fixnum? flonum? bignum?) 
+            (fixnum? sys:fixnum?)
+            (flonum? sys:flonum?)
+            (bignum? sys:bignum?)))
 
+  (define fixnum?
+    (lambda (x) (sys:fixnum? x)))
+
+  (define bignum? 
+    (lambda (x) (sys:bignum? x)))
+  
   (define flonum? 
-    (lambda (x) (flonum? x)))
+    (lambda (x) (sys:flonum? x)))
+  
+  (define number?
+    (lambda (x)
+      (or (sys:fixnum? x)
+          (sys:bignum? x)
+          (sys:flonum? x))))
 
+  (define complex?
+    (lambda (x) (number? x)))
+  
+  (define real?
+    (lambda (x) (number? x)))
+
+  (define rational?
+    (lambda (x) 
+      (cond
+        [(sys:fixnum? x) #t]
+        [(sys:bignum? x) #t]
+        [(sys:flonum? x) #f]
+        [else (error 'rational? "~s is not a number" x)])))
+
+  (define integer? 
+    (lambda (x) 
+      (cond
+        [(sys:fixnum? x) #t]
+        [(sys:bignum? x) #t]
+        [(sys:flonum? x) (error 'integer "dunno for ~s" x)]
+        [else #f])))
+
+  (define exact?
+    (lambda (x) 
+      (cond
+        [(sys:fixnum? x) #t]
+        [(sys:bignum? x) #t]
+        [(sys:flonum? x) #f]
+        [else 
+         (error 'exact? "~s is not a number" x)]))))
+
+
+(library (ikarus flonums)
+  (export string->flonum flonum->string)
+  (import 
+    (except (ikarus) flonum->string string->flonum))
+  
   (define (flonum->string x)
     (or (foreign-call "ikrt_flonum_to_string" x)
         (error 'flonum->string "~s is not a flonum" x)))
-
+  
   (define (string->flonum x)
     (cond
       [(string? x) (foreign-call "ikrt_string_to_flonum" x)]
@@ -19,13 +75,17 @@
        (error 'string->flonum "~s is not a string" x)])))
 
 
+
+
 (library (ikarus generic-arithmetic)
-  (export)
-  (import (scheme))
+  (export + - * = < <= > >= add1 sub1 quotient remainder
+          quotient+remainder number->string)
+  (import 
+    (only (scheme) $fxlogand $fx= $fx< $fx<= $fx> $fx>= $fxzero?
+          $fxsll $fxsra $fxmodulo)
+    (except (ikarus) + - * = < <= > >= add1 sub1 quotient remainder
+            quotient+remainder number->string))
 
-
-(let ()
-  
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))
   (define (bignum->flonum x)
@@ -262,14 +322,6 @@
            [(null? rest) (binary/ a b)]
            [else (f (binary/ a b) (car ls) (cdr ls))]))]))
 
-  (define expt
-    (lambda (n m)
-      (cond
-        [($fxzero? m) 1]
-        [($fxzero? ($fxlogand m 1))
-         (expt (binary* n n) ($fxsra m 1))]
-        [else
-         (binary* n (expt (binary* n n) ($fxsra m 1)))])))
 
   (define max
     (case-lambda
@@ -330,44 +382,6 @@
        (if (number? x) 
            x 
            (error 'min "~s is not a number" x))]))
-
-  (define number?
-    (lambda (x)
-      (or (fixnum? x)
-          (bignum? x)
-          (flonum? x))))
-
-  (define complex?
-    (lambda (x) (number? x)))
-  
-  (define real?
-    (lambda (x) (number? x)))
-
-  (define rational?
-    (lambda (x) 
-      (cond
-        [(fixnum? x) #t]
-        [(bignum? x) #t]
-        [(flonum? x) #f]
-        [else (error 'rational? "~s is not a number" x)])))
-
-  (define integer? 
-    (lambda (x) 
-      (cond
-        [(fixnum? x) #t]
-        [(bignum? x) #t]
-        [(flonum? x) (error 'integer "dunno for ~s" x)]
-        [else #f])))
-
-  (define exact?
-    (lambda (x) 
-      (cond
-        [(fixnum? x) #t]
-        [(bignum? x) #t]
-        [(flonum? x) #f]
-        [else 
-         (error 'exact? "~s is not a number" x)])))
-
   (define exact->inexact
     (lambda (x)
       (cond
@@ -676,25 +690,25 @@
   (flcmp flfl>= flfx>= fxfl>= flbn>= bnfl>= $fl>=)
 
 
-  (primitive-set! '+ +)
-  (primitive-set! '- -)
-  (primitive-set! '* *)
-  (primitive-set! '/ /)
-  (primitive-set! '= (mk< = $fx= false false bnbn= 
-                          fxfl= flfx= bnfl= flbn= flfl=))
-  (primitive-set! '< (mk< < $fx< fxbn< bnfx< bnbn<
-                          fxfl< flfx< bnfl< flbn< flfl<))
-  (primitive-set! '> (mk< > $fx> fxbn> bnfx> bnbn>
-                          fxfl> flfx> bnfl> flbn> flfl>))
-  (primitive-set! '<= (mk< <= $fx<= fxbn< bnfx< bnbn<=
-                          fxfl<= flfx<= bnfl<= flbn<= flfl<=))
-  (primitive-set! '>= (mk< >= $fx>= fxbn> bnfx> bnbn>=
-                          fxfl>= flfx>= bnfl>= flbn>= flfl>=))
-  (primitive-set! 'logand logand)
-  (primitive-set! 'number? number?)
-  (primitive-set! 'number->string number->string)
+;  (primitive-set! '+ +)
+;  (primitive-set! '- -)
+;  (primitive-set! '* *)
+;  (primitive-set! '/ /)
+  (define = 
+    (mk< = $fx= false false bnbn= fxfl= flfx= bnfl= flbn= flfl=))
+  (define < 
+    (mk< < $fx< fxbn< bnfx< bnbn< fxfl< flfx< bnfl< flbn< flfl<))
+  (define >
+    (mk< > $fx> fxbn> bnfx> bnbn> fxfl> flfx> bnfl> flbn> flfl>))
+  (define <= 
+    (mk< <= $fx<= fxbn< bnfx< bnbn<= fxfl<= flfx<= bnfl<= flbn<= flfl<=))
+  (define >= 
+    (mk< >= $fx>= fxbn> bnfx> bnbn>= fxfl>= flfx>= bnfl>= flbn>= flfl>=))
+  ;(primitive-set! 'logand logand)
+  ;(primitive-set! 'number? number?)
+  ;(primitive-set! 'number->string number->string)
 
-  (primitive-set! 'add1
+  (define add1
     (lambda (x)
       (cond
         [(fixnum? x) 
@@ -703,7 +717,7 @@
          (foreign-call "ikrt_fxbnplus" 1 x)]
         [else (error 'add1 "~s is not a number" x)])))
 
-  (primitive-set! 'sub1
+  (define sub1
     (lambda (x)
       (cond
         [(fixnum? x) 
@@ -712,7 +726,7 @@
          (foreign-call "ikrt_fxbnplus" -1 x)]
         [else (error 'sub1 "~s is not a number" x)])))
 
-  (primitive-set! 'zero?
+  (define zero?
     (lambda (x)
       (cond
         [(fixnum? x) (eq? x 0)]
@@ -724,14 +738,22 @@
                      ($fxlogand x -1)
                      )])))
 
-  (primitive-set! 'expt
+  (define expt
     (lambda (n m)
+      (define fxexpt
+        (lambda (n m)
+          (cond
+            [($fxzero? m) 1]
+            [($fxzero? ($fxlogand m 1))
+             (fxexpt (binary* n n) ($fxsra m 1))]
+            [else
+             (binary* n (fxexpt (binary* n n) ($fxsra m 1)))])))
       (unless (number? n)
         (error 'expt "~s is not a numebr" n))
       (cond
         [(fixnum? m) 
          (if ($fx>= m 0)
-             (expt n m)
+             (fxexpt n m)
              (error 'expt "power should be positive, got ~s" m))]
         [(bignum? m) 
          (cond
@@ -749,17 +771,17 @@
                 (error 'expt "power should be positive, got ~s" m))])]
         [else (error 'expt "~s is not a number" m)])))
 
-  (primitive-set! 'quotient
+  (define quotient
     (lambda (x y)
       (let-values ([(q r) (quotient+remainder x y)])
         q)))
 
-  (primitive-set! 'remainder
+  (define remainder
     (lambda (x y)
       (let-values ([(q r) (quotient+remainder x y)])
         r)))
 
-  (primitive-set! 'quotient+remainder
+  (define quotient+remainder
     (lambda (x y)
       (cond
         [(eq? y 0) 
@@ -786,61 +808,59 @@
         [else (error 'quotient+remainder 
                   "~s is not a number" x)])))
 
-  (primitive-set! 'positive?
+  (define positive?
     (lambda (x)
       (cond
         [(fixnum? x) ($fx> x 0)]
         [(bignum? x) (positive-bignum? x)]
         [else (error 'positive? "~s is not a number" x)])))
 
-  (primitive-set! 'negative?
+  (define negative?
     (lambda (x)
       (cond
         [(fixnum? x) ($fx< x 0)]
         [(bignum? x) (not (positive-bignum? x))]
         [else (error 'negative? "~s is not a number" x)])))
 
-  (primitive-set! 'sin
+  (define sin
     (lambda (x)
       (cond
         [(flonum? x) (foreign-call "ikrt_fl_sin" x)]
         [(fixnum? x) (foreign-call "ikrt_fx_sin" x)]
         [else (error 'sin "unsupported ~s" x)])))
 
-  (primitive-set! 'cos
+  (define cos
     (lambda (x)
       (cond
         [(flonum? x) (foreign-call "ikrt_fl_cos" x)]
         [(fixnum? x) (foreign-call "ikrt_fx_cos" x)]
         [else (error 'cos "unsupported ~s" x)])))
 
-  (primitive-set! 'atan
+  (define atan
     (lambda (x)
       (cond
         [(flonum? x) (foreign-call "ikrt_fl_atan" x)]
         [(fixnum? x) (foreign-call "ikrt_fx_atan" x)]
         [else (error 'atan "unsupported ~s" x)])))
 
-  (primitive-set! 'sqrt
+  (define sqrt
     (lambda (x)
       (cond
         [(flonum? x) (foreign-call "ikrt_fl_sqrt" x)]
         [(fixnum? x) (foreign-call "ikrt_fx_sqrt" x)]
         [else (error 'sqrt "unsupported ~s" x)])))
 
-  (primitive-set! 'even? even?)
-  (primitive-set! 'odd? odd?)
-  (primitive-set! 'max max)
-  (primitive-set! 'min min)
-  (primitive-set! 'complex? complex?)
-  (primitive-set! 'real? real?)
-  (primitive-set! 'rational? rational?)
-  (primitive-set! 'exact? exact?)
-  (primitive-set! 'inexact? inexact?)
-  (primitive-set! 'integer? integer?)
-  (primitive-set! 'exact->inexact exact->inexact)
-  (primitive-set! 'modulo modulo)
-  (primitive-set! 'bignum? 
-    (lambda (x) (bignum? x)))
+  ;(primitive-set! 'even? even?)
+  ;(primitive-set! 'odd? odd?)
+  ;(primitive-set! 'max max)
+  ;(primitive-set! 'min min)
+  ;(primitive-set! 'complex? complex?)
+  ;(primitive-set! 'real? real?)
+  ;(primitive-set! 'rational? rational?)
+  ;(primitive-set! 'exact? exact?)
+  ;(primitive-set! 'inexact? inexact?)
+  ;(primitive-set! 'integer? integer?)
+  ;(primitive-set! 'exact->inexact exact->inexact)
+  ;(primitive-set! 'modulo modulo)
 
-  ))
+  )
