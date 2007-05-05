@@ -22,7 +22,7 @@
     ;;;  Error: Error: Error: Error: Error: Error: Error: ...).
     ;;;
     '("ikarus.handlers.ss"
-      "libcontrol.ss"
+      "ikarus.control.ss"
       "libcollect.ss"
       "librecord.ss"
       "libcxr.ss"
@@ -76,9 +76,6 @@
       [cond              (macro . cond)]
       [and               (macro . and)]
       [or                (macro . or)]))
-
-  (define ikarus-system-primitives
-    '(print-greeting))
 
   (define library-legend
     '([s   (ikarus system)]
@@ -517,7 +514,6 @@
       [fx+-types-error                   s]
       [fx+-overflow-error                s]
       [$do-event                         s]
-
       ))
 
 
@@ -1057,8 +1053,8 @@
                           [(assq x ',primlocs) => cdr]
                           [else #f])))
                     ,@(map build-library library-legend))])
-      (parameterize ([print-gensym #f])
-        (pretty-print code))
+      ;(parameterize ([print-gensym #f])
+      ;  (pretty-print code))
       (let-values ([(code empty-subst empty-env)
                     (boot-library-expand code)])
          code)))
@@ -1071,7 +1067,7 @@
         (lambda (file)
           (load file
             (lambda (x) 
-              (pretty-print x)
+          ;    (pretty-print x)
               (let-values ([(code export-subst export-env)
                             (boot-library-expand x)])
                  (set! code* (cons code code*))
@@ -1081,6 +1077,7 @@
       (printf "building system ...\n")
       (let-values ([(export-subst export-env export-locs)
                     (make-system-data subst env)])
+        (printf "export-subst=~s\n" export-locs)
         (let ([code (build-system-library export-subst export-env export-locs)])
           (values 
             (reverse (list* (car code*) code (cdr code*)))

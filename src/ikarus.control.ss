@@ -1,27 +1,30 @@
 
 (library (ikarus control)
-  (export)
-  (import (scheme))
-;(let ()
+  (export call/cf call/cc dynamic-wind)
+  (import 
+    (only (scheme) $fp-at-base $current-frame $frame->continuation
+          $seal-frame-and-call)
+    (except (ikarus) call/cf call/cc dynamic-wind))
 
-(let ()
-  (define call-with-current-frame
+  (define primitive-call/cf
     (lambda (f)
       (if ($fp-at-base)
           (f ($current-frame))
           ($seal-frame-and-call f))))
-  (primitive-set! 'call/cf call-with-current-frame))
  
-(let () 
+  (define call/cf
+    (lambda (f)
+      (if (procedure? f)
+          (primitive-call/cf f)
+          (error 'call/cf "~s is not a procedure" f))))
+
   (define primitive-call/cc
     (lambda (f)
-      (call/cf
+      (primitive-call/cf
         (lambda (frm)
           (f ($frame->continuation frm))))))
-  (primitive-set! '$primitive-call/cc primitive-call/cc))
 
-
-(let ([winders '()])
+  (define winders '())
 
   (define len
     (lambda (ls n)
@@ -72,7 +75,7 @@
 
   (define call/cc
     (lambda (f)
-      ($primitive-call/cc
+      (primitive-call/cc
         (lambda (k)
           (let ([save winders])
             (f (case-lambda
@@ -94,9 +97,4 @@
           [(v1 v2 . v*)
            (set! winders (cdr winders))
            (out)
-           (apply values v1 v2 v*)]))))
-
-  (primitive-set! 'call/cc call/cc)
-  (primitive-set! 'dynamic-wind dynamic-wind)
-  (void))
-)
+           (apply values v1 v2 v*)])))))
