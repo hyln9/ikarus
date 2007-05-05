@@ -46,6 +46,7 @@
       "ikarus.io-ports.ss"
       "ikarus.io-primitives.unsafe.ss"
       "ikarus.io-primitives.ss"
+      "ikarus.io.input-files.ss"
 
       "libchezio.ss"
       "libhash.ss"
@@ -1101,7 +1102,7 @@
       (printf "building system ...\n")
       (let-values ([(export-subst export-env export-locs)
                     (make-system-data subst env)])
-        (printf "export-subst=~s\n" export-locs)
+        ;(printf "export-subst=~s\n" export-locs)
         (let ([code (build-system-library export-subst export-env export-locs)])
           (values 
             (reverse (list* (car code*) code (cdr code*)))

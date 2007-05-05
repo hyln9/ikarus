@@ -11,9 +11,7 @@
     (except (ikarus) read-char unread-char peek-char write-char
             newline port-name input-port-name output-port-name
             close-input-port reset-input-port!  flush-output-port
-            close-output-port)
-
-          )
+            close-output-port))
 
   (define write-char
     (case-lambda
