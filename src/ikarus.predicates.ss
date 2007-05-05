@@ -3,14 +3,15 @@
 
   (export fixnum? flonum? bignum? number? complex? real? rational?
           integer? exact? eof-object? immediate? boolean? char?
-          vector? string? procedure? null? pair? symbol? not eq?) 
+          vector? string? procedure? null? pair? symbol? not 
+          eq? eqv?) 
 
   (import 
 
     (except (ikarus) fixnum? flonum? bignum? number? complex? real?
             rational? integer? exact? eof-object?  immediate?
             boolean?  char?  vector?  string?  procedure?  null?
-            pair? symbol? not eq?)
+            pair? symbol? not eq? eqv?)
 
     (rename (only (ikarus) fixnum? flonum? bignum? eof-object?
               immediate? boolean? char? vector? string? procedure? 
@@ -91,4 +92,8 @@
 
   (define eq? (lambda (x y) (sys:eq? x y)))
 
+  (define eqv?
+    (lambda (x y)
+      (or (sys:eq? x y)
+          (and (number? x) (number? y) (= x y)))))
   )

@@ -103,12 +103,6 @@
        (error 'char-downcase "~s is not a character" c)])))
 
 
-
-(primitive-set! 'eqv?
-  (lambda (x y)
-    (or (eq? x y)
-        (and (number? x) (number? y) (= x y)))))
-
 (primitive-set! 'set-car!
   (lambda (x y) 
     (unless (pair? x)
