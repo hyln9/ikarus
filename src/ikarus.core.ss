@@ -73,26 +73,6 @@
 
 
 
-
-
-
-
-
-
-(primitive-set! 'string-set! 
-  (lambda (s i c) 
-    (unless (string? s) 
-      (error 'string-set! "~s is not a string" s))
-    (unless (fixnum? i)
-      (error 'string-set! "~s is not a valid index" i))
-    (unless (and ($fx< i ($string-length s))
-                 ($fx>= i 0))
-      (error 'string-set! "index ~s is out of range for ~s" i s))
-    (unless (char? c)
-      (error 'string-set! "~s is not a character" c))
-    ($string-set! s i c)))
-
-
 #|procedure:string-append
 synopsis:
   (string-append str ...)

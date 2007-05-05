@@ -1,11 +1,12 @@
 
 (library (ikarus strings)
-  (export string-length string-ref make-string string->list string=?)
+  (export string-length string-ref string-set! make-string string->list string=?)
   (import 
-    (except (ikarus) string-length string-ref make-string
+    (except (ikarus) string-length string-ref string-set! make-string
             string->list string=?)
     (only (scheme) 
-          $fx+ $fxsub1 $fxadd1 $char= $car $cdr $fxzero? $fx= $fx<= $fx<
+          $fx+ $fxsub1 $fxadd1 $char= $car $cdr
+          $fxzero? $fx= $fx<= $fx< $fx>=
           $string-length $string-ref 
           $make-string $string-set!))
 
@@ -27,6 +28,19 @@
       (error 'string-ref "index ~s is out of range for ~s" i s))
     ($string-ref s i))
   
+
+  (define string-set! 
+    (lambda (s i c) 
+      (unless (string? s) 
+        (error 'string-set! "~s is not a string" s))
+      (unless (fixnum? i)
+        (error 'string-set! "~s is not a valid index" i))
+      (unless (and ($fx< i ($string-length s))
+                   ($fx>= i 0))
+        (error 'string-set! "index ~s is out of range for ~s" i s))
+      (unless (char? c)
+        (error 'string-set! "~s is not a character" c))
+      ($string-set! s i c)))
   
   (define make-string
     (let ()
