@@ -1,12 +1,12 @@
 
 (library (ikarus lists)
   (export $memq list? length list-ref reverse last-pair 
-          memq memv member)
+          memq memv member assq assv assoc)
   (import 
     (only (scheme) $car $cdr $fx+ $fxsub1 $fxzero? $fx>=)
 
-    (except (ikarus) list? reverse last-pair memq memv member
-            length list-ref))
+    (except (ikarus) list? reverse last-pair length list-ref
+            memq memv member assq assv assoc))
 
   (define $memq
     (lambda (x ls)
@@ -165,6 +165,89 @@
        (lambda (x ls)
          (race ls ls ls x))))
 
+  (define assq
+    (letrec ([race
+              (lambda (x h t ls)
+                (if (pair? h)
+                    (let ([a ($car h)] [h ($cdr h)])
+                       (if (pair? a)
+                           (if (eq? ($car a) x)
+                               a
+                               (if (pair? h)
+                                   (if (not (eq? h t))
+                                       (let ([a ($car h)])
+                                          (if (pair? a)
+                                              (if (eq? ($car a) x)
+                                                  a
+                                                  (race x ($cdr h) ($cdr t) ls))
+                                              (error 'assq "malformed alist ~s"
+                                                     ls)))
+                                       (error 'assq "circular list ~s" ls))
+                                   (if (null? h)
+                                       #f
+                                       (error 'assq "~s is not a proper list" ls))))
+                           (error 'assq "malformed alist ~s" ls)))
+                    (if (null? h)
+                        #f
+                        (error 'assq "~s is not a proper list" ls))))])
+       (lambda (x ls) 
+         (race x ls ls ls))))
+
+  (define assv
+    (letrec ([race
+              (lambda (x h t ls)
+                (if (pair? h)
+                    (let ([a ($car h)] [h ($cdr h)])
+                       (if (pair? a)
+                           (if (eqv? ($car a) x)
+                               a
+                               (if (pair? h)
+                                   (if (not (eq? h t))
+                                       (let ([a ($car h)])
+                                          (if (pair? a)
+                                              (if (eqv? ($car a) x)
+                                                  a
+                                                  (race x ($cdr h) ($cdr t) ls))
+                                              (error 'assv "malformed alist ~s"
+                                                     ls)))
+                                       (error 'assv "circular list ~s" ls))
+                                   (if (null? h)
+                                       #f
+                                       (error 'assv "~s is not a proper list" ls))))
+                           (error 'assv "malformed alist ~s" ls)))
+                    (if (null? h)
+                        #f
+                        (error 'assv "~s is not a proper list" ls))))])
+       (lambda (x ls) 
+         (race x ls ls ls))))
+
+  (define assoc
+    (letrec ([race
+              (lambda (x h t ls)
+                (if (pair? h)
+                    (let ([a ($car h)] [h ($cdr h)])
+                       (if (pair? a)
+                           (if (equal? ($car a) x)
+                               a
+                               (if (pair? h)
+                                   (if (not (eq? h t))
+                                       (let ([a ($car h)])
+                                          (if (pair? a)
+                                              (if (equal? ($car a) x)
+                                                  a
+                                                  (race x ($cdr h) ($cdr t) ls))
+                                              (error 'assoc "malformed alist ~s"
+                                                     ls)))
+                                       (error 'assoc "circular list ~s" ls))
+                                   (if (null? h)
+                                       #f
+                                       (error 'assoc "~s is not a proper list" ls))))
+                           (error 'assoc "malformed alist ~s" ls)))
+                    (if (null? h)
+                        #f
+                        (error 'assoc "~s is not a proper list" ls))))])
+       (lambda (x ls) 
+         (race x ls ls ls))))
 
 
   )
