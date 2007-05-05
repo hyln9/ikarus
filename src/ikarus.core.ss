@@ -25,10 +25,6 @@
     (unless (char? x)
       (error 'char->integer "~s is not a character" x))
     ($char->fixnum x)))
-  
-
-  
-
 
 (primitive-set! 'gensym?
   (lambda (x)
@@ -67,32 +63,7 @@
     (primitive-set! x v)
     (set-top-level-value! x v)))
 
-(primitive-set! 'fx+ 
-  (lambda (x y) 
-    (unless (fixnum? x)
-      (error 'fx+ "~s is not a fixnum" x))
-    (unless (fixnum? y)
-      (error 'fx+ "~s is not a fixnum" y))
-    ($fx+ x y)))
-
-
-(primitive-set! 'fx-
-  (lambda (x y) 
-    (unless (fixnum? x)
-      (error 'fx- "~s is not a fixnum" x))
-    (unless (fixnum? y)
-      (error 'fx- "~s is not a fixnum" y))
-    ($fx- x y)))
-
-
-(primitive-set! 'fx*
-  (lambda (x y) 
-    (unless (fixnum? x)
-      (error 'fx* "~s is not a fixnum" x))
-    (unless (fixnum? y)
-      (error 'fx* "~s is not a fixnum" y))
-    ($fx* x y)))
-  
+ 
 (primitive-set! 'fxquotient
   (lambda (x y) 
     (unless (fixnum? x)
