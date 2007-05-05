@@ -1,10 +1,11 @@
 
+
 (library (ikarus control)
-  (export call/cf call/cc dynamic-wind)
+  (export call/cf call/cc dynamic-wind exit)
   (import 
     (only (scheme) $fp-at-base $current-frame $frame->continuation
           $seal-frame-and-call)
-    (except (ikarus) call/cf call/cc dynamic-wind))
+    (except (ikarus) call/cf call/cc dynamic-wind exit))
 
   (define primitive-call/cf
     (lambda (f)
@@ -97,4 +98,10 @@
           [(v1 v2 . v*)
            (set! winders (cdr winders))
            (out)
-           (apply values v1 v2 v*)])))))
+           (apply values v1 v2 v*)]))))
+  
+  (define exit
+    (case-lambda
+      [() (exit 0)]
+      [(status) (foreign-call "exit" status)]))
+  )

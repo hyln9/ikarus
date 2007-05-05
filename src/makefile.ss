@@ -22,13 +22,15 @@
     ;;;  Error: Error: Error: Error: Error: Error: Error: ...).
     ;;;
     '("ikarus.handlers.ss"
+      "ikarus.multiple-values.ss"
       "ikarus.control.ss"
       "ikarus.collect.ss"
       "ikarus.records.ss"
       "ikarus.cxr.ss"
       "ikarus.numerics.ss"
       "ikarus.guardians.ss"
-      "libcore.ss"
+
+      "ikarus.core.ss"
       "libchezio.ss"
       "libhash.ss"
       "libwriter.ss"
