@@ -70,24 +70,6 @@
                (f x (cdr ls)))))))
 
 
-(primitive-set! 'vector
-  ;;; FIXME: add case-lambda
-  (letrec ([length
-            (lambda (ls n)
-              (cond
-               [(null? ls) n]
-               [else (length ($cdr ls) ($fx+ n 1))]))]
-           [loop 
-            (lambda (v ls i n)
-              (cond
-               [($fx= i n) v]
-               [else 
-                ($vector-set! v i ($car ls))
-                (loop v ($cdr ls) ($fx+ i 1) n)]))])
-     (lambda ls
-       (let ([n (length ls 0)])
-         (let ([v (make-vector n)])
-           (loop v ls 0 n))))))
 
  
 (primitive-set! 'list?
