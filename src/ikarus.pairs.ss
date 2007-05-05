@@ -1,6 +1,6 @@
 
 
-(library (ikarus cxr)
+(library (ikarus pairs)
   (export
     car cdr caar cdar cadr cddr caaar cdaar cadar cddar caadr cdadr
     caddr cdddr caaaar cdaaar cadaar cddaar caadar cdadar caddar

@@ -54,23 +54,12 @@
       (error 'set-top-level-value! "~s is not a symbol" x))
     ($set-symbol-value! x v)))
  
-  
-
 (primitive-set! 'primitive-set!
   (lambda (x v)
     (unless (symbol? x)
       (error 'primitive-set! "~s is not a symbol" x))
     (primitive-set! x v)
     (set-top-level-value! x v)))
-
- 
- 
-
-
-
-
-
-
 
 (primitive-set! '$memq
   (lambda (x ls)
@@ -112,9 +101,6 @@
          [else c])]
       [else 
        (error 'char-downcase "~s is not a character" c)])))
-
-
-
 
 (primitive-set! 'cons (lambda (x y) (cons x y)))
 
