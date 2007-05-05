@@ -1,9 +1,9 @@
 
 (library (ikarus fixnums)
-  (export fxzero? fxadd1 fxsub1)
+  (export fxzero? fxadd1 fxsub1 fxlognot)
   (import 
-    (only (scheme) $fxadd1 $fxsub1)
-    (except (ikarus) fxzero? fxadd1 fxsub1))
+    (only (scheme) $fxadd1 $fxsub1 $fxlognot)
+    (except (ikarus) fxzero? fxadd1 fxsub1 fxlognot))
 
   (define fxzero?
     (lambda (x)
@@ -24,4 +24,10 @@
           ($fxsub1 n)
           (error 'fxsub1 "~s is not a fixnum" n))))
 
+
+  (define fxlognot 
+    (lambda (x)
+      (unless (fixnum? x) 
+        (error 'fxlognot "~s is not a fixnum" x))
+      ($fxlognot x)))
   )

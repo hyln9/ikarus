@@ -29,11 +29,6 @@
       (error 'char->integer "~s is not a character" x))
     ($char->fixnum x)))
   
-(primitive-set! 'fxlognot 
-  (lambda (x)
-    (unless (fixnum? x) 
-      (error 'fxlognot "~s is not a fixnum" x))
-    ($fxlognot x)))
   
 (let ()
   (define fill!
