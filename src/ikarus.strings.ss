@@ -1,11 +1,11 @@
 
 (library (ikarus strings)
   (export string-length string-ref string-set! make-string string->list string=?
-          string-append substring string list->string)
+          string-append substring string list->string uuid)
   (import 
     (except (ikarus) string-length string-ref string-set! make-string
             string->list string=? string-append substring string
-            list->string)
+            list->string uuid)
     (only (scheme) 
           $fx+ $fxsub1 $fxadd1 $char= $car $cdr
           $fxzero? $fx= $fx<= $fx< $fx>= $fx-
@@ -228,4 +228,10 @@
           (let ([s ($make-string n)])
             (fill-strings s s* 0))))))
 
+
+  (define uuid
+    (lambda ()
+      (let ([s (make-string 16)])
+        (or (foreign-call "ik_uuid" s)
+            (error 'uuid "failed!")))))
   )

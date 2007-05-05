@@ -1380,11 +1380,6 @@
 
 (primitive-set! 'list (lambda x x))
 
-(primitive-set! 'uuid
-   (lambda ()
-     (let ([s (make-string 16)])
-       (or (foreign-call "ik_uuid" s)
-           (error 'uuid "failed!")))))
 
 (primitive-set! 'gensym->unique-string
   (lambda (x)
