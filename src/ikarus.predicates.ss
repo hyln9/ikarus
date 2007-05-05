@@ -1,16 +1,33 @@
 
 (library (ikarus predicates)
-  (export fixnum? flonum? bignum? number? complex? real? rational? 
-          integer? exact? eof-object?)
+
+  (export fixnum? flonum? bignum? number? complex? real? rational?
+          integer? exact? eof-object? immediate? boolean? char?
+          vector? string? procedure? null? pair? symbol?) 
+
   (import 
+
     (except (ikarus) fixnum? flonum? bignum? number? complex? real?
-            rational? integer? exact? eof-object?)
-    (rename (only (ikarus) fixnum? flonum? bignum? eof-object?) 
+            rational? integer? exact? eof-object?  immediate?
+            boolean?  char?  vector?  string?  procedure?  null?
+            pair? symbol?)
+
+    (rename (only (ikarus) fixnum? flonum? bignum? eof-object?
+              immediate? boolean? char? vector? string? procedure? 
+              null? pair? symbol?)
             (fixnum? sys:fixnum?)
             (flonum? sys:flonum?)
             (bignum? sys:bignum?)
             (eof-object? sys:eof-object?)
-            ))
+            (immediate? sys:immediate?)
+            (boolean? sys:boolean?)
+            (char? sys:char?)
+            (vector? sys:vector?)
+            (string? sys:string?)
+            (procedure? sys:procedure?)
+            (null? sys:null?)
+            (pair? sys:pair?)
+            (symbol? sys:symbol?)))
 
   (define fixnum?
     (lambda (x) (sys:fixnum? x)))
@@ -58,8 +75,15 @@
         [else 
          (error 'exact? "~s is not a number" x)])))
   
-  (define eof-object?
-    (lambda (x)
-      (sys:eof-object? x)))
+  (define eof-object? (lambda (x) (sys:eof-object? x)))
+  (define immediate? (lambda (x) (sys:immediate? x)))
+  (define boolean? (lambda (x) (sys:boolean? x)))
+  (define char? (lambda (x) (sys:char? x)))
+  (define vector? (lambda (x) (sys:vector? x)))
+  (define string? (lambda (x) (sys:string? x)))
+  (define procedure? (lambda (x) (sys:procedure? x)))
+  (define null? (lambda (x) (sys:null? x)))
+  (define pair? (lambda (x) (sys:pair? x)))
+  (define symbol? (lambda (x) (sys:symbol? x)))
 
   )

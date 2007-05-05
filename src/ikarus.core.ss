@@ -46,22 +46,6 @@
       (error 'fxlognot "~s is not a fixnum" x))
     ($fxlognot x)))
   
-(primitive-set! 'immediate? (lambda (x) (immediate? x)))
-
-(primitive-set! 'boolean? (lambda (x) (boolean? x)))
-  
-(primitive-set! 'char? (lambda (x) (char? x)))
-
-(primitive-set! 'vector? (lambda (x) (vector? x)))
-
-(primitive-set! 'string? (lambda (x) (string? x)))
-
-(primitive-set! 'procedure? (lambda (x) (procedure? x)))
-
-(primitive-set! 'null? (lambda (x) (null? x)))
-
-(primitive-set! 'pair? (lambda (x) (pair? x)))
-
 (let ()
   (define fill!
     (lambda (v i n fill)
