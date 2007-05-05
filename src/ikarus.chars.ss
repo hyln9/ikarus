@@ -1,14 +1,31 @@
 
 (library (ikarus chars)
   (export char=? char<? char<=? char>? char>=? char-whitespace?
+          char->integer integer->char
           char-alphabetic? char-downcase)
   (import 
     (except (ikarus)
       char=? char<? char<=? char>? char>=?
+      integer->char char->integer
       char-whitespace? char-alphabetic? char-downcase)
     (only (scheme) 
-          $car $cdr $fx+ $fx- $fixnum->char $char->fixnum
+          $car $cdr $fx+ $fx- $fx<= $fx>= $fixnum->char $char->fixnum
           $char= $char< $char<= $char> $char>=))
+
+  (define integer->char
+    (lambda (n)
+      (unless (fixnum? n)
+        (error 'integer->char "~s is not a fixnum" n))
+      (unless (and ($fx>= n 0)
+                   ($fx<= n 255))
+        (error 'integer->char "~s is out of range[0..255]" n))
+      ($fixnum->char n)))
+  
+  (define char->integer 
+    (lambda (x) 
+      (unless (char? x)
+        (error 'char->integer "~s is not a character" x))
+      ($char->fixnum x)))
 
   ;;; FIXME: this file is embarrasing
   (define char=?

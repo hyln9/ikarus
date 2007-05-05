@@ -11,21 +11,6 @@
 (primitive-set! 'void
   (lambda () (void)))
   
-(primitive-set! 'integer->char
-  (lambda (n)
-    (unless (fixnum? n)
-      (error 'integer->char "~s is not a fixnum" n))
-    (unless (and ($fx>= n 0)
-                 ($fx<= n 255))
-      (error 'integer->char "~s is out of range[0..255]" n))
-    ($fixnum->char n)))
-  
-(primitive-set! 'char->integer 
-  (lambda (x) 
-    (unless (char? x)
-      (error 'char->integer "~s is not a character" x))
-    ($char->fixnum x)))
-
 (primitive-set! 'gensym?
   (lambda (x)
     (and (symbol? x) 
