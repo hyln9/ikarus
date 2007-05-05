@@ -25,7 +25,7 @@
       "ikarus.control.ss"
       "ikarus.collect.ss"
       "ikarus.records.ss"
-      "libcxr.ss"
+      "ikarus.cxr.ss"
       "libnumerics.ss"
       "libguardians.ss"
       "libcore.ss"

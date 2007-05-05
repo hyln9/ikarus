@@ -1,54 +1,48 @@
 
-;(primitive-set! 'car (lambda (x) (car x)))
-;(primitive-set! 'cdr (lambda (x) (cdr x)))
-;(primitive-set! 'cadr (lambda (x) (cadr x)))
 
 (library (ikarus cxr)
-  (export)
-  (import (scheme))
+  (export
+    car cdr caar cdar cadr cddr caaar cdaar cadar cddar caadr cdadr
+    caddr cdddr caaaar cdaaar cadaar cddaar caadar cdadar caddar
+    cdddar caaadr cdaadr cadadr cddadr caaddr cdaddr cadddr cddddr)
+  (import 
+    (only (ikarus) define if lambda pair? error quote let)
+    (only (scheme) $car $cdr))
 
   (define err
     (lambda (who x)
       (error who "invalid list structure ~s" x)))
-
-  (primitive-set!
-    'car
+  (define car
     (lambda (orig)
       (if (pair? orig) ($car orig) (err 'car orig))))
-  (primitive-set!
-    'cdr
+  (define cdr
     (lambda (orig)
       (if (pair? orig) ($cdr orig) (err 'cdr orig))))
-  (primitive-set!
-    'caar
+  (define caar
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($car orig)])
             (if (pair? x) ($car x) (err 'caar orig)))
           (err 'caar orig))))
-  (primitive-set!
-    'cadr
+  (define cadr
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($cdr orig)])
             (if (pair? x) ($car x) (err 'cadr orig)))
           (err 'cadr orig))))
-  (primitive-set!
-    'cdar
+  (define cdar
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($car orig)])
             (if (pair? x) ($cdr x) (err 'cdar orig)))
           (err 'cdar orig))))
-  (primitive-set!
-    'cddr
+  (define cddr
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($cdr orig)])
             (if (pair? x) ($cdr x) (err 'cddr orig)))
           (err 'cddr orig))))
-  (primitive-set!
-    'caaar
+  (define caaar
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($car orig)])
@@ -57,8 +51,7 @@
                   (if (pair? x) ($car x) (err 'caaar orig)))
                 (err 'caaar orig)))
           (err 'caaar orig))))
-  (primitive-set!
-    'caadr
+  (define caadr
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($cdr orig)])
@@ -67,8 +60,7 @@
                   (if (pair? x) ($car x) (err 'caadr orig)))
                 (err 'caadr orig)))
           (err 'caadr orig))))
-  (primitive-set!
-    'cadar
+  (define cadar
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($car orig)])
@@ -77,8 +69,7 @@
                   (if (pair? x) ($car x) (err 'cadar orig)))
                 (err 'cadar orig)))
           (err 'cadar orig))))
-  (primitive-set!
-    'caddr
+  (define caddr
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($cdr orig)])
@@ -87,8 +78,7 @@
                   (if (pair? x) ($car x) (err 'caddr orig)))
                 (err 'caddr orig)))
           (err 'caddr orig))))
-  (primitive-set!
-    'cdaar
+  (define cdaar
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($car orig)])
@@ -97,8 +87,7 @@
                   (if (pair? x) ($cdr x) (err 'cdaar orig)))
                 (err 'cdaar orig)))
           (err 'cdaar orig))))
-  (primitive-set!
-    'cdadr
+  (define cdadr
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($cdr orig)])
@@ -107,8 +96,7 @@
                   (if (pair? x) ($cdr x) (err 'cdadr orig)))
                 (err 'cdadr orig)))
           (err 'cdadr orig))))
-  (primitive-set!
-    'cddar
+  (define cddar
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($car orig)])
@@ -117,8 +105,7 @@
                   (if (pair? x) ($cdr x) (err 'cddar orig)))
                 (err 'cddar orig)))
           (err 'cddar orig))))
-  (primitive-set!
-    'cdddr
+  (define cdddr
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($cdr orig)])
@@ -127,8 +114,7 @@
                   (if (pair? x) ($cdr x) (err 'cdddr orig)))
                 (err 'cdddr orig)))
           (err 'cdddr orig))))
-  (primitive-set!
-    'caaaar
+  (define caaaar
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($car orig)])
@@ -140,8 +126,7 @@
                       (err 'caaaar orig)))
                 (err 'caaaar orig)))
           (err 'caaaar orig))))
-  (primitive-set!
-    'caaadr
+  (define caaadr
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($cdr orig)])
@@ -153,8 +138,7 @@
                       (err 'caaadr orig)))
                 (err 'caaadr orig)))
           (err 'caaadr orig))))
-  (primitive-set!
-    'caadar
+  (define caadar
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($car orig)])
@@ -166,8 +150,7 @@
                       (err 'caadar orig)))
                 (err 'caadar orig)))
           (err 'caadar orig))))
-  (primitive-set!
-    'caaddr
+  (define caaddr
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($cdr orig)])
@@ -179,8 +162,7 @@
                       (err 'caaddr orig)))
                 (err 'caaddr orig)))
           (err 'caaddr orig))))
-  (primitive-set!
-    'cadaar
+  (define cadaar
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($car orig)])
@@ -192,8 +174,7 @@
                       (err 'cadaar orig)))
                 (err 'cadaar orig)))
           (err 'cadaar orig))))
-  (primitive-set!
-    'cadadr
+  (define cadadr
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($cdr orig)])
@@ -205,8 +186,7 @@
                       (err 'cadadr orig)))
                 (err 'cadadr orig)))
           (err 'cadadr orig))))
-  (primitive-set!
-    'caddar
+  (define caddar
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($car orig)])
@@ -218,8 +198,7 @@
                       (err 'caddar orig)))
                 (err 'caddar orig)))
           (err 'caddar orig))))
-  (primitive-set!
-    'cadddr
+  (define cadddr
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($cdr orig)])
@@ -231,8 +210,7 @@
                       (err 'cadddr orig)))
                 (err 'cadddr orig)))
           (err 'cadddr orig))))
-  (primitive-set!
-    'cdaaar
+  (define cdaaar
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($car orig)])
@@ -244,8 +222,7 @@
                       (err 'cdaaar orig)))
                 (err 'cdaaar orig)))
           (err 'cdaaar orig))))
-  (primitive-set!
-    'cdaadr
+  (define cdaadr
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($cdr orig)])
@@ -257,8 +234,7 @@
                       (err 'cdaadr orig)))
                 (err 'cdaadr orig)))
           (err 'cdaadr orig))))
-  (primitive-set!
-    'cdadar
+  (define cdadar
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($car orig)])
@@ -270,8 +246,7 @@
                       (err 'cdadar orig)))
                 (err 'cdadar orig)))
           (err 'cdadar orig))))
-  (primitive-set!
-    'cdaddr
+  (define cdaddr
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($cdr orig)])
@@ -283,8 +258,7 @@
                       (err 'cdaddr orig)))
                 (err 'cdaddr orig)))
           (err 'cdaddr orig))))
-  (primitive-set!
-    'cddaar
+  (define cddaar
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($car orig)])
@@ -296,8 +270,7 @@
                       (err 'cddaar orig)))
                 (err 'cddaar orig)))
           (err 'cddaar orig))))
-  (primitive-set!
-    'cddadr
+  (define cddadr
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($cdr orig)])
@@ -309,8 +282,7 @@
                       (err 'cddadr orig)))
                 (err 'cddadr orig)))
           (err 'cddadr orig))))
-  (primitive-set!
-    'cdddar
+  (define cdddar
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($car orig)])
@@ -322,8 +294,7 @@
                       (err 'cdddar orig)))
                 (err 'cdddar orig)))
           (err 'cdddar orig))))
-  (primitive-set!
-    'cddddr
+  (define cddddr
     (lambda (orig)
       (if (pair? orig)
           (let ([x ($cdr orig)])
