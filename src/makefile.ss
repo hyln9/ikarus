@@ -26,7 +26,7 @@
       "ikarus.collect.ss"
       "ikarus.records.ss"
       "ikarus.cxr.ss"
-      "libnumerics.ss"
+      "ikarus.numerics.ss"
       "libguardians.ss"
       "libcore.ss"
       "libchezio.ss"

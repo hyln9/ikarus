@@ -1,23 +1,23 @@
 
 (library (ikarus flonums)
-  (export)
-  (import (scheme))
+  (export string->flonum flonum->string flonum?)
+  (import 
+    (except (ikarus) flonum->string string->flonum flonum?)
+    (rename (only (ikarus) flonum?) (flonum? sys:flonum?)))
 
-(let ()
+  (define flonum? 
+    (lambda (x) (flonum? x)))
+
   (define (flonum->string x)
     (or (foreign-call "ikrt_flonum_to_string" x)
         (error 'flonum->string "~s is not a flonum" x)))
+
   (define (string->flonum x)
     (cond
       [(string? x) (foreign-call "ikrt_string_to_flonum" x)]
       [else 
-       (error 'string->flonum "~s is not a string" x)]))
+       (error 'string->flonum "~s is not a string" x)])))
 
-  (primitive-set! 'flonum? 
-    (lambda (x) (flonum? x)))
-  (primitive-set! 'flonum->string flonum->string)
-  (primitive-set! 'string->flonum string->flonum)
-))
 
 (library (ikarus generic-arithmetic)
   (export)
