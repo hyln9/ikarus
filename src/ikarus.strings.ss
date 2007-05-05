@@ -1,13 +1,13 @@
 
 (library (ikarus strings)
   (export string-length string-ref string-set! make-string string->list string=?
-          string-append)
+          string-append substring)
   (import 
     (except (ikarus) string-length string-ref string-set! make-string
-            string->list string=? string-append)
+            string->list string=? string-append substring)
     (only (scheme) 
           $fx+ $fxsub1 $fxadd1 $char= $car $cdr
-          $fxzero? $fx= $fx<= $fx< $fx>=
+          $fxzero? $fx= $fx<= $fx< $fx>= $fx-
           $string-length $string-ref 
           $make-string $string-set!))
 
@@ -66,6 +66,32 @@
            (fill! ($make-string n) 0 n c)]))
         make-string))
 
+
+  (module (substring)
+    (define fill
+      (lambda (s d si sj di)
+        (cond
+          [($fx= si sj) d]
+          [else
+           ($string-set! d di ($string-ref s si))
+           (fill s d ($fxadd1 si) sj ($fxadd1 di))])))
+    (define substring
+       (lambda (s n m)
+         (unless (string? s)
+           (error 'substring "~s is not a string" s))
+         (let ([len ($string-length s)])
+           (unless (and (fixnum? n)
+                        ($fx>= n 0)
+                        ($fx< n len))
+             (error 'substring "~s is not a valid start index for ~s" n s))
+           (unless (and (fixnum? m)
+                        ($fx>= m 0)
+                        ($fx<= m len))
+             (error 'substring "~s is not a valid end index for ~s" m s))
+           (let ([len ($fx- m n)])
+             (if ($fx<= len 0)
+                 ""
+                 (fill s ($make-string len) n m 0)))))))
 
   (module (string=?)
     (define bstring=?

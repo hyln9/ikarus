@@ -77,35 +77,6 @@
 
 
 
-#|procedure:substring
-  (substring str i j)
-  Returns a substring of str starting from index i (inclusive)
-  and ending with index j (exclusive).|#
-(let ()
-  (define fill
-    (lambda (s d si sj di)
-      (cond
-        [($fx= si sj) d]
-        [else
-         ($string-set! d di ($string-ref s si))
-         (fill s d ($fxadd1 si) sj ($fxadd1 di))])))
-  (primitive-set! 'substring
-     (lambda (s n m)
-       (unless (string? s)
-         (error 'substring "~s is not a string" s))
-       (let ([len ($string-length s)])
-         (unless (and (fixnum? n)
-                      ($fx>= n 0)
-                      ($fx< n len))
-           (error 'substring "~s is not a valid start index for ~s" n s))
-         (unless (and (fixnum? m)
-                      ($fx>= m 0)
-                      ($fx<= m len))
-           (error 'substring "~s is not a valid end index for ~s" m s))
-         (let ([len ($fx- m n)])
-           (if ($fx<= len 0)
-               ""
-               (fill s ($make-string len) n m 0)))))))
 
 (primitive-set! 'not 
   (lambda (x) (if x #f #t)))
