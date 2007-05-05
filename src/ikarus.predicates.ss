@@ -2,25 +2,26 @@
 (library (ikarus predicates)
 
   (export fixnum? flonum? bignum? number? complex? real? rational?
-          integer? exact? eof-object? immediate? boolean? char?
-          vector? string? procedure? null? pair? symbol? not 
+          integer? exact? eof-object? bwp-object? immediate? boolean?
+          char? vector? string? procedure? null? pair? symbol? not 
           eq? eqv? equal?) 
 
   (import 
 
     (except (ikarus) fixnum? flonum? bignum? number? complex? real?
-            rational? integer? exact? eof-object?  immediate?
+            rational? integer? exact? eof-object? bwp-object? immediate?
             boolean?  char?  vector?  string?  procedure?  null?
             pair? symbol? not eq? eqv? equal?)
     (only (scheme) $fxadd1 $vector-ref $fx= $char= $string-ref
           $string-length $vector-length $car $cdr)
     (rename (only (ikarus) fixnum? flonum? bignum? eof-object?
-              immediate? boolean? char? vector? string? procedure? 
-              null? pair? symbol? eq?)
+                  bwp-object? immediate? boolean? char? vector? string?
+                  procedure? null? pair? symbol? eq?)
             (fixnum? sys:fixnum?)
             (flonum? sys:flonum?)
             (bignum? sys:bignum?)
             (eof-object? sys:eof-object?)
+            (bwp-object? sys:bwp-object?)
             (immediate? sys:immediate?)
             (boolean? sys:boolean?)
             (char? sys:char?)
@@ -79,6 +80,7 @@
          (error 'exact? "~s is not a number" x)])))
   
   (define eof-object? (lambda (x) (sys:eof-object? x)))
+  (define bwp-object? (lambda (x) (sys:bwp-object? x)))
   (define immediate? (lambda (x) (sys:immediate? x)))
   (define boolean? (lambda (x) (sys:boolean? x)))
   (define char? (lambda (x) (sys:char? x)))

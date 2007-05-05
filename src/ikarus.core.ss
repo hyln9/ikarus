@@ -210,9 +210,6 @@
       x)))
 
 
-(primitive-set! 'bwp-object?
-  (lambda (x)
-    (bwp-object? x)))
 
 (primitive-set! 'weak-cons
   (lambda (a d)
