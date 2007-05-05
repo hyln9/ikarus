@@ -1,11 +1,11 @@
 
 (library (ikarus lists)
-  (export $memq list? append length list-ref reverse last-pair 
+  (export $memq list? list make-list append length list-ref reverse last-pair 
           memq memv member assq assv assoc
           map for-each andmap ormap)
   (import 
     (only (scheme) $car $cdr $fx+ $fxadd1 $fxsub1 $fxzero? $fx>=)
-    (except (ikarus) list? append reverse last-pair length list-ref
+    (except (ikarus) list? list make-list append reverse last-pair length list-ref
             memq memv member assq assv assoc
             map for-each andmap ormap))
 
@@ -16,6 +16,8 @@
              (if (eq? x (car ls))
                  ls
                  (f x (cdr ls)))))))
+
+  (define list (lambda x x))
 
   (define list?
     (letrec ([race
@@ -28,7 +30,26 @@
                           (null? h)))
                    (null? h)))])
        (lambda (x) (race x x))))
-  
+
+  (module (make-list)
+    (define f
+      (lambda (n fill ls)
+        (cond
+          [($fxzero? n) ls]
+          [else
+           (f ($fxsub1 n) fill (cons fill ls))])))
+    (define make-list
+      (case-lambda
+        [(n)
+         (if (and (fixnum? n) ($fx>= n 0))
+             (f n (void) '())
+             (error 'make-list "~s is not a valid length" n))]
+        [(n fill)
+         (if (and (fixnum? n) ($fx>= n 0))
+             (f n fill '())
+             (error 'make-list "~s is not a valid length" n))])))
+
+
   (define length
     (letrec ([race
               (lambda (h t ls n)

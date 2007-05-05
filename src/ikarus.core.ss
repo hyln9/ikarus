@@ -161,44 +161,8 @@
         [(f a0 a1 . ls)
          (fixandgo f a0 a1 ls ls ($cdr ls))]))
     apply))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   
-(let ()
-  (define f
-    (lambda (n fill ls)
-      (cond
-        [($fxzero? n) ls]
-        [else
-         (f ($fxsub1 n) fill (cons fill ls))])))
-  (primitive-set! 'make-list
-    (case-lambda
-      [(n)
-       (if (and (fixnum? n) ($fx>= n 0))
-           (f n (void) '())
-           (error 'make-list "~s is not a valid length" n))]
-      [(n fill)
-       (if (and (fixnum? n) ($fx>= n 0))
-           (f n fill '())
-           (error 'make-list "~s is not a valid length" n))])))
 
-(primitive-set! 'list (lambda x x))
 
 
 (primitive-set! 'gensym->unique-string
