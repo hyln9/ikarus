@@ -111,22 +111,7 @@
       (error 'set-top-level-value! "~s is not a symbol" x))
     ($set-symbol-value! x v)))
  
-(primitive-set! 'symbol? (lambda (x) (symbol? x)))
   
-;(primitive-set! 'primitive?
-;  (lambda (x)
-;    (unless (symbol? x)
-;      (error 'primitive? "~s is not a symbol" x))
-;    (procedure? (primitive-ref x))))
-;
-;(primitive-set! 'primitive-ref
-;  (lambda (x)
-;    (unless (symbol? x)
-;      (error 'primitive-ref "~s is not a symbol" x))
-;    (let ([v (primitive-ref x)])
-;      (unless (procedure? v)
-;        (error 'primitive-ref "~s is not a primitive" x))
-;      v)))
 
 (primitive-set! 'primitive-set!
   (lambda (x v)
@@ -573,25 +558,6 @@
          (let ([v (make-vector n)])
            (loop v ls 0 n))))))
 
-(primitive-set! 'string
-  ;;; FIXME: add case-lambda
-  (letrec ([length
-            (lambda (ls n)
-              (cond
-               [(null? ls) n]
-               [(char? ($car ls)) (length ($cdr ls) ($fx+ n 1))]
-               [else (error 'string "~s is not a character" ($car ls))]))]
-           [loop 
-            (lambda (s ls i n)
-              (cond
-               [($fx= i n) s]
-               [else 
-                ($string-set! s i ($car ls))
-                (loop s ($cdr ls) ($fx+ i 1) n)]))])
-     (lambda ls
-       (let ([n (length ls 0)])
-         (let ([s (make-string n)])
-           (loop s ls 0 n))))))
  
 (primitive-set! 'list?
   (letrec ([race

@@ -1,10 +1,10 @@
 
 (library (ikarus strings)
   (export string-length string-ref string-set! make-string string->list string=?
-          string-append substring)
+          string-append substring string)
   (import 
     (except (ikarus) string-length string-ref string-set! make-string
-            string->list string=? string-append substring)
+            string->list string=? string-append substring string)
     (only (scheme) 
           $fx+ $fxsub1 $fxadd1 $char= $car $cdr
           $fxzero? $fx= $fx<= $fx< $fx>= $fx-
@@ -66,6 +66,26 @@
            (fill! ($make-string n) 0 n c)]))
         make-string))
 
+
+  (define string
+    ;;; FIXME: add case-lambda
+    (letrec ([length
+              (lambda (ls n)
+                (cond
+                 [(null? ls) n]
+                 [(char? ($car ls)) (length ($cdr ls) ($fx+ n 1))]
+                 [else (error 'string "~s is not a character" ($car ls))]))]
+             [loop 
+              (lambda (s ls i n)
+                (cond
+                 [($fx= i n) s]
+                 [else 
+                  ($string-set! s i ($car ls))
+                  (loop s ($cdr ls) ($fx+ i 1) n)]))])
+       (lambda ls
+         (let ([n (length ls 0)])
+           (let ([s (make-string n)])
+             (loop s ls 0 n))))))
 
   (module (substring)
     (define fill
