@@ -1,12 +1,13 @@
 
 (library (ikarus lists)
   (export $memq list? length list-ref reverse last-pair 
-          memq memv member assq assv assoc)
+          memq memv member assq assv assoc
+          map for-each)
   (import 
-    (only (scheme) $car $cdr $fx+ $fxsub1 $fxzero? $fx>=)
-
+    (only (scheme) $car $cdr $fx+ $fxadd1 $fxsub1 $fxzero? $fx>=)
     (except (ikarus) list? reverse last-pair length list-ref
-            memq memv member assq assv assoc))
+            memq memv member assq assv assoc
+            map for-each))
 
   (define $memq
     (lambda (x ls)
@@ -249,6 +250,211 @@
        (lambda (x ls) 
          (race x ls ls ls))))
 
+  (module (map)
+    (define who 'map)
+    (define len
+      (lambda (h t n)
+        (if (pair? h)
+            (let ([h ($cdr h)])
+              (if (pair? h)
+                  (if (eq? h t)
+                      (error who "circular list")
+                      (len ($cdr h) ($cdr t) ($fx+ n 2)))
+                  (if (null? h)
+                      ($fxadd1 n)
+                      (error who "improper list"))))
+            (if (null? h)
+                n
+                (error who "improper list")))))
+    (define map1
+      (lambda (f a d n)
+        (cond
+          [(pair? d)
+           (if ($fxzero? n)
+               (error who "list was altered!")
+               (cons (f a)
+                     (map1 f ($car d) ($cdr d) ($fxsub1 n))))]
+          [(null? d)
+           (if ($fxzero? n)
+               (cons (f a) '())
+               (error who "list was altered"))]
+          [else (error who "list was altered")])))
+    (define map2
+      (lambda (f a1 a2 d1 d2 n)
+        (cond
+          [(pair? d1)
+           (cond
+             [(pair? d2)
+              (if ($fxzero? n)
+                  (error who "list was altered")
+                  (cons (f a1 a2) 
+                        (map2 f
+                              ($car d1) ($car d2)
+                              ($cdr d1) ($cdr d2)
+                              ($fxsub1 n))))]
+             [else (error who "length mismatch")])]
+          [(null? d1)
+           (cond
+             [(null? d2)
+              (if ($fxzero? n)
+                  (cons (f a1 a2) '())
+                  (error who "list was altered"))]
+             [else (error who "length mismatch")])]
+          [else (error who "list was altered")])))
+    (define cars
+      (lambda (ls*)
+        (cond
+          [(null? ls*) '()]
+          [else
+           (let ([a (car ls*)])
+             (cond
+               [(pair? a) 
+                (cons (car a) (cars (cdr ls*)))]
+               [else 
+                (error 'map "length mismatch")]))])))
+    (define cdrs
+      (lambda (ls*)
+        (cond
+          [(null? ls*) '()]
+          [else
+           (let ([a (car ls*)])
+             (cond
+               [(pair? a) 
+                (cons (cdr a) (cdrs (cdr ls*)))]
+               [else 
+                (error 'map "length mismatch")]))])))
+    (define mapm
+      (lambda (f ls ls* n)
+        (cond
+          [(null? ls)
+           (if (andmap null? ls*)
+               (if (fxzero? n)
+                   '()
+                   (error 'map "lists were mutated during operation"))
+               (error 'map "length mismatch"))]
+          [(fxzero? n)
+           (error 'map "lists were mutated during operation")]
+          [else
+           (cons
+             (apply f (car ls) (cars ls*))
+             (mapm f (cdr ls) (cdrs ls*) (fxsub1 n)))])))
+    (define map
+       (case-lambda
+         [(f ls) 
+          (unless (procedure? f)
+            (error who "~s is not a procedure" f))
+          (cond
+            [(pair? ls)
+             (let ([d ($cdr ls)])
+               (map1 f ($car ls) d (len d d 0)))]
+            [(null? ls) '()]
+            [else (error who "improper list")])]
+         [(f ls ls2)
+          (unless (procedure? f)
+            (error who "~s is not a procedure" f))
+          (cond
+            [(pair? ls)
+             (if (pair? ls2)
+                 (let ([d ($cdr ls)])
+                   (map2 f ($car ls) ($car ls2) d ($cdr ls2) (len d d 0)))
+                 (error who "length mismatch"))]
+            [(null? ls)
+             (if (null? ls2)
+                 '()
+                 (error who "length mismatch"))]
+            [else (error who "not a list")])]
+         [(f ls . ls*)
+          (unless (procedure? f)
+            (error who "~s is not a procedure" f))
+          (cond
+            [(pair? ls)
+             (let ([n (len ls ls 0)])
+               (mapm f ls ls* n))]
+            [(null? ls)
+             (if (andmap null? ls*)
+                 '()
+                 (error who "length mismatch"))])])))
+
+  (module (for-each)
+    (define who 'for-each)
+    (define len
+      (lambda (h t n)
+        (if (pair? h)
+            (let ([h ($cdr h)])
+              (if (pair? h)
+                  (if (eq? h t)
+                      (error who "circular list")
+                      (len ($cdr h) ($cdr t) ($fx+ n 2)))
+                  (if (null? h)
+                      ($fxadd1 n)
+                      (error who "improper list"))))
+            (if (null? h)
+                n
+                (error who "improper list")))))
+    (define for-each1
+      (lambda (f a d n)
+        (cond
+          [(pair? d)
+           (if ($fxzero? n)
+               (error who "list was altered!")
+               (begin 
+                 (f a)
+                 (for-each1 f ($car d) ($cdr d) ($fxsub1 n))))]
+          [(null? d)
+           (if ($fxzero? n)
+               (f a)
+               (error who "list was altered"))]
+          [else (error who "list was altered")])))
+    (define for-each2
+      (lambda (f a1 a2 d1 d2 n)
+        (cond
+          [(pair? d1)
+           (cond
+             [(pair? d2)
+              (if ($fxzero? n)
+                  (error who "list was altered")
+                  (begin
+                    (f a1 a2) 
+                    (for-each2 f
+                      ($car d1) ($car d2)
+                      ($cdr d1) ($cdr d2)
+                      ($fxsub1 n))))]
+             [else (error who "length mismatch")])]
+          [(null? d1)
+           (cond
+             [(null? d2)
+              (if ($fxzero? n)
+                  (f a1 a2)
+                  (error who "list was altered"))]
+             [else (error who "length mismatch")])]
+          [else (error who "list was altered")])))
+    (define for-each
+       (case-lambda
+         [(f ls)
+          (unless (procedure? f)
+            (error who "~s is not a procedure" f))
+          (cond
+            [(pair? ls)
+             (let ([d ($cdr ls)])
+               (for-each1 f ($car ls) d (len d d 0)))]
+            [(null? ls) (void)]
+            [else (error who "improper list")])]
+         [(f ls ls2)
+          (unless (procedure? f)
+            (error who "~s is not a procedure" f))
+          (cond
+            [(pair? ls)
+             (if (pair? ls2)
+                 (let ([d ($cdr ls)])
+                   (for-each2 f
+                      ($car ls) ($car ls2) d ($cdr ls2) (len d d 0)))
+                 (error who "length mismatch"))]
+            [(null? ls)
+             (if (null? ls2)
+                 (void)
+                 (error who "length mismatch"))]
+            [else (error who "not a list")])]
+         [_ (error who "vararg not supported yet")])))
 
   )
 
