@@ -1,10 +1,19 @@
 
 (library (ikarus strings)
-  (export string-ref make-string)
+  (export string-length string-ref make-string)
   (import 
-    (except (ikarus) string-ref make-string)
-    (only (scheme) $string-ref $fx+ $fx= $fx<= $fx< $string-length
+    (except (ikarus) string-length string-ref make-string)
+    (only (scheme) 
+          $fx+ $fx= $fx<= $fx< $string-length $string-ref 
           $make-string $string-set!))
+
+
+  (define string-length
+    (lambda (x)
+      (unless (string? x)
+        (error 'string-length "~s is not a string" x))
+      ($string-length x)))
+
 
   (define (string-ref s i)
     (unless (string? s) 

@@ -72,11 +72,6 @@
 
 
 
-(primitive-set! 'string-length
-  (lambda (x)
-    (unless (string? x)
-      (error 'string-length "~s is not a string" x))
-    ($string-length x)))
 
 
 (primitive-set! 'string->list
