@@ -4,14 +4,15 @@
   (export fixnum? flonum? bignum? number? complex? real? rational?
           integer? exact? eof-object? bwp-object? immediate? boolean?
           char? vector? string? procedure? null? pair? symbol? not 
+          weak-pair?
           eq? eqv? equal?) 
 
   (import 
 
     (except (ikarus) fixnum? flonum? bignum? number? complex? real?
             rational? integer? exact? eof-object? bwp-object? immediate?
-            boolean?  char?  vector?  string?  procedure?  null?
-            pair? symbol? not eq? eqv? equal?)
+            boolean? char? vector? string?  procedure? null?
+            pair? weak-pair? symbol? not eq? eqv? equal?)
     (only (scheme) $fxadd1 $vector-ref $fx= $char= $string-ref
           $string-length $vector-length $car $cdr)
     (rename (only (ikarus) fixnum? flonum? bignum? eof-object?
@@ -90,6 +91,13 @@
   (define null? (lambda (x) (sys:null? x)))
   (define pair? (lambda (x) (sys:pair? x)))
   (define symbol? (lambda (x) (sys:symbol? x)))
+
+
+
+  (define weak-pair?
+    (lambda (x)
+      (and (pair? x)
+           (foreign-call "ikrt_is_weak_pair" x))))
 
   (define not (lambda (x) (if x #f #t)))
 

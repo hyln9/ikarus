@@ -211,15 +211,6 @@
 
 
 
-(primitive-set! 'weak-cons
-  (lambda (a d)
-    (foreign-call "ikrt_weak_cons" a d)))
-
-(primitive-set! 'weak-pair?
-  (lambda (x)
-    (and (pair? x)
-         (foreign-call "ikrt_is_weak_pair" x))))
-
 (primitive-set! 'pointer-value
   (lambda (x)
     (pointer-value x)))

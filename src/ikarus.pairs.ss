@@ -2,16 +2,21 @@
 
 (library (ikarus pairs)
   (export
-    cons set-car! set-cdr!
+    cons weak-cons set-car! set-cdr!
     car cdr caar cdar cadr cddr caaar cdaar cadar cddar caadr cdadr
     caddr cdddr caaaar cdaaar cadaar cddaar caadar cdadar caddar
     cdddar caaadr cdaadr cadadr cddadr caaddr cdaddr cadddr cddddr)
   (import 
-    (only (ikarus) define if lambda pair? error quote let unless)
+    (only (ikarus) define if lambda pair? error quote let unless
+          foreign-call)
     (rename (only (scheme) cons $car $cdr $set-car! $set-cdr!)
             (cons sys:cons)))
 
   (define cons (lambda (x y) (sys:cons x y)))
+
+  (define weak-cons
+    (lambda (a d)
+      (foreign-call "ikrt_weak_cons" a d)))
 
   (define set-car!
     (lambda (x y) 
