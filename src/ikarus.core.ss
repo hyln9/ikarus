@@ -69,40 +69,6 @@
                ls
                (f x (cdr ls)))))))
 
-(primitive-set! 'char-whitespace?
-  (lambda (c)
-    (cond 
-      [(memq c '(#\space #\tab #\newline #\return)) #t]
-      [(char? c) #f]
-      [else
-       (error 'char-whitespace? "~s is not a character" c)])))
-
-(primitive-set! 'char-alphabetic?
-  (lambda (c)
-    (cond
-      [(char? c)
-       (cond
-         [($char<= #\a c) ($char<= c #\z)]
-         [($char<= #\A c) ($char<= c #\Z)]
-         [else #f])]
-      [else 
-       (error 'char-alphabetic?  "~s is not a character" c)])))
-
-(primitive-set! 'char-downcase
-  (lambda (c)
-    (cond
-      [(char? c)
-       (cond
-         [(and ($char<= #\A c) ($char<= c #\Z))
-          ($fixnum->char 
-            ($fx+ ($char->fixnum c)
-                  ($fx- ($char->fixnum #\a)
-                        ($char->fixnum #\A))))]
-         [else c])]
-      [else 
-       (error 'char-downcase "~s is not a character" c)])))
-
-
 (primitive-set! 'set-car!
   (lambda (x y) 
     (unless (pair? x)
