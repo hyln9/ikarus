@@ -70,27 +70,6 @@
       (error 'vector-length "~s is not a vector" x))
     ($vector-length x)))
 
-(let ()
-  (define fill!
-    (lambda (s i n c)
-      (cond
-        [($fx= i n) s]
-        [else
-         ($string-set! s i c)
-         (fill! s ($fx+ i 1) n c)])))
-  (define make-string
-    (case-lambda
-      [(n) 
-       (unless (and (fixnum? n) (fx>= n 0))
-         (error 'make-string "~s is not a valid length" n))
-       ($make-string n)]
-      [(n c)
-       (unless (and (fixnum? n) (fx>= n 0))
-         (error 'make-string "~s is not a valid length" n))
-       (unless (char? c)
-         (error 'make-string "~s is not a character" c))
-       (fill! ($make-string n) 0 n c)]))
-  (primitive-set! 'make-string make-string))
 
 
 (primitive-set! 'string-length
