@@ -58,7 +58,7 @@
 
   (define read-char
     (case-lambda
-      [() ($read-char *current-input-port*)]
+      [() ($read-char (current-input-port))]
       [(p)
        (if (input-port? p)
            ($read-char p)
