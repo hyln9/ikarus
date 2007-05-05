@@ -1,11 +1,13 @@
 
 (library (ikarus vectors)
-  (export make-vector vector vector-length vector-ref vector-set!)
+  (export make-vector vector vector-length vector-ref vector-set!
+          list->vector)
   (import 
     (except (ikarus) make-vector vector 
-            vector-length vector-ref vector-set!)
+            vector-length vector-ref vector-set!
+            list->vector)
     (only (scheme)
-          $fx= $fx>= $fx< $fx<= $fx+ $car $cdr 
+          $fx= $fx>= $fx< $fx<= $fx+ $fxadd1 $car $cdr 
           $vector-set! $vector-ref $make-vector $vector-length))
 
 
@@ -74,8 +76,33 @@
         (error 'vector-set! "index ~s is out of range for ~s" i v))
       ($vector-set! v i c)))
   
-
-
+  (define list->vector
+    (letrec ([race
+              (lambda (h t ls n)
+               (if (pair? h)
+                   (let ([h ($cdr h)])
+                      (if (pair? h)
+                          (if (not (eq? h t))
+                              (race ($cdr h) ($cdr t) ls ($fx+ n 2))
+                              (error 'list->vector "circular list ~s" ls))
+                          (if (null? h)
+                              ($fx+ n 1)
+                              (error 'list->vector "~s is not a proper list" ls))))
+                   (if (null? h)
+                       n
+                       (error 'list->vector "~s is not a proper list" ls))))]
+              [fill
+               (lambda (v i ls)
+                 (cond
+                   [(null? ls) v]
+                   [else
+                    (let ([c ($car ls)])
+                      ($vector-set! v i c)
+                      (fill v ($fxadd1 i) (cdr ls)))]))])
+       (lambda (ls)
+         (let ([n (race ls ls ls 0)])
+           (let ([v (make-vector n)])
+             (fill v 0 ls))))))
 
 
   )
