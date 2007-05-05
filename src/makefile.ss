@@ -23,7 +23,7 @@
     ;;;
     '("ikarus.handlers.ss"
       "ikarus.control.ss"
-      "libcollect.ss"
+      "ikarus.collect.ss"
       "librecord.ss"
       "libcxr.ss"
       "libnumerics.ss"
@@ -514,6 +514,12 @@
       [fx+-types-error                   s]
       [fx+-overflow-error                s]
       [$do-event                         s]
+      [do-overflow            s]
+      [do-overflow-words      s]
+      [do-vararg-overflow     s]
+      [collect                s]
+      [do-stack-overflow      s]
+
       ))
 
 

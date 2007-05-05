@@ -1,38 +1,38 @@
 
 (library (ikarus collect)
-  (export)
-  (import (scheme))
+  (export do-overflow do-overflow-words do-vararg-overflow collect
+          do-stack-overflow)
+  (import (ikarus) 
+          (only (scheme) $fxsll))
 
 (define do-overflow
   (lambda (n)
     (foreign-call "ik_collect" n)
     (void)))
 
-(primitive-set! 'do-overflow do-overflow)
-
-(primitive-set! 'do-overflow-words
+(define do-overflow-words
   (lambda (n)
     (foreign-call "ik_collect" ($fxsll n 2))
     (void)))
 
-(primitive-set! 'do-vararg-overflow
+(define do-vararg-overflow
   (lambda (n)
     (foreign-call "ik_collect_vararg" n)
     (void)))
 
-(primitive-set! 'collect
+(define collect
   (lambda ()
     (do-overflow 4096)))
 
-(primitive-set! 'do-stack-overflow
+(define do-stack-overflow
   (lambda ()
     (foreign-call "ik_stack_overflow")))
 
-(primitive-set! 'dump-metatable
+(define dump-metatable
   (lambda ()
     (foreign-call "ik_dump_metatable")))
 
-(primitive-set! 'dump-dirty-vector
+(define dump-dirty-vector
   (lambda ()
     (foreign-call "ik_dump_dirty_vector")))
 )
