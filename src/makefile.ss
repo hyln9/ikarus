@@ -32,6 +32,7 @@
       "ikarus.chars.ss"
       "ikarus.records.ss"
       "ikarus.strings.ss"
+      "ikarus.symbols.ss"
       "ikarus.vectors.ss"
       "ikarus.numerics.ss"
       "ikarus.guardians.ss"
