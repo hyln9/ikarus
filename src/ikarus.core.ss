@@ -179,21 +179,6 @@
 
 
 
-(let ()
-  (define f
-    (lambda (v i ls)
-      (cond
-        [($fx< i 0) ls]
-        [else
-         (f v ($fxsub1 i) (cons ($vector-ref v i) ls))])))
-  (primitive-set! 'vector->list
-    (lambda (v)
-      (if (vector? v)
-          (let ([n ($vector-length v)])
-            (if ($fxzero? n)
-                '()
-                (f v ($fxsub1 n) '())))
-          (error 'vector->list "~s is not a vector" v)))))
   
 (let ()
   (define f

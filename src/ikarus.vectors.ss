@@ -1,13 +1,13 @@
 
 (library (ikarus vectors)
   (export make-vector vector vector-length vector-ref vector-set!
-          list->vector)
+          vector->list list->vector)
   (import 
     (except (ikarus) make-vector vector 
             vector-length vector-ref vector-set!
-            list->vector)
+            vector->list list->vector)
     (only (scheme)
-          $fx= $fx>= $fx< $fx<= $fx+ $fxadd1 $car $cdr 
+          $fx= $fx>= $fx< $fx<= $fx+ $fxadd1 $fxsub1 $fxzero? $car $cdr 
           $vector-set! $vector-ref $make-vector $vector-length))
 
 
@@ -75,7 +75,22 @@
                    ($fx<= 0 i))
         (error 'vector-set! "index ~s is out of range for ~s" i v))
       ($vector-set! v i c)))
-  
+
+  (define vector->list
+    (lambda (v)
+      (define f
+        (lambda (v i ls)
+          (cond
+            [($fx< i 0) ls]
+            [else
+             (f v ($fxsub1 i) (cons ($vector-ref v i) ls))])))
+      (if (vector? v)
+          (let ([n ($vector-length v)])
+            (if ($fxzero? n)
+                '()
+                (f v ($fxsub1 n) '())))
+          (error 'vector->list "~s is not a vector" v))))
+
   (define list->vector
     (letrec ([race
               (lambda (h t ls n)
