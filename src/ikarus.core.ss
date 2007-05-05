@@ -53,51 +53,6 @@
 
 
 
-(primitive-set! 'gensym->unique-string
-  (lambda (x)
-    (unless (symbol? x)
-      (error 'gensym->unique-string "~s is not a gensym" x))
-    (let ([us ($symbol-unique-string x)])
-      (cond
-        [(string? us) us]
-        [(not us)
-         (error 'gensym->unique-string "~s is not a gensym" x)]
-        [else
-         (let f ([x x])
-           (let ([id (uuid)])
-             ($set-symbol-unique-string! x id)
-             (cond
-               [(foreign-call "ikrt_intern_gensym" x) id]
-               [else (f x)])))]))))
-
-
-
-
-(primitive-set! 'gensym-prefix
-  (make-parameter
-    "g"
-    (lambda (x)
-      (unless (string? x)
-        (error 'gensym-prefix "~s is not a string" x))
-      x)))
-
-(primitive-set! 'gensym-count
-  (make-parameter
-    0
-    (lambda (x)
-      (unless (and (fixnum? x) ($fx>= x 0))
-        (error 'gensym-count "~s is not a valid count" x))
-      x)))
-
-(primitive-set! 'print-gensym
-  (make-parameter
-    #t
-    (lambda (x)
-      (unless (or (boolean? x) (eq? x 'pretty))
-        (error 'print-gensym "~s is not in #t|#f|pretty" x))
-      x)))
-
-
 
 (primitive-set! 'pointer-value
   (lambda (x)

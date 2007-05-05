@@ -1,15 +1,16 @@
 
 (library (ikarus symbols)
-  (export gensym gensym?
-    string->symbol
-    getprop putprop remprop property-list
-    top-level-value top-level-bound? set-top-level-value!)
+  (export gensym gensym? gensym->unique-string gensym-prefix
+          gensym-count print-gensym string->symbol
+          getprop putprop remprop property-list
+          top-level-value top-level-bound? set-top-level-value!)
   (import 
     (only (scheme) $make-symbol $symbol-string $symbol-unique-string
-          $symbol-value $set-symbol-value! $set-symbol-plist!
-          $symbol-plist
-          $car $cdr $set-cdr! $unbound-object?)
-    (except (ikarus) gensym gensym?
+          $set-symbol-unique-string! $symbol-value $set-symbol-value!
+          $set-symbol-plist! $symbol-plist
+          $car $cdr $fx>= $set-cdr! $unbound-object?)
+    (except (ikarus) gensym gensym? gensym->unique-string
+      gensym-prefix gensym-count print-gensym
       string->symbol
       getprop putprop remprop property-list
       top-level-value top-level-bound? set-top-level-value!))
@@ -109,6 +110,47 @@
                        (f ($cdr ls) 
                           (cons ($car a) (cons ($cdr a) ac))))]))])
         (f ($symbol-plist x) '()))))
+
+  (define gensym->unique-string
+    (lambda (x)
+      (unless (symbol? x)
+        (error 'gensym->unique-string "~s is not a gensym" x))
+      (let ([us ($symbol-unique-string x)])
+        (cond
+          [(string? us) us]
+          [(not us)
+           (error 'gensym->unique-string "~s is not a gensym" x)]
+          [else
+           (let f ([x x])
+             (let ([id (uuid)])
+               ($set-symbol-unique-string! x id)
+               (cond
+                 [(foreign-call "ikrt_intern_gensym" x) id]
+                 [else (f x)])))]))))
+  
+  (define gensym-prefix
+    (make-parameter
+      "g"
+      (lambda (x)
+        (unless (string? x)
+          (error 'gensym-prefix "~s is not a string" x))
+        x)))
+  
+  (define gensym-count
+    (make-parameter
+      0
+      (lambda (x)
+        (unless (and (fixnum? x) ($fx>= x 0))
+          (error 'gensym-count "~s is not a valid count" x))
+        x)))
+  
+  (define print-gensym
+    (make-parameter
+      #t
+      (lambda (x)
+        (unless (or (boolean? x) (eq? x 'pretty))
+          (error 'print-gensym "~s is not in #t|#f|pretty" x))
+        x)))
 
   )
 
