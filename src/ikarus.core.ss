@@ -73,47 +73,6 @@
 
 
 
-#|procedure:string-append
-synopsis:
-  (string-append str ...)
-description:  
-  Takes 0 or more strings and returns a new string that results from
-  appending the contents of the strings together.
-reference-implementation:
-  (define (string-append . s*)
-    (list->string (apply append (map string->list s*))))
-|#
-(let ()
-  ;; FIXME: make nonconsing on 0,1,2, and 3 args
-  (define length*
-    (lambda (s* n)
-      (cond
-        [(null? s*) n]
-        [else
-         (let ([a ($car s*)])
-           (unless (string? a) 
-             (error 'string-append "~s is not a string" a))
-           (length* ($cdr s*) ($fx+ n ($string-length a))))])))
-  (define fill-string
-    (lambda (s a si sj ai)
-      (unless ($fx= si sj)
-        ($string-set! s si ($string-ref a ai))
-        (fill-string s a ($fxadd1 si) sj ($fxadd1 ai)))))
-  (define fill-strings
-    (lambda (s s* i)
-      (cond
-        [(null? s*) s]
-        [else
-         (let ([a ($car s*)])
-           (let ([n ($string-length a)])
-             (let ([j ($fx+ i n)])
-               (fill-string s a i j 0)
-               (fill-strings s ($cdr s*) j))))])))
-  (primitive-set! 'string-append
-    (lambda s*
-      (let ([n (length* s* 0)])
-        (let ([s ($make-string n)])
-          (fill-strings s s* 0))))))
 
 
 
