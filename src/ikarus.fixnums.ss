@@ -2,14 +2,17 @@
 (library (ikarus fixnums)
   (export fxzero? fxadd1 fxsub1 fxlognot fx+ fx- fx* fxquotient
           fxremainder fxmodulo fxlogor fxlogand fxlogxor fxsll fxsra
-          fx= fx< fx<= fx> fx>=)
+          fx= fx< fx<= fx> fx>= fixnum->string)
   (import 
     (only (scheme) $fxadd1 $fxsub1 $fxlognot $fxzero? $fxquotient
           $fxmodulo $fx+ $fx- $fx* $fxlogor $fxlogand $fxlogxor
-          $fxsll $fxsra $fx= $fx< $fx<= $fx> $fx>=)
+          $fxsll $fxsra $fx= $fx< $fx<= $fx> $fx>=
+          $string-set!
+          $char->fixnum $fixnum->char)
     (except (ikarus) fxzero? fxadd1 fxsub1 fxlognot fx+ fx- fx*
             fxquotient fxremainder fxmodulo fxlogor fxlogand
-            fxlogxor fxsll fxsra fx= fx< fx<= fx> fx>=))
+            fxlogxor fxsll fxsra fx= fx< fx<= fx> fx>=
+            fixnum->string))
 
   (define fxzero?
     (lambda (x)
@@ -174,5 +177,38 @@
       (unless ($fx>= y 0)
         (error 'fxsll "negative shift not allowed, got ~s" y))
       ($fxsll x y))) 
+
+  (module (fixnum->string)
+    (define f
+      (lambda (n i j)
+        (cond
+          [($fxzero? n) 
+           (values (make-string i) j)]
+          [else
+           (let ([q ($fxquotient n 10)])
+             (call-with-values
+               (lambda () (f q ($fxadd1 i) j))
+               (lambda (str j)
+                 (let ([r ($fx- n ($fx* q 10))])
+                   (string-set! str j
+                      ($fixnum->char ($fx+ r ($char->fixnum #\0))))
+                   (values str ($fxadd1 j))))))])))
+    (define fixnum->string
+      (lambda (x)
+        (unless (fixnum? x) (error 'fixnum->string "~s is not a fixnum" x))
+        (cond
+          [($fxzero? x) "0"]
+          [($fx> x 0) 
+           (call-with-values
+             (lambda () (f x 0 0))
+             (lambda (str j) str))]
+          ;;; FIXME: DON'T HARDCODE CONSTANTS
+          [($fx= x -536870912) "-536870912"]
+          [else
+           (call-with-values
+             (lambda () (f ($fx- 0 x) 1 1))
+             (lambda (str j)
+               ($string-set! str 0 #\-)
+               str))]))))
 
   )
