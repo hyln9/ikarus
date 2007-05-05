@@ -14,8 +14,6 @@
 (primitive-set! 'eof-object
   (lambda () (eof-object)))
 
-(primitive-set! 'void
-  (lambda () (void)))
   
 (primitive-set! 'apply
   (let ()
