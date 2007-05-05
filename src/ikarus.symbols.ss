@@ -1,17 +1,18 @@
 
 (library (ikarus symbols)
   (export gensym gensym? gensym->unique-string gensym-prefix
-          gensym-count print-gensym string->symbol
+          gensym-count print-gensym string->symbol symbol->string
           getprop putprop remprop property-list
           top-level-value top-level-bound? set-top-level-value!)
   (import 
-    (only (scheme) $make-symbol $symbol-string $symbol-unique-string
-          $set-symbol-unique-string! $symbol-value $set-symbol-value!
+    (only (scheme) $make-symbol $symbol-string $set-symbol-string!
+          $symbol-unique-string $set-symbol-unique-string! 
+          $symbol-value $set-symbol-value!
           $set-symbol-plist! $symbol-plist
-          $car $cdr $fx>= $set-cdr! $unbound-object?)
+          $car $cdr $fx>= $fxadd1 $set-cdr! $unbound-object?)
     (except (ikarus) gensym gensym? gensym->unique-string
       gensym-prefix gensym-count print-gensym
-      string->symbol
+      string->symbol symbol->string
       getprop putprop remprop property-list
       top-level-value top-level-bound? set-top-level-value!))
 
@@ -58,6 +59,18 @@
         (error 'string->symbol "~s is not a string" x))
       (foreign-call "ikrt_string_to_symbol" x)))
   
+  (define symbol->string
+    (lambda (x)
+      (unless (symbol? x)
+        (error 'symbol->string "~s is not a symbol" x))
+      (let ([str ($symbol-string x)])
+        (or str
+            (let ([ct (gensym-count)])
+              ;;; FIXME: what if gensym-count is a bignum?
+              (let ([str (string-append (gensym-prefix) (fixnum->string ct))])
+                ($set-symbol-string! x str)
+                (gensym-count ($fxadd1 ct))
+                str))))))
 
   (define putprop
     (lambda (x k v)

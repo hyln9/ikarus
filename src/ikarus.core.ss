@@ -77,17 +77,6 @@
 
 
 
-(primitive-set! 'symbol->string
-  (lambda (x)
-    (unless (symbol? x)
-      (error 'symbol->string "~s is not a symbol" x))
-    (let ([str ($symbol-string x)])
-      (or str
-          (let ([ct (gensym-count)])
-            (let ([str (string-append (gensym-prefix) (fixnum->string ct))])
-              ($set-symbol-string! x str)
-              (gensym-count ($fxadd1 ct))
-              str))))))
 
 
 
