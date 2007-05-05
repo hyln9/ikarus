@@ -11,9 +11,6 @@
 (primitive-set! 'void
   (lambda () (void)))
   
-
- 
-
 (primitive-set! 'integer->char
   (lambda (n)
     (unless (fixnum? n)
@@ -29,23 +26,6 @@
       (error 'char->integer "~s is not a character" x))
     ($char->fixnum x)))
   
-  
-(let ()
-  (define fill!
-    (lambda (v i n fill)
-      (cond
-        [($fx= i n) v]
-        [else
-         ($vector-set! v i fill)
-         (fill! v ($fx+ i 1) n fill)])))
-  (define make-vector
-    (case-lambda
-      [(n) (make-vector n (void))]
-      [(n fill)
-       (unless (and (fixnum? n) (fx>= n 0))
-         (error 'make-vector "~s is not a valid length" n))
-       (fill! ($make-vector n) 0 n fill)]))
-  (primitive-set! 'make-vector make-vector))
 
 
 (primitive-set! 'vector-length

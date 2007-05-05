@@ -30,6 +30,7 @@
       "ikarus.records.ss"
       "ikarus.cxr.ss"
       "ikarus.strings.ss"
+      "ikarus.vectors.ss"
       "ikarus.numerics.ss"
       "ikarus.guardians.ss"
 
