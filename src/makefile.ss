@@ -45,6 +45,7 @@
 
       "ikarus.io-ports.ss"
       "ikarus.io-primitives.unsafe.ss"
+      "ikarus.io-primitives.ss"
 
       "libchezio.ss"
       "libhash.ss"
