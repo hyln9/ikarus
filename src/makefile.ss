@@ -57,7 +57,7 @@
       "ikarus.intel-assembler.ss"
       "ikarus.fasl.ss"
       "ikarus.compiler.ss"
-      "libsyntax.ss"
+      "ikarus.syntax.ss"
       "libpp.ss"
       "libcafe.ss"
       "libposix.ss"
@@ -538,7 +538,7 @@
       [do-vararg-overflow     s]
       [collect                s]
       [do-stack-overflow      s]
-
+      [syntax-dispatch        s]
       ))
 
 

@@ -1,7 +1,14 @@
 
 (library (ikarus syntax)
-  (export)
-  (import (scheme))
+  (export identifier? syntax-dispatch
+          generate-temporaries free-identifier=? syntax-error
+          boot-library-expand eval-top-level)
+  (import 
+    (rename (except (ikarus) boot-library-expand syntax-error eval-top-level)
+      (free-identifier=? sys:free-identifier=?)
+      (identifier? sys:identifier?)
+      (generate-temporaries sys:generate-temporaries)))
+                  
   (define who 'expander)
   (define-syntax no-source 
     (lambda (x) #f))
@@ -348,15 +355,15 @@
       (lambda (ctx)
         (define dots?
           (lambda (x)
-            (and (identifier? x) 
-                 (free-identifier=? x #'(... ...)))))
+            (and (sys:identifier? x) 
+                 (sys:free-identifier=? x #'(... ...)))))
         (define free-identifier-member?
           (lambda (x ls)
-            (and (ormap (lambda (y) (free-identifier=? x y)) ls) #t)))
+            (and (ormap (lambda (y) (sys:free-identifier=? x y)) ls) #t)))
         (define f
           (lambda (ctx lits)
             (syntax-case ctx ()
-              [id (identifier? #'id) 
+              [id (sys:identifier? #'id) 
                (if (free-identifier-member? #'id lits)
                    #'(lambda (x) (and (id? x) (free-id=? x (scheme-stx 'id))))
                    #'(lambda (x) #t))]
@@ -396,15 +403,15 @@
       (lambda (ctx) 
         (define free-identifier-member?
           (lambda (x ls)
-            (and (ormap (lambda (y) (free-identifier=? x y)) ls) #t)))
+            (and (ormap (lambda (y) (sys:free-identifier=? x y)) ls) #t)))
         (define dots?
           (lambda (x)
-            (and (identifier? x) 
-                 (free-identifier=? x #'(... ...))))) 
+            (and (sys:identifier? x) 
+                 (sys:free-identifier=? x #'(... ...))))) 
         (define f
           (lambda (stx lits)
             (syntax-case stx ()
-              [id (identifier? #'id) 
+              [id (sys:identifier? #'id) 
                (if (free-identifier-member? #'id lits)
                    (values '() #'(lambda (x) (dont-call-me)))
                   (values (list #'id) #'(lambda (x) x)))]
@@ -417,7 +424,7 @@
                      (values vars
                        (with-syntax ([(vars ...) vars]
                                      [ext extractor]
-                                     [(t* ...) (generate-temporaries vars)])
+                                     [(t* ...) (sys:generate-temporaries vars)])
                          #'(lambda (x) 
                              (let f ([x x] [vars '()] ...)
                                (cond
@@ -437,7 +444,7 @@
                      [(null? lvars)
                       (values pvars
                         (with-syntax ([(pvars ...) pvars]
-                                      [(t* ...) (generate-temporaries pvars)]
+                                      [(t* ...) (sys:generate-temporaries pvars)]
                                       [pext pext])
                           #'(lambda (x)
                               (let loop ([x x] [pvars '()] ...)
@@ -458,7 +465,7 @@
                      [else
                       (values (append pvars lvars)
                         (with-syntax ([(pvars ...) pvars]
-                                      [(t* ...) (generate-temporaries pvars)]
+                                      [(t* ...) (sys:generate-temporaries pvars)]
                                       [(lvars ...) lvars]
                                       [lext lext]
                                       [pext pext])
@@ -1366,13 +1373,13 @@
                                         (gen-ref src (car var.lev) (cdr var.lev) maps))))
                           (values (list 'ref var) maps))
                         (if (ellipsis? e)
-                            (syntax-error src "1misplaced ellipsis in syntax form")
+                            (stx-error src "1misplaced ellipsis in syntax form")
                             (begin
                               (values (list 'quote e) maps))))))
                 (match2 e (lambda (dots e) (ellipsis? dots))
                   (lambda (dots e)
                     (if vec?
-                       (syntax-error src "2misplaced ellipsis in syntax form")
+                       (stx-error src "2misplaced ellipsis in syntax form")
                        (gen-syntax src e r maps (lambda (x) #f) #f)))
                   (lambda ()
                     (cond
@@ -1386,7 +1393,7 @@
                                                   (gen-syntax src (syntax-car e) r 
                                                     (cons '() maps) ellipsis? #f)))
                                       (if (null? (car maps))
-                                          (syntax-error src
+                                          (stx-error src
                                             "extra ellipsis in syntax form")
                                           (values (gen-map x (car maps)) (cdr maps)))))))
                          (cond
@@ -1397,7 +1404,7 @@
                                (lambda (maps)
                                  (let-values (((x maps) (k (cons '() maps))))
                                    (if (null? (car maps))
-                                       (syntax-error src "extra ellipsis in syntax form")
+                                       (stx-error src "extra ellipsis in syntax form")
                                        (values (gen-mappend x (car maps)) (cdr maps)))))))
                            (else 
                             (let-values (((y maps) 
@@ -1425,7 +1432,7 @@
             (if (= level 0)
                 (values var maps)
                 (if (null? maps)
-                    (syntax-error src "missing ellipsis in syntax form")
+                    (stx-error src "missing ellipsis in syntax form")
                     (let-values (((outer-var outer-maps)
                                   (gen-ref src var (- level 1) (cdr maps))))
                       (cond
@@ -1509,7 +1516,7 @@
             (lambda (_ x)
               (let-values (((e maps) (gen-syntax e x r '() ellipsis? #f)))
                 (regen e)))
-            (lambda () (syntax-error e))))))
+            (lambda () (stx-error e))))))
   (define core-macro-transformer
     (lambda (name)
       (case name
@@ -1578,7 +1585,7 @@
            (let* ([loc value]
                   [lib (imported-loc->library loc)])
              (unless lib 
-               (syntax-error e "BUG: cannot find defining library"))
+               (stx-error e "BUG: cannot find defining library"))
              ((run-collector) lib)
              (build-global-reference no-source loc))]
           [(core-prim) 
@@ -1732,7 +1739,7 @@
                      [(define-syntax)
                       (let-values ([(id rhs) (parse-define-syntax e)])
                         (when (bound-id-member? id kwd*)
-                          (syntax-error id "undefined identifier"))
+                          (stx-error id "undefined identifier"))
                         (let ([lab (gen-label id)])
                           (let ([expanded-rhs (chi-expr rhs mr mr)])
                             (extend-rib! rib id lab)
@@ -1824,7 +1831,7 @@
                        [(define-syntax)
                         (let-values ([(id rhs) (parse-define-syntax e)])
                           (when (bound-id-member? id kwd*)
-                            (syntax-error id "undefined identifier"))
+                            (stx-error id "undefined identifier"))
                           (let ([lab (gen-label id)])
                             (let ([expanded-rhs (chi-expr rhs mr mr)])
                               (extend-rib! rib id lab)
@@ -1876,7 +1883,7 @@
                    [(define-syntax)
                     (let-values ([(id rhs) (parse-define-syntax e)])
                       (when (bound-id-member? id kwd*) 
-                        (syntax-error id "undefined identifier"))
+                        (stx-error id "undefined identifier"))
                       (let ([lab (gen-label id)])
                         (let ([expanded-rhs (chi-expr rhs mr mr)])
                           (extend-rib! rib id lab)
@@ -2112,7 +2119,7 @@
            void ;;; FIXME
            (lambda () (eval-core invoke-code)))
         (values invoke-code export-subst export-env))))
-  (define (boot-library-expander x)
+  (define (boot-library-expand x)
     (let-values ([(invoke-code export-subst export-env)
                   (library-expander x)])
       (values invoke-code export-subst export-env)))
@@ -2138,29 +2145,28 @@
                  (cons (cons (car ext*) label) subst)
                  (cons (cons label (cons 'global (binding-value b))) env))]
              [else (error #f "cannot export ~s of type ~s" sym type)]))])))
-  (primitive-set! 'identifier? id?)
-  (primitive-set! 'generate-temporaries
+;  (primitive-set! 'identifier? id?)
+  (define generate-temporaries
     (lambda (ls)
       (unless (list? ls) 
         (error 'generate-temporaries "~s is not a list"))
       (map (lambda (x) (stx (gensym 't) top-mark* '())) ls)))
-  (primitive-set! 'free-identifier=? 
+  (define free-identifier=? 
     (lambda (x y)
       (if (id? x)
           (if (id? y)
               (free-id=? x y)
               (error 'free-identifier=? "~s is not an identifier" y))
           (error 'free-identifier=? "~s is not an identifier" x))))
-  (primitive-set! 'syntax-error
+  (define syntax-error
     (lambda (x . args)
       (unless (andmap string? args)
         (error 'syntax-error "invalid argument ~s" args))
       (error #f "~a: ~s" 
              (apply string-append args) 
              (strip x '()))))
-  (primitive-set! 'syntax-dispatch syntax-dispatch)
-  (primitive-set! 'boot-library-expand boot-library-expander)
-  (primitive-set! 'eval-top-level 
+  (define identifier? (lambda (x) (id? x)))
+  (define eval-top-level 
     (lambda (x)
       (unless (pair? x)
         (error #f "invalid expression at top-level ~s" x))
