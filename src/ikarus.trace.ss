@@ -1,7 +1,10 @@
 
 (library (ikarus trace)
-  (export)
-  (import (scheme))
+  (export make-traced-procedure trace-symbol! untrace-symbol!)
+  (import
+    (only (scheme) top-level-bound? set-top-level-value!
+          top-level-value)
+    (ikarus))
 
   (define k* '())
   
@@ -96,9 +99,7 @@
             [else (cons (car ls) (loop (cdr ls)))])))
       (set! traced-symbols (loop traced-symbols))))
 
-  (primitive-set! 'make-traced-procedure make-traced-procedure)
-  (primitive-set! 'trace-symbol! trace-symbol!)
-  (primitive-set! 'untrace-symbol! untrace-symbol!))
+  )
 
 
 #!eof

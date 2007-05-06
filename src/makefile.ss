@@ -53,9 +53,9 @@
       "ikarus.reader.ss"
       "ikarus.code-objects.ss"
 
+      "ikarus.trace.ss"
       "ikarus.intel-assembler.ss"
       "ikarus.fasl.ss"
-      "libtrace.ss"
       "ikarus.compiler.ss"
       "libsyntax.ss"
       "libpp.ss"
