@@ -17,9 +17,7 @@
       record-type-field-names record-constructor record-predicate
       record-field-accessor record-field-mutator record? record-rtd
       record-type-descriptor record-name record-printer record-length
-      record-ref record-set!)
-    (only (scheme)
-          set-top-level-value! top-level-value top-level-bound?))
+      record-ref record-set!))
 
 
 
@@ -102,7 +100,7 @@
        (for-each verify-field fields)
        (let ([g (gensym name)])
          (let ([rtd (make-rtd name fields #f g)])
-           (set-top-level-value! g rtd)
+           (set-symbol-value! g rtd)
            rtd))]
       [(name fields g)
        (unless (string? name)
@@ -111,15 +109,15 @@
          (error 'make-record-type "fields must be a list, got ~s" fields))
        (for-each verify-field fields)
        (cond
-         [(top-level-bound? g)
-          (let ([rtd (top-level-value g)])
+         [(symbol-bound? g)
+          (let ([rtd (symbol-value g)])
             (unless (and (string=? name (record-type-name rtd))
                          (equal? fields (record-type-field-names rtd)))
               (error 'make-record-type "definition mismatch"))
             rtd)]
          [else
           (let ([rtd (make-rtd name fields #f g)])
-            (set-top-level-value! g rtd)
+            (set-symbol-value! g rtd)
             rtd)])]))
 
   (define record-type-name

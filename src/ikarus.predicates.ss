@@ -2,20 +2,22 @@
 (library (ikarus predicates)
 
   (export fixnum? flonum? bignum? number? complex? real? rational?
-          integer? exact? eof-object? bwp-object? immediate? boolean?
-          char? vector? string? procedure? null? pair? symbol? not 
-          weak-pair?
-          eq? eqv? equal?) 
+          integer? exact? eof-object? bwp-object? immediate?
+          boolean? char? vector? string? procedure? null? pair?
+          symbol? not weak-pair? eq? eqv? equal?) 
 
   (import 
 
     (except (ikarus) fixnum? flonum? bignum? number? complex? real?
-            rational? integer? exact? eof-object? bwp-object? immediate?
-            boolean? char? vector? string?  procedure? null?
-            pair? weak-pair? symbol? not eq? eqv? equal?
+            rational? integer? exact? eof-object? bwp-object?
+            immediate? boolean? char? vector? string? procedure?
+            null? pair? weak-pair? symbol? not eq? eqv? equal?
             port? input-port? output-port?)
-    (only (scheme) $fxadd1 $vector-ref $fx= $char= $string-ref
-          $string-length $vector-length $car $cdr)
+    (ikarus system $fx)
+    (ikarus system $pairs)
+    (ikarus system $chars)
+    (ikarus system $strings)
+    (ikarus system $vectors)
     (rename (only (ikarus) fixnum? flonum? bignum? eof-object?
                   bwp-object? immediate? boolean? char? vector? string?
                   procedure? null? pair? symbol? eq?

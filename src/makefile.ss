@@ -483,6 +483,7 @@
       [$set-symbol-string!        $symbols]
       [$set-symbol-unique-string! $symbols]
       [$set-symbol-plist!         $symbols]
+      [$unbound-object?           $symbols]
       ; (ikarus system $records)
       [base-rtd           $records]
       [$record-set!       $records]
@@ -546,7 +547,6 @@
       [$make-values-procedure           $stack]
       ; (ikarus system)
       [$forward-ptr?                    s  ]
-      [$unbound-object?                 s  ]
       [$interrupted?                    s  ]
       [$unset-interrupted!              s  ]
       [$apply-nonprocedure-error-handler s]

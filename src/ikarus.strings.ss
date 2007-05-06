@@ -9,12 +9,7 @@
     (ikarus system $pairs)
     (except (ikarus) string-length string-ref string-set! make-string
             string->list string=? string-append substring string
-            list->string uuid)
-    #;(only (scheme) 
-          $fx+ $fxsub1 $fxadd1 $char= $car $cdr
-          $fxzero? $fx= $fx<= $fx< $fx>= $fx-
-          $string-length $string-ref 
-          $make-string $string-set!))
+            list->string uuid))
 
 
   (define string-length

@@ -4,9 +4,10 @@
           console-output-port current-output-port
           open-output-file with-output-to-file call-with-output-file)
   (import 
-    (only (scheme) $set-port-output-size! $write-char $string-set!
-          $port-output-buffer $set-port-output-index! $fxadd1 $fx<
-          $port-output-size $port-output-index)
+    (ikarus system $ports)
+    (ikarus system $io)
+    (ikarus system $strings)
+    (ikarus system $fx)
     (except (ikarus)
             standard-output-port standard-error-port   
             console-output-port current-output-port    

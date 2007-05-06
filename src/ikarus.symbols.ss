@@ -6,11 +6,9 @@
           top-level-value top-level-bound? set-top-level-value!
           symbol-value symbol-bound? set-symbol-value!)
   (import 
-    (only (scheme) $make-symbol $symbol-string $set-symbol-string!
-          $symbol-unique-string $set-symbol-unique-string! 
-          $symbol-value $set-symbol-value!
-          $set-symbol-plist! $symbol-plist
-          $car $cdr $fx>= $fxadd1 $set-cdr! $unbound-object?)
+    (ikarus system $symbols)
+    (ikarus system $pairs)
+    (ikarus system $fx)
     (except (ikarus) gensym gensym? gensym->unique-string
       gensym-prefix gensym-count print-gensym
       string->symbol symbol->string

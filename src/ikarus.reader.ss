@@ -2,7 +2,7 @@
 (library (ikarus reader)
   (export read read-token comment-handler load)
   (import
-    (only (scheme) $char->fixnum  $char= $char<=)
+    (ikarus system $chars)
     (except (ikarus) read read-token comment-handler load))
 
   (define delimiter?

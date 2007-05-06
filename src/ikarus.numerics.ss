@@ -25,10 +25,9 @@
   (export + - * = < <= > >= add1 sub1 quotient remainder
           quotient+remainder number->string string->number)
   (import 
-    (only (scheme) $fxlogand $fx= $fx< $fx<= $fx> $fx>= $fxzero?
-          $fxsll $fxsra $fxmodulo $string-ref $string-length
-          $fxadd1 $fx- 
-          $char->fixnum $char= $char<=)
+    (ikarus system $fx)
+    (ikarus system $chars)
+    (ikarus system $strings)
     (except (ikarus) + - * = < <= > >= add1 sub1 quotient remainder
             quotient+remainder number->string string->number))
 
