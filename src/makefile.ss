@@ -51,8 +51,8 @@
       "ikarus.hash-tables.ss"
       "ikarus.writer.ss"
       "ikarus.reader.ss"
+      "ikarus.code-objects.ss"
 
-      "libassembler.ss"
       "libintelasm.ss"
       "libfasl.ss"
       "libtrace.ss"
