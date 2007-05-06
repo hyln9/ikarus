@@ -95,7 +95,8 @@
       [or                (macro . or)]))
 
   (define library-legend
-    '([s   (ikarus system)]
+    '([$all (ikarus system $all)]
+      [s   (ikarus system)]
       [u   (ikarus system unsafe)]
       [i   (ikarus)]
       [r   (r6rs)]
@@ -1101,12 +1102,16 @@
               [version     '()]
               [import-libs '()]
               [visit-libs  '()]
-              [invoke-libs '()]
-              [subst (get-export-subset key export-subst)]
-              [env (if (equal? name '(ikarus system)) export-env '())])
-          `(install-library 
-             ',id ',name ',version ',import-libs ',visit-libs ',invoke-libs
-             ',subst ',env void void))))
+              [invoke-libs '()])
+          (let-values ([(subst env)
+                        (if (equal? name '(ikarus system $all)) 
+                            (values export-subst export-env)
+                            (values
+                              (get-export-subset key export-subst)
+                              '()))])
+            `(install-library 
+               ',id ',name ',version ',import-libs ',visit-libs ',invoke-libs
+               ',subst ',env void void)))))
     (let ([code `(library (ikarus primlocs)
                     (export) ;;; must be empty
                     (import 

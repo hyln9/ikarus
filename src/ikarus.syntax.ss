@@ -566,7 +566,7 @@
     (lambda (sym)
       (let-values ([(subst env) 
                     (library-subst/env 
-                      (find-library-by-name '(scheme)))])
+                      (find-library-by-name '(ikarus system $all)))])
         (cond
           [(assq sym subst) =>
            (lambda (x)
