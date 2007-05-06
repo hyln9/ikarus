@@ -1112,8 +1112,7 @@
                     (import 
                       (only (ikarus library-manager)
                             install-library)
-                      (except (ikarus)
-                            install-library))
+                      (ikarus))
                     (current-primitive-locations 
                       (lambda (x) 
                         (cond

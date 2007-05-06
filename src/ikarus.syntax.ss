@@ -4,9 +4,17 @@
           generate-temporaries free-identifier=? syntax-error
           boot-library-expand eval-top-level)
   (import 
-    (only (ikarus library-manager) install-library)
+    (ikarus library-manager)
     (rename (except (ikarus) boot-library-expand syntax-error
-                    eval-top-level install-library)
+                    library-subst/env
+                    find-library-by-name
+                    imported-label->binding
+                    imported-loc->library
+                    library-spec
+                    current-library-collection
+                    invoke-library
+                    installed-libraries
+                    eval-top-level)
       (free-identifier=? sys:free-identifier=?)
       (identifier? sys:identifier?)
       (generate-temporaries sys:generate-temporaries)))
