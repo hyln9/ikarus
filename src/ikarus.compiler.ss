@@ -2554,7 +2554,7 @@
         s))
     (define (check? x)
       (cond
-        [(primref? x) #f]  ;;;; PRIMREF CHECK
+        [(primref? x) #t]  ;;;; PRIMREF CHECK
         [(closure? x) #f]
         [else         #t]))
     (define (do-new-frame label op rand* si r 
