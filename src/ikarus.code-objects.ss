@@ -4,9 +4,8 @@
     make-code code? code-reloc-vector code-freevars
     code-size code-ref code-set! set-code-reloc-vector!)
   (import
-    (only (scheme) $fx< $fx>= 
-          $code? $code-reloc-vector $code-freevars $code-size
-          $code-ref $code-set! )
+    (ikarus system $fx)
+    (ikarus system $codes)
     (except (ikarus) make-code code? code-reloc-vector code-freevars
             code-size code-ref code-set! set-code-reloc-vector!))
 
