@@ -2,25 +2,14 @@
 (library (ikarus hash-tables)
    (export hash-table? make-hash-table get-hash-table put-hash-table!)
    (import 
-     (only (scheme) $set-car! $set-cdr! $car $cdr $fxlogxor $fxsra
-           $fxsll $fxlognot $fx+ $fx- $fx= $fx> $fxadd1
-           $vector-length $vector-ref $vector-set!
-           $make-tcbucket $set-tcbucket-val!
-           $tcbucket-next $tcbucket-key $set-tcbucket-next!
-           $tcbucket-val $set-tcbucket-tconc! $fxlogand)
+     (ikarus system $pairs)
+     (ikarus system $vectors)
+     (ikarus system $tcbuckets)
+     (ikarus system $fx)
      (except (ikarus) hash-table? make-hash-table get-hash-table
              put-hash-table!))
 
    (define-record hasht (vec count tc))
-
-;(let ([hash-rtd (make-record-type '"hash-table" '(hash-vec count tc))])
-;  ;;; accessors
-;  (define get-vec (record-field-accessor hash-rtd 0))
-;  (define set-vec! (record-field-mutator hash-rtd 0))
-;  (define get-count (record-field-accessor hash-rtd 1))
-;  (define set-count! (record-field-mutator hash-rtd 1))
-;  (define get-tc (record-field-accessor hash-rtd 2))
-  ;;; implementation
 
   ;;; directly from Dybvig's paper
   (define tc-pop
@@ -119,28 +108,6 @@
                 ($vector-set! vec idx b)
                 (void))))))))
 
-  
-  ;(define hash-remove! 
-  ;  (lambda (h x)
-  ;    (let ([vec (get-vec h)]
-  ;          [next ($tcbucket-next b)])
-  ;      ;;; first remove it from its old place
-  ;      (let ([idx 
-  ;             (if (fixnum? next)
-  ;                 next
-  ;                 (get-bucket-index next))])
-  ;        (let ([fst ($vector-ref vec idx)])
-  ;          (cond
-  ;            [(eq? fst b) 
-  ;             ($vector-set! vec idx next)]
-  ;            [else 
-  ;             (replace! fst b next)]))))
-  ;    (let ([b1 ($tcbucket-dlink-next b)]
-  ;          [b2 ($tcbucket-dlink-prev b)])
-  ;      ($set-tcbucket-dlink-next! b2 b1)
-  ;      ($set-tcbucket-dlink-prev! b1 b2)
-  ;      (void))))
-
   (define get-hash
     (lambda (h x v)
       (let ([pv (pointer-value x)]
@@ -154,7 +121,6 @@
                  (lambda (b)
                    ($tcbucket-val b))]
                 [else v])))))))
-   
   
   (define put-hash!
     (lambda (h x v)
@@ -212,8 +178,6 @@
              [vec2 (make-base-vec n2)])
         (move-all vec1 0 n1 vec2 ($fx- n2 1))
         (set-hasht-vec! h vec2))))
-
-
 
   (define init-vec
     (lambda (v i n)
