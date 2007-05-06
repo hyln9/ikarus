@@ -50,7 +50,8 @@
       "ikarus.io.output-files.ss"
       "ikarus.io.output-strings.ss"
 
-      "libhash.ss"
+      "ikarus.hash-tables.ss"
+
       "libwriter.ss"
       "libtokenizer.ss"
       "libassembler.ss"

@@ -1,15 +1,25 @@
 
 (library (ikarus hash-tables)
-   (export)
-   (import (scheme))
+   (export hash-table? make-hash-table get-hash-table put-hash-table!)
+   (import 
+     (only (scheme) $set-car! $set-cdr! $car $cdr $fxlogxor $fxsra
+           $fxsll $fxlognot $fx+ $fx- $fx= $fx> $fxadd1
+           $vector-length $vector-ref $vector-set!
+           $make-tcbucket $set-tcbucket-val!
+           $tcbucket-next $tcbucket-key $set-tcbucket-next!
+           $tcbucket-val $set-tcbucket-tconc! $fxlogand)
+     (except (ikarus) hash-table? make-hash-table get-hash-table
+             put-hash-table!))
 
-(let ([hash-rtd (make-record-type '"hash-table" '(hash-vec count tc))])
-  ;;; accessors
-  (define get-vec (record-field-accessor hash-rtd 0))
-  (define set-vec! (record-field-mutator hash-rtd 0))
-  (define get-count (record-field-accessor hash-rtd 1))
-  (define set-count! (record-field-mutator hash-rtd 1))
-  (define get-tc (record-field-accessor hash-rtd 2))
+   (define-record hasht (vec count tc))
+
+;(let ([hash-rtd (make-record-type '"hash-table" '(hash-vec count tc))])
+;  ;;; accessors
+;  (define get-vec (record-field-accessor hash-rtd 0))
+;  (define set-vec! (record-field-mutator hash-rtd 0))
+;  (define get-count (record-field-accessor hash-rtd 1))
+;  (define set-count! (record-field-mutator hash-rtd 1))
+;  (define get-tc (record-field-accessor hash-rtd 2))
   ;;; implementation
 
   ;;; directly from Dybvig's paper
@@ -85,7 +95,7 @@
 
   (define re-add! 
     (lambda (h b)
-      (let ([vec (get-vec h)]
+      (let ([vec (hasht-vec h)]
             [next ($tcbucket-next b)])
         ;;; first remove it from its old place
         (let ([idx 
@@ -99,7 +109,7 @@
               [else 
                (replace! fst b next)])))
         ;;; reset the tcbucket-tconc FIRST
-        ($set-tcbucket-tconc! b (get-tc h))
+        ($set-tcbucket-tconc! b (hasht-tc h))
         ;;; then add it to the new place
         (let ([k ($tcbucket-key b)])
           (let ([ih (inthash (pointer-value k))])
@@ -134,12 +144,12 @@
   (define get-hash
     (lambda (h x v)
       (let ([pv (pointer-value x)]
-            [vec (get-vec h)])
+            [vec (hasht-vec h)])
         (let ([ih (inthash pv)])
           (let ([idx ($fxlogand ih ($fx- ($vector-length vec) 1))])
             (let ([b ($vector-ref vec idx)])
               (cond
-                [(or (direct-lookup x b) (rehash-lookup h (get-tc h) x))
+                [(or (direct-lookup x b) (rehash-lookup h (hasht-tc h) x))
                  =>
                  (lambda (b)
                    ($tcbucket-val b))]
@@ -149,19 +159,19 @@
   (define put-hash!
     (lambda (h x v)
       (let ([pv (pointer-value x)]
-            [vec (get-vec h)])
+            [vec (hasht-vec h)])
         (let ([ih (inthash pv)])
           (let ([idx ($fxlogand ih ($fx- ($vector-length vec) 1))])
             (let ([b ($vector-ref vec idx)])
               (cond
-                [(or (direct-lookup x b) (rehash-lookup h (get-tc h) x))
+                [(or (direct-lookup x b) (rehash-lookup h (hasht-tc h) x))
                  =>
                  (lambda (b) 
                    ($set-tcbucket-val! b v)
                    (void))]
                 [else 
                  (let ([bucket
-                        ($make-tcbucket (get-tc h) x v ($vector-ref vec idx))])
+                        ($make-tcbucket (hasht-tc h) x v ($vector-ref vec idx))])
                    (if ($fx= (pointer-value x) pv)
                        ($vector-set! vec idx bucket)
                        (let* ([ih (inthash (pointer-value x))]
@@ -169,8 +179,8 @@
                                ($fxlogand ih ($fx- ($vector-length vec) 1))])
                          ($set-tcbucket-next! bucket ($vector-ref vec idx))
                          ($vector-set! vec idx bucket))))
-                 (let ([ct (get-count h)])
-                   (set-count! h ($fxadd1 ct))
+                 (let ([ct (hasht-count h)])
+                   (set-hasht-count! h ($fxadd1 ct))
                    (when ($fx> ct ($vector-length vec))
                      (enlarge-table h)))])))))))
 
@@ -196,12 +206,12 @@
 
   (define enlarge-table
     (lambda (h)
-      (let* ([vec1 (get-vec h)]
+      (let* ([vec1 (hasht-vec h)]
              [n1 ($vector-length vec1)]
              [n2 ($fxsll n1 1)]
              [vec2 (make-base-vec n2)])
         (move-all vec1 0 n1 vec2 ($fx- n2 1))
-        (set-vec! h vec2))))
+        (set-hasht-vec! h vec2))))
 
 
 
@@ -218,22 +228,23 @@
       (init-vec (make-vector n) 0 n)))
 
   ;;; public interface
-  (primitive-set! 'hash-table? (record-predicate hash-rtd))
-  (primitive-set! 'make-hash-table
-    (let ([make (record-constructor hash-rtd)])
-      (lambda ()
-        (let ([x (cons #f #f)])
-          (let ([tc (cons x x)])
-            (make (make-base-vec 32) 0 tc))))))
-  (primitive-set! 'get-hash-table
+  (define (hash-table? x) (hasht? x))
+
+  (define (make-hash-table)
+    (let ([x (cons #f #f)])
+      (let ([tc (cons x x)])
+        (make-hasht (make-base-vec 32) 0 tc))))
+
+  (define get-hash-table
     (lambda (h x v)
-      (if (hash-table? h)
+      (if (hasht? h)
           (get-hash h x v)
           (error 'get-hash-table "~s is not a hash table" h))))
-  (primitive-set! 'put-hash-table!
+
+  (define put-hash-table!
     (lambda (h x v)
-      (if (hash-table? h)
+      (if (hasht? h)
           (put-hash! h x v)
-          (error 'put-hash-table! "~s is not a hash table" h)))))
+          (error 'put-hash-table! "~s is not a hash table" h))))
 
 )
