@@ -189,7 +189,7 @@
               (make-graph (code-reloc-vector x) h)]
              [(record? x)
               (when (eq? x (base-rtd))
-                (error 'fasl-write "$base-rtd is not writable"))
+                (error 'fasl-write "base-rtd is not writable"))
               (let ([rtd (record-type-descriptor x)])
                 (cond
                   [(eq? rtd (base-rtd))

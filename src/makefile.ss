@@ -457,7 +457,6 @@
       [record-ref                       s i]
       [record-field-accessor            s i]
       [record-field-mutator             s i]
-      [$base-rtd                        s  ]
       [$record-set!                     s  ]
       [$record-ref                      s  ]
       [$record-rtd                      s  ]
@@ -919,7 +918,6 @@
       [record-field-accessor   record-field-accessor-label   (core-prim . record-field-accessor)]
       [record-field-mutator    record-field-mutator-label    (core-prim . record-field-mutator)]
       ;;; records/low-level 
-      [$base-rtd    $base-rtd-label    (core-prim . $base-rtd)]
       [$record-set! $record-set!-label (core-prim . $record-set!)]
       [$record-ref  $record-ref-label  (core-prim . $record-ref)]
       [$record-rtd  $record-rtd-label  (core-prim . $record-rtd)]

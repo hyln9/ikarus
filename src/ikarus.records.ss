@@ -15,7 +15,7 @@
       record-field-accessor record-field-mutator record?  record-rtd
       record-type-descriptor record-name record-printer record-length
       record-ref record-set!)
-    (only (scheme) $record? $record-rtd $base-rtd $record-ref
+    (only (scheme) $record? $record-rtd $record-ref
           $record-set! $record $make-record $car $cdr $fxadd1 
           $fx< $fx= $fx+ $fx>=
           set-top-level-value! top-level-value top-level-bound?))
@@ -25,7 +25,7 @@
   (define rtd?
     (lambda (x)
       (and ($record? x)
-           (eq? ($record-rtd x) $base-rtd))))
+           (eq? ($record-rtd x) (base-rtd)))))
 
   (define rtd-name
     (lambda (rtd)
@@ -69,7 +69,7 @@
 
   (define make-rtd
     (lambda (name fields printer symbol)
-      ($record $base-rtd name (length fields) fields printer symbol)))
+      ($record (base-rtd) name (length fields) fields printer symbol)))
 
   (define verify-field
     (lambda (x)
@@ -254,9 +254,9 @@
           (error 'record-set! "index ~s is out of range for ~s" i x))
         ($record-set! x i v))))
 
-  (set-rtd-fields! $base-rtd '(name fields length printer symbol))
-  (set-rtd-name! $base-rtd "base-rtd")
-  (set-rtd-printer! $base-rtd
+  (set-rtd-fields! (base-rtd) '(name fields length printer symbol))
+  (set-rtd-name! (base-rtd) "base-rtd")
+  (set-rtd-printer! (base-rtd)
     (lambda (x p)
       (unless (rtd? x)
         (error 'record-type-printer "not an rtd"))
