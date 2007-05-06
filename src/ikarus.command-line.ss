@@ -1,8 +1,9 @@
 
 (library (ikarus command-line)
   (export command-line-arguments)
-  (import (only (scheme) $arg-list)
-          (except (ikarus) command-line-arguments))
+  (import 
+    (ikarus system $arg-list)
+    (except (ikarus) command-line-arguments))
 
   (define command-line-arguments
     (make-parameter ($arg-list)
