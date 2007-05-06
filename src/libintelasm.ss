@@ -974,11 +974,6 @@
                 (for-each set-code-reloc-vector! code* relv*)
                 code*)))))))
   
-  ;(define list->code
-  ;  (lambda (ls)
-  ;    (car (list*->code* (list ls)))))
-  
-  (primitive-set! 'list*->code* assemble-sources)
 
 )
 

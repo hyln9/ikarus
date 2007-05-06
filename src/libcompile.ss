@@ -4927,7 +4927,7 @@
     (let ([SL_apply (gensym "SL_apply")]
           [L_apply_done (gensym)]
           [L_apply_loop (gensym)])
-      (list*->code* (lambda (x) #f)
+      (assemble-sources (lambda (x) #f)
         (list
           (list 0 
               (label SL_apply)
@@ -4947,7 +4947,7 @@
       SL_apply)]
    [(sl-fx+-type-label)
     (define SL_fx+_type (gensym "SL_fx+_type"))
-    (list*->code* (lambda (x) #f)
+    (assemble-sources (lambda (x) #f)
       (list
         (list 0
               (label SL_fx+_type)
@@ -4958,7 +4958,7 @@
     SL_fx+_type]
    [(sl-fx+-types-label)
     (define SL_fx+_types (gensym "SL_fx+_types"))
-    (list*->code* (lambda (x) #f)
+    (assemble-sources (lambda (x) #f)
       (list
         (list 0
           (label SL_fx+_types)
@@ -4970,7 +4970,7 @@
     SL_fx+_types]
    [(sl-continuation-code-label)
     (define SL_continuation_code (gensym "SL_continuation_code"))
-    (list*->code* (lambda (x) #f)
+    (assemble-sources (lambda (x) #f)
       (list
         (let ([L_cont_zero_args      (gensym)] 
               [L_cont_mult_args      (gensym)]
@@ -5016,7 +5016,7 @@
     SL_continuation_code]
    [(sl-invalid-args-label)
     (define SL_invalid_args (gensym "SL_invalid_args"))
-    (list*->code* (lambda (x) #f)
+    (assemble-sources (lambda (x) #f)
       (list
         (list 0
           (label SL_invalid_args)
@@ -5030,7 +5030,7 @@
     SL_invalid_args]
    [(sl-mv-ignore-rp-label)
     (define SL_multiple_values_ignore_rp (gensym "SL_multiple_ignore_error_rp"))
-    (list*->code* (lambda (x) #f)
+    (assemble-sources (lambda (x) #f)
       (list
         (list 0
            (label SL_multiple_values_ignore_rp)
@@ -5038,7 +5038,7 @@
     SL_multiple_values_ignore_rp]
    [(sl-mv-error-rp-label)
     (define SL_multiple_values_error_rp (gensym "SL_multiple_values_error_rp"))
-    (list*->code* (lambda (x) #f)
+    (assemble-sources (lambda (x) #f)
       (list
         (list 0
           (label SL_multiple_values_error_rp)
@@ -5047,7 +5047,7 @@
     SL_multiple_values_error_rp]
    [(sl-values-label)
     (define SL_values (gensym "SL_values"))
-    (list*->code* (lambda (x) #f)
+    (assemble-sources (lambda (x) #f)
       (list
         (let ([L_values_one_value (gensym)]
               [L_values_many_values (gensym)])
@@ -5064,7 +5064,7 @@
     SL_values]
    [(sl-nonprocedure-error-label)
     (define SL_nonprocedure (gensym "SL_nonprocedure"))
-    (list*->code* (lambda (x) #f)
+    (assemble-sources (lambda (x) #f)
       (list
         (list 0
           (label SL_nonprocedure)
@@ -5075,7 +5075,7 @@
     SL_nonprocedure]
    [(sl-cwv-label)
     (define SL_call_with_values (gensym "SL_call_with_values"))
-    (list*->code* (lambda (x) #f)
+    (assemble-sources (lambda (x) #f)
       (list
         (let ([L_cwv_done (gensym)]
               [L_cwv_loop (gensym)]
@@ -5140,7 +5140,7 @@
     SL_call_with_values]
    [(sl-top-level-value-error-label)
     (define SL_top_level_value_error (gensym "SL_top_level_value_error"))
-    (list*->code* (lambda (x) #f)
+    (assemble-sources (lambda (x) #f)
       (list
         (list 0
           (label SL_top_level_value_error)
@@ -5151,7 +5151,7 @@
     SL_top_level_value_error]
    [(sl-cadr-error-label)
     (define SL_cadr_error (gensym "SL_cadr_error"))
-    (list*->code* (lambda (x) #f)
+    (assemble-sources (lambda (x) #f)
       (list
         (list 0
           (label SL_cadr_error)
@@ -5162,7 +5162,7 @@
     SL_cadr_error]
    [(sl-cdr-error-label)
     (define SL_cdr_error (gensym "SL_cdr_error"))
-    (list*->code* (lambda (x) #f)
+    (assemble-sources (lambda (x) #f)
       (list
         (list 0
           (label SL_cdr_error)
@@ -5173,7 +5173,7 @@
     SL_cdr_error]
    [(sl-car-error-label)
     (define SL_car_error (gensym "SL_car_error"))
-    (list*->code* (lambda (x) #f)
+    (assemble-sources (lambda (x) #f)
       (list
         (list 0
           (label SL_car_error)
@@ -5184,7 +5184,7 @@
     SL_car_error]
    [(sl-fxsub1-error-label)
     (define SL_fxsub1_error (gensym "SL_fxsub1_error"))
-    (list*->code* (lambda (x) #f)
+    (assemble-sources (lambda (x) #f)
       (list
         (list 0
           (label SL_fxsub1_error)
@@ -5195,7 +5195,7 @@
     SL_fxsub1_error]
    [(sl-fxadd1-error-label)
     (define SL_fxadd1_error (gensym "SL_fxadd1_error"))
-    (list*->code* (lambda (x) #f)
+    (assemble-sources (lambda (x) #f)
       (list
         (list 0
           (label SL_fxadd1_error)
@@ -5206,7 +5206,7 @@
     SL_fxadd1_error]
    [(sl-fx+-overflow-label)
     (define SL_fx+_overflow (gensym "SL_fx+_overflow"))
-    (list*->code* (lambda (x) #f)
+    (assemble-sources (lambda (x) #f)
       (list
         (list 0
           (label SL_fx+_overflow)
@@ -5245,7 +5245,7 @@
               (for-each (lambda (x) (printf "    ~s\n" x)) ls))
             ls*)))
       (let ([code* 
-             (list*->code* 
+             (assemble-sources 
                (lambda (x)
                  (if (closure? x)
                      (if (null? (closure-free* x))
@@ -5368,7 +5368,7 @@
               (for-each (lambda (x) (printf "    ~s\n" x)) ls))
             ls*)))
       (let ([code* 
-             (list*->code* 
+             (assemble-sources 
                (lambda (x)
                  (if (closure? x)
                      (if (null? (closure-free* x))
