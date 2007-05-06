@@ -8,9 +8,7 @@
     (ikarus system $strings)
     (ikarus system $fx)
     (ikarus system $pairs)
-    (only (scheme) 
-          $forward-ptr?
-          $unbound-object?)
+    (ikarus system $symbols)
     (except (ikarus) write display format printf print-error
             error-handler error))
 
@@ -375,9 +373,9 @@
         [($unbound-object? x)
          (write-char* "#<unbound-object>" p)
          i]
-        [($forward-ptr? x)
-         (write-char* "#<forward-ptr>" p)
-         i]
+       ;;; [($forward-ptr? x) FIXME reinstate
+       ;;;  (write-char* "#<forward-ptr>" p)
+       ;;;  i]
         [(number? x)
          (write-char* (number->string x) p)
          i]

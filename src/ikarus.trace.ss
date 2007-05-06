@@ -1,10 +1,7 @@
 
 (library (ikarus trace)
   (export make-traced-procedure trace-symbol! untrace-symbol!)
-  (import
-    (only (scheme) top-level-bound? set-top-level-value!
-          top-level-value)
-    (ikarus))
+  (import (ikarus))
 
   (define k* '())
   
@@ -63,7 +60,7 @@
       (cond
         [(assq s traced-symbols) =>
          (lambda (pr)
-           (let ([a (cdr pr)] [v (top-level-value s)])
+           (let ([a (cdr pr)] [v (symbol-value s)])
              (unless (eq? (cdr a) v)
                (unless (procedure? v)
                  (error 'trace
@@ -72,18 +69,18 @@
                (let ([p (make-traced-procedure s v)])
                  (set-car! a v)
                  (set-cdr! a p)
-                 (set-top-level-value! s p)))))]
+                 (set-symbol-value! s p)))))]
         [else
-         (unless (top-level-bound? s)
+         (unless (symbol-bound? s)
            (error 'trace "~s is unbound" s))
-         (let ([v (top-level-value s)])
+         (let ([v (symbol-value s)])
            (unless (procedure? v)
              (error 'trace "the top-level value of ~s is ~s (not a procedure)"
                     s v))
            (let ([p (make-traced-procedure s v)])
              (set! traced-symbols 
                (cons (cons s (cons v p)) traced-symbols))
-             (set-top-level-value! s p)))])))
+             (set-symbol-value! s p)))])))
   
   (define untrace-symbol!
     (lambda (s)
@@ -93,8 +90,8 @@
             [(null? ls) '()]
             [(eq? s (caar ls))
              (let ([a (cdar ls)])
-               (when (eq? (cdr a) (top-level-value s))
-                 (set-top-level-value! s (car a)))
+               (when (eq? (cdr a) (symbol-value s))
+                 (set-symbol-value! s (car a)))
                (cdr ls))]
             [else (cons (car ls) (loop (cdr ls)))])))
       (set! traced-symbols (loop traced-symbols))))

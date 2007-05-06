@@ -6,9 +6,9 @@
     (except (ikarus) make-vector vector 
             vector-length vector-ref vector-set!
             vector->list list->vector)
-    (only (scheme)
-          $fx= $fx>= $fx< $fx<= $fx+ $fxadd1 $fxsub1 $fxzero? $car $cdr 
-          $vector-set! $vector-ref $make-vector $vector-length))
+    (ikarus system $fx)
+    (ikarus system $pairs)
+    (ikarus system $vectors))
 
 
   (define vector-length
