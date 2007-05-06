@@ -33,7 +33,7 @@
 (library (ikarus fasl write)
   (export fasl-write)
   (import
-    (only (scheme) $closure-code $base-rtd)
+    (only (scheme) $closure-code )
     (except (ikarus) fasl-write))
 
   (define write-fixnum 
@@ -111,7 +111,7 @@
         [(record? x)
          (let ([rtd (record-type-descriptor x)])
            (cond
-             [(eq? rtd $base-rtd)
+             [(eq? rtd (base-rtd))
               ;;; rtd record
               (write-char #\R p)
               (let ([names (record-type-field-names x)]
@@ -188,11 +188,11 @@
              [(code? x) 
               (make-graph (code-reloc-vector x) h)]
              [(record? x)
-              (when (eq? x $base-rtd) 
+              (when (eq? x (base-rtd))
                 (error 'fasl-write "$base-rtd is not writable"))
               (let ([rtd (record-type-descriptor x)])
                 (cond
-                  [(eq? rtd $base-rtd)
+                  [(eq? rtd (base-rtd))
                    ;;; this is an rtd
                    (make-graph (record-type-name x) h)
                    (make-graph (record-type-symbol x) h)
