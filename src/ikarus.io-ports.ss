@@ -8,14 +8,9 @@
           port-output-index  set-port-output-index!
           port-output-size   set-port-output-size!)
   (import 
-    (only (scheme) $make-port/input $make-port/output
-          $make-port/both     $port-handler 
-          $port-input-buffer  $port-output-buffer 
-          $port-input-index   $set-port-input-index!
-          $port-input-size    $set-port-input-size!
-          $port-output-index  $set-port-output-index!
-          $port-output-size   $set-port-output-size!
-          $string-length $fx<= $fx>=)
+    (ikarus system $ports)
+    (ikarus system $strings)
+    (ikarus system $fx)
     (except (ikarus)  make-input-port make-output-port 
          make-input/output-port port-handler
          port-input-buffer  port-output-buffer
