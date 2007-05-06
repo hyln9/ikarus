@@ -8,9 +8,9 @@
       char=? char<? char<=? char>? char>=?
       integer->char char->integer
       char-whitespace? char-alphabetic? char-downcase)
-    (only (scheme) 
-          $car $cdr $fx+ $fx- $fx<= $fx>= $fixnum->char $char->fixnum
-          $char= $char< $char<= $char> $char>=))
+    (ikarus system $pairs)
+    (ikarus system $chars)
+    (ikarus system $fx))
 
   (define integer->char
     (lambda (n)
