@@ -48,8 +48,8 @@
       "ikarus.io-primitives.ss"
       "ikarus.io.input-files.ss"
       "ikarus.io.output-files.ss"
+      "ikarus.io.output-strings.ss"
 
-      "libchezio.ss"
       "libhash.ss"
       "libwriter.ss"
       "libtokenizer.ss"
