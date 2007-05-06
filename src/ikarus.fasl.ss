@@ -33,7 +33,7 @@
 (library (ikarus fasl write)
   (export fasl-write)
   (import
-    (only (scheme) $closure-code )
+    (ikarus system $codes)
     (ikarus system $records)
     (except (ikarus) fasl-write))
 
