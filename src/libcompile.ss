@@ -13,7 +13,7 @@
 
 (library (ikarus compiler)
   (export)
-  (import (scheme))
+  (import (scheme) (ikarus intel-assembler))
 
 
 (let ()

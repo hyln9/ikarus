@@ -37,7 +37,7 @@
    ;;;      setg
 
 
-(library (ikarus intel-assember)
+(library (ikarus intel-assembler)
   (export assemble-sources)
   (import (scheme))
 
