@@ -4,7 +4,7 @@
   (import 
     (except (ikarus) apply)
     (ikarus system $pairs)
-    (ikarus system $apply))
+    (ikarus system $stack))
 
   (define apply
     (let ()

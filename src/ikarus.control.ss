@@ -3,8 +3,7 @@
 (library (ikarus control)
   (export call/cf call/cc dynamic-wind exit)
   (import 
-    (only (scheme) $fp-at-base $current-frame $frame->continuation
-          $seal-frame-and-call)
+    (ikarus system $stack)
     (except (ikarus) call/cf call/cc dynamic-wind exit))
 
   (define primitive-call/cf
