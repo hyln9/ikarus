@@ -3,7 +3,8 @@
   (export compile-core-expr-to-port assembler-output
           current-primitive-locations eval-core)
   (import 
-    (only (scheme) $record-ref $record/rtd? $code->closure)
+    (only (ikarus system $codes) $code->closure)
+    (only (ikarus system $records) $record-ref $record/rtd?)
     (except (ikarus) ;fasl-write
         compile-core-expr-to-port assembler-output
         current-primitive-locations eval-core)
