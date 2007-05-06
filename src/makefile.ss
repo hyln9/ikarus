@@ -41,7 +41,6 @@
       "ikarus.numerics.ss"
       "ikarus.guardians.ss"
       "ikarus.command-line.ss"
-      "ikarus.core.ss"
       "ikarus.io-ports.ss"
       "ikarus.io-primitives.unsafe.ss"
       "ikarus.io-primitives.ss"
