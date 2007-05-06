@@ -4,10 +4,13 @@
   (export write display format printf print-error error-handler
           error)
   (import 
-    (only (scheme) $fixnum->char $char->fixnum $char= $char<= 
-          $fx= $fx>= $fx+ $fxadd1 $car $cdr $forward-ptr?
-          $unbound-object?
-          $string-length $string-ref)
+    (ikarus system $chars)
+    (ikarus system $strings)
+    (ikarus system $fx)
+    (ikarus system $pairs)
+    (only (scheme) 
+          $forward-ptr?
+          $unbound-object?)
     (except (ikarus) write display format printf print-error
             error-handler error))
 

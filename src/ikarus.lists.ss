@@ -4,11 +4,11 @@
           last-pair memq memv member assq assv assoc
           map for-each andmap ormap)
   (import 
-    (only (scheme) $car $cdr $fx+ $fxadd1 $fxsub1 $fxzero? $fx>=)
-    (except (ikarus) list? list list* make-list append reverse last-pair 
-            length list-ref
-            memq memv member assq assv assoc
-            map for-each andmap ormap))
+    (ikarus system $fx)
+    (ikarus system $pairs)
+    (except (ikarus) list? list list* make-list append reverse
+            last-pair length list-ref memq memv member assq assv
+            assoc map for-each andmap ormap))
 
   (define $memq
     (lambda (x ls)
