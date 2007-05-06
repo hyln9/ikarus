@@ -244,7 +244,7 @@
 
 (library (ikarus fasl read)
   (export)
-  (import (scheme))
+  (import )
 
   (define who 'fasl-read)
   (define (assert-eq? x y)

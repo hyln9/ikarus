@@ -4,11 +4,9 @@
           fxremainder fxmodulo fxlogor fxlogand fxlogxor fxsll fxsra
           fx= fx< fx<= fx> fx>= fixnum->string)
   (import 
-    (only (scheme) $fxadd1 $fxsub1 $fxlognot $fxzero? $fxquotient
-          $fxmodulo $fx+ $fx- $fx* $fxlogor $fxlogand $fxlogxor
-          $fxsll $fxsra $fx= $fx< $fx<= $fx> $fx>=
-          $string-set!
-          $char->fixnum $fixnum->char)
+    (ikarus system $fx)
+    (ikarus system $chars)
+    (ikarus system $strings)
     (except (ikarus) fxzero? fxadd1 fxsub1 fxlognot fx+ fx- fx*
             fxquotient fxremainder fxmodulo fxlogor fxlogand
             fxlogxor fxsll fxsra fx= fx< fx<= fx> fx>=
