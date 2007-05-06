@@ -3,10 +3,11 @@
   (export open-input-file current-input-port console-input-port
           with-input-from-file call-with-input-file)
   (import
-    (only (scheme) $set-port-input-size! $set-port-input-index! 
-          $string-ref $string-set! $port-input-buffer $port-input-size
-          $port-input-index $peek-char $read-char
-          $fx= $fx< $fx> $fx>= $fxadd1 $fxsub1)
+    (ikarus system $ports)
+    (ikarus system $io)
+    (ikarus system $fx)
+    (ikarus system $strings)
+    (ikarus system $chars)
     (except (ikarus)
             open-input-file current-input-port console-input-port
             with-input-from-file call-with-input-file
