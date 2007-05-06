@@ -171,6 +171,7 @@
     [$fp-at-base        0   pred]
     [$current-frame     0   value]
     [$arg-list          0   value]
+    [base-rtd           0   value]
     [$seal-frame-and-call 1  tail]
     [$frame->continuation 1 value]
     [$interrupted?       0   pred]
@@ -2017,7 +2018,7 @@
     (case op
       [(fixnum? flonum? bignum? immediate? boolean? char? vector? string? procedure?
         null? pair? not cons eq? vector symbol? error eof-object eof-object? 
-        void $unbound-object? $code? $forward-ptr? bwp-object?
+        void base-rtd $unbound-object? $code? $forward-ptr? bwp-object?
         pointer-value top-level-value car cdr list* list $record
         port? input-port? output-port?
         $make-port/input $make-port/output $make-port/both
@@ -3188,6 +3189,7 @@
       [(arg-list)           (mem 32 pcr)]
       [(engine-counter)     (mem 36 pcr)]
       [(interrupted)        (mem 40 pcr)]
+      [(base-rtd)           (mem 44 pcr)]
       [else (error 'pcb-ref "invalid arg ~s" x)])))
 
 (define do-warn
@@ -4041,6 +4043,8 @@
                      (f (cdr arg*) (fxadd1 idx)))])]))]
      [($current-frame)
       (list* (movl (pcb-ref 'next-continuation) eax) ac)]
+     [(base-rtd)
+      (list* (movl (pcb-ref 'base-rtd) eax) ac)]
      [($arg-list)
       (list* (movl (pcb-ref 'arg-list) eax) ac)]
      [($seal-frame-and-call) 

@@ -21,7 +21,8 @@
     ;;;  an error (which may lead to the infamous Error: Error: 
     ;;;  Error: Error: Error: Error: Error: Error: Error: ...).
     ;;;
-    '("ikarus.handlers.ss"
+    '("ikarus.singular-objects.ss"
+      "ikarus.handlers.ss"
       "ikarus.multiple-values.ss"
       "ikarus.control.ss"
       "ikarus.collect.ss"
@@ -536,6 +537,7 @@
       [collect                s]
       [do-stack-overflow      s]
       [syntax-dispatch        s]
+      [base-rtd               s i]
       ))
 
 
