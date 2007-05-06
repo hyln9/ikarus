@@ -3,7 +3,8 @@
   (export apply)
   (import 
     (except (ikarus) apply)
-    (only (scheme) $$apply $car $cdr $set-cdr!))
+    (ikarus system $pairs)
+    (ikarus system $apply))
 
   (define apply
     (let ()

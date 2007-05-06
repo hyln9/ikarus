@@ -111,7 +111,7 @@
       [$codes (ikarus system $codes)]
       [$tcbuckets (ikarus system $tcbuckets)]
       [$io (ikarus system $io)]
-      ;[$lists (ikarus system $lists)]
+      [$apply (ikarus system $apply)]
       ;[$lists (ikarus system $lists)]
       ;[$lists (ikarus system $lists)]
       ;[$lists (ikarus system $lists)]
@@ -531,12 +531,13 @@
       [$read-char             $io]
       [$peek-char             $io]
       [$unread-char           $io]
+      ; (ikarus system $apply)
+      [$$apply                $apply]
       ; (ikarus system)
       [$forward-ptr?                    s  ]
       [$unbound-object?                 s  ]
       [$make-call-with-values-procedure s  ]
       [$make-values-procedure           s  ]
-      [$$apply                          s  ]
       [$arg-list                        s  ]
       [$interrupted?                    s  ]
       [$unset-interrupted!              s  ]
