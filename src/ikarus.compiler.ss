@@ -4,10 +4,11 @@
           current-primitive-locations eval-core)
   (import 
     (only (scheme) $record-ref $record/rtd? $code->closure)
-    (except (ikarus)
+    (except (ikarus) ;fasl-write
         compile-core-expr-to-port assembler-output
         current-primitive-locations eval-core)
-    (ikarus intel-assembler))
+    (ikarus intel-assembler)
+    (ikarus fasl write))
 
 
 

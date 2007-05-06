@@ -54,7 +54,7 @@
       "ikarus.code-objects.ss"
 
       "ikarus.intel-assembler.ss"
-      "libfasl.ss"
+      "ikarus.fasl.ss"
       "libtrace.ss"
       "ikarus.compiler.ss"
       "libsyntax.ss"
@@ -438,7 +438,7 @@
       [eval-core                        s i]
       [load                             s i]
       [assembler-output                 s i]
-      [fasl-write                       s i]
+      ;[fasl-write                       s i]
       [new-cafe                         s i]
       [command-line-arguments           s i]
       [list*->code*                     s i]
@@ -897,7 +897,7 @@
       [eval-core  eval-core-label  (core-prim . eval-core)]
       [load       load-label       (core-prim . load)]
       [assembler-output       assembler-output-label       (core-prim . assembler-output)]
-      [fasl-write       fasl-write-label       (core-prim . fasl-write)]
+      ;[fasl-write       fasl-write-label       (core-prim . fasl-write)]
       [new-cafe   new-cafe-label   (core-prim . new-cafe)]
       [command-line-arguments command-line-arguments-label (core-prim .  command-line-arguments)]
       [list*->code*       list*->code*-label       (core-prim . list*->code*)]

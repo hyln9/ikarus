@@ -31,8 +31,10 @@
 
 
 (library (ikarus fasl write)
-  (export)
-  (import (scheme))
+  (export fasl-write)
+  (import
+    (only (scheme) $closure-code $base-rtd)
+    (except (ikarus) fasl-write))
 
   (define write-fixnum 
     (lambda (x p)
@@ -223,7 +225,7 @@
          (write-char #\1 port)
          (fasl-write-object x port h 1)
          (void))))
-  (primitive-set! 'fasl-write
+  (define fasl-write
      (case-lambda 
        [(x) (fasl-write-to-port x (current-output-port))]
        [(x port)
