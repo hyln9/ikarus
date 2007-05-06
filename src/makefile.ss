@@ -58,7 +58,7 @@
       "ikarus.pretty-print.ss"
       "ikarus.cafe.ss"
       "ikarus.posix.ss"
-      "libtimers.ss"
+      "ikarus.timer.ss"
       "library-manager.ss"
       "libtoplevel.ss"))
 

@@ -1,7 +1,7 @@
 
 (library (ikarus timers)
-  (export)
-  (import (scheme))
+  (export time-it)
+  (import (except (ikarus) time-it))
 
   (define-record stats 
     (user-secs user-usecs sys-secs sys-usecs real-secs real-usecs collection-id))
@@ -96,14 +96,11 @@
                            t1 t0)
               (apply values v*)])))]))
                        
-  (begin)
   (define (bytes-minor)
     (foreign-call "ikrt_bytes_allocated"))
   (define (bytes-major)
     (foreign-call "ikrt_bytes_allocated_major"))
   (define (diff-bytes mnr0 mjr0 mnr1 mjr1)
     (+ (fx- mnr1 mnr0) (* (fx- mjr1 mjr0) #x10000000)))
-
-  (primitive-set! 'time-it time-it)
 
 )
