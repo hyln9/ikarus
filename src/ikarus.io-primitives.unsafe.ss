@@ -5,13 +5,9 @@
           $close-input-port $close-output-port)
   (import
     (ikarus)
-    (only (scheme) $port-handler $port-output-buffer
-          $set-port-output-index! $port-output-size
-          $set-port-input-index! $port-input-buffer $port-input-size
-          $set-port-input-size!
-          $port-input-index
-          $fxadd1 $fxsub1 $fx< $fx>= $string-ref
-          $string-length $string-set!))
+    (ikarus system $ports)
+    (ikarus system $strings)
+    (ikarus system $fx))
 
   (define $write-char
     (lambda (c p)
