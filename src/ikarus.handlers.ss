@@ -25,8 +25,7 @@
     cdr-error fxadd1-error fxsub1-error cadr-error fx+-type-error
     fx+-types-error fx+-overflow-error $do-event)
   (import (except (ikarus) interrupt-handler)
-          (only (ikarus system) $interrupted? $unset-interrupted!)
-          (only (scheme) top-level-bound?))
+          (only (ikarus system) $interrupted? $unset-interrupted!))
 
   (define interrupt-handler
     (make-parameter
@@ -64,7 +63,7 @@
     (lambda (x)
       (cond
         [(symbol? x)
-         (if (top-level-bound? x)
+         (if (symbol-bound? x)
              (error 'top-level-value "BUG in ~s" x)
              (error 'top-level-value "~s is unbound" x))]
         [else
