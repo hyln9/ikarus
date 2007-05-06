@@ -97,17 +97,11 @@
               (error 'make-input/output-port "~s is not a string" input-buffer))
           (error 'make-input/output-port "~s is not a procedure" handler))))
   ;;;
-  ;;; XXX (primitive-set! '$port-handler
-  ;;; XXX   (lambda (x) ($port-handler x)))
-  ;;;
   (define port-handler
     (lambda (x)
       (if (port? x)
           ($port-handler x)
           (error 'port-handler "~s is not a port" x))))
-  ;;;
-  ;;; XXX (define $port-input-buffer
-  ;;; XXX   (lambda (x) ($port-input-buffer x)))
   ;;;
   (define port-input-buffer
     (lambda (x)
@@ -115,17 +109,11 @@
           ($port-input-buffer x)
           (error 'port-input-buffer "~s is not an input-port" x))))
   ;;;
-  ;;; XXX (primitive-set! '$port-input-index
-  ;;; XXX   (lambda (x) ($port-input-index x)))
-  ;;;
   (define port-input-index
     (lambda (x)
       (if (input-port? x)
           ($port-input-index x)
           (error 'port-input-index "~s is not an input-port" x))))
-  ;;;
-  ;;; XXX (primitive-set! '$port-input-size
-  ;;; XXX   (lambda (x) ($port-input-size x)))
   ;;;
   (define port-input-size
     (lambda (x)
@@ -133,17 +121,11 @@
           ($port-input-size x)
           (error 'port-input-size "~s is not an input-port" x))))
   ;;;
-  ;;; XXX (define '$port-output-buffer
-  ;;; XXX   (lambda (x) ($port-output-buffer x)))
-  ;;;
   (define port-output-buffer
     (lambda (x)
       (if (output-port? x)
           ($port-output-buffer x)
           (error 'port-output-buffer "~s is not an output-port" x))))
-  ;;;
-  ;;; XXX (primitive-set! '$port-output-index
-  ;;; XXX   (lambda (x) ($port-output-index x)))
   ;;;
   (define port-output-index
     (lambda (x)
@@ -151,17 +133,11 @@
           ($port-output-index x)
           (error 'port-output-index "~s is not an output-port" x))))
   ;;;
-  ;;; XXX (primitive-set! '$port-output-size
-  ;;; XXX   (lambda (x) ($port-output-size x)))
-  ;;;
   (define port-output-size
     (lambda (x)
       (if (output-port? x)
           ($port-output-size x)
           (error 'port-output-size "~s is not an output-port" x))))
-  ;;;
-  ;;; XXX (define '$set-port-input-index!
-  ;;; XXX   (lambda (p i) ($set-port-input-index! p i)))
   ;;;
   (define set-port-input-index!
     (lambda (p i)
@@ -174,11 +150,6 @@
                   (error 'set-port-input-index! "index ~s is negative" i))
               (error 'set-port-input-index! "~s is not a valid index" i))
           (error 'set-port-input-index! "~s is not an input-port" p))))
-  ;;;
-  ;;; XXX (primitive-set! '$set-port-input-size!
-  ;;; XXX   (lambda (p i) 
-  ;;; XXX     ($set-port-input-index! p 0)
-  ;;; XXX     ($set-port-input-size! p i)))
   ;;;
   (define set-port-input-size!
     (lambda (p i)
@@ -194,9 +165,6 @@
               (error 'set-port-input-size! "~s is not a valid size" i))
           (error 'set-port-input-size! "~s is not an input-port" p))))
   ;;;
-  ;;; XXX (primitive-set! '$set-port-output-index!
-  ;;; XXX   (lambda (p i) ($set-port-output-index! p i)))
-  ;;;
   (define set-port-output-index!
     (lambda (p i)
       (if (output-port? p)
@@ -208,11 +176,6 @@
                   (error 'set-port-output-index! "index ~s is negative" i))
               (error 'set-port-output-index! "~s is not a valid index" i))
           (error 'set-port-output-index! "~s is not an output-port" p))))
-  ;;;
-  ;;; XXX (primitive-set! '$set-port-output-size!
-  ;;; XXX   (lambda (p i) 
-  ;;; XXX     ($set-port-output-index! p 0)
-  ;;; XXX     ($set-port-output-size! p i)))
   ;;;
   (define set-port-output-size!
     (lambda (p i)

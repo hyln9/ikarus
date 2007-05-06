@@ -449,7 +449,7 @@
           [else
            (error who "Unexpected ~s as a fasl object header" h)])))
     (read))
-  (primitive-set! '$fasl-read
+  (define $fasl-read
     (lambda (p)
       (assert-eq? (read-char p) #\I)
       (assert-eq? (read-char p) #\K)

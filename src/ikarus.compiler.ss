@@ -136,7 +136,6 @@
     [$set-symbol-unique-string! 2   effect]
     [$symbol-plist      1   value]
     [$set-symbol-plist! 2   effect]
-    [primitive-set! 2 effect]
     [top-level-value      1   value]
     ;;; ports
     [port?                    1 pred]
@@ -942,7 +941,6 @@
   384 cdr
   898 cons
   747 error
-  331 primitive-set!
   555 void
   645 list
 |#
@@ -1258,7 +1256,7 @@
     ;X;      (giveup))]
     ;;; unoptimizables
     [(error syntax-error $syntax-dispatch $sc-put-cte 
-      primitive-set!  apply) 
+      apply) 
      (giveup)]
     ))
 
@@ -2064,7 +2062,6 @@
         $code-size $code-reloc-vector $code-freevars 
         $code-ref $code-set!
         $make-record $record? $record/rtd? $record-rtd $record-ref $record-set!
-        primitive-set! 
         $make-tcbucket $tcbucket-key $tcbucket-val $tcbucket-next
         $set-tcbucket-val! 
         $set-tcbucket-next! $set-tcbucket-tconc!)
@@ -4092,7 +4089,7 @@
                ac))]
      [($set-car! $set-cdr! $vector-set! $string-set! $exit
        $set-symbol-value! $set-symbol-plist! 
-       $code-set!  primitive-set! 
+       $code-set!  
        $set-code-object! $set-code-object+offset! $set-code-object+offset/rel!
        $record-set!
        $set-port-input-index! $set-port-input-size!
@@ -4253,17 +4250,6 @@
               (movl ebx (mem (fx- disp-symbol-function symbol-tag) eax))
                ;;; record side effect
                (addl (int (fx- disp-symbol-value symbol-tag)) eax)
-               (shrl (int pageshift) eax)
-               (sall (int wordshift) eax)
-               (addl (pcb-ref 'dirty-vector) eax)
-               (movl (int dirty-word) (mem 0 eax))
-              ac)]
-      [(primitive-set!) 
-       (list* (movl (Simple (car arg*)) eax)
-              (movl (Simple (cadr arg*)) ebx)
-              (movl ebx (mem (fx- disp-symbol-system-value symbol-tag) eax))
-               ;;; record side effect
-               (addl (int (fx- disp-symbol-system-value symbol-tag)) eax)
                (shrl (int pageshift) eax)
                (sall (int wordshift) eax)
                (addl (pcb-ref 'dirty-vector) eax)
@@ -5268,7 +5254,7 @@
     (parameterize ([assembler-output #f])
       (expand x))))
 
-(primitive-set! 'compile
+(define compile
   (lambda (x)
     (let ([code 
            (if (code? x)
@@ -5288,7 +5274,6 @@
             (f))))
       (close-input-port ip)
       (close-output-port op))))
-(primitive-set! 'compile-file compile-file)
 
 ;(include "libaltcogen.ss")
 (define alt-cogen
@@ -5308,9 +5293,8 @@
       (close-output-port op))))
 
 
-(primitive-set! 'alt-compile-file alt-compile-file)
 
-(primitive-set! 'alt-compile
+(define alt-compile
   (lambda (x)
     (let ([code 
            (if (code? x)

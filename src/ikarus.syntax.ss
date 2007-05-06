@@ -2145,7 +2145,6 @@
                  (cons (cons (car ext*) label) subst)
                  (cons (cons label (cons 'global (binding-value b))) env))]
              [else (error #f "cannot export ~s of type ~s" sym type)]))])))
-;  (primitive-set! 'identifier? id?)
   (define generate-temporaries
     (lambda (ls)
       (unless (list? ls) 

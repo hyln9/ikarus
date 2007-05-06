@@ -964,7 +964,6 @@
       [$unbound-object?     $unbound-object?-label    (core-prim . $unbound-object?)]
       [$make-call-with-values-procedure $make-cwv-procedure (core-prim . $make-call-with-values-procedure)]
       [$make-values-procedure $make-values-procedure (core-prim . $make-values-procedure)]
-      [primitive-set! primitive-set!-label (core-prim . primitive-set!)]
       [$$apply     $$apply-label    (core-prim . $$apply)]
       [$arg-list     $arg-list-label    (core-prim . $arg-list)]
       [$interrupted? $interrupted?-label (core-prim .  $interrupted?)]
@@ -1124,3 +1123,4 @@
 
 (invoke (ikarus makefile))
 
+;;; vim:syntax=scheme

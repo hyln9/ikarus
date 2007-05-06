@@ -55,5 +55,4 @@
                     (make-input-string-handler str)
                     str)])
         port)))
-  (primitive-set! 'open-input-string open-input-string)
 
