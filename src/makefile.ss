@@ -53,10 +53,10 @@
       "ikarus.reader.ss"
       "ikarus.code-objects.ss"
 
-      "libintelasm.ss"
+      "ikarus.intel-assembler.ss"
       "libfasl.ss"
       "libtrace.ss"
-      "libcompile.ss"
+      "ikarus.compiler.ss"
       "libsyntax.ss"
       "libpp.ss"
       "libcafe.ss"

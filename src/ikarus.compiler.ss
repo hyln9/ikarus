@@ -1,22 +1,15 @@
 
-
-;;; 9.0: * calls (gensym <symbol>) instead of 
-;;;        (gensym (symbol->string <symbol>)) in order to avoid incrementing
-;;;        gensym-count.
-;;; 6.7: * open-coded top-level-value, car, cdr
-;;; 6.2: * side-effects now modify the dirty-vector
-;;;      * added bwp-object?
-;;;      * added pointer-value
-;;;      * added tcbuckets
-;;; 6.1: * added case-lambda, dropped lambda
-;;; 6.0: * basic compiler
-
 (library (ikarus compiler)
-  (export)
-  (import (scheme) (ikarus intel-assembler))
+  (export compile-core-expr-to-port assembler-output
+          current-primitive-locations eval-core)
+  (import 
+    (only (scheme) $record-ref $record/rtd? $code->closure)
+    (except (ikarus)
+        compile-core-expr-to-port assembler-output
+        current-primitive-locations eval-core)
+    (ikarus intel-assembler))
 
 
-(let ()
 
 (define-syntax record-case
   (lambda (x)
@@ -921,24 +914,6 @@
   (Expr x)
   x)
 
-(module (tally-giveup)
-  (define giveup-list '())
-  (define (tally-giveup op)
-    (cond
-      [(getprop op '*compiler-giveup-tally*) =>
-       (lambda (n)
-         (putprop op '*compiler-giveup-tally* (add1 n)))]
-      [else 
-       (set! giveup-list (cons op giveup-list))
-       (putprop op '*compiler-giveup-tally* 1)]))
-  (define (print-tally)
-    (for-each 
-      (lambda (x)
-        (let ([n (getprop x '*compiler-giveup-tally*)])
-          (when (>= n 30)
-            (printf "~s ~s\n" n x))))
-      giveup-list))
-  (primitive-set! 'compiler-giveup-tally print-tally))
 
 #|FIXME:missing-optimizations
   128 list*
@@ -979,7 +954,6 @@
                (lambda () 
                  (make-funcall (make-primref op) rand*))))]
       [else
-       (tally-giveup op)
        (make-funcall (make-primref op) rand*)]))
   (define (constant-value x k) 
     (record-case x 
@@ -2098,7 +2072,7 @@
        (or (null? rand*)
            (valid-arg-types? op rand*))))
 
-(begin ;;; UNINLINED ANALYSIS
+(module (mark-uninlined uninlined-stats) ;;; UNINLINED ANALYSIS
   ;;; the output of simplify-operands differs from the input in that the 
   ;;; operands to primcalls are all simple (variables, primrefs, or constants).
   ;;; funcalls to open-codable primrefs whos arguments are "ok" are converted to
@@ -2109,15 +2083,14 @@
       [(assq x uninlined) =>
        (lambda (p) (set-cdr! p (fxadd1 (cdr p))))]
       [else (set! uninlined (cons (cons x 1) uninlined))]))
-  (module ()
-    (primitive-set! 'uninlined-stats 
-      (lambda () 
-        (let f ([ls uninlined] [ac '()])
-          (cond
-            [(null? ls) ac]
-            [(fx> (cdar ls) 15)
-             (f (cdr ls) (cons (car ls) ac))]
-            [else (f (cdr ls) ac)]))))))
+  (define uninlined-stats 
+    (lambda () 
+      (let f ([ls uninlined] [ac '()])
+        (cond
+          [(null? ls) ac]
+          [(fx> (cdar ls) 15)
+           (f (cdr ls) (cons (car ls) ac))]
+          [else (f (cdr ls) ac)])))))
 
 (define (introduce-primcalls x)
   (define who 'introduce-primcalls)
@@ -5264,11 +5237,9 @@
   (let ([code (compile-core-expr->code x)])
     ($code->closure code)))
 
-(primitive-set! 'compile-core-expr-to-port compile-core-expr-to-port)
+(define assembler-output (make-parameter #f))
 
-(primitive-set! 'assembler-output (make-parameter #f))
-
-(primitive-set! 'current-primitive-locations
+(define current-primitive-locations
   (let ([plocs (lambda (x) #f)])
     (case-lambda
       [() plocs]
@@ -5279,12 +5250,10 @@
              (refresh-cached-labels!))
            (error 'current-primitive-locations "~s is not a procedure" p))])))
 
-(primitive-set! 'eval-core
+(define eval-core
   (lambda (x) ((compile-core-expr x))))
 
-
-
-))
+)
 
 #!eof junk
 
