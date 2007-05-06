@@ -11,8 +11,6 @@
     (primitive-set! x v)
     (set-top-level-value! x v)))
 
-(primitive-set! 'eof-object
-  (lambda () (eof-object)))
 
 (primitive-set! 'pointer-value
   (lambda (x)
