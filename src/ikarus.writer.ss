@@ -1,13 +1,21 @@
 
 
 (library (ikarus writer)
-  (export)
-  (import (scheme))
+  (export write display format printf print-error error-handler
+          error)
+  (import 
+    (only (scheme) $fixnum->char $char->fixnum $char= $char<= 
+          $fx= $fx>= $fx+ $fxadd1 $car $cdr $forward-ptr?
+          $unbound-object?
+          $string-length $string-ref)
+    (except (ikarus) write display format printf print-error
+            error-handler error))
 
   (define char-table ; first nonprintable chars
     '#("nul" "soh" "stx" "etx" "eot" "enq" "ack" "bel" "bs" "tab" "newline"
        "vt" "ff" "return" "so" "si" "dle" "dc1" "dc2" "dc3" "dc4" "nak" 
        "syn" "etb" "can" "em" "sub" "esc" "fs" "gs" "rs" "us" "space"))
+
   (define write-character
     (lambda (x p m)
       (if m 
@@ -28,6 +36,7 @@
               (write-char #\x p)
               (write-fixnum i p)]))
           (write-char x p))))
+
   (define write-list
     (lambda (x p m h i)
       (cond
@@ -43,6 +52,7 @@
         (write-char #\. p)
         (write-char #\space p)
         (writer x p m h i)])))
+
   (define write-vector
     (lambda (x p m h i)
       (write-char #\# p)
@@ -62,6 +72,7 @@
                  [else i])])
            (write-char #\) p)
            i))))
+
   (define write-record
     (lambda (x p m h i)
       (write-char #\# p)
@@ -77,32 +88,40 @@
                (write-char #\space p)
                (f (fxadd1 idx) 
                   (writer (record-ref x idx) p m h i))]))))))
+  
   (define initial?
     (lambda (c)
       (or (letter? c) (special-initial? c))))
+  
   (define letter?
     (lambda (c)
       (or (and ($char<= #\a c) ($char<= c #\z))
           (and ($char<= #\A c) ($char<= c #\Z)))))
+  
   (define digit?
     (lambda (c)
       (and ($char<= #\0 c) ($char<= c #\9))))
+  
   (define special-initial? 
     (lambda (x)
       (memq x '(#\! #\$ #\% #\& #\* #\/ #\: #\< #\= #\> #\? #\^ #\_ #\~))))
+  
   (define subsequent?
     (lambda (x)
       (or (initial? x)
           (digit? x)
           (special-subsequent? x))))
+  
   (define special-subsequent?
     (lambda (x) 
       (memq x '(#\+ #\- #\. #\@))))
+  
   (define subsequent*?
     (lambda (str i n)
       (or ($fx= i n)
           (and (subsequent? ($string-ref str i))
                (subsequent*? str ($fxadd1 i) n)))))
+  
   (define valid-symbol-string?
     (lambda (str)
       (define normal-symbol-string?
@@ -133,11 +152,13 @@
             (write-char #\\ p))
           (write-char c p))
         (write-symbol-esc-loop x ($fxadd1 i) n p))))
+  
   (define write-symbol-esc
     (lambda (x p)
       (write-char #\| p)
       (write-symbol-esc-loop x 0 ($string-length x) p)
       (write-char #\| p)))
+  
   (define write-symbol
     (lambda (x p m)
       (let ([str (symbol->string x)])
@@ -146,6 +167,7 @@
                 (write-char* str p)
                 (write-symbol-esc str p))
             (write-char* str p)))))
+  
   (define write-gensym
     (lambda (x p m h i)
       (cond
@@ -173,6 +195,7 @@
         [else 
          (write-symbol x p m)
          i])))
+  
   (define write-string-escape
     (lambda (x p)
       (define loop 
@@ -198,11 +221,13 @@
       (write-char #\" p)
       (loop x 0 (string-length x) p)
       (write-char #\" p)))
+  
   (define write-string
     (lambda (x p m)
       (if m
           (write-string-escape x p)
           (write-char* x p))))
+  
   (define write-fixnum
     (lambda (x p)
       (define loop
@@ -222,6 +247,7 @@
             (write-char* "536870912" p)
             (loop (fx- 0 x) p))]
        [else (loop x p)])))
+  
   (define write-char*
     (lambda (x p)
       (define loop 
@@ -230,6 +256,7 @@
            (write-char (string-ref x i) p)
            (loop x (fxadd1 i) n p)))) 
       (loop x 0 (string-length x) p)))
+  
   (define macro
     (lambda (x)
       (define macro-forms
@@ -244,6 +271,7 @@
              (and (pair? d)
                   (null? ($cdr d))))
            (assq ($car x) macro-forms))))
+  
   (define write-pair
     (lambda (x p m h i)
       (write-char #\( p)
@@ -251,16 +279,19 @@
         (let ([i (write-list (cdr x) p m h i)])
           (write-char #\) p)
           i))))
+  
   (define write-ref
     (lambda (n p)
       (write-char #\# p)
       (write-fixnum (fx- -1 n) p)
       (write-char #\# p)))
+  
   (define write-mark
     (lambda (n p)
       (write-char #\# p)
       (write-fixnum (fx- -1 n) p)
       (write-char #\= p)))
+  
   (define write-shareable
     (lambda (x p m h i k)
       (cond
@@ -278,6 +309,7 @@
                 (write-mark i p)
                 (k x p m h i))]))]
         [else (k x p m h i)])))
+  
   (define writer
     (lambda (x p m h i)
       (cond
@@ -419,13 +451,13 @@
       (hasher x h)
       (writer x p #t h 0))
     (flush-output-port p))
-  ;;;
+  
   (define (display-to-port x p)
     (let ([h (make-hash-table)])
       (hasher x h)
       (writer x p #f h 0))
     (flush-output-port p))
-  ;;;
+  
   (define formatter
     (lambda (who p fmt args)
       (let f ([i 0] [args args])
@@ -468,8 +500,7 @@
       (unless (string? fmt)
         (error 'fprintf "~s is not a string" fmt))
       (formatter 'fprintf port fmt args)))
-  
-    
+
   (define display-error
     (lambda (errname who fmt args)
       (unless (string? fmt)
@@ -481,8 +512,8 @@
         (formatter 'print-error p fmt args)
         (write-char #\. p)
         (newline p))))
-  ;;;
-  (primitive-set! 'format
+  
+  (define format
     (lambda (fmt . args)
       (unless (string? fmt)
         (error 'format "~s is not a string" fmt))
@@ -490,35 +521,37 @@
         (formatter 'format p fmt args)
         (get-output-string p))))
    
-  (primitive-set! 'printf 
+  (define printf 
     (lambda (fmt . args)
       (unless (string? fmt)
         (error 'printf "~s is not a string" fmt))
       (formatter 'printf (current-output-port) fmt args)))
   
-  (primitive-set! 'fprintf fprintf)
-  (primitive-set! 'print-graph print-graph)
-  (primitive-set! 'write 
+  (define write 
     (case-lambda
       [(x) (write-to-port x (current-output-port))]
       [(x p)
        (unless (output-port? p) 
          (error 'write "~s is not an output port" p))
        (write-to-port x p)]))
-  (primitive-set! 'display 
+
+  (define display 
     (case-lambda
       [(x) (display-to-port x (current-output-port))]
       [(x p)
        (unless (output-port? p) 
          (error 'display "~s is not an output port" p))
        (display-to-port x p)]))
-  (primitive-set! 'print-error 
+
+  (define print-error 
     (lambda (who fmt . args)
       (display-error "Error" who fmt args)))
-  (primitive-set! 'warning 
+
+  (define warning 
     (lambda (who fmt . args)
       (display-error "Warning" who fmt args)))
-  (primitive-set! 'error-handler
+
+  (define error-handler
     (make-parameter
       (lambda args
         (apply print-error args)
@@ -528,7 +561,8 @@
         (if (procedure? x)
             x
             (error 'error-handler "~s is not a procedure" x)))))
-  (primitive-set! 'error
+
+  (define error
     (lambda args
       (apply (error-handler) args))))
 

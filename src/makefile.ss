@@ -42,17 +42,15 @@
       "ikarus.command-line.ss"
 
       "ikarus.core.ss"
-
       "ikarus.io-ports.ss"
       "ikarus.io-primitives.unsafe.ss"
       "ikarus.io-primitives.ss"
       "ikarus.io.input-files.ss"
       "ikarus.io.output-files.ss"
       "ikarus.io.output-strings.ss"
-
       "ikarus.hash-tables.ss"
+      "ikarus.writer.ss"
 
-      "libwriter.ss"
       "libtokenizer.ss"
       "libassembler.ss"
       "libintelasm.ss"
