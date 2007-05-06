@@ -3,7 +3,8 @@
   (export gensym gensym? gensym->unique-string gensym-prefix
           gensym-count print-gensym string->symbol symbol->string
           getprop putprop remprop property-list
-          top-level-value top-level-bound? set-top-level-value!)
+          top-level-value top-level-bound? set-top-level-value!
+          symbol-value symbol-bound? set-symbol-value!)
   (import 
     (only (scheme) $make-symbol $symbol-string $set-symbol-string!
           $symbol-unique-string $set-symbol-unique-string! 
@@ -14,7 +15,8 @@
       gensym-prefix gensym-count print-gensym
       string->symbol symbol->string
       getprop putprop remprop property-list
-      top-level-value top-level-bound? set-top-level-value!))
+      top-level-value top-level-bound? set-top-level-value!
+      symbol-value symbol-bound? set-symbol-value!))
 
   (define gensym
     (case-lambda
@@ -51,6 +53,27 @@
     (lambda (x v)
       (unless (symbol? x)
         (error 'set-top-level-value! "~s is not a symbol" x))
+      ($set-symbol-value! x v)))
+
+  (define symbol-value
+    (lambda (x)
+      (unless (symbol? x)
+        (error 'symbol-value "~s is not a symbol" x))
+      (let ([v ($symbol-value x)])
+        (when ($unbound-object? v)
+          (error 'symbol-value "unbound ~s" x))
+        v)))
+
+  (define symbol-bound?
+    (lambda (x)
+      (unless (symbol? x)
+        (error 'symbol-bound? "~s is not a symbol" x))
+      (not ($unbound-object? ($symbol-value x)))))
+
+  (define set-symbol-value!
+    (lambda (x v)
+      (unless (symbol? x)
+        (error 'set-symbol-value! "~s is not a symbol" x))
       ($set-symbol-value! x v)))
 
   (define string->symbol
