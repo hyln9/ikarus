@@ -14,8 +14,17 @@
 
 
 (library (ikarus library-manager)
-  (export)
-  (import (scheme))
+  (export imported-label->binding library-subst/env
+          current-library-collection
+          installed-libraries
+          find-library-by-name imported-loc->library install-library
+          library-spec invoke-library)
+  (import (except (ikarus) imported-label->binding library-subst/env
+          current-library-collection
+          installed-libraries
+          find-library-by-name imported-loc->library install-library
+          library-spec invoke-library))
+
 
 
   (define (make-collection)
@@ -28,7 +37,7 @@
         [() set]
         [(x) (set! set (set-cons x set))])))
 
-  (define lm:current-library-collection
+  (define current-library-collection
     (make-parameter (make-collection) 
       (lambda (x)
         (unless (procedure? x)
@@ -45,18 +54,18 @@
       [else (error 'find-dependencies "cannot handle deps yet")]))
 
   (define (find-library-by pred)
-    (let f ([ls ((lm:current-library-collection))])
+    (let f ([ls ((current-library-collection))])
       (cond
         [(null? ls) #f]
         [(pred (car ls)) (car ls)]
         [else (f (cdr ls))])))
 
-  (define (lm:find-library-by-name name)
+  (define (find-library-by-name name)
     (find-library-by
       (lambda (x) (equal? (library-name x) name))))
 
   (define (find-library-by-name/die name)
-    (or (lm:find-library-by-name name)
+    (or (find-library-by-name name)
         (error #f "cannot find library ~s" name)))
 
   (define (find-library-by-spec/die spec)
@@ -65,18 +74,18 @@
             (lambda (x) (eq? id (library-id x))))
           (error #f "cannot find library with spec ~s" spec))))
 
-  (define (lm:install-library id name ver
+  (define (install-library id name ver
              imp* vis* inv* exp-subst exp-env visit-code invoke-code)
     (let ([imp-lib* (map find-library-by-spec/die imp*)]
           [vis-lib* (map find-library-by-spec/die vis*)]
           [inv-lib* (map find-library-by-spec/die inv*)])
       (unless (and (symbol? id) (list? name) (list? ver))
         (error 'install-library "invalid spec ~s ~s ~s" id name ver))
-      (when (lm:find-library-by-name name)
+      (when (find-library-by-name name)
         (error 'install-library "~s is already installed" name))
       (let ([lib (make-library id name ver imp-lib* vis-lib* inv-lib* 
                     exp-subst exp-env visit-code invoke-code)])
-        ((lm:current-library-collection) lib))))
+        ((current-library-collection) lib))))
 
   (define scheme-env ; the-env
     '([define        define-label        (define)]
@@ -523,14 +532,14 @@
       [current-library-collection current-library-collection-label (core-prim . current-library-collection)]
       [invoke-library invoke-library-label (core-prim . invoke-library)]
       ))
-  (define (lm:imported-label->binding lab)
-    (let f ([ls ((lm:current-library-collection))])
+  (define (imported-label->binding lab)
+    (let f ([ls ((current-library-collection))])
       (cond
         [(null? ls) #f]
         [(assq lab (library-env (car ls))) => cdr]
         [else (f (cdr ls))])))
 
-  (define (lm:imported-loc->library loc)
+  (define (imported-loc->library loc)
     (define (loc-in-env? ls)
       (and (pair? ls)
            (let ([a (car ls)])
@@ -538,56 +547,52 @@
                (or (and (eq? (car binding) 'global)
                         (eq? (cdr binding) loc))
                    (loc-in-env? (cdr ls)))))))
-    (let f ([ls ((lm:current-library-collection))])
+    (let f ([ls ((current-library-collection))])
       (cond
         [(null? ls) #f]
         [(loc-in-env? (library-env (car ls))) (car ls)]
         [else (f (cdr ls))])))
 
-  (define (lm:invoke-library lib)
+  (define (invoke-library lib)
     (let ([invoke (library-invoke-state lib)])
       (when (procedure? invoke)
         (set-library-invoke-state! lib 
           (lambda () (error 'invoke "circularity detected for ~s" lib)))
-        (for-each lm:invoke-library (library-inv* lib))
+        (for-each invoke-library (library-inv* lib))
         (set-library-invoke-state! lib 
           (lambda () (error 'invoke "first invoke did not return for ~s" lib)))
         (invoke)
         (set-library-invoke-state! lib #t))))
 
-  (define (lm:invoke-library-by-spec spec)
-    (lm:invoke-library (find-library-by-spec/die spec)))
+  (define (invoke-library-by-spec spec)
+    (invoke-library (find-library-by-spec/die spec)))
+
+
+  (define installed-libraries 
+    (lambda () ((current-library-collection))))
+  (define library-subst/env
+    (lambda (x) 
+      (unless (library? x)
+        (error 'library-subst/env "~s is not a library" x))
+      (values (library-subst x) (library-env x))))
+  (define library-spec       
+    (lambda (x) 
+      (unless (library? x)
+        (error 'library-spec "~s is not a library" x))
+      (list (library-id x) (library-name x) (library-ver x))))
 
   ;;; init
   (let ([subst
          (map (lambda (x) (cons (car x) (cadr x))) scheme-env)]
         [env 
          (map (lambda (x) (cons (cadr x) (caddr x))) scheme-env)])
-    (lm:install-library 'scheme-id   ;;; id
-                        '(scheme)    ;;; name
-                        '()          ;;; version
-                        '() '() '()  ;;; req
-                        subst env
-                        void void))
+    (install-library 'scheme-id   ;;; id
+                     '(scheme)    ;;; name
+                     '()          ;;; version
+                     '() '() '()  ;;; req
+                     subst env
+                     void void))
 
-  (primitive-set! 'installed-libraries 
-    (lambda () ((lm:current-library-collection))))
-  (primitive-set! 'library-subst/env
-    (lambda (x) 
-      (unless (library? x)
-        (error 'library-subst/env "~s is not a library" x))
-      (values (library-subst x) (library-env x))))
-  (primitive-set! 'library-spec       
-    (lambda (x) 
-      (unless (library? x)
-        (error 'library-spec "~s is not a library" x))
-      (list (library-id x) (library-name x) (library-ver x))))
-  (primitive-set! 'find-library-by-name lm:find-library-by-name)
-  (primitive-set! 'imported-label->binding lm:imported-label->binding)
-  (primitive-set! 'imported-loc->library lm:imported-loc->library)
-  (primitive-set! 'invoke-library lm:invoke-library)
-  (primitive-set! 'current-library-collection lm:current-library-collection)
-  (primitive-set! 'install-library lm:install-library)
   ((record-field-mutator (record-type-descriptor (type-descriptor library)) 'printer)
     (type-descriptor library)
     (lambda (x p)

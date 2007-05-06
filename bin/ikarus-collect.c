@@ -348,6 +348,7 @@ ik_collect(int mem_req, ikpcb* pcb){
   pcb->symbol_table = add_object(&gc, pcb->symbol_table, "symbol_table"); 
   pcb->gensym_table = add_object(&gc, pcb->gensym_table, "gensym_table"); 
   pcb->arg_list = add_object(&gc, pcb->arg_list, "args_list_foo");
+  pcb->base_rtd = add_object(&gc, pcb->base_rtd, "base_rtd");
   /* now we trace all live objects */
   collect_loop(&gc);
   

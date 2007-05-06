@@ -337,6 +337,7 @@ ikpcb* ik_make_pcb(){
     ref(r, off_rtd_symbol) = 0;
     ref(s, off_symbol_system_value) = r;
     ref(s, off_symbol_value) = r;
+    pcb->base_rtd = r;
   }
   return pcb;
 }

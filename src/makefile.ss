@@ -59,7 +59,7 @@
       "ikarus.cafe.ss"
       "ikarus.posix.ss"
       "ikarus.timer.ss"
-      "library-manager.ss"
+      "ikarus.library-manager.ss"
       "libtoplevel.ss"))
 
   (define ikarus-system-macros
