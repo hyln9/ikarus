@@ -5,9 +5,8 @@
           close-input-port reset-input-port! 
           flush-output-port close-output-port)
   (import 
-    (only (scheme) $write-char $flush-output-port $port-handler
-          $read-char $unread-char $peek-char $write-char
-          $reset-input-port! $close-input-port $close-output-port)
+    (ikarus system $io)
+    (ikarus system $ports)
     (except (ikarus) read-char unread-char peek-char write-char
             newline port-name input-port-name output-port-name
             close-input-port reset-input-port!  flush-output-port
