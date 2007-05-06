@@ -98,7 +98,25 @@
     '([s   (ikarus system)]
       [u   (ikarus system unsafe)]
       [i   (ikarus)]
-      [r   (r6rs)]))
+      [r   (r6rs)]
+      [$pairs (ikarus system $pairs)]
+      [$lists (ikarus system $lists)]
+      [$chars (ikarus system $chars)]
+      [$strings (ikarus system $strings)]
+      [$vectors (ikarus system $vectors)]
+      [$fx (ikarus system $fx)]
+      [$symbols (ikarus system $symbols)]
+      [$records (ikarus system $records)]
+      [$ports (ikarus system $ports)]
+      [$codes (ikarus system $codes)]
+      [$tcbuckets (ikarus system $tcbuckets)]
+      [$io (ikarus system $io)]
+      ;[$lists (ikarus system $lists)]
+      ;[$lists (ikarus system $lists)]
+      ;[$lists (ikarus system $lists)]
+      ;[$lists (ikarus system $lists)]
+      ;[$lists (ikarus system $lists)]
+      ))
 
   (define ikarus-macros-map
     '([define           s i r]
@@ -406,104 +424,114 @@
       [library-spec                     s i]
       [current-library-collection       s i]
       [invoke-library                   s i]
-
-      [$car                             u  ]
-      [$cdr                             u  ]
-      [$set-car!                        u  ]
-      [$set-cdr!                        u  ]
-      [$memq                            u  ]
-      [$memv                            u  ]
-      [$char?                           s  ]
-      [$char=                           s  ]
-      [$char<                           s  ]
-      [$char>                           s  ]
-      [$char<=                          s  ]
-      [$char>=                          s  ]
-      [$char->fixnum                    s  ]
-      [$fixnum->char                    s  ]
-      [$make-string                     s i]
-      [$string-ref                      s  ]
-      [$string-set!                     s  ]
-      [$string-length                   s  ]
-      [$make-vector                     s  ]
-      [$vector-length                   s  ]
-      [$vector-ref                      s  ]
-      [$vector-set!                     s  ]
-      [$fxzero?                         s  ]
-      [$fxadd1                          s  ]
-      [$fxsub1                          s  ]
-      [$fx>=                            s  ]
-      [$fx<=                            s  ]
-      [$fx>                             s  ]
-      [$fx<                             s  ]
-      [$fx=                             s  ]
-      [$fxsll                           s  ]
-      [$fxsra                           s  ]
-      [$fxquotient                      s  ]
-      [$fxmodulo                        s  ]
-      [$fxlogxor                        s  ]
-      [$fxlogor                         s  ]
-      [$fxlognot                        s  ]
-      [$fxlogand                        s  ]
-      [$fx+                             s  ]
-      [$fx*                             s  ]
-      [$fx-                             s  ]
-      [$make-symbol                     s  ]
-      [$symbol-unique-string            s  ]
-      [$symbol-value                    s  ]
-      [$symbol-string                   s  ]
-      [$symbol-plist                    s  ]
-      [$set-symbol-value!               s  ]
-      [$set-symbol-string!              s  ]
-      [$set-symbol-unique-string!       s  ]
-      [$set-symbol-plist!               s  ]
-      [$record-set!                     s  ]
-      [$record-ref                      s  ]
-      [$record-rtd                      s  ]
-      [$record                          s  ]
-      [$make-record                     s  ]
-      [$record?                         s  ]
-      [$record/rtd?                     s  ]
-      [$make-port/input                 s  ]
-      [$make-port/output                s  ]
-      [$make-port/both                  s  ]
-      [$port-handler                    s  ]
-      [$port-input-buffer               s  ]
-      [$port-input-index                s  ]
-      [$port-input-size                 s  ]
-      [$port-output-buffer              s  ]
-      [$port-output-index               s  ]
-      [$port-output-size                s  ]
-      [$set-port-input-index!           s  ]
-      [$set-port-input-size!            s  ]
-      [$set-port-output-index!          s  ]
-      [$set-port-output-size!           s  ]
-;      [$make-input-port                 s  ]
-;      [$make-output-port                s  ]
-;      [$make-input/output-port          s  ]
-      [$flush-output-port               s  ]
-      [$reset-input-port!               s  ]
-      [$close-input-port                s  ]
-      [$close-output-port               s  ]
-      [$write-char                      s  ]
-      [$read-char                       s  ]
-      [$peek-char                       s  ]
-      [$unread-char                     s  ]
-      [$closure-code                    s  ]
-      [$code?                           s  ]
-      [$code->closure                   s  ]
-      [$code-reloc-vector               s  ]
-      [$code-freevars                   s  ]
-      [$code-size                       s  ]
-      [$code-ref                        s  ]
-      [$code-set!                       s  ]
-      [$make-tcbucket                   s  ]
-      [$tcbucket-key                    s  ]
-      [$tcbucket-val                    s  ]
-      [$tcbucket-next                   s  ]
-      [$set-tcbucket-val!               s  ]
-      [$set-tcbucket-next!              s  ]
-      [$set-tcbucket-tconc!             s  ]
+      ; (ikarus system $pairs)
+      [$car               $pairs]
+      [$cdr               $pairs]
+      [$set-car!          $pairs]
+      [$set-cdr!          $pairs]
+      ; (ikarus system $lists)
+      [$memq              $lists]
+      [$memv              $lists]
+      ; (ikarus system $chars)
+      [$char?             $chars]
+      [$char=             $chars]
+      [$char<             $chars]
+      [$char>             $chars]
+      [$char<=            $chars]
+      [$char>=            $chars]
+      [$char->fixnum      $chars]
+      [$fixnum->char      $chars]
+      ; (ikarus system $strings)
+      [$make-string       $strings]
+      [$string-ref        $strings]
+      [$string-set!       $strings]
+      [$string-length     $strings]
+      ; (ikarus system $vectors)
+      [$make-vector       $vectors]
+      [$vector-length     $vectors]
+      [$vector-ref        $vectors]
+      [$vector-set!       $vectors]
+      ; (ikarus system $fx)
+      [$fxzero?           $fx]
+      [$fxadd1            $fx]
+      [$fxsub1            $fx]
+      [$fx>=              $fx]
+      [$fx<=              $fx]
+      [$fx>               $fx]
+      [$fx<               $fx]
+      [$fx=               $fx]
+      [$fxsll             $fx]
+      [$fxsra             $fx]
+      [$fxquotient        $fx]
+      [$fxmodulo          $fx]
+      [$fxlogxor          $fx]
+      [$fxlogor           $fx]
+      [$fxlognot          $fx]
+      [$fxlogand          $fx]
+      [$fx+               $fx]
+      [$fx*               $fx]
+      [$fx-               $fx]
+      ; (ikarus system $symbols)
+      [$make-symbol               $symbols]
+      [$symbol-unique-string      $symbols]
+      [$symbol-value              $symbols]
+      [$symbol-string             $symbols]
+      [$symbol-plist              $symbols]
+      [$set-symbol-value!         $symbols]
+      [$set-symbol-string!        $symbols]
+      [$set-symbol-unique-string! $symbols]
+      [$set-symbol-plist!         $symbols]
+      ; (ikarus system $records)
+      [base-rtd           $records]
+      [$record-set!       $records]
+      [$record-ref        $records]
+      [$record-rtd        $records]
+      [$record            $records]
+      [$make-record       $records]
+      [$record?           $records]
+      [$record/rtd?       $records]
+      ; (ikarus system $ports)
+      [$make-port/input         $ports]
+      [$make-port/output        $ports]
+      [$make-port/both          $ports]
+      [$port-handler            $ports]
+      [$port-input-buffer       $ports]
+      [$port-input-index        $ports]
+      [$port-input-size         $ports]
+      [$port-output-buffer      $ports]
+      [$port-output-index       $ports]
+      [$port-output-size        $ports]
+      [$set-port-input-index!   $ports]
+      [$set-port-input-size!    $ports]
+      [$set-port-output-index!  $ports]
+      [$set-port-output-size!   $ports]
+      ; (ikarus system $codes)
+      [$closure-code            $codes]
+      [$code?                   $codes]
+      [$code->closure           $codes]
+      [$code-reloc-vector       $codes]
+      [$code-freevars           $codes]
+      [$code-size               $codes]
+      [$code-ref                $codes]
+      [$code-set!               $codes]
+      ; (ikarus system $tcbuckets)
+      [$make-tcbucket           $tcbuckets]
+      [$tcbucket-key            $tcbuckets]
+      [$tcbucket-val            $tcbuckets]
+      [$tcbucket-next           $tcbuckets]
+      [$set-tcbucket-val!       $tcbuckets]
+      [$set-tcbucket-next!      $tcbuckets]
+      [$set-tcbucket-tconc!     $tcbuckets]
+      ; (ikarus system $io)
+      [$flush-output-port     $io]
+      [$reset-input-port!     $io]
+      [$close-input-port      $io]
+      [$close-output-port     $io]
+      [$write-char            $io]
+      [$read-char             $io]
+      [$peek-char             $io]
+      [$unread-char           $io]
+      ; (ikarus system)
       [$forward-ptr?                    s  ]
       [$unbound-object?                 s  ]
       [$make-call-with-values-procedure s  ]
@@ -538,13 +566,18 @@
       [collect                s]
       [do-stack-overflow      s]
       [syntax-dispatch        s]
-      [base-rtd               s i]
-
-
-
-
-
       ))
+
+  (define (verify-procedures-map)
+    (for-each 
+      (lambda (x)
+        (for-each 
+          (lambda (x) 
+            (unless (assq x library-legend)
+              (error 'verify "~s is not in the libraries list" x)))
+          (cdr x)))
+      ikarus-procedures-map))
+
 
 
   (define scheme-env-junk
@@ -1093,6 +1126,7 @@
           [env   '()])
       (for-each
         (lambda (file)
+          (printf "expanding ~s\n" file)
           (load file
             (lambda (x) 
           ;    (pretty-print x)
@@ -1110,6 +1144,8 @@
           (values 
             (reverse (list* (car code*) code (cdr code*)))
             export-locs)))))
+
+  (verify-procedures-map)
 
   (printf "expanding ...\n")
   

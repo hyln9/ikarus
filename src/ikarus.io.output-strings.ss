@@ -2,11 +2,11 @@
 (library (ikarus io output-strings)
   (export open-output-string get-output-string with-output-to-string)
   (import 
-    (only (scheme) $string-length $string-ref $string-set! $car $cdr
-          $fx+ $fxadd1 $fxsub1 $fx= $fx<
-          $port-output-buffer $port-output-index $port-output-size
-          $port-handler
-          $set-port-output-size! $write-char $set-port-output-index!)
+    (ikarus system $strings)
+    (ikarus system $fx)
+    (ikarus system $pairs)
+    (ikarus system $ports)
+    (ikarus system $io)
     (except (ikarus) open-output-string get-output-string with-output-to-string))
 
   (define-syntax message-case

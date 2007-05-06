@@ -34,6 +34,7 @@
   (export fasl-write)
   (import
     (only (scheme) $closure-code )
+    (ikarus system $records)
     (except (ikarus) fasl-write))
 
   (define write-fixnum 

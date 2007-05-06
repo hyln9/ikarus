@@ -3,10 +3,14 @@
   (export string-length string-ref string-set! make-string string->list string=?
           string-append substring string list->string uuid)
   (import 
+    (ikarus system $strings)
+    (ikarus system $fx)
+    (ikarus system $chars)
+    (ikarus system $pairs)
     (except (ikarus) string-length string-ref string-set! make-string
             string->list string=? string-append substring string
             list->string uuid)
-    (only (scheme) 
+    #;(only (scheme) 
           $fx+ $fxsub1 $fxadd1 $char= $car $cdr
           $fxzero? $fx= $fx<= $fx< $fx>= $fx-
           $string-length $string-ref 

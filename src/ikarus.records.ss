@@ -9,15 +9,16 @@
     record-name record-printer record-length record-ref record-set!)
 
   (import
+    (ikarus system $records)
+    (ikarus system $pairs)
+    (ikarus system $fx)
     (except (ikarus)
       make-record-type record-type-name record-type-symbol
       record-type-field-names record-constructor record-predicate
-      record-field-accessor record-field-mutator record?  record-rtd
+      record-field-accessor record-field-mutator record? record-rtd
       record-type-descriptor record-name record-printer record-length
       record-ref record-set!)
-    (only (scheme) $record? $record-rtd $record-ref
-          $record-set! $record $make-record $car $cdr $fxadd1 
-          $fx< $fx= $fx+ $fx>=
+    (only (scheme)
           set-top-level-value! top-level-value top-level-bound?))
 
 
