@@ -2,8 +2,9 @@
 (library (ikarus collect)
   (export do-overflow do-overflow-words do-vararg-overflow collect
           do-stack-overflow)
-  (import (ikarus) 
-          (only (scheme) $fxsll))
+  (import 
+    (ikarus) 
+    (ikarus system $fx))
 
 (define do-overflow
   (lambda (n)
