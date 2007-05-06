@@ -1,7 +1,9 @@
 
-(library (ikarus tokenizer)
-  (export)
-  (import (scheme))
+(library (ikarus reader)
+  (export read read-token comment-handler load)
+  (import
+    (only (scheme) $char->fixnum  $char= $char<=)
+    (except (ikarus) read read-token comment-handler load))
 
   (define delimiter?
     (lambda (c)
@@ -555,13 +557,9 @@
                 (tokenize-hash/c c p)]))]
           [else (tokenize/c c p)]))))
 
-
-  ;;;
-  ;;;--------------------------------------------------------------* READ *---
-  ;;;
   (define read-list-rest
     (lambda (p locs k end mis)
-      (let ([t (read-token p)])
+      (let ([t (tokenize p)])
         (cond
          [(eof-object? t)
           (error 'read "end of file encountered while reading list")]
@@ -570,7 +568,7 @@
           (error 'read "paren mismatch")]
          [(eq? t 'dot)
           (let-values ([(d locs k) (read-expr p locs k)])
-            (let ([t (read-token p)])
+            (let ([t (tokenize p)])
               (cond
                [(eq? t end) (values d locs k)]
                [(eq? t mis)
@@ -592,7 +590,7 @@
                              k)))))]))))
   (define read-list-init
     (lambda (p locs k end mis)
-      (let ([t (read-token p)])
+      (let ([t (tokenize p)])
        (cond
          [(eof-object? t)
           (error 'read "end of file encountered while reading list")]
@@ -638,7 +636,7 @@
               (fxsub1 i) (cdr ls)))])))
   (define read-vector
     (lambda (p locs k count ls)
-      (let ([t (read-token p)])
+      (let ([t (tokenize p)])
         (cond
           [(eof-object? t) 
            (error 'read "end of file encountered while reading a vector")]
@@ -711,7 +709,7 @@
 
   (define read-expr
     (lambda (p locs k)
-      (parse-token p locs k (read-token p))))
+      (parse-token p locs k (tokenize p))))
   
   (define read-expr-initial
     (lambda (p locs k)
@@ -763,32 +761,31 @@
                (loc-value expr)
                expr)]))))
 
-
-  ;;;      
-  ;;;--------------------------------------------------------------* INIT *---
-  ;;; 
-  (primitive-set! 'read-token
+  (define read-token
     (case-lambda
       [() (tokenize (current-input-port))]
       [(p)
        (if (input-port? p)
            (tokenize p)
            (error 'read-token "~s is not an input port" p))]))
-  (primitive-set! 'read
+
+  (define read
     (case-lambda
       [() (my-read (current-input-port))]
       [(p)
        (if (input-port? p)
            (my-read p)
            (error 'read "~s is not an input port" p))]))
-  (primitive-set! 'comment-handler
+
+  (define comment-handler
     (make-parameter
       (lambda (x) (void))
       (lambda (x)
         (unless (procedure? x)
           (error 'comment-handler "~s is not a procedure" x))
         x)))
-  (let ()
+
+  (module (load)
     (define load-handler
       (lambda (x)
         (eval-top-level x)))
@@ -798,7 +795,7 @@
           (unless (eof-object? x)
             (eval-proc x)
             (read-and-eval p eval-proc)))))
-    (primitive-set! 'load
+    (define load
       (case-lambda
         [(x) (load x load-handler)]
         [(x eval-proc)

@@ -50,8 +50,8 @@
       "ikarus.io.output-strings.ss"
       "ikarus.hash-tables.ss"
       "ikarus.writer.ss"
+      "ikarus.reader.ss"
 
-      "libtokenizer.ss"
       "libassembler.ss"
       "libintelasm.ss"
       "libfasl.ss"
