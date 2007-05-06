@@ -39,7 +39,10 @@
 
 (library (ikarus intel-assembler)
   (export assemble-sources)
-  (import (scheme))
+  (import 
+    (ikarus)
+    (ikarus system $codes)
+    (ikarus system $pairs))
 
 (define fold
   (lambda (f init ls)
