@@ -55,12 +55,12 @@
       "ikarus.intel-assembler.ss"
       "ikarus.fasl.ss"
       "ikarus.compiler.ss"
+      "ikarus.library-manager.ss"
       "ikarus.syntax.ss"
       "ikarus.pretty-print.ss"
       "ikarus.cafe.ss"
       "ikarus.posix.ss"
       "ikarus.timer.ss"
-      "ikarus.library-manager.ss"
       "libtoplevel.ss"))
 
   (define ikarus-system-macros
@@ -386,7 +386,6 @@
       [new-cafe                         s i]
       [command-line-arguments           s i]
       [list*->code*                     s i]
-      [install-library                  s i]
       [eval-top-level                   s i]
       [current-primitive-locations      s i]
       [record?                          s i]
@@ -943,7 +942,6 @@
       [new-cafe   new-cafe-label   (core-prim . new-cafe)]
       [command-line-arguments command-line-arguments-label (core-prim .  command-line-arguments)]
       [list*->code*       list*->code*-label       (core-prim . list*->code*)]
-      [install-library         install-library-label         (core-prim . install-library)]
       [eval-top-level   eval-top-level-label   (core-prim . eval-top-level)]
       [current-primitive-locations       current-primitive-locations-label       (core-prim . current-primitive-locations)]
       ;;; record/mid-level
@@ -1111,7 +1109,11 @@
              ',subst ',env void void))))
     (let ([code `(library (ikarus primlocs)
                     (export) ;;; must be empty
-                    (import (scheme))
+                    (import 
+                      (only (ikarus library-manager)
+                            install-library)
+                      (except (ikarus)
+                            install-library))
                     (current-primitive-locations 
                       (lambda (x) 
                         (cond

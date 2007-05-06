@@ -447,7 +447,6 @@
       [new-cafe   new-cafe-label   (core-prim . new-cafe)]
       [command-line-arguments command-line-arguments-label (core-prim .  command-line-arguments)]
       [list*->code*       list*->code*-label       (core-prim . list*->code*)]
-      [install-library         install-library-label         (core-prim . install-library)]
       [eval-top-level   eval-top-level-label   (core-prim . eval-top-level)]
       [current-primitive-locations       current-primitive-locations-label       (core-prim . current-primitive-locations)]
       ;;; record/mid-level
