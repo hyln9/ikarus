@@ -16,11 +16,6 @@
   (lambda (x)
     (pointer-value x)))
 
-(primitive-set! 'date-string
-  (lambda ()
-    (let ([s (make-string 10)])
-      (foreign-call "ikrt_strftime" s "%F")
-      s)))
 
 
 )

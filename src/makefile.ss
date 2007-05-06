@@ -35,6 +35,7 @@
       "ikarus.chars.ss"
       "ikarus.records.ss"
       "ikarus.strings.ss"
+      "ikarus.date-string.ss"
       "ikarus.symbols.ss"
       "ikarus.vectors.ss"
       "ikarus.numerics.ss"
