@@ -1,7 +1,7 @@
 
 (library (ikarus pretty-print)
-  (export)
-  (import (scheme))
+  (export pretty-print)
+  (import (except (ikarus) pretty-print))
   (define (map1ltr f ls)
     ;;; ltr so that gensym counts get assigned properly
     (cond
@@ -501,7 +501,7 @@
   (define *pretty-format* '*pretty-format*)
   (define (set-fmt! name fmt)
     (putprop name *pretty-format* fmt))
-  (primitive-set! 'pretty-print 
+  (define pretty-print 
     (case-lambda
       [(x) (pretty x (current-output-port))]
       [(x p)

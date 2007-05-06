@@ -38,9 +38,7 @@
       "ikarus.vectors.ss"
       "ikarus.numerics.ss"
       "ikarus.guardians.ss"
-
       "ikarus.command-line.ss"
-
       "ikarus.core.ss"
       "ikarus.io-ports.ss"
       "ikarus.io-primitives.unsafe.ss"
@@ -52,13 +50,12 @@
       "ikarus.writer.ss"
       "ikarus.reader.ss"
       "ikarus.code-objects.ss"
-
       "ikarus.trace.ss"
       "ikarus.intel-assembler.ss"
       "ikarus.fasl.ss"
       "ikarus.compiler.ss"
       "ikarus.syntax.ss"
-      "libpp.ss"
+      "ikarus.pretty-print.ss"
       "libcafe.ss"
       "libposix.ss"
       "libtimers.ss"
