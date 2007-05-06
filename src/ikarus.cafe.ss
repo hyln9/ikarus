@@ -23,8 +23,8 @@ description:
   Be specific about what the error-port is |#
 
 (library (ikarus cafe)
-  (export)
-  (import (scheme))
+  (export new-cafe)
+  (import (except (ikarus) new-cafe))
 
   (define with-error-handler
     (lambda (p thunk)
@@ -101,7 +101,7 @@ description:
     (lambda (x) 
       (eval-top-level x)))
 
-  (primitive-set! 'new-cafe
+  (define new-cafe
     (case-lambda
       [() (do-new-cafe default-cafe-eval)]
       [(p)
