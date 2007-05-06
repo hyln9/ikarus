@@ -5,7 +5,7 @@
 
 (library (ikarus greeting)
   (export print-greeting)
-  (import (scheme))
+  (import (ikarus))
   (define (print-greeting)
     (define-syntax compile-time-string
       (lambda (x) (date-string)))
@@ -17,7 +17,7 @@
 
 (library (ikarus interaction)
   (export)
-  (import (scheme) (ikarus greeting))
+  (import (ikarus) (ikarus greeting))
   (let-values ([(files script args)
                 (let f ([args (command-line-arguments)])
                   (cond
