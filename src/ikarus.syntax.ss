@@ -595,9 +595,9 @@
              (stx-error x))])))
   (define scheme-stx
     (lambda (sym)
-      (let-values ([(subst env) 
-                    (library-subst/env 
-                      (find-library-by-name '(ikarus system $all)))])
+      (let ([subst 
+             (library-subst 
+               (find-library-by-name '(ikarus system $all)))])
         (cond
           [(assq sym subst) =>
            (lambda (x)
@@ -2096,7 +2096,7 @@
          (let ([lib (find-library-by-name spec)])
            (unless lib
              (error 'import "cannot find library satisfying ~s" spec))
-           (let-values ([(s _r) (library-subst/env lib)])
+           (let ([s (library-subst lib)])
               (values s lib)))]))
     (cond
       [(null? imp*) (values '() '())]

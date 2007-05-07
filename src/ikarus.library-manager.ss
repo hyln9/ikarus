@@ -2,7 +2,7 @@
 
 
 (library (ikarus library-manager)
-  (export imported-label->binding library-subst/env
+  (export imported-label->binding library-subst
           current-library-collection installed-libraries
           find-library-by-name install-library
           library-spec invoke-library)
@@ -41,9 +41,12 @@
         [(pred (car ls)) (car ls)]
         [else (f (cdr ls))])))
 
+  (define (install-library-by-name name)
+    #f)
+
   (define (find-library-by-name name)
     (find-library-by
-      (lambda (x) (equal? (library-name x) name))))
+       (lambda (x) (equal? (library-name x) name))))
 
   (define (library-exists? name)
     (and (find-library-by
@@ -102,11 +105,6 @@
 
   (define installed-libraries 
     (lambda () ((current-library-collection))))
-  (define library-subst/env
-    (lambda (x) 
-      (unless (library? x)
-        (error 'library-subst/env "~s is not a library" x))
-      (values (library-subst x) (library-env x))))
   (define library-spec       
     (lambda (x) 
       (unless (library? x)
