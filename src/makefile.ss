@@ -685,12 +685,11 @@
 
   (verify-map)
   
-  (time-it
+  (time-it "the entire bootstrap process"
     (lambda ()
       (let-values ([(core* locs) 
-                    (time-it 
-                      (lambda () (expand-all scheme-library-files))
-                      "macro expansion")])
+                    (time-it "macro expansion"
+                      (lambda () (expand-all scheme-library-files)))])
         (parameterize ([current-primitive-locations
                         (lambda (x)
                           (cond
@@ -701,8 +700,7 @@
             (for-each 
               (lambda (x) (compile-core-expr-to-port x p))
               core*)
-            (close-output-port p)))))
-    "the entire bootstrap process")
+            (close-output-port p))))))
 
   (printf "Happy Happy Joy Joy\n"))
 

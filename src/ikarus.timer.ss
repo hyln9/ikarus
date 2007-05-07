@@ -70,8 +70,8 @@
   (define time-it
     (case-lambda
       [(proc) 
-       (time-it proc #f)]
-      [(proc message)
+       (time-it #f proc)]
+      [(message proc)
        (unless (procedure? proc)
          (error 'time-it "~s is not a procedure" proc))
        (let* ([t0 (mk-stats)]
