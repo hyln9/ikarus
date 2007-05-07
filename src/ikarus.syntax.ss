@@ -104,8 +104,6 @@
   (module (make-stx stx? stx-expr stx-mark* stx-subst*)
     (define-record stx (expr mark* subst*)))
   (define (seal-rib! rib)
-    (when (rib-sealed/freq rib)
-      (error 'seal-rib! "rib ~s is already sealed" rib))
     (let ([sym* (rib-sym* rib)])
       (unless (null? sym*)
         ;;; only seal if rib is not empty.
@@ -608,12 +606,18 @@
                  (stx sym top-mark* '()))))]
           [else (stx sym top-mark* '())]))))
   ;;; macros
+  (define add-lexical
+    (lambda (lab lex r)
+      (cons (list* lab 'lexical lex) r)))
+  ;;;
   (define add-lexicals
     (lambda (lab* lex* r)
-      (append (map (lambda (lab lex)
-                     (cons lab (cons 'lexical lex)))
-                   lab* lex*)
-              r)))
+      (cond
+        [(null? lab*) r]
+        [else 
+         (add-lexicals (cdr lab*) (cdr lex*)
+           (add-lexical (car lab*) (car lex*) r))])))
+  ;;;
   (define let-values-transformer ;;; go away
     (lambda (e r mr) 
       (syntax-match e ()
@@ -1770,7 +1774,7 @@
                           (extend-rib! rib id lab)
                           (f (cdr e*)
                              module-init**
-                             (cons (cons lab (cons 'lexical lex)) r)
+                             (add-lexical lab lex r)
                              mr 
                              (cons id lhs*)
                              (cons lex lex*)
@@ -1862,7 +1866,7 @@
                                 [lab (gen-label id)])
                             (extend-rib! rib id lab)
                             (f (cdr e*)
-                               (cons (cons lab (cons 'lexical lex)) r)
+                               (add-lexical lab lex r)
                                mr 
                                (cons id lhs*)
                                (cons lex lex*)
@@ -1916,7 +1920,7 @@
                         (extend-rib! rib id lab)
                         (f (cdr e*)
                            module-init**
-                           (cons (cons lab (cons 'lexical lex)) r)
+                           (add-lexical lab lex r)
                            mr 
                            (cons id lhs*) (cons lex lex*) (cons rhs rhs*)
                            kwd*)))]
