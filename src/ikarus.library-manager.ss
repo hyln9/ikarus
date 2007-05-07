@@ -3,7 +3,7 @@
 
 (library (ikarus library-manager)
   (export imported-label->binding library-subst
-          installed-libraries
+          installed-libraries 
           find-library-by-name install-library
           library-spec invoke-library)
   (import (except (ikarus) installed-libraries))
@@ -30,7 +30,8 @@
         x)))
 
   (define-record library 
-     (id name ver imp* vis* inv* subst env visit-state invoke-state))
+    (id name ver imp* vis* inv* subst env visit-state invoke-state
+        visible?))
 
   (define (find-dependencies ls)
     (cond
@@ -64,28 +65,36 @@
 
   (define label->binding-table (make-hash-table))
 
-  (define (install-library id name ver
-             imp* vis* inv* exp-subst exp-env visit-code invoke-code)
-    (let ([imp-lib* (map find-library-by-spec/die imp*)]
-          [vis-lib* (map find-library-by-spec/die vis*)]
-          [inv-lib* (map find-library-by-spec/die inv*)])
-      (unless (and (symbol? id) (list? name) (list? ver))
-        (error 'install-library "invalid spec ~s ~s ~s" id name ver))
-      (when (library-exists? name)
-        (error 'install-library "~s is already installed" name))
-      (let ([lib (make-library id name ver imp-lib* vis-lib* inv-lib* 
-                    exp-subst exp-env visit-code invoke-code)])
-        (for-each 
-          (lambda (x) 
-            (let ([label (car x)] [binding (cdr x)])
-              (let ([binding 
-                     (case (car binding)
-                       [(global) 
-                        (cons 'global (cons lib (cdr binding)))]
-                       [else binding])])
-                (put-hash-table! label->binding-table label binding))))
-          exp-env)
-        ((current-library-collection) lib))))
+  (define install-library
+    (case-lambda
+;      [(id name ver imp* vis* inv* exp-subst exp-env
+;           visit-code invoke-code)
+;       (install-library id name ver imp* vis* inv* exp-subst exp-env
+;           visit-code invoke-code #t)]
+      [(id name ver imp* vis* inv* exp-subst exp-env
+           visit-code invoke-code visible?)
+       (let ([imp-lib* (map find-library-by-spec/die imp*)]
+             [vis-lib* (map find-library-by-spec/die vis*)]
+             [inv-lib* (map find-library-by-spec/die inv*)])
+         (unless (and (symbol? id) (list? name) (list? ver))
+           (error 'install-library "invalid spec ~s ~s ~s" id name ver))
+         (when (library-exists? name)
+           (error 'install-library "~s is already installed" name))
+         (let ([lib (make-library id name ver imp-lib* vis-lib* inv-lib* 
+                       exp-subst exp-env visit-code invoke-code 
+                       visible?)])
+           (for-each 
+             (lambda (x) 
+               (let ([label (car x)] [binding (cdr x)])
+                 (let ([binding 
+                        (case (car binding)
+                          [(global) 
+                           (cons 'global (cons lib (cdr binding)))]
+                          [else binding])])
+                   (put-hash-table! label->binding-table label binding))))
+             exp-env)
+           ((current-library-collection) lib)
+           lib))]))
 
   (define (imported-label->binding lab)
     (get-hash-table label->binding-table lab #f))
@@ -105,7 +114,16 @@
     (invoke-library (find-library-by-spec/die spec)))
 
   (define installed-libraries 
-    (lambda () ((current-library-collection))))
+    (case-lambda
+      [(all?)
+       (let f ([ls ((current-library-collection))])
+         (cond
+           [(null? ls) '()]
+           [(or all? (library-visible? (car ls)))
+            (cons (car ls) (f (cdr ls)))]
+           [else (f (cdr ls))]))]
+      [() (installed-libraries #f)]))
+
   (define library-spec       
     (lambda (x) 
       (unless (library? x)

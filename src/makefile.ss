@@ -97,25 +97,25 @@
       [or                (macro . or)]))
 
   (define library-legend
-    '([i           (ikarus)]
-      [r           (r6rs)]
-      [$all        (ikarus system $all)]
-      [$pairs      (ikarus system $pairs)]
-      [$lists      (ikarus system $lists)]
-      [$chars      (ikarus system $chars)]
-      [$strings    (ikarus system $strings)]
-      [$vectors    (ikarus system $vectors)]
-      [$fx         (ikarus system $fx)]
-      [$symbols    (ikarus system $symbols)]
-      [$records    (ikarus system $records)]
-      [$ports      (ikarus system $ports)]
-      [$codes      (ikarus system $codes)]
-      [$tcbuckets  (ikarus system $tcbuckets)]
-      [$io         (ikarus system $io)]
-      [$arg-list   (ikarus system $arg-list)]
-      [$stack      (ikarus system $stack)]
-      [$interrupts (ikarus system $interrupts)]
-      [$boot       (ikarus system $bootstrap)]
+    '([i           (ikarus)                     #t]
+      [r           (r6rs)                       #t]
+      [$all        (ikarus system $all)         #f]
+      [$pairs      (ikarus system $pairs)       #f]
+      [$lists      (ikarus system $lists)       #f]
+      [$chars      (ikarus system $chars)       #f]
+      [$strings    (ikarus system $strings)     #f]
+      [$vectors    (ikarus system $vectors)     #f]
+      [$fx         (ikarus system $fx)          #f]
+      [$symbols    (ikarus system $symbols)     #f]
+      [$records    (ikarus system $records)     #f]
+      [$ports      (ikarus system $ports)       #f]
+      [$codes      (ikarus system $codes)       #f]
+      [$tcbuckets  (ikarus system $tcbuckets)   #f]
+      [$io         (ikarus system $io)          #f]
+      [$arg-list   (ikarus system $arg-list)    #f]
+      [$stack      (ikarus system $stack)       #f]
+      [$interrupts (ikarus system $interrupts)  #f]
+      [$boot       (ikarus system $bootstrap)   #f]
       ))
 
   (define ikarus-macros-map
@@ -629,7 +629,9 @@
 
   (define (build-system-library export-subst export-env primlocs)
     (define (build-library legend-entry)
-      (let ([key (car legend-entry)] [name (cadr legend-entry)]) 
+      (let ([key (car legend-entry)]
+            [name (cadr legend-entry)]
+            [visible? (caddr legend-entry)]) 
         (let ([id     (gensym)]
               [name       name]
               [version     '()]
@@ -644,7 +646,7 @@
                               '()))])
             `(install-library 
                ',id ',name ',version ',import-libs ',visit-libs ',invoke-libs
-               ',subst ',env void void)))))
+               ',subst ',env void void ',visible?)))))
     (let ([code `(library (ikarus primlocs)
                     (export) ;;; must be empty
                     (import 

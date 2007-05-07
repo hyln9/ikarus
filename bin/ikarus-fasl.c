@@ -73,6 +73,7 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
       bzero(p.marks, p.marks_size * sizeof(ikp*));
     }
     ikp val = ik_exec_code(pcb, v);
+    val = void_object;
     if(val != void_object){
       ik_print(val);
     }
