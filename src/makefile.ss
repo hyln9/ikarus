@@ -113,7 +113,6 @@
       [$io (ikarus system $io)]
       [$arg-list (ikarus system $arg-list)]
       [$stack (ikarus system $stack)]
-      [$junkyard (ikarus system $junkyard)]
       [$interrupts (ikarus system $interrupts)]
       ))
 
@@ -547,29 +546,31 @@
       ; (ikarus system $interrupts)
       [$interrupted?                     $interrupts]
       [$unset-interrupted!               $interrupts]
-      ; (ikarus system $junkyard)
-      [$forward-ptr?                     $interrupts]
-      [$apply-nonprocedure-error-handler $junkyard]
-      [$incorrect-args-error-handler     $junkyard]
-      [$multiple-values-error            $junkyard]
-      [$debug                            $junkyard]
-      [$underflow-misaligned-error       $junkyard]
-      [top-level-value-error             $junkyard]
-      [car-error                         $junkyard]
-      [cdr-error                         $junkyard]
-      [fxadd1-error                      $junkyard]
-      [fxsub1-error                      $junkyard]
-      [cadr-error                        $junkyard]
-      [fx+-type-error                    $junkyard]
-      [fx+-types-error                   $junkyard]
-      [fx+-overflow-error                $junkyard]
-      [$do-event                         $junkyard]
-      [do-overflow                       $junkyard]
-      [do-overflow-words                 $junkyard]
-      [do-vararg-overflow                $junkyard]
-      [collect                           $junkyard]
-      [do-stack-overflow                 $junkyard]
-      [syntax-dispatch                   $junkyard]
+      ;;; the following must be defined but they don't have 
+      ;;; to reside in any library since they're here so that
+      ;;; the compiler can target them.  They're not usable 
+      ;;; by the end user.
+      [$apply-nonprocedure-error-handler ]
+      [$incorrect-args-error-handler     ]
+      [$multiple-values-error            ]
+      [$debug                            ]
+      [$underflow-misaligned-error       ]
+      [top-level-value-error             ]
+      [car-error                         ]
+      [cdr-error                         ]
+      [fxadd1-error                      ]
+      [fxsub1-error                      ]
+      [cadr-error                        ]
+      [fx+-type-error                    ]
+      [fx+-types-error                   ]
+      [fx+-overflow-error                ]
+      [$do-event                         ]
+      [do-overflow                       ]
+      [do-overflow-words                 ]
+      [do-vararg-overflow                ]
+      [collect                           ]
+      [do-stack-overflow                 ]
+      [syntax-dispatch                   ]
       ))
 
   (define (verify-procedures-map)
