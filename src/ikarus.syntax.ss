@@ -5,6 +5,7 @@
           boot-library-expand eval-top-level)
   (import 
     (ikarus library-manager)
+    (only (ikarus compiler) eval-core)
     (rename (except (ikarus) boot-library-expand syntax-error
                     library-subst/env
                     find-library-by-name
