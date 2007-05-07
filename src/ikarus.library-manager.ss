@@ -1,16 +1,4 @@
 
-#| current-library-collection   procedure
-  Calling (current-library-collection) returns a procedure that:
-    - when called with no arguments, it returns a list of the set
-      of
-      libraries in the collection.
-    - when called with a single argument, it adds that library to
-      the set of libraries in the collection.
-  Calling (current-library-collection f) sets the current library 
-   collection to be the procedure f which must follow the protocol
-   above.
-|#
-
 
 
 (library (ikarus library-manager)
@@ -39,7 +27,7 @@
         x)))
 
   (define-record library 
-    (id name ver imp* vis* inv* subst env visit-state invoke-state))
+     (id name ver imp* vis* inv* subst env visit-state invoke-state))
 
   (define (find-dependencies ls)
     (cond

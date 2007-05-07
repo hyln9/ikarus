@@ -84,9 +84,7 @@
         [else (error 'gen-lexical "invalid arg ~s" sym)])))
   (define gen-label
     (lambda (_) (gensym)))
-  (define make-rib
-    (lambda (sym* mark** label*)
-      (vector 'rib sym* mark** label*)))
+  (define-record rib (sym* mark** label*))
   (define make-full-rib
     (lambda (id* label*)
       (make-rib (map id->sym id*) (map stx-mark* id*) label*)))
@@ -97,30 +95,10 @@
     (lambda (rib id label)
       (if (rib? rib)
           (let ([sym (id->sym id)] [mark* (stx-mark* id)])
-            (vector-set! rib 1 (cons sym (vector-ref rib 1)))
-            (vector-set! rib 2 (cons mark* (vector-ref rib 2)))
-            (vector-set! rib 3 (cons label (vector-ref rib 3))))
-          (error 'extend-rib! "~s is not a rib" rib))))
-  (define rib?
-    (lambda (x) 
-      (and (vector? x)
-           (= (vector-length x) 4)
-           (eq? (vector-ref x 0) 'rib))))
-  (define rib-sym* 
-    (lambda (x)
-      (if (rib? x)
-          (vector-ref x 1)
-          (error 'rib-sym* "~s is not a rib" x))))
-  (define rib-mark** 
-    (lambda (x)
-      (if (rib? x)
-          (vector-ref x 2)
-          (error 'rib-mark** "~s is not a rib" x))))
-  (define rib-label* 
-    (lambda (x)
-      (if (rib? x)
-          (vector-ref x 3)
-          (error 'rib-label* "~s is not a rib" x))))
+            (set-rib-sym*! rib (cons sym (rib-sym* rib)))
+            (set-rib-mark**! rib (cons mark* (rib-mark** rib)))
+            (set-rib-label*! rib (cons label (rib-label* rib))))
+          (error 'extend-rib! "~s is not an extensible rib" rib))))
   (module (make-stx stx? stx-expr stx-mark* stx-subst*)
     (define-record stx (expr mark* subst*)))
   (define datum->stx
@@ -300,9 +278,9 @@
   (define label->binding
     (lambda (x r)
       (cond
-        [(not x) (cons 'unbound #f)]
-        [(assq x r) => cdr]
         [(imported-label->binding x)]
+        [(assq x r) => cdr]
+        [(not x) (cons 'unbound #f)]
         [else (cons 'displaced-lexical #f)])))
   (define make-binding cons)
   (define binding-type car)
@@ -2085,6 +2063,7 @@
     (lambda (e)
       (let-values ([(name exp-int* exp-ext* imp* b*) (parse-library e)])
         (let-values ([(subst imp*) (get-import-subst/libs imp*)])
+          ;(printf "substsize=~s\n" (length subst))
           (let ([rib (make-top-rib subst)])
             (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]
                   [kwd* (map (lambda (sym mark*) (stx sym mark* (list rib)))
