@@ -485,7 +485,6 @@
       [$set-port-output-size!   $ports]
       ; (ikarus system $codes)
       [$closure-code            $codes]
-      [$code?                   $codes]
       [$code->closure           $codes]
       [$code-reloc-vector       $codes]
       [$code-freevars           $codes]

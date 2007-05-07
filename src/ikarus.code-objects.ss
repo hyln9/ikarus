@@ -20,22 +20,22 @@
 
   (define code-reloc-vector
     (lambda (x)
-      (unless ($code? x) (error 'code-reloc-vector "~s is not a code" x))
+      (unless (code? x) (error 'code-reloc-vector "~s is not a code" x))
       ($code-reloc-vector x)))
 
   (define code-freevars
     (lambda (x)
-      (unless ($code? x) (error 'code-closure-size "~s is not a code" x))
+      (unless (code? x) (error 'code-closure-size "~s is not a code" x))
       ($code-freevars x)))
 
   (define code-size
     (lambda (x)
-      (unless ($code? x) (error 'code-size "~s is not a code" x))
+      (unless (code? x) (error 'code-size "~s is not a code" x))
       ($code-size x)))
 
   (define code-set!
     (lambda (x i v)
-      (unless ($code? x) (error 'code-set! "~s is not a code" x))
+      (unless (code? x) (error 'code-set! "~s is not a code" x))
       (unless (and (fixnum? i)
                    ($fx>= i 0)
                    ($fx< i ($code-size x)))
@@ -48,7 +48,7 @@
 
   (define code-ref
     (lambda (x i)
-      (unless ($code? x) (error 'code-ref "~s is not a code" x))
+      (unless (code? x) (error 'code-ref "~s is not a code" x))
       (unless (and (fixnum? i)
                    ($fx>= i 0)
                    ($fx< i ($code-size x)))
@@ -57,7 +57,7 @@
 
   (define set-code-reloc-vector!
     (lambda (x v)
-      (unless ($code? x) 
+      (unless (code? x) 
         (error 'set-code-reloc-vector! "~s is not a code" x))
       (unless (vector? v)
         (error 'set-code-reloc-vector! "~s is not a vector" v))
@@ -65,7 +65,7 @@
 
   (define code->thunk
     (lambda (x)
-      (unless ($code? x)
+      (unless (code? x)
         (error 'code->thunk "~s is not a a code object" x))
       (unless ($fxzero? ($code-freevars x))
         (error 'code->thunk "~s has free variables" x))
