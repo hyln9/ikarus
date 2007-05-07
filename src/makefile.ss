@@ -2,7 +2,9 @@
 
 (library (ikarus makefile)
   (export)
-  (import (ikarus))
+  (import
+    (ikarus system $bootstrap)
+    (ikarus))
   
   (define scheme-library-files
     ;;; Listed in the order in which they're loaded.
@@ -95,25 +97,25 @@
       [or                (macro . or)]))
 
   (define library-legend
-    '([$all (ikarus system $all)]
-      [u   (ikarus system unsafe)]
-      [i   (ikarus)]
-      [r   (r6rs)]
-      [$pairs (ikarus system $pairs)]
-      [$lists (ikarus system $lists)]
-      [$chars (ikarus system $chars)]
-      [$strings (ikarus system $strings)]
-      [$vectors (ikarus system $vectors)]
-      [$fx (ikarus system $fx)]
-      [$symbols (ikarus system $symbols)]
-      [$records (ikarus system $records)]
-      [$ports (ikarus system $ports)]
-      [$codes (ikarus system $codes)]
-      [$tcbuckets (ikarus system $tcbuckets)]
-      [$io (ikarus system $io)]
-      [$arg-list (ikarus system $arg-list)]
-      [$stack (ikarus system $stack)]
+    '([i           (ikarus)]
+      [r           (r6rs)]
+      [$all        (ikarus system $all)]
+      [$pairs      (ikarus system $pairs)]
+      [$lists      (ikarus system $lists)]
+      [$chars      (ikarus system $chars)]
+      [$strings    (ikarus system $strings)]
+      [$vectors    (ikarus system $vectors)]
+      [$fx         (ikarus system $fx)]
+      [$symbols    (ikarus system $symbols)]
+      [$records    (ikarus system $records)]
+      [$ports      (ikarus system $ports)]
+      [$codes      (ikarus system $codes)]
+      [$tcbuckets  (ikarus system $tcbuckets)]
+      [$io         (ikarus system $io)]
+      [$arg-list   (ikarus system $arg-list)]
+      [$stack      (ikarus system $stack)]
       [$interrupts (ikarus system $interrupts)]
+      [$boot       (ikarus system $bootstrap)]
       ))
 
   (define ikarus-macros-map
@@ -369,12 +371,10 @@
       [error-handler                     i]
       [interrupt-handler                 i]
       [exit                              i]
-      [compile-core-expr-to-port         i]
       [load                              i]
       [assembler-output                  i]
       [new-cafe                          i]
       [command-line-arguments            i]
-      [current-primitive-locations       i]
       [record?                           i]
       [make-record-type                  i]
       [record-type-descriptor            i]
@@ -393,7 +393,6 @@
       [syntax-error                      i]
       [generate-temporaries              i]
       [free-identifier=?                 i]
-      [boot-library-expand               i]
       [code?                             i]
       [make-code                         i]
       [code-reloc-vector                 i]
@@ -404,14 +403,11 @@
       [code-set!                         i]
       [immediate?                        i]
       [pointer-value                     i]
-      [installed-libraries               i]
-      [library-subst/env                 i]
-      [find-library-by-name              i]
-      [imported-label->binding           i]
-      [imported-loc->library             i]
-      [library-spec                      i]
-      [current-library-collection        i]
-      [invoke-library                    i]
+
+      [current-library-collection        $boot]
+      [compile-core-expr-to-port         $boot]
+      [current-primitive-locations       $boot]
+      [boot-library-expand               $boot]
       ; (ikarus system $pairs)
       [$car               $pairs]
       [$cdr               $pairs]
@@ -660,6 +656,8 @@
                     (import 
                       (only (ikarus library-manager)
                             install-library)
+                      (only (ikarus compiler)
+                            current-primitive-locations)
                       (ikarus))
                     (current-primitive-locations 
                       (lambda (x) 
