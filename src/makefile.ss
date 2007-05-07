@@ -397,7 +397,6 @@
       [immediate?              i]
       [pointer-value           i]
 
-      [current-library-collection  $boot]
       [compile-core-expr-to-port   $boot]
       [current-primitive-locations $boot]
       [boot-library-expand         $boot]
