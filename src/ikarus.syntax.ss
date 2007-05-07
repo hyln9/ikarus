@@ -103,6 +103,20 @@
           (error 'extend-rib! "~s is not a rib" rib))))
   (module (make-stx stx? stx-expr stx-mark* stx-subst*)
     (define-record stx (expr mark* subst*)))
+  (define (seal-rib! rib)
+    (when (rib-sealed/freq rib)
+      (error 'seal-rib! "rib ~s is already sealed" rib))
+    (let ([sym* (rib-sym* rib)])
+      (unless (null? sym*)
+        ;;; only seal if rib is not empty.
+        (let ([sym* (list->vector sym*)])
+          (set-rib-sym*! rib sym*)
+          (set-rib-mark**! rib 
+            (list->vector (rib-mark** rib)))
+          (set-rib-label*! rib 
+            (list->vector (rib-label* rib)))
+          (set-rib-sealed/freq! rib
+            (make-vector (vector-length sym*) 0))))))
   (define datum->stx
     (lambda (id datum)
       (make-stx datum (stx-mark* id) (stx-subst* id))))
@@ -258,6 +272,32 @@
                        x 
                        (list->vector new))))]
               [else x])))))
+  (define (increment-rib-frequency! rib idx)
+    (let ([freq* (rib-sealed/freq rib)])
+      (let ([freq (vector-ref freq* idx)])
+        (let ([i
+               (let f ([i idx])
+                 (cond
+                   [(fx= i 0) 0]
+                   [else 
+                    (let ([j (fxsub1 i)])
+                      (cond
+                        [(fx= freq (vector-ref freq* j)) (f j)]
+                        [else i]))]))])
+          (vector-set! freq* i (fxadd1 freq))
+          (unless (fx= i idx) 
+            (let ([sym* (rib-sym* rib)] 
+                  [mark** (rib-mark** rib)]
+                  [label* (rib-label* rib)])
+              (let ([sym (vector-ref sym* idx)])
+                (vector-set! sym* idx (vector-ref sym* i))
+                (vector-set! sym* i sym))
+              (let ([mark* (vector-ref mark** idx)])
+                (vector-set! mark** idx (vector-ref mark** i))
+                (vector-set! mark** i mark*))
+              (let ([label (vector-ref label* idx)])
+                (vector-set! label* idx (vector-ref label* i))
+                (vector-set! label* i label))))))))
   (define id->label
     (lambda (id)
       (let ([sym (id->sym id)])
@@ -268,15 +308,29 @@
              (search (cdr subst*) (cdr mark*))]
             [else
              (let ([rib (car subst*)])
-               (let f ([sym* (rib-sym* rib)] 
-                       [mark** (rib-mark** rib)]
-                       [label* (rib-label* rib)])
-                 (cond
-                   [(null? sym*) (search (cdr subst*) mark*)]
-                   [(and (eq? (car sym*) sym)
-                         (same-marks? (car mark**) mark*))
-                    (car label*)]
-                   [else (f (cdr sym*) (cdr mark**) (cdr label*))])))])))))
+               (cond
+                 [(rib-sealed/freq rib) 
+                  (let ([sym* (rib-sym* rib)])
+                    (let f ([i 0] [n (sub1 (vector-length sym*))])
+                      (cond
+                        [(and (eq? (vector-ref sym* i) sym)
+                              (same-marks? mark*
+                                (vector-ref (rib-mark** rib) i)))
+                          (let ([label (vector-ref (rib-label* rib) i)])
+                            (increment-rib-frequency! rib i)
+                            label)]
+                        [(fx= i n) (search (cdr subst*) mark*)]
+                        [else (f (fxadd1 i) n)])))]
+                 [else
+                  (let f ([sym* (rib-sym* rib)] 
+                          [mark** (rib-mark** rib)]
+                          [label* (rib-label* rib)])
+                    (cond
+                      [(null? sym*) (search (cdr subst*) mark*)]
+                      [(and (eq? (car sym*) sym)
+                            (same-marks? (car mark**) mark*))
+                       (car label*)]
+                      [else (f (cdr sym*) (cdr mark**) (cdr label*))]))]))])))))
   (define label->binding
     (lambda (x r)
       (cond
@@ -2064,7 +2118,6 @@
     (lambda (e)
       (let-values ([(name exp-int* exp-ext* imp* b*) (parse-library e)])
         (let-values ([(subst imp*) (get-import-subst/libs imp*)])
-          ;(printf "substsize=~s\n" (length subst))
           (let ([rib (make-top-rib subst)])
             (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]
                   [kwd* (map (lambda (sym mark*) (stx sym mark* (list rib)))
@@ -2073,6 +2126,7 @@
               (parameterize ([run-collector rtc])
                 (let-values ([(init* r mr lex* rhs*)
                               (chi-library-internal b* rib kwd*)])
+                  (seal-rib! rib)
                   (let ([rhs* (chi-rhs* rhs* r mr)])
                     (let ([body (if (and (null? init*) (null? lex*)) 
                                     (build-void)
