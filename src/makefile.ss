@@ -56,6 +56,7 @@
       "ikarus.compiler.ss"
       "ikarus.library-manager.ss"
       "ikarus.syntax.ss"
+      "ikarus.load.ss"
       "ikarus.pretty-print.ss"
       "ikarus.cafe.ss"
       "ikarus.posix.ss"
