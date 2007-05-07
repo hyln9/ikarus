@@ -6,7 +6,7 @@
           installed-libraries
           find-library-by-name install-library
           library-spec invoke-library)
-  (import (ikarus))
+  (import (except (ikarus) installed-libraries))
 
   (define (make-collection)
     (let ([set '()])

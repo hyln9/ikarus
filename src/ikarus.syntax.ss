@@ -7,7 +7,7 @@
     (ikarus library-manager)
     (only (ikarus compiler) eval-core)
     (rename (except (ikarus) boot-library-expand syntax-error
-                    eval-top-level)
+                    eval-top-level installed-libraries)
       (free-identifier=? sys:free-identifier=?)
       (identifier? sys:identifier?)
       (generate-temporaries sys:generate-temporaries)))
