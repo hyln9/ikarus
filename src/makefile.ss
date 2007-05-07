@@ -376,7 +376,6 @@
       ;[fasl-write                       i]
       [new-cafe                          i]
       [command-line-arguments            i]
-      [eval-top-level                    i]
       [current-primitive-locations       i]
       [record?                           i]
       [make-record-type                  i]

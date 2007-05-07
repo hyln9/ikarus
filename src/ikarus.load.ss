@@ -3,6 +3,7 @@
   (export load)
   (import 
     (except (ikarus) load)
+    (only (ikarus syntax) eval-top-level)
     (only (ikarus reader) read-initial))
 
   (define load-handler

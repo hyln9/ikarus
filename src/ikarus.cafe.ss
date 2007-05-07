@@ -26,7 +26,7 @@ description:
   (export new-cafe)
   (import 
     (only (ikarus syntax) eval-top-level)
-    (except (ikarus) new-cafe eval-top-level))
+    (except (ikarus) new-cafe))
 
   (define with-error-handler
     (lambda (p thunk)
