@@ -15,17 +15,10 @@
 
 (library (ikarus library-manager)
   (export imported-label->binding library-subst/env
-          current-library-collection
-          installed-libraries
+          current-library-collection installed-libraries
           find-library-by-name imported-loc->library install-library
           library-spec invoke-library)
-  (import (except (ikarus) imported-label->binding library-subst/env
-          current-library-collection
-          installed-libraries
-          find-library-by-name imported-loc->library install-library
-          library-spec invoke-library))
-
-
+  (import (except (ikarus) current-library-collection))
 
   (define (make-collection)
     (let ([set '()])

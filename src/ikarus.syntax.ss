@@ -7,14 +7,6 @@
     (ikarus library-manager)
     (only (ikarus compiler) eval-core)
     (rename (except (ikarus) boot-library-expand syntax-error
-                    library-subst/env
-                    find-library-by-name
-                    imported-label->binding
-                    imported-loc->library
-                    library-spec
-                    current-library-collection
-                    invoke-library
-                    installed-libraries
                     eval-top-level)
       (free-identifier=? sys:free-identifier=?)
       (identifier? sys:identifier?)
