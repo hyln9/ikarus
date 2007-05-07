@@ -117,6 +117,12 @@
             (list->vector (rib-label* rib)))
           (set-rib-sealed/freq! rib
             (make-vector (vector-length sym*) 0))))))
+  (define (unseal-rib! rib)
+    (when (rib-sealed/freq rib)
+      (set-rib-sealed/freq! rib #f)
+      (set-rib-sym*! rib (vector->list (rib-sym* rib)))
+      (set-rib-mark**! rib (vector->list (rib-mark** rib)))
+      (set-rib-label*! rib (vector->list (rib-label* rib)))))
   (define datum->stx
     (lambda (id datum)
       (make-stx datum (stx-mark* id) (stx-subst* id))))
@@ -2134,6 +2140,7 @@
                                       (append
                                         (map build-export lex*)
                                         (chi-expr* init* r mr))))])
+                      (unseal-rib! rib)
                       (let-values ([(export-subst export-env) 
                                     (find-exports exp-int* exp-ext* rib r)])
                         (values
