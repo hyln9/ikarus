@@ -117,6 +117,7 @@
             (make-vector (vector-length sym*) 0))))))
   (define (unseal-rib! rib)
     (when (rib-sealed/freq rib)
+      ;(printf "[ribsize ~s]\n" (vector-length (rib-sealed/freq rib)))
       (set-rib-sealed/freq! rib #f)
       (set-rib-sym*! rib (vector->list (rib-sym* rib)))
       (set-rib-mark**! rib (vector->list (rib-mark** rib)))
@@ -2093,6 +2094,8 @@
         [(prefix) (error #f "prefix found")]
         [else 
          (let ([lib (find-library-by-name spec)])
+           (unless lib
+             (error 'import "cannot find library satisfying ~s" spec))
            (let-values ([(s _r) (library-subst/env lib)])
               (values s lib)))]))
     (cond

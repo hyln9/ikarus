@@ -45,10 +45,6 @@
     (find-library-by
       (lambda (x) (equal? (library-name x) name))))
 
-  (define (find-library-by-name/die name)
-    (or (find-library-by-name name)
-        (error #f "cannot find library ~s" name)))
-
   (define (find-library-by-spec/die spec)
     (let ([id (car spec)])
       (or (find-library-by
