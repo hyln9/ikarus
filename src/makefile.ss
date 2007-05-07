@@ -374,6 +374,7 @@
       [load                    i]
       [assembler-output        i]
       [new-cafe                i]
+      [time-it                 i]
       [command-line-arguments  i]
       [record?                 i]
       [make-record-type        i]
@@ -675,7 +676,6 @@
                  (set! subst (append export-subst subst))
                  (set! env (append export-env env))))))
         files)
-      (printf "building system ...\n")
       (let-values ([(export-subst export-env export-locs)
                     (make-system-data subst env)])
         (let ([code (build-system-library export-subst export-env export-locs)])
@@ -684,22 +684,25 @@
             export-locs)))))
 
   (verify-map)
-
-  (printf "expanding ...\n")
   
-  (let-values ([(core* locs) (expand-all scheme-library-files)])
-    (printf "compiling ...\n")
-    (parameterize ([current-primitive-locations
-                    (lambda (x)
-                      (cond
-                        [(assq x locs) => cdr]
-                        [else 
-                         (error 'bootstrap "no location for ~s" x)]))])
-      (let ([p (open-output-file "ikarus.boot" 'replace)])
-        (for-each 
-          (lambda (x) (compile-core-expr-to-port x p))
-          core*)
-        (close-output-port p))))
+  (time-it
+    (lambda ()
+      (let-values ([(core* locs) 
+                    (time-it 
+                      (lambda () (expand-all scheme-library-files))
+                      "macro expansion")])
+        (parameterize ([current-primitive-locations
+                        (lambda (x)
+                          (cond
+                            [(assq x locs) => cdr]
+                            [else 
+                             (error 'bootstrap "no location for ~s" x)]))])
+          (let ([p (open-output-file "ikarus.boot" 'replace)])
+            (for-each 
+              (lambda (x) (compile-core-expr-to-port x p))
+              core*)
+            (close-output-port p)))))
+    "the entire bootstrap process")
 
   (printf "Happy Happy Joy Joy\n"))
 
