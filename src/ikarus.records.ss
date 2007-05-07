@@ -4,7 +4,8 @@
   (export
     make-record-type record-type-name record-type-symbol
     record-type-field-names record-constructor record-predicate
-    record-field-accessor record-field-mutator record?  record-rtd
+    record-field-accessor record-field-mutator record? record-rtd
+    set-rtd-printer!
     (rename (record-rtd record-type-descriptor)) 
     record-name record-printer record-length record-ref record-set!)
 
@@ -17,7 +18,7 @@
       record-type-field-names record-constructor record-predicate
       record-field-accessor record-field-mutator record? record-rtd
       record-type-descriptor record-name record-printer record-length
-      record-ref record-set!))
+      record-ref record-set! set-rtd-printer!))
 
 
 
@@ -58,7 +59,7 @@
     (lambda (rtd fields)
       ($record-set! rtd 2 fields)))
 
-  (define set-rtd-printer!
+  (define $set-rtd-printer!
     (lambda (rtd printer)
       ($record-set! rtd 3 printer)))
    
@@ -253,9 +254,16 @@
           (error 'record-set! "index ~s is out of range for ~s" i x))
         ($record-set! x i v))))
 
+  (define (set-rtd-printer! x p)
+    (unless (rtd? x)
+      (error 'set-rtd-printer! "~s is not an rtd" x))
+    (unless (procedure? p)
+      (error 'set-rtd-printer! "~s is not a procedure" p))
+    ($set-rtd-printer! x p))
+
   (set-rtd-fields! (base-rtd) '(name fields length printer symbol))
   (set-rtd-name! (base-rtd) "base-rtd")
-  (set-rtd-printer! (base-rtd)
+  ($set-rtd-printer! (base-rtd)
     (lambda (x p)
       (unless (rtd? x)
         (error 'record-type-printer "not an rtd"))

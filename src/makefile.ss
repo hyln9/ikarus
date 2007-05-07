@@ -382,6 +382,7 @@
       [record-type-field-names i]
       [record-type-symbol      i]
       [record-type-name        i]
+      [set-rtd-printer!        i]
       [record-name             i]
       [record-constructor      i]
       [record-predicate        i]

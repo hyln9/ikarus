@@ -19,11 +19,14 @@
         [(x) (set! set (set-cons x set))])))
 
   (define current-library-collection
-    (make-parameter (make-collection) 
+    ;;; this works now because make-collection is a lambda
+    ;;; binding and this turns into a complex binding as far
+    ;;; as letrec is concerned.  It will be more ok once we do
+    ;;; letrec*.
+    (make-parameter (make-collection)
       (lambda (x)
         (unless (procedure? x)
-          (error 'current-library-collection 
-            "~s is not a procedure" x))
+          (error 'current-library-collection "~s is not a procedure" x))
         x)))
 
   (define-record library 
@@ -87,7 +90,6 @@
   (define (imported-label->binding lab)
     (get-hash-table label->binding-table lab #f))
 
-
   (define (invoke-library lib)
     (let ([invoke (library-invoke-state lib)])
       (when (procedure? invoke)
@@ -102,7 +104,6 @@
   (define (invoke-library-by-spec spec)
     (invoke-library (find-library-by-spec/die spec)))
 
-
   (define installed-libraries 
     (lambda () ((current-library-collection))))
   (define library-spec       
@@ -112,9 +113,7 @@
       (list (library-id x) (library-name x) (library-ver x))))
 
   ;;; init
-
-  ((record-field-mutator (record-type-descriptor (type-descriptor library)) 'printer)
-    (type-descriptor library)
+  (set-rtd-printer! (type-descriptor library)
     (lambda (x p)
       (unless (library? x)
         (error 'record-type-printer "not a library"))
