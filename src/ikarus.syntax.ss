@@ -1913,8 +1913,8 @@
                    [(define) 
                     (let-values ([(id rhs) (parse-define e)])
                       (when (bound-id-member? id kwd*) 
-                        (stx-error id "cannt redefine identifier"))
-                      (when (bound-id-member? id lhs*) 
+                        (stx-error id "cannot redefine identifier"))
+                      (when (bound-id-member? id lhs*)
                         (stx-error id "multiple definition"))
                       (let ([lex (gen-lexical id)]
                             [lab (gen-label id)])
@@ -2194,7 +2194,8 @@
               (f (cdr int*) (cdr ext*) 
                  (cons (cons (car ext*) label) subst)
                  (cons (cons label (cons 'global (binding-value b))) env))]
-             [else (error #f "cannot export ~s of type ~s" sym type)]))])))
+             [else (error #f "cannot export ~s of type ~s, value=~s" sym type
+                          (binding-value b))]))])))
   (define generate-temporaries
     (lambda (ls)
       (unless (list? ls) 
