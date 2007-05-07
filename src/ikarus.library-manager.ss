@@ -3,10 +3,10 @@
 
 (library (ikarus library-manager)
   (export imported-label->binding library-subst
-          current-library-collection installed-libraries
+          installed-libraries
           find-library-by-name install-library
           library-spec invoke-library)
-  (import (except (ikarus) current-library-collection))
+  (import (ikarus))
 
   (define (make-collection)
     (let ([set '()])
