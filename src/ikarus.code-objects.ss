@@ -1,12 +1,13 @@
 
 (library (ikarus code-objects)
   (export
-    make-code code? code-reloc-vector code-freevars
-    code-size code-ref code-set! set-code-reloc-vector!)
+    make-code code-reloc-vector code-freevars
+    code-size code-ref code-set! set-code-reloc-vector!
+    code->thunk)
   (import
     (ikarus system $fx)
     (ikarus system $codes)
-    (except (ikarus) make-code code? code-reloc-vector code-freevars
+    (except (ikarus) make-code code-reloc-vector code-freevars
             code-size code-ref code-set! set-code-reloc-vector!))
 
   (define make-code
@@ -16,9 +17,6 @@
       (unless (and (fixnum? freevars) ($fx>= freevars 0))
         (error 'make-code "~s is not a valid number of free vars" freevars))
       (foreign-call "ikrt_make_code" code-size freevars '#())))
-
-  (define code?
-    (lambda (x) ($code? x)))
 
   (define code-reloc-vector
     (lambda (x)
@@ -64,5 +62,14 @@
       (unless (vector? v)
         (error 'set-code-reloc-vector! "~s is not a vector" v))
       (foreign-call "ikrt_set_code_reloc_vector" x v)))
+
+  (define code->thunk
+    (lambda (x)
+      (unless ($code? x)
+        (error 'code->thunk "~s is not a a code object" x))
+      (unless ($fxzero? ($code-freevars x))
+        (error 'code->thunk "~s has free variables" x))
+      ($code->closure x)))
+
   )
 

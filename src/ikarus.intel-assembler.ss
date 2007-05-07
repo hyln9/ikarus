@@ -1,47 +1,10 @@
 
-;;; 
-;;; assuming the existence of a code manager, this file defines an assember
-;;; that takes lists of assembly code and produces a list of code objects
-;;;
-
-   ;;;      add     
-   ;;;      and
-   ;;;      cmp
-   ;;;      call
-   ;;;      cltd
-   ;;;      idiv
-   ;;;      imull
-   ;;;      ja
-   ;;;      jae
-   ;;;      jb
-   ;;;      jbe
-   ;;;      je
-   ;;;      jg
-   ;;;      jge
-   ;;;      jl
-   ;;;      jle
-   ;;;      jne
-   ;;;      jmp
-   ;;;      movb
-   ;;;      movl
-   ;;;      negl
-   ;;;      notl
-   ;;;      orl
-   ;;;      popl
-   ;;;      pushl
-   ;;;      ret
-   ;;;      sall
-   ;;;      sarl
-   ;;;      shrl
-   ;;;      sete
-   ;;;      setg
-
 
 (library (ikarus intel-assembler)
   (export assemble-sources)
   (import 
     (ikarus)
-    (ikarus system $codes)
+    (ikarus code-objects)
     (ikarus system $pairs))
 
 (define fold
@@ -894,7 +857,7 @@
                              (error 'whack-reloc 
                                "cannot create a thunk pointing at ~s"
                                idx))
-                           (let ([thunk ($code->closure code)])
+                           (let ([thunk (code->thunk code)])
                              (set-cdr! (cdr p) (list thunk))
                              thunk))]
                         [else (caddr p)])))]

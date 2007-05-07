@@ -35,6 +35,7 @@
   (import
     (ikarus system $codes)
     (ikarus system $records)
+    (ikarus code-objects)
     (except (ikarus) fasl-write))
 
   (define write-fixnum 

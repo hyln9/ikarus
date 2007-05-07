@@ -52,8 +52,8 @@
       "ikarus.writer.ss"
       "ikarus.reader.ss"
       "ikarus.code-objects.ss"
-      "ikarus.trace.ss"
       "ikarus.intel-assembler.ss"
+      "ikarus.trace.ss"
       "ikarus.fasl.ss"
       "ikarus.compiler.ss"
       "ikarus.library-manager.ss"
@@ -394,13 +394,6 @@
       [generate-temporaries              i]
       [free-identifier=?                 i]
       [code?                             i]
-      [make-code                         i]
-      [code-reloc-vector                 i]
-      [set-code-reloc-vector!            i]
-      [code-size                         i]
-      [code-freevars                     i]
-      [code-ref                          i]
-      [code-set!                         i]
       [immediate?                        i]
       [pointer-value                     i]
 

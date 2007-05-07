@@ -4,14 +4,14 @@
   (export fixnum? flonum? bignum? number? complex? real? rational?
           integer? exact? eof-object? bwp-object? immediate?
           boolean? char? vector? string? procedure? null? pair?
-          symbol? not weak-pair? eq? eqv? equal?) 
+          symbol? code? not weak-pair? eq? eqv? equal?) 
 
   (import 
 
     (except (ikarus) fixnum? flonum? bignum? number? complex? real?
             rational? integer? exact? eof-object? bwp-object?
             immediate? boolean? char? vector? string? procedure?
-            null? pair? weak-pair? symbol? not eq? eqv? equal?
+            null? pair? weak-pair? symbol? code? not eq? eqv? equal?
             port? input-port? output-port?)
     (ikarus system $fx)
     (ikarus system $pairs)
@@ -20,7 +20,7 @@
     (ikarus system $vectors)
     (rename (only (ikarus) fixnum? flonum? bignum? eof-object?
                   bwp-object? immediate? boolean? char? vector? string?
-                  procedure? null? pair? symbol? eq?
+                  procedure? null? pair? symbol? code? eq?
                   port? input-port? output-port?)
             (fixnum? sys:fixnum?)
             (flonum? sys:flonum?)
@@ -36,6 +36,7 @@
             (null? sys:null?)
             (pair? sys:pair?)
             (symbol? sys:symbol?)
+            (code? sys:code?)
             (eq? sys:eq?)
             (port? sys:port?)
             (input-port? sys:input-port?)
@@ -99,7 +100,7 @@
   (define null? (lambda (x) (sys:null? x)))
   (define pair? (lambda (x) (sys:pair? x)))
   (define symbol? (lambda (x) (sys:symbol? x)))
-
+  (define code? (lambda (x) (sys:code? x)))
 
 
   (define weak-pair?

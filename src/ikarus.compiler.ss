@@ -190,6 +190,7 @@
     ;;; asm
     ;;;
     [$code?              1    pred]
+    [code?              1    pred]
     [$code-size          1    value]
     [$code-reloc-vector  1    value]
     [$code-freevars      1    value]
@@ -2017,7 +2018,7 @@
     (case op
       [(fixnum? flonum? bignum? immediate? boolean? char? vector? string? procedure?
         null? pair? not cons eq? vector symbol? error eof-object eof-object? 
-        void base-rtd $unbound-object? $code? $forward-ptr? bwp-object?
+        void base-rtd $unbound-object? $code? code? $forward-ptr? bwp-object?
         pointer-value top-level-value car cdr list* list $record
         port? input-port? output-port?
         $make-port/input $make-port/output $make-port/both
@@ -3327,7 +3328,7 @@
      [(not)        (Pred (car rand*) Lf Lt ac)]
      [(eof-object?) (type-pred #f eof rand* Lt Lf ac)]
      [(bwp-object?) (type-pred #f bwp-object rand* Lt Lf ac)]
-     [($code?) 
+     [($code? code?) 
       (indirect-type-pred vector-mask vector-tag #f code-tag 
          rand* Lt Lf ac)]
      [($fxzero?)   (type-pred #f 0 rand* Lt Lf ac)]
@@ -4092,7 +4093,8 @@
      [(fixnum? bignum? flonum? immediate? $fxzero? boolean? char? pair? 
        vector? string? symbol?
        procedure? null? not eof-object? $fx= $fx< $fx<= $fx> $fx>= eq?
-       $char= $char< $char<= $char> $char>= $unbound-object? $code? 
+       $char= $char< $char<= $char> $char>= $unbound-object? $code?
+       code?
        $record? $record/rtd? bwp-object? port? input-port? output-port?) 
       (do-pred->value-prim op arg* ac)]
      [($code->closure)
