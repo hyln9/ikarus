@@ -61,7 +61,7 @@
       "ikarus.cafe.ss"
       "ikarus.posix.ss"
       "ikarus.timer.ss"
-      "libtoplevel.ss"))
+      "ikarus.main.ss"))
 
   (define ikarus-system-macros
     '([define            (define)]
