@@ -25,7 +25,7 @@
     cdr-error fxadd1-error fxsub1-error cadr-error fx+-type-error
     fx+-types-error fx+-overflow-error $do-event)
   (import (except (ikarus) interrupt-handler)
-          (only (ikarus system $junkyard) $interrupted? $unset-interrupted!))
+          (only (ikarus system $interrupts) $interrupted? $unset-interrupted!))
 
   (define interrupt-handler
     (make-parameter

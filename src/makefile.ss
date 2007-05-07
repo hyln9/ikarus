@@ -114,6 +114,7 @@
       [$arg-list (ikarus system $arg-list)]
       [$stack (ikarus system $stack)]
       [$junkyard (ikarus system $junkyard)]
+      [$interrupts (ikarus system $interrupts)]
       ))
 
   (define ikarus-macros-map
@@ -543,10 +544,11 @@
       [$seal-frame-and-call             $stack]
       [$make-call-with-values-procedure $stack]
       [$make-values-procedure           $stack]
+      ; (ikarus system $interrupts)
+      [$interrupted?                     $interrupts]
+      [$unset-interrupted!               $interrupts]
       ; (ikarus system $junkyard)
-      [$forward-ptr?                     $junkyard]
-      [$interrupted?                     $junkyard]
-      [$unset-interrupted!               $junkyard]
+      [$forward-ptr?                     $interrupts]
       [$apply-nonprocedure-error-handler $junkyard]
       [$incorrect-args-error-handler     $junkyard]
       [$multiple-values-error            $junkyard]
@@ -676,8 +678,6 @@
                           [(assq x ',primlocs) => cdr]
                           [else #f])))
                     ,@(map build-library library-legend))])
-      ;(parameterize ([print-gensym #f])
-      ;  (pretty-print code))
       (let-values ([(code empty-subst empty-env)
                     (boot-library-expand code)])
          code)))
@@ -691,7 +691,6 @@
           (printf "expanding ~s\n" file)
           (load file
             (lambda (x) 
-          ;    (pretty-print x)
               (let-values ([(code export-subst export-env)
                             (boot-library-expand x)])
                  (set! code* (cons code code*))
@@ -701,7 +700,6 @@
       (printf "building system ...\n")
       (let-values ([(export-subst export-env export-locs)
                     (make-system-data subst env)])
-        ;(printf "export-subst=~s\n" export-locs)
         (let ([code (build-system-library export-subst export-env export-locs)])
           (values 
             (reverse (list* (car code*) code (cdr code*)))
