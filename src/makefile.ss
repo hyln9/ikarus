@@ -114,7 +114,6 @@
       [$arg-list (ikarus system $arg-list)]
       [$stack (ikarus system $stack)]
       [$junkyard (ikarus system $junkyard)]
-      ;[$lists (ikarus system $lists)]
       ))
 
   (define ikarus-macros-map
@@ -718,7 +717,8 @@
                     (lambda (x)
                       (cond
                         [(assq x locs) => cdr]
-                        [else #f]))])
+                        [else 
+                         (error 'bootstrap "no location for ~s" x)]))])
       (let ([p (open-output-file "ikarus.boot" 'replace)])
         (for-each 
           (lambda (x) (compile-core-expr-to-port x p))

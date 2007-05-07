@@ -5,7 +5,7 @@
   (import 
     (only (ikarus system $codes) $code->closure)
     (only (ikarus system $records) $record-ref $record/rtd?)
-    (except (ikarus) ;fasl-write
+    (except (ikarus)
         compile-core-expr-to-port assembler-output
         current-primitive-locations eval-core)
     (ikarus intel-assembler)
@@ -3190,12 +3190,6 @@
       [(base-rtd)           (mem 44 pcr)]
       [else (error 'pcb-ref "invalid arg ~s" x)])))
 
-(define do-warn
-  (let ([ls '()])
-    (lambda (x) 
-      (unless (memq x ls)
-        (printf "[ERR ~s] " x)
-        (set! ls (cons x ls))))))
 
 (define (primref-loc op)
   (unless (symbol? op) (error 'primref-loc "not a symbol ~s" op))
@@ -3207,9 +3201,7 @@
             "~s is not a valid location for ~s" x op))
        (mem (fx- disp-symbol-value symbol-tag) (obj x)))]
     [else
-     (do-warn op)
-     (mem (fx- disp-symbol-system-value symbol-tag)
-          (obj op))]))
+     (error 'compile "cannot find location of primitive ~s" op)]))
 
 
 (define (generate-code x)
