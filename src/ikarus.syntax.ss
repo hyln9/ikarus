@@ -1585,10 +1585,8 @@
            (let ([transformer (core-macro-transformer value)])
              (transformer e r mr))]
           [(global) 
-           (let* ([loc value]
-                  [lib (imported-loc->library loc)])
-             (unless lib 
-               (stx-error e "BUG: cannot find defining library"))
+           (let* ([lib (car value)]
+                  [loc (cdr value)])
              ((run-collector) lib)
              (build-global-reference no-source loc))]
           [(core-prim) 

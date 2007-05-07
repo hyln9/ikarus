@@ -16,7 +16,7 @@
 (library (ikarus library-manager)
   (export imported-label->binding library-subst/env
           current-library-collection installed-libraries
-          find-library-by-name imported-loc->library install-library
+          find-library-by-name install-library
           library-spec invoke-library)
   (import (except (ikarus) current-library-collection))
 
@@ -82,26 +82,19 @@
                     exp-subst exp-env visit-code invoke-code)])
         (for-each 
           (lambda (x) 
-            (put-hash-table! label->binding-table (car x) (cdr x)))
+            (let ([label (car x)] [binding (cdr x)])
+              (let ([binding 
+                     (case (car binding)
+                       [(global) 
+                        (cons 'global (cons lib (cdr binding)))]
+                       [else binding])])
+                (put-hash-table! label->binding-table label binding))))
           exp-env)
         ((current-library-collection) lib))))
 
   (define (imported-label->binding lab)
     (get-hash-table label->binding-table lab #f))
 
-  (define (imported-loc->library loc)
-    (define (loc-in-env? ls)
-      (and (pair? ls)
-           (let ([a (car ls)])
-             (let ([binding (cdr a)])
-               (or (and (eq? (car binding) 'global)
-                        (eq? (cdr binding) loc))
-                   (loc-in-env? (cdr ls)))))))
-    (let f ([ls ((current-library-collection))])
-      (cond
-        [(null? ls) #f]
-        [(loc-in-env? (library-env (car ls))) (car ls)]
-        [else (f (cdr ls))])))
 
   (define (invoke-library lib)
     (let ([invoke (library-invoke-state lib)])
