@@ -67,6 +67,8 @@
             (lambda (x) (eq? id (library-id x))))
           (error #f "cannot find library with spec ~s" spec))))
 
+  (define label->binding-table (make-hash-table))
+
   (define (install-library id name ver
              imp* vis* inv* exp-subst exp-env visit-code invoke-code)
     (let ([imp-lib* (map find-library-by-spec/die imp*)]
@@ -78,14 +80,14 @@
         (error 'install-library "~s is already installed" name))
       (let ([lib (make-library id name ver imp-lib* vis-lib* inv-lib* 
                     exp-subst exp-env visit-code invoke-code)])
+        (for-each 
+          (lambda (x) 
+            (put-hash-table! label->binding-table (car x) (cdr x)))
+          exp-env)
         ((current-library-collection) lib))))
 
   (define (imported-label->binding lab)
-    (let f ([ls ((current-library-collection))])
-      (cond
-        [(null? ls) #f]
-        [(assq lab (library-env (car ls))) => cdr]
-        [else (f (cdr ls))])))
+    (get-hash-table label->binding-table lab #f))
 
   (define (imported-loc->library loc)
     (define (loc-in-env? ls)
