@@ -45,6 +45,11 @@
     (find-library-by
       (lambda (x) (equal? (library-name x) name))))
 
+  (define (library-exists? name)
+    (and (find-library-by
+           (lambda (x) (equal? (library-name x) name)))
+         #t))
+
   (define (find-library-by-spec/die spec)
     (let ([id (car spec)])
       (or (find-library-by
@@ -60,7 +65,7 @@
           [inv-lib* (map find-library-by-spec/die inv*)])
       (unless (and (symbol? id) (list? name) (list? ver))
         (error 'install-library "invalid spec ~s ~s ~s" id name ver))
-      (when (find-library-by-name name)
+      (when (library-exists? name)
         (error 'install-library "~s is already installed" name))
       (let ([lib (make-library id name ver imp-lib* vis-lib* inv-lib* 
                     exp-subst exp-env visit-code invoke-code)])
