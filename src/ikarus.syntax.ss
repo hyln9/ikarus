@@ -84,21 +84,23 @@
         [else (error 'gen-lexical "invalid arg ~s" sym)])))
   (define gen-label
     (lambda (_) (gensym)))
-  (define-record rib (sym* mark** label*))
+  (define-record rib (sym* mark** label* sealed/freq))
   (define make-full-rib
     (lambda (id* label*)
-      (make-rib (map id->sym id*) (map stx-mark* id*) label*)))
+      (make-rib (map id->sym id*) (map stx-mark* id*) label* #f)))
   (define make-empty-rib
     (lambda ()
-      (make-rib '() '() '())))
+      (make-rib '() '() '() #f)))
   (define extend-rib!
     (lambda (rib id label)
       (if (rib? rib)
           (let ([sym (id->sym id)] [mark* (stx-mark* id)])
+            (when (rib-sealed/freq rib)
+              (error 'extend-rib! "rib ~s is sealed" rib))
             (set-rib-sym*! rib (cons sym (rib-sym* rib)))
             (set-rib-mark**! rib (cons mark* (rib-mark** rib)))
             (set-rib-label*! rib (cons label (rib-label* rib))))
-          (error 'extend-rib! "~s is not an extensible rib" rib))))
+          (error 'extend-rib! "~s is not a rib" rib))))
   (module (make-stx stx? stx-expr stx-mark* stx-subst*)
     (define-record stx (expr mark* subst*)))
   (define datum->stx
@@ -280,7 +282,6 @@
       (cond
         [(imported-label->binding x)]
         [(assq x r) => cdr]
-        [(not x) (cons 'unbound #f)]
         [else (cons 'displaced-lexical #f)])))
   (define make-binding cons)
   (define binding-type car)
@@ -543,7 +544,7 @@
            (lambda (x)
              (let ([name (car x)] [label (cdr x)])
                (add-subst 
-                 (make-rib (list name) (list top-mark*) (list label))
+                 (make-rib (list name) (list top-mark*) (list label) #f)
                  (stx sym top-mark* '()))))]
           [else (stx sym top-mark* '())]))))
   ;;; macros
