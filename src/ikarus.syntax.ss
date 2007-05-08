@@ -425,14 +425,17 @@
         (define (parse-pat pat)
           (syntax-case pat ()
             [id (sys:identifier? #'id) 
-             (if (free-identifier-member? #'id lits)
-                 (values '() 
-                   #'(lambda (x) 
-                       (if (and (id? x) (free-id=? x (scheme-stx 'id)))
-                           '()
-                           #f)))
-                 (values (list #'id) 
-                   #'(lambda (x) (list x))))]
+             (cond
+               [(free-identifier-member? #'id lits)
+                (values '() 
+                  #'(lambda (x) 
+                       (and (id? x)
+                            (free-id=? x (scheme-stx 'id))
+                            '())))]
+               [(sys:free-identifier=? #'id #'_) 
+                (values '() #'(lambda (x) '()))]
+               [else
+                (values (list #'id) #'(lambda (x) (list x)))])]
             [(pat dots) (dots? #'dots)
              (let-values ([(pvars decon) (parse-pat #'pat)])
                (with-syntax ([(v* ...) pvars] [decon decon])
@@ -502,6 +505,12 @@
              (with-syntax ([(v* ...) pvars])
                (values decon 
                        #'(lambda (v* ...) #t)
+                       #'(lambda (v* ...) body))))]
+          [(pat guard body)
+           (let-values ([(pvars decon) (parse-pat #'pat)])
+             (with-syntax ([(v* ...) pvars])
+               (values decon
+                       #'(lambda (v* ...) guard)
                        #'(lambda (v* ...) body))))]))
       (syntax-case ctx ()
         [(_ expr (lits ...)) (andmap sys:identifier? #'(lits ...))
@@ -520,12 +529,12 @@
   (define parse-define
     (lambda (x)
       (syntax-match x ()
-        [(__ (id . fmls) b b* ...) 
+        [(_ (id . fmls) b b* ...) 
          (if (id? id) 
              (values id
               (cons 'defun (cons fmls (cons b b*))))
              (stx-error x))]
-        [(__ id val)
+        [(_ id val)
          (if (id? id) 
              (values id (cons 'expr val))
              (stx-error x))])))
