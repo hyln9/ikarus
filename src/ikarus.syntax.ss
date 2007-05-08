@@ -1059,20 +1059,20 @@
             [id (id? id)
              (cond
                [(bound-id-member? p keys)
-                (values (vector 'free-id p) ids)]
+                (values `#(free-id ,p) ids)]
                [(free-id=? p (scheme-stx '_))
                 (values '_ ids)]
                [else (values 'any (cons (cons p n) ids))])]
             [(p dots) (ellipsis? dots)
              (let-values ([(p ids) (cvt p (+ n 1) ids)])
                (values 
-                 (if (eq? p 'any) 'each-any (vector 'each p)) 
+                 (if (eq? p 'any) 'each-any `#(each ,p)) 
                  ids))]
             [(x dots ys ... . z) (ellipsis? dots)
              (let-values ([(z ids) (cvt z n ids)])
                (let-values ([(ys ids) (cvt* ys n ids)])
                  (let-values ([(x ids) (cvt x (+ n 1) ids)])
-                   (values (vector 'each+ x (reverse ys) z) ids))))]
+                   (values `#(each+ ,x ,(reverse ys) ,z) ids))))]
             [(x . y) 
              (let-values ([(y ids) (cvt y n ids)])
                (let-values ([(x ids) (cvt x n ids)])
@@ -1080,9 +1080,9 @@
             [() (values '() ids)]
             [#(p ...) 
              (let-values ([(p ids) (cvt p n ids)])
-               (values (vector 'vector p) ids))]
+               (values `#(vector ,p) ids))]
             [datum 
-             (values (vector 'atom (strip datum '())) ids)])))
+             (values `#(atom ,(strip datum '())) ids)])))
       (cvt pattern 0 '())))
   (define syntax-dispatch
     (lambda (e p)
