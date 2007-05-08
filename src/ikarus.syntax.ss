@@ -1391,7 +1391,7 @@
         (define gen-map
           (lambda (e map-env)
             (let ((formals (map cdr map-env))
-                  (actuals (map (lambda (x) (list 'ref (car x))) map-env)))
+                  (actuals (map (lambda (x) `(ref ,(car x))) map-env)))
               (cond
                ; identity map equivalence:
                ; (map (lambda (x) x) y) == y
@@ -1434,19 +1434,19 @@
         (define regen
           (lambda (x)
             (case (car x)
-              ((ref) (build-lexical-reference no-source (cadr x)))
-              ((primitive) (build-primref no-source (cadr x)))
-              ((quote) (build-data no-source (cadr x)))
-              ((lambda) (build-lambda no-source (cadr x) (regen (caddr x))))
-              ((map)
+              [(ref) (build-lexical-reference no-source (cadr x))]
+              [(primitive) (build-primref no-source (cadr x))]
+              [(quote) (build-data no-source (cadr x))]
+              [(lambda) (build-lambda no-source (cadr x) (regen (caddr x)))]
+              [(map)
                (let ((ls (map regen (cdr x))))
                  (build-application no-source
                    (build-primref no-source 'map)
-                   ls)))
-              (else
+                   ls))]
+              [else
                (build-application no-source
                  (build-primref no-source (car x))
-                 (map regen (cdr x)))))))
+                 (map regen (cdr x)))])))
         (lambda (e r mr)
           (syntax-match e ()
             [(_ x)
