@@ -2283,32 +2283,6 @@
                [else
                 (error #f "don't know how to export ~s ~s"
                        (binding-type b) (binding-value b))])))])))
-  (define (find-exports int* ext* rib r)
-    (let f ([int* int*] [ext* ext*] [subst '()] [env '()] [m* '()])
-      (cond
-        [(null? int*) (values subst env m*)]
-        [else
-         (let* ([sym (car int*)]
-                [id (stx sym top-mark* (list rib))]
-                [label (id->label id)]
-                [b (label->binding label r)]
-                [type (binding-type b)])
-           (unless label
-             (stx-error id "cannot export unbound identifier"))
-           (case type
-             [(lexical) 
-              (f (cdr int*) (cdr ext*) 
-                 (cons (cons (car ext*) label) subst)
-                 (cons (cons label (cons 'global (binding-value b))) env)
-                 m*)]
-             [(local-macro)
-              (let ([loc (gensym)])
-                (f (cdr int*) (cdr ext*)
-                   (cons (cons (car ext*) label) subst)
-                   (cons (cons label (cons 'global-macro loc)) env)
-                   (cons (cons loc (binding-value b)) m*)))]
-             [else (error #f "cannot export ~s of type ~s, value=~s" sym type
-                          (binding-value b))]))])))
   (define generate-temporaries
     (lambda (ls)
       (unless (list? ls) 
