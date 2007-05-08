@@ -1652,7 +1652,7 @@
           [(global) 
            (let* ([lib (car value)]
                   [loc (cdr value)])
-             ((run-collector) lib)
+             ((inv-collector) lib)
              (build-global-reference no-source loc))]
           [(core-prim) 
            (let ([name value])
@@ -2153,13 +2153,21 @@
       (case-lambda
         [() ls]
         [(x) (set! ls (set-cons x ls))])))
-  (define run-collector
+  (define inv-collector
     (make-parameter 
       (lambda args 
-        (error 'run-collector "not initialized"))
+        (error 'inv-collector "not initialized"))
       (lambda (x)
         (unless (procedure? x) 
-          (error 'run-collector "~s is not a procedure" x))
+          (error 'inv-collector "~s is not a procedure" x))
+        x)))
+  (define vis-collector
+    (make-parameter 
+      (lambda args 
+        (error 'vis-collector "not initialized"))
+      (lambda (x)
+        (unless (procedure? x) 
+          (error 'vis-collector "~s is not a procedure" x))
         x)))
   (define core-library-expander
     (lambda (e)
@@ -2169,8 +2177,10 @@
             (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]
                   [kwd* (map (lambda (sym mark*) (stx sym mark* (list rib)))
                              (rib-sym* rib) (rib-mark** rib))]
-                  [rtc (make-collector)])
-              (parameterize ([run-collector rtc])
+                  [rtc (make-collector)]
+                  [vtc (make-collector)])
+              (parameterize ([inv-collector rtc]
+                             [vis-collector vtc])
                 (let-values ([(init* r mr lex* rhs*)
                               (chi-library-internal b* rib kwd*)])
                   (seal-rib! rib)
@@ -2185,7 +2195,7 @@
                       (let-values ([(export-subst export-env macro*) 
                                     (find-exports exp-int* exp-ext* rib r)])
                         (values
-                          name imp* (rtc)
+                          name imp* (rtc) (vtc)
                           (build-letrec no-source lex* rhs* invoke-body)
                           macro*
                           export-subst export-env))))))))))))
@@ -2203,14 +2213,14 @@
                    (build-global-assignment no-source loc src)))
                macro*))))
   (define (library-expander x)
-    (let-values ([(name imp* run* invoke-code macro* export-subst export-env)
+    (let-values ([(name imp* inv* vis* invoke-code macro* export-subst export-env)
                     (core-library-expander x)])
       (let ([id (gensym)]
             [name name]
             [ver '()]  ;;; FIXME
             [imp* (map library-spec imp*)]
-            [vis* '()] ;;; FIXME
-            [inv* (map library-spec run*)])
+            [vis* (map library-spec vis*)] 
+            [inv* (map library-spec inv*)])
         (install-library id name ver
            imp* vis* inv* export-subst export-env
            (lambda () (visit! macro*))
