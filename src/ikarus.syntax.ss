@@ -1053,66 +1053,36 @@
               (let-values (((y ids) (cvt* (cdr p*) n ids)))
                 (let-values (((x ids) (cvt (car p*) n ids)))
                   (values (cons x y) ids))))))
-      ;;; FIXME: these should go away
-      (define id-dots?
-        (lambda (x) 
-          (and (syntax-pair? x)
-               (let ([d (syntax-cdr x)])
-                 (and (syntax-pair? d) 
-                      (syntax-null? (syntax-cdr d))
-                      (ellipsis? (syntax-car d)))))))
-      (define id-dots-id
-        (lambda (x) (syntax-car x)))
-      (define syntax-foo?
-        (lambda (x)
-          (and (syntax-pair? x)
-               (let ((d (syntax-cdr x)))
-                 (and (syntax-pair? d)
-                      (ellipsis? (syntax-car d)))))))
-      (define syntax-foo-z
-        (lambda (x)
-          (let f ([x (syntax-cdr (syntax-cdr x))])
-            (cond
-              ((syntax-pair? x) (f (syntax-cdr x)))
-              (else x)))))
-      (define syntax-foo-ys
-        (lambda (x)
-          (let f ([x (syntax-cdr (syntax-cdr x))])
-            (cond
-              [(syntax-pair? x)
-               (cons (syntax-car x) (f (syntax-cdr x)))]
-              [else '()]))))
-      (define syntax-foo-x
-        (lambda (x) (syntax-car x)))
       (define cvt
         (lambda (p n ids)
-          (cond
-            [(not (id? p))
+          (syntax-match p ()
+            [id (id? id)
              (cond
-               [(id-dots? p)
-                (let-values ([(p ids) (cvt (id-dots-id p) (+ n 1) ids)])
-                  (values
-                    (if (eq? p 'any) 'each-any (vector 'each p))
-                    ids))]
-               [(syntax-foo? p) ; (x dots y ... . z)
-                (let-values ([(z ids) (cvt (syntax-foo-z p) n ids)])
-                  (let-values ([(y ids) (cvt* (syntax-foo-ys p) n ids)])
-                    (let-values ([(x ids) (cvt (syntax-foo-x p) (+ n 1) ids)])
-                      (values (vector 'each+ x (reverse y) z) ids))))]
-               [(syntax-pair? p)
-                (let-values ([(y ids) (cvt (syntax-cdr p) n ids)])
-                  (let-values ([(x ids) (cvt (syntax-car p) n ids)])
-                    (values (cons x y) ids)))]
-               [(syntax-null? p) (values '() ids)]
-               [(syntax-vector? p)
-                (let-values ([(p ids) (cvt (syntax-vector->list p) n ids)])
-                  (values (vector 'vector p) ids))]
-               [else (values (vector 'atom (strip p '())) ids)])]
-            [(bound-id-member? p keys)
-             (values (vector 'free-id p) ids)]
-            [(free-id=? p (scheme-stx '_))
-             (values '_ ids)]
-            [else (values 'any (cons (cons p n) ids))])))
+               [(bound-id-member? p keys)
+                (values (vector 'free-id p) ids)]
+               [(free-id=? p (scheme-stx '_))
+                (values '_ ids)]
+               [else (values 'any (cons (cons p n) ids))])]
+            [(p dots) (ellipsis? dots)
+             (let-values ([(p ids) (cvt p (+ n 1) ids)])
+               (values 
+                 (if (eq? p 'any) 'each-any (vector 'each p)) 
+                 ids))]
+            [(x dots ys ... . z) (ellipsis? dots)
+             (let-values ([(z ids) (cvt z n ids)])
+               (let-values ([(ys ids) (cvt* ys n ids)])
+                 (let-values ([(x ids) (cvt x (+ n 1) ids)])
+                   (values (vector 'each+ x (reverse ys) z) ids))))]
+            [(x . y) 
+             (let-values ([(y ids) (cvt y n ids)])
+               (let-values ([(x ids) (cvt x n ids)])
+                 (values (cons x y) ids)))]
+            [() (values '() ids)]
+            [#(p ...) 
+             (let-values ([(p ids) (cvt p n ids)])
+               (values (vector 'vector p) ids))]
+            [datum 
+             (values (vector 'atom (strip datum '())) ids)])))
       (cvt pattern 0 '())))
   (define syntax-dispatch
     (lambda (e p)
