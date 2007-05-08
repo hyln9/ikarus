@@ -456,7 +456,7 @@
                #'(lambda (x) 
                    (equal? (strip x '()) 'datum))])))
         (syntax-case ctx ()
-          [(_ x (lits ...) [pat code code* ...])
+          [(_ x (lits ...) [pat code])
            (with-syntax ([pat-code (f #'pat #'(lits ...))])
              #'(pat-code x))])))
     (define-syntax syntax-match-conseq
@@ -581,9 +581,9 @@
                          (f #'pat #'(lits ...))])
              (with-syntax ([e extractor] [(vs ...) vars])
                (case (length vars)
-                 [(0) #'(begin code code* ...)]
-                 [(1) #'(let ([vs ... (e x)]) code code* ...)]
-                 [else #'(let-values ([(vs ...) (e x)]) code code* ...)])))])))
+                 [(0) #'(begin #f code)]
+                 [(1) #'(let ([vs ... (e x)]) #f code)]
+                 [else #'(let-values ([(vs ...) (e x)]) #f code)])))])))
     (define-syntax syntax-match
       (lambda (x)
         (syntax-case x ()
@@ -688,15 +688,16 @@
     (lambda (e r mr)
       (syntax-match e ()
         [(_ id) 
-         (unless (id? id) (stx-error e))
-         (let* ([lab (id->label id)]
-                [b (label->binding lab r)]
-                [type (binding-type b)])
-           (unless lab (stx-error e "unbound identifier"))
-           (case type
-             [($rtd)
-              (build-data no-source (binding-value b))]
-             [else (stx-error e "invalid type")]))])))
+         (begin
+           (unless (id? id) (stx-error e))
+           (let* ([lab (id->label id)]
+                  [b (label->binding lab r)]
+                  [type (binding-type b)])
+             (unless lab (stx-error e "unbound identifier"))
+             (case type
+               [($rtd)
+                (build-data no-source (binding-value b))]
+               [else (stx-error e "invalid type")])))])))
   (define when-transformer ;;; go away
     (lambda (e r mr)
       (syntax-match e ()
@@ -890,18 +891,19 @@
       (syntax-match e ()
         [(_ (lits ...) 
             [pat* tmp*] ...)
-         (unless (andmap
-                   (lambda (x) 
-                     (and (id? x) 
-                          (not (free-id=? x (scheme-stx '...)))
-                          (not (free-id=? x (scheme-stx '_)))))
-                   lits)
-           (stx-error e "invalid literals"))
-         (bless `(lambda (x) 
-                   (syntax-case x ,lits
-                     ,@(map (lambda (pat tmp)
-                              `[,pat (syntax ,tmp)])
-                            pat* tmp*))))])))
+         (begin
+           (unless (andmap
+                     (lambda (x) 
+                       (and (id? x) 
+                            (not (free-id=? x (scheme-stx '...)))
+                            (not (free-id=? x (scheme-stx '_)))))
+                     lits)
+             (stx-error e "invalid literals"))
+           (bless `(lambda (x) 
+                     (syntax-case x ,lits
+                       ,@(map (lambda (pat tmp)
+                                `[,pat (syntax ,tmp)])
+                              pat* tmp*)))))])))
   (define quasiquote-macro
     (let ()
       (define-syntax app
@@ -1126,6 +1128,7 @@
               (let-values (((y ids) (cvt* (cdr p*) n ids)))
                 (let-values (((x ids) (cvt (car p*) n ids)))
                   (values (cons x y) ids))))))
+      ;;; FIXME: these should go away
       (define id-dots?
         (lambda (x) 
           (and (syntax-pair? x)
@@ -1141,7 +1144,6 @@
                (let ((d (syntax-cdr x)))
                  (and (syntax-pair? d)
                       (ellipsis? (syntax-car d)))))))
-      ;;; FIXME: these should go away
       (define syntax-foo-z
         (lambda (x)
           (let f ([x (syntax-cdr (syntax-cdr x))])
@@ -1409,13 +1411,14 @@
       (lambda (e r mr)
         (syntax-match e ()
           [(_ expr (keys ...) clauses ...)
-           (unless (andmap (lambda (x) (and (id? x) (not (ellipsis?  x)))) keys)
-             (stx-error e))
-           (let ((x (gen-lexical 'tmp)))
-             (let ([body (gen-syntax-case x keys clauses r mr)])
-               (build-application no-source
-                 (build-lambda no-source (list x) body)
-                 (list (chi-expr expr r mr)))))]))))
+           (begin
+             (unless (andmap (lambda (x) (and (id? x) (not (ellipsis?  x)))) keys)
+               (stx-error e))
+             (let ((x (gen-lexical 'tmp)))
+               (let ([body (gen-syntax-case x keys clauses r mr)])
+                 (build-application no-source
+                   (build-lambda no-source (list x) body)
+                   (list (chi-expr expr r mr))))))]))))
     (define syntax-transformer
       (let ()
         (define match2
@@ -1816,11 +1819,13 @@
         (lambda (e)
           (syntax-match e ()
             [(_ (export* ...) b* ...)
-             (unless (andmap id? export*) (stx-error e))
-             (values #f export* b*)]
+             (begin
+               (unless (andmap id? export*) (stx-error e))
+               (values #f export* b*))]
             [(_ name (export* ...) b* ...)
-             (unless (and (id? name) (andmap id? export*)) (stx-error e))
-             (values name export* b*)])))
+             (begin
+               (unless (and (id? name) (andmap id? export*)) (stx-error e))
+               (values name export* b*))])))
       (let-values ([(name exp-id* e*) (parse-module e)])
         (let* ([rib (make-empty-rib)]
                [e* (map (lambda (x) (add-subst rib x))
@@ -1925,12 +1930,14 @@
         [else
          (syntax-match (car exp*) ()
            [(rename (i* e*) ...)
-            (unless (and (eq? rename 'rename) (andmap symbol? i*) (andmap symbol? e*))
-              (error #f "invalid export specifier ~s" (car exp*)))
-            (f (cdr exp*) (append i* int*) (append e* ext*))]
+            (begin
+              (unless (and (eq? rename 'rename) (andmap symbol? i*) (andmap symbol? e*))
+                (error #f "invalid export specifier ~s" (car exp*)))
+              (f (cdr exp*) (append i* int*) (append e* ext*)))]
            [ie 
-            (unless (symbol? ie) (error #f "invalid export ~s" ie))
-            (f (cdr exp*) (cons ie int*) (cons ie ext*))])])))
+            (begin
+              (unless (symbol? ie) (error #f "invalid export ~s" ie))
+              (f (cdr exp*) (cons ie int*) (cons ie ext*)))])])))
   (define parse-library 
     (lambda (e)
       (syntax-match e ()
@@ -2016,32 +2023,35 @@
         [(rename) 
          (syntax-match spec ()
            [(_ isp (old* new*) ...)
-            (unless (and (andmap symbol? old*) (andmap symbol? new*))
-              (error 'import "invalid import spec ~s" spec))
-            (let-values ([(subst lib) (get-import isp)])
-              (let ([old-label* (find* old* subst)])
-                (let ([subst (rem* old* subst)])
-                  ;;; FIXME: make sure map is valid
-                  (values (merge-substs (map cons new* old-label*) subst)
-                          lib))))]
+            (begin
+              (unless (and (andmap symbol? old*) (andmap symbol? new*))
+                (error 'import "invalid import spec ~s" spec))
+              (let-values ([(subst lib) (get-import isp)])
+                (let ([old-label* (find* old* subst)])
+                  (let ([subst (rem* old* subst)])
+                    ;;; FIXME: make sure map is valid
+                    (values (merge-substs (map cons new* old-label*) subst)
+                            lib)))))]
            [_ (error 'import "invalid rename spec ~s" spec)])]
         [(except) 
          (syntax-match spec ()
            [(_ isp sym* ...)
-            (unless (andmap symbol? sym*) 
-              (error 'import "invalid import spec ~s" spec))
-            (let-values ([(subst lib) (get-import isp)])
-              (values (rem* sym* subst) lib))]
+            (begin
+              (unless (andmap symbol? sym*) 
+                (error 'import "invalid import spec ~s" spec))
+              (let-values ([(subst lib) (get-import isp)])
+                (values (rem* sym* subst) lib)))]
            [_ (error 'import "invalid import spec ~s" spec)])]
         [(only)  
          (syntax-match spec ()
            [(_ isp sym* ...)
-            (unless (andmap symbol? sym*) 
-              (error 'import "invalid import spec ~s" spec))
-            (let-values ([(subst lib) (get-import isp)])
-              (let ([sym* (remove-dups sym*)])
-                (let ([lab* (find* sym* subst)])
-                  (values (map cons sym* lab*) lib))))]
+            (begin
+              (unless (andmap symbol? sym*) 
+                (error 'import "invalid import spec ~s" spec))
+              (let-values ([(subst lib) (get-import isp)])
+                (let ([sym* (remove-dups sym*)])
+                  (let ([lab* (find* sym* subst)])
+                    (values (map cons sym* lab*) lib)))))]
            [_ (error 'import "invalid import spec ~s" spec)])]
         [(prefix) (error #f "prefix found")]
         [else 
@@ -2216,15 +2226,16 @@
         [(invoke)
          (syntax-match x ()
            [(_ (id** ...) ...)
-            (unless (andmap (lambda (id*) (andmap symbol? id*)) id**)
-              (error #f "invalid invoke form ~s" x))
-            (let ([lib* 
-                   (map (lambda (x)
-                          (or (find-library-by-name x)
-                              (error #f "cannot find library ~s"
-                                     x)))
-                        id**)])
-              (for-each invoke-library lib*))]
+            (begin
+              (unless (andmap (lambda (id*) (andmap symbol? id*)) id**)
+                (error #f "invalid invoke form ~s" x))
+              (let ([lib* 
+                     (map (lambda (x)
+                            (or (find-library-by-name x)
+                                (error #f "cannot find library ~s"
+                                       x)))
+                          id**)])
+                (for-each invoke-library lib*)))]
            [else (error #f "invalid invoke form ~s" x)])]
         [else (error #f "invalid top-level form ~s" x)])))
 )
