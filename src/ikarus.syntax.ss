@@ -345,6 +345,7 @@
   (define make-binding cons)
   (define binding-type car)
   (define binding-value cdr)
+  (define local-binding-value cadr)
   (define syntax-type
     (lambda (e r)
       (cond
@@ -356,7 +357,7 @@
              (unless label 
                (stx-error e "unbound identifier"))
              (case type
-               [(lexical core-prim macro global)
+               [(lexical core-prim macro global local-macro)
                 (values type (binding-value b) id)]
                [else (values 'other #f #f)])))]
         [(syntax-pair? e)
@@ -366,7 +367,7 @@
                       [b (label->binding label r)]
                       [type (binding-type b)])
                  (case type
-                   [(define define-syntax core-macro begin macro module set!)
+                   [(define define-syntax core-macro begin macro local-macro module set!)
                     (values type (binding-value b) id)]
                    [else 
                     (values 'call #f #f)]))
@@ -381,16 +382,17 @@
         [(_ stx) #'(error 'chi "invalid syntax ~s" (strip stx '()))]
         [(_ stx msg) #'(error 'chi "~a: ~s" msg (strip stx '()))])))
   (define sanitize-binding
-    (lambda (x)
+    (lambda (x src)
       (cond
-        [(procedure? x) (cons 'macro x)]
+        [(procedure? x) (list* 'local-macro x src)]
         [(and (pair? x) (eq? (car x) 'macro!) (procedure? (cdr x)))
-         x]
-        [(and (pair? x) (eq? (car x) '$rtd)) x]
+         (list* 'local-macro! (cdr x) src)]
+        [(and (pair? x) (eq? (car x) '$rtd)) 
+         (list* 'local-rtd (cdr x) src)]
         [else (error 'expand "invalid transformer ~s" x)])))
   (define make-eval-transformer
     (lambda (x)
-      (sanitize-binding (eval-core x))))
+      (sanitize-binding (eval-core x) x)))
   (module (syntax-match) 
     (define-syntax syntax-match-test
       (lambda (ctx)
@@ -675,8 +677,8 @@
                 [type (binding-type b)])
            (unless lab (stx-error e "unbound identifier"))
            (case type
-             [($rtd)
-              (build-data no-source (binding-value b))]
+             [(local-rtd)
+              (build-data no-source (local-binding-value b))]
              [else (stx-error e "invalid type")]))])))
   (define when-transformer ;;; go away
     (lambda (e r mr)
@@ -1600,10 +1602,16 @@
            [(with-syntax)   with-syntax-macro]
            [else (error 'macro-transformer "invalid macro ~s" x)])]
         [else (error 'core-macro-transformer "invalid macro ~s" x)])))
+  (define (local-macro-transformer x)
+    (car x))
   ;;; chi procedures
   (define chi-macro 
     (lambda (p e)
       (let ([s ((macro-transformer p) (add-mark anti-mark e))])
+        (add-mark (gen-mark) s))))
+  (define chi-local-macro 
+    (lambda (p e)
+      (let ([s ((local-macro-transformer p) (add-mark anti-mark e))])
         (add-mark (gen-mark) s))))
   (define chi-expr*
     (lambda (e* r mr)
@@ -1640,6 +1648,7 @@
           [(lexical)
            (let ([lex value])
              (build-lexical-reference no-source lex))]
+          [(local-macro) (chi-expr (chi-local-macro value e) r mr)]
           [(macro) (chi-expr (chi-macro value e) r mr)]
           [(constant)
            (let ([datum value])
@@ -1799,6 +1808,9 @@
                         [(_ x* ...)
                          (f (append x* (cdr e*)) module-init** 
                             r mr lhs* lex* rhs* kwd*)])]
+                     [(local-macro)
+                      (f (cons (add-subst rib (chi-local-macro value e)) (cdr e*))
+                         module-init** r mr lhs* lex* rhs* kwd*)]
                      [(macro)
                       (f (cons (add-subst rib (chi-macro value e)) (cdr e*))
                          module-init** r mr lhs* lex* rhs* kwd*)]
@@ -1890,6 +1902,9 @@
                         (syntax-match e ()
                           [(_ x* ...)
                            (f (append x* (cdr e*)) r mr lhs* lex* rhs* kwd*)])]
+                       [(local-macro)
+                        (f (cons (add-subst rib (chi-local-macro value e)) (cdr e*))
+                           r mr lhs* lex* rhs* kwd*)]
                        [(macro)
                         (f (cons (add-subst rib (chi-macro value e)) (cdr e*))
                            r mr lhs* lex* rhs* kwd*)]
@@ -1956,6 +1971,10 @@
                       [(_ x* ...)
                        (f (append x* (cdr e*)) module-init** r mr lhs* lex* rhs*
                           kwd*)])]
+                   [(local-macro)
+                    (f (cons (add-subst rib (chi-local-macro value e)) (cdr e*))
+                       module-init**
+                       r mr lhs* lex* rhs* kwd*)]
                    [(macro)
                     (f (cons (add-subst rib (chi-macro value e)) (cdr e*))
                        module-init**
