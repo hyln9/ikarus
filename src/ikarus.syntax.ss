@@ -1810,7 +1810,7 @@
                         (when (bound-id-member? id kwd*)
                           (stx-error id "undefined identifier"))
                         (let ([lab (gen-label id)])
-                          (let ([expanded-rhs (chi-expr rhs mr mr)])
+                          (let ([expanded-rhs (expand-transformer rhs mr)])
                             (extend-rib! rib id lab)
                             (let ([b (make-eval-transformer expanded-rhs)])
                               (f (cdr e*)
@@ -1905,7 +1905,7 @@
                           (when (bound-id-member? id kwd*)
                             (stx-error id "undefined identifier"))
                           (let ([lab (gen-label id)])
-                            (let ([expanded-rhs (chi-expr rhs mr mr)])
+                            (let ([expanded-rhs (expand-transformer rhs mr)])
                               (extend-rib! rib id lab)
                               (let ([b (make-eval-transformer expanded-rhs)])
                                 (f (cdr e*)
@@ -1924,6 +1924,21 @@
                         (f (cons (add-subst rib (chi-macro value e)) (cdr e*))
                            r mr lhs* lex* rhs* kwd*)]
                        [else (return e* r mr lhs* lex* rhs* kwd*)]))))]))))))
+
+  (define (expand-transformer expr r)
+    (let ([rtc (make-collector)])
+      (let ([expanded-rhs 
+             (parameterize ([inv-collector rtc]
+                            [vis-collector (lambda (x) (void))])
+                 (chi-expr expr r r))])
+        (for-each
+          (let ([mark-visit (vis-collector)])
+            (lambda (x)
+              (invoke-library x)
+              (mark-visit x)))
+          (rtc))
+        expanded-rhs)))
+
   (define chi-library-internal 
     (lambda (e* rib kwd*)
       (define return
@@ -1959,15 +1974,15 @@
                     (let-values ([(id rhs) (parse-define-syntax e)])
                       (when (bound-id-member? id kwd*) 
                         (stx-error id "undefined identifier"))
-                      (let ([lab (gen-label id)])
-                        (let ([expanded-rhs (chi-expr rhs mr mr)])
+                      (let ([lab (gen-label id)]
+                            [expanded-rhs (expand-transformer rhs mr)])
                           (extend-rib! rib id lab)
                           (let ([b (make-eval-transformer expanded-rhs)])
                             (f (cdr e*) 
                                module-init**
                                (cons (cons lab b) r)
                                (cons (cons lab b) mr) 
-                               (cons id lhs*) lex* rhs* kwd*)))))] 
+                               (cons id lhs*) lex* rhs* kwd*))))]
                    [(module)
                     (let-values ([(m-lhs* m-lex* m-rhs* m-init* m-exp-id* m-exp-lab* r mr kwd*)
                                   (chi-internal-module e r mr kwd*)])
@@ -2226,7 +2241,7 @@
            (lambda () (visit! macro*))
            (lambda () (eval-core invoke-code))
            #t)
-        (pretty-print (build-visit-code macro*))
+        ;(pretty-print (build-visit-code macro*))
         (values invoke-code
                 (build-visit-code macro*)
                 export-subst export-env))))
