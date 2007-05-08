@@ -1316,74 +1316,60 @@
                    (list (chi-expr expr r mr))))))]))))
     (define syntax-transformer
       (let ()
-        (define match2
-          (lambda (e f? sk fk)
-            (if (syntax-list? e)
-                (let ((e (syntax->list e)))
-                  (if (= (length e) 2)
-                      (let ((e0 (car e)) (e1 (cadr e)))
-                        (if (or (eq? f? #t) (f? e0 e1))
-                            (sk e0 e1)
-                            (fk)))
-                      (fk)))
-                (fk))))
         (define gen-syntax
           (lambda (src e r maps ellipsis? vec?)
-            (if (id? e)
-                (let ((label (id->label e)))
-                  (let ((b (label->binding label r)))
-                    (if (eq? (binding-type b) 'syntax)
-                        (let-values (((var maps)
-                                      (let ((var.lev (binding-value b)))
-                                        (gen-ref src (car var.lev) (cdr var.lev) maps))))
-                          (values (list 'ref var) maps))
-                        (if (ellipsis? e)
-                            (stx-error src "1misplaced ellipsis in syntax form")
-                            (begin
-                              (values (list 'quote e) maps))))))
-                (match2 e (lambda (dots e) (ellipsis? dots))
-                  (lambda (dots e)
-                    (if vec?
-                       (stx-error src "2misplaced ellipsis in syntax form")
-                       (gen-syntax src e r maps (lambda (x) #f) #f)))
-                  (lambda ()
-                    (syntax-match e ()
-                      [(x dots . y) (ellipsis? dots)
-                       (let f ([y y]
-                               [k (lambda (maps)
-                                    (let-values ([(x maps)
-                                                  (gen-syntax src x r 
-                                                    (cons '() maps) ellipsis? #f)])
-                                      (if (null? (car maps))
-                                          (stx-error src
-                                            "extra ellipsis in syntax form")
-                                          (values (gen-map x (car maps)) (cdr maps)))))])
-                         (syntax-match y ()
-                           [() (k maps)]
-                           [(dots . y) (ellipsis? dots)
-                            (f y
-                               (lambda (maps)
-                                 (let-values (((x maps) (k (cons '() maps))))
-                                   (if (null? (car maps))
-                                       (stx-error src "extra ellipsis in syntax form")
-                                       (values (gen-mappend x (car maps)) (cdr maps))))))]
-                           [_
-                            (let-values (((y maps) 
-                                          (gen-syntax src y r maps ellipsis? vec?)))
-                              (let-values (((x maps) (k maps)))
-                                (values (gen-append x y) maps)))]))]
-                      [(x . y)
-                       (let-values (((xnew maps)
-                                     (gen-syntax src x r maps ellipsis? #f)))
-                         (let-values (((ynew maps)
-                                       (gen-syntax src y r maps ellipsis? vec?)))
-                           (values (gen-cons e x y xnew ynew) maps)))]
-                      [#(ls ...)
-                       (let-values (((lsnew maps)
-                                     (gen-syntax src ls r maps ellipsis? #t)))
-                         (values (gen-vector e ls lsnew) maps))]
-                      [() (values '(quote ()) maps)]
-                      [_ (values `(quote ,e) maps)]))))))
+            (syntax-match e ()
+              [dots (ellipsis? dots) 
+               (stx-error src "misplaced ellipsis in syntax form")]
+              [id (id? id)
+               (let* ([label (id->label e)]
+                      [b (label->binding label r)])
+                   (if (eq? (binding-type b) 'syntax)
+                       (let-values ([(var maps)
+                                     (let ((var.lev (binding-value b)))
+                                       (gen-ref src (car var.lev) (cdr var.lev) maps))])
+                         (values (list 'ref var) maps))
+                       (values (list 'quote e) maps)))]
+              [(dots e) (ellipsis? dots)
+               (if vec?
+                   (stx-error src "misplaced ellipsis in syntax form")
+                   (gen-syntax src e r maps (lambda (x) #f) #f))]
+              [(x dots . y) (ellipsis? dots)
+               (let f ([y y]
+                       [k (lambda (maps)
+                            (let-values ([(x maps)
+                                          (gen-syntax src x r 
+                                            (cons '() maps) ellipsis? #f)])
+                              (if (null? (car maps))
+                                  (stx-error src
+                                    "extra ellipsis in syntax form")
+                                  (values (gen-map x (car maps)) (cdr maps)))))])
+                 (syntax-match y ()
+                   [() (k maps)]
+                   [(dots . y) (ellipsis? dots)
+                    (f y
+                       (lambda (maps)
+                         (let-values ([(x maps) (k (cons '() maps))])
+                           (if (null? (car maps))
+                               (stx-error src "extra ellipsis in syntax form")
+                               (values (gen-mappend x (car maps)) (cdr maps))))))]
+                   [_
+                    (let-values ([(y maps) 
+                                  (gen-syntax src y r maps ellipsis? vec?)])
+                      (let-values (((x maps) (k maps)))
+                        (values (gen-append x y) maps)))]))]
+              [(x . y)
+               (let-values ([(xnew maps)
+                             (gen-syntax src x r maps ellipsis? #f)])
+                 (let-values ([(ynew maps)
+                               (gen-syntax src y r maps ellipsis? vec?)])
+                   (values (gen-cons e x y xnew ynew) maps)))]
+              [#(ls ...)
+               (let-values ([(lsnew maps)
+                             (gen-syntax src ls r maps ellipsis? #t)])
+                 (values (gen-vector e ls lsnew) maps))]
+              [() (values '(quote ()) maps)]
+              [_ (values `(quote ,e) maps)])))
         (define gen-ref
           (lambda (src var level maps)
             (if (= level 0)
@@ -1469,11 +1455,10 @@
                  (build-primref no-source (car x))
                  (map regen (cdr x)))))))
         (lambda (e r mr)
-          (match2 e #t
-            (lambda (_ x)
-              (let-values (((e maps) (gen-syntax e x r '() ellipsis? #f)))
-                (regen e)))
-            (lambda () (stx-error e))))))
+          (syntax-match e ()
+            [(_ x) 
+             (let-values (((e maps) (gen-syntax e x r '() ellipsis? #f)))
+               (regen e))]))))
   (define core-macro-transformer
     (lambda (name)
       (case name
