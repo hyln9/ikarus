@@ -2166,50 +2166,8 @@
                 (for-each invoke-library lib*)))]
            [else (error #f "invalid invoke form ~s" x)])]
         [else (error #f "invalid top-level form ~s" x)])))
+  ;;; FIXME: export the rest of the syntax-case procedures
 )
 
 
 
-
-#!eof junk
-
-(build-application no-source
-            (build-primref no-source 'install-library)
-            (list (build-data no-source id)
-                  (build-data no-source name)
-                  (build-data no-source ver)
-                  (build-data no-source imp*)
-                  (build-data no-source vis*)
-                  (build-data no-source inv*)
-                  (build-data no-source exp-subst)
-                  (build-data no-source exp-env)
-                  (build-primref no-source 'void)
-                  (build-sequence no-source
-                    (list invoke-code 
-                          (build-primref no-source 'void)))))
-
-
-  (module (make-stx stx? stx-expr stx-mark* stx-subst*)
-    (define make-stx
-      (lambda (e m* s*)
-        (vector 'stx e m* s*)))
-    (define stx?
-      (lambda (x)
-        (and (vector? x) 
-             (= (vector-length x) 4)
-             (eq? (vector-ref x 0) 'stx))))
-    (define stx-expr 
-      (lambda (x)
-        (if (stx? x)
-            (vector-ref x 1)
-            (error 'stx-expr "~s is not a syntax object" x))))
-    (define stx-mark* 
-      (lambda (x)
-        (if (stx? x)
-            (vector-ref x 2)
-            (error 'stx-mark* "~s is not a syntax object" x))))
-    (define stx-subst* 
-      (lambda (x)
-        (if (stx? x)
-            (vector-ref x 3)
-            (error 'stx-subst* "~s is not a syntax object" x)))))
