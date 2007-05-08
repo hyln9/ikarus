@@ -36,297 +36,54 @@
   (define err
     (lambda (who x)
       (error who "invalid list structure ~s" x)))
-  (define car
-    (lambda (orig)
-      (if (pair? orig) ($car orig) (err 'car orig))))
-  (define cdr
-    (lambda (orig)
-      (if (pair? orig) ($cdr orig) (err 'cdr orig))))
-  (define caar
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($car orig)])
-            (if (pair? x) ($car x) (err 'caar orig)))
-          (err 'caar orig))))
-  (define cadr
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($cdr orig)])
-            (if (pair? x) ($car x) (err 'cadr orig)))
-          (err 'cadr orig))))
-  (define cdar
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($car orig)])
-            (if (pair? x) ($cdr x) (err 'cdar orig)))
-          (err 'cdar orig))))
-  (define cddr
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($cdr orig)])
-            (if (pair? x) ($cdr x) (err 'cddr orig)))
-          (err 'cddr orig))))
-  (define caaar
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($car orig)])
-            (if (pair? x)
-                (let ([x ($car x)])
-                  (if (pair? x) ($car x) (err 'caaar orig)))
-                (err 'caaar orig)))
-          (err 'caaar orig))))
-  (define caadr
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($cdr orig)])
-            (if (pair? x)
-                (let ([x ($car x)])
-                  (if (pair? x) ($car x) (err 'caadr orig)))
-                (err 'caadr orig)))
-          (err 'caadr orig))))
-  (define cadar
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($car orig)])
-            (if (pair? x)
-                (let ([x ($cdr x)])
-                  (if (pair? x) ($car x) (err 'cadar orig)))
-                (err 'cadar orig)))
-          (err 'cadar orig))))
-  (define caddr
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($cdr orig)])
-            (if (pair? x)
-                (let ([x ($cdr x)])
-                  (if (pair? x) ($car x) (err 'caddr orig)))
-                (err 'caddr orig)))
-          (err 'caddr orig))))
-  (define cdaar
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($car orig)])
-            (if (pair? x)
-                (let ([x ($car x)])
-                  (if (pair? x) ($cdr x) (err 'cdaar orig)))
-                (err 'cdaar orig)))
-          (err 'cdaar orig))))
-  (define cdadr
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($cdr orig)])
-            (if (pair? x)
-                (let ([x ($car x)])
-                  (if (pair? x) ($cdr x) (err 'cdadr orig)))
-                (err 'cdadr orig)))
-          (err 'cdadr orig))))
-  (define cddar
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($car orig)])
-            (if (pair? x)
-                (let ([x ($cdr x)])
-                  (if (pair? x) ($cdr x) (err 'cddar orig)))
-                (err 'cddar orig)))
-          (err 'cddar orig))))
-  (define cdddr
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($cdr orig)])
-            (if (pair? x)
-                (let ([x ($cdr x)])
-                  (if (pair? x) ($cdr x) (err 'cdddr orig)))
-                (err 'cdddr orig)))
-          (err 'cdddr orig))))
-  (define caaaar
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($car orig)])
-            (if (pair? x)
-                (let ([x ($car x)])
-                  (if (pair? x)
-                      (let ([x ($car x)])
-                        (if (pair? x) ($car x) (err 'caaaar orig)))
-                      (err 'caaaar orig)))
-                (err 'caaaar orig)))
-          (err 'caaaar orig))))
-  (define caaadr
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($cdr orig)])
-            (if (pair? x)
-                (let ([x ($car x)])
-                  (if (pair? x)
-                      (let ([x ($car x)])
-                        (if (pair? x) ($car x) (err 'caaadr orig)))
-                      (err 'caaadr orig)))
-                (err 'caaadr orig)))
-          (err 'caaadr orig))))
-  (define caadar
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($car orig)])
-            (if (pair? x)
-                (let ([x ($cdr x)])
-                  (if (pair? x)
-                      (let ([x ($car x)])
-                        (if (pair? x) ($car x) (err 'caadar orig)))
-                      (err 'caadar orig)))
-                (err 'caadar orig)))
-          (err 'caadar orig))))
-  (define caaddr
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($cdr orig)])
-            (if (pair? x)
-                (let ([x ($cdr x)])
-                  (if (pair? x)
-                      (let ([x ($car x)])
-                        (if (pair? x) ($car x) (err 'caaddr orig)))
-                      (err 'caaddr orig)))
-                (err 'caaddr orig)))
-          (err 'caaddr orig))))
-  (define cadaar
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($car orig)])
-            (if (pair? x)
-                (let ([x ($car x)])
-                  (if (pair? x)
-                      (let ([x ($cdr x)])
-                        (if (pair? x) ($car x) (err 'cadaar orig)))
-                      (err 'cadaar orig)))
-                (err 'cadaar orig)))
-          (err 'cadaar orig))))
-  (define cadadr
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($cdr orig)])
-            (if (pair? x)
-                (let ([x ($car x)])
-                  (if (pair? x)
-                      (let ([x ($cdr x)])
-                        (if (pair? x) ($car x) (err 'cadadr orig)))
-                      (err 'cadadr orig)))
-                (err 'cadadr orig)))
-          (err 'cadadr orig))))
-  (define caddar
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($car orig)])
-            (if (pair? x)
-                (let ([x ($cdr x)])
-                  (if (pair? x)
-                      (let ([x ($cdr x)])
-                        (if (pair? x) ($car x) (err 'caddar orig)))
-                      (err 'caddar orig)))
-                (err 'caddar orig)))
-          (err 'caddar orig))))
-  (define cadddr
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($cdr orig)])
-            (if (pair? x)
-                (let ([x ($cdr x)])
-                  (if (pair? x)
-                      (let ([x ($cdr x)])
-                        (if (pair? x) ($car x) (err 'cadddr orig)))
-                      (err 'cadddr orig)))
-                (err 'cadddr orig)))
-          (err 'cadddr orig))))
-  (define cdaaar
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($car orig)])
-            (if (pair? x)
-                (let ([x ($car x)])
-                  (if (pair? x)
-                      (let ([x ($car x)])
-                        (if (pair? x) ($cdr x) (err 'cdaaar orig)))
-                      (err 'cdaaar orig)))
-                (err 'cdaaar orig)))
-          (err 'cdaaar orig))))
-  (define cdaadr
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($cdr orig)])
-            (if (pair? x)
-                (let ([x ($car x)])
-                  (if (pair? x)
-                      (let ([x ($car x)])
-                        (if (pair? x) ($cdr x) (err 'cdaadr orig)))
-                      (err 'cdaadr orig)))
-                (err 'cdaadr orig)))
-          (err 'cdaadr orig))))
-  (define cdadar
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($car orig)])
-            (if (pair? x)
-                (let ([x ($cdr x)])
-                  (if (pair? x)
-                      (let ([x ($car x)])
-                        (if (pair? x) ($cdr x) (err 'cdadar orig)))
-                      (err 'cdadar orig)))
-                (err 'cdadar orig)))
-          (err 'cdadar orig))))
-  (define cdaddr
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($cdr orig)])
-            (if (pair? x)
-                (let ([x ($cdr x)])
-                  (if (pair? x)
-                      (let ([x ($car x)])
-                        (if (pair? x) ($cdr x) (err 'cdaddr orig)))
-                      (err 'cdaddr orig)))
-                (err 'cdaddr orig)))
-          (err 'cdaddr orig))))
-  (define cddaar
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($car orig)])
-            (if (pair? x)
-                (let ([x ($car x)])
-                  (if (pair? x)
-                      (let ([x ($cdr x)])
-                        (if (pair? x) ($cdr x) (err 'cddaar orig)))
-                      (err 'cddaar orig)))
-                (err 'cddaar orig)))
-          (err 'cddaar orig))))
-  (define cddadr
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($cdr orig)])
-            (if (pair? x)
-                (let ([x ($car x)])
-                  (if (pair? x)
-                      (let ([x ($cdr x)])
-                        (if (pair? x) ($cdr x) (err 'cddadr orig)))
-                      (err 'cddadr orig)))
-                (err 'cddadr orig)))
-          (err 'cddadr orig))))
-  (define cdddar
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($car orig)])
-            (if (pair? x)
-                (let ([x ($cdr x)])
-                  (if (pair? x)
-                      (let ([x ($cdr x)])
-                        (if (pair? x) ($cdr x) (err 'cdddar orig)))
-                      (err 'cdddar orig)))
-                (err 'cdddar orig)))
-          (err 'cdddar orig))))
-  (define cddddr
-    (lambda (orig)
-      (if (pair? orig)
-          (let ([x ($cdr orig)])
-            (if (pair? x)
-                (let ([x ($cdr x)])
-                  (if (pair? x)
-                      (let ([x ($cdr x)])
-                        (if (pair? x) ($cdr x) (err 'cddddr orig)))
-                      (err 'cddddr orig)))
-                (err 'cddddr orig)))
-          (err 'cddddr orig)))))
+
+  (define-syntax cxr
+    (syntax-rules ()
+      [(_ err $car/$cdr) 
+       (lambda (x) 
+         (if (pair? x) ($car/$cdr x) err))]
+      [(_ err rest ... $car/$cdr)
+       (lambda (x)
+         (if (pair? x)
+             ((cxr err rest ...) ($car/$cdr x))
+             err))]))
+
+  (define-syntax define-cxr*
+    (syntax-rules ()
+      [(_ [name* ops** ...] ...)
+       (begin
+         (define name*
+           (lambda (x) ((cxr (err 'name* x) ops** ...) x)))
+         ...)]))
+
+  (define-cxr*
+    [car      $car]
+    [cdr      $cdr]
+    [caar     $car $car]
+    [cdar     $cdr $car]
+    [cadr     $car $cdr]
+    [cddr     $cdr $cdr]
+    [caaar    $car $car $car]
+    [cdaar    $cdr $car $car]
+    [cadar    $car $cdr $car]
+    [cddar    $cdr $cdr $car]
+    [caadr    $car $car $cdr]
+    [cdadr    $cdr $car $cdr]
+    [caddr    $car $cdr $cdr]
+    [cdddr    $cdr $cdr $cdr]
+    [caaaar   $car $car $car $car]
+    [cdaaar   $cdr $car $car $car]
+    [cadaar   $car $cdr $car $car]
+    [cddaar   $cdr $cdr $car $car]
+    [caadar   $car $car $cdr $car]
+    [cdadar   $cdr $car $cdr $car]
+    [caddar   $car $cdr $cdr $car]
+    [cdddar   $cdr $cdr $cdr $car]
+    [caaadr   $car $car $car $cdr]
+    [cdaadr   $cdr $car $car $cdr]
+    [cadadr   $car $cdr $car $cdr]
+    [cddadr   $cdr $cdr $car $cdr]
+    [caaddr   $car $car $cdr $cdr]
+    [cdaddr   $cdr $car $cdr $cdr]
+    [cadddr   $car $cdr $cdr $cdr]
+    [cddddr   $cdr $cdr $cdr $cdr]))
