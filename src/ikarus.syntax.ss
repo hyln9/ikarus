@@ -430,9 +430,9 @@
                 (values '() 
                   #'(lambda (x) 
                        (and (id? x)
-                            (free-id=? x (scheme-stx 'id))
-                            '())))]
-               [(sys:free-identifier=? #'id #'_) 
+                         (free-id=? x (scheme-stx 'id))
+                         '())))]
+               [(sys:free-identifier=? #'id #'_)
                 (values '() #'(lambda (x) '()))]
                [else
                 (values (list #'id) #'(lambda (x) (list x)))])]
@@ -518,9 +518,7 @@
         [(_ expr (lits ...) cls cls* ...) (andmap sys:identifier? #'(lits ...))
          (let-values ([(decon guard body)
                        (parse-clause #'(lits ...) #'cls)])
-           (with-syntax ([decon decon]
-                         [guard guard]
-                         [body body])
+           (with-syntax ([decon decon] [guard guard] [body body])
              #'(let ([t expr])
                  (let ([ls/false (decon t)])
                    (if (and ls/false (apply guard ls/false))
@@ -529,22 +527,14 @@
   (define parse-define
     (lambda (x)
       (syntax-match x ()
-        [(_ (id . fmls) b b* ...) 
-         (if (id? id) 
-             (values id
-              (cons 'defun (cons fmls (cons b b*))))
-             (stx-error x))]
-        [(_ id val)
-         (if (id? id) 
-             (values id (cons 'expr val))
-             (stx-error x))])))
+        [(_ (id . fmls) b b* ...) (id? id)
+         (values id (cons 'defun (cons fmls (cons b b*))))]
+        [(_ id val) (id? id)
+         (values id (cons 'expr val))])))
   (define parse-define-syntax
     (lambda (x)
       (syntax-match x ()
-        [(_ id val) 
-         (if (id? id) 
-             (values id val)
-             (stx-error x))])))
+        [(_ id val) (id? id) (values id val)])))
   (define scheme-stx
     (lambda (sym)
       (let ([subst 
@@ -602,7 +592,7 @@
       (syntax-match e ()
         [(_ ([lhs* rhs*] ...) b b* ...) 
          (if (not (valid-bound-ids? lhs*))
-             (stx-error e)
+             (stx-error e "duplicate identifiers")
              (let ([lex* (map gen-lexical lhs*)]
                    [lab* (map gen-label lhs*)])
                (let ([rib (make-full-rib lhs* lab*)]
@@ -620,17 +610,15 @@
   (define type-descriptor-transformer
     (lambda (e r mr)
       (syntax-match e ()
-        [(_ id) 
-         (begin
-           (unless (id? id) (stx-error e))
-           (let* ([lab (id->label id)]
-                  [b (label->binding lab r)]
-                  [type (binding-type b)])
-             (unless lab (stx-error e "unbound identifier"))
-             (case type
-               [($rtd)
-                (build-data no-source (binding-value b))]
-               [else (stx-error e "invalid type")])))])))
+        [(_ id) (id? id)
+         (let* ([lab (id->label id)]
+                [b (label->binding lab r)]
+                [type (binding-type b)])
+           (unless lab (stx-error e "unbound identifier"))
+           (case type
+             [($rtd)
+              (build-data no-source (binding-value b))]
+             [else (stx-error e "invalid type")]))])))
   (define when-transformer ;;; go away
     (lambda (e r mr)
       (syntax-match e ()
@@ -744,23 +732,21 @@
         [(_ ([lhs* rhs*] ...) b b* ...)
          (if (valid-bound-ids? lhs*)
              (bless `((lambda ,lhs* ,b . ,b*) . ,rhs*))
-             (stx-error stx "invalid syntax"))]
-        [(_ f ([lhs* rhs*] ...) b b* ...)
-         (if (and (id? f) (valid-bound-ids? lhs*))
+             (stx-error stx "duplicate bindings"))]
+        [(_ f ([lhs* rhs*] ...) b b* ...) (id? f)
+         (if (valid-bound-ids? lhs*)
              (bless `(letrec ([,f (lambda ,lhs* ,b . ,b*)])
                         (,f . ,rhs*)))
              (stx-error stx "invalid syntax"))])))
   (define let*-macro
     (lambda (stx)
       (syntax-match stx ()
-        [(_ ([lhs* rhs*] ...) b b* ...)
-         (if (andmap id? lhs*)
-             (bless
-               (let f ([x* (map list lhs* rhs*)])
-                 (cond
-                   [(null? x*) `(let () ,b . ,b*)]
-                   [else `(let (,(car x*)) ,(f (cdr x*)))])))
-             (stx-error stx "invalid bindings"))])))
+        [(_ ([lhs* rhs*] ...) b b* ...) (andmap id? lhs*)
+         (bless
+           (let f ([x* (map list lhs* rhs*)])
+             (cond
+               [(null? x*) `(let () ,b . ,b*)]
+               [else `(let (,(car x*)) ,(f (cdr x*)))])))])))
   (define or-macro
     (lambda (stx)
       (syntax-match stx ()
@@ -1346,7 +1332,7 @@
           [(_ expr (keys ...) clauses ...)
            (begin
              (unless (andmap (lambda (x) (and (id? x) (not (ellipsis?  x)))) keys)
-               (stx-error e))
+               (stx-error e "invalid literals"))
              (let ((x (gen-lexical 'tmp)))
                (let ([body (gen-syntax-case x keys clauses r mr)])
                  (build-application no-source
@@ -1633,16 +1619,15 @@
   (define chi-set!
     (lambda (e r mr)
       (syntax-match e ()
-        [(_ x v)
-         (if (id? x)
-             (let-values ([(type value kwd) (syntax-type x r)])
-               (case type
-                 [(lexical) 
-                  (build-lexical-assignment no-source 
-                    value 
-                    (chi-expr v r mr))]
-                 [else (stx-error e)]))
-             (stx-error e))])))
+        [(_ x v) (id? x)
+         (let-values ([(type value kwd) (syntax-type x r)])
+           (case type
+             [(lexical) 
+              (build-lexical-assignment no-source 
+                value 
+                (chi-expr v r mr))]
+             ;;; FIXME: handle macro!
+             [else (stx-error e)]))])))
   (define chi-lambda-clause
     (lambda (fmls body* r mr)
       (syntax-match fmls ()
@@ -1753,11 +1738,15 @@
           (syntax-match e ()
             [(_ (export* ...) b* ...)
              (begin
-               (unless (andmap id? export*) (stx-error e))
+               (unless (andmap id? export*)
+                 (stx-error e "module exports must be identifiers"))
                (values #f export* b*))]
             [(_ name (export* ...) b* ...)
              (begin
-               (unless (and (id? name) (andmap id? export*)) (stx-error e))
+               (unless (id? name) 
+                 (stx-error e "module name must be an identifier"))
+               (unless (andmap id? export*) 
+                 (stx-error e "module exports must be identifiers"))
                (values name export* b*))])))
       (let-values ([(name exp-id* e*) (parse-module e)])
         (let* ([rib (make-empty-rib)]
