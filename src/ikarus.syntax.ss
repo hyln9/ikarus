@@ -1,4 +1,10 @@
 
+;;; FIXME: teach the compiler about (apply append ls) since I
+;;;        used it a zillion times in this file.
+;;;        other primitives that are usually apply'd include the
+;;;        arithmetic operations (+, =, min, max, ...).
+;;;        (apply (lambda ---) ls) is also common in this file.
+
 (library (ikarus syntax)
   (export identifier? syntax-dispatch
           generate-temporaries free-identifier=? syntax-error
