@@ -389,8 +389,7 @@
         [(procedure? x) (list* 'local-macro x src)]
         [(and (pair? x) (eq? (car x) 'macro!) (procedure? (cdr x)))
          (list* 'local-macro! (cdr x) src)]
-        [(and (pair? x) (eq? (car x) '$rtd)) 
-         (list* 'local-rtd (cdr x) src)]
+        [(and (pair? x) (eq? (car x) '$rtd)) x]
         [else (error 'expand "invalid transformer ~s" x)])))
   (define make-eval-transformer
     (lambda (x)
@@ -679,8 +678,8 @@
                 [type (binding-type b)])
            (unless lab (stx-error e "unbound identifier"))
            (case type
-             [(local-rtd)
-              (build-data no-source (local-binding-value b))]
+             [($rtd)
+              (build-data no-source (binding-value b))]
              [else (stx-error e "invalid type")]))])))
   (define when-transformer ;;; go away
     (lambda (e r mr)
@@ -2207,13 +2206,14 @@
                                                (map build-export lex*)
                                                (chi-expr* init* r mr))))])
                       (unseal-rib! rib)
-                      (let-values ([(export-subst export-env macro*) 
-                                    (find-exports exp-int* exp-ext* rib r)])
-                        (values
-                          name imp* (rtc) (vtc)
-                          (build-letrec no-source lex* rhs* invoke-body)
-                          macro*
-                          export-subst export-env))))))))))))
+                      (let ([export-subst (make-export-subst exp-int* exp-ext* rib)])
+                        (let-values ([(export-env macro*)
+                                      (make-export-env/macros r)])
+                          (values
+                            name imp* (rtc) (vtc)
+                            (build-letrec no-source lex* rhs* invoke-body)
+                            macro*
+                            export-subst export-env)))))))))))))
   (define (visit! macro*)
     (for-each (lambda (x)
                 (let ([loc (car x)] [proc (cadr x)])
@@ -2253,6 +2253,36 @@
     (lambda (x)
       ;;; exports use the same gensym
       `(#%$set-symbol-value! ',x ,x)))
+  (define (make-export-subst int* ext* rib)
+    (map 
+      (lambda (int ext)
+        (let* ([id (stx int top-mark* (list rib))]
+               [label (id->label id)])
+          (unless label
+            (stx-error id "cannot export unbound identifier"))
+          (cons ext label)))
+      int* ext*))
+  (define (make-export-env/macros r)
+    (let f ([r r] [env '()] [macro* '()]) 
+      (cond
+        [(null? r) (values env macro*)]
+        [else
+         (let ([x (car r)])
+           (let ([label (car x)] [b (cdr x)])
+             (case (binding-type b)
+               [(lexical)
+                (f (cdr r)
+                   (cons (list* label 'global (binding-value b)) env)
+                   macro*)]
+               [(local-macro)
+                (let ([loc (gensym)])
+                  (f (cdr r)
+                     (cons (list* label 'global-macro loc) env)
+                     (cons (cons loc (binding-value b)) macro*)))]
+               [($rtd) (f (cdr r) (cons x env) macro*)]
+               [else
+                (error #f "don't know how to export ~s ~s"
+                       (binding-type b) (binding-value b))])))])))
   (define (find-exports int* ext* rib r)
     (let f ([int* int*] [ext* ext*] [subst '()] [env '()] [m* '()])
       (cond
