@@ -379,8 +379,8 @@
              (unless label
                (stx-error e "unbound identifier"))
              (case type
-               [(lexical core-prim macro global local-macro global-macro
-                 displaced-lexical)
+               [(lexical core-prim macro global local-macro
+                   global-macro displaced-lexical)
                 (values type (binding-value b) id)]
                [else (values 'other #f #f)])))]
         [(syntax-pair? e)
