@@ -358,7 +358,7 @@
              (unless label 
                (stx-error e "unbound identifier"))
              (case type
-               [(lexical core-prim macro global local-macro)
+               [(lexical core-prim macro global local-macro global-macro)
                 (values type (binding-value b) id)]
                [else (values 'other #f #f)])))]
         [(syntax-pair? e)
@@ -368,7 +368,8 @@
                       [b (label->binding label r)]
                       [type (binding-type b)])
                  (case type
-                   [(define define-syntax core-macro begin macro local-macro module set!)
+                   [(define define-syntax core-macro begin macro
+                      local-macro global-macro  module set!)
                     (values type (binding-value b) id)]
                    [else 
                     (values 'call #f #f)]))
@@ -1614,6 +1615,17 @@
     (lambda (p e)
       (let ([s ((local-macro-transformer p) (add-mark anti-mark e))])
         (add-mark (gen-mark) s))))
+  (define (chi-global-macro p e)
+    (let ([lib (car p)]
+          [loc (cdr p)])
+      (visit-library lib)
+      (let ([x (symbol-value loc)])
+        (let ([transformer
+               (cond
+                 [(procedure? x) x]
+                 [else (error 'chi-global-macro "~s is not a procedure")])])
+          (let ([s (transformer (add-mark anti-mark e))])
+            (add-mark (gen-mark) s))))))
   (define chi-expr*
     (lambda (e* r mr)
       ;;; expand left to right
@@ -1649,6 +1661,8 @@
           [(lexical)
            (let ([lex value])
              (build-lexical-reference no-source lex))]
+          [(global-macro) 
+           (chi-expr (chi-global-macro value e) r mr)]
           [(local-macro) (chi-expr (chi-local-macro value e) r mr)]
           [(macro) (chi-expr (chi-macro value e) r mr)]
           [(constant)
@@ -2202,6 +2216,7 @@
            (lambda () (visit! macro*))
            (lambda () (eval-core invoke-code))
            #t)
+        (pretty-print (build-visit-code macro*))
         (values invoke-code
                 (build-visit-code macro*)
                 export-subst export-env))))

@@ -3,7 +3,7 @@
 
 (library (ikarus library-manager)
   (export imported-label->binding library-subst
-          installed-libraries 
+          installed-libraries visit-library
           find-library-by-name install-library
           library-spec invoke-library)
   (import (except (ikarus) installed-libraries))
@@ -84,6 +84,8 @@
                      (case (car binding)
                        [(global) 
                         (cons 'global (cons lib (cdr binding)))]
+                       [(global-macro)
+                        (cons 'global-macro (cons lib (cdr binding)))]
                        [else binding])])
                 (put-hash-table! label->binding-table label binding))))
           exp-env)
@@ -102,6 +104,19 @@
           (lambda () (error 'invoke "first invoke did not return for ~s" lib)))
         (invoke)
         (set-library-invoke-state! lib #t))))
+
+
+  (define (visit-library lib)
+    (let ([visit (library-visit-state lib)])
+      (when (procedure? visit)
+        (set-library-visit-state! lib 
+          (lambda () (error 'visit "circularity detected for ~s" lib)))
+        (for-each invoke-library (library-vis* lib))
+        (set-library-visit-state! lib 
+          (lambda () (error 'invoke "first visit did not return for ~s" lib)))
+        (visit)
+        (set-library-visit-state! lib #t))))
+
 
   (define (invoke-library-by-spec spec)
     (invoke-library (find-library-by-spec/die spec)))
