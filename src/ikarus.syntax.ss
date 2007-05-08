@@ -6,10 +6,12 @@
   (import 
     (ikarus library-manager)
     (only (ikarus compiler) eval-core)
-    (rename (except (ikarus) boot-library-expand syntax-error
+    (rename (except (ikarus) boot-library-expand 
                     eval-top-level installed-libraries)
       (free-identifier=? sys:free-identifier=?)
       (identifier? sys:identifier?)
+      (syntax-error sys:syntax-error)
+      ;(syntax->datum sys:syntax->datum)
       (generate-temporaries sys:generate-temporaries)))
                   
   (define who 'expander)
@@ -410,198 +412,120 @@
   (define make-eval-transformer
     (lambda (x)
       (sanitize-binding (eval-core x) x)))
-  (module (syntax-match) 
-    (define-syntax syntax-match-test
-      (lambda (ctx)
-        (define dots?
-          (lambda (x)
-            (and (sys:identifier? x) 
-                 (sys:free-identifier=? x #'(... ...)))))
-        (define free-identifier-member?
-          (lambda (x ls)
-            (and (ormap (lambda (y) (sys:free-identifier=? x y)) ls) #t)))
-        (define f
-          (lambda (ctx lits)
-            (syntax-case ctx ()
-              [id (sys:identifier? #'id) 
-               (if (free-identifier-member? #'id lits)
-                   #'(lambda (x) (and (id? x) (free-id=? x (scheme-stx 'id))))
-                   #'(lambda (x) #t))]
-              [(pat dots) (dots? #'dots)
-               (with-syntax ([p (f #'pat lits)])
-                 #'(lambda (x) 
-                     (and (syntax-list? x)
-                          (andmap p (syntax->list x)))))]
-              [(pat dots . last) (dots? #'dots)
-               (with-syntax ([p (f #'pat lits)] [l (f #'last lits)])
-                 #'(lambda (x)
-                     (let loop ([x x])
-                       (cond
-                         [(syntax-pair? x) 
-                          (and (p (syntax-car x)) 
-                               (loop (syntax-cdr x)))]
-                         [else (l x)]))))]
-              [(a . d) 
-               (with-syntax ([pa (f #'a lits)] [pd (f #'d lits)])
-                 #'(lambda (x) 
-                     (and (syntax-pair? x)
-                          (pa (syntax-car x))
-                          (pd (syntax-cdr x)))))]
-              [#(pats ...)
-               (with-syntax ([p (f #'(pats ...) lits)])
-                 #'(lambda (x) 
-                     (and (syntax-vector? x) 
-                          (p (syntax-vector->list x)))))]
-              [datum 
+  (define-syntax syntax-match
+    (lambda (ctx)
+      (define dots?
+        (lambda (x)
+          (and (sys:identifier? x) 
+               (sys:free-identifier=? x #'(... ...)))))
+      (define free-identifier-member?
+        (lambda (x ls)
+          (and (ormap (lambda (y) (sys:free-identifier=? x y)) ls) #t)))
+      (define (parse-clause lits cls)
+        (define (parse-pat pat)
+          (syntax-case pat ()
+            [id (sys:identifier? #'id) 
+             (if (free-identifier-member? #'id lits)
+                 (values '() 
+                   #'(lambda (x) 
+                       (if (and (id? x) (free-id=? x (scheme-stx 'id)))
+                           '()
+                           #f)))
+                 (values (list #'id) 
+                   #'(lambda (x) (list x))))]
+            [(pat dots) (dots? #'dots)
+             (let-values ([(pvars decon) (parse-pat #'pat)])
+               (with-syntax ([(v* ...) pvars] [decon decon])
+                 (values pvars
+                   #'(letrec ([f (lambda (x)
+                                   (cond
+                                     [(syntax-pair? x)
+                                      (let ([cars/f (decon (syntax-car x))])
+                                        (and cars/f
+                                          (let ([cdrs/f (f (syntax-cdr x))])
+                                            (and cdrs/f
+                                              (map cons cars/f cdrs/f)))))]
+                                     [(syntax-null? x) 
+                                      (list (begin 'v* '()) ...)]
+                                     [else #f]))])
+                       f))))]
+            [(pat dots . last) (dots? #'dots)
+             (let-values ([(p1 d1) (parse-pat #'pat)]
+                          [(p2 d2) (parse-pat #'last)])
+               (with-syntax ([(v* ...) (append p1 p2)]
+                             [(v1* ...) p1]
+                             [(v2* ...) p2]
+                             [d1 d1] [d2 d2])
+                 (values (append p1 p2)
+                   #'(letrec ([f (lambda (x)
+                                   (cond
+                                     [(syntax-pair? x)
+                                      (let ([cars/f (d1 (syntax-car x))])
+                                        (and cars/f 
+                                          (let ([d/f (f (syntax-cdr x))])
+                                            (and d/f
+                                              (cons (map cons cars/f (car d/f))
+                                                    (cdr d/f))))))]
+                                     [else
+                                      (let ([d (d2 x)])
+                                        (and d 
+                                          (cons (list (begin 'v1* '()) ...)
+                                                d)))]))])
+                       (lambda (x)
+                         (let ([x (f x)])
+                           (and x (append (car x) (cdr x)))))))))]
+            [(pat1 . pat2) 
+             (let-values ([(p1 d1) (parse-pat #'pat1)]
+                          [(p2 d2) (parse-pat #'pat2)])
+               (with-syntax ([d1 d1] [d2 d2])
+                 (values (append p1 p2)
+                    #'(lambda (x)
+                        (and (syntax-pair? x)
+                          (let ([q (d1 (syntax-car x))])
+                            (and q 
+                              (let ([r (d2 (syntax-cdr x))])
+                                (and r (append q r))))))))))]
+            [#(pats ...)
+             (let-values ([(pvars d) (parse-pat #'(pats ...))])
+                (with-syntax ([d d])
+                  (values pvars
+                    #'(lambda (x)
+                        (and (syntax-vector? x)
+                             (d (syntax-vector->list x)))))))]
+            [datum 
+             (values '()
                #'(lambda (x) 
-                   (equal? (strip x '()) 'datum))])))
-        (syntax-case ctx ()
-          [(_ x (lits ...) [pat code])
-           (with-syntax ([pat-code (f #'pat #'(lits ...))])
-             #'(pat-code x))])))
-    (define-syntax syntax-match-conseq
-      (lambda (ctx) 
-        (define free-identifier-member?
-          (lambda (x ls)
-            (and (ormap (lambda (y) (sys:free-identifier=? x y)) ls) #t)))
-        (define dots?
-          (lambda (x)
-            (and (sys:identifier? x) 
-                 (sys:free-identifier=? x #'(... ...))))) 
-        (define f
-          (lambda (stx lits)
-            (syntax-case stx ()
-              [id (sys:identifier? #'id) 
-               (if (free-identifier-member? #'id lits)
-                   (values '() #'(lambda (x) (dont-call-me)))
-                  (values (list #'id) #'(lambda (x) x)))]
-              [(pat dots) (dots? #'dots)
-               (let-values ([(vars extractor) (f #'pat lits)])
-                  (cond
-                    [(null? vars) 
-                     (values '() #'(lambda (x) (dont-call-me)))]
-                    [else
-                     (values vars
-                       (with-syntax ([(vars ...) vars]
-                                     [ext extractor]
-                                     [(t* ...) (sys:generate-temporaries vars)])
-                         #'(lambda (x) 
-                             (let f ([x x] [vars '()] ...)
-                               (cond
-                                 [(syntax-null? x) 
-                                  (values (reverse vars) ...)]
-                                 [else
-                                  (let-values ([(t* ...) (ext (syntax-car x))])
-                                    (f (syntax-cdr x) 
-                                       (cons t* vars)
-                                       ...))])))))]))]
-              [(pat dots . last) (dots? #'dots)
-               (let-values ([(pvars pext) (f #'pat lits)])
-                 (let-values ([(lvars lext) (f #'last lits)])
-                   (cond
-                     [(and (null? pvars) (null? lvars)) 
-                      (values '() #'(lambda (x) (dont-call-me)))]
-                     [(null? lvars)
-                      (values pvars
-                        (with-syntax ([(pvars ...) pvars]
-                                      [(t* ...) (sys:generate-temporaries pvars)]
-                                      [pext pext])
-                          #'(lambda (x)
-                              (let loop ([x x] [pvars '()] ...)
-                                (cond
-                                  [(syntax-pair? x)
-                                   (let-values ([(t* ...) (pext (syntax-car x))])
-                                     (loop (syntax-cdr x) 
-                                           (cons t* pvars) ...))]
-                                  [else
-                                   (values (reverse pvars) ...)])))))]
-                     [(null? pvars)
-                      (values lvars
-                        (with-syntax ([lext lext])
-                          #'(let loop ([x x])
-                              (cond
-                                [(syntax-pair? x) (loop (syntax-cdr x))]
-                                [else (lext x)]))))]
-                     [else
-                      (values (append pvars lvars)
-                        (with-syntax ([(pvars ...) pvars]
-                                      [(t* ...) (sys:generate-temporaries pvars)]
-                                      [(lvars ...) lvars]
-                                      [lext lext]
-                                      [pext pext])
-                          #'(lambda (x)
-                              (let loop ([x x] [pvars '()] ...)
-                                (cond
-                                  [(syntax-pair? x)
-                                   (let-values ([(t* ...) (pext (syntax-car x))])
-                                     (loop (syntax-cdr x) 
-                                           (cons t* pvars) ...))]
-                                  [else
-                                   (let-values ([(lvars ...) (lext x)])
-                                     (values (reverse pvars) ...
-                                             lvars ...))])))))])))]
-              [(a . d) 
-               (let-values ([(avars aextractor) (f #'a lits)])
-                 (let-values ([(dvars dextractor) (f #'d lits)])
-                   (cond
-                     [(and (null? avars) (null? dvars))
-                      (values '() #'(lambda (x) (dot-call-me)))]
-                     [(null? avars) 
-                      (values dvars
-                        (with-syntax ([d dextractor])
-                          #'(lambda (x) (d (syntax-cdr x)))))]
-                     [(null? dvars) 
-                      (values avars
-                        (with-syntax ([a aextractor])
-                          #'(lambda (x) (a (syntax-car x)))))]
-                     [else
-                      (values (append avars dvars)
-                        (with-syntax ([(avars ...) avars]
-                                      [(dvars ...) dvars]
-                                      [a aextractor]
-                                      [d dextractor])
-                          #'(lambda (x)
-                              (let-values ([(avars ...) (a (syntax-car x))])
-                                (let-values ([(dvars ...) (d (syntax-cdr x))])
-                                  (values avars ... dvars ...))))))])))]
-              [#(pats ...) 
-               (let-values ([(vars extractor) (f #'(pats ...) lits)])
-                 (cond
-                   [(null? vars) (values '() #f)]
-                   [else 
-                    (values vars
-                      (with-syntax ([extractor extractor])
-                        #'(lambda (x) 
-                            (extractor (syntax-vector->list x)))))]))]
-              [datum 
-               (values '() #'(lambda (x) (dot-call-me)))])))
-        (syntax-case ctx ()
-          [(_ x (lits ...) [pat code code* ...])
-           (let-values ([(vars extractor) 
-                         (f #'pat #'(lits ...))])
-             (with-syntax ([e extractor] [(vs ...) vars])
-               (case (length vars)
-                 [(0) #'(begin #f code)]
-                 [(1) #'(let ([vs ... (e x)]) #f code)]
-                 [else #'(let-values ([(vs ...) (e x)]) #f code)])))])))
-    (define-syntax syntax-match
-      (lambda (x)
-        (syntax-case x ()
-          [(_ expr (lits ...)) #'(stx-error expr)]
-          [(_ expr (lits ...) cls cls* ...)
-           #'(let ([t expr])
-               (if (syntax-match-test t (lits ...) cls)
-                   (syntax-match-conseq t (lits ...) cls)
-                   (syntax-match t (lits ...) cls* ...)))]))))
+                   (and (equal? (strip x '()) 'datum) '())))]))
+        (syntax-case cls ()
+          [(pat body)
+           (let-values ([(pvars decon) (parse-pat #'pat)])
+             (with-syntax ([(v* ...) pvars])
+               (values decon 
+                       #'(lambda (v* ...) #t)
+                       #'(lambda (v* ...) body))))]))
+      (syntax-case ctx ()
+        [(_ expr (lits ...)) (andmap sys:identifier? #'(lits ...))
+         #'(stx-error expr "invalid syntax")]
+        [(_ expr (lits ...) cls cls* ...) (andmap sys:identifier? #'(lits ...))
+         (let-values ([(decon guard body)
+                       (parse-clause #'(lits ...) #'cls)])
+           (with-syntax ([decon decon]
+                         [guard guard]
+                         [body body])
+             #'(let ([t expr])
+                 (let ([ls/false (decon t)])
+                   (if (and ls/false (apply guard ls/false))
+                       (apply body ls/false)
+                       (syntax-match t (lits ...) cls* ...))))))])))
   (define parse-define
     (lambda (x)
       (syntax-match x ()
-        [(_ (id . fmls) b b* ...) 
+        [(__ (id . fmls) b b* ...) 
          (if (id? id) 
              (values id
               (cons 'defun (cons fmls (cons b b*))))
              (stx-error x))]
-        [(_ id val)
+        [(__ id val)
          (if (id? id) 
              (values id (cons 'expr val))
              (stx-error x))])))
