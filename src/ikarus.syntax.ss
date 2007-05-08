@@ -346,6 +346,7 @@
   (define binding-type car)
   (define binding-value cdr)
   (define local-binding-value cadr)
+  (define local-macro-src cddr)
   (define syntax-type
     (lambda (e r)
       (cond
@@ -2160,21 +2161,35 @@
                               (chi-library-internal b* rib kwd*)])
                   (seal-rib! rib)
                   (let ([rhs* (chi-rhs* rhs* r mr)])
-                    (let ([body (if (and (null? init*) (null? lex*)) 
-                                    (build-void)
-                                    (build-sequence no-source 
-                                      (append
-                                        (map build-export lex*)
-                                        (chi-expr* init* r mr))))])
+                    (let ([invoke-body (if (and (null? init*) (null? lex*)) 
+                                           (build-void)
+                                           (build-sequence no-source 
+                                             (append
+                                               (map build-export lex*)
+                                               (chi-expr* init* r mr))))])
                       (unseal-rib! rib)
-                      (let-values ([(export-subst export-env) 
+                      (let-values ([(export-subst export-env macro*) 
                                     (find-exports exp-int* exp-ext* rib r)])
                         (values
                           name imp* (rtc)
-                          (build-letrec no-source lex* rhs* body)
+                          (build-letrec no-source lex* rhs* invoke-body)
+                          macro*
                           export-subst export-env))))))))))))
+  (define (visit! macro*)
+    (for-each (lambda (x)
+                (let ([loc (car x)] [proc (cadr x)])
+                  (set-symbol-value! loc proc)))
+              macro*))
+  (define (build-visit-code macro*)
+    (if (null? macro*)
+        (build-void)
+        (build-sequence no-source
+          (map (lambda (x)
+                 (let ([loc (car x)] [src (cddr x)])
+                   (build-global-assignment no-source loc src)))
+               macro*))))
   (define (library-expander x)
-    (let-values ([(name imp* run* invoke-code export-subst export-env)
+    (let-values ([(name imp* run* invoke-code macro* export-subst export-env)
                     (core-library-expander x)])
       (let ([id (gensym)]
             [name name]
@@ -2184,12 +2199,14 @@
             [inv* (map library-spec run*)])
         (install-library id name ver
            imp* vis* inv* export-subst export-env
-           void ;;; FIXME
+           (lambda () (visit! macro*))
            (lambda () (eval-core invoke-code))
            #t)
-        (values invoke-code export-subst export-env))))
+        (values invoke-code
+                (build-visit-code macro*)
+                export-subst export-env))))
   (define (boot-library-expand x)
-    (let-values ([(invoke-code export-subst export-env)
+    (let-values ([(invoke-code visit-code export-subst export-env)
                   (library-expander x)])
       (values invoke-code export-subst export-env)))
   (define build-export
@@ -2197,9 +2214,9 @@
       ;;; exports use the same gensym
       `(#%$set-symbol-value! ',x ,x)))
   (define (find-exports int* ext* rib r)
-    (let f ([int* int*] [ext* ext*] [subst '()] [env '()])
+    (let f ([int* int*] [ext* ext*] [subst '()] [env '()] [m* '()])
       (cond
-        [(null? int*) (values subst env)]
+        [(null? int*) (values subst env m*)]
         [else
          (let* ([sym (car int*)]
                 [id (stx sym top-mark* (list rib))]
@@ -2212,7 +2229,14 @@
              [(lexical) 
               (f (cdr int*) (cdr ext*) 
                  (cons (cons (car ext*) label) subst)
-                 (cons (cons label (cons 'global (binding-value b))) env))]
+                 (cons (cons label (cons 'global (binding-value b))) env)
+                 m*)]
+             [(local-macro)
+              (let ([loc (gensym)])
+                (f (cdr int*) (cdr ext*)
+                   (cons (cons (car ext*) label) subst)
+                   (cons (cons label (cons 'global-macro loc)) env)
+                   (cons (cons loc (binding-value b)) m*)))]
              [else (error #f "cannot export ~s of type ~s, value=~s" sym type
                           (binding-value b))]))])))
   (define generate-temporaries
