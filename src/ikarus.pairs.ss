@@ -33,10 +33,6 @@
         (error 'set-cdr! "~s is not a pair" x))
       ($set-cdr! x y)))
 
-  (define err
-    (lambda (who x)
-      (error who "invalid list structure ~s" x)))
-
   (define-syntax cxr
     (syntax-rules ()
       [(_ err $car/$cdr) 
@@ -53,7 +49,9 @@
       [(_ [name* ops** ...] ...)
        (begin
          (define name*
-           (lambda (x) ((cxr (err 'name* x) ops** ...) x)))
+           (lambda (x) 
+             ((cxr (error 'name* "invalid list structure ~s" x) ops** ...)
+              x)))
          ...)]))
 
   (define-cxr*
