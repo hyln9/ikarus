@@ -1771,12 +1771,12 @@
   (define chi-internal
     (lambda (e* r mr)
       (let ([rib (make-empty-rib)])
-        (let-values ([(e* r mr lhs* lex* rhs* mod** kwd*)
+        (let-values ([(e* r mr lex* rhs* mod**)
                       (chi-body* (map (lambda (x) (add-subst rib x)) 
                                       (syntax->list e*))
-                         rib r mr '() '() '() '() '())])
-           (unless (valid-bound-ids? lhs*)
-             (stx-error (find-dups lhs*) "multiple definitions in internal"))
+                         rib r mr '() '() '())])
+           ;(unless (valid-bound-ids? lhs*)
+           ;  (stx-error (find-dups lhs*) "multiple definitions in internal"))
            (when (null? e*) 
              (stx-error e* "no expression in body"))
            (let ([rhs* (chi-rhs* rhs* r mr)]
@@ -1787,13 +1787,13 @@
   
   (define chi-library-internal
     (lambda (e* rib kwd*)
-      (let-values ([(e* r mr lhs* lex* rhs* mod** kwd*)
-                    (chi-body* e* rib '() '() '() '() '() '() kwd*)])
+      (let-values ([(e* r mr lex* rhs* mod**)
+                    (chi-body* e* rib  '() '() '() '() '())])
         (values (append (apply append (reverse mod**)) e*)
            r mr (reverse lex*) (reverse rhs*)))))
 
   (define chi-internal-module
-    (lambda (e r mr kwd*) ;;; (return init* r mr lhs* lex* rhs* kwd*)
+    (lambda (e r mr lex* rhs* mod**) ;;; (return init* r mr lhs* lex* rhs* kwd*)
       (define parse-module
         (lambda (e)
           (syntax-match e ()
@@ -1807,91 +1807,84 @@
         (let* ([rib (make-empty-rib)]
                [e* (map (lambda (x) (add-subst rib x))
                         (syntax->list e*))])
-          (let-values ([(e* r mr lhs* lex* rhs* mod** kwd*)
-                        (chi-body* e* rib r mr '() '() '() '() kwd*)])
-              (unless (valid-bound-ids? lhs*)
-                (stx-error (find-dups lhs*) "multiple definitions in module"))
+          (let-values ([(e* r mr lex* rhs* mod**)
+                        (chi-body* e* rib r mr lex* rhs* mod**)])
+              ;;; (unless (valid-bound-ids? lhs*)
+              ;;;   (stx-error (find-dups lhs*) "multiple definitions in module"))
               (let ([exp-lab* 
                      (map (lambda (x) 
                              (or (id->label (add-subst rib x))
                                  (stx-error x "cannot find export")))
                           exp-id*)]
-                    [init* 
-                     (append (apply append (reverse mod**)) e*)])
+                    [mod** (cons e* mod**)])
                 (if (not name) ;;; explicit export
-                    (values lhs* lex* rhs* init* exp-id* exp-lab* r mr kwd*)
+                    (values lex* rhs* exp-id* exp-lab* r mr mod**)
                     (let ([lab (gen-label 'module)]
                           [iface (cons exp-id* exp-lab*)])
-                      (values lhs* lex* rhs* init* 
+                      (values lex* rhs* 
                               (list name) ;;; FIXME: module cannot
                               (list lab)  ;;;  export itself yet
                               (cons (cons lab (cons '$module iface)) r)
                               (cons (cons lab (cons '$module iface)) mr)
-                              kwd*)))))))))
+                              mod**)))))))))
 
   (define chi-body*
-    (lambda (e* rib r mr lhs* lex* rhs* mod** kwd*)
+    (lambda (e* rib r mr lex* rhs* mod**)
       (cond
-        [(null? e*) (values e* r mr lhs* lex* rhs* mod** kwd*)]
+        [(null? e*) (values e* r mr lex* rhs* mod**)]
         [else
          (let ([e (car e*)])
            (let-values ([(type value kwd) (syntax-type e r)])
-             (let ([kwd* (cons-id kwd kwd*)])
+             (let () ;;; ([kwd* (cons-id kwd kwd*)])
                (case type
                  [(define) 
                   (let-values ([(id rhs) (parse-define e)])
-                    (when (bound-id-member? id kwd*) 
-                      (stx-error id "cannot redefine identifier"))
-                    (when (bound-id-member? id lhs*)
-                      (stx-error id "multiple definition"))
+                    ;;; (when (bound-id-member? id kwd*) 
+                    ;;;   (stx-error id "cannot redefine identifier"))
+                    ;;; (when (bound-id-member? id lhs*)
+                    ;;;   (stx-error id "multiple definition in body*"))
                     (let ([lex (gen-lexical id)]
                           [lab (gen-label id)])
                       (extend-rib! rib id lab)
                       (chi-body* (cdr e*) 
                          rib (add-lexical lab lex r) mr 
-                         (cons id lhs*) (cons lex lex*) (cons rhs rhs*)
-                         mod** kwd*)))]
+                         (cons lex lex*) (cons rhs rhs*)
+                         mod**)))]
                  [(define-syntax)
                   (let-values ([(id rhs) (parse-define-syntax e)])
-                    (when (bound-id-member? id kwd*) 
-                      (stx-error id "undefined identifier"))
+                    ;;; (when (bound-id-member? id kwd*) 
+                    ;;;   (stx-error id "undefined identifier"))
                     (let ([lab (gen-label id)]
                           [expanded-rhs (expand-transformer rhs mr)])
                         (extend-rib! rib id lab)
                         (let ([b (make-eval-transformer expanded-rhs)])
                           (chi-body* (cdr e*) 
                              rib (cons (cons lab b) r) (cons (cons lab b) mr)
-                             (cons id lhs*) lex* rhs*
-                             mod** kwd*))))]
+                             lex* rhs*
+                             mod**))))]
                  [(module)
-                  (let-values ([(m-lhs* m-lex* m-rhs* m-init* m-exp-id* m-exp-lab* r mr kwd*)
-                                (chi-internal-module e r mr kwd*)])
+                  (let-values ([(lex* rhs* m-exp-id* m-exp-lab* r mr mod**)
+                                (chi-internal-module e r mr lex* rhs* mod**)])
                     (for-each
                       (lambda (id lab) (extend-rib! rib id lab))
                       m-exp-id* m-exp-lab*)
-                    (chi-body* (cdr e*)
-                       rib r mr 
-                       (append m-exp-id* lhs*)
-                       (append m-lex* lex*)
-                       (append m-rhs* rhs*)
-                       (cons m-init* mod**) kwd*))]
+                    (chi-body* (cdr e*) rib r mr lex* rhs* mod**))]
                  [(begin)
                   (syntax-match e ()
                     [(_ x* ...)
                      (chi-body* (append x* (cdr e*))
-                        rib r mr lhs* lex* rhs* mod** kwd*)])]
+                        rib r mr lex* rhs* mod**)])]
                  [(global-macro) (error 'chi-body "global macro")]
                  [(local-macro)
                   (chi-body* 
                      (cons (add-subst rib (chi-local-macro value e)) (cdr e*))
-                     rib r mr lhs* lex* rhs* mod** kwd*)]
+                     rib r mr lex* rhs* mod**)]
                  [(macro)
                   (chi-body* 
                      (cons (add-subst rib (chi-macro value e)) (cdr e*))
-                     rib r mr lhs* lex* rhs* mod** kwd*)]
+                     rib r mr lex* rhs* mod**)]
                  [else 
-                  (values e* r mr lhs* lex* rhs* mod** kwd*)]))))])))
-
+                  (values e* r mr lex* rhs* mod**)]))))])))
 
   (define (expand-transformer expr r)
     (let ([rtc (make-collector)])
