@@ -840,6 +840,7 @@
   645 list
 |#
 
+;;; FIXME: should handle (+ x k), (- x k) where k is a fixnum
 (module (optimize-primcall)
   (define (optimize-primcall ctxt op rand*)
     (cond

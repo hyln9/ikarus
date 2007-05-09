@@ -10,19 +10,15 @@
           generate-temporaries free-identifier=? syntax-error
           eval-r6rs-top-level boot-library-expand eval-top-level)
   (import
+    (r6rs)
     (except (ikarus library-manager) installed-libraries)
     (only (ikarus compiler) eval-core)
     (chez modules)
     (ikarus symbols)
-    (only (ikarus) error ormap andmap list*
-          format make-record-type parameterize
-          void make-parameter)
-    (rename (r6rs)
-      (free-identifier=? sys:free-identifier=?)
-      (identifier? sys:identifier?)
-      (syntax-error sys:syntax-error)
-      ;(syntax->datum sys:syntax->datum)
-      (generate-temporaries sys:generate-temporaries)))
+    (ikarus parameters)
+    (only (ikarus) error ormap andmap list* format make-record-type void)
+    (only (r6rs syntax-case) syntax-case syntax with-syntax)
+    (prefix (r6rs syntax-case) sys:))
   (define who 'expander)
   (define-syntax no-source
     (lambda (x) #f))
@@ -1927,7 +1923,24 @@
                   (let ([lab* (find* sym* subst)])
                     (values (map cons sym* lab*) lib)))))]
            [_ (error 'import "invalid import spec ~s" spec)])]
-        [(prefix) (error #f "prefix found")]
+        [(prefix) 
+         (syntax-match spec ()
+           [(_ isp p)
+            (let ([s (if (symbol? p)
+                         (symbol->string p)
+                         (error 'import "invalid prefix"))])
+              (let-values ([(subst lib) (get-import isp)])
+                (values
+                  (map 
+                    (lambda (x)
+                      (cons
+                        (string->symbol 
+                          (string-append s 
+                            (symbol->string (car x))))
+                        (cdr x)))
+                    subst)
+                  lib)))]
+           [_ (error 'import "invalid prefix form ~s" spec)])]
         [else
          (let ([lib (find-library-by-name spec)])
            (unless lib
