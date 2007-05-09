@@ -627,6 +627,11 @@
   (Expr x))
 
 
+(define simple-primitives 
+  ;;; primitives that are side-effect-free
+  ;;; FIXME: surely something must go here, no?
+  '())
+
 (define (optimize-letrec x)
   (define who 'optimize-letrec)
   (define (extend-hash lhs* h ref)
@@ -738,14 +743,14 @@
               cls*)
          #f)]
       [(primcall rator rand*) 
-       (when (memq rator '(call/cc call/cf))
+       (unless (memq rator simple-primitives)
          (comp))
        (make-primcall rator (E* rand* ref comp))]
       [(funcall rator rand*)
        (let ([rator (E rator ref comp)] [rand* (E* rand* ref comp)])
          (record-case rator
            [(primref op)
-            (when (memq op '(call/cc call/cf))
+            (unless (memq op simple-primitives)
               (comp))]
            [else
             (comp)])
