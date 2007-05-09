@@ -122,7 +122,7 @@
 (define ikarus-macros-map
   '([define           i r]
     [define-syntax    i r]
-    [module           i   cm]
+    [module           i cm]
     [begin            i r]
     [set!             i r]
     [foreign-call     i]
@@ -137,7 +137,7 @@
     [if               i r]
     [when             i r]
     [unless           i r]
-    [parameterize     i   parameters]
+    [parameterize     i parameters]
     [case             i r]
     [let-values       i r]
     [define-record    i r]
@@ -392,6 +392,7 @@
     [record-length           i]
     [record-printer          i]
     [record-ref              i]
+    [record-set!             i]
     [record-field-accessor   i]
     [record-field-mutator    i]
     [identifier?             i syncase]
@@ -588,6 +589,7 @@
           [(assq x (export-subst))
            (error who "ambiguous export of ~s" x)]
           [(assq x subst) =>
+           ;;; primitive defined (exported) within the compiled libraries
            (lambda (p)
              (let ([label (cdr p)])
                (cond
@@ -603,7 +605,8 @@
                          (error #f "invalid binding ~s for ~s" p x)])))]
                  [else (error #f "cannot find binding for ~s" x)])))]
           [else 
-           ;;; core primitive with no backing definition
+           ;;; core primitive with no backing definition, assumed to
+           ;;; be defined in other strata of the system
            (let ([label (gensym)])
              (export-subst (cons x label))
              (export-env (cons label (cons 'core-prim x))))]))

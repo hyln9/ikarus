@@ -840,7 +840,8 @@
   645 list
 |#
 
-;;; FIXME: should handle (+ x k), (- x k) where k is a fixnum
+;;; FIXME URGENT: should handle (+ x k), (- x k) where k is a fixnum
+;;;               also fx+, fx-
 (module (optimize-primcall)
   (define (optimize-primcall ctxt op rand*)
     (cond
@@ -4748,7 +4749,6 @@
              (map CodeExpr ls)))]))
 
 (module ;assembly-labels
-
   (refresh-cached-labels!
    sl-apply-label sl-fx+-type-label sl-fx+-types-label
    sl-continuation-code-label sl-invalid-args-label
@@ -4756,7 +4756,6 @@
    sl-cwv-label sl-top-level-value-error-label sl-cadr-error-label
    sl-cdr-error-label sl-car-error-label sl-nonprocedure-error-label
    sl-fxsub1-error-label sl-fxadd1-error-label sl-fx+-overflow-label)
-
   (define-syntax define-cached
     (lambda (x)
       (syntax-case x ()
@@ -5067,8 +5066,7 @@
           (movl (primref-loc 'fx+-overflow-error) cpr)
           (movl (int (argc-convention 2)) eax)
           (tail-indirect-cpr-call))))
-    SL_fx+_overflow])
-)
+    SL_fx+_overflow]))
 
 (define (compile-core-expr->code p)
   (let* ([p (recordize p)]

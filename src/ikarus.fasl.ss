@@ -237,15 +237,12 @@
 
 
 
-#!eof
-
-#not working yet
-
-
-
 (library (ikarus fasl read)
-  (export)
-  (import )
+  (export fasl-read)
+  (import (ikarus)
+          (ikarus code-objects)
+          (ikarus system $codes)
+          (ikarus system $records))
 
   (define who 'fasl-read)
   (define (assert-eq? x y)
@@ -457,5 +454,15 @@
       (assert-eq? (read-char p) #\K)
       (assert-eq? (read-char p) #\0)
       (assert-eq? (read-char p) #\1)
-      (do-read p))))
+      (do-read p)))
+  
+  (define fasl-read
+    (case-lambda
+      [() ($fasl-read (current-input-port))]
+      [(p) 
+       (if (input-port? p) 
+           ($fasl-read p)
+           (error 'fasl-read "~s is not an input port" p))]))
+
+  )
 
