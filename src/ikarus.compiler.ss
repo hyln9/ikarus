@@ -242,6 +242,7 @@
 (define-record interrupt-call (test handler))
 (define-record bind (lhs* rhs* body))
 (define-record recbind (lhs* rhs* body))
+(define-record rec*bind (lhs* rhs* body))
 (define-record fix (lhs* rhs* body))
 
 (define-record seq (e0 e1))
@@ -352,7 +353,15 @@
             (let ([lhs* (map car bind*)]
                   [rhs* (map cadr bind*)])
               (let ([nlhs* (gen-fml* lhs*)])
-                (let ([expr (make-recbind nlhs* (map E rhs*) (E body ))])
+                (let ([expr (make-recbind nlhs* (map E rhs*) (E body))])
+                  (ungen-fml* lhs*)
+                  expr))))]
+         [(letrec*)
+          (let ([bind* (cadr x)] [body (caddr x)])
+            (let ([lhs* (map car bind*)]
+                  [rhs* (map cadr bind*)])
+              (let ([nlhs* (gen-fml* lhs*)])
+                (let ([expr (make-rec*bind nlhs* (map E rhs*) (E body))])
                   (ungen-fml* lhs*)
                   expr))))]
          [(case-lambda)
@@ -417,6 +426,9 @@
           ,(E body))]
       [(recbind lhs* rhs* body) 
        `(letrec ,(map (lambda (lhs rhs) (list (E lhs) (E rhs))) lhs* rhs*)
+          ,(E body))]
+      [(rec*bind lhs* rhs* body) 
+       `(letrec* ,(map (lambda (lhs rhs) (list (E lhs) (E rhs))) lhs* rhs*)
           ,(E body))]
       [(fix lhs* rhs* body) 
        `(fix ,(map (lambda (lhs rhs) (list (E lhs) (E rhs))) lhs* rhs*)
@@ -586,6 +598,8 @@
        (make-bind lhs* (map Expr rhs*) (Expr body))]
       [(recbind lhs* rhs* body)
        (make-recbind lhs* (map Expr rhs*) (Expr body))]
+      [(rec*bind lhs* rhs* body)
+       (make-rec*bind lhs* (map Expr rhs*) (Expr body))]
       [(conditional test conseq altern)
        (make-conditional 
          (Expr test)
@@ -612,86 +626,6 @@
       [else (error who "invalid expression ~s" (unparse x))]))
   (Expr x))
 
-(define lambda-both 0)
-(define lambda-producer 0)
-(define lambda-consumer 0)
-(define lambda-none 0)
-(define branching-producer 0)
-
-(define (analyze-cwv x)
-  (define who 'analyze-cwv)
-  (define (lambda? x)
-    (record-case x
-      [(clambda) #t]
-      [else      #f]))
-  (define (branching-producer? x)
-    (define (bt? x)
-      (record-case x
-        [(bind lhs* rhs* body) (bt? body)]
-        [(recbind lhs* rhs* body) (bt? body)]
-        [(conditional test conseq altern) #t]
-        [(seq e0 e1) (bt? e1)]
-        [else #f]))
-    (define (branching-clause? x)
-      (record-case x 
-        [(clambda-case info body) 
-         (bt? body)]))
-    (record-case x
-      [(clambda g cls*)
-       (ormap branching-clause? cls*)]
-      [else #f]))
-  (define (analyze producer consumer)
-    (cond
-      [(and (lambda? producer) (lambda? consumer))
-       (set! lambda-both (fxadd1 lambda-both))]
-      [(lambda? producer) 
-       (set! lambda-producer (fxadd1 lambda-producer))]
-      [(lambda? consumer)
-       (set! lambda-consumer (fxadd1 lambda-consumer))]
-      [else 
-       (set! lambda-none (fxadd1 lambda-none))])
-    (when (branching-producer? producer)
-      (set! branching-producer (fxadd1 branching-producer)))
-    (printf "both=~s p=~s c=~s none=~s branching-prod=~s\n"
-            lambda-both lambda-producer lambda-consumer lambda-none
-            branching-producer))
-  (define (E x)
-    (record-case x
-      [(constant) (void)]
-      [(var) (void)]
-      [(primref) (void)]
-      [(bind lhs* rhs* body)
-       (for-each E rhs*) (E body)]
-      [(recbind lhs* rhs* body)
-       (for-each E rhs*) (E body)]
-      [(conditional test conseq altern)
-       (E test)
-       (E conseq)
-       (E altern)]
-      [(seq e0 e1) (E e0) (E e1)]
-      [(clambda g cls*)
-       (for-each 
-         (lambda (x)
-           (record-case x
-             [(clambda-case info body) (E body)]))
-         cls*)]
-      [(primcall rator rand*) 
-       (for-each E rand*)
-       (when (and (eq? rator 'call-with-values) (fx= (length rand*) 2))
-         (analyze (car rand*) (cadr rand*)))]
-      [(funcall rator rand*)
-       (E rator) (for-each E rand*)
-       (when (and (record-case rator
-                    [(primref op) (eq? op 'call-with-values)]
-                    [else #f])
-                  (fx= (length rand*) 2))
-         (analyze (car rand*) (cadr rand*)))]
-      [(forcall rator rand*) 
-       (for-each E rand*)]
-      [(assign lhs rhs)
-       (E rhs)]
-      [else (error who "invalid expression ~s" (unparse x))]))
-  (E x))
 
 (define (optimize-letrec x)
   (define who 'optimize-letrec)
@@ -743,7 +677,7 @@
            [else
             (values (cons lhs slhs*) (cons rhs srhs*) llhs* lrhs* clhs* crhs*)]
            ))]))
-  (define (do-recbind lhs* rhs* body ref comp)
+  (define (do-recbind lhs* rhs* body ref comp letrec?)
     (let ([h (make-hash-table)]
           [vref (make-vector (length lhs*) #f)]
           [vcomp (make-vector (length lhs*) #f)])
@@ -752,16 +686,18 @@
         (let ([rhs* (do-rhs* 0 lhs* rhs* ref comp vref vcomp)])
           (let-values ([(slhs* srhs* llhs* lrhs* clhs* crhs*)
                         (partition-rhs* 0 lhs* rhs* vref vcomp)])
-            (let ([v* (map (lambda (x) (make-primcall 'void '())) clhs*)]
-                  [t* (map (lambda (x) (unique-var 'tmp)) clhs*)])
-              (make-bind slhs* srhs*
-                (make-bind clhs* v*
-                  (make-fix llhs* lrhs*
-                    (make-bind t* crhs*
-                      (build-assign* clhs* t* body)))))))))))
+           (let ([v* (map (lambda (x) (make-primcall 'void '())) clhs*)])
+             (make-bind slhs* srhs*
+               (make-bind clhs* v*
+                 (make-fix llhs* lrhs*
+                   (if letrec?
+                       (let ([t* (map (lambda (x) (unique-var 'tmp)) clhs*)])
+                         (make-bind t* crhs*
+                           (build-assign* clhs* t* body)))
+                       (build-assign* clhs* crhs* body)))))))))))
   (define (build-assign* lhs* rhs* body)
     (cond
-      [(null? lhs*)  body]
+      [(null? lhs*) body]
       [else
        (make-seq
          (make-assign (car lhs*) (car rhs*))
@@ -783,7 +719,11 @@
       [(recbind lhs* rhs* body)
        (if (null? lhs*)
            (E body ref comp)
-           (do-recbind lhs* rhs* body ref comp))]
+           (do-recbind lhs* rhs* body ref comp #t))]
+      [(rec*bind lhs* rhs* body)
+       (if (null? lhs*)
+           (E body ref comp)
+           (do-recbind lhs* rhs* body ref comp #f))] 
       [(conditional e0 e1 e2)
        (make-conditional (E e0 ref comp) (E e1 ref comp) (E e2 ref comp))]
       [(seq e0 e1) (make-seq (E e0 ref comp) (E e1 ref comp))]
@@ -820,57 +760,6 @@
   (E x (lambda (x) (error who "free var ~s found" x))
        void))
 
-;;; This pass was here before optimize-letrec was implemented.
-(define (remove-letrec x)
-  (define who 'remove-letrec)
-  (define (Expr x)
-    (record-case x
-      [(constant) x]
-      [(var) x]
-      [(primref) x]
-      [(bind lhs* rhs* body)
-       (make-bind lhs* (map Expr rhs*) (Expr body))]
-      [(recbind lhs* rhs* body)
-       (let ([t* (map (lambda (lhs) (unique-var 'tmp)) lhs*)]
-             [v* (map (lambda (lhs) (make-primcall 'void '())) lhs*)])
-         (make-bind lhs* v*
-           (make-bind t* (map Expr rhs*)
-             (let f ([lhs* lhs*] [t* t*])
-               (cond
-                 [(null? lhs*) (Expr body)]
-                 [else
-                  (make-seq
-                    (make-assign (car lhs*) (car t*))
-                    (f (cdr lhs*) (cdr t*)))])))))]
-      ;[(fix lhs* rhs* body)
-      ; (Expr (make-recbind lhs* rhs* body))]
-      [(fix lhs* rhs* body)
-       (make-fix lhs* (map Expr rhs*) (Expr body))]
-      [(conditional test conseq altern)
-       (make-conditional 
-         (Expr test)
-         (Expr conseq)
-         (Expr altern))]
-      [(seq e0 e1) 
-       (make-seq (Expr e0) (Expr e1))]
-      [(clambda g cls*)
-       (make-clambda g
-         (map (lambda (x)
-                (record-case x
-                  [(clambda-case info body)
-                   (make-clambda-case info (Expr body))]))
-              cls*)
-         #f)]
-      [(primcall rator rand*) 
-       (make-primcall rator (map Expr rand*))]
-      [(funcall rator rand*)
-       (make-funcall (Expr rator) (map Expr rand*))]
-      [(forcall rator rand*) 
-       (make-forcall rator (map Expr rand*))]
-      [(assign lhs rhs)
-       (make-assign lhs (Expr rhs))]
-      [else (error who "invalid expression ~s" (unparse x))]))
-  (Expr x))
 
 (define (uncover-assigned/referenced x)
   (define who 'uncover-assigned/referenced)
