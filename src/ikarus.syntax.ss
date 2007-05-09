@@ -78,7 +78,10 @@
       (lambda () '(#%void)))
     (define build-letrec
       (lambda (ae vars val-exps body-exp)
-        (if (null? vars) body-exp `(letrec ,(map list vars val-exps) ,body-exp)))))
+        (if (null? vars) body-exp `(letrec ,(map list vars val-exps) ,body-exp))))
+    (define build-letrec*
+      (lambda (ae vars val-exps body-exp)
+        (if (null? vars) body-exp `(letrec* ,(map list vars val-exps) ,body-exp)))))
   (define top-mark* '(top))
   (define top-marked?
     (lambda (m*) (memq 'top m*)))
@@ -591,26 +594,31 @@
                          (build-lambda no-source '() (car rhs*))
                          (build-lambda no-source (car lex**)
                            (f (cdr lex**) (cdr rhs*)))))])))))])))
-  (define letrec-transformer
-    (lambda (e r mr)
-      (syntax-match e ()
-        [(_ ([lhs* rhs*] ...) b b* ...)
-         (if (not (valid-bound-ids? lhs*))
-             (stx-error e "duplicate identifiers")
-             (let ([lex* (map gen-lexical lhs*)]
-                   [lab* (map gen-label lhs*)])
-               (let ([rib (make-full-rib lhs* lab*)]
-                     [r (add-lexicals lab* lex* r)])
-                 (let ([body (chi-internal
-                               (add-subst rib (cons b b*))
-                               r mr)]
-                       [rhs* (chi-expr*
-                               (map (lambda (x)
-                                      (add-subst rib x))
-                                    rhs*)
-                               r mr)])
-                   (build-letrec no-source
-                     lex* rhs* body)))))])))
+  (module (letrec-transformer letrec*-transformer)
+    (define helper
+      (lambda (e r mr letrec?)
+        (syntax-match e ()
+          [(_ ([lhs* rhs*] ...) b b* ...)
+           (if (not (valid-bound-ids? lhs*))
+               (stx-error e "duplicate identifiers")
+               (let ([lex* (map gen-lexical lhs*)]
+                     [lab* (map gen-label lhs*)])
+                 (let ([rib (make-full-rib lhs* lab*)]
+                       [r (add-lexicals lab* lex* r)])
+                   (let ([body (chi-internal
+                                 (add-subst rib (cons b b*))
+                                 r mr)]
+                         [rhs* (chi-expr*
+                                 (map (lambda (x)
+                                        (add-subst rib x))
+                                      rhs*)
+                                 r mr)])
+                     ((if letrec? build-letrec build-letrec*)
+                       no-source lex* rhs* body)))))])))
+    (define letrec-transformer
+      (lambda (e r mr) (helper e r mr #t)))
+    (define letrec*-transformer
+      (lambda (e r mr) (helper e r mr #f))))
   (define type-descriptor-transformer
     (lambda (e r mr)
       (syntax-match e ()
@@ -1460,6 +1468,7 @@
         [(case-lambda)   case-lambda-transformer]
         [(let-values)    let-values-transformer]
         [(letrec)        letrec-transformer]
+        [(letrec*)       letrec*-transformer]
         [(case)          case-transformer]
         [(if)            if-transformer]
         [(when)          when-transformer]
