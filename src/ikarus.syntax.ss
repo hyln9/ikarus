@@ -1770,7 +1770,12 @@
                      (cons (add-subst rib (chi-macro value e)) (cdr e*))
                      r mr lex* rhs* mod** kwd* rib top?)]
                  [else
-                  (values e* r mr lex* rhs* mod** kwd*)]))))])))
+                  (if top?
+                      (chi-body* (cdr e*) r mr 
+                          (cons (gen-lexical 'dummy) lex*)
+                          (cons (cons 'expr e) rhs*)
+                          mod** kwd* rib top?)
+                      (values e* r mr lex* rhs* mod** kwd*))]))))])))
   (define (expand-transformer expr r)
     (let ([rtc (make-collector)])
       (let ([expanded-rhs
