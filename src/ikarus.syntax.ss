@@ -1672,7 +1672,7 @@
              (stx-error e* "no expression in body"))
            (let ([rhs* (chi-rhs* rhs* r mr)]
                  [init* (chi-expr* (append (apply append (reverse mod**)) e*) r mr)])
-             (build-letrec no-source
+             (build-letrec* no-source
                 (reverse lex*) (reverse rhs*)
                 (build-sequence no-source init*)))))))
   (define chi-library-internal
@@ -1992,7 +1992,7 @@
                                       (make-export-env/macros r)])
                           (values
                             name imp* (rtc) (vtc)
-                            (build-letrec no-source lex* rhs* invoke-body)
+                            (build-letrec* no-source lex* rhs* invoke-body)
                             macro*
                             export-subst export-env)))))))))))))
   (define (visit! macro*)
