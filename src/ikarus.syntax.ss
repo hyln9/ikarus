@@ -1667,7 +1667,7 @@
         (let-values ([(e* r mr lex* rhs* mod** kwd*)
                       (chi-body* (map (lambda (x) (add-subst rib x))
                                       (syntax->list e*))
-                         rib r mr '() '() '() '())])
+                         r mr '() '() '() '() rib)])
            (when (null? e*)
              (stx-error e* "no expression in body"))
            (let ([rhs* (chi-rhs* rhs* r mr)]
@@ -1678,7 +1678,7 @@
   (define chi-library-internal
     (lambda (e* rib)
       (let-values ([(e* r mr lex* rhs* mod** _kwd*)
-                    (chi-body* e* rib '() '() '() '() '() '())])
+                    (chi-body* e* '() '() '() '() '() '() rib)])
         (values (append (apply append (reverse mod**)) e*)
            r mr (reverse lex*) (reverse rhs*)))))
   (define chi-internal-module
@@ -1703,7 +1703,7 @@
                [e* (map (lambda (x) (add-subst rib x))
                         (syntax->list e*))])
           (let-values ([(e* r mr lex* rhs* mod** kwd*)
-                        (chi-body* e* rib r mr lex* rhs* mod** kwd*)])
+                        (chi-body* e* r mr lex* rhs* mod** kwd* rib)])
               (let ([exp-lab*
                      (map (lambda (x)
                              (or (id->label (add-subst rib x))
@@ -1721,7 +1721,7 @@
                               (cons (cons lab (cons '$module iface)) mr)
                               mod** kwd*)))))))))
   (define chi-body*
-    (lambda (e* rib r mr lex* rhs* mod** kwd*)
+    (lambda (e* r mr lex* rhs* mod** kwd* rib)
       (cond
         [(null? e*) (values e* r mr lex* rhs* mod** kwd*)]
         [else
@@ -1737,9 +1737,9 @@
                           [lab (gen-label id)])
                       (extend-rib/check! rib id lab)
                       (chi-body* (cdr e*)
-                         rib (add-lexical lab lex r) mr
+                         (add-lexical lab lex r) mr
                          (cons lex lex*) (cons rhs rhs*)
-                         mod** kwd*)))]
+                         mod** kwd* rib)))]
                  [(define-syntax)
                   (let-values ([(id rhs) (parse-define-syntax e)])
                     (when (bound-id-member? id kwd*)
@@ -1749,30 +1749,30 @@
                         (extend-rib/check! rib id lab)
                         (let ([b (make-eval-transformer expanded-rhs)])
                           (chi-body* (cdr e*)
-                             rib (cons (cons lab b) r) (cons (cons lab b) mr)
+                             (cons (cons lab b) r) (cons (cons lab b) mr)
                              lex* rhs*
-                             mod** kwd*))))]
+                             mod** kwd* rib))))]
                  [(module)
                   (let-values ([(lex* rhs* m-exp-id* m-exp-lab* r mr mod** kwd*)
                                 (chi-internal-module e r mr lex* rhs* mod** kwd*)])
                     (for-each
                       (lambda (id lab) (extend-rib/check! rib id lab))
                       m-exp-id* m-exp-lab*)
-                    (chi-body* (cdr e*) rib r mr lex* rhs* mod** kwd*))]
+                    (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* rib))]
                  [(begin)
                   (syntax-match e ()
                     [(_ x* ...)
                      (chi-body* (append x* (cdr e*))
-                        rib r mr lex* rhs* mod** kwd*)])]
+                        r mr lex* rhs* mod** kwd* rib)])]
                  [(global-macro) (error 'chi-body "global macro")]
                  [(local-macro)
                   (chi-body*
                      (cons (add-subst rib (chi-local-macro value e)) (cdr e*))
-                     rib r mr lex* rhs* mod** kwd*)]
+                     r mr lex* rhs* mod** kwd* rib)]
                  [(macro)
                   (chi-body*
                      (cons (add-subst rib (chi-macro value e)) (cdr e*))
-                     rib r mr lex* rhs* mod** kwd*)]
+                     r mr lex* rhs* mod** kwd* rib)]
                  [else
                   (values e* r mr lex* rhs* mod** kwd*)]))))])))
   (define (expand-transformer expr r)
