@@ -17,24 +17,39 @@
 
 (library (ikarus interaction)
   (export)
-  (import (ikarus) (ikarus greeting))
-  (let-values ([(files script args)
+  (import (ikarus)
+          (ikarus greeting)
+          (only (ikarus load) load-r6rs-top-level))
+  (let-values ([(files script script-type args)
                 (let f ([args (command-line-arguments)])
                   (cond
-                    [(null? args) (values '() #f '())]
+                    [(null? args) (values '() #f #f '())]
                     [(string=? (car args) "--")
-                     (values '() #f (cdr args))]
+                     (values '() #f #f (cdr args))]
                     [(string=? (car args) "--script")
                      (let ([d (cdr args)])
                        (cond
-                         [(null? d) 
+                         [(null? d)
                           (error #f "--script requires a script name")]
                          [else
-                          (values '() (car d) (cdr d))]))]
+                          (values '() (car d) 'script (cdr d))]))]
+                    [(string=? (car args) "--r6rs-script")
+                     (let ([d (cdr args)])
+                       (cond
+                         [(null? d)
+                          (error #f "--r6rs-script requires a script name")]
+                         [else
+                          (values '() (car d) 'r6rs-script (cdr d))]))]
                     [else
-                     (let-values ([(f* script a*) (f (cdr args))])
-                       (values (cons (car args) f*) script a*))]))])
+                     (let-values ([(f* script script-type a*) (f (cdr args))])
+                       (values (cons (car args) f*) script script-type a*))]))])
     (cond
+      [(eq? script-type 'r6rs-script)
+       (command-line-arguments (cons script args))
+       ;(for-each load files)
+       (load-r6rs-top-level script)
+       ;(load script)
+       (exit 0)]
       [script ; no greeting, no cafe
        (command-line-arguments (cons script args))
        (for-each load files)

@@ -32,14 +32,21 @@
   (define-syntax f
     (lambda (x) #'h))
   (define-syntax h 
-    (lambda (x) #'g)))
+    (lambda (x) #'g))
+  (printf "F0 invoked\n"))
+
+;(library (F0 client)
+;  (export)
+;  (import (ikarus) (F0))
+;  (unless (= (f) 17) 
+;    (error #f "F0 client"))
+;  (printf "F0 client ok\n"))
+
 
 (library (F0 client)
   (export)
   (import (ikarus) (F0))
-  (unless (= (f) 17) 
-    (error #f "F0 client"))
-  (printf "F0 client ok\n"))
+  (f))
 
 (invoke (F0 client))
 

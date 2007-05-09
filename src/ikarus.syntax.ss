@@ -8,7 +8,7 @@
 (library (ikarus syntax)
   (export identifier? syntax-dispatch
           generate-temporaries free-identifier=? syntax-error
-          boot-library-expand eval-top-level)
+          eval-r6rs-top-level boot-library-expand eval-top-level)
   (import
     (ikarus library-manager)
     (only (ikarus compiler) eval-core)
@@ -1675,12 +1675,6 @@
              (build-letrec* no-source
                 (reverse lex*) (reverse rhs*)
                 (build-sequence no-source init*)))))))
-  (define chi-library-internal
-    (lambda (e* rib)
-      (let-values ([(e* r mr lex* rhs* mod** _kwd*)
-                    (chi-body* e* '() '() '() '() '() '() rib #t)])
-        (values (append (apply append (reverse mod**)) e*)
-           r mr (reverse lex*) (reverse rhs*)))))
   (define chi-internal-module
     (lambda (e r mr lex* rhs* mod** kwd*)
       (define parse-module
@@ -1763,7 +1757,10 @@
                     [(_ x* ...)
                      (chi-body* (append x* (cdr e*))
                         r mr lex* rhs* mod** kwd* rib top?)])]
-                 [(global-macro) (error 'chi-body "global macro")]
+                 [(global-macro)
+                  (chi-body*
+                     (cons (add-subst rib (chi-global-macro value e)) (cdr e*))
+                     r mr lex* rhs* mod** kwd* rib top?)]
                  [(local-macro)
                   (chi-body*
                      (cons (add-subst rib (chi-local-macro value e)) (cdr e*))
@@ -1965,6 +1962,12 @@
         (unless (procedure? x)
           (error 'vis-collector "~s is not a procedure" x))
         x)))
+  (define chi-library-internal
+    (lambda (e* rib top?)
+      (let-values ([(e* r mr lex* rhs* mod** _kwd*)
+                    (chi-body* e* '() '() '() '() '() '() rib top?)])
+        (values (append (apply append (reverse mod**)) e*)
+           r mr (reverse lex*) (reverse rhs*)))))
   (define core-library-expander
     (lambda (e)
       (let-values ([(name exp-int* exp-ext* imp* b*) (parse-library e)])
@@ -1976,7 +1979,7 @@
               (parameterize ([inv-collector rtc]
                              [vis-collector vtc])
                 (let-values ([(init* r mr lex* rhs*)
-                              (chi-library-internal b* rib)])
+                              (chi-library-internal b* rib #f)])
                   (seal-rib! rib)
                   (let ([rhs* (chi-rhs* rhs* r mr)])
                     (let ([invoke-body (if (and (null? init*) (null? lex*))
@@ -1994,6 +1997,35 @@
                             (build-letrec* no-source lex* rhs* invoke-body)
                             macro*
                             export-subst export-env)))))))))))))
+  
+  (define (parse-top-level-program e*)
+    (syntax-match e* ()
+      [((import imp* ...) b* ...) (eq? import 'import)
+       (values imp* b*)]
+      [_ (error "invalid syntax of top-level program")]))
+
+  (define top-level-expander
+    (lambda (e*)
+      (let-values ([(imp* b*) (parse-top-level-program e*)])
+        (let-values ([(subst imp*) (get-import-subst/libs imp*)])
+          (let ([rib (make-top-rib subst)])
+            (let ([b* (map (lambda (x) (stx x top-mark* (list rib))) b*)]
+                  [rtc (make-collector)]
+                  [vtc (make-collector)])
+              (parameterize ([inv-collector rtc]
+                             [vis-collector vtc])
+                (let-values ([(init* r mr lex* rhs*)
+                              (chi-library-internal b* rib #t)])
+                  (seal-rib! rib)
+                  (let ([rhs* (chi-rhs* rhs* r mr)])
+                    (let ([invoke-body (if (null? init*)
+                                           (build-void)
+                                           (build-sequence no-source
+                                             (chi-expr* init* r mr)))])
+                      (unseal-rib! rib)
+                      (values (rtc)
+                        (build-letrec* no-source 
+                          lex* rhs* invoke-body))))))))))))
   (define (visit! macro*)
     (for-each (lambda (x)
                 (let ([loc (car x)] [proc (cadr x)])
@@ -2083,6 +2115,12 @@
              (apply string-append args)
              (strip x '()))))
   (define identifier? (lambda (x) (id? x)))
+  (define eval-r6rs-top-level
+    (lambda (x*)
+      (let-values ([(lib* invoke-code) (top-level-expander x*)])
+        (for-each invoke-library lib*)
+        (eval-core invoke-code)
+        (void))))
   (define eval-top-level
     (lambda (x)
       (unless (pair? x)

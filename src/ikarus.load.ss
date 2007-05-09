@@ -1,9 +1,9 @@
 
 (library (ikarus load)
-  (export load)
+  (export load load-r6rs-top-level)
   (import 
     (except (ikarus) load)
-    (only (ikarus syntax) eval-top-level)
+    (only (ikarus syntax) eval-top-level eval-r6rs-top-level)
     (only (ikarus reader) read-initial))
 
   (define load-handler
@@ -28,4 +28,22 @@
            (unless (eof-object? x)
              (eval-proc x)
              (read-and-eval p eval-proc)))
-         (close-input-port p))])))
+         (close-input-port p))]))
+  (define load-r6rs-top-level
+    (lambda (x)
+      (define (read-file)
+        (let ([p (open-input-file x)])
+          (let ([x (read-initial p)])
+            (if (eof-object? x)
+                (begin (close-input-port p) '())
+                (cons x 
+                  (let f ()
+                    (let ([x (read p)])
+                      (cond
+                        [(eof-object? x) 
+                         (close-input-port p)
+                         '()]
+                        [else (cons x (f))]))))))))
+      (let ([prog (read-file)])
+        (eval-r6rs-top-level prog))))
+  )
