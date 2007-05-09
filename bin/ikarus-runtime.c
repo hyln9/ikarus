@@ -327,7 +327,6 @@ ikpcb* ik_make_pcb(){
   }
   /* initialize base rtd */
   {
-    ikp s = ik_cstring_to_symbol("$base-rtd", pcb);
     ikp r = ik_alloc(pcb, align(rtd_size)) + rtd_tag;
     ref(r, off_rtd_rtd) = r;
     ref(r, off_rtd_length) = (ikp) (rtd_size-wordsize);
@@ -335,8 +334,6 @@ ikpcb* ik_make_pcb(){
     ref(r, off_rtd_fields) = 0;
     ref(r, off_rtd_printer) = 0;
     ref(r, off_rtd_symbol) = 0;
-    ref(s, off_symbol_system_value) = r;
-    ref(s, off_symbol_value) = r;
     pcb->base_rtd = r;
   }
   return pcb;

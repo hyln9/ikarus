@@ -344,8 +344,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     ikp rtd;
     if(gensym_val == unbound_object){
       rtd = ik_alloc(pcb, align(rtd_size)) + vector_tag;
-      ikp base_sym = ik_cstring_to_symbol("$base-rtd", pcb);
-      ikp base_rtd = ref(base_sym, off_symbol_system_value);
+      ikp base_rtd = pcb->base_rtd;
       ref(rtd, off_rtd_rtd) = base_rtd;
       ref(rtd, off_rtd_name) = name;
       ref(rtd, off_rtd_length) = fix(n);
