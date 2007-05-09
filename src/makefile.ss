@@ -275,6 +275,7 @@
     [>                       i r]
     [<=                      i r]
     [>=                      i r]
+    [zero?                   i r]
     [*                       i r]
     [+                       i r]
     [add1                    i]

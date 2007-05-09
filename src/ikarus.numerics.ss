@@ -22,14 +22,15 @@
 
 
 (library (ikarus generic-arithmetic)
-  (export + - * = < <= > >= add1 sub1 quotient remainder
+  (export + - * zero? = < <= > >= add1 sub1 quotient remainder
           quotient+remainder number->string string->number)
   (import 
     (ikarus system $fx)
     (ikarus system $chars)
     (ikarus system $strings)
-    (except (ikarus) + - * = < <= > >= add1 sub1 quotient remainder
-            quotient+remainder number->string string->number))
+    (except (ikarus) + - * zero? = < <= > >= add1 sub1 quotient
+            remainder quotient+remainder number->string
+            string->number))
 
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))

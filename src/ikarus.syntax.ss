@@ -14,8 +14,8 @@
     (only (ikarus compiler) eval-core)
     (chez modules)
     (ikarus symbols)
-    (only (ikarus) error ormap andmap fxadd1 fx= fxsub1 sub1 list*
-          add1 format make-record-type parameterize
+    (only (ikarus) error ormap andmap list*
+          format make-record-type parameterize
           void make-parameter)
     (rename (r6rs)
       (free-identifier=? sys:free-identifier=?)
@@ -311,14 +311,14 @@
         (let ([i
                (let f ([i idx])
                  (cond
-                   [(fx= i 0) 0]
+                   [(zero? i) 0]
                    [else
-                    (let ([j (fxsub1 i)])
+                    (let ([j (- i 1)])
                       (cond
-                        [(fx= freq (vector-ref freq* j)) (f j)]
+                        [(= freq (vector-ref freq* j)) (f j)]
                         [else i]))]))])
-          (vector-set! freq* i (fxadd1 freq))
-          (unless (fx= i idx)
+          (vector-set! freq* i (+ freq 1))
+          (unless (= i idx)
             (let ([sym* (rib-sym* rib)]
                   [mark** (rib-mark** rib)]
                   [label* (rib-label* rib)])
@@ -344,7 +344,7 @@
                (cond
                  [(rib-sealed/freq rib)
                   (let ([sym* (rib-sym* rib)])
-                    (let f ([i 0] [n (sub1 (vector-length sym*))])
+                    (let f ([i 0] [n (- (vector-length sym*) 1)])
                       (cond
                         [(and (eq? (vector-ref sym* i) sym)
                               (same-marks? mark*
@@ -352,8 +352,8 @@
                           (let ([label (vector-ref (rib-label* rib) i)])
                             (increment-rib-frequency! rib i)
                             label)]
-                        [(fx= i n) (search (cdr subst*) mark*)]
-                        [else (f (fxadd1 i) n)])))]
+                        [(= i n) (search (cdr subst*) mark*)]
+                        [else (f (+ i 1) n)])))]
                  [else
                   (let f ([sym* (rib-sym* rib)]
                           [mark** (rib-mark** rib)]
@@ -952,7 +952,7 @@
           (let f ([i 0] [ls ls])
             (cond
               [(null? ls) '()]
-              [else (cons i (f (add1 i) (cdr ls)))]))))
+              [else (cons i (f (+ i 1) (cdr ls)))]))))
       (define mkid
         (lambda (id str)
           (datum->stx id (string->symbol str))))
