@@ -1,5 +1,5 @@
 
-(library (ikarus symbols)
+(library (ikarus base symbols)
   (export gensym gensym? gensym->unique-string gensym-prefix
           gensym-count print-gensym string->symbol symbol->string
           getprop putprop remprop property-list
