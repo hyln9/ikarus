@@ -10,10 +10,14 @@
           generate-temporaries free-identifier=? syntax-error
           eval-r6rs-top-level boot-library-expand eval-top-level)
   (import
-    (ikarus library-manager)
+    (except (ikarus library-manager) installed-libraries)
     (only (ikarus compiler) eval-core)
-    (rename (except (ikarus) boot-library-expand
-                    eval-top-level installed-libraries)
+    (only (ikarus) error)
+    (chez modules)
+    (only (ikarus) ormap andmap gensym fxadd1 fx= fxsub1 sub1 list*
+          add1 format make-record-type symbol-value parameterize
+          void make-parameter set-symbol-value!)
+    (rename (r6rs)
       (free-identifier=? sys:free-identifier=?)
       (identifier? sys:identifier?)
       (syntax-error sys:syntax-error)
