@@ -97,6 +97,7 @@
   '([i           (ikarus)                     #t]
     [symbols     (ikarus symbols)             #t]
     [parameters  (ikarus parameters)          #t]
+    [interaction (ikarus interaction)         #t]
     [r           (r6rs)                       #t]
     [syncase     (r6rs syntax-case)           #t]
     [cm          (chez modules)               #t]

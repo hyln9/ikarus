@@ -5,7 +5,8 @@
   (export imported-label->binding library-subst
           installed-libraries visit-library
           find-library-by-name install-library
-          library-spec invoke-library)
+          library-spec invoke-library 
+          extend-library-subst! extend-library-env!)
   (import (except (ikarus) installed-libraries))
 
   (define (make-collection)
@@ -90,6 +91,17 @@
                 (put-hash-table! label->binding-table label binding))))
           exp-env)
         ((current-library-collection) lib))))
+
+  (define extend-library-subst!
+    (lambda (lib sym label)
+      (set-library-subst! lib 
+        (cons (cons sym label) (library-subst lib)))))
+
+  (define extend-library-env!
+    (lambda (lib label binding)
+      (set-library-env! lib
+        (cons (cons label binding) (library-env lib)))
+      (put-hash-table! label->binding-table label binding)))
 
   (define (imported-label->binding lab)
     (get-hash-table label->binding-table lab #f))

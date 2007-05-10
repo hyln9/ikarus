@@ -15,7 +15,7 @@
 
 ;;; Finally, we're ready to evaluate the files and enter the cafe.
 
-(library (ikarus interaction)
+(library (ikarus main)
   (export)
   (import (ikarus)
           (ikarus greeting)

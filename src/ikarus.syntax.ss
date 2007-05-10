@@ -16,7 +16,7 @@
     (chez modules)
     (ikarus symbols)
     (ikarus parameters)
-    (only (ikarus) error ormap andmap list* format make-record-type void)
+    (only (ikarus) error printf ormap andmap list* format make-record-type void)
     (only (r6rs syntax-case) syntax-case syntax with-syntax)
     (prefix (r6rs syntax-case) sys:))
   (define who 'expander)
@@ -92,6 +92,7 @@
          (gensym (symbol->string sym))]
         [(stx? sym) (gen-lexical (id->sym sym))]
         [else (error 'gen-lexical "invalid arg ~s" sym)])))
+  (define (gen-global x) (gen-lexical x))
   (define gen-label
     (lambda (_) (gensym)))
   (define-record rib (sym* mark** label* sealed/freq))
@@ -327,12 +328,35 @@
               (let ([label (vector-ref label* idx)])
                 (vector-set! label* idx (vector-ref label* i))
                 (vector-set! label* i label))))))))
+  (define interaction-library 
+    (make-parameter #f))
   (define id->label
     (lambda (id)
       (let ([sym (id->sym id)])
         (let search ([subst* (stx-subst* id)] [mark* (stx-mark* id)])
           (cond
-            [(null? subst*) #f]
+            [(null? subst*) 
+             (cond
+               [(interaction-library) =>
+                (lambda (lib)
+                  (cond
+                    [(assq sym (library-subst lib)) => cdr]
+                    [else
+                     (let ([subst (library-subst 
+                                    (find-library-by-name '(ikarus)))])
+                       (cond
+                         [(assq sym subst) =>
+                          (lambda (sym/lab)
+                            (let ([label (cdr sym/lab)])
+                              (extend-library-subst! lib sym label)
+                              label))]
+                         [else
+                          (let ([label (gen-label sym)])
+                            (extend-library-subst! lib sym label)
+                            (extend-library-env! lib label 
+                              (cons 'global (cons lib (gen-global sym))))
+                            label)]))]))]
+               [else #f])]
             [(eq? (car subst*) 'shift)
              (search (cdr subst*) (cdr mark*))]
             [else
@@ -1627,26 +1651,31 @@
            (let-values ([(a* b*)
                          (chi-lambda-clause* (cdr fmls*) (cdr body**) r mr)])
              (values (cons a a*) (cons b b*))))])))
+  (define chi-rhs
+    (lambda (rhs r mr)
+      (case (car rhs)
+        [(defun)
+         (let ([x (cdr rhs)])
+           (let ([fmls (car x)] [body* (cdr x)])
+             (let-values ([(fmls body)
+                           (chi-lambda-clause fmls body* r mr)])
+               (build-lambda no-source fmls body))))]
+        [(expr)
+         (let ([expr (cdr rhs)])
+           (chi-expr expr r mr))]
+        [(top-expr)
+         (let ([expr (cdr rhs)])
+           (build-sequence no-source
+             (list (chi-expr expr r mr) 
+                   (build-void))))]
+        [else (error 'chi-rhs "invalid rhs ~s" rhs)])))
   (define chi-rhs*
     (lambda (rhs* r mr)
-      (define chi-rhs
-        (lambda (rhs)
-          (case (car rhs)
-            [(defun)
-             (let ([x (cdr rhs)])
-               (let ([fmls (car x)] [body* (cdr x)])
-                 (let-values ([(fmls body)
-                               (chi-lambda-clause fmls body* r mr)])
-                   (build-lambda no-source fmls body))))]
-            [(expr)
-             (let ([expr (cdr rhs)])
-               (chi-expr expr r mr))]
-            [else (error 'chi-rhs "invalid rhs ~s" rhs)])))
       (let f ([ls rhs*])
         (cond ;;; chi in order
           [(null? ls) '()]
           [else
-           (let ([a (chi-rhs (car ls))])
+           (let ([a (chi-rhs (car ls) r mr)])
              (cons a (f (cdr ls))))]))))
   (define find-bound=?
     (lambda (x lhs* rhs*)
@@ -1773,9 +1802,61 @@
                   (if top?
                       (chi-body* (cdr e*) r mr 
                           (cons (gen-lexical 'dummy) lex*)
-                          (cons (cons 'expr e) rhs*)
+                          (cons (cons 'top-expr e) rhs*)
                           mod** kwd* rib top?)
                       (values e* r mr lex* rhs* mod** kwd*))]))))])))
+  (define set-global-macro-binding!
+    (lambda (loc b) (error 'set-global-macro-binding! "not yet")))
+  (define gen-global-macro-binding
+    (lambda (id) (error 'gen-global-macro-binding "not yet")))
+  (define gen-global-var-binding
+    (lambda (id ctxt) 
+      (let ([label (id->label id)])
+        (let ([b (imported-label->binding label)])
+          (case (binding-type b)
+            [(global)
+             (let ([x (binding-value b)])
+               (let ([lib (car x)] [loc (cdr x)])
+                 (cond 
+                   [(eq? lib (interaction-library)) 
+                    loc]
+                   [else 
+                    (stx-error ctxt "cannot modify imported binding")])))]
+            [else (stx-error ctxt "cannot modify")])))))
+  (define chi-top*
+    (lambda (e* init*)
+      (cond
+        [(null? e*) init*]
+        [else
+         (let ([e (car e*)])
+           (let-values ([(type value kwd) (syntax-type e '())])
+             (case type
+               [(define)
+                (let-values ([(id rhs) (parse-define e)])
+                  (let ([loc (gen-global-var-binding id e)])
+                    (let ([rhs (chi-rhs rhs '() '())])
+                      (chi-top* (cdr e*) (cons (cons loc rhs) init*)))))]
+               [(define-syntax)
+                (let-values ([(id rhs) (parse-define-syntax e)])
+                  (let ([loc (gen-global-macro-binding id)])
+                    (let ([expanded-rhs (expand-transformer rhs '())])
+                      (let ([b (make-eval-transformer expanded-rhs)])
+                        (set-global-macro-binding! loc b)
+                        (chi-top* (cdr e*) init*)))))]
+               [(begin)
+                (syntax-match e ()
+                  [(_ x* ...)
+                   (chi-top* (append x* (cdr e*)) init*)])]
+               [(global-macro)
+                (chi-top* (cons (chi-global-macro value e) (cdr e*)) init*)]
+               [(local-macro)
+                (chi-top* (cons (chi-local-macro value e) (cdr e*)) init*)]
+               [(macro)
+                (chi-top* (cons (chi-macro value e) (cdr e*)) init*)]
+               [else 
+                (chi-top* (cdr e*)
+                   (cons (cons #f (chi-expr e '() '())) 
+                      init*))])))])))
   (define (expand-transformer expr r)
     (let ([rtc (make-collector)])
       (let ([expanded-rhs
@@ -2144,6 +2225,28 @@
         (eval-core invoke-code)
         (void))))
   (define eval-top-level
+    (lambda (x)
+      (define (eval-binding x)
+        (let ([loc (car x)] [expr (cdr x)])
+          (cond
+            [loc (set-symbol-value! loc (eval-core expr))]
+            [else (eval-core expr)])))
+
+      (let ([rtc (make-collector)]
+            [vtc (make-collector)])
+        (let ([init* 
+               (parameterize ([inv-collector rtc]
+                              [vis-collector vtc]
+                              [interaction-library
+                               (find-library-by-name '(ikarus interaction))])
+                 (chi-top* (list (stx x top-mark* '())) '()))])
+          (for-each invoke-library (rtc))
+          (cond
+            [(null? init*) (void)]
+            [else
+             (for-each eval-binding (reverse (cdr init*)))
+             (eval-binding (car init*))])))))
+  (define eval-top-level^old
     (lambda (x)
       (unless (pair? x)
         (error #f "invalid expression at top-level ~s" x))
