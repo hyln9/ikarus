@@ -2246,29 +2246,6 @@
             [else
              (for-each eval-binding (reverse (cdr init*)))
              (eval-binding (car init*))])))))
-  (define eval-top-level^old
-    (lambda (x)
-      (unless (pair? x)
-        (error #f "invalid expression at top-level ~s" x))
-      (case (car x)
-        [(library)
-         (library-expander x)
-         (void)]
-        [(invoke)
-         (syntax-match x ()
-           [(_ (id** ...) ...)
-            (begin
-              (unless (andmap (lambda (id*) (andmap symbol? id*)) id**)
-                (error #f "invalid invoke form ~s" x))
-              (let ([lib*
-                     (map (lambda (x)
-                            (or (find-library-by-name x)
-                                (error #f "cannot find library ~s"
-                                       x)))
-                          id**)])
-                (for-each invoke-library lib*)))]
-           [else (error #f "invalid invoke form ~s" x)])]
-        [else (error #f "invalid top-level form ~s" x)])))
   ;;; FIXME: export the rest of the syntax-case procedures
 )
 
