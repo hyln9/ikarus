@@ -74,7 +74,7 @@
                (lambda (c)
                  (cond
                    [(or (char<=? #\a c #\z) 
-                        (char<=? #\A c #\A)
+                        (char<=? #\A c #\Z)
                         (char<=? #\0 c #\9) 
                         (memv c '(#\- #\. #\_ #\~)))
                     (display c)]
@@ -92,7 +92,8 @@
         (let ([str (library-name->file-name x)])
           (let f ([ls (library-path)])
             (and (pair? ls)
-                 (let ([name (string-append (car ls) "/" str)])
+                 (let ([name (string-append (car ls) str)])
+                   (printf "trying ~s\n" name)
                    (if (file-exists? name)
                        name
                        (f (cdr ls))))))))
