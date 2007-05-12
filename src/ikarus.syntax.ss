@@ -8,7 +8,8 @@
 (library (ikarus syntax)
   (export identifier? syntax-dispatch environment environment? 
           eval generate-temporaries free-identifier=?
-          bound-identifier=? syntax-error
+          bound-identifier=? syntax-error datum->syntax
+          syntax->datum
           eval-r6rs-top-level boot-library-expand eval-top-level)
   (import
     (r6rs)
@@ -2276,6 +2277,14 @@
              (apply string-append args)
              (strip x '()))))
   (define identifier? (lambda (x) (id? x)))
+  (define datum->syntax
+    (lambda (id datum)
+      (if (id? id)
+          (datum->stx id datum)
+          (error 'datum->syntax "~s is not an identifier" id))))
+  (define syntax->datum
+    (lambda (x) (stx->datum x)))
+
   (define eval-r6rs-top-level
     (lambda (x*)
       (let-values ([(lib* invoke-code) (top-level-expander x*)])
