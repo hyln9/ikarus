@@ -410,7 +410,7 @@
                (stx-error e "unbound identifier"))
              (case type
                [(lexical core-prim macro global local-macro
-                   global-macro displaced-lexical)
+                   global-macro displaced-lexical syntax)
                 (values type (binding-value b) id)]
                [else (values 'other #f #f)])))]
         [(syntax-pair? e)
@@ -1622,6 +1622,7 @@
                 (chi-expr* (cons x x*) r mr))])]
           [(displaced-lexical)
            (stx-error e "identifier out of context")]
+          [(syntax) (stx-error e "reference to pattern variable outside a syntax form")]
           [else (error 'chi-expr "invalid type ~s for ~s" type
                        (strip e '())) (stx-error e)]))))
   (define chi-set!
