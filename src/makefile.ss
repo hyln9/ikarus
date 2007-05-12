@@ -43,6 +43,7 @@
     "ikarus.io-primitives.ss"
     "ikarus.io.input-files.ss"
     "ikarus.io.output-files.ss"
+    "ikarus.io.input-strings.ss"
     "ikarus.io.output-strings.ss"
     "ikarus.hash-tables.ss"
     "ikarus.writer.ss"
@@ -334,6 +335,7 @@
     [with-output-to-file     i r]
     [open-output-file        i r]
     [open-output-string      i]
+    [open-input-string       i]
     [get-output-string       i]
     [with-output-to-string   i]
     [close-input-port        i r]
