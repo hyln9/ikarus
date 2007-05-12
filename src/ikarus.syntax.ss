@@ -6,8 +6,8 @@
 ;;;        (apply (lambda ---) ls) is also common in this file.
 
 (library (ikarus syntax)
-  (export identifier? syntax-dispatch
-          generate-temporaries free-identifier=? syntax-error
+  (export identifier? syntax-dispatch environment environment? 
+          eval generate-temporaries free-identifier=? syntax-error
           eval-r6rs-top-level boot-library-expand eval-top-level)
   (import
     (r6rs)
@@ -16,7 +16,8 @@
     (chez modules)
     (ikarus symbols)
     (ikarus parameters)
-    (only (ikarus) error printf ormap andmap list* format make-record-type void)
+    (only (ikarus) error printf ormap andmap list* format
+          make-record-type void set-rtd-printer! type-descriptor)
     (only (r6rs syntax-case) syntax-case syntax with-syntax)
     (prefix (r6rs syntax-case) sys:))
   (define who 'expander)
@@ -2129,6 +2130,29 @@
                       (values (rtc)
                         (build-letrec* no-source 
                           lex* rhs* invoke-body))))))))))))
+  (define-record eval-environment (subst imp*))
+  (define environment
+    (lambda imp*
+      (let-values ([(subst imp*) (get-import-subst/libs imp*)])
+        (make-eval-environment subst imp*))))
+  (define environment?
+    (lambda (x) (eval-environment? x)))
+  (define eval
+    (lambda (x env)
+      (unless (eval-environment? env)
+        (error 'eval "~s is not an environment" env))
+      (let ([subst (eval-environment-subst env)])
+        (let ([rib (make-top-rib subst)])
+          (let ([x (stx x top-mark* (list rib))]
+                [rtc (make-collector)]
+                [vtc (make-collector)])
+              (let ([x 
+                     (parameterize ([inv-collector rtc]
+                                    [vis-collector vtc])
+                        (chi-expr x '() '()))])
+                (seal-rib! rib)
+                (for-each invoke-library (rtc))
+                (eval-core x)))))))
   (define (visit! macro*)
     (for-each (lambda (x)
                 (let ([loc (car x)] [proc (cadr x)])
@@ -2246,6 +2270,11 @@
              (for-each eval-binding (reverse (cdr init*)))
              (eval-binding (car init*))])))))
   ;;; FIXME: export the rest of the syntax-case procedures
+  (set-rtd-printer! (type-descriptor eval-environment)
+    (lambda (x p)
+      (unless (eval-environment? x)
+        (error 'record-type-printer "not an environment"))
+      (display (format "#<environment>") p)))
   (current-library-expander 
     (lambda (x)
       (library-expander x)
