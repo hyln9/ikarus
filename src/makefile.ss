@@ -408,6 +408,7 @@
     [syntax-error            i syncase]
     [generate-temporaries    i syncase]
     [free-identifier=?       i syncase]
+    [bound-identifier=?       i syncase]
     [code?                   i]
     [immediate?              i]
     [pointer-value           i]

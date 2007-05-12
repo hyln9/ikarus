@@ -7,7 +7,8 @@
 
 (library (ikarus syntax)
   (export identifier? syntax-dispatch environment environment? 
-          eval generate-temporaries free-identifier=? syntax-error
+          eval generate-temporaries free-identifier=?
+          bound-identifier=? syntax-error
           eval-r6rs-top-level boot-library-expand eval-top-level)
   (import
     (r6rs)
@@ -2260,6 +2261,13 @@
               (free-id=? x y)
               (error 'free-identifier=? "~s is not an identifier" y))
           (error 'free-identifier=? "~s is not an identifier" x))))
+  (define bound-identifier=?
+    (lambda (x y)
+      (if (id? x)
+          (if (id? y)
+              (bound-id=? x y)
+              (error 'bound-identifier=? "~s is not an identifier" y))
+          (error 'bound-identifier=? "~s is not an identifier" x))))
   (define syntax-error
     (lambda (x . args)
       (unless (andmap string? args)
