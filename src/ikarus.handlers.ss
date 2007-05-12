@@ -65,7 +65,7 @@
         [(symbol? x)
          (if (symbol-bound? x)
              (error 'top-level-value "BUG in ~s" x)
-             (error 'top-level-value "~s is unbound" x))]
+             (error 'top-level-value "~a is unbound" x))]
         [else
          (error 'top-level-value "~s is not a symbol" x)])))
   
