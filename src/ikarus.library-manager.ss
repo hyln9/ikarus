@@ -6,7 +6,8 @@
           installed-libraries visit-library
           find-library-by-name install-library
           library-spec invoke-library 
-          extend-library-subst! extend-library-env!)
+          extend-library-subst! extend-library-env!
+          current-library-expander)
   (import (except (ikarus) installed-libraries))
 
   (define (make-collection)
@@ -46,12 +47,104 @@
         [(pred (car ls)) (car ls)]
         [else (f (cdr ls))])))
 
-  (define (install-library-by-name name)
-    #f)
+  (define library-path
+    (make-parameter
+      '(".")
+      (lambda (x)
+        (if (and (list? x) (andmap string? x))
+            (map values x)
+            (error 'library-path "~s is not a list of strings" x)))))
 
+  (define (library-name->file-name x) 
+    (with-output-to-string
+      (lambda ()
+        (define (display-hex n)
+          (cond
+            [(<= 0 n 9) (display n)]
+            [else (display 
+                    (integer->char 
+                      (+ (char->integer #\A)
+                         (- n 10))))]))
+        (let f ([ls x])
+          (cond
+            [(null? ls) (display ".ss")]
+            [else
+             (display "/")
+             (for-each
+               (lambda (c)
+                 (cond
+                   [(or (char<=? #\a c #\z) 
+                        (char<=? #\A c #\A)
+                        (char<=? #\0 c #\9) 
+                        (memv c '(#\- #\. #\_ #\~)))
+                    (display c)]
+                   [else
+                    (display "%")
+                    (let ([n (char->integer c)])
+                      (display-hex (quotient n 16))
+                      (display-hex (remainder n 16)))]))
+               (string->list 
+                 (symbol->string (car ls))))
+             (f (cdr ls))])))))
+  (define file-locator
+    (make-parameter
+      (lambda (x)
+        (let ([str (library-name->file-name x)])
+          (let f ([ls (library-path)])
+            (and (pair? ls)
+                 (let ([name (string-append (car ls) "/" str)])
+                   (if (file-exists? name)
+                       name
+                       (f (cdr ls))))))))
+      (lambda (f)
+        (if (procedure? f)
+            f
+            (error 'file-locator 
+               "~s is not a procedure" f)))))
+
+  (define library-locator
+    (make-parameter
+      (lambda (x)
+        (let ([file-name ((file-locator) x)])
+          (and (string? file-name)
+               (with-input-from-file file-name read))))
+      (lambda (f)
+        (if (procedure? f)
+            f
+            (error 'library-locator 
+                   "~s is not a procedure" f)))))
+
+  (define current-library-expander
+    (make-parameter
+      (lambda (x)
+        (error 'library-expander "not initialized"))
+      (lambda (f)
+        (if (procedure? f)
+            f
+            (error 'library-expander 
+                   "~s is not a procedure" f)))))
+
+  (define external-pending-libraries 
+    (make-parameter '()))
+
+  (define (find-external-library name)
+    (when (member name (external-pending-libraries))
+      (error #f "circular attempt to import library ~s detected"
+             name))
+    (parameterize ([external-pending-libraries
+                    (cons name (external-pending-libraries))])
+      (let ([lib-expr ((library-locator) name)])
+        (unless lib-expr 
+          (error #f "cannot find library ~s" name))
+        ((current-library-expander) lib-expr)
+        (or (find-library-by
+              (lambda (x) (equal? (library-name x) name)))
+            (error #f "handling external library of ~s did not yield the currect library" name)))))
+          
   (define (find-library-by-name name)
-    (find-library-by
-       (lambda (x) (equal? (library-name x) name))))
+    (or (find-library-by
+          (lambda (x) (equal? (library-name x) name)))
+        (find-external-library name)))
 
   (define (library-exists? name)
     (and (find-library-by
@@ -66,6 +159,22 @@
 
   (define label->binding-table (make-hash-table))
 
+  (define (install-library-record lib)
+    (let ([exp-env (library-env lib)])
+      (for-each 
+        (lambda (x) 
+          (let ([label (car x)] [binding (cdr x)])
+            (let ([binding 
+                   (case (car binding)
+                     [(global) 
+                      (cons 'global (cons lib (cdr binding)))]
+                     [(global-macro)
+                      (cons 'global-macro (cons lib (cdr binding)))]
+                     [else binding])])
+              (put-hash-table! label->binding-table label binding))))
+        exp-env))
+    ((current-library-collection) lib))
+
   (define (install-library id name ver imp* vis* inv* 
             exp-subst exp-env visit-code invoke-code visible?)
     (let ([imp-lib* (map find-library-by-spec/die imp*)]
@@ -78,19 +187,7 @@
       (let ([lib (make-library id name ver imp-lib* vis-lib* inv-lib* 
                     exp-subst exp-env visit-code invoke-code 
                     visible?)])
-        (for-each 
-          (lambda (x) 
-            (let ([label (car x)] [binding (cdr x)])
-              (let ([binding 
-                     (case (car binding)
-                       [(global) 
-                        (cons 'global (cons lib (cdr binding)))]
-                       [(global-macro)
-                        (cons 'global-macro (cons lib (cdr binding)))]
-                       [else binding])])
-                (put-hash-table! label->binding-table label binding))))
-          exp-env)
-        ((current-library-collection) lib))))
+        (install-library-record lib))))
 
   (define extend-library-subst!
     (lambda (lib sym label)

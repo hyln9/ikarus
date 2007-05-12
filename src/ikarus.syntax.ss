@@ -2231,7 +2231,6 @@
           (cond
             [loc (set-symbol-value! loc (eval-core expr))]
             [else (eval-core expr)])))
-
       (let ([rtc (make-collector)]
             [vtc (make-collector)])
         (let ([init* 
@@ -2247,6 +2246,10 @@
              (for-each eval-binding (reverse (cdr init*)))
              (eval-binding (car init*))])))))
   ;;; FIXME: export the rest of the syntax-case procedures
+  (current-library-expander 
+    (lambda (x)
+      (library-expander x)
+      (void)))
 )
 
 
