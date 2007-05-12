@@ -90,6 +90,7 @@
     [let               (macro . let)]
     [let*              (macro . let*)]
     [cond              (macro . cond)]
+    [do                (macro . do)]
     [and               (macro . and)]
     [or                (macro . or)]))
 
@@ -149,6 +150,7 @@
     [let              i r]
     [let*             i r]
     [cond             i r]
+    [do               i r]
     [and              i r]
     [or               i r]))
 
@@ -370,6 +372,7 @@
     [values                  i r]
     [call-with-values        i r]
     [call/cc                 i r]
+    [call-with-current-continuation i r]
     [call/cf                 i]
     [dynamic-wind            i r]
     [error                   i]

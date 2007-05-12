@@ -775,6 +775,31 @@
              (bless `(letrec ([,f (lambda ,lhs* ,b . ,b*)])
                         (,f . ,rhs*)))
              (stx-error stx "invalid syntax"))])))
+  (define do-macro
+    (lambda (stx)
+      (define bind
+        (lambda (x)
+          (syntax-match x ()
+            [(x init)      `(,x ,init ,x)]
+            [(x init step) `(,x ,init ,step)]
+            [_  (stx-error stx "invalid binding")])))
+      (syntax-match stx ()
+        [(_ (binding* ...)
+            (test expr* ...)
+            command* ...)
+         (syntax-match (map bind binding*) ()
+           [([x* init* step*] ...)
+            (if (valid-bound-ids? x*)
+                (bless 
+                  `(letrec ([loop 
+                             (lambda ,x*
+                               (if ,test 
+                                 (begin (void) ,@expr*)
+                                 (begin 
+                                   ,@command* 
+                                   (loop ,@step*))))])
+                     (loop ,@init*)))
+                (stx-error stx "duplicate bindings"))])])))
   (define let*-macro
     (lambda (stx)
       (syntax-match stx ()
@@ -1514,6 +1539,7 @@
            [(include)       include-macro]
            [(cond)          cond-macro]
            [(let)           let-macro]
+           [(do)            do-macro]
            [(or)            or-macro]
            [(and)           and-macro]
            [(let*)          let*-macro]

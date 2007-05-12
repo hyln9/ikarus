@@ -93,7 +93,6 @@
           (let f ([ls (library-path)])
             (and (pair? ls)
                  (let ([name (string-append (car ls) str)])
-                   (printf "trying ~s\n" name)
                    (if (file-exists? name)
                        name
                        (f (cdr ls))))))))

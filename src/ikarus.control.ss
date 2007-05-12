@@ -1,10 +1,11 @@
 
 
 (library (ikarus control)
-  (export call/cf call/cc dynamic-wind exit)
+  (export call/cf call/cc call-with-current-continuation dynamic-wind exit)
   (import 
     (ikarus system $stack)
-    (except (ikarus) call/cf call/cc dynamic-wind exit))
+    (except (ikarus) call/cf call/cc call-with-current-continuation
+            dynamic-wind exit))
 
   (define primitive-call/cf
     (lambda (f)
@@ -84,6 +85,10 @@
                  [(v1 v2 . v*)
                   (unless (eq? save winders) (do-wind save))
                   (apply k v1 v2 v*)])))))))
+
+  (define call-with-current-continuation
+          ;; look at how verbose I am ;;
+    (lambda (f) (call/cc f)))
 
   (define dynamic-wind
     (lambda (in body out)
