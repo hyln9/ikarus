@@ -289,6 +289,7 @@
     [bignum?                 i]
     [integer?                i]
     [flonum?                 i]
+    [positive?               i r]
     [quotient                i r]
     [remainder               i r]
     [quotient+remainder      i r]
