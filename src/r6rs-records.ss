@@ -1,5 +1,6 @@
 ;;; procedural layer:
 
+
 (make-record-type-descriptor name parent uid sealed? opaque? fields)
 ;;; name is a symbol, for informational purposes only
 ;;; parent is #f or an rtd
