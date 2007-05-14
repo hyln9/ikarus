@@ -1,8 +1,19 @@
 * FIX: Error in generate-code: BUG: unhandles single rv.
 
+
+
+
+
+Not applicable anymore:
+
 * In libcompile.ss:
   If you move the (initialize-system) call to the very bottom of the
   library, the system crashes on startup.  
+
+
+
+
+Fixed:
 
 * Investigate what happens when an interrupt occurs during a write.
 

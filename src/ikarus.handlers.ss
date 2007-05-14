@@ -30,7 +30,7 @@
   (define interrupt-handler
     (make-parameter
       (lambda ()
-        (flush-output-port (console-output-port))
+        (set-port-output-index! (console-output-port) 0)
         (error #f "interrupted"))
       (lambda (x)
         (if (procedure? x)
