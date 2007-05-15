@@ -3,13 +3,13 @@
   (export make-bytevector bytevector-length bytevector-s8-ref
           bytevector-u8-ref bytevector-u8-set! bytevector-s8-set!
           bytevector-copy! u8-list->bytevector bytevector->u8-list
-          bytevector-fill! bytevector-copy)
+          bytevector-fill! bytevector-copy bytevector=?)
   (import 
     (except (ikarus) 
         make-bytevector bytevector-length bytevector-s8-ref
         bytevector-u8-ref bytevector-u8-set! bytevector-s8-set! 
         bytevector-copy! u8-list->bytevector bytevector->u8-list
-        bytevector-fill! bytevector-copy)
+        bytevector-fill! bytevector-copy bytevector=?)
     (ikarus system $fx)
     (ikarus system $pairs)
     (ikarus system $bytevectors))
@@ -138,6 +138,19 @@
              ($bytevector-set! dst i ($bytevector-u8-ref src i))
              (f src dst ($fxadd1 i) n)])))))
 
+  (define bytevector=? 
+    (lambda (x y)
+      (unless (bytevector? x)
+        (error 'bytevector=? "~s is not a bytevector" x))
+      (unless (bytevector? y)
+        (error 'bytevector=? "~s is not a bytevector" y))
+      (let ([n ($bytevector-length x)])
+        (and ($fx= n ($bytevector-length y))
+             (let f ([x x] [y y] [i 0] [n n])
+               (or ($fx= i n)
+                   (and ($fx= ($bytevector-u8-ref x i)
+                              ($bytevector-u8-ref y i))
+                        (f x y ($fxadd1 i) n))))))))
 
   (define bytevector-copy!
     (lambda (src src-start dst dst-start k) 

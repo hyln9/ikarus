@@ -282,6 +282,7 @@
     [bytevector-copy!        i]
     [bytevector-copy         i]
     [bytevector-fill!        i]
+    [bytevector=?            i]
 
     [for-each                i r]
     [map                     i r]
