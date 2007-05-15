@@ -275,6 +275,8 @@
     [bytevector-length       i]
     [bytevector-s8-ref       i]
     [bytevector-u8-ref       i]
+    [bytevector-s8-set!      i]
+    [bytevector-u8-set!      i]
 
     [for-each                i r]
     [map                     i r]

@@ -25,6 +25,15 @@
          (bytevector-u8-ref b1 0)
          (bytevector-s8-ref b2 0)
          (bytevector-u8-ref b2 0)))]
+    [(lambda (x) (equal? x '(-126 130 -10 246)))
+     (let ([b (make-bytevector 16 -127)])
+       (bytevector-s8-set! b 0 -126)
+       (bytevector-u8-set! b 1 246)
+       (list 
+         (bytevector-s8-ref b 0)
+         (bytevector-u8-ref b 0)
+         (bytevector-s8-ref b 1)
+         (bytevector-u8-ref b 1)))]
 
     ))
 

@@ -4038,7 +4038,7 @@
                ac))]
      [($set-car! $set-cdr! $vector-set! $string-set! $exit
        $set-symbol-value! $set-symbol-plist! 
-       $code-set!  
+       $code-set! $bytevector-set! 
        $set-code-object! $set-code-object+offset! $set-code-object+offset/rel!
        $record-set!
        $set-port-input-index! $set-port-input-size!
