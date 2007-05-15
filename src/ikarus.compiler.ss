@@ -2324,7 +2324,7 @@
        (let ([x (make-primcall op (map Expr arg*))])
          (case op
            [(cons) (check-const pair-size x)]
-           [($make-symbol) (check-const symbol-size x)]
+           [($make-symbol) (check-const symbol-record-size x)]
            [($make-tcbucket) (check-const tcbucket-size x)]
            [($frame->continuation $code->closure) 
             (check-const 
@@ -2932,19 +2932,28 @@
   (define wordsize  4)
   (define wordshift 2)
   
-  (define symbol-mask 7)
-  (define symbol-tag 2)
-  (define disp-symbol-string          0)
-  (define disp-symbol-unique-string   4)
-  (define disp-symbol-value           8)
-  (define disp-symbol-plist          12)
-  (define disp-symbol-system-value   16)
-  (define disp-symbol-function       20)
-  (define disp-symbol-error-function 24)
-  (define disp-symbol-unused         28)
-  (define symbol-size                32)
+  ;(define symbol-mask 7)
+  ;(define symbol-tag 2)
+  ;(define disp-symbol-string          0)
+  ;(define disp-symbol-unique-string   4)
+  ;(define disp-symbol-value           8)
+  ;(define disp-symbol-plist          12)
+  ;(define disp-symbol-system-value   16)
+  ;(define disp-symbol-function       20)
+  ;(define disp-symbol-error-function 24)
+  ;(define disp-symbol-unused         28)
+  ;(define symbol-size                32)
 
+  (define symbol-record-tag #x5F)
+  (define disp-symbol-record-string  4)
+  (define disp-symbol-record-ustring 8)
+  (define disp-symbol-record-value  12)
+  (define disp-symbol-record-proc   16)
+  (define disp-symbol-record-plist  20)
+  (define symbol-record-size  24)
   
+  (define record-tag  5)
+  (define record-mask 7)
 
   (define vector-tag 5)
   (define vector-mask 7)
@@ -3098,7 +3107,7 @@
        (unless (symbol? x) 
          (error 'primitive-location 
             "~s is not a valid location for ~s" x op))
-       (mem (fx- disp-symbol-value symbol-tag) (obj x)))]
+       (mem (fx- disp-symbol-record-value record-tag) (obj x)))]
     [else
      (error 'compile "cannot find location of primitive ~s" op)]))
 
@@ -3217,7 +3226,9 @@
      [(pair?)      (type-pred pair-mask pair-tag rand* Lt Lf ac)]
      [(char?)      (type-pred char-mask char-tag rand* Lt Lf ac)]
      [(string?)    (type-pred string-mask string-tag rand* Lt Lf ac)]
-     [(symbol?)    (type-pred symbol-mask symbol-tag rand* Lt Lf ac)]
+     [(symbol?)    
+      (indirect-type-pred vector-mask vector-tag #f
+         symbol-record-tag rand* Lt Lf ac)]
      [(procedure?) (type-pred closure-mask closure-tag rand* Lt Lf ac)]
      [(boolean?)   (type-pred bool-mask bool-tag rand* Lt Lf ac)]
      [(null?)      (type-pred #f nil rand* Lt Lf ac)]
@@ -3641,11 +3652,11 @@
       [($string-length) 
        (indirect-ref arg* (fx- disp-string-length string-tag) ac)]
       [($symbol-string) 
-       (indirect-ref arg* (fx- disp-symbol-string symbol-tag) ac)]
+       (indirect-ref arg* (fx- disp-symbol-record-string record-tag) ac)]
       [($symbol-unique-string) 
-       (indirect-ref arg* (fx- disp-symbol-unique-string symbol-tag) ac)]
+       (indirect-ref arg* (fx- disp-symbol-record-ustring record-tag) ac)]
       [($symbol-value) 
-       (indirect-ref arg* (fx- disp-symbol-value symbol-tag) ac)]
+       (indirect-ref arg* (fx- disp-symbol-record-value record-tag) ac)]
       [($tcbucket-key) 
        (indirect-ref arg* (fx- disp-tcbucket-key vector-tag) ac)]
       [($tcbucket-val) 
@@ -3673,7 +3684,7 @@
          (sall (int fx-shift) eax)
          ac)]
       [($symbol-plist) 
-       (indirect-ref arg* (fx- disp-symbol-plist symbol-tag) ac)]
+       (indirect-ref arg* (fx- disp-symbol-record-plist record-tag) ac)]
       [($record-rtd) 
        (indirect-ref arg* (fx- disp-record-rtd record-ptag) ac)]
       [($constant-ref)
@@ -3716,7 +3727,7 @@
               (cond
                 [(symbol? v)
                  (list* 
-                   (movl (mem (fx- disp-symbol-value symbol-tag) (obj v)) eax)
+                   (movl (mem (fx- disp-symbol-record-value record-tag) (obj v)) eax)
                    (movl (obj v) ebx)
                    (cmpl (int unbound) eax)
                    (je (label (sl-top-level-value-error-label)))
@@ -3730,10 +3741,13 @@
             (NonTail x
               (list* 
                 (movl eax ebx)
-                (andl (int symbol-mask) eax)
-                (cmpl (int symbol-tag) eax)
+                (andl (int record-mask) eax)
+                (cmpl (int record-tag) eax)
                 (jne (label (sl-top-level-value-error-label)))
-                (movl (mem (fx- disp-symbol-value symbol-tag) ebx) eax)
+                (movl (mem (- record-tag) ebx) eax)
+                (cmpl (int symbol-record-tag) eax)
+                (jne (label (sl-top-level-value-error-label)))
+                (movl (mem (fx- disp-symbol-record-value record-tag) ebx) eax)
                 (cmpl (int unbound) eax)
                 (je (label (sl-top-level-value-error-label)))
                 ac))]))]
@@ -3847,18 +3861,16 @@
                           (mem (fx- disp-cdr (fx+ pair-tag pair-size)) apr))
                       (f b (car d) (cdr d)))))))])]
       [($make-symbol)
-       (list* (movl (Simple (car arg*)) eax)
-              (movl eax (mem disp-symbol-string apr))
-              (movl (int 0) (mem disp-symbol-unique-string apr))
-              (movl (int unbound) (mem disp-symbol-value apr))
-              (movl (int nil) (mem disp-symbol-plist apr))
-              (movl (int unbound) (mem disp-symbol-system-value apr))
-              (movl (int 0) (mem disp-symbol-function apr))
-              (movl (int 0) (mem disp-symbol-error-function apr))
-              (movl (int 0) (mem disp-symbol-unused apr))
+       (list* (movl (int symbol-record-tag) (mem 0 apr))
+              (movl (Simple (car arg*)) eax)
+              (movl eax (mem disp-symbol-record-string apr))
+              (movl (int 0) (mem disp-symbol-record-ustring apr))
+              (movl (int unbound) (mem disp-symbol-record-value apr))
+              (movl (int 0) (mem disp-symbol-record-proc apr))
+              (movl (int nil) (mem disp-symbol-record-plist apr))
               (movl apr eax)
-              (addl (int symbol-tag) eax)
-              (addl (int (align symbol-size)) apr)
+              (addl (int record-tag) eax)
+              (addl (int (align symbol-record-size)) apr)
               ac)]
       [($make-port/input)  (do-make-port input-port-tag arg* ac)]
       [($make-port/output) (do-make-port output-port-tag arg* ac)]
@@ -4137,11 +4149,9 @@
       [($set-symbol-value!) 
        (list* (movl (Simple (car arg*)) eax)
               (movl (Simple (cadr arg*)) ebx)
-              (movl ebx (mem (fx- disp-symbol-value symbol-tag) eax))
-              (movl (mem (fx- disp-symbol-error-function symbol-tag) eax) ebx)
-              (movl ebx (mem (fx- disp-symbol-function symbol-tag) eax))
+              (movl ebx (mem (fx- disp-symbol-record-value record-tag) eax))
                ;;; record side effect
-               (addl (int (fx- disp-symbol-value symbol-tag)) eax)
+               (addl (int (fx- disp-symbol-record-value record-tag)) eax)
                (shrl (int pageshift) eax)
                (sall (int wordshift) eax)
                (addl (pcb-ref 'dirty-vector) eax)
@@ -4150,9 +4160,9 @@
       [($set-symbol-plist!) 
        (list* (movl (Simple (car arg*)) eax)
               (movl (Simple (cadr arg*)) ebx)
-              (movl ebx (mem (fx- disp-symbol-plist symbol-tag) eax))
+              (movl ebx (mem (fx- disp-symbol-record-plist record-tag) eax))
                ;;; record side effect
-               (addl (int (fx- disp-symbol-plist symbol-tag)) eax)
+               (addl (int (fx- disp-symbol-record-plist record-tag)) eax)
                (shrl (int pageshift) eax)
                (sall (int wordshift) eax)
                (addl (pcb-ref 'dirty-vector) eax)
@@ -4161,9 +4171,9 @@
       [($set-symbol-unique-string!) 
        (list* (movl (Simple (car arg*)) eax)
               (movl (Simple (cadr arg*)) ebx)
-              (movl ebx (mem (fx- disp-symbol-unique-string symbol-tag) eax))
+              (movl ebx (mem (fx- disp-symbol-record-ustring record-tag) eax))
                ;;; record side effect
-               (addl (int (fx- disp-symbol-unique-string symbol-tag)) eax)
+               (addl (int (fx- disp-symbol-record-ustring record-tag)) eax)
                (shrl (int pageshift) eax)
                (sall (int wordshift) eax)
                (addl (pcb-ref 'dirty-vector) eax)
@@ -4172,9 +4182,9 @@
       [($set-symbol-string!) 
        (list* (movl (Simple (car arg*)) eax)
               (movl (Simple (cadr arg*)) ebx)
-              (movl ebx (mem (fx- disp-symbol-string symbol-tag) eax))
+              (movl ebx (mem (fx- disp-symbol-record-string record-tag) eax))
                ;;; record side effect
-               (addl (int (fx- disp-symbol-string symbol-tag)) eax)
+               (addl (int (fx- disp-symbol-record-string record-tag)) eax)
                (shrl (int pageshift) eax)
                (sall (int wordshift) eax)
                (addl (pcb-ref 'dirty-vector) eax)
