@@ -2,12 +2,14 @@
 (library (ikarus bytevectors)
   (export make-bytevector bytevector-length bytevector-s8-ref
           bytevector-u8-ref bytevector-u8-set! bytevector-s8-set!
-          bytevector-copy! u8-list->bytevector bytevector->u8-list)
+          bytevector-copy! u8-list->bytevector bytevector->u8-list
+          bytevector-fill! bytevector-copy)
   (import 
     (except (ikarus) 
         make-bytevector bytevector-length bytevector-s8-ref
         bytevector-u8-ref bytevector-u8-set! bytevector-s8-set! 
-        bytevector-copy! u8-list->bytevector bytevector->u8-list)
+        bytevector-copy! u8-list->bytevector bytevector->u8-list
+        bytevector-fill! bytevector-copy)
     (ikarus system $fx)
     (ikarus system $pairs)
     (ikarus system $bytevectors))
@@ -29,6 +31,15 @@
        (if (and (fixnum? fill) ($fx<= -128 fill) ($fx<= fill 255))
            ($bytevector-fill (make-bytevector k) 0 k fill)
            (error 'make-bytevector "~s is not a valid fill" fill))]))
+
+  (define bytevector-fill!
+    (lambda (x fill)
+      (unless (bytevector? x)
+        (error 'bytevector-fill! "~s is not a bytevector" x))
+      (unless (and (fixnum? fill) ($fx<= -128 fill) ($fx<= fill 255))
+        (error 'bytevector-fill! "~s is not a valid fill" fill))
+      ($bytevector-fill x 0 ($bytevector-length x) fill)))
+
 
   (define bytevector-length
     (lambda (x)
@@ -113,6 +124,20 @@
          (let ([n (race ls ls ls 0)])
            (let ([s ($make-bytevector n)])
              (fill s 0 ls))))))
+
+
+  (define bytevector-copy
+    (lambda (src)
+      (unless (bytevector? src)
+        (error 'bytevector-copy "~s is not a bytevector" src))
+      (let ([n ($bytevector-length src)])
+        (let f ([src src] [dst ($make-bytevector n)] [i 0] [n n])
+          (cond
+            [($fx= i n) dst]
+            [else
+             ($bytevector-set! dst i ($bytevector-u8-ref src i))
+             (f src dst ($fxadd1 i) n)])))))
+
 
   (define bytevector-copy!
     (lambda (src src-start dst dst-start k) 

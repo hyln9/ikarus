@@ -280,6 +280,8 @@
     [bytevector->u8-list     i]
     [u8-list->bytevector     i]
     [bytevector-copy!        i]
+    [bytevector-copy         i]
+    [bytevector-fill!        i]
 
     [for-each                i r]
     [map                     i r]
