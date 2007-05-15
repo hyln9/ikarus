@@ -1,14 +1,14 @@
 #!/usr/bin/env ikarus -b ikarus.boot --r6rs-script
 
 
-#;(import (except (ikarus) assembler-output)
+(import (except (ikarus) assembler-output)
         (ikarus compiler)
         (except (ikarus system $bootstrap)
                 eval-core
                 current-primitive-locations
                 compile-core-expr-to-port))
 
-(import (ikarus) (ikarus system $bootstrap))
+;(import (ikarus) (ikarus system $bootstrap))
 
 (define scheme-library-files
   ;;; Listed in the order in which they're loaded.
@@ -130,6 +130,18 @@
     [$interrupts (ikarus system $interrupts)  #f]
     [$boot       (ikarus system $bootstrap)   #f]
     ))
+
+(define bootstrap-collection
+  (let ([ls (map 
+              (lambda (x) 
+                (find-library-by-name (cadr x)))
+              library-legend)])
+    (case-lambda
+      [() ls]
+      [(x) (unless (memq x ls) 
+             (set! ls (cons x ls)))])))
+
+
 
 (define ikarus-macros-map
   '([define           i r]
@@ -787,18 +799,21 @@
   (lambda ()
     (let-values ([(core* locs) 
                   (time-it "macro expansion"
-                    (lambda () (expand-all scheme-library-files)))])
-      (parameterize ([current-primitive-locations
-                      (lambda (x)
-                        (cond
-                          [(assq x locs) => cdr]
-                          [else 
-                           (error 'bootstrap "no location for ~s" x)]))])
+                    (lambda () 
+                      (parameterize ([current-library-collection
+                                       bootstrap-collection])
+                        (expand-all scheme-library-files))))])
+        (current-primitive-locations
+          (lambda (x)
+            (cond
+              [(assq x locs) => cdr]
+              [else 
+               (error 'bootstrap "no location for ~s" x)])))
         (let ([p (open-output-file "ikarus.boot" 'replace)])
           (for-each 
             (lambda (x) (compile-core-expr-to-port x p))
             core*)
-          (close-output-port p))))))
+          (close-output-port p)))))
 
 (printf "Happy Happy Joy Joy\n")
 
