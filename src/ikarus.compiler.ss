@@ -1,5 +1,5 @@
 
-(library (ikarus.compiler)
+(library (ikarus compiler)
   (export compile-core-expr-to-port assembler-output
           current-primitive-locations eval-core)
   (import 
@@ -8,8 +8,8 @@
     (except (ikarus)
         compile-core-expr-to-port assembler-output
         current-primitive-locations eval-core)
-    (ikarus.intel-assembler)
-    (ikarus.fasl.write))
+    (ikarus intel-assembler)
+    (ikarus fasl write))
 
 
 

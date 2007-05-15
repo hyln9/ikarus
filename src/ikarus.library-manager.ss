@@ -4,10 +4,11 @@
 (library (ikarus library-manager)
   (export imported-label->binding library-subst
           installed-libraries visit-library
+          library-name
           find-library-by-name install-library
           library-spec invoke-library 
           extend-library-subst! extend-library-env!
-          current-library-expander)
+          current-library-expander current-library-collection)
   (import (except (ikarus) installed-libraries))
 
   (define (make-collection)

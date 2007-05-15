@@ -1,11 +1,12 @@
 #!/usr/bin/env ikarus -b ikarus.boot --r6rs-script
 
-;(import 
-;  ;(only (ikarus system $bootstrap) boot-library-expand)
-;  (ikarus.compiler)
-;  (ikarus.syntax)
-;  (except (ikarus) 
-;           assembler-output))
+
+;(import (except (ikarus) assembler-output)
+;        (ikarus compiler)
+;        (except (ikarus system $bootstrap)
+;                eval-core
+;                current-primitive-locations
+;                compile-core-expr-to-port))
 
 (import (ikarus) (ikarus system $bootstrap))
 
@@ -431,6 +432,8 @@
     [current-primitive-locations $boot]
     [boot-library-expand         $boot]
     [eval-core                   $boot]
+    [current-library-collection  $boot]
+    [library-name                $boot]
 
     [$car               $pairs]
     [$cdr               $pairs]
@@ -682,7 +685,7 @@
                   (import 
                     (only (ikarus library-manager)
                           install-library)
-                    (only (ikarus.compiler)
+                    (only (ikarus compiler)
                           current-primitive-locations)
                     (ikarus))
                   (current-primitive-locations 
@@ -695,13 +698,58 @@
                   (boot-library-expand code)])
        code)))
 
+
+;;; (define (install-system-libraries export-subst export-env)
+;;;   (define (install legend-entry)
+;;;     (let ([key (car legend-entry)]
+;;;           [name (cadr legend-entry)]
+;;;           [visible? (caddr legend-entry)]) 
+;;;       (let ([id     (gensym)]
+;;;             [name       name]
+;;;             [version     '()]
+;;;             [import-libs '()]
+;;;             [visit-libs  '()]
+;;;             [invoke-libs '()])
+;;;         (let-values ([(subst env)
+;;;                       (if (equal? name '(ikarus system $all)) 
+;;;                           (values export-subst export-env)
+;;;                           (values
+;;;                             (get-export-subset key export-subst)
+;;;                             '()))])
+;;;           (install-library 
+;;;              id name version import-libs visit-libs invoke-libs
+;;;              subst env void void visible?)))))
+;;;   (for-each install library-legend))
+
+;  (let ([code `(library (ikarus primlocs)
+;                  (export) ;;; must be empty
+;                  (import 
+;                    (only (ikarus library-manager)
+;                          install-library)
+;                    (only (ikarus.compiler)
+;                          current-primitive-locations)
+;                    (ikarus))
+;                  (current-primitive-locations 
+;                    (lambda (x) 
+;                      (cond
+;                        [(assq x ',primlocs) => cdr]
+;                        [else #f])))
+;                  ,@(map build-library library-legend))])
+;    (let-values ([(code empty-subst empty-env)
+;                  (boot-library-expand code)])
+;       code)))
+
+
+
+
+
 (define (expand-all files)
   (let ([code* '()]
         [subst '()]
         [env   '()])
     (for-each
       (lambda (file)
-        ;(printf "expanding ~s\n" file)
+        (printf "expanding ~s\n" file)
         (load file
           (lambda (x) 
             (let-values ([(code export-subst export-env)
@@ -718,6 +766,21 @@
           export-locs)))))
 
 (verify-map)
+
+;;; (let* ([names (append (map car ikarus-system-macros)
+;;;                       (map car ikarus-procedures-map))]
+;;;        [labels (map (lambda (x) (gensym "boot")) names)]
+;;;        [bindings 
+;;;          (append (map cadr ikarus-system-macros)
+;;;                  (map (lambda (x) 
+;;;                         (cons 'core-prim (car x)))
+;;;                       ikarus-procedures-map))]
+;;;        [subst (map cons names labels)]
+;;;        [env (map cons labels bindings)])
+;;;   (install-system-libraries subst env))
+;;; 
+;;; (printf "installed base libraries ~s\n"
+;;;         (installed-libraries))
 
 (time-it "the entire bootstrap process"
   (lambda ()

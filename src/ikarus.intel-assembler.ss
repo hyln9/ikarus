@@ -1,10 +1,10 @@
 
 
-(library (ikarus.intel-assembler)
+(library (ikarus intel-assembler)
   (export assemble-sources)
   (import 
     (ikarus)
-    (ikarus.code-objects)
+    (ikarus code-objects)
     (ikarus system $pairs))
 
 (define fold

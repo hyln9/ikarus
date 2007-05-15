@@ -131,7 +131,12 @@
            (set-rib-label*! rib (cons label (rib-label* rib)))))]
       [else (error 'extend-rib/check! "~s is not a rib" rib)]))
   (module (make-stx stx? stx-expr stx-mark* stx-subst*)
-    (define-record stx (expr mark* subst*)))
+    (define-record stx (expr mark* subst*))
+    (set-rtd-printer! (type-descriptor stx)
+      (lambda (x p)
+        (display "#<syntax " p)
+        (display (stx->datum x) p)
+        (display ">" p))))
   (define (seal-rib! rib)
     (let ([sym* (rib-sym* rib)])
       (unless (null? sym*)
@@ -433,8 +438,8 @@
   (define-syntax stx-error
     (lambda (x)
       (syntax-case x ()
-        [(_ stx) #'(error #f "invalid syntax ~s" (strip stx '()))]
-        [(_ stx msg) #'(error #f "~a: ~s" msg (strip stx '()))])))
+        [(_ stx) #'(error 'stx-error "invalid syntax ~s" (strip stx '()))]
+        [(_ stx msg) #'(error 'stx-error "~a: ~s" msg (strip stx '()))])))
   (define sanitize-binding
     (lambda (x src)
       (cond

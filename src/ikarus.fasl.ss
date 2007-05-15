@@ -36,7 +36,7 @@
 (library (ikarus fasl read)
   (export fasl-read)
   (import (ikarus)
-          (ikarus.code-objects)
+          (ikarus code-objects)
           (ikarus system $codes)
           (ikarus system $records))
 
