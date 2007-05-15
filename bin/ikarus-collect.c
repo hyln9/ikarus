@@ -149,11 +149,22 @@ gc_alloc_new_ptr(int size, int old_gen, gc_t* gc){
   return meta_alloc(size, old_gen, gc, meta_ptrs);
 }
 
+#if 0
 static inline ikp 
 gc_alloc_new_symbol(int old_gen, gc_t* gc){
   assert(symbol_size == align(symbol_size));
   return meta_alloc(symbol_size, old_gen, gc, meta_symbol);
 }
+#endif
+
+static inline ikp 
+gc_alloc_new_symbol_record(int old_gen, gc_t* gc){
+  assert(symbol_record_size == align(symbol_record_size));
+  return meta_alloc(symbol_record_size, old_gen, gc, meta_symbol);
+}
+
+
+
 
 static inline ikp 
 gc_alloc_new_pair(int old_gen, gc_t* gc){
@@ -928,6 +939,7 @@ add_object_proc(gc_t* gc, ikp x)
     add_list(gc, t, gen, x, &y);
     return y;
   }
+#if 0
   else if(tag == symbol_tag){
     //ikp y = gc_alloc_new_ptr(align(symbol_size),gen, gc) + symbol_tag;
     ikp y = gc_alloc_new_symbol(gen, gc) + symbol_tag;
@@ -946,6 +958,7 @@ add_object_proc(gc_t* gc, ikp x)
 #endif
     return y;
   }
+#endif
   else if(tag == closure_tag){
     int size = disp_closure_data+
               (int) ref(fst, disp_code_freevars - disp_code_data);
@@ -982,6 +995,18 @@ add_object_proc(gc_t* gc, ikp x)
 #endif
       return y;
     } 
+    else if(fst == symbol_record_tag){
+      ikp y = gc_alloc_new_symbol_record(gen, gc) + record_tag;
+      ref(y, -record_tag)               = symbol_record_tag;
+      ref(y, off_symbol_record_string)  = ref(x, off_symbol_record_string);
+      ref(y, off_symbol_record_ustring) = ref(x, off_symbol_record_ustring);
+      ref(y, off_symbol_record_value)   = ref(x, off_symbol_record_value);
+      ref(y, off_symbol_record_proc)    = ref(x, off_symbol_record_proc);
+      ref(y, off_symbol_record_plist)   = ref(x, off_symbol_record_plist);
+      ref(x, -record_tag) = forward_ptr; 
+      ref(x, wordsize-record_tag) = y;
+      return y;
+    }
     else if(tagof(fst) == rtd_tag){
       /* record */
       int size = (int) ref(fst, off_rtd_length);

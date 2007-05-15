@@ -42,6 +42,7 @@ static int strings_eqp(ikp str1, ikp str2){
   return 0;
 }
 
+#if 0
 static ikp 
 ik_make_symbol(ikp str, ikp ustr, ikpcb* pcb){
   ikp sym = ik_alloc(pcb, symbol_size) + symbol_tag;
@@ -55,6 +56,19 @@ ik_make_symbol(ikp str, ikp ustr, ikpcb* pcb){
   ref(sym, off_symbol_unused) = 0;
   return sym;
 }
+#endif
+
+static ikp 
+ik_make_symbol(ikp str, ikp ustr, ikpcb* pcb){
+  ikp sym = ik_alloc(pcb, symbol_record_size) + record_tag;
+  ref(sym, off_symbol_record_string)  = str;
+  ref(sym, off_symbol_record_ustring) = ustr;
+  ref(sym, off_symbol_record_value)   = unbound_object;
+  ref(sym, off_symbol_record_proc)    = str;
+  ref(sym, off_symbol_record_plist)   = null_object;
+  return sym;
+}
+
 
 
 static ikp
@@ -65,7 +79,7 @@ intern_string(ikp str, ikp st, ikpcb* pcb){
   ikp b = bckt;
   while(b){
     ikp sym = ref(b, off_car);
-    ikp sym_str = ref(sym, off_symbol_string);
+    ikp sym_str = ref(sym, off_symbol_record_string);
     if(strings_eqp(sym_str, str)){
       return sym;
     }
@@ -88,7 +102,7 @@ intern_unique_string(ikp str, ikp ustr, ikp st, ikpcb* pcb){
   ikp b = bckt;
   while(b){
     ikp sym = ref(b, off_car);
-    ikp sym_ustr = ref(sym, off_symbol_ustring);
+    ikp sym_ustr = ref(sym, off_symbol_record_ustring);
     if(strings_eqp(sym_ustr, ustr)){
       return sym;
     }
@@ -110,14 +124,14 @@ ikrt_intern_gensym(ikp sym, ikpcb* pcb){
     st = make_symbol_table(pcb);
     pcb->gensym_table = st;
   }
-  ikp ustr = ref(sym, off_symbol_ustring);
+  ikp ustr = ref(sym, off_symbol_record_ustring);
   int h = compute_hash(ustr);
   int idx = h & (unfix(ref(st, off_vector_length)) - 1);
   ikp bckt = ref(st, off_vector_data + idx*wordsize);
   ikp b = bckt;
   while(b){
     ikp sym = ref(b, off_car);
-    ikp sym_ustr = ref(sym, off_symbol_ustring);
+    ikp sym_ustr = ref(sym, off_symbol_record_ustring);
     if(strings_eqp(sym_ustr, ustr)){
       return false_object;
     }

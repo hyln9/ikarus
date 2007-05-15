@@ -14,7 +14,7 @@
   (import
     (r6rs)
     (except (ikarus library-manager) installed-libraries)
-    (only (ikarus compiler) eval-core)
+    (only (ikarus system $bootstrap) eval-core)
     (chez modules)
     (ikarus symbols)
     (ikarus parameters)

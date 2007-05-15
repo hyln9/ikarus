@@ -107,6 +107,7 @@
 #define off_vector_length (disp_vector_length - vector_tag)
 
 
+#if 0
 #define symbol_tag    2
 #define disp_symbol_string        0
 #define disp_symbol_ustring       4
@@ -125,6 +126,21 @@
 #define off_symbol_code (disp_symbol_code - symbol_tag)
 #define off_symbol_errcode (disp_symbol_errcode - symbol_tag)
 #define off_symbol_unused (disp_symbol_unused - symbol_tag)
+#endif
+
+#define symbol_record_tag ((ikp) 0x5F)
+#define disp_symbol_record_string   4
+#define disp_symbol_record_ustring  8
+#define disp_symbol_record_value   12
+#define disp_symbol_record_proc    16
+#define disp_symbol_record_plist   20
+#define symbol_record_size         24
+#define off_symbol_record_string  (disp_symbol_record_string  - record_tag) 
+#define off_symbol_record_ustring (disp_symbol_record_ustring - record_tag) 
+#define off_symbol_record_value   (disp_symbol_record_value   - record_tag) 
+#define off_symbol_record_proc    (disp_symbol_record_proc    - record_tag) 
+#define off_symbol_record_plist   (disp_symbol_record_plist   - record_tag) 
+
 
 #define closure_tag  3
 #define closure_mask 7

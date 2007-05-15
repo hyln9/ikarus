@@ -54,10 +54,12 @@ print(FILE* fh, ikp x){
   else if(IK_CHARP(x)){
     fprintf(fh, "%s", char_string[IK_CHAR_VAL(x)]);
   }
+#if 0
   else if(tagof(x) == symbol_tag){
     ikp str = ref(x, off_symbol_string);
     fprintf(fh, "%s", str+off_string_data);
   }
+#endif
   else if(tagof(x) == vector_tag){
     ikp len = ref(x, off_vector_length);
     if(len == 0){

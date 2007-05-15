@@ -1,6 +1,13 @@
 #!/usr/bin/env ikarus -b ikarus.boot --r6rs-script
 
-(import (ikarus system $bootstrap) (ikarus))
+;(import 
+;  ;(only (ikarus system $bootstrap) boot-library-expand)
+;  (ikarus.compiler)
+;  (ikarus.syntax)
+;  (except (ikarus) 
+;           assembler-output))
+
+(import (ikarus) (ikarus system $bootstrap))
 
 (define scheme-library-files
   ;;; Listed in the order in which they're loaded.
@@ -51,6 +58,7 @@
     "ikarus.code-objects.ss"
     "ikarus.intel-assembler.ss"
     "ikarus.trace.ss"
+    "ikarus.fasl.write.ss"
     "ikarus.fasl.ss"
     "ikarus.compiler.ss"
     "ikarus.library-manager.ss"
@@ -422,6 +430,7 @@
     [compile-core-expr-to-port   $boot]
     [current-primitive-locations $boot]
     [boot-library-expand         $boot]
+    [eval-core                   $boot]
 
     [$car               $pairs]
     [$cdr               $pairs]
@@ -673,7 +682,7 @@
                   (import 
                     (only (ikarus library-manager)
                           install-library)
-                    (only (ikarus compiler)
+                    (only (ikarus.compiler)
                           current-primitive-locations)
                     (ikarus))
                   (current-primitive-locations 

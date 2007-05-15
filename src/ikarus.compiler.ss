@@ -1,5 +1,5 @@
 
-(library (ikarus compiler)
+(library (ikarus.compiler)
   (export compile-core-expr-to-port assembler-output
           current-primitive-locations eval-core)
   (import 
@@ -8,8 +8,8 @@
     (except (ikarus)
         compile-core-expr-to-port assembler-output
         current-primitive-locations eval-core)
-    (ikarus intel-assembler)
-    (ikarus fasl write))
+    (ikarus.intel-assembler)
+    (ikarus.fasl.write))
 
 
 
@@ -2943,6 +2943,9 @@
   (define disp-symbol-error-function 24)
   (define disp-symbol-unused         28)
   (define symbol-size                32)
+
+  
+
   (define vector-tag 5)
   (define vector-mask 7)
   (define disp-vector-length 0)
