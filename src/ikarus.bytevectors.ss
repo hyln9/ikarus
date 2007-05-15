@@ -3,13 +3,17 @@
   (export make-bytevector bytevector-length bytevector-s8-ref
           bytevector-u8-ref bytevector-u8-set! bytevector-s8-set!
           bytevector-copy! u8-list->bytevector bytevector->u8-list
-          bytevector-fill! bytevector-copy bytevector=?)
+          bytevector-fill! bytevector-copy bytevector=?
+          bytevector-uint-ref bytevector-sint-ref 
+          bytevector->uint-list bytevector->sint-list)
   (import 
     (except (ikarus) 
         make-bytevector bytevector-length bytevector-s8-ref
         bytevector-u8-ref bytevector-u8-set! bytevector-s8-set! 
         bytevector-copy! u8-list->bytevector bytevector->u8-list
-        bytevector-fill! bytevector-copy bytevector=?)
+        bytevector-fill! bytevector-copy bytevector=?
+        bytevector-uint-ref bytevector-sint-ref
+        bytevector->uint-list bytevector->sint-list)
     (ikarus system $fx)
     (ikarus system $pairs)
     (ikarus system $bytevectors))
@@ -190,6 +194,154 @@
            (unless ($fx= si sj)
              ($bytevector-set! dst di ($bytevector-u8-ref src si))
              (f src ($fxadd1 si) dst ($fxadd1 di) sj)))])))
+
+  (module (bytevector-uint-ref bytevector-sint-ref
+           bytevector->uint-list bytevector->sint-list)
+    (define (uref-big x ib il) ;; ib included, il excluded
+      (cond
+        [($fx= il ib) 0]
+        [else
+         (let ([b ($bytevector-u8-ref x ib)])
+           (cond
+             [($fx= b 0) (uref-big x ($fxadd1 ib) il)]
+             [else
+              (case ($fx- il ib)
+                [(1) b]
+                [(2) ($fx+ ($fxsll b 8)
+                           ($bytevector-u8-ref x ($fxsub1 il)))]
+                [(3) 
+                 ($fx+ ($fxsll ($fx+ ($fxsll b 8)
+                                     ($bytevector-u8-ref x ($fxadd1 ib)))
+                               8)
+                       ($bytevector-u8-ref x ($fxsub1 il)))]
+                [else
+                 (let ([im ($fxsra ($fx+ il ib) 1)])
+                   (+ (uref-big x im il)
+                      (* (uref-big x ib im)
+                         (expt 256 ($fx- il im)))))])]))]))
+    (define (uref-little x il ib) ;; il included, ib excluded
+      (cond
+        [($fx= il ib) 0]
+        [else
+         (let ([ib^ ($fxsub1 ib)])
+          (let ([b ($bytevector-u8-ref x ib^)])
+            (cond
+              [($fx= b 0) (uref-little x il ib^)]
+              [else
+               (case ($fx- ib il)
+                 [(1) b]
+                 [(2) ($fx+ ($fxsll b 8) ($bytevector-u8-ref x il))]
+                 [(3) 
+                  ($fx+ ($fxsll ($fx+ ($fxsll b 8) 
+                                      ($bytevector-u8-ref x ($fxadd1 il)))
+                                8)
+                        ($bytevector-u8-ref x il))]
+                 [else
+                  (let ([im ($fxsra ($fx+ il ib) 1)])
+                    (+ (uref-little x il im) 
+                       (* (uref-little x im ib) 
+                          (expt 256 ($fx- im il)))))])])))]))
+    (define (sref-big x ib il) ;; ib included, il excluded
+      (cond
+        [($fx= il ib) -1]
+        [else
+         (let ([b ($bytevector-u8-ref x ib)])
+           (cond
+             [($fx= b 0) (uref-big x ($fxadd1 ib) il)]
+             [($fx= b 255) (sref-big-neg x ($fxadd1 ib) il)]
+             [($fx< b 128) (uref-big x ib il)]
+             [else (- (uref-big x ib il) (expt 256 ($fx- il ib)))]))]))
+    (define (sref-big-neg x ib il) ;; ib included, il excluded
+      (cond
+        [($fx= il ib) -1]
+        [else
+         (let ([b ($bytevector-u8-ref x ib)])
+           (cond
+             [($fx= b 255) (sref-big-neg x ($fxadd1 ib) il)]
+             [else (- (uref-big x ib il) (expt 256 ($fx- il ib)))]))]))
+    (define (sref-little x il ib) ;; il included, ib excluded
+      (cond
+        [($fx= il ib) -1]
+        [else
+         (let ([ib^ ($fxsub1 ib)])
+          (let ([b ($bytevector-u8-ref x ib^)])
+            (cond
+              [($fx= b 0) (uref-little x il ib^)]
+              [($fx= b 255) (sref-little-neg x il ib^)]
+              [($fx< b 128) (uref-little x il ib)]
+              [else (- (uref-little x il ib) (expt 256 ($fx- ib il)))])))]))
+    (define (sref-little-neg x il ib) ;; il included, ib excluded
+      (cond
+        [($fx= il ib) -1]
+        [else
+         (let ([ib^ ($fxsub1 ib)])
+          (let ([b ($bytevector-u8-ref x ib^)])
+            (cond
+              [($fx= b 255) (sref-little-neg x il ib^)]
+              [else (- (uref-little x il ib) (expt 256 ($fx- ib il)))])))])) 
+    (define bytevector-sint-ref
+      (lambda (x k endianness size)
+        (define who 'bytevector-sint-ref)
+        (unless (bytevector? x) (error who "~s is not a bytevector" x))
+        (unless (and (fixnum? k) ($fx>= k 0)) (error who "invalid index ~s" k))
+        (unless (and (fixnum? size) ($fx>= size 1)) (error who "invalid size ~s" size))
+        (let ([n ($bytevector-length x)])
+          (unless ($fx< k n) (error who "index ~s is out of range" k))
+          (let ([end ($fx+ k size)])
+            (unless (and ($fx>= end 0) ($fx<= end n))
+              (error who "~s+~s is out of range" k size))
+            (case endianness
+              [(little) (sref-little x k end)]
+              [(big)    (sref-big x k end)]
+              [else (error who "invalid endianness ~s" endianness)])))))
+    (define bytevector-uint-ref
+      (lambda (x k endianness size)
+        (define who 'bytevector-uint-ref)
+        (unless (bytevector? x) (error who "~s is not a bytevector" x))
+        (unless (and (fixnum? k) ($fx>= k 0)) (error who "invalid index ~s" k))
+        (unless (and (fixnum? size) ($fx>= size 1)) (error who "invalid size ~s" size))
+        (let ([n ($bytevector-length x)])
+          (unless ($fx< k n) (error who "index ~s is out of range" k))
+          (let ([end ($fx+ k size)])
+            (unless (and ($fx>= end 0) ($fx<= end n))
+              (error who "~s+~s is out of range" k size))
+            (case endianness
+              [(little) (uref-little x k end)]
+              [(big)    (uref-big x k end)]
+              [else (error who "invalid endianness ~s" endianness)])))))
+    (define (bytevector->some-list x k n ls proc who)
+      (cond
+        [($fx= n 0) ls]
+        [else
+         (let ([i ($fx- n k)])
+           (cond
+             [($fx>= i 0)
+              (bytevector->some-list x k i (cons (proc x i n) ls) proc who)]
+             [else
+              (error who "invalid size ~s" k)]))]))
+    (define bytevector->uint-list
+      (lambda (x endianness size)
+        (define who 'bytevector->uint-list)
+        (unless (bytevector? x) (error who "~s is not a bytevector" x))
+        (unless (and (fixnum? size) ($fx>= size 1)) (error who "invalid size ~s" size))
+        (case endianness
+          [(little) (bytevector->some-list x size ($bytevector-length x)
+                      '() uref-little 'bytevector->uint-list)]
+          [(big)    (bytevector->some-list x size ($bytevector-length x) 
+                      '() uref-big 'bytevector->uint-list)]
+          [else (error who "invalid endianness ~s" endianness)])))
+    (define bytevector->sint-list
+      (lambda (x endianness size)
+        (define who 'bytevector->sint-list)
+        (unless (bytevector? x) (error who "~s is not a bytevector" x))
+        (unless (and (fixnum? size) ($fx>= size 1)) (error who "invalid size ~s" size))
+        (case endianness
+          [(little) (bytevector->some-list x size ($bytevector-length x)
+                      '() sref-little 'bytevector->sint-list)]
+          [(big)    (bytevector->some-list x size ($bytevector-length x) 
+                      '() sref-big 'bytevector->sint-list)]
+          [else (error who "invalid endianness ~s" endianness)])))
+    )
 
 
 

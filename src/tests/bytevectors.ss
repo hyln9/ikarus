@@ -34,12 +34,57 @@
          (bytevector-u8-ref b 0)
          (bytevector-s8-ref b 1)
          (bytevector-u8-ref b 1)))]
-
     [(lambda (x) (equal? x '(1 2 3 1 2 3 4 8)))
      (let ([b (u8-list->bytevector '(1 2 3 4 5 6 7 8))])
        (bytevector-copy! b 0 b 3 4)
        (bytevector->u8-list b))]
-
+    [(lambda (x) (= x 17)) 
+     (bytevector-uint-ref 
+       (u8-list->bytevector '(17))
+       0 'little 1)]
+    [(lambda (x) (= x 17)) 
+     (bytevector-uint-ref 
+       (u8-list->bytevector '(17))
+       0 'big 1)]
+    [(lambda (x) (= x (+ 17 (* 54 256))))
+     (bytevector-uint-ref 
+       (u8-list->bytevector '(17 54))
+       0 'little 2)]
+    [(lambda (x) (= x (+ 17 (* 54 256))))
+     (bytevector-uint-ref 
+       (u8-list->bytevector (reverse '(17 54)))
+       0 'big 2)] 
+    [(lambda (x) (= x (+ 17 (* 54 256) (* 98 256 256))))
+     (bytevector-uint-ref 
+       (u8-list->bytevector '(17 54 98))
+       0 'little 3)]
+    [(lambda (x) (= x (+ 17 (* 54 256) (* 98 256 256))))
+     (bytevector-uint-ref 
+       (u8-list->bytevector (reverse '(17 54 98)))
+       0 'big 3)] 
+    [(lambda (x) (= x (+ 17 (* 54 256) (* 98 256 256) (* 120 256 256 256))))
+     (bytevector-uint-ref 
+       (u8-list->bytevector '(17 54 98 120))
+       0 'little 4)]
+    [(lambda (x) (= x #x123897348738947983174893204982390489))
+     (bytevector-uint-ref 
+       (u8-list->bytevector
+         '(#x89 #x04 #x39 #x82 #x49 #x20 #x93 #x48 #x17
+           #x83 #x79 #x94 #x38 #x87 #x34 #x97 #x38 #x12))
+       0 'little 18)]
+    [(lambda (x) (= x #x123897348738947983174893204982390489))
+     (bytevector-uint-ref 
+       (u8-list->bytevector
+         (reverse
+           '(#x89 #x04 #x39 #x82 #x49 #x20 #x93 #x48 #x17
+             #x83 #x79 #x94 #x38 #x87 #x34 #x97 #x38 #x12)))
+       0 'big 18)]
+    [(lambda (x) (equal? x '(513 65283 513 513)))
+     (let ([b (u8-list->bytevector '(1 2 3 255 1 2 1 2))])
+       (bytevector->uint-list b 'little 2))]
+    [(lambda (x) (equal? x '(513 -253 513 513)))
+     (let ([b (u8-list->bytevector '(1 2 3 255 1 2 1 2))])
+       (bytevector->sint-list b 'little 2))]
     ))
 
 

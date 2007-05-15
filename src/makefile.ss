@@ -283,6 +283,10 @@
     [bytevector-copy         i]
     [bytevector-fill!        i]
     [bytevector=?            i]
+    [bytevector-uint-ref     i]
+    [bytevector-sint-ref     i]
+    [bytevector->uint-list   i]
+    [bytevector->sint-list   i]
 
     [for-each                i r]
     [map                     i r]
@@ -322,6 +326,7 @@
     [+                       i r]
     [add1                    i]
     [sub1                    i]
+    [expt                    i]
     [number?                 i r]
     [bignum?                 i]
     [integer?                i]
