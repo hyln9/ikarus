@@ -126,6 +126,12 @@
     [$string-length     1   value]
     [$string-ref        2   value]
     [$string-set!       3   effect]
+    ;;; bytevectors
+    [bytevector?        1   pred]
+    [$make-bytevector   1   value]
+    [$bytevector-length 1   value]
+    [$bytevector-ref    2   value]
+    [$bytevector-set!   3   effect]
     ;;; symbols
     [$make-symbol       1   value]
     [$symbol-value      1   value]

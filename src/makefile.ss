@@ -117,6 +117,7 @@
     [$chars      (ikarus system $chars)       #f]
     [$strings    (ikarus system $strings)     #f]
     [$vectors    (ikarus system $vectors)     #f]
+    [$bytes      (ikarus system $bytevectors) #f]
     [$fx         (ikarus system $fx)          #f]
     [$symbols    (ikarus system $symbols)     #f]
     [$records    (ikarus system $records)     #f]
@@ -129,6 +130,7 @@
     [$interrupts (ikarus system $interrupts)  #f]
     [$boot       (ikarus system $bootstrap)   #f]
     ))
+
 
 (define bootstrap-collection
   (let ([ls (map 
@@ -469,6 +471,14 @@
     [$string-set!       $strings]
     [$string-length     $strings]
   
+    [bytevector?        i]
+
+    [$make-bytevector   $bytes]
+    [$bytevector-length $bytes]
+    [$bytevector-ref    $bytes]
+    [$bytevector-set!   $bytes]
+
+
     [$make-vector       $vectors]
     [$vector-length     $vectors]
     [$vector-ref        $vectors]
