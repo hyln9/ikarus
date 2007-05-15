@@ -1921,7 +1921,8 @@
         null? pair? not cons eq? vector symbol? error eof-object eof-object? 
         void base-rtd $unbound-object? code? $forward-ptr? bwp-object?
         pointer-value top-level-value car cdr list* list $record
-        port? input-port? output-port?
+        port? input-port? output-port? $bytevector-set!
+        $make-bytevector $bytevector-ref bytevector?
         $make-port/input $make-port/output $make-port/both
         $port-handler 
         $port-input-buffer $port-input-index $port-input-size
@@ -2335,7 +2336,7 @@
            [($frame->continuation $code->closure) 
             (check-const 
               (fx+ disp-closure-data (fx* (length arg*) wordsize)) x)]
-           [($make-string) 
+           [($make-string $make-bytevector) 
             (record-case (car arg*)
               [(constant i)
                (check-const (fx+ i (fx+ disp-string-data 1)) x)]
@@ -2950,6 +2951,11 @@
   ;(define disp-symbol-unused         28)
   ;(define symbol-size                32)
 
+  (define bytevector-mask 7)
+  (define bytevector-tag 2)
+  (define disp-bytevector-length 0)
+  (define disp-bytevector-data 4)
+
   (define symbol-record-tag #x5F)
   (define disp-symbol-record-string  4)
   (define disp-symbol-record-ustring 8)
@@ -3228,10 +3234,11 @@
          (cond-branch op Lt Lf ac))]))
   (define (do-pred-prim op rand* Lt Lf ac)
     (case op
-     [(fixnum?)    (type-pred fx-mask fx-tag rand* Lt Lf ac)]
-     [(pair?)      (type-pred pair-mask pair-tag rand* Lt Lf ac)]
-     [(char?)      (type-pred char-mask char-tag rand* Lt Lf ac)]
-     [(string?)    (type-pred string-mask string-tag rand* Lt Lf ac)]
+     [(fixnum?)     (type-pred fx-mask fx-tag rand* Lt Lf ac)]
+     [(pair?)       (type-pred pair-mask pair-tag rand* Lt Lf ac)]
+     [(char?)       (type-pred char-mask char-tag rand* Lt Lf ac)]
+     [(string?)     (type-pred string-mask string-tag rand* Lt Lf ac)]
+     [(bytevector?) (type-pred bytevector-mask bytevector-tag rand* Lt Lf ac)]
      [(symbol?)    
       (indirect-type-pred vector-mask vector-tag #f
          symbol-record-tag rand* Lt Lf ac)]
@@ -3793,6 +3800,18 @@
               (addl (int (fx+ disp-string-data object-alignment)) apr)
               (sarl (int align-shift) apr)
               (sall (int align-shift) apr)
+              ac)] 
+      [($make-bytevector) 
+       (list* (movl (Simple (car arg*)) ebx)
+              (movl ebx (mem disp-bytevector-length apr))
+              (movl apr eax)
+              (addl (int bytevector-tag) eax)
+              (sarl (int fx-shift) ebx)
+              (addl ebx apr)
+              (movb (int 0) (mem disp-bytevector-data apr))
+              (addl (int (fx+ disp-bytevector-data object-alignment)) apr)
+              (sarl (int align-shift) apr)
+              (sall (int align-shift) apr)
               ac)]
       [($make-vector) 
        (list* (movl (Simple (car arg*)) ebx)
@@ -4007,7 +4026,7 @@
       (do-effect-prim op arg*
         (cons (movl (int void-object) eax) ac))]
      [(fixnum? bignum? flonum? immediate? $fxzero? boolean? char? pair? 
-       vector? string? symbol?
+       vector? bytevector? string? symbol?
        procedure? null? not eof-object? $fx= $fx< $fx<= $fx> $fx>= eq?
        $char= $char< $char<= $char> $char>= $unbound-object? code?
        $record? $record/rtd? bwp-object? port? input-port? output-port?) 
@@ -4097,6 +4116,13 @@
               (addl (Simple (car arg*)) eax)
               (movl (Simple (caddr arg*)) ebx)
               (movb bh (mem (fx- disp-string-data string-tag) eax))
+              ac)]
+      [($bytevector-set!) 
+       (list* (movl (Simple (cadr arg*)) eax)
+              (sarl (int fx-shift) eax)
+              (addl (Simple (car arg*)) eax)
+              (movl (Simple (caddr arg*)) ebx)
+              (movb bh (mem (fx- disp-bytevector-data bytevector-tag) eax))
               ac)]
       [($set-car!) 
        (list* (movl (Simple (car arg*)) eax)

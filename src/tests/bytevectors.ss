@@ -3,7 +3,7 @@
   (export test-bytevectors)
   (import (ikarus) (tests framework))
 
-  (define (not-byte-vector? x) 
+  (define (not-bytevector? x) 
     (not (bytevector? x)))
 
   (define-tests test-bytevectors

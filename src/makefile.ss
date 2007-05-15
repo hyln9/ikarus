@@ -68,6 +68,7 @@
     "ikarus.cafe.ss"
     "ikarus.posix.ss"
     "ikarus.timer.ss"
+    "ikarus.bytevectors.ss"
     "ikarus.main.ss"))
 
 (define ikarus-system-macros
@@ -270,6 +271,8 @@
     [vector-length           i r]
     [list->vector            i r]
     [vector->list            i r]
+    [make-bytevector         i]
+
     [for-each                i r]
     [map                     i r]
     [andmap                  i]

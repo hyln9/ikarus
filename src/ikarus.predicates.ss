@@ -3,14 +3,14 @@
 
   (export fixnum? flonum? bignum? number? complex? real? rational?
           integer? exact? eof-object? bwp-object? immediate?
-          boolean? char? vector? string? procedure? null? pair?
+          boolean? char? vector? bytevector? string? procedure? null? pair?
           symbol? code? not weak-pair? eq? eqv? equal?) 
 
   (import 
 
     (except (ikarus) fixnum? flonum? bignum? number? complex? real?
             rational? integer? exact? eof-object? bwp-object?
-            immediate? boolean? char? vector? string? procedure?
+            immediate? boolean? char? vector? bytevector? string? procedure?
             null? pair? weak-pair? symbol? code? not eq? eqv? equal?
             port? input-port? output-port?)
     (ikarus system $fx)
@@ -20,7 +20,7 @@
     (ikarus system $vectors)
     (rename (only (ikarus) fixnum? flonum? bignum? eof-object?
                   bwp-object? immediate? boolean? char? vector? string?
-                  procedure? null? pair? symbol? code? eq?
+                  bytevector? procedure? null? pair? symbol? code? eq?
                   port? input-port? output-port?)
             (fixnum? sys:fixnum?)
             (flonum? sys:flonum?)
@@ -31,6 +31,7 @@
             (boolean? sys:boolean?)
             (char? sys:char?)
             (vector? sys:vector?)
+            (bytevector? sys:bytevector?)
             (string? sys:string?)
             (procedure? sys:procedure?)
             (null? sys:null?)
@@ -95,6 +96,7 @@
   (define boolean? (lambda (x) (sys:boolean? x)))
   (define char? (lambda (x) (sys:char? x)))
   (define vector? (lambda (x) (sys:vector? x)))
+  (define bytevector? (lambda (x) (sys:bytevector? x)))
   (define string? (lambda (x) (sys:string? x)))
   (define procedure? (lambda (x) (sys:procedure? x)))
   (define null? (lambda (x) (sys:null? x)))
