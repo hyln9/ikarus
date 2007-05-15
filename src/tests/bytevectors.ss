@@ -35,6 +35,11 @@
          (bytevector-s8-ref b 1)
          (bytevector-u8-ref b 1)))]
 
+    [(lambda (x) (equal? x '(1 2 3 1 2 3 4 8)))
+     (let ([b (u8-list->bytevector '(1 2 3 4 5 6 7 8))])
+       (bytevector-copy! b 0 b 3 4)
+       (bytevector->u8-list b))]
+
     ))
 
 

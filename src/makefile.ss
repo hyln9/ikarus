@@ -277,6 +277,9 @@
     [bytevector-u8-ref       i]
     [bytevector-s8-set!      i]
     [bytevector-u8-set!      i]
+    [bytevector->u8-list     i]
+    [u8-list->bytevector     i]
+    [bytevector-copy!        i]
 
     [for-each                i r]
     [map                     i r]
