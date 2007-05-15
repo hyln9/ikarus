@@ -15,6 +15,9 @@
     [not-bytevector? (current-output-port)] 
     [not-bytevector? (current-input-port)] 
     [not-bytevector? '#(2837 2398 239)] 
+    [zero? (bytevector-length (make-bytevector 0))]
+    [(lambda (x) (= x 100)) (bytevector-length (make-bytevector 100 -30))]
+
     ))
 
 

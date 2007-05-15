@@ -1922,6 +1922,7 @@
         void base-rtd $unbound-object? code? $forward-ptr? bwp-object?
         pointer-value top-level-value car cdr list* list $record
         port? input-port? output-port? $bytevector-set!
+        $bytevector-length
         $make-bytevector $bytevector-ref bytevector?
         $make-port/input $make-port/output $make-port/both
         $port-handler 
@@ -3662,6 +3663,8 @@
       [($cdr) (indirect-ref arg* (fx- disp-cdr pair-tag) ac)]
       [($vector-length) 
        (indirect-ref arg* (fx- disp-vector-length vector-tag) ac)]
+      [($bytevector-length) 
+       (indirect-ref arg* (fx- disp-bytevector-length bytevector-tag) ac)]
       [($string-length) 
        (indirect-ref arg* (fx- disp-string-length string-tag) ac)]
       [($symbol-string) 
