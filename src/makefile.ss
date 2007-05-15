@@ -1,12 +1,12 @@
 #!/usr/bin/env ikarus -b ikarus.boot --r6rs-script
 
 
-;(import (except (ikarus) assembler-output)
-;        (ikarus compiler)
-;        (except (ikarus system $bootstrap)
-;                eval-core
-;                current-primitive-locations
-;                compile-core-expr-to-port))
+#;(import (except (ikarus) assembler-output)
+        (ikarus compiler)
+        (except (ikarus system $bootstrap)
+                eval-core
+                current-primitive-locations
+                compile-core-expr-to-port))
 
 (import (ikarus) (ikarus system $bootstrap))
 
@@ -434,6 +434,7 @@
     [eval-core                   $boot]
     [current-library-collection  $boot]
     [library-name                $boot]
+    [find-library-by-name        $boot]
 
     [$car               $pairs]
     [$cdr               $pairs]
