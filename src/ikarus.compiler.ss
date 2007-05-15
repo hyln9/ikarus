@@ -130,7 +130,8 @@
     [bytevector?        1   pred]
     [$make-bytevector   1   value]
     [$bytevector-length 1   value]
-    [$bytevector-ref    2   value]
+    [$bytevector-u8-ref    2   value]
+    [$bytevector-s8-ref    2   value]
     [$bytevector-set!   3   effect]
     ;;; symbols
     [$make-symbol       1   value]
@@ -1922,7 +1923,7 @@
         void base-rtd $unbound-object? code? $forward-ptr? bwp-object?
         pointer-value top-level-value car cdr list* list $record
         port? input-port? output-port? $bytevector-set!
-        $bytevector-length
+        $bytevector-length $bytevector-u8-ref $bytevector-s8-ref
         $make-bytevector $bytevector-ref bytevector?
         $make-port/input $make-port/output $make-port/both
         $port-handler 
@@ -3785,6 +3786,22 @@
               (movb (mem (fx- disp-code-data vector-tag) ebx) ah)
               (sarl (int (fx- 8 fx-shift)) eax)
               ac)]
+      [($bytevector-s8-ref) 
+       (list* (movl (Simple (cadr arg*)) ebx)
+              (sarl (int fx-shift) ebx)
+              (addl (Simple (car arg*)) ebx)
+              (movb (mem (fx- disp-bytevector-data bytevector-tag) ebx) al)
+              (sall (int (* (sub1 wordsize) 8)) eax)
+              (sarl (int (- (* (sub1 wordsize) 8) fx-shift)) eax)
+              ac)] 
+      [($bytevector-u8-ref) 
+       (list* (movl (Simple (cadr arg*)) ebx)
+              (sarl (int fx-shift) ebx)
+              (addl (Simple (car arg*)) ebx)
+              (movl (int 0) eax)
+              (movb (mem (fx- disp-bytevector-data bytevector-tag) ebx) al)
+              (sall (int fx-shift) eax)
+              ac)]
       [($string-ref) 
        (list* (movl (Simple (cadr arg*)) ebx)
               (sarl (int fx-shift) ebx)
@@ -4125,6 +4142,7 @@
               (sarl (int fx-shift) eax)
               (addl (Simple (car arg*)) eax)
               (movl (Simple (caddr arg*)) ebx)
+              (sall (int (- 8 fx-shift)) ebx)
               (movb bh (mem (fx- disp-bytevector-data bytevector-tag) eax))
               ac)]
       [($set-car!) 

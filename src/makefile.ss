@@ -273,6 +273,8 @@
     [vector->list            i r]
     [make-bytevector         i]
     [bytevector-length       i]
+    [bytevector-s8-ref       i]
+    [bytevector-u8-ref       i]
 
     [for-each                i r]
     [map                     i r]
@@ -479,8 +481,8 @@
 
     [$make-bytevector   $bytes]
     [$bytevector-length $bytes]
-    [$bytevector-ref    $bytes]
     [$bytevector-s8-ref $bytes]
+    [$bytevector-u8-ref $bytes]
     [$bytevector-set!   $bytes]
 
 
