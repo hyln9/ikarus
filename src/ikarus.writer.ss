@@ -9,6 +9,7 @@
     (ikarus system $fx)
     (ikarus system $pairs)
     (ikarus system $symbols)
+    (ikarus system $bytevectors)
     (except (ikarus) write display format printf print-error
             error-handler error))
 
@@ -73,6 +74,30 @@
                  [else i])])
            (write-char #\) p)
            i))))
+
+  (define write-bytevector
+    (lambda (x p m h i)
+      (write-char #\# p)
+      (write-char #\v p)
+      (write-char #\u p)
+      (write-char #\8 p)
+      (write-char #\( p)
+      (let ([n ($bytevector-length x)])
+        (let ([i
+               (cond
+                 [(fx> n 0)
+                  (let f ([idx 1] [i (writer ($bytevector-u8-ref x 0) p m h i)])
+                    (cond
+                      [(fx= idx n)
+                       i]
+                      [else
+                       (write-char #\space p)
+                       (f (fxadd1 idx)
+                          (writer (bytevector-u8-ref x idx) p m h i))]))]
+                 [else i])])
+           (write-char #\) p)
+           i))))
+
 
   (define write-record
     (lambda (x p m h i)
@@ -347,6 +372,8 @@
            i)]
         [(vector? x)
          (write-shareable x p m h i write-vector)]
+        [(bytevector? x)
+         (write-shareable x p m h i write-bytevector)]
         [(null? x) 
          (write-char #\( p)
          (write-char #\) p)

@@ -3,6 +3,9 @@
   (export read read-initial read-token comment-handler)
   (import
     (ikarus system $chars)
+    (ikarus system $fx)
+    (ikarus system $pairs)
+    (ikarus system $bytevectors)
     (except (ikarus) read read-token comment-handler))
 
   (define delimiter?
@@ -460,6 +463,25 @@
                     [else
                      (error 'tokenize
                         "invalid char ~a inside gensym" c)])))]))]
+        [($char= #\v c)
+         (let ([c (read-char p)])
+           (cond
+             [($char= #\u c)
+              (let ([c (read-char p)])
+                (cond
+                  [($char= c #\8)
+                   (let ([c (read-char p)])
+                     (cond
+                       [($char= c #\() 'vu8]
+                       [(eof-object? c) 
+                        (error 'tokenize "invalid eof object after #vu8")]
+                       [else (error 'tokenize "invalid sequence #vu8~a" c)]))]
+                  [(eof-object? c) 
+                   (error 'tokenize "invalid eof object after #vu")]
+                  [else (error 'tokenize "invalid sequence #vu~a" c)]))]
+             [(eof-object? c) 
+              (error 'tokenize "invalid eof object after #v")]
+             [else (error 'tokenize "invalid sequence #v~a" c)]))]
         [($char= #\@ c)
          (error 'read "FIXME: fasl read disabled")
          '(cons 'datum ($fasl-read p))]
@@ -634,6 +656,19 @@
                     (k))
                   k)
               (fxsub1 i) (cdr ls)))])))
+  (define bytevector-put
+    (lambda (v k i ls)
+      (cond
+        [(null? ls) k]
+        [else
+         (let ([a (car ls)])
+           (cond
+             [(fixnum? a)
+              (unless (and (fx<= 0 a) (fx<= a 255))
+                (error 'read "invalid value ~s in a bytevector" a))
+              ($bytevector-set! v i a)
+              (bytevector-put v k ($fxsub1 i) ($cdr ls))]
+             [else (error 'read "invalid value ~s is a bytevector" a)]))])))
   (define read-vector
     (lambda (p locs k count ls)
       (let ([t (tokenize p)])
@@ -654,6 +689,26 @@
           [else
            (let-values ([(a locs k) (parse-token p locs k t)])
               (read-vector p locs k (fxadd1 count) (cons a ls)))]))))
+  (define read-bytevector
+    (lambda (p locs k count ls)
+      (let ([t (tokenize p)])
+        (cond
+          [(eof-object? t) 
+           (error 'read "end of file encountered while reading a bytevector")]
+          [(eq? t 'rparen) 
+           (let ([v ($make-bytevector count)])
+             (let ([k (bytevector-put v k (fxsub1 count) ls)])
+               (values v locs k)))]
+          [(eq? t 'rbrack)
+           (error 'read "unexpected ] while reading a bytevector")]
+          [(eq? t 'dot)
+           (error 'read "unexpected . while reading a bytevector")]
+          [(eq? t 'hash-semi)
+           (let-values ([(ignored locs k) (read-expr p locs k)])
+             (read-bytevector p locs k count ls))]
+          [else
+           (let-values ([(a locs k) (parse-token p locs k t)])
+              (read-bytevector p locs k (fxadd1 count) (cons a ls)))]))))
   (define-record loc (value set?))
   (define parse-token
     (lambda (p locs k t)
@@ -665,6 +720,7 @@
         [(eq? t 'hash-semi)
          (let-values ([(ignored locs k) (read-expr p locs k)])
            (read-expr p locs k))]
+        [(eq? t 'vu8) (read-bytevector p locs k 0 '())]
         [(pair? t)
          (cond
            [(eq? (car t) 'datum) (values (cdr t) locs k)]

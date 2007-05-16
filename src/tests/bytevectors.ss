@@ -105,6 +105,9 @@
          (bytevector-uint-ref b 0 'big 16)
          (bytevector-sint-ref b 0 'big 16)
          (bytevector->u8-list b)))]
+    [(lambda (x) (equal? x '(1 2 3 4)))
+     (bytevector->u8-list '#vu8(1 2 3 4))]
+
     ))
 
 
