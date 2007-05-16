@@ -133,6 +133,12 @@
     [$bytevector-u8-ref    2   value]
     [$bytevector-s8-ref    2   value]
     [$bytevector-set!   3   effect]
+    ;;; bignums
+    [$make-bignum       2   value]
+    [$bignum-positive?  1   pred]
+    [$bignum-size       1   value]
+    [$bignum-byte-ref   2   value]
+    [$bignum-byte-set!  3   effect]
     ;;; symbols
     [$make-symbol       1   value]
     [$symbol-value      1   value]
@@ -1925,6 +1931,7 @@
         port? input-port? output-port? $bytevector-set!
         $bytevector-length $bytevector-u8-ref $bytevector-s8-ref
         $make-bytevector $bytevector-ref bytevector?
+        $bignum-byte-ref $bignum-positive? $bignum-size
         $make-port/input $make-port/output $make-port/both
         $port-handler 
         $port-input-buffer $port-input-index $port-input-size
@@ -3261,6 +3268,12 @@
      [($fx<= $char<=)   (compare-and-branch 'jle rand* Lt Lf ac)]
      [($fx> $char>)     (compare-and-branch 'jg rand* Lt Lf ac)]
      [($fx>= $char>=)   (compare-and-branch 'jge rand* Lt Lf ac)]
+     [($bignum-positive?) 
+      (list* 
+        (movl (Simple (car rand*)) eax)
+        (movl (mem (- 0 record-tag) eax) eax)
+        (andl (int bignum-sign-mask) eax)
+        (cond-branch 'je Lt Lf ac))]
      [(vector?) 
       (indirect-type-pred vector-mask vector-tag fx-mask fx-tag 
          rand* Lt Lf ac)]
@@ -3668,6 +3681,12 @@
        (indirect-ref arg* (fx- disp-bytevector-length bytevector-tag) ac)]
       [($string-length) 
        (indirect-ref arg* (fx- disp-string-length string-tag) ac)]
+      [($bignum-size) 
+       (indirect-ref arg* (fx- 0 record-tag) 
+          (list* 
+            (sarl (int bignum-length-shift) eax)
+            (sall (int (* 2 fx-shift)) eax)
+            ac))]
       [($symbol-string) 
        (indirect-ref arg* (fx- disp-symbol-record-string record-tag) ac)]
       [($symbol-unique-string) 
@@ -3800,6 +3819,14 @@
               (addl (Simple (car arg*)) ebx)
               (movl (int 0) eax)
               (movb (mem (fx- disp-bytevector-data bytevector-tag) ebx) al)
+              (sall (int fx-shift) eax)
+              ac)]
+      [($bignum-byte-ref) 
+       (list* (movl (Simple (cadr arg*)) ebx)
+              (sarl (int fx-shift) ebx)
+              (addl (Simple (car arg*)) ebx)
+              (movl (int 0) eax)
+              (movb (mem (fx- disp-bignum-data record-tag) ebx) al)
               (sall (int fx-shift) eax)
               ac)]
       [($string-ref) 

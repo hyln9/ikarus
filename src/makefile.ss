@@ -286,6 +286,7 @@
     [bytevector-uint-ref     i]
     [bytevector-sint-ref     i]
     [bytevector-uint-set!    i]
+    [bytevector-sint-set!    i]
     [bytevector->uint-list   i]
     [bytevector->sint-list   i]
 
@@ -500,7 +501,7 @@
     [$bytevector-set!   $bytes]
 
     [$make-bignum       $bignums]
-    [$bignum-sign       $bignums]
+    [$bignum-positive?  $bignums]
     [$bignum-size       $bignums]
     [$bignum-byte-ref   $bignums]
     [$bignum-byte-set!  $bignums]

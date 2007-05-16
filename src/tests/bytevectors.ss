@@ -107,7 +107,47 @@
          (bytevector->u8-list b)))]
     [(lambda (x) (equal? x '(1 2 3 4)))
      (bytevector->u8-list '#vu8(1 2 3 4))]
-
+    [(lambda (x) (= x #xFFFFFFFF))
+     (let ([b (make-bytevector 4 0)])
+       (bytevector-sint-set! b 0 -1 'little 4)
+       (bytevector-uint-ref b 0 'little 4))]
+    [(lambda (x) (= x #xFFFFFF00))
+     (let ([b (make-bytevector 4 0)])
+       (bytevector-sint-set! b 0 -256 'little 4)
+       (bytevector-uint-ref b 0 'little 4))]
+    [(lambda (x) (= x #xFFFF0000))
+     (let ([b (make-bytevector 4 0)])
+       (bytevector-sint-set! b 0 (- (expt 256 2)) 'little 4)
+       (bytevector-uint-ref b 0 'little 4))]
+    [(lambda (x) (= x #xFFFFFFFFFFFF0000))
+     (let ([b (make-bytevector 8 0)])
+       (bytevector-sint-set! b 0 (- (expt 256 2)) 'little 8)
+       (bytevector-uint-ref b 0 'little 8))]
+    [(lambda (x) (= x #xFFFFFFFF00000000))
+     (let ([b (make-bytevector 8 0)])
+       (bytevector-sint-set! b 0 (- (expt 256 4)) 'little 8)
+       (bytevector-uint-ref b 0 'little 8))]
+    [(lambda (x) (= x #xFF00000000000000))
+     (let ([b (make-bytevector 8 0)])
+       (bytevector-sint-set! b 0 (- (expt 256 7)) 'little 8)
+       (bytevector-uint-ref b 0 'little 8))] 
+    [(lambda (x) (= x (- 1 (expt 2 63))))
+     (let ([b (make-bytevector 8 0)])
+       (bytevector-sint-set! b 0 (- 1 (expt 2 63)) 'little 8)
+       (bytevector-sint-ref b 0 'little 8))]
+    [(lambda (x) (= x #x7FFFFFFF))
+     (let ([b (make-bytevector 4 38)])
+       (bytevector-sint-set! b 0 (sub1 (expt 2 31)) 'little 4)
+       (bytevector-sint-ref b 0 'little 4))]
+    [(lambda (x) (= x #x-80000000))
+     (let ([b (make-bytevector 4 38)])
+       (bytevector-sint-set! b 0 (- (expt 2 31)) 'little 4)
+       (bytevector-sint-ref b 0 'little 4))]
+    [(lambda (x) (= x #x-100000000))
+     (let ([b (make-bytevector 5 38)])
+       (bytevector-sint-set! b 0 (- (expt 2 32)) 'little 5)
+       (printf "b=~s\n" b)
+       (bytevector-sint-ref b 0 'little 5))]
     ))
 
 
