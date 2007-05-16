@@ -423,13 +423,6 @@
         (cond
           [(not sep) 
            (output-rest-multi box* '(#f . #f) p col left)]
-          #;[(fx<= (fx+ (sum box*) col) (pretty-width))
-           (let g ([box* box*] [p p] [col col])
-             (cond
-               [(null? box*) col]
-               [else
-                (display " " p)
-                (g (cdr box*) p (f (car box*) p (fxadd1 col)))]))]
           [else 
            (let g ([box* box*] [p p] [left (fx+ left sep)] [col col])
              (cond

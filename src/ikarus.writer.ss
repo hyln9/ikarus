@@ -98,7 +98,6 @@
            (write-char #\) p)
            i))))
 
-
   (define write-record
     (lambda (x p m h i)
       (write-char #\# p)

@@ -118,6 +118,7 @@
     [$chars      (ikarus system $chars)       #f]
     [$strings    (ikarus system $strings)     #f]
     [$vectors    (ikarus system $vectors)     #f]
+    [$bignums    (ikarus system $bignums)     #f]
     [$bytes      (ikarus system $bytevectors) #f]
     [$fx         (ikarus system $fx)          #f]
     [$symbols    (ikarus system $symbols)     #f]
@@ -131,7 +132,6 @@
     [$interrupts (ikarus system $interrupts)  #f]
     [$boot       (ikarus system $bootstrap)   #f]
     ))
-
 
 (define bootstrap-collection
   (let ([ls (map 
@@ -499,6 +499,11 @@
     [$bytevector-u8-ref $bytes]
     [$bytevector-set!   $bytes]
 
+    [$make-bignum       $bignums]
+    [$bignum-sign       $bignums]
+    [$bignum-size       $bignums]
+    [$bignum-byte-ref   $bignums]
+    [$bignum-byte-set!  $bignums]
 
     [$make-vector       $vectors]
     [$vector-length     $vectors]
