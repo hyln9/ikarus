@@ -356,7 +356,7 @@
            ($bytevector-set! x k r))]))
     (define (big-uint-set! x k1 n k2)
       (cond
-        [($fx= k1 k2) 
+        [($fx= k1 k2)
          (unless (zero? n)
            (error 'bytevector-uint-set! "value out of range"))]
         [else
@@ -370,7 +370,8 @@
         (unless (bytevector? x) (error who "~s is not a bytevector" x))
         (unless (and (fixnum? k) ($fx>= k 0)) (error who "invalid index ~s" k))
         (unless (and (fixnum? size) ($fx>= size 1)) (error who "invalid size ~s" size))
-        (unless (or (fixnum? n) (bignum? n)) (error who "invalid value ~s" n))
+        (unless (or (and (fixnum? n) ($fx>= n 0)) (and (bignum? n) (>= n 0)))
+          (error who "invalid value ~s" n))
         (case endianness
           [(little) (little-uint-set! x k n size)]
           [(big)    (big-uint-set! x k n ($fx+ k size))]
