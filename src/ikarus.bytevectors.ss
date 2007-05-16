@@ -5,6 +5,7 @@
           bytevector-copy! u8-list->bytevector bytevector->u8-list
           bytevector-fill! bytevector-copy bytevector=?
           bytevector-uint-ref bytevector-sint-ref 
+          bytevector-uint-set!
           bytevector->uint-list bytevector->sint-list)
   (import 
     (except (ikarus) 
@@ -13,6 +14,7 @@
         bytevector-copy! u8-list->bytevector bytevector->u8-list
         bytevector-fill! bytevector-copy bytevector=?
         bytevector-uint-ref bytevector-sint-ref
+        bytevector-uint-set!
         bytevector->uint-list bytevector->sint-list)
     (ikarus system $fx)
     (ikarus system $pairs)
@@ -340,8 +342,40 @@
                       '() sref-little 'bytevector->sint-list)]
           [(big)    (bytevector->some-list x size ($bytevector-length x) 
                       '() sref-big 'bytevector->sint-list)]
-          [else (error who "invalid endianness ~s" endianness)])))
-    )
+          [else (error who "invalid endianness ~s" endianness)]))))
+
+  (module (bytevector-uint-set!)
+    (define (little-uint-set! x k n size)
+      (cond
+        [($fx= size 0) 
+         (unless (zero? n) 
+           (error 'bytevector-uint-set! "value out of range"))]
+        [else
+         (let-values ([(q r) (quotient+remainder n 256)])
+           (little-uint-set! x ($fxadd1 k) q ($fxsub1 size))
+           ($bytevector-set! x k r))]))
+    (define (big-uint-set! x k1 n k2)
+      (cond
+        [($fx= k1 k2) 
+         (unless (zero? n)
+           (error 'bytevector-uint-set! "value out of range"))]
+        [else
+         (let-values ([(q r) (quotient+remainder n 256)])
+           (let ([k2 ($fxsub1 k2)])
+             (big-uint-set! x k1 q k2)
+             ($bytevector-set! x k2 r)))]))
+    (define bytevector-uint-set!
+      (lambda (x k n endianness size)
+        (define who 'bytevector-uint-set!)
+        (unless (bytevector? x) (error who "~s is not a bytevector" x))
+        (unless (and (fixnum? k) ($fx>= k 0)) (error who "invalid index ~s" k))
+        (unless (and (fixnum? size) ($fx>= size 1)) (error who "invalid size ~s" size))
+        (unless (or (fixnum? n) (bignum? n)) (error who "invalid value ~s" n))
+        (case endianness
+          [(little) (little-uint-set! x k n size)]
+          [(big)    (big-uint-set! x k n ($fx+ k size))]
+          [else (error who "invalid endianness ~s" endianness)]))))
+
 
 
 

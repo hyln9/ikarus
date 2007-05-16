@@ -285,6 +285,7 @@
     [bytevector=?            i]
     [bytevector-uint-ref     i]
     [bytevector-sint-ref     i]
+    [bytevector-uint-set!    i]
     [bytevector->uint-list   i]
     [bytevector->sint-list   i]
 

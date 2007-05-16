@@ -85,6 +85,26 @@
     [(lambda (x) (equal? x '(513 -253 513 513)))
      (let ([b (u8-list->bytevector '(1 2 3 255 1 2 1 2))])
        (bytevector->sint-list b 'little 2))]
+    [(lambda (x) (equal? x '(#xfffffffffffffffffffffffffffffffd
+                             -3
+                             (253 255 255 255 255 255 255 255
+                              255 255 255 255 255 255 255 255))))
+     (let ([b (make-bytevector 16 -127)])
+       (bytevector-uint-set! b 0 (- (expt 2 128) 3) 'little 16)
+       (list 
+         (bytevector-uint-ref b 0 'little 16)
+         (bytevector-sint-ref b 0 'little 16)
+         (bytevector->u8-list b)))]
+    [(lambda (x) (equal? x '(#xfffffffffffffffffffffffffffffffd
+                             -3
+                             (255 255 255 255 255 255 255 255
+                              255 255 255 255 255 255 255 253))))
+     (let ([b (make-bytevector 16 -127)])
+       (bytevector-uint-set! b 0 (- (expt 2 128) 3) 'big 16)
+       (list 
+         (bytevector-uint-ref b 0 'big 16)
+         (bytevector-sint-ref b 0 'big 16)
+         (bytevector->u8-list b)))]
     ))
 
 
