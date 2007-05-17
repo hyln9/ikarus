@@ -52,7 +52,7 @@
   ;;;
   (define $make-input-port
     (lambda (handler buffer)
-      ($make-port/input handler buffer 0 ($string-length buffer) #f 0 0)))
+      ($make-port/input handler buffer 0 (string-length buffer) #f 0 0)))
   ;;;
   (define make-input-port
     (lambda (handler buffer)
@@ -64,7 +64,7 @@
   ;;;
   (define $make-output-port
     (lambda (handler buffer)
-      ($make-port/output handler #f 0 0 buffer 0 ($string-length buffer))))
+      ($make-port/output handler #f 0 0 buffer 0 (string-length buffer))))
   ;;;
   (define make-output-port
     (lambda (handler buffer)
@@ -77,8 +77,8 @@
   (define $make-input/output-port
     (lambda (handler input-buffer output-buffer)
        ($make-port/both handler
-                  input-buffer 0 ($string-length input-buffer)
-                  output-buffer 0 ($string-length output-buffer))))
+                  input-buffer 0 (string-length input-buffer)
+                  output-buffer 0 (string-length output-buffer))))
   ;;;
   (define make-input/output-port
     (lambda (handler input-buffer output-buffer)
@@ -151,7 +151,7 @@
       (if (input-port? p)
           (if (fixnum? i)
               (if ($fx>= i 0)
-                  (if ($fx<= i ($string-length ($port-input-buffer p)))
+                  (if ($fx<= i (string-length ($port-input-buffer p)))
                       (begin
                         ($set-port-input-index! p 0)
                         ($set-port-input-size! p i))
@@ -177,7 +177,7 @@
       (if (output-port? p)
           (if (fixnum? i)
               (if ($fx>= i 0)
-                  (if ($fx<= i ($string-length ($port-output-buffer p)))
+                  (if ($fx<= i (string-length ($port-output-buffer p)))
                       (begin
                         ($set-port-output-index! p 0)
                         ($set-port-output-size! p i))

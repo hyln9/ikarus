@@ -14,7 +14,7 @@
       (let ([idx (port-output-index p)])
         (if ($fx< idx ($port-output-size p))
             (begin
-              ($string-set! ($port-output-buffer p) idx c)
+              (string-set! ($port-output-buffer p) idx c)
               ($set-port-output-index! p ($fxadd1 idx)))
             (($port-handler p) 'write-char c p)))))
 
@@ -24,7 +24,7 @@
         (if ($fx< idx ($port-input-size p))
             (begin
               ($set-port-input-index! p ($fxadd1 idx))
-              ($string-ref ($port-input-buffer p) idx))
+              (string-ref ($port-input-buffer p) idx))
             (begin
               (($port-handler p) 'read-char p))))))
 
@@ -32,7 +32,7 @@
     (lambda (p)
       (let ([idx ($port-input-index p)])
         (if ($fx< idx ($port-input-size p))
-            ($string-ref ($port-input-buffer p) idx)
+            (string-ref ($port-input-buffer p) idx)
             (($port-handler p) 'peek-char p)))))
 
   (define $unread-char
@@ -42,7 +42,7 @@
                  ($fx< idx ($port-input-size p)))
             (begin
               ($set-port-input-index! p idx)
-              ($string-set! ($port-input-buffer p) idx c))
+              (string-set! ($port-input-buffer p) idx c))
             (($port-handler p) 'unread-char c p)))))
 
   (define $reset-input-port!

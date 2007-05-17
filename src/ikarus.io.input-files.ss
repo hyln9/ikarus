@@ -57,7 +57,7 @@
                (if ($fx< idx ($port-input-size p))
                    (begin
                      ($set-port-input-index! p ($fxadd1 idx))
-                     ($string-ref ($port-input-buffer p) idx))
+                     (string-ref ($port-input-buffer p) idx))
                    (if open?
                        (let ([bytes
                               (foreign-call "ikrt_read" 
@@ -78,7 +78,7 @@
                (error 'peek-char "~s is not an input port" p))
              (let ([idx ($port-input-index p)])
                (if ($fx< idx ($port-input-size p))
-                   ($string-ref ($port-input-buffer p) idx)
+                   (string-ref ($port-input-buffer p) idx)
                    (if open?
                        (let ([bytes
                               (foreign-call "ikrt_read" fd
@@ -101,7 +101,7 @@
                         ($fx< idx ($port-input-size p)))
                    (begin
                      ($set-port-input-index! p idx)
-                     ($string-set! ($port-input-buffer p) idx c))
+                     (string-set! ($port-input-buffer p) idx c))
                    (if open?
                        (error 'unread-char "port ~s is closed" p)
                        (error 'unread-char "too many unread-chars"))))]

@@ -70,7 +70,7 @@
                      (let ([idx ($port-output-index p)])
                         (if ($fx< idx ($port-output-size p))
                             (begin
-                              ($string-set! ($port-output-buffer p) idx c)
+                              (string-set! ($port-output-buffer p) idx c)
                               ($set-port-output-index! p ($fxadd1 idx)))
                             (if open?
                               (begin

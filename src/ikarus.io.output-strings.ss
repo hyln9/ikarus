@@ -38,18 +38,18 @@
   (define concat 
     (lambda (str i ls)
       (let ([n (sum i ls)])
-        (let ([outstr ($make-string n)])
+        (let ([outstr (make-string n)])
           (let f ([n (copy outstr str i n)] [ls ls])
             (if (null? ls)
                 outstr
                 (let ([a ($car ls)])
-                  (f (copy outstr a ($string-length a) n) ($cdr ls)))))))))
+                  (f (copy outstr a (string-length a) n) ($cdr ls)))))))))
 
   (define sum 
     (lambda (ac ls)
       (cond
         [(null? ls) ac]
-        [else (sum ($fx+ ac ($string-length ($car ls))) ($cdr ls))])))
+        [else (sum ($fx+ ac (string-length ($car ls))) ($cdr ls))])))
   
   (define copy
     (lambda (dst src n end)
@@ -59,7 +59,7 @@
           [($fx= si 0) di]
           [else
            (let ([di ($fxsub1 di)] [si ($fxsub1 si)])
-             ($string-set! dst di ($string-ref src si))
+             (string-set! dst di (string-ref src si))
              (f di si))]))))
   
   (define make-output-string-handler
@@ -75,7 +75,7 @@
                      (let ([idx ($port-output-index p)])
                         (if ($fx< idx ($port-output-size p))
                             (begin
-                              ($string-set! ($port-output-buffer p) idx c)
+                              (string-set! ($port-output-buffer p) idx c)
                               ($set-port-output-index! p ($fxadd1 idx)))
                             (if open?
                               (begin
@@ -83,7 +83,7 @@
                                   (cons (string-copy (port-output-buffer p))
                                         buffer-list))
                                 ($set-port-output-size! p 
-                                  ($string-length ($port-output-buffer p)))
+                                  (string-length ($port-output-buffer p)))
                                 ($write-char c p))
                               (error 'write-char "port ~s is closed" p))))
                      (error 'write-char "~s is not an output-port" p))

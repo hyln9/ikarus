@@ -480,6 +480,7 @@ ikp ik_uuid(ikp str){
 }
 
 
+#if 0
 ikp ik_read(ikp fdptr, ikp bufptr, ikp lenptr){
   int fd = unfix(fdptr);
   int len = unfix(lenptr);
@@ -491,7 +492,7 @@ ikp ik_read(ikp fdptr, ikp bufptr, ikp lenptr){
   }
   return fix(bytes);
 }  
-
+#endif
 
 ikp ik_write(ikp fdptr, ikp idx, ikp str){
   fprintf(stderr, "IK_WRITE\n");
@@ -782,8 +783,8 @@ ikrt_close_file(ikp fd, ikpcb* pcb){
   }
 }
 
-ikp
-ikrt_read(ikp fd, ikp buff, ikpcb* pcb){
+static ikp
+ikrt_read_to_string(ikp fd, ikp buff, ikpcb* pcb){
   int bytes =
     read(unfix(fd), string_data(buff), unfix(ref(buff, off_string_length)));
   ikp fbytes = fix(bytes);
@@ -794,6 +795,30 @@ ikrt_read(ikp fd, ikp buff, ikpcb* pcb){
     exit(-1);
   }
 }
+
+static ikp
+ikrt_read_to_bytevector(ikp fd, ikp buff, ikpcb* pcb){
+  int bytes =
+    read(unfix(fd), buff+off_bytevector_data, unfix(ref(buff, off_bytevector_length)));
+  ikp fbytes = fix(bytes);
+  if (bytes == unfix(fbytes)){
+    return fbytes;
+  } else {
+    fprintf(stderr, "ERR: ikrt_read: too big\n");
+    exit(-1);
+  }
+}
+
+ikp ikrt_read(ikp fd, ikp buff, ikpcb* pcb){
+  if(tagof(buff) == string_tag){
+    return ikrt_read_to_string(fd,buff,pcb);
+  } else {
+    return ikrt_read_to_bytevector(fd,buff,pcb);
+  }
+}
+
+
+
 
 #if 0
   if(bytes == -1){

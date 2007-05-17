@@ -3,7 +3,7 @@
   (export do-overflow do-overflow-words do-vararg-overflow collect
           do-stack-overflow)
   (import 
-    (ikarus) 
+    (except (ikarus) collect)
     (ikarus system $fx))
 
 (define do-overflow
