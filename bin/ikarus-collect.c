@@ -1128,6 +1128,18 @@ add_object_proc(gc_t* gc, ikp x)
       exit(-1);
     }
   }
+  else if(tag == bytevector_tag){
+    int len = unfix(fst);
+    int memreq = align(len + disp_bytevector_data + 1);
+    ikp new_bv = gc_alloc_new_data(memreq, gen, gc) + bytevector_tag;
+    ref(new_bv, off_bytevector_length) = fst;
+    memcpy(new_bv+off_bytevector_data,
+           x + off_bytevector_data,
+           len + 1);
+    ref(x, -bytevector_tag) = forward_ptr;
+    ref(x, wordsize-bytevector_tag) = new_bv;
+    return new_bv;
+  }
   fprintf(stderr, "unhandled tag: %d\n", tag);
   exit(-1);
 }

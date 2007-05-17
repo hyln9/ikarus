@@ -628,7 +628,7 @@
     [do-overflow                       ]
     [do-overflow-words                 ]
     [do-vararg-overflow                ]
-    [collect                           ]
+    [collect                           i]
     [do-stack-overflow                 ]
     [syntax-dispatch                   ]
     ))

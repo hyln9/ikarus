@@ -128,6 +128,12 @@
 #define off_symbol_unused (disp_symbol_unused - symbol_tag)
 #endif
 
+#define bytevector_tag 2
+#define disp_bytevector_length 0
+#define disp_bytevector_data   4
+#define off_bytevector_length (disp_bytevector_length - bytevector_tag)
+#define off_bytevector_data (disp_bytevector_data - bytevector_tag)
+
 #define symbol_record_tag ((ikp) 0x5F)
 #define disp_symbol_record_string   4
 #define disp_symbol_record_ustring  8
