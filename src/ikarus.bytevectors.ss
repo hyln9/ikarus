@@ -6,7 +6,8 @@
           bytevector-fill! bytevector-copy bytevector=?
           bytevector-uint-ref bytevector-sint-ref 
           bytevector-uint-set!  bytevector-sint-set!
-          bytevector->uint-list bytevector->sint-list)
+          bytevector->uint-list bytevector->sint-list
+          uint-list->bytevector sint-list->bytevector)
   (import 
     (except (ikarus) 
         make-bytevector bytevector-length bytevector-s8-ref
@@ -15,7 +16,8 @@
         bytevector-fill! bytevector-copy bytevector=?
         bytevector-uint-ref bytevector-sint-ref
         bytevector-uint-set!  bytevector-sint-set!
-        bytevector->uint-list bytevector->sint-list)
+        bytevector->uint-list bytevector->sint-list
+        uint-list->bytevector sint-list->bytevector)
     (ikarus system $fx)
     (ikarus system $bignums)
     (ikarus system $pairs)
@@ -393,64 +395,72 @@
       (unless ($fx= i j)
         ($bytevector-set! x i 0)
         (bv-zero! x ($fxadd1 i) j)))
-    (define (lbn-neg-copy! x xi n ni xj nj c)
-      (cond
-        [($fx= ni nj)
-         (case ($fxsra c 7)
-           [(#x01) ;;; borrow is 0, last byte was negative
-            (bv-neg-zero! x xi xj)]
-           [(#x00) ;;; borrow is 0, last byte was positive
-            (if ($fx< xi xj)
-                (bv-neg-zero! x xi xj)
-                (error 'bytevector-sint-set! "number ~s does not fit" n))]
-           [else (error 'lbn-neg-copy! "BUG: not handled ~s" c)])]
-        [else
-         (let ([c ($fx- ($fx+ 255 ($fxsra c 8)) ($bignum-byte-ref n ni))])
-           (lbn-neg-copy! x ($fxadd1 xi) n ($fxadd1 ni) xj nj c)
-           ($bytevector-set! x xi ($fxlogand c 255)))]))
-    (define (bbn-neg-copy! x xi n ni xj nj c)
-      (cond
-        [($fx= ni nj)
-         (case ($fxsra c 7)
-           [(#x01) ;;; borrow is 0, last byte was negative
-            (bv-neg-zero! x xi xj)]
-           [(#x00) ;;; borrow is 0, last byte was positive
-            (if ($fx< xi xj)
-                (bv-neg-zero! x xi xj)
-                (error 'bytevector-sint-set! "number ~s does not fit" n))]
-           [else (error 'bbn-neg-copy! "BUG: not handled ~s" c)])]
-        [else
-         (let ([c ($fx- ($fx+ 255 ($fxsra c 8)) ($bignum-byte-ref n ni))]
-               [xj ($fxsub1 xj)])
-           (bbn-neg-copy! x xi n ($fxadd1 ni) xj nj c)
-           ($bytevector-set! x xj ($fxlogand c 255)))]))
-    (define (lbn-pos-copy! x xi n ni nj xj c)
-      (cond
-        [($fx= ni nj)
-         (cond
-           [(or ($fx<= c 127) ($fx< xi xj))
-            ;;; last byte was positive
-            (bv-zero! x xi xj)]
-           [else 
-            (error 'bytevector-sint-set! "number ~s does not fit" n)])]
-        [else
-         (let ([c ($bignum-byte-ref n ni)])
-           (lbn-pos-copy! x ($fxadd1 xi) n ($fxadd1 ni) nj xj c)
-           ($bytevector-set! x xi ($fxlogand c 255)))]))
-    (define (bbn-pos-copy! x xi n ni nj xj c)
-      (cond
-        [($fx= ni nj)
-         (cond
-           [(or ($fx<= c 127) ($fx< xi xj))
-            ;;; last byte was positive
-            (bv-zero! x xi xj)]
-           [else 
-            (error 'bytevector-sint-set! "number ~s does not fit" n)])]
-        [else
-         (let ([c ($bignum-byte-ref n ni)]
-               [xj ($fxsub1 xj)])
-           (bbn-pos-copy! x xi n ($fxadd1 ni) nj xj c)
-           ($bytevector-set! x xj ($fxlogand c 255)))]))
+    (define (make-lbn-neg-copy! who)
+      (define (lbn-neg-copy! x xi n ni xj nj c)
+        (cond
+          [($fx= ni nj)
+           (case ($fxsra c 7)
+             [(#x01) ;;; borrow is 0, last byte was negative
+              (bv-neg-zero! x xi xj)]
+             [(#x00) ;;; borrow is 0, last byte was positive
+              (if ($fx< xi xj)
+                  (bv-neg-zero! x xi xj)
+                  (error who "number ~s does not fit" n))]
+             [else (error 'lbn-neg-copy! "BUG: not handled ~s" c)])]
+          [else
+           (let ([c ($fx- ($fx+ 255 ($fxsra c 8)) ($bignum-byte-ref n ni))])
+             (lbn-neg-copy! x ($fxadd1 xi) n ($fxadd1 ni) xj nj c)
+             ($bytevector-set! x xi ($fxlogand c 255)))]))
+      lbn-neg-copy!)
+    (define (make-bbn-neg-copy! who)
+      (define (bbn-neg-copy! x xi n ni xj nj c)
+        (cond
+          [($fx= ni nj)
+           (case ($fxsra c 7)
+             [(#x01) ;;; borrow is 0, last byte was negative
+              (bv-neg-zero! x xi xj)]
+             [(#x00) ;;; borrow is 0, last byte was positive
+              (if ($fx< xi xj)
+                  (bv-neg-zero! x xi xj)
+                  (error who "number ~s does not fit" n))]
+             [else (error 'bbn-neg-copy! "BUG: not handled ~s" c)])]
+          [else
+           (let ([c ($fx- ($fx+ 255 ($fxsra c 8)) ($bignum-byte-ref n ni))]
+                 [xj ($fxsub1 xj)])
+             (bbn-neg-copy! x xi n ($fxadd1 ni) xj nj c)
+             ($bytevector-set! x xj ($fxlogand c 255)))]))
+      bbn-neg-copy!)
+    (define (make-lbn-pos-copy! who)
+      (define (lbn-pos-copy! x xi n ni nj xj c)
+        (cond
+          [($fx= ni nj)
+           (cond
+             [(or ($fx<= c 127) ($fx< xi xj))
+              ;;; last byte was positive
+              (bv-zero! x xi xj)]
+             [else 
+              (error who "number ~s does not fit" n)])]
+          [else
+           (let ([c ($bignum-byte-ref n ni)])
+             (lbn-pos-copy! x ($fxadd1 xi) n ($fxadd1 ni) nj xj c)
+             ($bytevector-set! x xi ($fxlogand c 255)))]))
+      lbn-pos-copy!)
+    (define (make-bbn-pos-copy! who)
+      (define (bbn-pos-copy! x xi n ni nj xj c)
+        (cond
+          [($fx= ni nj)
+           (cond
+             [(or ($fx<= c 127) ($fx< xi xj))
+              ;;; last byte was positive
+              (bv-zero! x xi xj)]
+             [else 
+              (error who "number ~s does not fit" n)])]
+          [else
+           (let ([c ($bignum-byte-ref n ni)]
+                 [xj ($fxsub1 xj)])
+             (bbn-pos-copy! x xi n ($fxadd1 ni) nj xj c)
+             ($bytevector-set! x xj ($fxlogand c 255)))]))
+      bbn-pos-copy!)
     (define (bv-neg-zero! x i j)
       (unless ($fx= i j)
         ($bytevector-set! x i 255)
@@ -470,9 +480,8 @@
                           i-2))
                     i-1))
               i))))
-    (define bytevector-uint-set!
+    (define (make-bytevector-uint-set! who)
       (lambda (x k n endianness size)
-        (define who 'bytevector-uint-set!)
         (unless (bytevector? x) (error who "~s is not a bytevector" x))
         (unless (and (fixnum? k) ($fx>= k 0)) (error who "invalid index ~s" k))
         (unless (and (fixnum? size) ($fx>= size 1)) (error who "invalid size ~s" size))
@@ -507,10 +516,14 @@
                       [else (error who "number ~s does not fit" n)]))
                   (error who "value ~s must be positive" n))]
              [else (error who "invalid value argument ~s" n)])]
-          [else (error who "invalid endianness ~s" endianness)]))) 
-    (define bytevector-sint-set!
+          [else (error who "invalid endianness ~s" endianness)])))
+    (define bytevector-uint-set! (make-bytevector-uint-set! 'bytevector-uint-set!))
+    (define (make-bytevector-sint-set! who)
+      (define bbn-neg-copy! (make-bbn-neg-copy! who))
+      (define bbn-pos-copy! (make-bbn-pos-copy! who))
+      (define lbn-neg-copy! (make-lbn-neg-copy! who))
+      (define lbn-pos-copy! (make-lbn-pos-copy! who))
       (lambda (x k n endianness size)
-        (define who 'bytevector-sint-set!)
         (unless (bytevector? x) (error who "~s is not a bytevector" x))
         (unless (and (fixnum? k) ($fx>= k 0)) (error who "invalid index ~s" k))
         (unless (and (fixnum? size) ($fx>= size 1)) (error who "invalid size ~s" size))
@@ -547,7 +560,40 @@
                        (bbn-neg-copy! x k n 0 size sz 256)]
                       [else (error who "number ~s does not fit" n)])))] 
              [else (error who "invalid value argument ~s" n)])]
-          [else (error who "invalid endianness ~s" endianness)]))))
+          [else (error who "invalid endianness ~s" endianness)])))
+    (define bytevector-sint-set! (make-bytevector-sint-set! 'bytevector-sint-set!)))
+
+  (module (uint-list->bytevector sint-list->bytevector)
+    (define (make-xint-list->bytevector who bv-set!)
+      (define (race h t ls idx endianness size)
+        (if (pair? h)
+            (let ([h ($cdr h)] [a ($car h)])
+               (if (pair? h)
+                   (if (not (eq? h t))
+                       (let ([bv (race ($cdr h) ($cdr t) ls 
+                                       ($fx+ idx ($fx+ size size))
+                                       endianness size)])
+                         (bv-set! bv idx a endianness size)
+                         (bv-set! bv ($fx+ idx size) ($car h) endianness size)
+                         bv)
+                       (error who "circular list ~s" ls))
+                   (if (null? h)
+                       (let ([bv (make-bytevector ($fx+ idx size))])
+                         (bv-set! bv idx a endianness size)
+                         bv)
+                       (error who "~s is not a proper list" ls))))
+            (if (null? h)
+                (make-bytevector idx)
+                (error who "~s is not a proper list" ls))))
+      (lambda (ls endianness size)
+        (race ls ls ls 0 endianness size)))
+    (define uint-list->bytevector 
+      (make-xint-list->bytevector 
+        'uint-list->bytevector bytevector-uint-set!))
+    (define sint-list->bytevector 
+      (make-xint-list->bytevector 
+        'sint-list->bytevector bytevector-sint-set!)))
+
   )
 
 

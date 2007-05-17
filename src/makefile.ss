@@ -289,6 +289,8 @@
     [bytevector-sint-set!    i]
     [bytevector->uint-list   i]
     [bytevector->sint-list   i]
+    [uint-list->bytevector   i]
+    [sint-list->bytevector   i]
 
     [for-each                i r]
     [map                     i r]
