@@ -408,6 +408,22 @@
          (let ([c ($fx- ($fx+ 255 ($fxsra c 8)) ($bignum-byte-ref n ni))])
            (lbn-neg-copy! x ($fxadd1 xi) n ($fxadd1 ni) xj nj c)
            ($bytevector-set! x xi ($fxlogand c 255)))]))
+    (define (bbn-neg-copy! x xi n ni xj nj c)
+      (cond
+        [($fx= ni nj)
+         (case ($fxsra c 7)
+           [(#x01) ;;; borrow is 0, last byte was negative
+            (bv-neg-zero! x xi xj)]
+           [(#x00) ;;; borrow is 0, last byte was positive
+            (if ($fx< xi xj)
+                (bv-neg-zero! x xi xj)
+                (error 'bytevector-sint-set! "number ~s does not fit" n))]
+           [else (error 'bbn-neg-copy! "BUG: not handled ~s" c)])]
+        [else
+         (let ([c ($fx- ($fx+ 255 ($fxsra c 8)) ($bignum-byte-ref n ni))]
+               [xj ($fxsub1 xj)])
+           (bbn-neg-copy! x xi n ($fxadd1 ni) xj nj c)
+           ($bytevector-set! x xj ($fxlogand c 255)))]))
     (define (lbn-pos-copy! x xi n ni nj xj c)
       (cond
         [($fx= ni nj)
@@ -421,6 +437,20 @@
          (let ([c ($bignum-byte-ref n ni)])
            (lbn-pos-copy! x ($fxadd1 xi) n ($fxadd1 ni) nj xj c)
            ($bytevector-set! x xi ($fxlogand c 255)))]))
+    (define (bbn-pos-copy! x xi n ni nj xj c)
+      (cond
+        [($fx= ni nj)
+         (cond
+           [(or ($fx<= c 127) ($fx< xi xj))
+            ;;; last byte was positive
+            (bv-zero! x xi xj)]
+           [else 
+            (error 'bytevector-sint-set! "number ~s does not fit" n)])]
+        [else
+         (let ([c ($bignum-byte-ref n ni)]
+               [xj ($fxsub1 xj)])
+           (bbn-pos-copy! x xi n ($fxadd1 ni) nj xj c)
+           ($bytevector-set! x xj ($fxlogand c 255)))]))
     (define (bv-neg-zero! x i j)
       (unless ($fx= i j)
         ($bytevector-set! x i 255)
@@ -504,17 +534,18 @@
           [(big)
            (cond
              [(fixnum? n) (bsfx-set! x k n ($fx+ k size) who n)]
-             ;[(bignum? n)
-             ; (if ($bignum-positive? n)
-             ;     (let ([sz ($bignum-size n)])
-             ;       (cond
-             ;         [($fx<= sz size) 
-             ;          (bbn-copy! x ($fx+ k size) n 0 sz)]
-             ;         [($fx< sz size)
-             ;          (bbn-copy! x ($fx+ k size) n 0 sz)
-             ;          (bv-zero! x k ($fx+ k ($fx- size sz)))]
-             ;         [else (error who "number ~s does not fit" n)]))
-             ;     (error who "value ~s must be positive" n))]
+             [(bignum? n)
+              (if ($bignum-positive? n)
+                  (let ([sz (bignum-bytes n)])
+                    (cond
+                      [($fx<= sz size) 
+                       (bbn-pos-copy! x k n 0 size sz 255)]
+                      [else (error who "number ~s does not fit" n)]))
+                  (let ([sz (bignum-bytes n)])
+                    (cond
+                      [($fx<= sz size) 
+                       (bbn-neg-copy! x k n 0 size sz 256)]
+                      [else (error who "number ~s does not fit" n)])))] 
              [else (error who "invalid value argument ~s" n)])]
           [else (error who "invalid endianness ~s" endianness)]))))
   )
