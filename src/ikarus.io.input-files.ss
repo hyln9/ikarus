@@ -7,6 +7,7 @@
     (ikarus system $io)
     (ikarus system $fx)
     (ikarus system $strings)
+    (ikarus system $bytevectors)
     (ikarus system $chars)
     (except (ikarus)
             open-input-file current-input-port console-input-port
@@ -45,7 +46,7 @@
            (close-input-port p)
            (close-ports))])))
  
-  (define make-input-file-handler
+  (define make-input-file-handler-old
     (lambda (fd port-name)
       (let ((open? #t))
         (lambda (msg . args)
@@ -118,6 +119,72 @@
              (error 'input-file-handler
                     "message not handled ~s" (cons msg args))])))))
 
+  (define make-input-file-handler
+    (lambda (fd port-name)
+      (let ([open? #t] [idx 0] [size 0] [buff (make-string 4096)])
+        (lambda (msg . args)
+          (message-case msg args
+            [(read-char p)
+             (unless (input-port? p)
+               (error 'read-char "~s is not an input port" p))
+             (if ($fx< idx size)
+                 (let ([c (string-ref buff idx)])
+                   (set! idx ($fxadd1 idx))
+                   c)
+                 (if open?
+                     (let ([bytes
+                            (foreign-call "ikrt_read" fd buff)])
+                       (cond
+                         [($fx> bytes 0)
+                          (set! size bytes)
+                          (set! idx 1)
+                          ($string-ref buff 0)]
+                         [($fx= bytes 0)
+                          (eof-object)]
+                         [else
+                          (error 'read-char "Cannot read from ~a"
+                                 port-name)]))
+                     (error 'read-char "port ~s is closed" p)))]
+            [(peek-char p)
+             (unless (input-port? p)
+               (error 'peek-char "~s is not an input port" p))
+             (if ($fx< idx size)
+                 (string-ref buff idx)
+                 (if open?
+                     (let ([bytes
+                            (foreign-call "ikrt_read" fd buff)])
+                       (cond
+                         [(not bytes)
+                          (error 'peek-char
+                                 "Cannot read from ~s" port-name)]
+                         [($fx= bytes 0)
+                          (eof-object)]
+                         [else
+                          (set! size bytes)
+                          (string-ref buff 0)]))
+                     (error 'peek-char "port ~s is closed" p)))]
+            [(unread-char c p)
+             (unless (input-port? p)
+               (error 'unread-char "~s is not an input port" p))
+             (let ([i ($fxsub1 idx)])
+               (if (and ($fx>= i 0) ($fx< i size))
+                   (set! idx i)
+                   (if open?
+                       (error 'unread-char "port ~s is closed" p)
+                       (error 'unread-char "too many unread-chars"))))]
+            [(port-name p) port-name]
+            [(close-port p)
+             (unless (input-port? p)
+               (error 'close-input-port "~s is not an input port" p))
+             (when open?
+               (set! size 0)
+               (set! open? #f)
+               (unless (foreign-call "ikrt_close_file" fd)
+                  (error 'close-input-port "cannot close ~s" port-name)))]
+            [else 
+             (error 'input-file-handler
+                    "message not handled ~s" (cons msg args))])))))
+
   (define $open-input-file
     (lambda (filename)
       (close-ports)
@@ -125,8 +192,8 @@
         (if (fixnum? fd/error)
             (let ([port (make-input-port 
                           (make-input-file-handler fd/error filename)
-                          (make-string 4096))])
-              (set-port-input-size! port 0)
+                          ($make-bytevector 0))])
+              ;(set-port-input-size! port 0)
               (guardian port)
               port)
             (error 'open-input-file "cannot open ~s: ~a" filename fd/error)))))
@@ -185,8 +252,8 @@
   (set! *standard-input-port* 
     (let ([p (make-input-port 
                (make-input-file-handler 0 '*stdin*)
-               (make-string 4096))])
-      (set-port-input-size! p 0)
+               ($make-bytevector 0))])
+      ;(set-port-input-size! p 0)
       p))
   (set! *current-input-port* *standard-input-port*)
   )

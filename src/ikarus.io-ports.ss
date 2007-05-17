@@ -10,6 +10,7 @@
   (import 
     (ikarus system $ports)
     (ikarus system $strings)
+    (ikarus system $bytevectors)
     (ikarus system $fx)
     (except (ikarus)  make-input-port make-output-port 
          make-input/output-port port-handler
@@ -52,14 +53,14 @@
   ;;;
   (define $make-input-port
     (lambda (handler buffer)
-      ($make-port/input handler buffer 0 (string-length buffer) #f 0 0)))
+      ($make-port/input handler buffer 0 ($bytevector-length buffer) #f 0 0)))
   ;;;
   (define make-input-port
     (lambda (handler buffer)
       (if (procedure? handler)
-          (if (string? buffer)
+          (if (bytevector? buffer)
               ($make-input-port handler buffer)
-              (error 'make-input-port "~s is not a string" buffer))
+              (error 'make-input-port "~s is not a bytevector" buffer))
           (error 'make-input-port "~s is not a procedure" handler))))
   ;;;
   (define $make-output-port
@@ -77,19 +78,19 @@
   (define $make-input/output-port
     (lambda (handler input-buffer output-buffer)
        ($make-port/both handler
-                  input-buffer 0 (string-length input-buffer)
+                  input-buffer 0 ($bytevector-length input-buffer)
                   output-buffer 0 (string-length output-buffer))))
   ;;;
   (define make-input/output-port
     (lambda (handler input-buffer output-buffer)
       (if (procedure? handler)
-          (if (string? input-buffer)
+          (if (bytevector? input-buffer)
               (if (string? output-buffer)
                   ($make-input/output-port handler input-buffer output-buffer) 
                   (error 'make-input/output-port 
                          "~s is not a string"
                          output-buffer))
-              (error 'make-input/output-port "~s is not a string" input-buffer))
+              (error 'make-input/output-port "~s is not a bytevector" input-buffer))
           (error 'make-input/output-port "~s is not a procedure" handler))))
   ;;;
   (define port-handler
@@ -151,7 +152,7 @@
       (if (input-port? p)
           (if (fixnum? i)
               (if ($fx>= i 0)
-                  (if ($fx<= i (string-length ($port-input-buffer p)))
+                  (if ($fx<= i ($bytevector-length ($port-input-buffer p)))
                       (begin
                         ($set-port-input-index! p 0)
                         ($set-port-input-size! p i))

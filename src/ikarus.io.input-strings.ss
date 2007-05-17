@@ -3,6 +3,7 @@
   (export open-input-string)
   (import 
     (ikarus system $strings)
+    (ikarus system $bytevectors)
     (ikarus system $fx)
     (ikarus system $pairs)
     (ikarus system $ports)
@@ -72,7 +73,7 @@
         (error 'open-input-string "~s is not a string" str))
       (let ([port (make-input-port
                     (make-input-string-handler str)
-                    "")])
+                    ($make-bytevector 0))])
         port)))
   )
 

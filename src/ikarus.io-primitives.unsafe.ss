@@ -7,6 +7,8 @@
     (ikarus)
     (ikarus system $ports)
     (ikarus system $strings)
+    (ikarus system $chars)
+    (ikarus system $bytevectors)
     (ikarus system $fx))
 
   (define $write-char
@@ -22,27 +24,35 @@
     (lambda (p)
       (let ([idx ($port-input-index p)])
         (if ($fx< idx ($port-input-size p))
-            (begin
-              ($set-port-input-index! p ($fxadd1 idx))
-              (string-ref ($port-input-buffer p) idx))
-            (begin
-              (($port-handler p) 'read-char p))))))
+            (let ([b ($bytevector-u8-ref ($port-input-buffer p) idx)])
+              (cond
+                [($fx<= b 127) 
+                 ($set-port-input-index! p ($fxadd1 idx))
+                 ($fixnum->char b)]
+                [else (($port-handler p) 'read-char p)]))
+            (($port-handler p) 'read-char p)))))
 
   (define $peek-char
     (lambda (p)
       (let ([idx ($port-input-index p)])
         (if ($fx< idx ($port-input-size p))
-            (string-ref ($port-input-buffer p) idx)
+            (let ([b ($bytevector-u8-ref ($port-input-buffer p) idx)])
+                (cond
+                  [($fx<= b 127) 
+                   ($fixnum->char b)]
+                  [else (($port-handler p) 'peek-char p)]))
             (($port-handler p) 'peek-char p)))))
 
   (define $unread-char
     (lambda (c p)
-      (let ([idx ($fxsub1 ($port-input-index p))])
-        (if (and ($fx>= idx 0)
+      (let ([idx ($fxsub1 ($port-input-index p))]
+            [b ($char->fixnum c)])
+        (if (and ($fx<= b 127)
+                 ($fx>= idx 0)
                  ($fx< idx ($port-input-size p)))
             (begin
               ($set-port-input-index! p idx)
-              (string-set! ($port-input-buffer p) idx c))
+              ($bytevector-set! ($port-input-buffer p) idx b))
             (($port-handler p) 'unread-char c p)))))
 
   (define $reset-input-port!
