@@ -1,6 +1,6 @@
 
 (library (ikarus io-primitives unsafe)
-  (export $write-char $read-char $unread-char $peek-char
+  (export $write-char $write-byte $read-char $unread-char $peek-char
           $reset-input-port! $flush-output-port 
           $close-input-port $close-output-port)
   (import
@@ -19,6 +19,17 @@
               (string-set! ($port-output-buffer p) idx c)
               ($set-port-output-index! p ($fxadd1 idx)))
             (($port-handler p) 'write-char c p)))))
+
+  (define $write-byte
+    (lambda (b p)
+      (let ([idx (port-output-index p)])
+        (if ($fx< idx ($port-output-size p))
+            (let ([buff ($port-output-buffer p)])
+              (if (string? buff)
+                  (string-set! buff idx ($fixnum->char b))
+                  ($bytevector-set! buff idx b))
+              ($set-port-output-index! p ($fxadd1 idx)))
+            (($port-handler p) 'write-byte b p)))))
 
   (define $read-char
     (lambda (p)

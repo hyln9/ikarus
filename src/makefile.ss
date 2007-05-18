@@ -589,6 +589,7 @@
     [$close-input-port      $io]
     [$close-output-port     $io]
     [$write-char            $io]
+    [$write-byte            $io]
     [$read-char             $io]
     [$peek-char             $io]
     [$unread-char           $io]

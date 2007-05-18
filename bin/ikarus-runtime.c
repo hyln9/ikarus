@@ -845,7 +845,12 @@ ikrt_open_output_file(ikp fname, ikp flagptr, ikpcb* pcb){
 
 ikp
 ikrt_write_file(ikp fd, ikp buff, ikp idx, ikpcb* pcb){
-  int bytes = write(unfix(fd), string_data(buff), unfix(idx));
+  int bytes;
+  if(tagof(buff) == bytevector_tag){
+    bytes = write(unfix(fd), buff+off_bytevector_data, unfix(idx));
+  } else {
+    bytes = write(unfix(fd), string_data(buff), unfix(idx));
+  }
   return fix(bytes);
 }
 

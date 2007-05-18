@@ -24,6 +24,19 @@
                ($write-char c p)
                (error 'write-char "~s is not an output-port" p))
            (error 'write-char "~s is not a character" c))]))
+   
+  #;(define write-byte
+    (case-lambda
+      [(c)
+       (if (char? c)
+           ($write-char c (current-output-port))
+           (error 'write-char "~s is not a character" c))]
+      [(c p)
+       (if (char? c)
+           (if (output-port? p)
+               ($write-char c p)
+               (error 'write-char "~s is not an output-port" p))
+           (error 'write-char "~s is not a character" c))]))
   ;;;
   (define newline
     (case-lambda
