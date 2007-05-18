@@ -15,19 +15,20 @@
     (lambda (c p)
       (let ([idx (port-output-index p)])
         (if ($fx< idx ($port-output-size p))
-            (begin
-              (string-set! ($port-output-buffer p) idx c)
-              ($set-port-output-index! p ($fxadd1 idx)))
+            (let ([b ($char->fixnum c)])
+              (if ($fx< b 128)
+                  (begin
+                    ($bytevector-set! ($port-output-buffer p) idx b)
+                    ($set-port-output-index! p ($fxadd1 idx)))
+                  (($port-handler p) 'write-char c p)))
             (($port-handler p) 'write-char c p)))))
 
   (define $write-byte
     (lambda (b p)
       (let ([idx (port-output-index p)])
         (if ($fx< idx ($port-output-size p))
-            (let ([buff ($port-output-buffer p)])
-              (if (string? buff)
-                  (string-set! buff idx ($fixnum->char b))
-                  ($bytevector-set! buff idx b))
+            (begin
+              ($bytevector-set! ($port-output-buffer p) idx b)
               ($set-port-output-index! p ($fxadd1 idx)))
             (($port-handler p) 'write-byte b p)))))
 

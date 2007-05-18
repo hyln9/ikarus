@@ -137,7 +137,7 @@
       (define buffer-list '())
       (define open? #t)
       (define idx 0)
-      (define buff (make-bytevector 59))
+      (define buff ($make-bytevector 59))
       (define size 59)
       (define output-handler
         (lambda (msg . args)
@@ -152,7 +152,7 @@
                          (if open?
                            (begin
                              (set! buffer-list (cons buff buffer-list))
-                             (set! buff (make-bytevector 59))
+                             (set! buff ($make-bytevector 59))
                              ($bytevector-set! buff 0 b)
                              (set! idx 1))
                            (error 'write-byte "port ~s is closed" p)))
@@ -182,7 +182,7 @@
     (lambda ()
       (make-output-port 
         (make-output-string-handler)
-        (make-string 0))))
+        ($make-bytevector 0))))
 
   (define get-output-string
     (lambda (p)
