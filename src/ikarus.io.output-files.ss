@@ -79,6 +79,7 @@
                               (error 'write-char "port ~s is closed" p))))
                      (error 'write-char "~s is not an output-port" p))
                  (error 'write-char "~s is not a character" c))]
+            [(write-byte b p) (output-file-handler 'write-char (integer->char b) p)]
             [(flush-output-port p)
              (if (output-port? p)
                  (if open?

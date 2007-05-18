@@ -88,6 +88,7 @@
                               (error 'write-char "port ~s is closed" p))))
                      (error 'write-char "~s is not an output-port" p))
                  (error 'write-char "~s is not a character" c))]
+            [(write-byte b p) (output-handler 'write-char (integer->char b) p)]
             [(flush-output-port p)
              (void)]
             [(close-port p)

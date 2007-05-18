@@ -9,6 +9,7 @@
     (ikarus system $fx)
     (ikarus system $ports)
     (except (ikarus) read-char unread-char peek-char write-char
+            write-byte
             newline port-name input-port-name output-port-name
             close-input-port reset-input-port!  flush-output-port
             close-output-port))
