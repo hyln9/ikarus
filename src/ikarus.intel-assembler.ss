@@ -868,9 +868,13 @@
            (vector-set! vec (fx+ reloc-idx 1) v)
            (set! reloc-idx (fx+ reloc-idx 2))]
           [(foreign-label)
-           (vector-set! vec reloc-idx (fxlogor 1 (fxsll idx 2)))
-           (vector-set! vec (fx+ reloc-idx 1) v)
-           (set! reloc-idx (fx+ reloc-idx 2))]
+           (let ([name 
+                  (if (string? v)
+                      (string->utf8-bytevector v)
+                      (error 'whack-reloc "not a string ~s" v))])
+             (vector-set! vec reloc-idx (fxlogor 1 (fxsll idx 2)))
+             (vector-set! vec (fx+ reloc-idx 1) name)
+             (set! reloc-idx (fx+ reloc-idx 2)))]
           [(reloc-word+)
            (let ([obj (car v)] [disp (cdr v)])
              (vector-set! vec reloc-idx (fxlogor 2 (fxsll idx 2)))

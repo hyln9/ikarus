@@ -149,7 +149,13 @@ ik_relocate_code(ikp code){
     else if(tag == 1){
       /* foreign object */
       ikp str = ref(p, wordsize);
-      char* name = string_data(str);
+      char* name;
+      if(tagof(str) == bytevector_tag){
+        name = (char*) str + off_bytevector_data;
+      } else {
+        fprintf(stderr, "foreign name is not a bytevector\n");
+        exit(-1);
+      }
       void* sym = dlsym(RTLD_DEFAULT, name);
       char* err = dlerror();
       if(err){
