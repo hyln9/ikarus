@@ -389,6 +389,20 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
       exit(-1);
     }
   }
+  else if(c == 'v'){
+    /* bytevector */
+    int len;
+    fasl_read_buf(p, &len, sizeof(int));
+    int size = align(len + disp_bytevector_data + 1);
+    ikp x = ik_alloc(pcb, size) + bytevector_tag;
+    ref(x, off_bytevector_length) = fix(len);
+    fasl_read_buf(p, x+off_bytevector_data, len);
+    x[off_bytevector_data+len] = 0;
+    if(put_mark_index){
+      p->marks[put_mark_index] = x;
+    }
+    return x;
+  }
   else {
     fprintf(stderr, 
         "invalid type '%c' (0x%02x) found in fasl file at byte 0x%08x\n", 

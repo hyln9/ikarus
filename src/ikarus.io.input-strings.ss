@@ -73,7 +73,7 @@
         (error 'open-input-string "~s is not a string" str))
       (let ([port (make-input-port
                     (make-input-string-handler str)
-                    ($make-bytevector 0))])
+                    '#vu8())])
         port)))
   )
 
