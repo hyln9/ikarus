@@ -69,6 +69,7 @@
     "ikarus.posix.ss"
     "ikarus.timer.ss"
     "ikarus.bytevectors.ss"
+    "ikarus.transcoders.ss"
     "ikarus.main.ss"))
 
 (define ikarus-system-macros
@@ -291,6 +292,7 @@
     [bytevector->sint-list   i]
     [uint-list->bytevector   i]
     [sint-list->bytevector   i]
+    [string->utf8-bytevector i]
 
     [for-each                i r]
     [map                     i r]
