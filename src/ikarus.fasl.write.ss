@@ -10,18 +10,17 @@
   (define write-fixnum 
     (lambda (x p)
       (unless (fixnum? x) (error 'write-fixnum "not a fixnum ~s" x))
-      (write-char (integer->char (fxsll (fxlogand x #x3F) 2)) p)
-      (write-char (integer->char (fxlogand (fxsra x 6) #xFF)) p)
-      (write-char (integer->char (fxlogand (fxsra x 14) #xFF)) p)
-      (write-char (integer->char (fxlogand (fxsra x 22) #xFF)) p)))
+      (write-byte (fxsll (fxlogand x #x3F) 2) p)
+      (write-byte (fxlogand (fxsra x 6) #xFF) p)
+      (write-byte (fxlogand (fxsra x 14) #xFF) p)
+      (write-byte (fxlogand (fxsra x 22) #xFF) p)))
   (define write-int 
     (lambda (x p)
       (unless (fixnum? x) (error 'write-int "not a fixnum ~s" x))
-      (write-char (integer->char (fxlogand x #xFF)) p)
-      (write-char (integer->char (fxlogand (fxsra x 8) #xFF)) p)
-      (write-char (integer->char (fxlogand (fxsra x 16) #xFF)) p)
-      (write-char (integer->char (fxlogand (fxsra x 24) #xFF)) p)))
-  
+      (write-byte (fxlogand x #xFF) p)
+      (write-byte (fxlogand (fxsra x 8) #xFF) p)
+      (write-byte (fxlogand (fxsra x 16) #xFF) p)
+      (write-byte (fxlogand (fxsra x 24) #xFF) p)))
   (define fasl-write-immediate
     (lambda (x p)
       (cond
@@ -76,7 +75,7 @@
          (write-fixnum (code-freevars x) p)
          (let f ([i 0] [n (code-size x)])
            (unless (fx= i n)
-             (write-char (integer->char (code-ref x i)) p)
+             (write-byte (code-ref x i) p)
              (f (fxadd1 i) n)))
          (fasl-write-object (code-reloc-vector x) p h m)]
         [(record? x)

@@ -3,6 +3,8 @@
   (export open-output-string get-output-string with-output-to-string)
   (import 
     (ikarus system $strings)
+    (ikarus system $bytevectors)
+    (ikarus system $chars)
     (ikarus system $fx)
     (ikarus system $pairs)
     (ikarus system $ports)
@@ -35,7 +37,7 @@
     (lambda (s)
       (substring s 0 (string-length s))))
 
-  (define concat 
+  (define concat-old
     (lambda (str i ls)
       (let ([n (sum i ls)])
         (let ([outstr (make-string n)])
@@ -45,13 +47,28 @@
                 (let ([a ($car ls)])
                   (f (copy outstr a (string-length a) n) ($cdr ls)))))))))
 
+  (define concat 
+    (lambda (bv i ls)
+      (let ([n (sum i ls)])
+        (let ([outstr (make-string n)])
+          (let f ([n (copy outstr bv i n)] [ls ls])
+            (if (null? ls)
+                outstr
+                (let ([a ($car ls)])
+                  (f (copy outstr a ($bytevector-length a) n) ($cdr ls)))))))))
   (define sum 
     (lambda (ac ls)
       (cond
         [(null? ls) ac]
-        [else (sum ($fx+ ac (string-length ($car ls))) ($cdr ls))])))
+        [else (sum ($fx+ ac ($bytevector-length ($car ls))) ($cdr ls))])))
   
-  (define copy
+  (define sum-old
+    (lambda (ac ls)
+      (cond
+        [(null? ls) ac]
+        [else (sum ($fx+ ac (string-length ($car ls))) ($cdr ls))])))
+
+  (define copy-old
     (lambda (dst src n end)
       (let f ([di end]
               [si n])
@@ -61,8 +78,21 @@
            (let ([di ($fxsub1 di)] [si ($fxsub1 si)])
              (string-set! dst di (string-ref src si))
              (f di si))]))))
-  
-  (define make-output-string-handler
+
+  (define copy
+    (lambda (dst src n end)
+      (let f ([di end]
+              [si n])
+        (cond
+          [($fx= si 0) di]
+          [else
+           (let ([di ($fxsub1 di)] [si ($fxsub1 si)])
+             (string-set! dst di 
+               (integer->char ($bytevector-u8-ref src si)))
+             (f di si))]))))
+
+
+  (define make-output-string-handler-old
     (lambda ()
       (define buffer-list '())
       (define open? #t)
@@ -102,11 +132,57 @@
                          "unhandled message ~s" (cons msg args))])))
       output-handler))
 
+  (define make-output-string-handler
+    (lambda ()
+      (define buffer-list '())
+      (define open? #t)
+      (define idx 0)
+      (define buff (make-bytevector 59))
+      (define size 59)
+      (define output-handler
+        (lambda (msg . args)
+          (message-case msg args
+            [(write-byte b p)
+             (if (and (fixnum? b) ($fx<= 0 b) ($fx<= b 255))
+                 (if (output-port? p)
+                     (if ($fx< idx size)
+                         (begin
+                           ($bytevector-set! buff idx b)
+                           (set! idx ($fxadd1 idx)))
+                         (if open?
+                           (begin
+                             (set! buffer-list (cons buff buffer-list))
+                             (set! buff (make-bytevector 59))
+                             ($bytevector-set! buff 0 b)
+                             (set! idx 1))
+                           (error 'write-byte "port ~s is closed" p)))
+                     (error 'write-byte "~s is not an output-port" p))
+                 (error 'write-byte "~s is not a byte" b))]
+            [(write-char c p)
+             (if (char? c)
+                 (if (output-port? p)
+                     (let ([b ($char->fixnum c)])
+                       (if ($fx<= b 255)
+                           ($write-byte b p)
+                           (error 'write-char "multibyte write of ~s is not implemented" c)))
+                     (error 'write-char "~s is not an output-port" p))
+                 (error 'write-char "~s is not a character" c))]
+            [(flush-output-port p)
+             (void)]
+            [(close-port p)
+             (set! open? #f)]
+            [(port-name p) 'string-port]
+            [(get-output-string p) 
+             (concat buff idx buffer-list)]
+            [else (error 'output-handler 
+                         "unhandled message ~s" (cons msg args))])))
+      output-handler))
+
   (define open-output-string 
     (lambda ()
       (make-output-port 
         (make-output-string-handler)
-        (make-string 10))))
+        (make-string 0))))
 
   (define get-output-string
     (lambda (p)

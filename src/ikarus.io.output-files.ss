@@ -7,6 +7,8 @@
     (ikarus system $ports)
     (ikarus system $io)
     (ikarus system $strings)
+    (ikarus system $chars)
+    (ikarus system $bytevectors)
     (ikarus system $fx)
     (except (ikarus)
             standard-output-port standard-error-port   
@@ -48,7 +50,7 @@
            (close-output-port p)
            (close-ports))])))
 
-  (define do-write-buffer
+  (define do-write-buffer-old
     (lambda (fd port-name p caller)
       (let ([bytes (foreign-call "ikrt_write_file" 
                                  fd
@@ -58,7 +60,14 @@
             (set-port-output-index! p 0)
             (error caller "cannot write to file ~s: ~a" port-name bytes)))))
   
-  (define make-output-file-handler
+  (define do-write-buffer
+    (lambda (fd port-name buff idx caller)
+      (let ([bytes (foreign-call "ikrt_write_file" fd buff idx)])
+        (if (fixnum? bytes)
+            bytes
+            (error caller "cannot write to file ~s: ~a" port-name bytes)))))
+
+  (define make-output-file-handler-old
     (lambda (fd port-name)
       (define open? #t)
       (define output-file-handler
@@ -98,6 +107,56 @@
                          "unhandled message ~s" (cons msg args))])))
       output-file-handler))
   
+  (define make-output-file-handler
+    (lambda (fd port-name)
+      (define open? #t)
+      (define buff ($make-bytevector 4096))
+      (define idx 0)
+      (define size 4096)
+      (define output-file-handler
+        (lambda (msg . args)
+          (message-case msg args
+            [(write-byte b p)
+             (if (and (fixnum? b) ($fx<= 0 b) ($fx<= b 255))
+                 (if (output-port? p)
+                     (if ($fx< idx size)
+                         (begin
+                           ($bytevector-set! buff idx b)
+                           (set! idx ($fxadd1 idx)))
+                         (if open?
+                           (let ([bytes (do-write-buffer fd port-name buff idx 'write-char)])
+                             (set! idx 0)
+                             ($write-byte b p))
+                           (error 'write-byte "port ~s is closed" p)))
+                     (error 'write-byte "~s is not an output-port" p))
+                 (error 'write-byte "~s is not a byte" b))]
+            [(write-char c p)
+             (if (char? c)
+                 (if (output-port? p)
+                     (let ([b ($char->fixnum c)])
+                       (if ($fx<= b 255)
+                           ($write-byte b p)
+                           (error 'write-char "multibyte write of ~s not implemented" c)))
+                     (error 'write-char "~s is not an output-port" p))
+                 (error 'write-char "~s is not a character" c))]
+            [(flush-output-port p)
+             (if (output-port? p)
+                 (if open?
+                     (let ([bytes (do-write-buffer fd port-name buff idx 'flush-output-port)])
+                       (set! idx 0))
+                     (error 'flush-output-port "port ~s is closed" p))
+                 (error 'flush-output-port "~s is not an output-port" p))]
+            [(close-port p)
+             (when open?
+               (flush-output-port p)
+               (set! size 0)
+               (set! open? #f)
+               (unless (foreign-call "ikrt_close_file" fd)
+                 (error 'close-output-port "cannot close ~s" port-name)))]
+            [(port-name p) port-name]
+            [else (error 'output-file-handler 
+                         "unhandled message ~s" (cons msg args))])))
+      output-file-handler))
   (define (option-id x)
     (case x
       [(error)    0]
@@ -117,7 +176,7 @@
             (let ([port
                    (make-output-port
                      (make-output-file-handler fd/error filename)
-                     (make-string 4096))])
+                     (make-string 0))])
               (guardian port)
               port)
             (error 'open-output-file "cannot open ~s: ~a" filename fd/error)))))
@@ -191,9 +250,9 @@
   (set! *standard-output-port* 
     (make-output-port
       (make-output-file-handler 1 '*stdout*)
-      (make-string 4096)))
+      (make-string 0)))
   (set! *current-output-port* *standard-output-port*)
   (set! *standard-error-port* 
     (make-output-port
       (make-output-file-handler 2 '*stderr*)
-      (make-string 4096))) )
+      (make-string 0))) )
