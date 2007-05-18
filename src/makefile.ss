@@ -398,6 +398,7 @@
     [display                 i r]
     [write                   i r]
     [write-char              i]
+    [write-byte              i]
     [read                    i r]
     [read-char               i r]
     [read-token              i]

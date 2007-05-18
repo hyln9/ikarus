@@ -1,11 +1,12 @@
 
 (library (ikarus io-primitives)
-  (export read-char unread-char peek-char write-char newline
+  (export read-char unread-char peek-char write-char write-byte newline
           port-name input-port-name output-port-name
           close-input-port reset-input-port! 
           flush-output-port close-output-port)
   (import 
     (ikarus system $io)
+    (ikarus system $fx)
     (ikarus system $ports)
     (except (ikarus) read-char unread-char peek-char write-char
             newline port-name input-port-name output-port-name
@@ -25,18 +26,18 @@
                (error 'write-char "~s is not an output-port" p))
            (error 'write-char "~s is not a character" c))]))
    
-  #;(define write-byte
+  (define write-byte
     (case-lambda
-      [(c)
-       (if (char? c)
-           ($write-char c (current-output-port))
-           (error 'write-char "~s is not a character" c))]
-      [(c p)
-       (if (char? c)
+      [(b)
+       (if (and (fixnum? b) ($fx<= 0 b) ($fx<= b 255))
+           ($write-byte b (current-output-port))
+           (error 'write-byte "~s is not a byte" b))]
+      [(b p)
+       (if (and (fixnum? b) ($fx<= 0 b) ($fx<= b 255))
            (if (output-port? p)
-               ($write-char c p)
-               (error 'write-char "~s is not an output-port" p))
-           (error 'write-char "~s is not a character" c))]))
+               ($write-byte b p)
+               (error 'write-byte "~s is not an output-port" p))
+           (error 'write-byte "~s is not a byte" b))]))
   ;;;
   (define newline
     (case-lambda
