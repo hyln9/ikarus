@@ -91,71 +91,39 @@
                (integer->char ($bytevector-u8-ref src si)))
              (f di si))]))))
 
+  (define bv-copy
+    (lambda (src)
+      (let ([n ($bytevector-length src)])
+        (let f ([src src] [dst ($make-bytevector n)] [i 0] [n n])
+          (cond
+            [($fx= i n) dst]
+            [else
+             ($bytevector-set! dst i ($bytevector-u8-ref src i))
+             (f src dst ($fxadd1 i) n)])))))
 
-  (define make-output-string-handler-old
-    (lambda ()
-      (define buffer-list '())
-      (define open? #t)
-      (define output-handler
-        (lambda (msg . args)
-          (message-case msg args
-            [(write-char c p)
-             (if (char? c)
-                 (if (output-port? p)
-                     (let ([idx ($port-output-index p)])
-                        (if ($fx< idx ($port-output-size p))
-                            (begin
-                              (string-set! ($port-output-buffer p) idx c)
-                              ($set-port-output-index! p ($fxadd1 idx)))
-                            (if open?
-                              (begin
-                                (set! buffer-list
-                                  (cons (string-copy (port-output-buffer p))
-                                        buffer-list))
-                                ($set-port-output-size! p 
-                                  (string-length ($port-output-buffer p)))
-                                ($write-char c p))
-                              (error 'write-char "port ~s is closed" p))))
-                     (error 'write-char "~s is not an output-port" p))
-                 (error 'write-char "~s is not a character" c))]
-            [(write-byte b p) (output-handler 'write-char (integer->char b) p)]
-            [(flush-output-port p)
-             (void)]
-            [(close-port p)
-             (set! open? #f)]
-            [(port-name p) 'string-port]
-            [(get-output-string p) 
-             (concat ($port-output-buffer p)
-                     ($port-output-index p)
-                     buffer-list)]
-            [else (error 'output-handler 
-                         "unhandled message ~s" (cons msg args))])))
-      output-handler))
+
 
   (define make-output-string-handler
     (lambda ()
       (define buffer-list '())
       (define open? #t)
-      (define idx 0)
-      (define buff ($make-bytevector 59))
-      (define size 59)
       (define output-handler
         (lambda (msg . args)
           (message-case msg args
             [(write-byte b p)
              (if (and (fixnum? b) ($fx<= 0 b) ($fx<= b 255))
                  (if (output-port? p)
-                     (if ($fx< idx size)
-                         (begin
-                           ($bytevector-set! buff idx b)
-                           (set! idx ($fxadd1 idx)))
-                         (if open?
+                     (let ([idx ($port-output-index p)])
+                       (if ($fx< idx ($port-output-size p))
                            (begin
-                             (set! buffer-list (cons buff buffer-list))
-                             (set! buff ($make-bytevector 59))
-                             ($bytevector-set! buff 0 b)
-                             (set! idx 1))
-                           (error 'write-byte "port ~s is closed" p)))
+                             ($bytevector-set! ($port-output-buffer p) idx b)
+                             ($set-port-output-index! p ($fxadd1 idx)))
+                           (if open?
+                             (let ([buff ($port-output-buffer p)])
+                               (set! buffer-list (cons (bv-copy buff) buffer-list))
+                               ($bytevector-set! buff 0 b)
+                               (set! idx 1))
+                             (error 'write-byte "port ~s is closed" p))))
                      (error 'write-byte "~s is not an output-port" p))
                  (error 'write-byte "~s is not a byte" b))]
             [(write-char c p)
@@ -173,7 +141,9 @@
              (set! open? #f)]
             [(port-name p) 'string-port]
             [(get-output-string p) 
-             (concat buff idx buffer-list)]
+             (concat ($port-output-buffer p) 
+                     ($port-output-index p)
+                     buffer-list)]
             [else (error 'output-handler 
                          "unhandled message ~s" (cons msg args))])))
       output-handler))
@@ -182,7 +152,7 @@
     (lambda ()
       (make-output-port 
         (make-output-string-handler)
-        ($make-bytevector 0))))
+        ($make-bytevector 59))))
 
   (define get-output-string
     (lambda (p)
