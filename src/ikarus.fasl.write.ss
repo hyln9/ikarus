@@ -4,6 +4,9 @@
   (import
     (ikarus system $codes)
     (ikarus system $records)
+    (ikarus system $io)
+    (ikarus system $bytevectors)
+    (ikarus system $fx)
     (ikarus code-objects)
     (except (ikarus) fasl-write))
 
@@ -111,7 +114,17 @@
         [(procedure? x)
          (write-char #\Q p)
          (fasl-write-object ($closure-code x) p h m)]
+        [(bytevector? x) 
+         (write-char #\v p)
+         (let ([n ($bytevector-length x)])
+           (write-int n p)
+           (write-bytevector x 0 n p))
+         m]
         [else (error 'fasl-write "~s is not fasl-writable" x)])))
+  (define (write-bytevector x i j p)
+    (unless ($fx= i j)
+      ($write-byte ($bytevector-u8-ref x i) p)
+      (write-bytevector x ($fxadd1 i) j p)))
   (define fasl-write-object 
     (lambda (x p h m)
       (cond
@@ -182,6 +195,7 @@
                          "Cannot write a non-thunk procedure; the one given has ~s free vars"
                          (code-freevars code)))
                 (make-graph code h))]
+             [(bytevector? x) (void)]
              [else (error 'fasl-write "~s is not fasl-writable" x)])]))))
   (define fasl-write-to-port
     (lambda (x port)

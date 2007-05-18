@@ -16,8 +16,8 @@
 ;;;   "I" + 4-bytes : denoting a fixnum (in host byte order)
 ;;;   "C" + 1-byte : denoting a character
 ;;;   "P" + object1 + object2 : a pair
-;;;   "V" + 4-bytes(n) + object ... : a vector of length n followed by n
-;;;                                   objects
+;;;   "V" + 4-bytes(n) + object ... : a vector of length n followed by n objects
+;;;   "v" + 4-byte(n) + octet ... : a bytevector of length n followed by n octets
 ;;;   "S" + 4-bytes(n) + char ... : a string
 ;;;   "M" + symbol-name : a symbol
 ;;;   "G" + pretty-name + unique-name : a gensym
