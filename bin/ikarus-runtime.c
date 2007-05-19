@@ -774,6 +774,29 @@ ikrt_strftime(ikp outstr, ikp fmtstr){
 }
 
 ikp
+ikrt_bvftime(ikp outbv, ikp fmtbv){
+  time_t t;
+  struct tm* tmp;
+  t = time(NULL);
+  tmp = localtime(&t);
+  if(tmp == NULL){
+    fprintf(stderr, "Error in time: %s\n", strerror(errno));
+  }
+  int rv = 
+    strftime((char*)outbv+off_bytevector_data,
+             unfix(ref(outbv, off_bytevector_length)) + 1,
+             (char*)fmtbv+off_bytevector_data,
+             tmp);
+  if(rv == 0){
+    fprintf(stderr, "Error in strftime: %s\n", strerror(errno));
+  }
+  return fix(rv);
+}
+
+
+
+
+ikp
 ikrt_close_file(ikp fd, ikpcb* pcb){
   int err = close(unfix(fd));
   if(err == -1){

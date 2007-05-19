@@ -868,6 +868,8 @@
            (vector-set! vec (fx+ reloc-idx 1) v)
            (set! reloc-idx (fx+ reloc-idx 2))]
           [(foreign-label)
+           ;;; FIXME: converted strings should be memoized.
+           ;;;        wait for equal? hash tables.
            (let ([name 
                   (if (string? v)
                       (string->utf8-bytevector v)

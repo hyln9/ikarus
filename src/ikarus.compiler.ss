@@ -1943,7 +1943,7 @@
         $fx= $fx< $fx<= $fx> $fx>= $fxquotient $fxmodulo $fxsll $fxsra $fxlogxor $exit) 
        (andmap (check op fixnum?) rand*)]
       [($fixnum->char) 
-       (andmap (check op byte?) rand*)]
+       (andmap (check op fixnum?) rand*)]
       [($char->fixnum $char= $char< $char<= $char> $char>= $string)
        (andmap (check op char?) rand*)]
       [($make-vector $make-string)
