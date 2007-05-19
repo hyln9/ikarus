@@ -169,6 +169,19 @@
           (and (subsequent? ($string-ref str i))
                (subsequent*? str ($fxadd1 i) n)))))
   
+  (define peculiar-symbol-string?
+    (lambda (str)
+      (let ([n (string-length str)])
+        (cond
+          [(fx= n 1) 
+           (memq (string-ref str 0) '(#\+ #\-))]
+          [(fx>= n 2)
+           (or (and (char=? (string-ref str 0) #\-)
+                    (char=? (string-ref str 1) #\>)
+                    (subsequent*? str 2 n))
+               (string=? str "..."))]
+          [else #f]))))
+
   (define valid-symbol-string?
     (lambda (str)
       (define normal-symbol-string?
@@ -177,43 +190,132 @@
             (and ($fx>= n 1)
                  (initial? ($string-ref str 0))
                  (subsequent*? str 1 n)))))
-      (define peculiar-symbol-string?
-        (lambda (str)
-          (let ([n (string-length str)])
-            (cond
-              [(fx= n 1) 
-               (memq (string-ref str 0) '(#\+ #\-))]
-              [(fx>= n 2)
-               (or (and (char=? (string-ref str 0) #\-)
-                        (char=? (string-ref str 1) #\>)
-                        (subsequent*? str 2 n))
-                   (string=? str "..."))]))))
       (or (normal-symbol-string? str)
           (peculiar-symbol-string? str))))
   
-  (define write-symbol-esc-loop
+  (define write-symbol-bar-esc-loop
     (lambda (x i n p)
       (unless ($fx= i n)
-        (let ([c ($string-ref x i)])
-          (when (memq c '(#\\ #\|))
-            (write-char #\\ p))
-          (write-char c p))
-        (write-symbol-esc-loop x ($fxadd1 i) n p))))
+        (let* ([c ($string-ref x i)]
+               [b ($char->fixnum c)])
+          (cond
+            [($fx< b 32)
+             (cond
+               [($fx< b 7) 
+                (write-inline-hex b p)]
+               [($fx< b 14)
+                (write-char #\\ p)
+                (write-char (string-ref "abtnvfr" ($fx- b 7)) p)]
+               [else 
+                (write-inline-hex b p)])]
+            [(memq c '(#\\ #\|))
+             (write-char #\\ p)
+             (write-char c p)]
+            [($fx< b 127) 
+             (write-char c p)]
+            [else 
+             (write-inline-hex b p)]))
+        (write-symbol-bar-esc-loop x ($fxadd1 i) n p))))
   
-  (define write-symbol-esc
+  (define write-symbol-bar-esc
     (lambda (x p)
       (write-char #\| p)
-      (write-symbol-esc-loop x 0 ($string-length x) p)
+      (write-symbol-bar-esc-loop x 0 ($string-length x) p)
       (write-char #\| p)))
   
+  (define-syntax ascii-map
+    (lambda (x)
+      ;;; r6rs prohibits bytevectors from being "datum"s
+      ;;; oh well.
+      (syntax-case x ()
+        [(stx str) (string? (syntax->datum #'str))
+         (let ([s (syntax->datum #'str)]
+               [bv (make-bytevector 16 0)])
+           (for-each
+             (lambda (c)
+               (let ([b (char->integer c)])
+                 (let ([i (fxlogand b 7)]
+                       [j (fxsra b 3)])
+                   (bytevector-u8-set! bv j
+                     (fxlogor (bytevector-u8-ref bv j)
+                       (fxsll 1 i))))))
+             (string->list s))
+           (with-syntax ([bv (datum->syntax #'stx bv)])
+             #'(quote bv)))])))
+
+  (define subsequents-map 
+   (ascii-map
+     "!$%&*/:<=>?^_~+-.@abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"))
+  (define initials-map
+   (ascii-map
+     "!$%&*/:<=>?^_~abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"))
+
+
+  (define (in-map? byte map)
+    (let ([i ($fxlogand byte 7)]
+          [j ($fxsra byte 3)])
+      (and 
+        (fx< j ($bytevector-length map))
+        (let ([mask ($fxsll 1 i)])
+           (not ($fxzero? 
+                  ($fxlogand mask
+                    ($bytevector-u8-ref map j))))))))
+
+
+  (define (write-subsequent* str i j p)
+    (unless ($fx= i j) 
+      (let* ([c ($string-ref str i)]
+             [b ($char->fixnum c)])
+        (cond
+          [(in-map? b subsequents-map) 
+           (write-char c p)]
+          [else 
+           (write-inline-hex b p)]))))
+
+  (define write-symbol-hex-esc
+    (lambda (str p)
+      (let ([n ($string-length str)])
+        (cond
+          [($fx= n 0) 
+           (write-char #\| p) 
+           (write-char #\| p)]
+          [else
+           (let* ([c0 ($string-ref str 0)]
+                  [b0 ($char->fixnum c0)])
+             (cond
+               [(in-map? b0 initials-map) (write-char c0 p)]
+               [else (write-inline-hex b0 p)])
+             (write-subsequent* str 1 n p))]))))
+
+
+  (define (write-peculiar str p)
+    (let ([n ($string-length str)])
+      (cond
+        [($fx= n 1) 
+         (write-char ($string-ref str 0) p)]
+        [(and ($fx>= n 2) 
+              ($char= ($string-ref str 0) #\-)
+              ($char= ($string-ref str 1) #\>))
+         (write-char #\- p)
+         (write-char #\> p)
+         (write-subsequent* str 2 n p)]
+        [(string=? str "...")
+         (write-char #\. p)
+         (write-char #\. p)
+         (write-char #\. p)]
+        [else (error 'write-peculiear "BUG")])))
+
   (define write-symbol
     (lambda (x p m)
-      (let ([str (symbol->string x)])
-        (if m
-            (if (valid-symbol-string? str)
-                (write-char* str p)
-                (write-symbol-esc str p))
-            (write-char* str p)))))
+      (write-symbol-string (symbol->string x) p m)))
+
+  (define write-symbol-string
+    (lambda (str p m)
+      (if m
+          (if (peculiar-symbol-string? str)
+              (write-peculiar str p)
+              (write-symbol-hex-esc str p))
+          (write-char* str p))))
   
   (define write-gensym
     (lambda (x p m h i)
@@ -225,45 +327,53 @@
               (let ([str (symbol->string x)])
                 (write-char #\# p)
                 (write-char #\: p)
-                (if (valid-symbol-string? str)
-                    (write-char* str p)
-                    (write-symbol-esc str p)))]
+                (write-symbol-string str p m))]
              [else
-              (let ([str (symbol->string x)])
+              (let ([str (symbol->string x)]
+                    [ustr (gensym->unique-string x)])
                 (write-char #\# p)
                 (write-char #\{ p)
-                (if (valid-symbol-string? str)
-                    (write-char* str p)
-                    (write-symbol-esc str p))
+                (write-symbol-string str p m)
                 (write-char #\space p)
-                (write-symbol-esc (gensym->unique-string x) p)
+                (write-symbol-bar-esc ustr p)
                 (write-char #\} p))])
            i)]
         [else 
          (write-symbol x p m)
          i])))
   
+  (define write-inline-hex
+    (lambda (b p)
+      (write-char #\\ p)
+      (write-char #\x p)
+      (if ($fxzero? b) 
+          (write-char #\0 p)
+          (write-positive-hex-fx b p))
+      (write-char #\; p)))
+
   (define write-string-escape
     (lambda (x p)
       (define loop 
         (lambda (x i n p)
          (unless (fx= i n)
-           (let ([c (string-ref x i)])
+           (let* ([c (string-ref x i)]
+                  [b ($char->fixnum c)])
              (cond
+               [($fx< b 32) 
+                (cond
+                  [($fx< b 7) 
+                   (write-inline-hex b p)]
+                  [($fx< b 14)
+                   (write-char #\\ p)
+                   (write-char (string-ref "abtnvfr" ($fx- b 7)) p)]
+                  [else 
+                   (write-inline-hex b p)])]
                [(or ($char= #\" c) ($char= #\\ c))
                 (write-char #\\ p)
                 (write-char c p)]
-               [($char= #\newline c)
-                (write-char #\\ p)
-                (write-char #\n p)] 
-               [($char= #\return c)
-                (write-char #\\ p)
-                (write-char #\r p)] 
-               [($char= #\tab c)
-                (write-char #\\ p)
-                (write-char #\t p)]
-               [else
-                (write-char c p)]))
+               [($fx< b 127)
+                (write-char c p)]
+               [else (write-inline-hex b p)]))
            (loop x (fxadd1 i) n p)))) 
       (write-char #\" p)
       (loop x 0 (string-length x) p)

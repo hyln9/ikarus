@@ -217,7 +217,7 @@
                     (f (cdr ls) (fx+ n (box-length (car ls))))]))])
           (make-vbox (fx+ (fx+ n 2) (vector-length x)) ls))))
     (cond
-      [(string? x)    (boxify-string x)]
+     ; [(string? x)    (boxify-string x)]
       [(null? x)      "()"]
       [(vector? x)    (boxify-vector x)]
       [(list? x)      (boxify-list x '())]
