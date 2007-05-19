@@ -14,12 +14,15 @@
 
   (define integer->char
     (lambda (n)
-      (unless (fixnum? n)
-        (error 'integer->char "~s is not a fixnum" n))
-      (unless (and ($fx>= n 0)
-                   ($fx<= n 255))
-        (error 'integer->char "~s is out of range[0..255]" n))
-      ($fixnum->char n)))
+      (cond
+        [(not (fixnum? n)) (error 'integer->char "invalid argument ~s" n)]
+        [($fx< n 0) (error 'integer->char "~s is negative" n)]
+        [($fx<= n #xD7FF) ($fixnum->char n)]
+        [($fx< n #xE000)
+         (error 'integer->char "~s does not have a unicode representation" n)]
+        [($fx<= n #x10FFFF) ($fixnum->char n)]
+        [else (error 'integer->char 
+                "~s does not have a unicode representation" n)])))
   
   (define char->integer 
     (lambda (x) 

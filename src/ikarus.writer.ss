@@ -13,10 +13,32 @@
     (except (ikarus) write display format printf print-error
             error-handler error))
 
+ ;;; (define char-table ; first nonprintable chars
+ ;;;   '#("nul" "soh" "stx" "etx" "eot" "enq" "ack" "bel" "bs" "tab" "newline"
+ ;;;      "vt" "ff" "return" "so" "si" "dle" "dc1" "dc2" "dc3" "dc4" "nak" 
+ ;;;      "syn" "etb" "can" "em" "sub" "esc" "fs" "gs" "rs" "us" "space"))
+
   (define char-table ; first nonprintable chars
-    '#("nul" "soh" "stx" "etx" "eot" "enq" "ack" "bel" "bs" "tab" "newline"
-       "vt" "ff" "return" "so" "si" "dle" "dc1" "dc2" "dc3" "dc4" "nak" 
-       "syn" "etb" "can" "em" "sub" "esc" "fs" "gs" "rs" "us" "space"))
+    '#("nul" "x1" "x2" "x3" "x4" "x5" "x6" "alarm"
+       "backspace" "tab" "linefeed" "vtab" "page" "return" "xE" "xF" 
+       "x10" "x11" "x12" "x13" "x14" "x15" "x16" "x17" 
+       "x18" "x19" "x1A" "esc" "x1C" "x1D" "x1E" "x1F" 
+       "space"))
+
+  (define write-positive-hex-fx
+    (lambda (n p)
+      (unless ($fx= n 0)
+        (write-positive-hex-fx ($fxsra n 4) p)
+        (let ([n ($fxlogand n #xF)])
+          (cond
+            [($fx<= n 9)
+             (write-char ($fixnum->char 
+                           ($fx+ ($char->fixnum #\0) n)) 
+                         p)]
+            [else
+             (write-char ($fixnum->char
+                           ($fx+ ($char->fixnum #\A) ($fx- n 10)))
+                         p)])))))
 
   (define write-character
     (lambda (x p m)
@@ -32,11 +54,11 @@
               (write-char x p)]
              [(fx= i 127) 
               (write-char #\\ p)
-              (write-char* "del" p)]
+              (write-char* "delete" p)]
              [else
               (write-char #\\ p)
               (write-char #\x p)
-              (write-fixnum i p)]))
+              (write-positive-hex-fx i p)]))
           (write-char x p))))
 
   (define write-list
