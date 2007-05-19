@@ -672,7 +672,12 @@ ikp ik_close(ikp fd){
 
 ikp 
 ik_system(ikp str){
-  return fix(system(string_data(str)));
+  if(tagof(str) == bytevector_tag){
+    return fix(system((char*)str+off_bytevector_data));
+  } else {
+    fprintf(stderr, "bug in ik_system\n");
+    exit(-1);
+  }
 }
 
 static char*

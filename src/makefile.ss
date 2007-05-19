@@ -467,6 +467,8 @@
     [immediate?              i]
     [pointer-value           i]
 
+    [system                  i]
+
     [installed-libraries     i]
     [compile-core-expr-to-port   $boot]
     [current-primitive-locations $boot]

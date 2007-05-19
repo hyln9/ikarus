@@ -30,7 +30,8 @@
     (lambda (x)
       (unless (string? x)
         (error 'system "~s is not a string" x))
-      (let ([rv (foreign-call "ik_system" x)])
+      (let ([rv (foreign-call "ik_system"
+                  (string->utf8-bytevector x))])
         (if (fx= rv -1)
             (error 'system "failed")
             rv))))
