@@ -60,7 +60,8 @@
     (lambda (x)
       (unless (string? x)
         (error 'delete-file "filename ~s is not a string" x))
-      (let ([v (foreign-call "ikrt_delete_file" x)])
+      (let ([v (foreign-call "ikrt_delete_file"
+                 (string->utf8-bytevector x))])
         (case v
           [(0) (void)]
           [else

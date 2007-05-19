@@ -646,7 +646,13 @@ ikrt_file_exists(ikp filename){
 
 ikp
 ikrt_delete_file(ikp filename){
-  char* str = string_data(filename);
+  char* str;
+  if(tagof(filename) == bytevector_tag){
+    str = (char*) filename + off_bytevector_data;
+  } else {
+    fprintf(stderr, "bug in ikrt_delete_file\n");
+    exit(-1);
+  }
   int err = unlink(str);
   if(err == 0){
     return 0;
