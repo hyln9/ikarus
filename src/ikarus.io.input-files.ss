@@ -141,7 +141,8 @@
   (define $open-input-file
     (lambda (filename)
       (close-ports)
-      (let ([fd/error (foreign-call "ikrt_open_input_file" filename)])
+      (let ([fd/error (foreign-call "ikrt_open_input_file" 
+                        (string->utf8-bytevector filename))])
         (if (fixnum? fd/error)
             (let ([port (make-input-port 
                           (make-input-file-handler fd/error filename)

@@ -805,7 +805,14 @@ ikp ikrt_read(ikp fd, ikp buff, ikpcb* pcb){
 
 ikp
 ikrt_open_input_file(ikp fname, ikpcb* pcb){
-  int fd = open(string_data(fname), O_RDONLY);
+  char* name;
+  if(tagof(fname) == bytevector_tag){
+    name = (char*) fname + off_bytevector_data;
+  } else {
+    fprintf(stderr, "bug in ikrt_open_input_file\n");
+    exit(-1);
+  }
+  int fd = open(name, O_RDONLY);
   if(fd == -1){
     return false_object;
   } else {
