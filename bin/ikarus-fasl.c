@@ -270,8 +270,8 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     }
     return sym;
   }
-  else if(c == 'S'){
-    /* string */
+  else if(c == 's'){
+    /* ascii string */
     int len;
     fasl_read_buf(p, &len, sizeof(int));
     int size = align(len + disp_string_data + 1);
@@ -284,6 +284,26 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     }
     return str;
   }
+  else if(c == 'S'){
+    /* string */
+    int len;
+    fasl_read_buf(p, &len, sizeof(int));
+    int size = align(len*string_char_size + disp_string_data + 1);
+    ikp str = ik_alloc(pcb, size) + string_tag;
+    ref(str, off_string_length) = fix(len);
+    int i;
+    for(i=0; i<len; i++){
+      int c;
+      fasl_read_buf(p, &c, sizeof(int));
+      string_set(str, i, integer_to_char(c));
+    }
+    str[off_string_data+len*string_char_size] = 0;
+    if(put_mark_index){
+      p->marks[put_mark_index] = str;
+    }
+    return str;
+  }
+
   else if(c == 'V'){
     int len;
     fasl_read_buf(p, &len, sizeof(int));

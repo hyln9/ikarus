@@ -18,7 +18,8 @@
 ;;;   "P" + object1 + object2 : a pair
 ;;;   "V" + 4-bytes(n) + object ... : a vector of length n followed by n objects
 ;;;   "v" + 4-byte(n) + octet ... : a bytevector of length n followed by n octets
-;;;   "S" + 4-bytes(n) + char ... : a string
+;;;   "s" + 4-bytes(n) + octet ... : an ascii string
+;;;   "S" + 4-bytes(n) + int ... : a unicode string
 ;;;   "M" + symbol-name : a symbol
 ;;;   "G" + pretty-name + unique-name : a gensym
 ;;;   "R" + rtd-name + rtd-symbol + field-count + field-names

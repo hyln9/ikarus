@@ -63,7 +63,7 @@
            (cond
              [(fx= i n) m]
              [else
-              (write-char (string-ref x i) p)
+              (write-int (char->integer (string-ref x i)) p)
               (f x (fxadd1 i) n)]))]
         [(gensym? x)
          (write-char #\G p)
