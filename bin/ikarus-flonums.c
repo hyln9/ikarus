@@ -127,33 +127,26 @@ ikrt_fx_atan(ikp x, ikpcb* pcb){
   return r;
 }
 
-
-
-
-
-
-
-
-
 ikp
-ikrt_flonum_to_string(ikp x, ikpcb* pcb){
+ikrt_flonum_to_bytevector(ikp x, ikp bv, ikpcb* pcb){
   if(tagof(x) == vector_tag){
     if(ref(x,-vector_tag) == flonum_tag){
-      char buff[80];
-      int n = snprintf(buff, sizeof(buff)-2, "%.12G", flonum_data(x));
+      char* buff = (char*) bv + off_bytevector_data;
+      int len = unfix(ref(bv, off_bytevector_data));
+      int n = snprintf(buff, len-2, "%.12G", flonum_data(x));
       if(n >= 0){
         int i=0;
         while ((i<n) && (buff[i] != '.')){ i++; }
         if(i == n){
           buff[i] = '.';
           buff[i+1] = '0';
-          n += 2;;
+          buff[i+2] = 0;
+          n += 2;
+        } else {
+          buff[n] = 0;
         }
-        ikp str = ik_alloc(pcb, align(n+disp_string_data+1)) +
-          string_tag;
-        ref(str, -string_tag) = fix(n);
-        memcpy(string_data(str), buff, n);
-        return str;
+        ref(bv, off_bytevector_length) = fix(n);
+        return bv;
       }
     }
   }

@@ -7,11 +7,14 @@
 (library (ikarus flonums)
   (export string->flonum flonum->string)
   (import 
+    (ikarus system $bytevectors)
     (except (ikarus) flonum->string string->flonum))
   
   (define (flonum->string x)
-    (or (foreign-call "ikrt_flonum_to_string" x)
-        (error 'flonum->string "~s is not a flonum" x)))
+    (utf8-bytevector->string
+      (or (foreign-call "ikrt_flonum_to_bytevector" x
+            (make-bytevector 80 0))
+          (error 'flonum->string "~s is not a flonum" x))))
   
   (define (string->flonum x)
     (cond
@@ -376,7 +379,7 @@
       (cond
         [(fixnum? x) (fixnum->string x)]
         [(bignum? x) (foreign-call "ikrt_bntostring" x)]
-        [(flonum? x) (foreign-call "ikrt_flonum_to_string" x)]
+        [(flonum? x) (flonum->string x)]
         [else (error 'number->string "~s is not a number" x)])))
 
   (define modulo
