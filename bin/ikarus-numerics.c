@@ -1222,12 +1222,8 @@ ikrt_bnfxdivrem(ikp x, ikp y, ikpcb* pcb){
 }
 
 
-
-
-
-
 ikp
-ikrt_bntostring(ikp x, ikpcb* pcb){
+ikrt_bignum_to_bytevector(ikp x, ikpcb* pcb){
   /* FIXME: avoid calling malloc, instead, use the heap pointer itself
    * as a buffer to hold the temporary data after ensuring that it has enough
    * space */
@@ -1258,9 +1254,9 @@ ikrt_bntostring(ikp x, ikpcb* pcb){
     string_start++;
     bytes--;
   }
-  ikp str = ik_alloc(pcb, align(bytes + disp_string_data + (sign_bit?1:0)));
-  ref(str, 0) = fix(bytes + (sign_bit?1:0));
-  ikp dest = str + disp_string_data;
+  ikp bv = ik_alloc(pcb, align(bytes + disp_bytevector_data + (sign_bit?1:0)));
+  ref(bv, 0) = fix(bytes + (sign_bit?1:0));
+  ikp dest = bv + disp_bytevector_data;
   if(sign_bit){
     *dest = '-';
     dest++;
@@ -1274,6 +1270,6 @@ ikrt_bntostring(ikp x, ikpcb* pcb){
     dest[bytes] = 0;
   }
   free(mem);
-  return str + string_tag;
+  return bv + bytevector_tag;
 }
 

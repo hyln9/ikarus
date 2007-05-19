@@ -376,11 +376,16 @@
         [(bignum? x) (even-bignum? x)]
         [else (error 'odd? "~s is not an integer" x)])))
 
+  (define bignum->string
+    (lambda (x)
+      (utf8-bytevector->string
+        (foreign-call "ikrt_bignum_to_bytevector" x))))
+
   (define number->string
     (lambda (x)
       (cond
         [(fixnum? x) (fixnum->string x)]
-        [(bignum? x) (foreign-call "ikrt_bntostring" x)]
+        [(bignum? x) (bignum->string x)]
         [(flonum? x) (flonum->string x)]
         [else (error 'number->string "~s is not a number" x)])))
 
