@@ -1109,12 +1109,12 @@ add_object_proc(gc_t* gc, ikp x)
   else if(tag == string_tag){
     if(is_fixnum(fst)){
       int strlen = unfix(fst);
-      int memreq = align(strlen + disp_string_data + 1);
+      int memreq = align(strlen*string_char_size + disp_string_data + 1);
       ikp new_str = gc_alloc_new_data(memreq, gen, gc) + string_tag;
       ref(new_str, off_string_length) = fst;
       memcpy(new_str+off_string_data,
              x + off_string_data,
-             strlen + 1);
+             strlen*string_char_size + 1);
       ref(x, -string_tag) = forward_ptr;
       ref(x, wordsize-string_tag) = new_str;
 #if accounting

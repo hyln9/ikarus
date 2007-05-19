@@ -106,7 +106,9 @@ print(FILE* fh, ikp x){
   else if(tagof(x) == string_tag){
     ikp fxlen = ref(x, off_string_length);
     int len = unfix(fxlen);
-    char* data = string_data(x);
+    fprintf(stderr, "bug: printer busted!\n");
+    exit(-1);
+    char* data = 0; //string_data(x);
     fprintf(fh, "\"");
     int i;
     for(i=0; i<len; i++){

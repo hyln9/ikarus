@@ -19,7 +19,7 @@ compute_hash(ikp str){
   int len = unfix(ref(str, off_string_length));
   char* data = (char*) str + off_string_data;
   int h = len;
-  char* last = data + len;
+  char* last = data + len * string_char_size;
   while(data < last){
     char c = *data;
     h = h + c;
@@ -37,7 +37,10 @@ static int strings_eqp(ikp str1, ikp str2){
   ikp len = ref(str1, off_string_length);
   if(len == ref(str2, off_string_length)){
     return
-      (memcmp(str1+off_string_data, str2+off_string_data, unfix(len)) == 0);
+      (memcmp(str1+off_string_data, 
+              str2+off_string_data, 
+              unfix(len) * string_char_size)
+       == 0);
   }
   return 0;
 }
@@ -175,7 +178,7 @@ ikrt_strings_to_gensym(ikp str, ikp ustr, ikpcb* pcb){
 }
 
 
-
+#if 0
 ikp
 ik_cstring_to_symbol(char* str, ikpcb* pcb){
   int n = strlen(str);
@@ -186,3 +189,4 @@ ik_cstring_to_symbol(char* str, ikpcb* pcb){
   ikp sym = ikrt_string_to_symbol(s, pcb);
   return sym;
 }
+#endif

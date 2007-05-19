@@ -137,11 +137,17 @@ int main(int argc, char** argv){
     while(i > 0){
       char* s = argv[i];
       int n = strlen(s);
-      ikp str = ik_alloc(pcb, align(n+disp_string_data+1));
-      ref(str, disp_string_length) = fix(n);
-      strcpy((char*)str+disp_string_data, s);
+      ikp str = ik_alloc(pcb, align(n*string_char_size+disp_string_data+1))
+                + string_tag;
+      ref(str, off_string_length) = fix(n);
+      {
+        int i;
+        for(i=0; i<n; i++){
+          string_set(str, i, integer_to_char(s[i]));
+        }
+      }
       ikp p = ik_alloc(pcb, pair_size);
-      ref(p, disp_car) = str + string_tag;
+      ref(p, disp_car) = str;
       ref(p, disp_cdr) = arg_list;
       arg_list = p+pair_tag;
       i--;

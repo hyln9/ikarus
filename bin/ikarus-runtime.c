@@ -479,7 +479,7 @@ ikp ik_uuid(ikp str){
   return str;
 }
 
-
+#if 0
 ikp ik_write(ikp fdptr, ikp idx, ikp str){
   fprintf(stderr, "IK_WRITE\n");
   int fd = unfix(fdptr);
@@ -492,6 +492,7 @@ ikp ik_write(ikp fdptr, ikp idx, ikp str){
   }
   return true_object;
 }
+#endif
 
 
 /* 
@@ -505,6 +506,7 @@ ikp ik_write(ikp fdptr, ikp idx, ikp str){
  * int unlink(const char *pathname);  
  */
 
+#if 0
 ikp ik_open_file(ikp str, ikp flagptr){
   int flags;
   int f = unfix(flagptr);
@@ -537,6 +539,7 @@ ikp ik_open_file(ikp str, ikp flagptr){
   }
   return fix(fd);
 }
+#endif
  
 
 /*
@@ -829,12 +832,19 @@ ikrt_open_output_file(ikp fname, ikp flagptr, ikpcb* pcb){
   /* [(replace)  1] */
   /* [(truncate) 2] */
   /* [(append)   3] */
+  char* name;
+  if(tagof(fname) == bytevector_tag){
+    name = (char*) fname + off_bytevector_data;
+  } else {
+    fprintf(stderr, "bug in ikrt_open_output_file\n");
+    exit(-1);
+  }
   int flags;
   int f = unfix(flagptr);
   if(f == 0){
     flags = O_WRONLY | O_CREAT;
   } else if(f == 1){
-    unlink(string_data(fname));
+    unlink(name);
     flags = O_WRONLY | O_CREAT;
   } else if(f == 2){
     flags = O_WRONLY | O_TRUNC | O_CREAT;
@@ -844,13 +854,6 @@ ikrt_open_output_file(ikp fname, ikp flagptr, ikpcb* pcb){
     fprintf(stderr, "Error in S_open_file: invalid mode 0x%08x\n", 
                   (int)flagptr);
     exit(-10);
-  }
-  char* name;
-  if(tagof(fname) == bytevector_tag){
-    name = (char*) fname + off_bytevector_data;
-  } else {
-    fprintf(stderr, "bug in ikrt_open_output_file\n");
-    exit(-1);
   }
   int fd = open(name, flags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if(fd == -1){
@@ -868,7 +871,8 @@ ikrt_write_file(ikp fd, ikp buff, ikp idx, ikpcb* pcb){
   if(tagof(buff) == bytevector_tag){
     bytes = write(unfix(fd), buff+off_bytevector_data, unfix(idx));
   } else {
-    bytes = write(unfix(fd), string_data(buff), unfix(idx));
+    fprintf(stderr, "bug in ikrt_write_file\n");
+    exit(-1);
   }
   return fix(bytes);
 }
@@ -953,7 +957,7 @@ ikp
 ikrt_getenv(ikp str, ikpcb* pcb){
   fprintf(stderr, "getenv busted!\n");
   exit(-1);
-  char* v = getenv(string_data(str));
+  char* v = getenv((char*)str + off_bytevector_data);
   if(v){
     int n = strlen(v);
     ikp s = ik_alloc(pcb, align(n+disp_string_data+1)) + string_tag;
@@ -973,7 +977,8 @@ ikp
 ikrt_setenv(ikp key, ikp val, ikp overwrite){
   fprintf(stderr, "setenv busted!\n");
   exit(-1);
-  int err = setenv(string_data(key), string_data(val), 
+  int err = setenv((char*)key+off_bytevector_data, 
+                   (char*)val+off_bytevector_data,
                    overwrite!=false_object);
   if(err){
     return false_object;

@@ -97,7 +97,7 @@
 #define off_string_length (disp_string_length - string_tag)
 #define off_string_data (disp_string_data - string_tag)
 
-#define string_data(x)  ((char*)((x) + off_string_data))
+//#define string_data(x)  ((char*)((x) + off_string_data))
 #define string_set(x,i,c) \
   ((((unsigned char*)(x)) + off_string_data + (int)(i))[0] = \
    (((int)(c)) >> IK_CHAR_SHIFT))
