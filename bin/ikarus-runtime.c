@@ -965,6 +965,8 @@ ikrt_waitpid(ikp pid){
 
 ikp 
 ikrt_getenv(ikp str, ikpcb* pcb){
+  fprintf(stderr, "getenv busted!\n");
+  exit(-1);
   char* v = getenv(string_data(str));
   if(v){
     int n = strlen(v);
@@ -983,6 +985,8 @@ ikrt_getenv(ikp str, ikpcb* pcb){
 
 ikp 
 ikrt_setenv(ikp key, ikp val, ikp overwrite){
+  fprintf(stderr, "setenv busted!\n");
+  exit(-1);
   int err = setenv(string_data(key), string_data(val), 
                    overwrite!=false_object);
   if(err){
@@ -995,6 +999,8 @@ ikrt_setenv(ikp key, ikp val, ikp overwrite){
 
 ikp 
 ikrt_environ(ikpcb* pcb){
+  fprintf(stderr, "environ busted!\n");
+  exit(-1);
   char** es = environ;
   int i; char* e;
   ikp ac = null_object;

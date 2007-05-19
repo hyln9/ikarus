@@ -96,9 +96,12 @@
                      (error 'env "failed to set ~s to ~s" key val))
                    (error 'env "the value: ~s is not a string" val))
                (error 'env "the key: ~s is not a string" key))]))
-      env))
+      (define busted (lambda args (error 'env "busted!")))
+      busted))
 
-  (define environ
+
+  (define environ (lambda args (error 'environ "busted!")))
+  (define environ^
     (lambda ()
       (map 
         (lambda (s)
