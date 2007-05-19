@@ -6,6 +6,7 @@
     (ikarus system $strings)
     (ikarus system $fx)
     (ikarus system $chars)
+    (ikarus system $bytevectors)
     (ikarus system $pairs)
     (except (ikarus) string-length string-ref string-set! make-string
             string->list string=? string-append substring string
@@ -230,7 +231,8 @@
 
   (define uuid
     (lambda ()
-      (let ([s (make-string 16)])
-        (or (foreign-call "ik_uuid" s)
-            (error 'uuid "failed!")))))
+      (let ([s ($make-bytevector 16)])
+        (utf8-bytevector->string
+          (or (foreign-call "ik_uuid" s)
+              (error 'uuid "failed!"))))))
   )

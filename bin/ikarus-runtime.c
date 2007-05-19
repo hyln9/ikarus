@@ -467,8 +467,8 @@ ikp ik_uuid(ikp str){
     }
     uuid_strlen = strlen(uuid_chars);
   }
-  int n = unfix(ref(str, off_string_length));
-  unsigned char* data = str+off_string_data;
+  int n = unfix(ref(str, off_bytevector_length));
+  unsigned char* data = str+off_bytevector_data;
   read(fd, data, n);
   unsigned char* p = data;
   unsigned char* q = data + n;
@@ -479,20 +479,6 @@ ikp ik_uuid(ikp str){
   return str;
 }
 
-
-#if 0
-ikp ik_read(ikp fdptr, ikp bufptr, ikp lenptr){
-  int fd = unfix(fdptr);
-  int len = unfix(lenptr);
-  char* buf = (char*)(bufptr+disp_string_data-string_tag);
-  int bytes = read(fd, buf, len);
-  if(bytes == -1){
-    perror("S_read");
-    exit(-10);
-  }
-  return fix(bytes);
-}  
-#endif
 
 ikp ik_write(ikp fdptr, ikp idx, ikp str){
   fprintf(stderr, "IK_WRITE\n");
