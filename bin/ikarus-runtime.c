@@ -754,26 +754,6 @@ ikrt_set_code_reloc_vector(ikp code, ikp vec, ikpcb* pcb){
 }
 
 ikp
-ikrt_strftime(ikp outstr, ikp fmtstr){
-  time_t t;
-  struct tm* tmp;
-  t = time(NULL);
-  tmp = localtime(&t);
-  if(tmp == NULL){
-    fprintf(stderr, "Error in time: %s\n", strerror(errno));
-  }
-  int rv = 
-    strftime((char*)outstr+off_string_data,
-             unfix(ref(outstr, off_string_length)) + 1,
-             (char*)fmtstr+off_string_data,
-             tmp);
-  if(rv == 0){
-    fprintf(stderr, "Error in strftime: %s\n", strerror(errno));
-  }
-  return fix(rv);
-}
-
-ikp
 ikrt_bvftime(ikp outbv, ikp fmtbv){
   time_t t;
   struct tm* tmp;

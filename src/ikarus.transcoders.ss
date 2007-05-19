@@ -201,7 +201,7 @@
                     [(eq? mode 'replace) 
                      ($string-set! str n ($fixnum->char #xFFFD))
                      (f str x ($fxadd1 i) j ($fxadd1 n) mode)]
-                    [else (error who "BUG: incomplete char sequence")])]
+                    [else (error who "BUG")])]
                  [($fx= ($fxsra b0 3) #b11110)
                   (cond
                     [($fx< ($fx+ i 3) j) 
@@ -236,7 +236,7 @@
       (define (convert bv mode)
         (fill ($make-string (count bv mode)) bv mode))
       (case-lambda
-        [(bv) (convert bv 'error)]
+        [(bv) (convert bv 'raise)]
         [(bv handling-mode)
          (unless (memq handling-mode '(ignore replace raise)) 
            (error 'utf8-bytevector->string
@@ -245,7 +245,3 @@
          (convert bv handling-mode)])))
 
   )
-
-
-#!eof
-
