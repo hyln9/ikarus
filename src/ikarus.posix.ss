@@ -40,7 +40,8 @@
     (lambda (x)
       (unless (string? x)
         (error 'file-exists? "filename ~s is not a string" x))
-      (let ([v (foreign-call "ikrt_file_exists" x)])
+      (let ([v (foreign-call "ikrt_file_exists" 
+                  (string->utf8-bytevector x))])
         (cond
           [(boolean? v) v]
           [else

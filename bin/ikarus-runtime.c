@@ -575,7 +575,13 @@ ERRORS
 */
 ikp 
 ikrt_file_exists(ikp filename){
-  char* str = string_data(filename);
+  char* str;
+  if(tagof(filename) == bytevector_tag){
+    str = (char*)filename + off_bytevector_data;
+  } else {
+    fprintf(stderr, "bug in ikrt_file_exists\n");
+    exit(-1);
+  }
   struct stat sb;
   int st = stat(str, &sb);
   if(st == 0){
