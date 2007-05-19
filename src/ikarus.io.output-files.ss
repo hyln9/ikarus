@@ -132,7 +132,7 @@
       (close-ports)
       (let ([fd/error 
              (foreign-call "ikrt_open_output_file" 
-                           filename 
+                           (string->utf8-bytevector filename)
                            (option-id options))])
         (if (fixnum? fd/error)
             (let ([port

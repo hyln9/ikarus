@@ -842,8 +842,14 @@ ikrt_open_output_file(ikp fname, ikp flagptr, ikpcb* pcb){
                   (int)flagptr);
     exit(-10);
   }
-  int fd = open(string_data(fname), flags,
-                S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  char* name;
+  if(tagof(fname) == bytevector_tag){
+    name = (char*) fname + off_bytevector_data;
+  } else {
+    fprintf(stderr, "bug in ikrt_open_output_file\n");
+    exit(-1);
+  }
+  int fd = open(name, flags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if(fd == -1){
     fprintf(stderr, "openfile failed: %s\n", strerror(errno));
     return false_object;
