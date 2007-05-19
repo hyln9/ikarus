@@ -13,12 +13,14 @@
   (define (flonum->string x)
     (utf8-bytevector->string
       (or (foreign-call "ikrt_flonum_to_bytevector" x
-            (make-bytevector 80 0))
+            ($make-bytevector 80))
           (error 'flonum->string "~s is not a flonum" x))))
   
   (define (string->flonum x)
     (cond
-      [(string? x) (foreign-call "ikrt_string_to_flonum" x)]
+      [(string? x)
+       (foreign-call "ikrt_bytevector_to_flonum" 
+         (string->utf8-bytevector x))]
       [else 
        (error 'string->flonum "~s is not a string" x)])))
 

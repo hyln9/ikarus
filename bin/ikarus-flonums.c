@@ -5,15 +5,15 @@
 #include <errno.h>
 #include <math.h>
 
-
 ikp
-ikrt_string_to_flonum(ikp x, ikpcb* pcb){
-  double v = strtod(string_data(x), NULL);
+ikrt_bytevector_to_flonum(ikp x, ikpcb* pcb){
+  double v = strtod((char*)x+off_bytevector_data, NULL);
   ikp r = ik_alloc(pcb, flonum_size) + vector_tag;
   ref(r, -vector_tag) = (ikp)flonum_tag;
   flonum_data(r) = v;
   return r;
 }
+
 
 ikp
 ikrt_fl_plus(ikp x, ikp y,ikpcb* pcb){
