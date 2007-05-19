@@ -1959,8 +1959,7 @@
       [($vector-ref $vector-set!)
        (and ((check op vector?) (car rand*))
             ((check op nonnegative-fixnum?) (cadr rand*)))]
-      [($string-ref $string-set!
-        $string-ref-16+0 $string-ref-16+1 $string-ref-8+0 $string-ref-8+2)
+      [($string-ref $string-set!)
        (and ((check op string?) (car rand*))
             ((check op nonnegative-fixnum?) (cadr rand*)))]
       [($symbol-string $symbol-unique-string)
@@ -2345,17 +2344,15 @@
            [($frame->continuation $code->closure) 
             (check-const 
               (fx+ disp-closure-data (fx* (length arg*) wordsize)) x)]
-           [($make-string $make-bytevector) 
+           [($make-bytevector) 
             (record-case (car arg*)
               [(constant i)
                (check-const (fx+ i (fx+ disp-string-data 1)) x)]
               [else
                (check-bytes (fxadd1 disp-string-data) (car arg*) x)])]
-           [($string)
-            (check-const (fx+ (length arg*) (fx+ disp-string-data 1)) x)]
            [($make-port/input $make-port/output $make-port/both)
             (check-const port-size x)]
-           [($make-vector) 
+           [($make-vector $make-string) 
             (record-case (car arg*)
               [(constant i)
                (check-const (fx+ (fx* i wordsize) disp-vector-data) x)]
@@ -2371,7 +2368,7 @@
             (check-const (fx* (fxsub1 (length arg*)) pair-size) x)]
            [(list)
             (check-const (fx* (length arg*) pair-size) x)]
-           [(vector $record)
+           [(vector $record $string)
             (check-const (fx+ (fx* (length arg*) wordsize) disp-vector-data) x)]
            [else x]))]
       [(forcall op arg*)
@@ -3829,12 +3826,29 @@
               (movb (mem (fx- disp-bignum-data record-tag) ebx) al)
               (sall (int fx-shift) eax)
               ac)]
+      ; STRING
+      [($string-ref) 
+       (list* (movl (Simple (cadr arg*)) ebx)
+              (addl (Simple (car arg*)) ebx)
+              (movl (mem (fx- disp-string-data string-tag) ebx) eax)
+              ac)] 
       [($string-ref) 
        (list* (movl (Simple (cadr arg*)) ebx)
               (sarl (int fx-shift) ebx)
               (addl (Simple (car arg*)) ebx)
               (movl (int char-tag) eax)
               (movb (mem (fx- disp-string-data string-tag) ebx) ah)
+              ac)]
+      ; STRING
+      [($make-string) 
+       (list* (movl (Simple (car arg*)) ebx)
+              (movl ebx (mem disp-string-length apr))
+              (movl apr eax)
+              (addl (int string-tag) eax)
+              (addl ebx apr)
+              (addl (int (fx+ disp-string-data (fxsub1 object-alignment))) apr)
+              (sarl (int align-shift) apr)
+              (sall (int align-shift) apr)
               ac)]
       [($make-string) 
        (list* (movl (Simple (car arg*)) ebx)
@@ -3993,6 +4007,21 @@
             (list* (movl (Simple (car arg*)) eax)
                    (movl eax (mem idx apr))
                    (f (cdr arg*) (fx+ idx wordsize)))]))]
+     ; STRING
+      [($string) 
+       (let f ([arg* arg*] [idx disp-string-data])
+         (cond
+           [(null? arg*) 
+            (list* (movl apr eax)
+                   (addl (int string-tag) eax)
+                   (movl (int (fx- idx disp-string-data))
+                         (mem disp-string-length apr))
+                   (addl (int (align idx)) apr)
+                   ac)]
+           [else 
+            (list* (movl (Simple (car arg*)) eax)
+                   (movl eax (mem idx apr))
+                   (f (cdr arg*) (fx+ idx wordsize)))]))] 
      [($string)
       (let f ([arg* arg*] [idx disp-string-data])
         (cond
@@ -4156,6 +4185,13 @@
               (movl (Simple (caddr arg*)) ebx)  ;;; value (fixnum)
               (sall (int (fx- 8 fx-shift)) ebx) ;;; move to high byte
               (movb bh (mem (fx- disp-code-data vector-tag) eax))
+              ac)]
+      ; STRING
+      [($string-set!) 
+       (list* (movl (Simple (cadr arg*)) eax)
+              (addl (Simple (car arg*)) eax)
+              (movl (Simple (caddr arg*)) ebx)
+              (movl ebx (mem (fx- disp-string-data string-tag) eax))
               ac)]
       [($string-set!) 
        (list* (movl (Simple (cadr arg*)) eax)

@@ -28,7 +28,10 @@
     (unless (and ($fx< i ($string-length s))
                  ($fx<= 0 i))
       (error 'string-ref "index ~s is out of range for ~s" i s))
-    ($string-ref s i))
+    (let ([c ($string-ref s i)])
+      (unless (char? c)
+        (error 'string-ref "BUG: got a non-char"))
+      c))
   
 
   (define string-set! 

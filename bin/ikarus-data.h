@@ -98,11 +98,13 @@
 #define off_string_data (disp_string_data - string_tag)
 
 //#define string_data(x)  ((char*)((x) + off_string_data))
+//#define string_set(x,i,c) 
+//  ((((unsigned char*)(x)) + off_string_data + (int)(i))[0] = 
+//   (((int)(c)) >> IK_CHAR_SHIFT))
 #define string_set(x,i,c) \
-  ((((unsigned char*)(x)) + off_string_data + (int)(i))[0] = \
-   (((int)(c)) >> IK_CHAR_SHIFT))
+  (((ikp*)(((ikp)(x)) + off_string_data))[i] = ((ikp)(c)))
 #define integer_to_char(x) ((ikp)((((int)(x)) << IK_CHAR_SHIFT) + IK_CHAR_TAG))
-#define string_char_size 1
+#define string_char_size 4
 
 #define vector_tag 5
 #define disp_vector_length 0
