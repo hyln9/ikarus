@@ -53,7 +53,7 @@
         (let ([outbv ($make-bytevector n)])
           (let f ([n (copy outbv bv i n)] [ls ls])
             (if (null? ls)
-                (utf8-bytevector->string outbv)
+                outbv
                 (let ([a ($car ls)])
                   (f (copy outbv a ($bytevector-length a) n) ($cdr ls)))))))))
   (define sum 
@@ -140,9 +140,11 @@
              (set! open? #f)]
             [(port-name p) 'string-port]
             [(get-output-string p) 
-             (concat ($port-output-buffer p) 
-                     ($port-output-index p)
-                     buffer-list)]
+             (utf8-bytevector->string
+               (concat 
+                 ($port-output-buffer p) 
+                 ($port-output-index p)
+                 buffer-list))]
             [else (error 'output-handler 
                          "unhandled message ~s" (cons msg args))])))
       output-handler))
