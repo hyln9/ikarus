@@ -13,15 +13,31 @@
 
   (define $write-char
     (lambda (c p)
-      (let ([idx (port-output-index p)])
-        (if ($fx< idx ($port-output-size p))
-            (let ([b ($char->fixnum c)])
-              (if ($fx< b 128)
-                  (begin
-                    ($bytevector-set! ($port-output-buffer p) idx b)
-                    ($set-port-output-index! p ($fxadd1 idx)))
-                  (($port-handler p) 'write-char c p)))
-            (($port-handler p) 'write-char c p)))))
+      (let ([b ($char->fixnum c)])
+        (cond
+          [($fx<= b #x7F)
+           ($write-byte b p)]
+          [($fx<= b #x7FF) 
+           ($write-byte 
+             ($fxlogor #b11000000 ($fxsra b 6)) p)
+           ($write-byte
+             ($fxlogor #b10000000 ($fxlogand b #b111111)) p)]
+          [($fx<= b #xFFFF)
+           ($write-byte 
+             ($fxlogor #b11100000 ($fxsra b 12)) p)
+           ($write-byte 
+             ($fxlogor #b10000000 ($fxlogand ($fxsra b 6) #b111111)) p)
+           ($write-byte 
+             ($fxlogor #b10000000 ($fxlogand b #b111111)) p)]
+          [else 
+           ($write-byte
+             ($fxlogor #b11110000 ($fxsra b 18)) p)
+           ($write-byte 
+             ($fxlogor #b10000000 ($fxlogand ($fxsra b 12) #b111111)) p)
+           ($write-byte 
+             ($fxlogor #b10000000 ($fxlogand ($fxsra b 6) #b111111)) p)
+           ($write-byte 
+             ($fxlogor #b10000000 ($fxlogand b #b111111)) p)]))))
 
   (define $write-byte
     (lambda (b p)

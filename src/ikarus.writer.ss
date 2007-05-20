@@ -105,20 +105,15 @@
       (write-char #\8 p)
       (write-char #\( p)
       (let ([n ($bytevector-length x)])
-        (let ([i
-               (cond
-                 [(fx> n 0)
-                  (let f ([idx 1] [i (writer ($bytevector-u8-ref x 0) p m h i)])
-                    (cond
-                      [(fx= idx n)
-                       i]
-                      [else
-                       (write-char #\space p)
-                       (f (fxadd1 idx)
-                          (writer (bytevector-u8-ref x idx) p m h i))]))]
-                 [else i])])
-           (write-char #\) p)
-           i))))
+        (when (fx> n 0)
+          (write-fixnum ($bytevector-u8-ref x 0) p)
+          (let f ([idx 1] [n n] [x x] [p p])
+            (unless ($fx= idx n)
+              (write-char #\space p)
+              (write-fixnum ($bytevector-u8-ref x idx) p)
+              (f (fxadd1 idx) n x p)))))
+      (write-char #\) p)
+      i))
 
   (define write-record
     (lambda (x p m h i)
@@ -270,7 +265,8 @@
           [(in-map? b subsequents-map) 
            (write-char c p)]
           [else 
-           (write-inline-hex b p)]))))
+           (write-inline-hex b p)]))
+      (write-subsequent* str ($fxadd1 i) j p)))
 
   (define write-symbol-hex-esc
     (lambda (str p)
