@@ -50,12 +50,12 @@
   (define concat 
     (lambda (bv i ls)
       (let ([n (sum i ls)])
-        (let ([outstr (make-string n)])
-          (let f ([n (copy outstr bv i n)] [ls ls])
+        (let ([outbv ($make-bytevector n)])
+          (let f ([n (copy outbv bv i n)] [ls ls])
             (if (null? ls)
-                outstr
+                (utf8-bytevector->string outbv)
                 (let ([a ($car ls)])
-                  (f (copy outstr a ($bytevector-length a) n) ($cdr ls)))))))))
+                  (f (copy outbv a ($bytevector-length a) n) ($cdr ls)))))))))
   (define sum 
     (lambda (ac ls)
       (cond
@@ -87,8 +87,7 @@
           [($fx= si 0) di]
           [else
            (let ([di ($fxsub1 di)] [si ($fxsub1 si)])
-             (string-set! dst di 
-               (integer->char ($bytevector-u8-ref src si)))
+             ($bytevector-set! dst di ($bytevector-u8-ref src si))
              (f di si))]))))
 
   (define bv-copy

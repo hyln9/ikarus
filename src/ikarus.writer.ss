@@ -1,11 +1,11 @@
 
-
 (library (ikarus writer)
   (export write display format printf print-error error-handler
           error)
   (import 
     (ikarus system $chars)
     (ikarus system $strings)
+    (ikarus system $vectors)
     (ikarus system $fx)
     (ikarus system $pairs)
     (ikarus system $symbols)
@@ -13,10 +13,24 @@
     (except (ikarus) write display format printf print-error
             error-handler error))
 
- ;;; (define char-table ; first nonprintable chars
- ;;;   '#("nul" "soh" "stx" "etx" "eot" "enq" "ack" "bel" "bs" "tab" "newline"
- ;;;      "vt" "ff" "return" "so" "si" "dle" "dc1" "dc2" "dc3" "dc4" "nak" 
- ;;;      "syn" "etb" "can" "em" "sub" "esc" "fs" "gs" "rs" "us" "space"))
+
+  (include "unicode/unicode-constituents.ss")
+
+  (define (binary-search-on? n v)
+    (let ([k ($fx- ($vector-length v) 1)])
+      (let f ([i 0] [k k] [n n] [v v])
+        (cond
+          [($fx= i k) ($fx= ($fxlogand i 1) 1)]
+          [else
+           (let ([j ($fxsra ($fx+ i ($fx+ k 1)) 1)])
+             (cond
+               [($fx<= ($vector-ref v j) n) (f j k n v)]
+               [else (f i ($fx- j 1) n v)]))]))))
+
+  (define (unicode-printable-char? c)
+    (binary-search-on?
+      ($char->fixnum c) 
+      unicode-constituents-vector))
 
   (define char-table ; first nonprintable chars
     '#("nul" "x1" "x2" "x3" "x4" "x5" "x6" "alarm"
@@ -55,6 +69,9 @@
              [(fx= i 127) 
               (write-char #\\ p)
               (write-char* "delete" p)]
+             [(unicode-printable-char? x) 
+              (write-char #\\ p)
+              (write-char x p)]
              [else
               (write-char #\\ p)
               (write-char #\x p)
@@ -264,6 +281,10 @@
         (cond
           [(in-map? b subsequents-map) 
            (write-char c p)]
+          [($fx< b 128) 
+           (write-inline-hex b p)]
+          [(unicode-printable-char? c)
+           (write-char c p)]
           [else 
            (write-inline-hex b p)]))
       (write-subsequent* str ($fxadd1 i) j p)))
@@ -280,6 +301,8 @@
                   [b0 ($char->fixnum c0)])
              (cond
                [(in-map? b0 initials-map) (write-char c0 p)]
+               [($fx< b0 128) (write-inline-hex b0 p)]
+               [(unicode-printable-char? c0) (write-char c0 p)]
                [else (write-inline-hex b0 p)])
              (write-subsequent* str 1 n p))]))))
 
@@ -368,6 +391,8 @@
                 (write-char #\\ p)
                 (write-char c p)]
                [($fx< b 127)
+                (write-char c p)]
+               [(unicode-printable-char? c) 
                 (write-char c p)]
                [else (write-inline-hex b p)]))
            (loop x (fxadd1 i) n p)))) 
