@@ -176,7 +176,7 @@
         (cond
           [(eof-object? c) '(datum . +)]
           [(delimiter? c)  '(datum . +)]
-          [(digit? c) 
+          [(digit? c)
            (read-char p)
            (cons 'datum (tokenize-number (char->num c) p))]
           [($char= c #\.)
@@ -340,6 +340,72 @@
         [(char-whitespace? c)
          (skip-whitespace p caller)]
         [else c])))
+  (module (tok-exact tok-radix)
+    (define (eof-error)
+      (error 'tokenize "eof encountered while reading a number"))
+    (define (digit? c)
+      (memq c '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9 
+                #\a #\b #\c #\d #\e #\f #\A #\B #\C #\D #\E #\F)))
+    (define (tok-complex-sign p)
+      (error 'tok-complex-sign "not yet"))
+    (define (tok-real-decimal p)
+      (error 'tok-real-decimal "not yet"))
+    (define (tok-real-decpt p)
+      (error 'tok-real-decpt "not yet"))
+    (define (tok-real-sign p)
+      ;;; we read the sign part of a real number
+      (let ([c0 (read-char p)])
+        (cond
+          [(eof-object? c0) (eof-error)]
+          [(memq c0 '(#\.)) 
+           (cons c0 (tok-real-decpt p))]
+          [(digit? c0)
+           (cons c0 (tok-real-digit p))]
+          [(delimiter? c0) (unread-char c0 p) '()]
+          ;[(memq c0 '(#\i)) ;;; +i and -i
+          ; (list c0)]
+          [else (list c0)])))
+    (define (tok-real-digit p)
+      ;;; we did read one digit.
+      (let ([c0 (read-char p)])
+        (cond
+          [(eof-object? c0) '()]
+          [(memq c0 '(#\.))
+           (cons c0 (tok-real-decimal p))]
+          [(memq c0 '(#\- #\+)) 
+           (cons c0 (tok-complex-sign p))]
+          [(digit? c0) 
+           (cons c0 (tok-real-digit p))]
+          [(delimiter? c0) (unread-char c0 p) '()]
+          [else (list c0)])))
+    (define (tok-real p)
+      (let ([c0 (read-char p)])
+        (cond
+          [(eof-object? c0) (eof-error)]
+          [(memq c0 '(#\- #\+)) 
+           (cons c0 (tok-real-sign p))]
+          [(memq c0 '(#\.)) 
+           (cons c0 (tok-real-decpt p))]
+          [(digit? c0) 
+           (cons c0 (tok-real-digit p))]
+          [(delimiter? c0) (unread-char c0 p) '()]
+          [else (list c0)])))
+    (define (tok-exact p)
+      (error 'tokenize-exact "not yet"))
+    (define (tok-radix p)
+      (let ([c0 (peek-char p)])
+        (cond
+          [(eof-object? c0) (eof-error)]
+          [($char= c0 #\#) 
+           (read-char p)
+           (let ([c1 (read-char p)])
+             (cond
+               [(eof-object? c1) (eof-error)]
+               [(memq c1 '(#\e #\i #\E #\I))
+                (list* c0 c1 (tok-real p))]
+               [(delimiter? c1) (unread-char c1 p) (list c0)]
+               [else (list c0 c1)]))]
+          [else (tok-real p)]))))
   (define tokenize-hash/c
     (lambda (c p)
       (cond
@@ -358,38 +424,10 @@
              [else (error 'tokenize "invalid syntax near #f")]))]
         [($char= #\\ c) (tokenize-char p)]
         [($char= #\( c) 'vparen]
-        [($char= #\x c) (tokenize-hex-init p)]
         [($char= #\' c) '(macro . syntax)]
         [($char= #\; c) 'hash-semi]
         [($char= #\% c) '(macro . |#primitive|)]
         [($char= #\| c) (multiline-comment p) (tokenize p)]
-        [($char= #\b c) 
-         (let ([c (read-char p)])
-           (cond
-             [(eof-object? c) 
-              (error 'tokenize "invalid eof while reading #b")]
-             [($char= #\- c)
-              (let ([c (read-char p)])
-                (cond
-                  [(eof-object? c)
-                   (error 'tokenize "invalid eof while reading #b-")]
-                  [($char= #\0 c)
-                   (cons 'datum
-                     (* -1 (read-binary 0 '(#\0 #\-) p)))]
-                  [($char= #\1 c)
-                   (cons 'datum
-                     (* -1 (read-binary 1 '(#\1 #\-) p)))]
-                  [else 
-                   (unread-char c p)
-                   (error 'tokenize "invalid binary syntax #b-~a" c)]))]
-             [($char= #\0 c)
-              (cons 'datum (read-binary 0 '(#\0) p))]
-             [($char= #\1 c)
-              (cons 'datum (read-binary 1 '(#\1) p))]
-             [else 
-              (unread-char c p)
-              (error 'tokenize "invalid syntax #b~a" c)]
-             ))]
         [($char= #\! c) 
          (let ([e (read-char p)])
            (when (eof-object? e)
@@ -482,6 +520,44 @@
              [(eof-object? c) 
               (error 'tokenize "invalid eof object after #v")]
              [else (error 'tokenize "invalid sequence #v~a" c)]))]
+        [(memq c '(#\e #\i #\E #\I))
+         (let ([str (list->string (list* #\# c (tok-exact p)))])
+           (cond
+             [(string->number str) => (lambda (n) (cons 'datum n))]
+             [else (error 'tokenize "invalid numeric sequence ~a" str)]))]
+        [(memq c '(#\b #\B #\x #\X #\o #\O #\d #\D))
+         (let ([str (list->string (list* #\# c (tok-radix p)))])
+           (cond
+             [(string->number str) => (lambda (n) (cons 'datum n))]
+             [else (error 'tokenize "invalid numeric sequence ~a" str)]))]
+        ;[($char= #\x c) (tokenize-hex-init p)]
+        ;[(or ($char= #\b c) ($char= #\B c))
+        ; (let ([c (read-char p)])
+        ;   (cond
+        ;     [(eof-object? c) 
+        ;      (error 'tokenize "invalid eof while reading #b")]
+        ;     [($char= #\- c)
+        ;      (let ([c (read-char p)])
+        ;        (cond
+        ;          [(eof-object? c)
+        ;           (error 'tokenize "invalid eof while reading #b-")]
+        ;          [($char= #\0 c)
+        ;           (cons 'datum
+        ;             (* -1 (read-binary 0 '(#\0 #\-) p)))]
+        ;          [($char= #\1 c)
+        ;           (cons 'datum
+        ;             (* -1 (read-binary 1 '(#\1 #\-) p)))]
+        ;          [else 
+        ;           (unread-char c p)
+        ;           (error 'tokenize "invalid binary syntax #b-~a" c)]))]
+        ;     [($char= #\0 c)
+        ;      (cons 'datum (read-binary 0 '(#\0) p))]
+        ;     [($char= #\1 c)
+        ;      (cons 'datum (read-binary 1 '(#\1) p))]
+        ;     [else 
+        ;      (unread-char c p)
+        ;      (error 'tokenize "invalid syntax #b~a" c)]
+        ;     ))]
         [($char= #\@ c)
          (error 'read "FIXME: fasl read disabled")
          '(cons 'datum ($fasl-read p))]
@@ -529,7 +605,7 @@
          (let ([c (peek-char p)])
            (cond
             [(eof-object? c) '(macro . unquote)]
-            [($char= c #\@) 
+            [($char= c #\@)
              (read-char p)
              '(macro . unquote-splicing)]
             [else '(macro . unquote)]))]
@@ -539,7 +615,7 @@
         [(initial? c) 
          (let ([ls (reverse (tokenize-identifier (cons c '()) p))])
            (cons 'datum (string->symbol (list->string ls))))]
-        [($char= #\" c) 
+        [($char= #\" c)
          (let ([ls (tokenize-string '() p)])
            (cons 'datum (list->string (reverse ls))))]
         [($char= #\; c)

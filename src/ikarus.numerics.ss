@@ -832,6 +832,66 @@
           [($fx> len 1)
            (convert-data-init str len pos? 2 ($string-ref str 1))]
           [else #f]))
+      (define (digit c radix)
+        (cond
+          [(and ($char<= #\0 c) ($char<= c #\9)) 
+           (let ([n ($fx- ($char->fixnum c) ($char->fixnum #\0))])
+             (and
+               (or ($fx>= radix 10)
+                   (and ($fx= radix 8) ($char<= c #\7))
+                   (and ($fx= radix 2) ($char<= c #\1)))
+               n))]
+          [(and ($char<= #\a c) ($char<= c #\f)) 
+           (let ([n ($fx+ 10 ($fx- ($char->fixnum c) ($char->fixnum #\a)))])
+             (and ($fx= radix 16) n))] 
+          [(and ($char<= #\A c) ($char<= c #\F)) 
+           (let ([n ($fx+ 10 ($fx- ($char->fixnum c) ($char->fixnum #\A)))])
+             (and ($fx= radix 16) n))] 
+          [else #f]))
+      (define (convert-subseq str idx len radix ac)
+        (cond
+          [($fx< idx len)
+           (let ([c (string-ref str idx)])
+             (cond
+               [(digit c radix) =>
+                (lambda (n) 
+                  (convert-subseq str ($fxadd1 idx) len radix
+                    (+ (* ac radix) n)))]
+               [else #f]))]
+          [else ac]))
+      (define (convert-init str idx len radix)
+        (cond
+          [($fx< idx len)
+           (let ([c (string-ref str idx)])
+             (cond
+               [(digit c radix) =>
+                (lambda (n) 
+                  (convert-subseq str ($fxadd1 idx) len radix n))]
+               [else #f]))]
+          [else #f]))
+      (define (convert-init-sign str idx len radix)
+        (cond
+          [($fx< idx len)
+           (let ([c (string-ref str idx)])
+             (cond
+               [(char=? c #\+)
+                (convert-init str ($fxadd1 idx) len radix)]
+               [(char=? c #\-)
+                (let ([n (convert-init str ($fxadd1 idx) len radix)])
+                  (and n (- n)))]
+               [else (convert-init str idx len radix)]))]
+          [else #f]))
+      (define (convert-radix str len)
+        (cond
+          [($fx>= len 2)
+           (let ([c (string-ref str 1)])
+             (case c
+               [(#\x #\X) (convert-init-sign str 2 len 16)]
+               [(#\b #\B) (convert-init-sign str 2 len 2)]
+               [(#\d #\D) (convert-init-sign str 2 len 10)]
+               [(#\o #\O) (convert-init-sign str 2 len 8)]
+               [else #f]))]
+          [else #f]))
       (define (convert-sign str len)
         (cond
           [($fx> len 0)
@@ -839,6 +899,7 @@
              (case c
                [(#\+) (convert-num str len #t)]
                [(#\-) (convert-num str len #f)]
+               [(#\#) (convert-radix str len)]
                [else
                 (convert-data-init str len #t 1 c)]))]
           [else #f]))
