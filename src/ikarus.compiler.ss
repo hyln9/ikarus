@@ -141,7 +141,7 @@
     [$bignum-byte-set!  3   effect]
     ;;; ratnums
     [$make-ratnum       2   value]
-    [$ratnum?           1   pred]
+    [ratnum?            1   pred]
     [$ratnum-n          1   value]
     [$ratnum-d          1   value]
     ;;; symbols
@@ -1970,7 +1970,7 @@
       [($symbol-string $symbol-unique-string)
        (andmap (check op symbol?) rand*)]
       [($constant-ref $set-constant! $intern $pcb-set! $pcb-ref $make-symbol
-        $make-ratnum $ratnum? $ratnum-n $ratnum-d
+        $make-ratnum ratnum? $ratnum-n $ratnum-d
         $symbol-value $set-symbol-value! $set-symbol-function! $symbol-plist $set-symbol-plist!
         $set-symbol-system-value! $set-symbol-system-value!
         $set-symbol-unique-string!
@@ -3260,7 +3260,7 @@
      [(symbol?)    
       (indirect-type-pred vector-mask vector-tag #f
          symbol-record-tag rand* Lt Lf ac)]
-     [($ratnum?)    
+     [(ratnum?)    
       (indirect-type-pred vector-mask vector-tag #f
          ratnum-tag rand* Lt Lf ac)]
      [(procedure?) (type-pred closure-mask closure-tag rand* Lt Lf ac)]
@@ -4131,7 +4131,7 @@
        $set-port-output-index! $set-port-output-size!) 
       (do-effect-prim op arg*
         (cons (movl (int void-object) eax) ac))]
-     [(fixnum? bignum? flonum? immediate? $fxzero? boolean? char? pair? 
+     [(fixnum? bignum? flonum? ratnum? immediate? $fxzero? boolean? char? pair? 
        vector? bytevector? string? symbol?
        procedure? null? not eof-object? $fx= $fx< $fx<= $fx> $fx>= eq?
        $char= $char< $char<= $char> $char>= $unbound-object? code?

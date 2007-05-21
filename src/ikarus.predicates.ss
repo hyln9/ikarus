@@ -1,14 +1,14 @@
 
 (library (ikarus predicates)
 
-  (export fixnum? flonum? bignum? number? complex? real? rational?
+  (export fixnum? flonum? bignum? ratnum? number? complex? real? rational?
           integer? exact? eof-object? bwp-object? immediate?
           boolean? char? vector? bytevector? string? procedure? null? pair?
           symbol? code? not weak-pair? eq? eqv? equal?) 
 
   (import 
 
-    (except (ikarus) fixnum? flonum? bignum? number? complex? real?
+    (except (ikarus) fixnum? flonum? bignum? ratnum? number? complex? real?
             rational? integer? exact? eof-object? bwp-object?
             immediate? boolean? char? vector? bytevector? string? procedure?
             null? pair? weak-pair? symbol? code? not eq? eqv? equal?
@@ -18,13 +18,14 @@
     (ikarus system $chars)
     (ikarus system $strings)
     (ikarus system $vectors)
-    (rename (only (ikarus) fixnum? flonum? bignum? eof-object?
+    (rename (only (ikarus) fixnum? flonum? bignum? ratnum? eof-object?
                   bwp-object? immediate? boolean? char? vector? string?
                   bytevector? procedure? null? pair? symbol? code? eq?
                   port? input-port? output-port?)
             (fixnum? sys:fixnum?)
             (flonum? sys:flonum?)
             (bignum? sys:bignum?)
+            (ratnum? sys:ratnum?)
             (eof-object? sys:eof-object?)
             (bwp-object? sys:bwp-object?)
             (immediate? sys:immediate?)
@@ -50,6 +51,9 @@
   (define bignum? 
     (lambda (x) (sys:bignum? x)))
   
+  (define ratnum? 
+    (lambda (x) (sys:ratnum? x)))
+  
   (define flonum? 
     (lambda (x) (sys:flonum? x)))
   
@@ -57,7 +61,8 @@
     (lambda (x)
       (or (sys:fixnum? x)
           (sys:bignum? x)
-          (sys:flonum? x))))
+          (sys:flonum? x)
+          (sys:ratnum? x))))
   
   (define complex?
     (lambda (x) (number? x)))
@@ -70,6 +75,7 @@
       (cond
         [(sys:fixnum? x) #t]
         [(sys:bignum? x) #t]
+        [(sys:ratnum? x) #t]
         [(sys:flonum? x) #f]
         [else (error 'rational? "~s is not a number" x)])))
 
@@ -78,6 +84,7 @@
       (cond
         [(sys:fixnum? x) #t]
         [(sys:bignum? x) #t]
+        [(sys:ratnum? x) #f]
         [(sys:flonum? x) (error 'integer "dunno for ~s" x)]
         [else #f])))
 

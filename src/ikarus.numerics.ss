@@ -27,16 +27,20 @@
 
 
 (library (ikarus generic-arithmetic)
-  (export + - * zero? = < <= > >= add1 sub1 quotient remainder
+  (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
           positive? expt
           quotient+remainder number->string string->number)
   (import 
     (ikarus system $fx)
+    (ikarus system $ratnums)
+    (ikarus system $bignums)
     (ikarus system $chars)
     (ikarus system $strings)
-    (except (ikarus) + - * zero? = < <= > >= add1 sub1 quotient
+    (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
             remainder quotient+remainder number->string positive?
             string->number expt))
+
+  ;(define (ratnum? c) #f)
 
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))
@@ -266,7 +270,28 @@
       [(x y) (binary/ x y)]
       [(x) 
        (cond
+         [(fixnum? x)
+          (cond
+            [($fxzero? x) (error '/ "division by 0")]
+            [($fx> x 0)
+             (if ($fx= x 1)
+                 1
+                 ($make-ratnum 1 x))]
+            [else
+             (if ($fx= x -1)
+                 -1
+                 ($make-ratnum -1 (- x)))])]
+         [(bignum? x)
+          (if ($bignum-positive? x)
+              ($make-ratnum 1 x)
+              ($make-ratnum -1 (- x)))]
          [(flonum? x) (foreign-call "ikrt_fl_invert" x)]
+         [(ratnum? x)
+          (let ([n ($ratnum-n x)] [d ($ratnum-d x)])
+            (cond
+              [($fx= n 1) d]
+              [($fx= n -1) (- d)]
+              [else ($make-ratnum d n)]))]
          [else (error '/ "unspported argument ~s" x)])]
       [(x y z . rest)
        (let f ([a (binary/ x y)] [b z] [ls rest])
@@ -380,13 +405,21 @@
     (lambda (x)
       (utf8-bytevector->string
         (foreign-call "ikrt_bignum_to_bytevector" x))))
-
+  
+  (define ratnum->string
+    (lambda (x) 
+      (string-append 
+        (number->string ($ratnum-n x))
+        "/"
+        (number->string ($ratnum-d x)))))
+  
   (define number->string
     (lambda (x)
       (cond
         [(fixnum? x) (fixnum->string x)]
         [(bignum? x) (bignum->string x)]
         [(flonum? x) (flonum->string x)]
+        [(ratnum? x) (ratnum->string x)]
         [else (error 'number->string "~s is not a number" x)])))
 
   (define modulo
