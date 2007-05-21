@@ -48,7 +48,7 @@ TODO for (R6RS BASE)
     div         mod           div-and-mod
     div0        mod0          div0-and-mod0
 
-    gcd     lcm
+    gcd     lcm  (don't deal with inexact ints yet)
 
     floor       ceiling      truncate    round         
 

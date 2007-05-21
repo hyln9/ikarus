@@ -380,6 +380,7 @@
     [string->number          i r]
     [flonum->string          i]
     [gcd                     i r]
+    [lcm                     i r]
     [symbol?                 i r symbols]
     [gensym?                 i symbols]
     [gensym                  i symbols]

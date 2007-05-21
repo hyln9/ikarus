@@ -28,7 +28,7 @@
 
 (library (ikarus generic-arithmetic)
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
-          positive? expt gcd
+          positive? expt gcd lcm
           quotient+remainder number->string string->number)
   (import 
     (ikarus system $fx)
@@ -38,7 +38,7 @@
     (ikarus system $strings)
     (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
             remainder quotient+remainder number->string positive?
-            string->number expt gcd))
+            string->number expt gcd lcm))
 
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))
@@ -315,6 +315,38 @@
            [else (f (gcd g (car ls)) (cdr ls))]))]))
 
 
+  (define lcm
+    (case-lambda
+      [(x y) 
+       (cond
+         [(or (fixnum? x) (bignum? x))
+          (cond
+            [(or (fixnum? y) (bignum? y)) 
+             (let ([x (if (< x 0) (- x) x)]
+                   [y (if (< y 0) (- y) y)])
+               (let ([g (binary-gcd x y)])
+                 (binary* y (quotient x g))))]
+            [(number? y)
+             (error 'lcm "~s is not an exact integer" y)]
+            [else 
+             (error 'lcm "~s is not a number" y)])]
+         [(number? x)
+          (error 'lcm "~s is not an exact integer" x)]
+         [else 
+          (error 'lcm "~s is not a number" x)])]
+      [(x)
+       (cond
+         [(or (fixnum? x) (bignum? x)) x]
+         [(number? x)
+          (error 'lcm "~s is not an exact integer" x)]
+         [else 
+          (error 'lcm "~s is not a number" x)])]
+      [() 1]
+      [(x y z . ls) 
+       (let f ([g (lcm (lcm x y) z)] [ls ls])
+         (cond
+           [(null? ls) g]
+           [else (f (lcm g (car ls)) (cdr ls))]))]))
 
 
 
