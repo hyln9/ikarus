@@ -28,7 +28,7 @@
 
 (library (ikarus generic-arithmetic)
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
-          positive? expt
+          positive? expt gcd
           quotient+remainder number->string string->number)
   (import 
     (ikarus system $fx)
@@ -38,20 +38,25 @@
     (ikarus system $strings)
     (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
             remainder quotient+remainder number->string positive?
-            string->number expt))
-
-  ;(define (ratnum? c) #f)
+            string->number expt gcd))
 
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))
   (define (bignum->flonum x)
     (foreign-call "ikrt_bignum_to_flonum" x))
+  (define (ratnum->flonum x) 
+    (binary/ (exact->inexact ($ratnum-n x)) 
+             (exact->inexact ($ratnum-d x))))
   (define ($fl+ x y)
     (foreign-call "ikrt_fl_plus" x y))
   (define ($fl- x y)
     (foreign-call "ikrt_fl_minus" x y))
   (define ($fl* x y)
     (foreign-call "ikrt_fl_times" x y))
+  (define ($fl/ x y)
+    (foreign-call "ikrt_fl_div" x y))
+  
+
 
   (define binary+
     (lambda (x y)
@@ -64,6 +69,10 @@
             (foreign-call "ikrt_fxbnplus" x y)]
            [(flonum? y)
             ($fl+ (fixnum->flonum x) y)]
+           [(ratnum? y)
+            ($make-ratnum
+              (+ (* x ($ratnum-d y)) ($ratnum-n y))
+              ($ratnum-d y))]
            [else 
             (error '+ "~s is not a number" y)])]
         [(bignum? x)
@@ -74,6 +83,10 @@
             (foreign-call "ikrt_bnbnplus" x y)]
            [(flonum? y)
             ($fl+ (bignum->flonum x) y)]
+           [(ratnum? y)
+            ($make-ratnum
+              (+ (* x ($ratnum-d y)) ($ratnum-n y))
+              ($ratnum-d y))] 
            [else 
             (error '+ "~s is not a number" y)])]
         [(flonum? x)
@@ -84,8 +97,25 @@
             ($fl+ x (bignum->flonum y))]
            [(flonum? y)
             ($fl+ x y)]
+           [(ratnum? y)
+            ($fl+ x (ratnum->flonum y))]
            [else 
             (error '+ "~s is not a number" y)])]
+        [(ratnum? x)
+         (cond
+           [(or (fixnum? y) (bignum? y))
+            ($make-ratnum
+              (+ (* y ($ratnum-d x)) ($ratnum-n x))
+              ($ratnum-d x))]
+           [(flonum? y)
+            ($fl+ y (ratnum->flonum x))]
+           [(ratnum? y)
+            (let ([n0 ($ratnum-n x)] [n1 ($ratnum-n y)]
+                  [d0 ($ratnum-d x)] [d1 ($ratnum-d y)])
+              ;;; FIXME: inefficient
+              (/ (+ (* n0 d1) (* n1 d0)) (* d0 d1)))]
+           [else 
+            (error '+ "~s is not a number" y)])] 
         [else (error '+ "~s is not a number" x)])))
 
   (define binary-logand
@@ -242,28 +272,155 @@
            [(null? e*) ac]
            [else (f (binary* ac (car e*)) (cdr e*))]))]))
 
-  (define binary/
+  (define (binary-gcd x y) 
+    (define (gcd x y)
+      (cond
+        [($fx= y 0) x]
+        [else (gcd y (remainder x y))]))
+    (let ([x (if (< x 0) (- x) x)]
+          [y (if (< y 0) (- y) y)])
+      (cond
+        [(> x y) (gcd x y)]
+        [(< x y) (gcd y x)]
+        [else x])))
+
+  (define gcd
+    (case-lambda
+      [(x y) 
+       (cond
+         [(or (fixnum? x) (bignum? x))
+          (cond
+            [(or (fixnum? y) (bignum? y)) 
+             (binary-gcd x y)]
+            [(number? y)
+             (error 'gcd "~s is not an exact integer" y)]
+            [else 
+             (error 'gcd "~s is not a number" y)])]
+         [(number? x)
+          (error 'gcd "~s is not an exact integer" x)]
+         [else 
+          (error 'gcd "~s is not a number" x)])]
+      [(x)
+       (cond
+         [(or (fixnum? x) (bignum? x)) x]
+         [(number? x)
+          (error 'gcd "~s is not an exact integer" x)]
+         [else 
+          (error 'gcd "~s is not a number" x)])]
+      [() 0]
+      [(x y z . ls) 
+       (let f ([g (gcd (gcd x y) z)] [ls ls])
+         (cond
+           [(null? ls) g]
+           [else (f (gcd g (car ls)) (cdr ls))]))]))
+
+
+
+
+
+
+  (define binary/ ;;; implements ratnums
     (lambda (x y)
       (cond
         [(flonum? x)
          (cond
-           [(flonum? y) 
-            (foreign-call "ikrt_fl_div" x y)]
-           [(fixnum? y)
-            (foreign-call "ikrt_fl_div" x (fixnum->flonum y))]
+           [(flonum? y) ($fl/ x y)]
+           [(fixnum? y) ($fl/ x (fixnum->flonum y))]
+           [(bignum? y) ($fl/ x (bignum->flonum y))]
+           [(ratnum? y) ($fl/ x (ratnum->flonum y))]
            [else (error '/ "unspported ~s ~s" x y)])]
         [(fixnum? x)
          (cond
-           [(flonum? y)
-            (foreign-call "ikrt_fl_div" (fixnum->flonum x) y)]
-           [(fixnum? y) 
-            (let ([q (fxquotient x y)]
-                  [r (fxremainder x y)])
-              (if (fxzero? r)
-                  q
-                  (error '/ "no ratnum for ~s/~s" x y)))]
+           [(flonum? y) ($fl/ (fixnum->flonum x) y)]
+           [(fixnum? y)
+            (cond
+              [($fx= y 0) (error '/ "division by 0")]
+              [($fx> y 0)
+               (if ($fx= y 1)
+                   x
+                   (let ([g (binary-gcd x y)])
+                     (cond
+                       [($fx= g y) (fxquotient x g)]
+                       [($fx= g 1) ($make-ratnum x y)]
+                       [else ($make-ratnum (fxquotient x g) (fxquotient y g))])))]
+              [else
+               (if ($fx= y -1)
+                   (binary- 0 x)
+                   (let ([g (binary-gcd x y)])
+                     (cond
+                       [($fx= ($fx- 0 g) y) (binary- 0 (fxquotient x g))]
+                       [($fx= g 1) ($make-ratnum (binary- 0 x) (binary- 0 y))]
+                       [else
+                        ($make-ratnum 
+                          (binary- 0 (fxquotient x g))
+                          (binary- 0 (fxquotient y g)))])))])]
+           [(bignum? y)
+            (let ([g (binary-gcd x y)])
+              (cond
+                [(= g y) (quotient x g)] ;;; should not happen
+                [($bignum-positive? y)
+                 (if ($fx= g 1) 
+                     ($make-ratnum x y)
+                     ($make-ratnum (fxquotient x g) (quotient y g)))]
+                [else
+                 (if ($fx= g 1)
+                     ($make-ratnum (binary- 0 x) (binary- 0 y))
+                     ($make-ratnum 
+                        (binary- 0 (fxquotient x g))
+                        (binary- 0 (quotient y g))))]))]
+           [(ratnum? y) 
+            (/ (* x ($ratnum-d y)) ($ratnum-n y))]
            [else (error '/ "unsupported ~s ~s" x y)])]
-        [else (error '/ "unsupported ~s ~s" x y)])))
+        [(bignum? x) 
+         (cond
+           [(fixnum? y) 
+            (cond
+              [($fx= y 0) (error '/ "division by 0")]
+              [($fx> y 0)
+               (if ($fx= y 1)
+                   x
+                   (let ([g (binary-gcd x y)])
+                     (cond
+                       [($fx= g 1) ($make-ratnum x y)]
+                       [($fx= g y) (quotient x g)]
+                       [else
+                        ($make-ratnum (quotient x g) (quotient y g))])))]
+              [else
+               (if ($fx= y -1)
+                   (- x)
+                   (let ([g (binary-gcd x y)])
+                     (cond
+                       [(= (- g) y) (- (quotient x g))]
+                       [else
+                        ($make-ratnum 
+                          (- (quotient x g))
+                          (- (quotient y g)))])))])]
+           [(bignum? y) 
+            (let ([g (binary-gcd x y)])
+              (cond
+                [($fx= g 1) ($make-ratnum x y)]
+                [($bignum-positive? y)
+                 (if (= g y)
+                     (quotient x g)
+                     ($make-ratnum (quotient x g) (quotient y g)))]
+                [else
+                 (let ([y (binary- 0 y)])
+                   (if (= g y)
+                       (binary- 0 (quotient x g))
+                       ($make-ratnum (binary- 0 (quotient x g))
+                                     (quotient y g))))]))]
+           [(flonum? y) ($fl/ (bignum->flonum x) y)]
+           [(ratnum? y) 
+            (binary/ (binary* x ($ratnum-n y)) ($ratnum-d y))]
+           [else (error '/ "~s is not a number" y)])]
+        [(ratnum? x)
+         (cond
+           [(ratnum? y) 
+            (binary/
+              (binary* ($ratnum-n x) ($ratnum-d y))
+              (binary* ($ratnum-n y) ($ratnum-d x)))]
+           [else (binary/ 1 (binary/ y x))])]
+        [else (error '/ "~s is not a number" x)])))
 
   (define /
     (case-lambda
@@ -359,6 +516,7 @@
        (if (number? x) 
            x 
            (error 'min "~s is not a number" x))]))
+
   (define exact->inexact
     (lambda (x)
       (cond
