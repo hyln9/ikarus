@@ -1,0 +1,89 @@
+
+
+TODO for (R6RS BASE)
+
+* Compiler + libraries:
+  - letrec and letrec* restrictions (references and multiple returns)
+  - prohibit export of mutable bindings
+  - library versioning
+  - library phases (simply ignore)
+  - internal imports
+  - Recognize (define x)
+  - Add let-syntax and letrec-syntax
+  - Add identifier-syntax
+  - Add do, let*-values.
+
+* Numerics:
+  - Add rational, complex, and single-precision numbers
+  - Make sure the following primitives work:
+    
+    rationalize
+    numerator           denominator
+
+    make-rectangular    make-polar 
+    real-part           imag-part
+    magnitude           angle
+
+    expt        log        
+    sin         cos         tan
+    asin        acos        atan
+
+    sqrt    exact-integer-sqrt
+
+    number?   complex?   real?   rational?  integer?  
+    real-valued?  rational-valued?   integer-values?
+    
+    exact?     inexact?    ->exact   ->inexact
+
+    real->flonum    real->single    real->double
+    
+    =   <   <=   >   >=
+    zero?  positive?  negative?
+    odd?  even?
+    finite?  infinite?  nan?
+    min   max   abs
+
+    +       -      *      /
+    
+    div         mod           div-and-mod
+    div0        mod0          div0-and-mod0
+
+    gcd     lcm
+
+    floor       ceiling      truncate    round         
+
+    number->string(radix,precision)    string->number(radix)
+
+* Read:
+  - recognize rational, complex and flonum syntax
+  - recognize inline-hex sequences (strings, chars, and symbols)
+  - #!r6rs
+  - #\ sequnces: nul, alarm, backspace, tab, linefeed, vtab, page,
+    return, esc, space, delete
+  - respect unicode constituents
+  - recognize \a, \b, \t, \n, \v, \f, \r, \", \\, \<lf>, \<spc>,
+    \xXXX; sequences in strings.
+  - Add unsyntax, unsyntax-splicing, and quasisyntax.
+
+* Bytevectors:
+  - equal? for bytevectors
+
+* Strings:
+  - string-copy    
+  - string-fill!
+
+* Vectors:
+  - vector-fill!
+  - vector-map
+  - vector-for-each
+
+* Errors:
+  - (error who msg irritants ...)
+  - (assertion-violation who message irritants ...)
+
+
+
+
+
+
+Completed for (R6RS BASE):
