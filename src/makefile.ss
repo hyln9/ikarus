@@ -381,6 +381,8 @@
     [flonum->string          i]
     [gcd                     i r]
     [lcm                     i r]
+    [numerator               i r]
+    [denominator             i r]
     [symbol?                 i r symbols]
     [gensym?                 i symbols]
     [gensym                  i symbols]

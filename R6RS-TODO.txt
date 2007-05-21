@@ -18,7 +18,6 @@ TODO for (R6RS BASE)
   - Make sure the following primitives work:
     
     rationalize
-    numerator           denominator
 
     make-rectangular    make-polar 
     real-part           imag-part
@@ -87,3 +86,4 @@ TODO for (R6RS BASE)
 
 
 Completed for (R6RS BASE):
+    numerator           denominator

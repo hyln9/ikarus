@@ -28,7 +28,7 @@
 
 (library (ikarus generic-arithmetic)
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
-          positive? expt gcd lcm
+          positive? expt gcd lcm numerator denominator
           quotient+remainder number->string string->number)
   (import 
     (ikarus system $fx)
@@ -38,7 +38,7 @@
     (ikarus system $strings)
     (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
             remainder quotient+remainder number->string positive?
-            string->number expt gcd lcm))
+            string->number expt gcd lcm numerator denominator))
 
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))
@@ -1023,7 +1023,19 @@
         [(fixnum? x) (foreign-call "ikrt_fx_sqrt" x)]
         [else (error 'sqrt "unsupported ~s" x)])))
 
+  (define numerator
+    (lambda (x)
+      (cond
+        [(ratnum? x) ($ratnum-n x)]
+        [(or (fixnum? x) (bignum? x)) x]
+        [else (error 'numerator "~s is not an exact integer" x)])))
 
+  (define denominator
+    (lambda (x)
+      (cond
+        [(ratnum? x) ($ratnum-d x)]
+        [(or (fixnum? x) (bignum? x)) 1]
+        [else (error 'denominator "~s is not an exact integer" x)])))
 
   (define string->number
     (lambda (x)
