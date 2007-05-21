@@ -122,6 +122,7 @@
     [$bignums    (ikarus system $bignums)     #f]
     [$bytes      (ikarus system $bytevectors) #f]
     [$fx         (ikarus system $fx)          #f]
+    [$rat        (ikarus system $ratnums)     #f]
     [$symbols    (ikarus system $symbols)     #f]
     [$records    (ikarus system $records)     #f]
     [$ports      (ikarus system $ports)       #f]
@@ -134,11 +135,42 @@
     [$boot       (ikarus system $bootstrap)   #f]
     ))
 
+(define library-legend2
+  '([i           (ikarus)                     #t]
+    [symbols     (ikarus symbols)             #t]
+    [parameters  (ikarus parameters)          #t]
+    [interaction (ikarus interaction)         #t]
+    [r           (r6rs)                       #t]
+    [syncase     (r6rs syntax-case)           #t]
+    [cm          (chez modules)               #t]
+    [$all        (ikarus system $all)         #f]
+    [$pairs      (ikarus system $pairs)       #f]
+    [$lists      (ikarus system $lists)       #f]
+    [$chars      (ikarus system $chars)       #f]
+    [$strings    (ikarus system $strings)     #f]
+    [$vectors    (ikarus system $vectors)     #f]
+    [$bignums    (ikarus system $bignums)     #f]
+    [$bytes      (ikarus system $bytevectors) #f]
+    [$fx         (ikarus system $fx)          #f]
+    [$rat        (ikarus system $ratnums)     #f]
+    [$symbols    (ikarus system $symbols)     #f]
+    [$records    (ikarus system $records)     #f]
+    [$ports      (ikarus system $ports)       #f]
+    [$codes      (ikarus system $codes)       #f]
+    [$tcbuckets  (ikarus system $tcbuckets)   #f]
+    [$io         (ikarus system $io)          #f]
+    [$arg-list   (ikarus system $arg-list)    #f]
+    [$stack      (ikarus system $stack)       #f]
+    [$interrupts (ikarus system $interrupts)  #f]
+    [$boot       (ikarus system $bootstrap)   #f]
+    ))
+
+
 (define bootstrap-collection
   (let ([ls (map 
               (lambda (x) 
                 (find-library-by-name (cadr x)))
-              library-legend)])
+              library-legend2)])
     (case-lambda
       [() ls]
       [(x) (unless (memq x ls) 
@@ -514,6 +546,11 @@
     [$bignum-size       $bignums]
     [$bignum-byte-ref   $bignums]
     [$bignum-byte-set!  $bignums]
+
+    [$make-ratnum       $rat]
+    [$ratnum-n          $rat]
+    [$ratnum-d          $rat]
+    [$ratnum?           $rat]
 
     [$make-vector       $vectors]
     [$vector-length     $vectors]

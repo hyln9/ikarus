@@ -139,6 +139,11 @@
     [$bignum-size       1   value]
     [$bignum-byte-ref   2   value]
     [$bignum-byte-set!  3   effect]
+    ;;; ratnums
+    [$make-ratnum       2   value]
+    [$ratnum?           1   pred]
+    [$ratnum-n          1   value]
+    [$ratnum-d          1   value]
     ;;; symbols
     [$make-symbol       1   value]
     [$symbol-value      1   value]
@@ -1965,6 +1970,7 @@
       [($symbol-string $symbol-unique-string)
        (andmap (check op symbol?) rand*)]
       [($constant-ref $set-constant! $intern $pcb-set! $pcb-ref $make-symbol
+        $make-ratnum $ratnum? $ratnum-n $ratnum-d
         $symbol-value $set-symbol-value! $set-symbol-function! $symbol-plist $set-symbol-plist!
         $set-symbol-system-value! $set-symbol-system-value!
         $set-symbol-unique-string!
@@ -2370,6 +2376,7 @@
             (check-const (fx* (length arg*) pair-size) x)]
            [(vector $record $string)
             (check-const (fx+ (fx* (length arg*) wordsize) disp-vector-data) x)]
+           [($make-ratnum) (check-const ratnum-size x)]
            [else x]))]
       [(forcall op arg*)
        (make-forcall op (map Expr arg*))]
@@ -2933,6 +2940,11 @@
   (define flonum-size     16)
   (define disp-flonum-data 8)
 
+  (define ratnum-tag    #x27)
+  (define disp-ratnum-num  4)
+  (define disp-ratnum-den  8)
+  (define ratnum-size     16)
+
   (define bignum-mask        #b111)
   (define bignum-tag         #b011)
   (define bignum-sign-mask  #b1000)
@@ -3248,6 +3260,9 @@
      [(symbol?)    
       (indirect-type-pred vector-mask vector-tag #f
          symbol-record-tag rand* Lt Lf ac)]
+     [($ratnum?)    
+      (indirect-type-pred vector-mask vector-tag #f
+         ratnum-tag rand* Lt Lf ac)]
      [(procedure?) (type-pred closure-mask closure-tag rand* Lt Lf ac)]
      [(boolean?)   (type-pred bool-mask bool-tag rand* Lt Lf ac)]
      [(null?)      (type-pred #f nil rand* Lt Lf ac)]
@@ -3710,6 +3725,10 @@
        (indirect-ref arg* (fx- disp-port-output-index vector-tag) ac)]
       [($port-output-size) 
        (indirect-ref arg* (fx- disp-port-output-size vector-tag) ac)]
+      [($ratnum-n) 
+       (indirect-ref arg* (fx- disp-ratnum-num vector-tag) ac)]
+      [($ratnum-d) 
+       (indirect-ref arg* (fx- disp-ratnum-den vector-tag) ac)]
       [(pointer-value)
        (list*
          (movl (Simple (car arg*)) eax)
@@ -3958,6 +3977,17 @@
               (addl (int record-tag) eax)
               (addl (int (align symbol-record-size)) apr)
               ac)]
+      [($make-ratnum)
+       (list* 
+         (movl (int ratnum-tag) (mem 0 apr))
+         (movl (Simple (car arg*)) eax)
+         (movl eax (mem disp-ratnum-num apr))
+         (movl (Simple (cadr arg*)) eax)
+         (movl eax (mem disp-ratnum-den apr))
+         (movl apr eax)
+         (addl (int vector-tag) eax)
+         (addl (int ratnum-size) apr)
+         ac)]
       [($make-port/input)  (do-make-port input-port-tag arg* ac)]
       [($make-port/output) (do-make-port output-port-tag arg* ac)]
       [($make-port/both)   (do-make-port input/output-port-tag arg* ac)]
