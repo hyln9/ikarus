@@ -155,7 +155,7 @@ verify_page(unsigned char* p, unsigned char* base, unsigned int* svec, unsigned 
   else if(type == symbols_type){
     return verify_pointers_page(p,s,d,base,svec,dvec);
   }
-  else if(type == data_type){
+  else if(type == dat_type){
     /* nothing to do for data */
     return p+pagesize;
   }

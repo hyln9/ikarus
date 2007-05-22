@@ -13,27 +13,62 @@
 #include <sys/mman.h>
 #include <dlfcn.h>
 
+#include <zlib.h>
+
 #ifndef RTLD_DEFAULT
 #define RTLD_DEFAULT 0
 #endif
 
+#define USE_ZLIB 1
+
 typedef struct {
+#if USE_ZLIB
+  gzFile fh;
+#else
   char* membase;
   char* memp;
   char* memq;
+#endif
   ikp* marks;
   int marks_size;
 } fasl_port;
 
 static ikp ik_fasl_read(ikpcb* pcb, fasl_port* p);
 
+#if USE_ZLIB
+void ik_fasl_load(ikpcb* pcb, char* fasl_file){
+  gzFile fh = gzopen(fasl_file, "rb");
+  if(fh == NULL){
+    fprintf(stderr, "cannot open %s\n", fasl_file);
+    exit(-1);
+  }
+  fasl_port p;
+  p.fh = fh;
+  p.marks = NULL;
+  p.marks_size = 0;
+  ikp v = ik_fasl_read(pcb, &p);
+  while(v){
+    if(p.marks){
+      bzero(p.marks, p.marks_size * sizeof(ikp*));
+    }
+    ikp val = ik_exec_code(pcb, v);
+    val = void_object;
+    if(val != void_object){
+      ik_print(val);
+    }
+    v = ik_fasl_read(pcb, &p);
+  };
+
+  fprintf(stderr, "here\n");
+  exit(-1);
+}
+#else
 void ik_fasl_load(ikpcb* pcb, char* fasl_file){ 
   int fd = open(fasl_file, O_RDONLY);
   if(fd == -1){
     fprintf(stderr, "failed to open %s: %s\n", fasl_file, strerror(errno));
     exit(-1);
   }
-
   int filesize;
   {
     struct stat buf;
@@ -45,7 +80,6 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
     filesize = buf.st_size;
   }
   int mapsize = ((filesize + pagesize - 1) / pagesize) * pagesize;
-
   char* mem = mmap(
       0,
       mapsize,
@@ -53,20 +87,16 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
       MAP_PRIVATE,
       fd,
       0);
-
   if(mem == MAP_FAILED){
     fprintf(stderr, "Mapping failed for %s: %s\n", fasl_file, strerror(errno));
     exit(-1);
   }
-
   fasl_port p;
   p.membase = mem;
   p.memp = mem;
   p.memq = mem + filesize;
   p.marks = NULL;
   p.marks_size = 0;
-
-
   while(p.memp < p.memq){
     ikp v = ik_fasl_read(pcb, &p);
     if(p.marks){
@@ -78,7 +108,6 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
       ik_print(val);
     }
   }
-
   if(p.memp != p.memq){
     fprintf(stderr, "fasl-read did not reach eof!\n");
     exit(-10);
@@ -95,7 +124,7 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
   }
   close(fd);
 }
-
+#endif
 
 
 static ikp 
@@ -121,9 +150,6 @@ ik_relocate_code(ikp code){
     }
     int tag = r & 3;
     int code_off = r >> 2;
-//    fprintf(stderr, "data=0x%08x, off=0x%08x, data+off=0x%08x, r=0x%08x\n",
-//        (int)data, code_off, (int)data+code_off, r);
-//    fprintf(stderr, "setting 0x%08x from r=0x%08x\n", (int)(data+code_off), r);
     if(tag == 0){
       /* vanilla object */
       ref(data, code_off) = ref(p, wordsize);
@@ -174,10 +200,16 @@ ik_relocate_code(ikp code){
 
 
 static char fasl_read_byte(fasl_port* p){
+#if USE_ZLIB
+  int c = gzgetc(p->fh);
+  if(c != -1){
+    return (char)c;
+#else
   if(p->memp < p->memq){
     char c = *(p->memp);
     p->memp++;
     return c;
+#endif
   } else {
     fprintf(stderr, "fasl_read_byte: read beyond eof\n");
     exit(-1);
@@ -185,9 +217,15 @@ static char fasl_read_byte(fasl_port* p){
 }
 
 static void fasl_read_buf(fasl_port* p, void* buf, int n){
+#if USE_ZLIB
+  int bytes = gzread(p->fh, buf, n);
+  if(bytes == n){
+    return;
+#else
   if((p->memp+n) <= p->memq){
     memcpy(buf, p->memp, n);
     p->memp += n;
+#endif
   } else {
     fprintf(stderr, "fasl_read_buf: read beyond eof\n");
     exit(-1);
@@ -220,9 +258,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
       }
       if(idx < p->marks_size){
         if(p->marks[idx] != 0){
-          fprintf(stderr, "mark %d already set (fileoff=%d)\n", 
-              idx,
-              (int)p->memp - (int)p->membase - 6);
+          fprintf(stderr, "mark %d already set\n", idx);
           ik_print(p->marks[idx]);
           exit(-1);
         }
@@ -438,10 +474,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     return x;
   }
   else {
-    fprintf(stderr, 
-        "invalid type '%c' (0x%02x) found in fasl file at byte 0x%08x\n", 
-        c, c,
-        (int) p->memp - (int) p->membase - 1);
+    fprintf(stderr, "invalid type '%c' (0x%02x) found in fasl file\n", c, c);
     exit(-1);
   }
 }
@@ -450,11 +483,17 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
 static ikp ik_fasl_read(ikpcb* pcb, fasl_port* p){
   /* first check the header */
   char buf[IK_FASL_HEADER_LEN];
+#if USE_ZLIB
+  int bytes = gzread(p->fh, buf, IK_FASL_HEADER_LEN);
+  if(bytes == 0){
+    return 0;
+  }
+#else
   fasl_read_buf(p, buf, IK_FASL_HEADER_LEN);
+#endif
   if(strncmp(buf, IK_FASL_HEADER, IK_FASL_HEADER_LEN) != 0){
     fprintf(stderr, "invalid fasl header\n");
     exit(-1);
   }
   return do_read(pcb, p);
 }
-

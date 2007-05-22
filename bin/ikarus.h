@@ -28,7 +28,7 @@ extern int hash_table_count;
 #define mainheap_type   0x00000100
 #define mainstack_type  0x00000200
 #define pointers_type   0x00000300
-#define data_type       0x00000400
+#define dat_type       0x00000400
 #define code_type       0x00000500
 #define weak_pairs_type 0x00000600
 #define symbols_type    0x00000700
@@ -44,7 +44,7 @@ extern int hash_table_count;
 #define mainstack_mt    (mainstack_type  | unscannable_tag | retain_tag)
 #define pointers_mt     (pointers_type   | scannable_tag   | dealloc_tag)
 #define symbols_mt      (symbols_type    | scannable_tag   | dealloc_tag)
-#define data_mt         (data_type       | unscannable_tag | dealloc_tag)
+#define data_mt         (dat_type        | unscannable_tag | dealloc_tag)
 #define code_mt         (code_type       | scannable_tag   | dealloc_tag)
 #define weak_pairs_mt   (weak_pairs_type | scannable_tag   | dealloc_tag)
 

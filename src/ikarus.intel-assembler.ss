@@ -838,6 +838,19 @@
           0 
           ls)))
 
+(define foreign-string->bytevector
+  (let ([mem '()])
+    (lambda (x)
+      (let f ([ls mem])
+        (cond
+          [(null? ls) 
+           (let ([bv (string->utf8-bytevector x)])
+             (set! mem (cons (cons x bv) mem))
+             bv)]
+          [(string=? x (caar ls)) (cdar ls)]
+          [else (f (cdr ls))])))))
+
+
 (define whack-reloc
   (lambda (thunk?-label code vec)
     (define reloc-idx 0)
@@ -872,7 +885,7 @@
            ;;;        wait for equal? hash tables.
            (let ([name 
                   (if (string? v)
-                      (string->utf8-bytevector v)
+                      (foreign-string->bytevector v)
                       (error 'whack-reloc "not a string ~s" v))])
              (vector-set! vec reloc-idx (fxlogor 1 (fxsll idx 2)))
              (vector-set! vec (fx+ reloc-idx 1) name)
