@@ -78,6 +78,8 @@
     [module            (module)]
     [begin             (begin)]
     [set!              (set!)]
+    [let-syntax        (let-syntax)]
+    [letrec-syntax     (letrec-syntax)]
     [foreign-call      (core-macro . foreign-call)]
     [quote             (core-macro . quote)]
     [syntax-case       (core-macro . syntax-case)]
@@ -181,6 +183,8 @@
 (define ikarus-macros-map
   '([define           i r]
     [define-syntax    i r]
+    [let-syntax       i r]
+    [letrec-syntax    i r]
     [module           i cm]
     [begin            i r]
     [set!             i r]

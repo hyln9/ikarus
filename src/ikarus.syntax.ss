@@ -426,7 +426,8 @@
                       [type (binding-type b)])
                  (case type
                    [(define define-syntax core-macro begin macro
-                      local-macro global-macro module set!)
+                      local-macro global-macro module set!
+                      let-syntax letrec-syntax)
                     (values type (binding-value b) id)]
                    [else
                     (values 'call #f #f)]))
@@ -1625,6 +1626,24 @@
              [(_ x x* ...)
               (build-sequence no-source
                 (chi-expr* (cons x x*) r mr))])]
+          [(let-syntax letrec-syntax)
+           (syntax-match e ()
+             [(_ ([xlhs* xrhs*] ...) xbody xbody* ...)
+              (unless (valid-bound-ids? xlhs*) 
+                (stx-error e "duplicate identifiers"))
+              (let* ([xlab* (map gen-label xlhs*)]
+                     [xrib (make-full-rib xlhs* xlab*)]
+                     [xb* (map (lambda (x) 
+                                (make-eval-transformer
+                                  (expand-transformer
+                                    (if (eq? type 'let-syntax) x (add-subst xrib x))
+                                    mr)))
+                              xrhs*)])
+                (build-sequence no-source
+                  (chi-expr* 
+                    (map (lambda (x) (add-subst xrib x)) (cons xbody xbody*))
+                    (append (map cons xlab* xb*) r)
+                    (append (map cons xlab* xb*) mr))))])]
           [(displaced-lexical)
            (stx-error e "identifier out of context")]
           [(syntax) (stx-error e "reference to pattern variable outside a syntax form")]
@@ -1809,6 +1828,24 @@
                           (chi-body* (cdr e*)
                              (cons (cons lab b) r) (cons (cons lab b) mr)
                              lex* rhs* mod** kwd* rib top?))))]
+                 [(let-syntax letrec-syntax)
+                  (syntax-match e ()
+                    [(_ ([xlhs* xrhs*] ...) xbody* ...)
+                     (unless (valid-bound-ids? xlhs*)
+                       (stx-error e "duplicate identifiers"))
+                     (let* ([xlab* (map gen-label xlhs*)]
+                            [xrib (make-full-rib xlhs* xlab*)]
+                            [xb* (map (lambda (x) 
+                                       (make-eval-transformer
+                                         (expand-transformer
+                                           (if (eq? type 'let-syntax) x (add-subst xrib x))
+                                           mr)))
+                                     xrhs*)])
+                       (chi-body* 
+                         (append (map (lambda (x) (add-subst xrib x)) xbody*) (cdr e*))
+                         (append (map cons xlab* xb*) r)
+                         (append (map cons xlab* xb*) mr)
+                         lex* rhs* mod** kwd* rib top?))])]
                  [(module)
                   (let-values ([(lex* rhs* m-exp-id* m-exp-lab* r mr mod** kwd*)
                                 (chi-internal-module e r mr lex* rhs* mod** kwd*)])

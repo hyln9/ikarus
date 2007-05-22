@@ -6,11 +6,10 @@
 (library (ikarus greeting)
   (export print-greeting)
   (import (ikarus))
-  (define (print-greeting)
-    (define-syntax compile-time-string
-      (lambda (x) (date-string)))
-    (printf "Ikarus Scheme (Build ~a)\n" (compile-time-string))
-    (display "Copyright (c) 2006-2007 Abdulaziz Ghuloum\n\n")))
+  (letrec-syntax ([compile-time-string (lambda (x) (date-string))])
+    (define (print-greeting)
+      (printf "Ikarus Scheme (Build ~a)\n" (compile-time-string))
+      (display "Copyright (c) 2006-2007 Abdulaziz Ghuloum\n\n"))))
 
 
 ;;; Finally, we're ready to evaluate the files and enter the cafe.

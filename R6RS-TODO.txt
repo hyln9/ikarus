@@ -9,7 +9,6 @@ TODO for (R6RS BASE)
   - library phases (simply ignore)
   - internal imports
   - Recognize (define x)
-  - Add let-syntax and letrec-syntax
   - Add identifier-syntax
   - Add do, let*-values.
 
@@ -86,4 +85,5 @@ TODO for (R6RS BASE)
 
 
 Completed for (R6RS BASE):
+  - Add let-syntax and letrec-syntax
     numerator           denominator
