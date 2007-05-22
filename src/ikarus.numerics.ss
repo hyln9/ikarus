@@ -28,7 +28,7 @@
 
 (library (ikarus generic-arithmetic)
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
-          positive? expt gcd lcm numerator denominator
+          positive? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number)
   (import 
     (ikarus system $fx)
@@ -38,7 +38,8 @@
     (ikarus system $strings)
     (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
             remainder quotient+remainder number->string positive?
-            string->number expt gcd lcm numerator denominator))
+            string->number expt gcd lcm numerator denominator
+            exact-integer-sqrt))
 
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))
@@ -1021,7 +1022,45 @@
       (cond
         [(flonum? x) (foreign-call "ikrt_fl_sqrt" x)]
         [(fixnum? x) (foreign-call "ikrt_fx_sqrt" x)]
+        [(bignum? x) (error 'sqrt "BUG: bignum sqrt not implemented")]
+        [(ratnum? x) (/ (sqrt ($ratnum-n x)) (sqrt ($ratnum-d x)))]
         [else (error 'sqrt "unsupported ~s" x)])))
+
+  (define exact-integer-sqrt
+    (lambda (x)
+      (define who 'exact-integer-sqrt)
+      (define (fxsqrt x i k) 
+        (let ([j ($fxsra ($fx+ i k) 1)])
+          (let ([j^2 ($fx* j j)])
+             (if ($fx> j^2 x)
+                 (fxsqrt x i j)
+                 (if ($fx= i j) 
+                     (values j ($fx- x j^2))
+                     (fxsqrt x j k))))))
+      (define (bnsqrt x i k) 
+        (let ([j (quotient (+ i k) 2)])
+          (let ([j^2 (* j j)])
+             (if (> j^2 x)
+                 (bnsqrt x i j)
+                 (if (= i j) 
+                     (values j (- x j^2))
+                     (bnsqrt x j k))))))
+      (cond
+        [(fixnum? x) 
+         (cond
+           [($fx< x 0) (error who "invalid argument ~s" x)]
+           [($fx= x 0) (values 0 0)]
+           [($fx< x 4) (values 1 ($fx- x 1))]
+           [($fx< x 9) (values 2 ($fx- x 4))]
+           [($fx< x 46340) (fxsqrt x 3 ($fxsra x 1))]
+           [else           (fxsqrt x 215 23171)])]
+        [(bignum? x) 
+         (cond
+           [($bignum-positive? x) 
+            (bnsqrt x 23170 (quotient x 23170))]
+           [else (error who "invalid argument ~s" x)])]
+        [else (error who "invalid argument ~s" x)])))
+
 
   (define numerator
     (lambda (x)

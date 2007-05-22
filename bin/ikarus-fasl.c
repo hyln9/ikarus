@@ -274,11 +274,19 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     /* ascii string */
     int len;
     fasl_read_buf(p, &len, sizeof(int));
-    int size = align(len + disp_string_data + 1);
+    int size = align(len*string_char_size + disp_string_data);
     ikp str = ik_alloc(pcb, size) + string_tag;
     ref(str, off_string_length) = fix(len);
     fasl_read_buf(p, str+off_string_data, len);
-    str[off_string_data+len] = 0;
+    {
+      unsigned char* pi = (unsigned char*) (str+off_string_data);
+      ikp* pj = (ikp*) (str+off_string_data);
+      int i = len-1;
+      for(i=len-1; i >= 0; i--){
+        pj[i] = integer_to_char(pi[i]);
+      }
+    }
+    //str[off_string_data+len] = 0;
     if(put_mark_index){
       p->marks[put_mark_index] = str;
     }
@@ -288,7 +296,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     /* string */
     int len;
     fasl_read_buf(p, &len, sizeof(int));
-    int size = align(len*string_char_size + disp_string_data + 1);
+    int size = align(len*string_char_size + disp_string_data);
     ikp str = ik_alloc(pcb, size) + string_tag;
     ref(str, off_string_length) = fix(len);
     int i;
@@ -297,7 +305,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
       fasl_read_buf(p, &c, sizeof(int));
       string_set(str, i, integer_to_char(c));
     }
-    str[off_string_data+len*string_char_size] = 0;
+    //str[off_string_data+len*string_char_size] = 0;
     if(put_mark_index){
       p->marks[put_mark_index] = str;
     }

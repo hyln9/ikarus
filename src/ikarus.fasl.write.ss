@@ -7,6 +7,8 @@
     (ikarus system $io)
     (ikarus system $bytevectors)
     (ikarus system $fx)
+    (ikarus system $chars)
+    (ikarus system $strings)
     (ikarus code-objects)
     (except (ikarus) fasl-write))
 
@@ -40,6 +42,12 @@
         [(eq? x (void)) (write-char #\U p)]
         [else (error 'fasl-write "~s is not a fasl-writable immediate" x)])))
   
+  (define (ascii-string? s)
+    (let f ([s s] [i 0] [n (string-length s)])
+      (or ($fx= i n)
+          (and ($char<= ($string-ref s i) ($fixnum->char 127))
+               (f s ($fxadd1 i) n)))))
+
   (define do-write
     (lambda (x p h m)
       (cond
@@ -57,14 +65,22 @@
               (f x (fxadd1 i) n
                  (fasl-write-object (vector-ref x i) p h m))]))]
         [(string? x) 
-         (write-char #\S p)
-         (write-int (string-length x) p)
-         (let f ([x x] [i 0] [n (string-length x)])
-           (cond
-             [(fx= i n) m]
-             [else
-              (write-int (char->integer (string-ref x i)) p)
-              (f x (fxadd1 i) n)]))]
+         (cond
+           [(ascii-string? x)
+            (write-char #\s p)
+            (write-int (string-length x) p)
+            (let f ([x x] [i 0] [n (string-length x)])
+              (unless (fx= i n)
+                (write-char (string-ref x i) p)
+                (f x (fxadd1 i) n)))]
+           [else
+            (write-char #\S p)
+            (write-int (string-length x) p)
+            (let f ([x x] [i 0] [n (string-length x)])
+              (unless (= i n)
+                (write-int (char->integer (string-ref x i)) p)
+                (f x (fxadd1 i) n)))])
+         m]
         [(gensym? x)
          (write-char #\G p)
          (fasl-write-object (gensym->unique-string x) p h

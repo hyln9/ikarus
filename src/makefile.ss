@@ -383,6 +383,7 @@
     [lcm                     i r]
     [numerator               i r]
     [denominator             i r]
+    [exact-integer-sqrt      i r]
     [symbol?                 i r symbols]
     [gensym?                 i symbols]
     [gensym                  i symbols]
