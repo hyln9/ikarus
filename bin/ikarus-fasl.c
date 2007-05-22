@@ -19,7 +19,7 @@
 #define RTLD_DEFAULT 0
 #endif
 
-#define USE_ZLIB 1
+#define USE_ZLIB 0
 
 typedef struct {
 #if USE_ZLIB
@@ -473,6 +473,49 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     }
     return x;
   }
+  else if(c == 'l'){
+    int len = (unsigned char) fasl_read_byte(p);
+    if(len < 0){
+      fprintf(stderr, "invalid len=%d\n", len);
+      exit(-1);
+    }
+    ikp pair = ik_alloc(pcb, pair_size * (len+1)) + pair_tag;
+    if(put_mark_index){
+      p->marks[put_mark_index] = pair;
+    }
+    int i; ikp pt = pair;
+    for(i=0; i<len; i++){
+      ref(pt, off_car) = do_read(pcb, p);
+      ref(pt, off_cdr) = pt + pair_size;
+      pt += pair_size;
+    }
+    ref(pt, off_car) = do_read(pcb, p);
+    ref(pt, off_cdr) = do_read(pcb, p);
+    return pair;
+  }
+  else if(c == 'L'){
+    int len;
+    fasl_read_buf(p, &len, sizeof(int));
+    if(len < 0){
+      fprintf(stderr, "invalid len=%d\n", len);
+      exit(-1);
+    }
+    ikp pair = ik_alloc(pcb, pair_size * (len+1)) + pair_tag;
+    if(put_mark_index){
+      p->marks[put_mark_index] = pair;
+    }
+    int i; ikp pt = pair;
+    for(i=0; i<len; i++){
+      ref(pt, off_car) = do_read(pcb, p);
+      ref(pt, off_cdr) = pt + pair_size;
+      pt += pair_size;
+    }
+    ref(pt, off_car) = do_read(pcb, p);
+    ref(pt, off_cdr) = do_read(pcb, p);
+    return pair;
+  }
+
+
   else {
     fprintf(stderr, "invalid type '%c' (0x%02x) found in fasl file\n", c, c);
     exit(-1);

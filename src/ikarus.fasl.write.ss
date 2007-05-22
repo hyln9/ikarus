@@ -3,6 +3,7 @@
   (export fasl-write)
   (import
     (ikarus system $codes)
+    (ikarus system $pairs)
     (ikarus system $records)
     (ikarus system $io)
     (ikarus system $bytevectors)
@@ -48,13 +49,42 @@
           (and ($char<= ($string-ref s i) ($fixnum->char 127))
                (f s ($fxadd1 i) n)))))
 
+  (define (count-unshared-cdrs x h n)
+    (cond
+      [(and (pair? x) (eq? (get-hash-table h x #f) 0))
+       (count-unshared-cdrs ($cdr x) h ($fxadd1 n))]
+      [else n]))
+
+  (define (write-pairs x p h m n)
+    (cond
+      [($fx= n 0) (fasl-write-object x p h m)]
+      [else 
+       (write-pairs (cdr x) p h 
+         (fasl-write-object (car x) p h m)
+         ($fxsub1 n))]))
+       
   (define do-write
     (lambda (x p h m)
       (cond
-        [(pair? x)   
-         (write-char #\P p)
-         (fasl-write-object (cdr x) p h
-           (fasl-write-object (car x) p h m))]
+        [(pair? x)
+         (let ([d ($cdr x)])
+           (let ([n (count-unshared-cdrs d h 0)])
+             (cond
+               [($fx= n 0)
+                (write-char #\P p)
+                (fasl-write-object d p h
+                  (fasl-write-object (car x) p h m))]
+               [else 
+                (cond
+                  [($fx<= n 255) 
+                   (write-char #\l p)
+                   (write-byte n p)]
+                  [else
+                   (write-char #\L p)
+                   (write-int n p)])
+                (write-pairs d p h 
+                  (fasl-write-object (car x) p h m)
+                  n)])))]
         [(vector? x)
          (write-char #\V p)
          (write-int (vector-length x) p)

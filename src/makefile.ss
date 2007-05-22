@@ -843,14 +843,14 @@
               [(assq x locs) => cdr]
               [else 
                (error 'bootstrap "no location for ~s" x)])))
-        (let ([p (open-output-file "ikarus.tmp" 'replace)])
+        (let ([p (open-output-file "ikarus.boot" 'replace)])
           (for-each 
             (lambda (x) (compile-core-expr-to-port x p))
             core*)
           (close-output-port p)))))
 
-(system "gzip -f ikarus.tmp")
-(system "mv ikarus.tmp.gz ikarus.boot")
+;(system "gzip -f ikarus.boot.uncompressed")
+;(system "mv ikarus.boot.uncompressed.gz ikarus.boot")
 
 (printf "Happy Happy Joy Joy\n")
 
