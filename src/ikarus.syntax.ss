@@ -439,8 +439,8 @@
   (define-syntax stx-error
     (lambda (x)
       (syntax-case x ()
-        [(_ stx) #'(error 'stx-error "invalid syntax ~s" (strip stx '()))]
-        [(_ stx msg) #'(error 'stx-error "~a: ~s" msg (strip stx '()))])))
+        [(_ stx) #'(error #f "invalid syntax ~s" (strip stx '()))]
+        [(_ stx msg) #'(error #f "~a: ~s" msg (strip stx '()))])))
   (define sanitize-binding
     (lambda (x src)
       (cond
@@ -1647,6 +1647,8 @@
           [(displaced-lexical)
            (stx-error e "identifier out of context")]
           [(syntax) (stx-error e "reference to pattern variable outside a syntax form")]
+          [(define define-syntax module) 
+           (stx-error e "invalid expression")]
           [else (error 'chi-expr "invalid type ~s for ~s" type
                        (strip e '())) (stx-error e)]))))
   (define chi-set!
