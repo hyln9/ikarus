@@ -1,6 +1,8 @@
 
 (library (ikarus compiler)
-  (export compile-core-expr-to-port assembler-output
+  (export compile-core-expr-to-port 
+          alt-compile-core-expr-to-port 
+          assembler-output
           current-primitive-locations eval-core)
   (import 
     (ikarus system $fx)
@@ -5271,60 +5273,8 @@
                ls*)])
         (car code*)))))
 
-
-(define compile-core-expr-to-port
-  (lambda (expr port)
-    (fasl-write (compile-core-expr->code expr) port)))
-
-(define (compile-core-expr x)
-  (let ([code (compile-core-expr->code x)])
-    ($code->closure code)))
-
-(define assembler-output (make-parameter #f))
-
-(define current-primitive-locations
-  (let ([plocs (lambda (x) #f)])
-    (case-lambda
-      [() plocs]
-      [(p)
-       (if (procedure? p)
-           (begin 
-             (set! plocs p) 
-             (refresh-cached-labels!))
-           (error 'current-primitive-locations "~s is not a procedure" p))])))
-
-(define eval-core
-  (lambda (x) ((compile-core-expr x))))
-
-(include "libaltcogen.ss")
-
-
-)
-
-#!eof junk
-
-
-
-(define alt-cogen
-  (lambda args
-    (error 'alt-cogen "disabled for now")))
-
-
-
-
-(define alt-compile
-  (lambda (x)
-    (let ([code 
-           (if (code? x)
-               x
-               (alt-compile-expr x))])
-      (let ([proc ($code->closure code)])
-        (proc)))))
-
-(define (alt-compile-expr expr)
-  (let* ([p (parameterize ([assembler-output #f])
-              (expand expr))]
-         [p (recordize p)]
+(define (alt-compile-core-expr->code p)
+  (let* ([p (recordize p)]
          [p (parameterize ([open-mvcalls #f])
               (optimize-direct-calls p))]
          [p (optimize-letrec p)]
@@ -5353,3 +5303,38 @@
                      #f))
                ls*)])
         (car code*)))))
+
+(define compile-core-expr-to-port
+  (lambda (expr port)
+    (fasl-write (compile-core-expr->code expr) port)))
+
+(define alt-compile-core-expr-to-port
+  (lambda (expr port)
+    (fasl-write (alt-compile-core-expr->code expr) port)))
+
+(define (compile-core-expr x)
+  (let ([code (compile-core-expr->code x)])
+    ($code->closure code)))
+
+(define assembler-output (make-parameter #f))
+
+(define current-primitive-locations
+  (let ([plocs (lambda (x) #f)])
+    (case-lambda
+      [() plocs]
+      [(p)
+       (if (procedure? p)
+           (begin 
+             (set! plocs p) 
+             (refresh-cached-labels!))
+           (error 'current-primitive-locations "~s is not a procedure" p))])))
+
+(define eval-core
+  (lambda (x) ((compile-core-expr x))))
+
+(include "libaltcogen.ss")
+
+
+)
+
+
