@@ -121,7 +121,7 @@
                              (let ([buff ($port-output-buffer p)])
                                (set! buffer-list (cons (bv-copy buff) buffer-list))
                                ($bytevector-set! buff 0 b)
-                               (set! idx 1))
+                               ($set-port-output-index! p 1))
                              (error 'write-byte "port ~s is closed" p))))
                      (error 'write-byte "~s is not an output-port" p))
                  (error 'write-byte "~s is not a byte" b))]
@@ -129,7 +129,7 @@
              (if (char? c)
                  (if (output-port? p)
                      (let ([b ($char->fixnum c)])
-                       (if ($fx<= b 255)
+                       (if ($fx<= b 127)
                            ($write-byte b p)
                            (error 'write-char "multibyte write of ~s is not implemented" c)))
                      (error 'write-char "~s is not an output-port" p))

@@ -144,7 +144,8 @@
                     [else (error who "incomplete char sequence")])]
                  [(eq? mode 'ignore) (f x ($fxadd1 i) j n mode)]
                  [(eq? mode 'replace) (f x ($fxadd1 i) j ($fxadd1 n) mode)]
-                 [else (error who "invalid byte ~s" b0)]))])))
+                 [else (error who "invalid byte ~s at index ~s of ~s" 
+                              b0 i x)]))])))
       (define (fill str bv mode)
         (let f ([str str] [x bv] [i 0] [j ($bytevector-length bv)] [n 0] [mode mode])
           (cond

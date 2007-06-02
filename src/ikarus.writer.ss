@@ -10,27 +10,11 @@
     (ikarus system $pairs)
     (ikarus system $symbols)
     (ikarus system $bytevectors)
+    (ikarus unicode-data)
     (except (ikarus) write display format printf print-error
             error-handler error))
 
 
-  (include "unicode/unicode-constituents.ss")
-
-  (define (binary-search-on? n v)
-    (let ([k ($fx- ($vector-length v) 1)])
-      (let f ([i 0] [k k] [n n] [v v])
-        (cond
-          [($fx= i k) ($fx= ($fxlogand i 1) 1)]
-          [else
-           (let ([j ($fxsra ($fx+ i ($fx+ k 1)) 1)])
-             (cond
-               [($fx<= ($vector-ref v j) n) (f j k n v)]
-               [else (f i ($fx- j 1) n v)]))]))))
-
-  (define (unicode-printable-char? c)
-    (binary-search-on?
-      ($char->fixnum c) 
-      unicode-constituents-vector))
 
   (define char-table ; first nonprintable chars
     '#("nul" "x1" "x2" "x3" "x4" "x5" "x6" "alarm"

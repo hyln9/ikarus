@@ -46,9 +46,32 @@
            (close-input-port p)
            (close-ports))])))
  
+  (define refill-buffer!
+    (lambda (p bytes)
+      (error 'refill-buffer! "not implemented")))
+
   (define read-multibyte-char 
-    (lambda (p)
-      (error 'read-multibyte-char "not implemented")))
+    (lambda (p b0)
+      (let ([idx ($port-input-index p)] 
+            [size ($port-input-size p)])
+        (cond
+          [($fx= ($fxlogand b0 #b11100000) #b11000000) 
+           ;;; 2-byte utf8 sequence
+           (unless ($fx< ($fx+ idx 1) size)
+             (refill-buffer! p 1))
+           (let ([b1 ($bytevector-u8-ref 
+                       ($port-input-buffer p)
+                       ($fxadd1 idx))])
+             (unless ($fx= ($fxlogand b1 #b11000000) #b10000000)
+               (error 'read-char "invalid utf8 sequence ~a ~a" b0 b1))
+             ($set-port-input-index! p ($fx+ idx 2))
+             ($fixnum->char 
+               ($fx+ ($fxsll ($fxlogand b0 #b11111) 6)
+                     ($fxlogand b1 #b111111))))]
+          [else 
+           (error 'read-multibyte
+             "bytesequence ~a is not supported yet" b0)]))))
+
   (define peek-multibyte-char 
     (lambda (p)
       (error 'peek-multibyte-char "not implemented")))
@@ -71,7 +94,7 @@
                        [($fx< b 128) 
                         ($set-port-input-index! p ($fxadd1 idx))
                         ($fixnum->char b)]
-                       [else (read-multibyte-char p)]))
+                       [else (read-multibyte-char p b)]))
                    (if open?
                        (let ([bytes
                               (foreign-call "ikrt_read" 

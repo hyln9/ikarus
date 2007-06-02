@@ -6,6 +6,7 @@
     (ikarus system $fx)
     (ikarus system $pairs)
     (ikarus system $bytevectors)
+    (ikarus unicode-data)
     (except (ikarus) read read-token comment-handler))
 
   (define delimiter?
@@ -20,7 +21,10 @@
       (fx- ($char->fixnum c) ($char->fixnum #\0))))
   (define initial?
     (lambda (c)
-      (or (letter? c) (special-initial? c))))
+      (cond
+        [($char<= c ($fixnum->char 127))
+         (or (letter? c) (special-initial? c))]
+        [else (unicode-printable-char? c)])))
   (define letter? 
     (lambda (c)
       (or (and ($char<= #\a c) ($char<= c #\z))
@@ -154,6 +158,29 @@
            (tokenize-char-seq p "tab" '(datum . #\tab))]
           [($char= #\r c) 
            (tokenize-char-seq p "return" '(datum . #\return))]
+          [($char= #\x c) 
+           (let ([n (peek-char p)])
+             (cond
+               [(or (eof-object? n) (delimiter? n))
+                '(datum . #\x)]
+               [(hex n) =>
+                (lambda (v) 
+                  (read-char p)
+                  (let f ([v v])
+                    (let ([c (read-char p)])
+                      (cond
+                        [(eof-object? c)
+                         (cons 'datum (integer->char v))]
+                        [(delimiter? c)
+                         (unread-char c p)
+                         (cons 'datum (integer->char v))]
+                        [(hex c) =>
+                         (lambda (v0)
+                           (f (+ (* v 16) v0)))]
+                        [else
+                         (error 'tokenize "invalid character sequence")]))))]
+               [else
+                (error 'tokenize "invalid character sequence #\\x~a" n)]))]
           [else
            (let ([n (peek-char p)])
              (cond
@@ -161,6 +188,17 @@
                [(delimiter? n)  (cons 'datum c)]
                [else 
                 (error 'tokenize "invalid syntax #\\~a~a" c n)]))]))))
+  (define (hex x)
+    (cond
+      [(and ($char<= #\0 x) ($char<= x #\9))
+       ($fx- ($char->fixnum x) ($char->fixnum #\0))]
+      [(and ($char<= #\a x) ($char<= x #\z))
+       ($fx- ($char->fixnum x) 
+             ($fx- ($char->fixnum #\a) 10))]
+      [(and ($char<= #\A x) ($char<= x #\Z))
+       ($fx- ($char->fixnum x) 
+             ($fx- ($char->fixnum #\A) 10))]
+      [else #f]))
   (define multiline-error
     (lambda ()
       (error 'tokenize
@@ -486,6 +524,42 @@
                [else (tokenize-bar p (cons c ac))]))]
           [($char= #\| c) ac]
           [else (tokenize-bar p (cons c ac))]))))
+  (define (tokenize-backslash p)
+    (let ([c (read-char p)])
+      (cond
+        [(eof-object? c) 
+         (error 'tokenize "invalid eof after \\")]
+        [($char= #\x c) 
+         (let ([c (read-char p)])
+           (cond
+             [(eof-object? c) 
+              (error 'tokenize "invalid eof after \\x")]
+             [(hex c) => 
+              (lambda (v)
+                (let f ([v v] [ac `(,c #\x #\\)])
+                  (let ([c (read-char p)])
+                    (cond
+                      [(eof-object? c) 
+                       (error 'tokenize "invalid eof after ~a"
+                         (list->string (reverse ac)))]
+                      [($char= #\; c)
+                       (cons 'datum 
+                         (string->symbol 
+                           (list->string 
+                             (cons (integer->char v)
+                               (reverse (tokenize-identifier '() p))))))]
+                      [(hex c) =>
+                       (lambda (v0)
+                         (f (+ (* v 16) v0) (cons c ac)))]
+                      [else 
+                       (error 'tokenize "invalid sequence ~a"
+                         (list->string (cons c (reverse ac))))]))))]
+             [else
+              (unread-char c p) 
+              (error 'tokenize "invalid sequence \\x~a" c)]))]
+        [else 
+         (unread-char c p) 
+         (error 'tokenize "invalid sequence \\~a" c)])))
   (define tokenize/c
     (lambda (c p)
       (cond
@@ -538,6 +612,10 @@
         [($char= #\| c)
          (let ([ls (reverse (tokenize-bar p '()))])
            (cons 'datum (string->symbol (list->string ls))))]
+        [($char= #\\ c)
+         (tokenize-backslash p)]
+
+
         [else
          (unread-char c p) 
          (error 'tokenize "invalid syntax ~a" c)])))

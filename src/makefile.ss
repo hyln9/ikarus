@@ -54,6 +54,7 @@
     "ikarus.io.input-strings.ss"
     "ikarus.io.output-strings.ss"
     "ikarus.hash-tables.ss"
+    "ikarus.unicode-data.ss"
     "ikarus.writer.ss"
     "ikarus.reader.ss"
     "ikarus.code-objects.ss"

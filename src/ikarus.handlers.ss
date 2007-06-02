@@ -64,8 +64,8 @@
       (cond
         [(symbol? x)
          (if (symbol-bound? x)
-             (error 'top-level-value "BUG in ~s" x)
-             (error 'top-level-value "~a is unbound" x))]
+             (error 'top-level-value-error "BUG in ~s" x)
+             (error #f "~a is unbound" x))]
         [else
          (error 'top-level-value "~s is not a symbol" x)])))
   
