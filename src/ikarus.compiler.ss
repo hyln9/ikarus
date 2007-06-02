@@ -12,7 +12,6 @@
     (ikarus fasl write))
 
 
-
 (define-syntax record-case
   (lambda (x)
     (define (enumerate fld* i)
@@ -5289,53 +5288,19 @@
 (define eval-core
   (lambda (x) ((compile-core-expr x))))
 
+;(include "libaltcogen.ss")
+
+
 )
 
 #!eof junk
 
 
-(define (compile-expr->code x)
-  (compile-core-expr->code
-    (parameterize ([assembler-output #f])
-      (expand x))))
 
-(define compile
-  (lambda (x)
-    (let ([code 
-           (if (code? x)
-               x
-               (compile-expr->code x))])
-      (let ([proc ($code->closure code)])
-        (proc)))))
-
-(define compile-file
-  (lambda (input-file output-file . rest)
-    (let ([ip (open-input-file input-file)]
-          [op (apply open-output-file output-file rest)])
-      (let f ()
-        (let ([x (read ip)])
-          (unless (eof-object? x)
-            (fasl-write (compile-expr->code x) op)
-            (f))))
-      (close-input-port ip)
-      (close-output-port op))))
-
-;(include "libaltcogen.ss")
 (define alt-cogen
   (lambda args
     (error 'alt-cogen "disabled for now")))
 
-(define alt-compile-file
-  (lambda (input-file output-file . rest)
-    (let ([ip (open-input-file input-file)]
-          [op (apply open-output-file output-file rest)])
-      (let f ()
-        (let ([x (read ip)])
-          (unless (eof-object? x)
-            (fasl-write (alt-compile-expr x) op)
-            (f))))
-      (close-input-port ip)
-      (close-output-port op))))
 
 
 

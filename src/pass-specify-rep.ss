@@ -29,11 +29,10 @@
     (putprop x cookie v))
   )
 
-
 (module (specify-representation)
   (import object-representation)
   (import primops)
-   (define-record PH
+  (define-record PH
     (interruptable? p-handler p-handled? v-handler v-handled? e-handler e-handled?))
   (define interrupt-handler
     (make-parameter (lambda () (error 'interrupt-handler "uninitialized"))))
@@ -179,10 +178,10 @@
   (define-syntax define-primop
     (lambda (x)
       (define (cogen-name stx name suffix)
-        (datum->syntax-object stx
+        (datum->syntax stx
           (string->symbol
             (format "cogen-~a-~a" suffix 
-                    (syntax-object->datum name)))))
+                    (syntax->datum name)))))
       (define (generate-handler name ctxt case*)
         (define (filter-cases case*)
           (syntax-case case* ()

@@ -415,7 +415,7 @@
                (stx-error e "unbound identifier"))
              (case type
                [(lexical core-prim macro global local-macro
-                   global-macro displaced-lexical syntax)
+                 global-macro displaced-lexical syntax import)
                 (values type (binding-value b) id)]
                [else (values 'other #f #f)])))]
         [(syntax-pair? e)
@@ -427,7 +427,7 @@
                  (case type
                    [(define define-syntax core-macro begin macro
                       local-macro global-macro module set!
-                      let-syntax letrec-syntax)
+                      let-syntax letrec-syntax import)
                     (values type (binding-value b) id)]
                    [else
                     (values 'call #f #f)]))
@@ -783,6 +783,15 @@
              (bless `(letrec ([,f (lambda ,lhs* ,b . ,b*)])
                         (,f . ,rhs*)))
              (stx-error stx "invalid syntax"))])))
+  (define identifier-syntax-macro
+    (lambda (stx)
+      (syntax-match stx ()
+        [(_ expr) 
+         (bless `(lambda (x) 
+                   (syntax-case x ()
+                     [id (identifier? #'id) #',expr]
+                     [(id e* ...) (identifier? #'id) 
+                      (cons #',expr #'(e* ...))])))])))
   (define do-macro
     (lambda (stx)
       (define bind
@@ -1554,6 +1563,7 @@
            [(syntax-rules)  syntax-rules-macro]
            [(quasiquote)    quasiquote-macro]
            [(with-syntax)   with-syntax-macro]
+           [(identifier-syntax)   identifier-syntax-macro]
            [else (error 'macro-transformer "invalid macro ~s" x)])]
         [else (error 'core-macro-transformer "invalid macro ~s" x)])))
   (define (local-macro-transformer x)
