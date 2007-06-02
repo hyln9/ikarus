@@ -180,8 +180,9 @@
       (define (cogen-name stx name suffix)
         (datum->syntax stx
           (string->symbol
-            (format "cogen-~a-~a" suffix 
-                    (syntax->datum name)))))
+            (format "cogen-~a-~a" 
+              suffix 
+              (syntax->datum name)))))
       (define (generate-handler name ctxt case*)
         (define (filter-cases case*)
           (syntax-case case* ()
@@ -199,10 +200,10 @@
                  [args (interrupt)])
                handled?])))
       (syntax-case x ()
-        [(_ name int? case* ...) 
-         (with-syntax ([cogen-p (cogen-name #'_ #'name "pred")]
-                       [cogen-e (cogen-name #'_ #'name "effect")]
-                       [cogen-v (cogen-name #'_ #'name "value")]
+        [(stx name int? case* ...) 
+         (with-syntax ([cogen-p (cogen-name #'stx #'name "pred")]
+                       [cogen-e (cogen-name #'stx #'name "effect")]
+                       [cogen-v (cogen-name #'stx #'name "value")]
                        [interruptable?
                         (syntax-case #'int? (safe unsafe)
                           [safe   #t] [unsafe #f])]
@@ -321,8 +322,8 @@
       [(var)      x]
       [(primref name)  
        (prm 'mref
-             (K (make-object name))
-             (K (- disp-symbol-system-value symbol-tag)))]
+             (K (make-object (primref->symbol name)))
+             (K (- disp-symbol-record-value symbol-ptag)))]
       [(code-loc) (make-constant x)]
       [(closure)  (make-constant x)]
       [(bind lhs* rhs* body)
@@ -414,7 +415,7 @@
            (lambda (sym)
              (record-symbol-call! sym)
              (prm 'mref (T (K sym))
-                  (K (- disp-symbol-function symbol-tag))))]
+                  (K (- disp-symbol-record-proc symbol-ptag))))]
           [else (nonproc x)])]
        [(primref op) (V x)]
        [else (nonproc x)]))
@@ -462,35 +463,35 @@
       (define L1 (gensym))
       (define L2 (gensym))
       `(0
-        [movl (disp ,(- disp-symbol-value symbol-tag) (obj ,symbol)) ,cp-register]
+        [movl (disp ,(- disp-symbol-record-value symbol-ptag) (obj ,symbol)) ,cp-register]
         [andl ,closure-mask ,cp-register]
         [cmpl ,closure-tag ,cp-register]
         [jne (label ,L1)]
-        [movl (disp ,(- disp-symbol-value symbol-tag) (obj ,symbol)) ,cp-register]
-        [movl ,cp-register (disp ,(- disp-symbol-function symbol-tag) (obj ,symbol))]
+        [movl (disp ,(- disp-symbol-record-value symbol-ptag) (obj ,symbol)) ,cp-register]
+        [movl ,cp-register (disp ,(- disp-symbol-record-proc symbol-ptag) (obj ,symbol))]
         [jmp (disp ,(- disp-closure-code closure-tag) ,cp-register)]
         [label ,L1]
-        [movl (disp ,(- disp-symbol-value symbol-tag) (obj ,symbol)) %eax]
+        [movl (disp ,(- disp-symbol-record-value symbol-ptag) (obj ,symbol)) %eax]
         [cmpl ,unbound %eax]
         [je (label ,L2)]
         [movl (obj apply) (disp -4 %esp)]
         [movl (obj "~s is not a procedure") (disp -8 %esp)]
         [movl %eax (disp -12 %esp)]
-        [movl (obj error) ,cp-register]
-        [movl (disp ,(- disp-symbol-system-value symbol-tag)
+        [movl (obj ,(primref->symbol 'error)) ,cp-register]
+        [movl (disp ,(- disp-symbol-record-value symbol-ptag)
                     ,cp-register) ,cp-register]
         [movl ,(argc-convention 3) %eax]
         [jmp (disp ,(- disp-closure-code closure-tag) ,cp-register)]
         [label ,L2]
         [movl (obj ,symbol) (disp -4 %esp)]
-        [movl (obj top-level-value) ,cp-register]
-        [movl (disp ,(- disp-symbol-system-value symbol-tag)
+        [movl (obj ,(primref->symbol 'top-level-value)) ,cp-register]
+        [movl (disp ,(- disp-symbol-record-value symbol-ptag)
                     ,cp-register) ,cp-register]
         [movl ,(argc-convention 1) %eax]
         [jmp (disp ,(- disp-closure-code closure-tag) ,cp-register)]))
     (let ([ls encountered-symbol-calls])
       (let ([c* (map code-list ls)])
-        (let ([c* (list*->code* (lambda (x) #f) c*)])
+        (let ([c* (assemble-sources (lambda (x) #f) c*)])
           (let ([p* (map (lambda (x) ($code->closure x)) c*)])
             (let f ([ls ls] [p* p*])
               (cond

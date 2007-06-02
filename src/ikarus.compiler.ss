@@ -3,6 +3,8 @@
   (export compile-core-expr-to-port assembler-output
           current-primitive-locations eval-core)
   (import 
+    (ikarus system $fx)
+    (ikarus system $pairs)
     (only (ikarus system $codes) $code->closure)
     (only (ikarus system $records) $record-ref $record/rtd?)
     (except (ikarus)
@@ -2973,6 +2975,8 @@
   (define disp-bytevector-length 0)
   (define disp-bytevector-data 4)
 
+  (define ptag-mask 7)
+  (define symbol-ptag 5)
   (define symbol-record-tag #x5F)
   (define disp-symbol-record-string  4)
   (define disp-symbol-record-ustring 8)
@@ -3128,17 +3132,21 @@
       [else (error 'pcb-ref "invalid arg ~s" x)])))
 
 
-(define (primref-loc op)
-  (unless (symbol? op) (error 'primref-loc "not a symbol ~s" op))
+(define (primref->symbol op)
+  (unless (symbol? op) (error 'primref->symbol "not a symbol ~s" op))
   (cond
     [((current-primitive-locations) op) =>
      (lambda (x)
        (unless (symbol? x) 
          (error 'primitive-location 
             "~s is not a valid location for ~s" x op))
-       (mem (fx- disp-symbol-record-value record-tag) (obj x)))]
+       x)]
     [else
      (error 'compile "cannot find location of primitive ~s" op)]))
+
+(define (primref-loc op)
+  (mem (fx- disp-symbol-record-value record-tag) 
+       (obj (primref->symbol op))))
 
 
 (define (generate-code x)
@@ -5288,7 +5296,7 @@
 (define eval-core
   (lambda (x) ((compile-core-expr x))))
 
-;(include "libaltcogen.ss")
+(include "libaltcogen.ss")
 
 
 )

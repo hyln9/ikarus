@@ -587,9 +587,11 @@
          (make-primcall 'nop '())
          (make-funcall 
            (make-primcall 'mref
-              (list (make-constant (make-object 'do-overflow))
-                    (make-constant (- disp-symbol-system-value
-                                      symbol-tag))))
+              (list (make-constant 
+                      (make-object
+                        (primref->symbol 
+                          'do-overflow)))
+                    (make-constant (- disp-symbol-record-value symbol-ptag))))
            (list size)))))
   ;;; impose value
   (define (V d x)
@@ -969,18 +971,18 @@
    )
   
   (begin
-    (define-syntax car      (identifier-syntax #%$car))
-    (define-syntax cdr      (identifier-syntax #%$cdr))
-    (define-syntax fxsll    (identifier-syntax #%$fxsll))
-    (define-syntax fxsra    (identifier-syntax #%$fxsra))
-    (define-syntax fxlogor  (identifier-syntax #%$fxlogor))
-    (define-syntax fxlogand (identifier-syntax #%$fxlogand))
-    (define-syntax fxlognot (identifier-syntax #%$fxlognot))
-    (define-syntax fx+      (identifier-syntax #%$fx+))
-    (define-syntax fxzero?  (identifier-syntax #%$fxzero?))
+    (define-syntax car      (identifier-syntax $car))
+    (define-syntax cdr      (identifier-syntax $cdr))
+    (define-syntax fxsll    (identifier-syntax $fxsll))
+    (define-syntax fxsra    (identifier-syntax $fxsra))
+    (define-syntax fxlogor  (identifier-syntax $fxlogor))
+    (define-syntax fxlogand (identifier-syntax $fxlogand))
+    (define-syntax fxlognot (identifier-syntax $fxlognot))
+    (define-syntax fx+      (identifier-syntax $fx+))
+    (define-syntax fxzero?  (identifier-syntax $fxzero?))
     (define-syntax fxeven?
       (syntax-rules ()
-        [(_ x) (#%$fxzero? (#%$fxlogand x 1))])))
+        [(_ x) ($fxzero? ($fxlogand x 1))])))
 
   (define bits 28)
   (define (index-of n) (fxquotient n bits))
@@ -2579,8 +2581,8 @@
        (let ([LCALL (unique-label)])
          (define (rp-label value)
            (if value
-               (label-address SL_multiple_values_error_rp)
-               (label-address SL_multiple_values_ignore_rp)))
+               (label-address (sl-mv-error-rp-label))
+               (label-address (sl-mv-ignore-rp-label))))
          (cond
            [(string? target) ;; foreign call
             (list* `(subl ,(* (fxsub1 size) wordsize) ,fpr)
@@ -2887,7 +2889,7 @@
               (let f ([case* case*])
                 (cond
                   [(null? case*) 
-                   (cons `(jmp (label ,SL_invalid_args)) ac)]
+                   (cons `(jmp (label ,(sl-invalid-args-label))) ac)]
                   [else
                    (ClambdaCase (car case*) (f (cdr case*)))])))))]))
   ;;;

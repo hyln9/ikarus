@@ -284,28 +284,28 @@
 /section)
 
 (section ;;; vectors
-(section ;;; helpers
-  (define (vector-range-check x idx)
-    (define (check-fx i)
-      (seq*
-         (interrupt-unless (tag-test (T x) vector-mask vector-tag))
-         (with-tmp ([len (cogen-value-$vector-length x)])
-           (interrupt-unless (prm 'u< (K (* i wordsize)) len))
-           (interrupt-unless-fixnum len))))
-    (define (check-? idx)
-      (seq*
-        (interrupt-unless (tag-test (T x) vector-mask vector-tag))
-        (with-tmp ([len (cogen-value-$vector-length x)])
-          (interrupt-unless (prm 'u< (T idx) len))
-          (with-tmp ([t (prm 'logor len (T idx))])
-            (interrupt-unless-fixnum t)))))
-    (record-case idx
-      [(constant i)
-       (if (and (fixnum? i) (fx>= i 0)) 
-           (check-fx i)
-           (check-? idx))]
-      [else (check-? idx)]))
-  /section)
+  (section ;;; helpers
+    (define (vector-range-check x idx)
+      (define (check-fx i)
+        (seq*
+           (interrupt-unless (tag-test (T x) vector-mask vector-tag))
+           (with-tmp ([len (cogen-value-$vector-length x)])
+             (interrupt-unless (prm 'u< (K (* i wordsize)) len))
+             (interrupt-unless-fixnum len))))
+      (define (check-? idx)
+        (seq*
+          (interrupt-unless (tag-test (T x) vector-mask vector-tag))
+          (with-tmp ([len (cogen-value-$vector-length x)])
+            (interrupt-unless (prm 'u< (T idx) len))
+            (with-tmp ([t (prm 'logor len (T idx))])
+              (interrupt-unless-fixnum t)))))
+      (record-case idx
+        [(constant i)
+         (if (and (fixnum? i) (fx>= i 0)) 
+             (check-fx i)
+             (check-? idx))]
+        [else (check-? idx)]))
+    /section)
 
 (define-primop vector? unsafe
   [(P x) (sec-tag-test (T x) vector-mask vector-tag fixnum-mask fixnum-tag)]
@@ -434,62 +434,64 @@
 (section ;;; symbols
 
 (define-primop symbol? safe
-  [(P x) (tag-test (T x) symbol-mask symbol-tag)]
+  [(P x) (tag-test (T x) ptag-mask symbol-ptag)]
   [(E x) (nop)])
 
 (define-primop $make-symbol unsafe
   [(V str)
-   (with-tmp ([x (prm 'alloc (K (align symbol-size)) (K symbol-tag))])
-     (prm 'mset x (K (- disp-symbol-string symbol-tag)) (T str))
-     (prm 'mset x (K (- disp-symbol-unique-string symbol-tag)) (K 0))
-     (prm 'mset x (K (- disp-symbol-value symbol-tag)) (K unbound))
-     (prm 'mset x (K (- disp-symbol-plist symbol-tag)) (K nil))
-     (prm 'mset x (K (- disp-symbol-system-value symbol-tag)) (K unbound))
-     (prm 'mset x (K (- disp-symbol-function symbol-tag)) (K 0))
-     (prm 'mset x (K (- disp-symbol-error-function symbol-tag)) (K 0)) 
-     (prm 'mset x (K (- disp-symbol-unused symbol-tag)) (K 0))
+   (with-tmp ([x (prm 'alloc (K (align symbol-record-size)) (K symbol-ptag))])
+     (prm 'mset x (K (- symbol-ptag)) (K symbol-record-tag))
+     (prm 'mset x (K (- disp-symbol-record-string symbol-ptag))  (T str))
+     (prm 'mset x (K (- disp-symbol-record-ustring symbol-ptag)) (K 0))
+     (prm 'mset x (K (- disp-symbol-record-value symbol-ptag))   (K unbound))
+     (prm 'mset x (K (- disp-symbol-record-proc symbol-ptag))    (K unbound))
+     (prm 'mset x (K (- disp-symbol-record-plist symbol-ptag))   (K nil))
+     ;(prm 'mset x (K (- disp-symbol-system-value symbol-tag)) (K unbound))
+     ;(prm 'mset x (K (- disp-symbol-function symbol-ptag)) (K 0))
+     ;(prm 'mset x (K (- disp-symbol-error-function symbol-ptag)) (K 0)) 
+     ;(prm 'mset x (K (- disp-symbol-unused symbol-tag)) (K 0))
      x)]
   [(P str) (K #t)]
   [(E str) (nop)])
 
-(define-primop primitive-set! unsafe
-  [(E x v) (mem-assign v (T x) (- disp-symbol-system-value symbol-tag))])
-
-(define-primop primitive-ref unsafe
-  [(V x) (prm 'mref (T x) (K (- disp-symbol-system-value symbol-tag)))]
-  [(E x) (nop)])
+;(define-primop primitive-set! unsafe
+;  [(E x v) (mem-assign v (T x) (- disp-symbol-system-value symbol-tag))])
+;
+;(define-primop primitive-ref unsafe
+;  [(V x) (prm 'mref (T x) (K (- disp-symbol-system-value symbol-tag)))]
+;  [(E x) (nop)])
 
 (define-primop $symbol-string unsafe
-  [(V x) (prm 'mref (T x) (K (- disp-symbol-string symbol-tag)))]
+  [(V x) (prm 'mref (T x) (K (- disp-symbol-record-string symbol-ptag)))]
   [(E x) (nop)])
 
 (define-primop $set-symbol-string! unsafe
-  [(E x v) (mem-assign v (T x) (- disp-symbol-string symbol-tag))])
+  [(E x v) (mem-assign v (T x) (- disp-symbol-record-string symbol-ptag))])
 
 (define-primop $symbol-unique-string unsafe
-  [(V x) (prm 'mref (T x) (K (- disp-symbol-unique-string symbol-tag)))]
+  [(V x) (prm 'mref (T x) (K (- disp-symbol-record-ustring symbol-ptag)))]
   [(E x) (nop)])
 
 (define-primop $set-symbol-unique-string! unsafe
-  [(E x v) (mem-assign v (T x) (- disp-symbol-unique-string symbol-tag))])
+  [(E x v) (mem-assign v (T x) (- disp-symbol-record-ustring symbol-ptag))])
 
 (define-primop $symbol-plist unsafe
-  [(V x) (prm 'mref (T x) (K (- disp-symbol-plist symbol-tag)))]
+  [(V x) (prm 'mref (T x) (K (- disp-symbol-record-plist symbol-ptag)))]
   [(E x) (nop)])
 
 (define-primop $set-symbol-plist! unsafe
-  [(E x v) (mem-assign v (T x) (- disp-symbol-plist symbol-tag))])
+  [(E x v) (mem-assign v (T x) (- disp-symbol-record-plist symbol-ptag))])
 
 (define-primop $symbol-value unsafe
-  [(V x) (prm 'mref (T x) (K (- disp-symbol-value symbol-tag)))]
+  [(V x) (prm 'mref (T x) (K (- disp-symbol-record-value symbol-ptag)))]
   [(E x) (nop)])
 
 (define-primop $set-symbol-value! unsafe
   [(E x v)
    (with-tmp ([x (T x)])
-     (prm 'mset x (K (- disp-symbol-value symbol-tag)) (T v))
-     (prm 'mset x (K (- disp-symbol-function symbol-tag))
-          (prm 'mref x (K (- disp-symbol-error-function symbol-tag))))
+     (prm 'mset x (K (- disp-symbol-record-value symbol-ptag)) (T v))
+     ;(prm 'mset x (K (- disp-symbol-function symbol-tag))
+     ;     (prm 'mref x (K (- disp-symbol-error-function symbol-tag))))
      (dirty-vector-set x))])
 
 (define-primop top-level-value safe
@@ -524,8 +526,8 @@
 (define-primop $init-symbol-function! unsafe
   [(E x v)
    (with-tmp ([x (T x)] [v (T v)])
-     (prm 'mset x (K (- disp-symbol-function symbol-tag)) v)
-     (prm 'mset x (K (- disp-symbol-error-function symbol-tag)) v)
+     (prm 'mset x (K (- disp-symbol-record-proc symbol-ptag)) v)
+     ;(prm 'mset x (K (- disp-symbol-error-function symbol-tag)) v)
      (dirty-vector-set x))])
 
 
@@ -1236,7 +1238,7 @@
                     (K (align (+ disp-closure-data wordsize)))
                     (K closure-tag))])
      (prm 'mset t (K (- disp-closure-code closure-tag))
-          (K (make-code-loc SL_continuation_code)))
+          (K (make-code-loc (sl-continuation-code-label))))
      (prm 'mset t (K (- disp-closure-data closure-tag))
           (T x))
      t)]
@@ -1244,12 +1246,12 @@
   [(E x) (nop)])
 
 (define-primop $make-call-with-values-procedure unsafe
-  [(V) (K (make-closure (make-code-loc SL_call_with_values) '()))]
+  [(V) (K (make-closure (make-code-loc (sl-cwv-label)) '()))]
   [(P) (interrupt)]
   [(E) (interrupt)])
 
 (define-primop $make-values-procedure unsafe
-  [(V) (K (make-closure (make-code-loc SL_values) '()))]
+  [(V) (K (make-closure (make-code-loc (sl-values-label)) '()))]
   [(P) (interrupt)]
   [(E) (interrupt)])
 

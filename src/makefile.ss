@@ -390,6 +390,7 @@
     [flonum->string          i]
     [gcd                     i r]
     [lcm                     i r]
+    [max                     i r]
     [numerator               i r]
     [denominator             i r]
     [exact-integer-sqrt      i r]

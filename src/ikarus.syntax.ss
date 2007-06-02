@@ -2319,7 +2319,7 @@
                   (f (cdr r)
                      (cons (list* label 'global-macro loc) env)
                      (cons (cons loc (binding-value b)) macro*)))]
-               [($rtd) (f (cdr r) (cons x env) macro*)]
+               [($rtd $module) (f (cdr r) (cons x env) macro*)]
                [else
                 (error #f "don't know how to export ~s ~s"
                        (binding-type b) (binding-value b))])))])))
