@@ -415,7 +415,8 @@
                (stx-error e "unbound identifier"))
              (case type
                [(lexical core-prim macro global local-macro
-                 global-macro displaced-lexical syntax import)
+                 global-macro displaced-lexical syntax import
+                 $module)
                 (values type (binding-value b) id)]
                [else (values 'other #f #f)])))]
         [(syntax-pair? e)
@@ -1657,7 +1658,7 @@
           [(displaced-lexical)
            (stx-error e "identifier out of context")]
           [(syntax) (stx-error e "reference to pattern variable outside a syntax form")]
-          [(define define-syntax module) 
+          [(define define-syntax module import) 
            (stx-error e "invalid expression")]
           [else (error 'chi-expr "invalid type ~s for ~s" type
                        (strip e '())) (stx-error e)]))))
@@ -1858,13 +1859,6 @@
                          (append (map cons xlab* xb*) r)
                          (append (map cons xlab* xb*) mr)
                          lex* rhs* mod** kwd* rib top?))])]
-                 [(module)
-                  (let-values ([(lex* rhs* m-exp-id* m-exp-lab* r mr mod** kwd*)
-                                (chi-internal-module e r mr lex* rhs* mod** kwd*)])
-                    (for-each
-                      (lambda (id lab) (extend-rib/check! rib id lab))
-                      m-exp-id* m-exp-lab*)
-                    (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* rib top?))]
                  [(begin)
                   (syntax-match e ()
                     [(_ x* ...)
@@ -1882,6 +1876,30 @@
                   (chi-body*
                      (cons (add-subst rib (chi-macro value e)) (cdr e*))
                      r mr lex* rhs* mod** kwd* rib top?)]
+                 [(module)
+                  (let-values ([(lex* rhs* m-exp-id* m-exp-lab* r mr mod** kwd*)
+                                (chi-internal-module e r mr lex* rhs* mod** kwd*)])
+                    (for-each
+                      (lambda (id lab) (extend-rib/check! rib id lab))
+                      m-exp-id* m-exp-lab*)
+                    (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* rib top?))]
+                 [(import) 
+                  (let ()
+                    (define (module-import e r)
+                      (syntax-match e ()
+                        [(_ id) (id? id)
+                         (let-values ([(type value kwd) (syntax-type id r)])
+                           (case type
+                             [($module) 
+                              (let ([iface value])
+                                (let ([id* (car iface)] [lab* (cdr iface)])
+                                  (values id* lab*)))]
+                             [else (stx-error e "invalid import")]))]))
+                    (let-values ([(id* lab*) (module-import e r)])
+                      (for-each
+                        (lambda (id lab) (extend-rib/check! rib id lab))
+                        id* lab*)))
+                  (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* rib top?)]
                  [else
                   (if top?
                       (chi-body* (cdr e*) r mr 
