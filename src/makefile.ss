@@ -853,16 +853,10 @@
               [(assq x locs) => cdr]
               [else 
                (error 'bootstrap "no location for ~s" x)])))
-        (let ([p (open-output-file "ikarus.boot.new" 'replace)]
-              [idx 0])
+        (let ([p (open-output-file "ikarus.boot" 'replace)])
           (for-each 
             (lambda (x) 
-              (set! idx (+ idx 1))
-              (cond
-                [(memv idx '(1))
-                 (alt-compile-core-expr-to-port x p)]
-                [else
-                 (compile-core-expr-to-port x p)]))
+              (alt-compile-core-expr-to-port x p))
             core*)
           (close-output-port p)))))
 

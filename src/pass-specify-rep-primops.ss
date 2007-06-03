@@ -439,7 +439,8 @@
 (section ;;; symbols
 
 (define-primop symbol? safe
-  [(P x) (tag-test (T x) ptag-mask symbol-ptag)]
+  [(P x) 
+   (sec-tag-test (T x) vector-mask vector-tag #f symbol-record-tag)]
   [(E x) (nop)])
 
 (define-primop $make-symbol unsafe
@@ -1195,7 +1196,10 @@
          (unless (fixnum? c) (interrupt))
          (prm 'bset/c (T x)
               (K (+ i (- disp-bytevector-data bytevector-tag)))
-              (K c))]
+              (K (cond
+                   [(<= -128 c 127) c]
+                   [(<= 128 c 255) (- c 256)]
+                   [else (interrupt)])))]
         [else
          (prm 'bset/h (T x)
                (K (+ i (- disp-bytevector-data bytevector-tag)))
@@ -1208,7 +1212,10 @@
               (prm 'int+ 
                    (prm 'sra (T i) (K fixnum-shift))
                    (K (- disp-bytevector-data bytevector-tag)))
-              (K c))]
+              (K (cond
+                   [(<= -128 c 127) c]
+                   [(<= 128 c 255) (- c 256)]
+                   [else (interrupt)])))]
         [else
          (prm 'bset/h (T x)
                (prm 'int+ 

@@ -913,6 +913,7 @@
 
   (define (make-empty-set) (make-set '()))
   (define (set-member? x s) 
+    ;(unless (fixnum? x) (error 'set-member? "~s is not a fixnum" x))
     (unless (set? s) (error 'set-member? "~s is not a set" s))
     (memq x (set-v s)))
 
@@ -925,6 +926,7 @@
     (set-v s))
     
   (define (set-add x s)
+    ;(unless (fixnum? x) (error 'set-add "~s is not a fixnum" x))
     (unless (set? s) (error 'set-add "~s is not a set" s))
     (cond
       [(memq x (set-v s)) s]
@@ -937,6 +939,7 @@
       [else (cons (car s) (rem x (cdr s)))])) 
 
   (define (set-rem x s)
+    ;(unless (fixnum? x) (error 'set-rem "~s is not a fixnum" x))
     (unless (set? s) (error 'set-rem "~s is not a set" s))
     (make-set (rem x (set-v s))))
   
@@ -956,6 +959,7 @@
     (make-set (union (set-v s1) (set-v s2))))
 
   (define (list->set ls)
+    ;(unless (andmap fixnum? ls) (error 'set-rem "~s is not a list of fixnum" ls))
     (make-set ls))
 
   (define (union s1 s2)
@@ -992,6 +996,7 @@
   (define (empty-set? s) (eqv? s 0))
   
   (define (set-member? n s) 
+    (unless (fixnum? n) (error 'set-member? "~s is not a fixnum" n))
     (let f ([s s] [i (index-of n)] [j (mask-of n)])
       (cond
         [(pair? s)
@@ -1002,6 +1007,7 @@
         [else #f])))
 
   (define (set-add n s)
+    (unless (fixnum? n) (error 'set-add "~s is not a fixnum" n))
     (let f ([s s] [i (index-of n)] [j (mask-of n)])
       (cond
         [(pair? s)
@@ -1024,6 +1030,7 @@
         (cons a d)))
 
   (define (set-rem n s)
+    (unless (fixnum? n) (error 'set-rem "~s is not a fixnum" n))
     (let f ([s s] [i (index-of n)] [j (mask-of n)])
       (cond
         [(pair? s)
@@ -1087,6 +1094,7 @@
             (fxlogand s1 (fxlognot s2)))))
 
   (define (list->set ls)
+    (unless (andmap fixnum? ls) (error 'list->set "~s is not a list of fixnum" ls))
     (let f ([ls ls] [s 0])
       (cond
         [(null? ls) s]
@@ -2105,7 +2113,7 @@
                  (set-union (R v) s)]
                 [else
                  (set-for-each (lambda (y) (add-edge! g d y)) s)
-                 (set-union (R v) s)]))] 
+                 (set-union (R v) s)]))]
            [(int-/overflow int+/overflow int*/overflow)
             (unless (exception-live-set)
               (error who "uninitialized live set"))
@@ -2567,6 +2575,8 @@
 
 
 
+
+
 (define (flatten-codes x)
   (define who 'flatten-codes)
   ;;;
@@ -2589,7 +2599,7 @@
   (define (BYTE x)
     (record-case x
       [(constant x)
-       (unless (and (integer? x) (fx<= x 255) (fx<= 0 x))
+       (unless (and (integer? x) (fx<= x 255) (fx<= -128 x))
          (error who "invalid byte ~s" x))
        x]
       [else (error who "invalid byte ~s" x)]))
