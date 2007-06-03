@@ -70,6 +70,11 @@
 
 (section ;;; simple objects section
 
+(define-primop base-rtd safe
+  [(V) (prm 'mref pcr (K 44))]
+  [(P) (K #t)]
+  [(E) (prm 'nop)])
+
 (define-primop void safe
   [(V) (K void-object)]
   [(P) (K #t)]
@@ -494,6 +499,7 @@
      ;     (prm 'mref x (K (- disp-symbol-error-function symbol-tag))))
      (dirty-vector-set x))])
 
+
 (define-primop top-level-value safe
   [(V x)
    (record-case x
@@ -668,6 +674,48 @@
   [(P x) (sec-tag-test (T x) vector-mask vector-tag bignum-mask bignum-tag)]
   [(E x) (nop)])
 
+(define-primop $bignum-positive? unsafe
+  [(P x) 
+   (prm '= (prm 'logand
+                (prm 'mref (T x) (K (- vector-tag))) 
+                (K bignum-sign-mask))
+        (K 0))]
+  [(E x) (nop)])
+
+(define-primop $bignum-byte-ref unsafe
+  [(V s i)
+   (record-case i
+     [(constant i)
+      (unless (fixnum? i) (interrupt))
+      (prm 'sll
+        (prm 'logand 
+           (prm 'mref (T s)
+             (K (+ i (- disp-bignum-data record-tag))))
+           (K 255))
+        (K fx-shift))]
+     [else
+      (prm 'sll
+        (prm 'srl ;;; FIXME: bref
+           (prm 'mref (T s)
+                (prm 'int+
+                   (prm 'sra (T i) (K fixnum-shift))
+                   ;;; ENDIANNESS DEPENDENCY
+                   (K (- disp-bignum-data 
+                         (- wordsize 1) 
+                         record-tag))))
+           (K (* (- wordsize 1) 8)))
+        (K fx-shift))])]
+  [(P s i) (K #t)]
+  [(E s i) (nop)])
+
+(define-primop $bignum-size unsafe
+  [(V x) 
+   (prm 'sll
+     (prm 'sra
+       (prm 'mref (T x) (K (- record-tag))) 
+       (K bignum-length-shift))
+     (K (* 2 fx-shift)))])
+
 /section)
 
 (section ;;; flonums
@@ -675,6 +723,31 @@
 (define-primop flonum? safe
   [(P x) (sec-tag-test (T x) vector-mask vector-tag #f flonum-tag)]
   [(E x) (nop)])
+
+/section)
+
+(section ;;; ratnums
+
+(define-primop ratnum? safe
+  [(P x) (sec-tag-test (T x) vector-mask vector-tag #f ratnum-tag)]
+  [(E x) (nop)])
+
+(define-primop $make-ratnum unsafe
+  [(V num den)
+   (with-tmp ([x (prm 'alloc (K (align ratnum-size)) (K vector-tag))])
+     (prm 'mset x (K (- vector-tag)) (K ratnum-tag))
+     (prm 'mset x (K (- disp-ratnum-num vector-tag)) (T num))
+     (prm 'mset x (K (- disp-ratnum-den vector-tag)) (T den))
+     x)]
+  [(P str) (K #t)]
+  [(E str) (nop)])
+
+
+(define-primop $ratnum-n unsafe
+  [(V x) (prm 'mref (T x) (K (- vector-tag disp-ratnum-num)))])
+
+(define-primop $ratnum-d unsafe
+  [(V x) (prm 'mref (T x) (K (- vector-tag disp-ratnum-den)))])
 
 /section)
 
@@ -981,6 +1054,170 @@
 
 /section)
 
+(section ;;; bytevectors
+         
+(define-primop bytevector? safe
+  [(P x) (tag-test (T x) bytevector-mask bytevector-tag)]
+  [(E x) (nop)])
+
+(define-primop $make-bytevector unsafe
+  [(V n)
+   (record-case n
+     [(constant n)
+      (unless (fixnum? n) (interrupt))
+      (with-tmp ([s (prm 'alloc 
+                      (K (align (+ n 1 disp-bytevector-data)))
+                      (K bytevector-tag))])
+         (prm 'mset s
+             (K (- disp-bytevector-length bytevector-tag))
+             (K (* n fixnum-scale)))
+         (prm 'bset/c s
+             (K (+ n (- disp-bytevector-data bytevector-tag)))
+             (K 0))
+         s)]
+     [else
+      (with-tmp ([s (prm 'alloc 
+                      (align-code 
+                        (prm 'sra (T n) (K fixnum-shift))
+                        (+ disp-bytevector-data 1))
+                      (K bytevector-tag))])
+          (prm 'mset s
+            (K (- disp-bytevector-length bytevector-tag))
+            (T n))
+          (prm 'bset/c s
+               (prm 'int+ 
+                    (prm 'sra (T n) (K fixnum-shift))
+                    (K (- disp-bytevector-data bytevector-tag)))
+               (K 0))
+          s)])]
+  [(P n) (K #t)]
+  [(E n) (nop)])
+
+(define-primop $bytevector-length unsafe
+  [(V x) (prm 'mref (T x) (K (- disp-bytevector-length bytevector-tag)))]
+  [(P x) (K #t)]
+  [(E x) (nop)])
+
+(define-primop $bytevector-u8-ref unsafe
+  [(V s i)
+   (record-case i
+     [(constant i)
+      (unless (fixnum? i) (interrupt))
+      (prm 'sll
+        (prm 'logand 
+           (prm 'mref (T s)
+             (K (+ i (- disp-bytevector-data bytevector-tag))))
+           (K 255))
+        (K fx-shift))]
+     [else
+      (prm 'sll
+        (prm 'srl ;;; FIXME: bref
+           (prm 'mref (T s)
+                (prm 'int+
+                   (prm 'sra (T i) (K fixnum-shift))
+                   ;;; ENDIANNESS DEPENDENCY
+                   (K (- disp-bytevector-data 
+                         (- wordsize 1) 
+                         bytevector-tag))))
+           (K (* (- wordsize 1) 8)))
+        (K fx-shift))])]
+  [(P s i) (K #t)]
+  [(E s i) (nop)])
+
+(define-primop $bytevector-s8-ref unsafe
+  [(V s i)
+   (record-case i
+     [(constant i)
+      (unless (fixnum? i) (interrupt))
+      (prm 'srl
+        (prm 'sll
+          (prm 'logand 
+             (prm 'mref (T s)
+               (K (+ i (- disp-bytevector-data bytevector-tag))))
+             (K 255))
+          (K (- (* wordsize 8) 8)))
+        (K (- (* wordsize 8) (+ 8 fx-shift))))]
+     [else
+      (prm 'srl
+        (prm 'sll
+          (prm 'srl ;;; FIXME: bref
+             (prm 'mref (T s)
+                  (prm 'int+
+                     (prm 'sra (T i) (K fixnum-shift))
+                     ;;; ENDIANNESS DEPENDENCY
+                     (K (- disp-bytevector-data 
+                           (- wordsize 1) 
+                           bytevector-tag))))
+             (K (* (- wordsize 1) 8)))
+          (K fx-shift))
+        (K (- (* wordsize 8) (+ 8 fx-shift))))])]
+  [(P s i) (K #t)]
+  [(E s i) (nop)])
+
+#;
+(define (assert-fixnum x)
+  (record-case x
+    [(constant i) 
+     (if (fixnum? i) (nop) (interrupt))]
+    [else (interrupt-unless (cogen-pred-fixnum? x))]))
+#;
+(define (assert-string x)
+  (record-case x
+    [(constant s) (if (string? s) (nop) (interrupt))]
+    [else (interrupt-unless (cogen-pred-string? x))]))
+#;
+(define-primop string-ref safe
+  [(V s i)
+   (seq*
+     (assert-fixnum i)
+     (assert-string s)
+     (interrupt-unless (prm 'u< (T i) (cogen-value-$string-length s)))
+     (cogen-value-$string-ref s i))]
+  [(P s i)
+   (seq*
+     (assert-fixnum i)
+     (assert-string s)
+     (interrupt-unless (prm 'u< (T i) (cogen-value-$string-length s)))
+     (K #t))]
+  [(E s i)
+   (seq*
+     (assert-fixnum i)
+     (assert-string s)
+     (interrupt-unless (prm 'u< (T i) (cogen-value-$string-length s))))])
+
+(define-primop $bytevector-set! unsafe
+  [(E x i c)
+   (record-case i
+     [(constant i) 
+      (unless (fixnum? i) (interrupt))
+      (record-case c
+        [(constant c)
+         (unless (fixnum? c) (interrupt))
+         (prm 'bset/c (T x)
+              (K (+ i (- disp-bytevector-data bytevector-tag)))
+              (K c))]
+        [else
+         (prm 'bset/h (T x)
+               (K (+ i (- disp-bytevector-data bytevector-tag)))
+               (prm 'sll (T c) (K (- 8 fx-shift))))])]
+     [else
+      (record-case c
+        [(constant c)
+         (unless (fixnum? c) (interrupt))
+         (prm 'bset/c (T x) 
+              (prm 'int+ 
+                   (prm 'sra (T i) (K fixnum-shift))
+                   (K (- disp-bytevector-data bytevector-tag)))
+              (K c))]
+        [else
+         (prm 'bset/h (T x)
+               (prm 'int+ 
+                    (prm 'sra (T i) (K fixnum-shift))
+                    (K (- disp-bytevector-data bytevector-tag)))
+               (prm 'sll (T c) (K (- 8 fx-shift))))])])])
+
+/section)
+
 (section ;;; strings
          
 (define-primop string? safe
@@ -993,29 +1230,19 @@
      [(constant n)
       (unless (fixnum? n) (interrupt))
       (with-tmp ([s (prm 'alloc 
-                      (K (align (+ n 1 disp-string-data)))
+                      (K (align (+ (* n wordsize) disp-string-data)))
                       (K string-tag))])
          (prm 'mset s
              (K (- disp-string-length string-tag))
              (K (* n fixnum-scale)))
-         (prm 'bset/c s
-             (K (+ n (- disp-string-data string-tag)))
-             (K 0))
          s)]
      [else
       (with-tmp ([s (prm 'alloc 
-                      (align-code 
-                        (prm 'sra (T n) (K fixnum-shift))
-                        (+ disp-string-data 1))
+                      (align-code (T n) disp-string-data)
                       (K string-tag))])
           (prm 'mset s
             (K (- disp-string-length string-tag))
             (T n))
-          (prm 'bset/c s
-               (prm 'int+ 
-                    (prm 'sra (T n) (K fixnum-shift))
-                    (K (- disp-string-data string-tag)))
-               (K 0))
           s)])]
   [(P n) (K #t)]
   [(E n) (nop)])
@@ -1031,28 +1258,13 @@
    (record-case i
      [(constant i)
       (unless (fixnum? i) (interrupt))
-      (prm 'logor
-        (prm 'sll
-          (prm 'logand 
-             (prm 'mref (T s)
-               (K (+ i (- disp-string-data string-tag))))
-             (K 255))
-          (K char-shift))
-        (K char-tag))]
+      (prm 'mref (T s)
+        (K (+ (* i fixnum-scale) 
+              (- disp-string-data string-tag))))]
      [else
-      (prm 'logor
-        (prm 'sll
-          (prm 'srl ;;; FIXME: bref
-             (prm 'mref (T s)
-                  (prm 'int+
-                     (prm 'sra (T i) (K fixnum-shift))
-                     ;;; ENDIANNESS DEPENDENCY
-                     (K (- disp-string-data 
-                           (- wordsize 1) 
-                           string-tag))))
-             (K (* (- wordsize 1) 8)))
-          (K char-shift))
-        (K char-tag))])]
+      (prm 'mref (T s)
+        (prm 'int+ (T i)
+          (K (- disp-string-data string-tag))))])]
   [(P s i) (K #t)]
   [(E s i) (nop)])
 
@@ -1092,33 +1304,13 @@
    (record-case i
      [(constant i) 
       (unless (fixnum? i) (interrupt))
-      (record-case c
-        [(constant c)
-         (unless (char? c) (interrupt))
-         (prm 'bset/c (T x) 
-              (K (+ i (- disp-string-data string-tag)))
-              (K (char->integer c)))]
-        [else
-         (unless (= char-shift 8) (error 'cogen-$string-set! "BUG"))
-         (prm 'bset/h (T x)
-               (K (+ i (- disp-string-data string-tag)))
-               (T c))])]
+      (prm 'mset (T x) 
+         (K (+ (* i fixnum-scale) (- disp-string-data string-tag)))
+         (T c))]
      [else
-      (record-case c
-        [(constant c)
-         (unless (char? c) (interrupt))
-         (prm 'bset/c (T x) 
-              (prm 'int+ 
-                   (prm 'sra (T i) (K fixnum-shift))
-                   (K (- disp-string-data string-tag)))
-              (K (char->integer c)))]
-        [else
-         (unless (= char-shift 8) (error 'cogen-$string-set! "BUG"))
-         (prm 'bset/h (T x)
-               (prm 'int+ 
-                    (prm 'sra (T i) (K fixnum-shift))
-                    (K (- disp-string-data string-tag)))
-               (T c))])])])
+      (prm 'mset (T x) 
+         (prm 'int+ (T i) (K (- disp-string-data string-tag)))
+         (T c))])])
 
 /section)
 
@@ -1291,7 +1483,7 @@
 
 (section ;;; codes
 
-(define-primop $code? unsafe
+(define-primop code? unsafe
   [(P x) (sec-tag-test (T x) vector-mask vector-tag #f code-tag)])
 
 (define-primop $closure-code unsafe

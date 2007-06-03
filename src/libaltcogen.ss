@@ -1244,6 +1244,73 @@
   #|ListyGraphs|#)
 
 
+(module IntegerGraphs 
+  (empty-graph add-edge! empty-graph? print-graph node-neighbors
+   delete-node!)
+  (import IntegerSet)
+  ;;;
+  (define-record graph (ls))
+  ;;;
+  (define (empty-graph) (make-graph '()))
+  ;;;
+  (define (empty-graph? g) 
+    (andmap (lambda (x) (empty-set? (cdr x))) (graph-ls g)))
+  ;;;
+  (define (single x)
+    (set-add x (make-empty-set)))
+
+  (define (add-edge! g x y)
+    (let ([ls (graph-ls g)])
+      (cond
+        [(assq x ls) =>
+         (lambda (p0)
+           (unless (set-member? y (cdr p0))
+             (set-cdr! p0 (set-add y (cdr p0)))
+             (cond
+               [(assq y ls) => 
+                (lambda (p1) 
+                  (set-cdr! p1 (set-add x (cdr p1))))]
+               [else
+                (set-graph-ls! g 
+                   (cons (cons y (single x)) ls))])))]
+        [(assq y ls) =>
+         (lambda (p1)
+           (set-cdr! p1 (set-add x (cdr p1)))
+           (set-graph-ls! g (cons (cons x (single y)) ls)))]
+        [else 
+         (set-graph-ls! g 
+           (list* (cons x (single y))
+                  (cons y (single x))
+                  ls))])))
+  (define (print-graph g)
+    (printf "G={\n")
+    (parameterize ([print-gensym 'pretty])
+      (for-each (lambda (x) 
+                  (let ([lhs (car x)] [rhs* (cdr x)])
+                    (printf "  ~s => ~s\n" 
+                            (unparse lhs)
+                            (map unparse (set->list rhs*)))))
+        (graph-ls g)))
+    (printf "}\n"))
+  (define (node-neighbors x g)
+    (cond
+      [(assq x (graph-ls g)) => cdr]
+      [else (make-empty-set)]))
+
+  (define (delete-node! x g)
+    (let ([ls (graph-ls g)])
+      (cond
+        [(assq x ls) =>
+         (lambda (p)
+           (for-each (lambda (y) 
+                       (let ([p (assq y ls)])
+                         (set-cdr! p (set-rem x (cdr p)))))
+                     (set->list (cdr p)))
+           (set-cdr! p (make-empty-set)))]
+        [else (void)])))
+  ;;;
+  #|IntegerGraphs|#)
+
 (module (assign-frame-sizes)
   ;;; assign-frame-sizes module
   (define indent (make-parameter 0))
@@ -1997,6 +2064,8 @@
 (module (color-by-chaitin)
   (import ListySet)
   (import ListyGraphs)
+  ;(import IntegerSet)
+  ;(import IntegerGraphs)
   ;;;
   (define (set-for-each f s)
     (for-each f (set->list s)))
@@ -2931,14 +3000,6 @@
         [ls (flatten-codes x)]
        ;[foo (printf "8")]
          )
-    (when #f
-      (parameterize ([gensym-prefix "L"]
-                     [print-gensym #f])
-        (for-each 
-          (lambda (ls)
-            (newline)
-            (for-each (lambda (x) (printf "    ~s\n" x)) ls))
-          ls)))
     ls))
   
 

@@ -406,6 +406,7 @@
     [gensym->unique-string   i symbols]
     [symbol-bound?           i symbols]
     [symbol-value            i symbols]
+    [top-level-value         i symbols]
     [set-symbol-value!       i symbols]
     [make-guardian           i]
     [make-input-port         i]
@@ -520,7 +521,6 @@
     [system                  i]
 
     [installed-libraries     i]
-    [compile-core-expr-to-port   $boot]
     [current-primitive-locations $boot]
     [boot-library-expand         $boot]
     [eval-core                   $boot]
@@ -853,9 +853,16 @@
               [(assq x locs) => cdr]
               [else 
                (error 'bootstrap "no location for ~s" x)])))
-        (let ([p (open-output-file "ikarus.boot" 'replace)])
+        (let ([p (open-output-file "ikarus.boot.new" 'replace)]
+              [idx 0])
           (for-each 
-            (lambda (x) (compile-core-expr-to-port x p))
+            (lambda (x) 
+              (set! idx (+ idx 1))
+              (cond
+                [(memv idx '(1))
+                 (alt-compile-core-expr-to-port x p)]
+                [else
+                 (compile-core-expr-to-port x p)]))
             core*)
           (close-output-port p)))))
 

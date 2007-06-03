@@ -5318,6 +5318,12 @@
 
 (define assembler-output (make-parameter #f))
 
+
+(define eval-core
+  (lambda (x) ((compile-core-expr x))))
+
+(include "libaltcogen.ss")
+
 (define current-primitive-locations
   (let ([plocs (lambda (x) #f)])
     (case-lambda
@@ -5328,12 +5334,6 @@
              (set! plocs p) 
              (refresh-cached-labels!))
            (error 'current-primitive-locations "~s is not a procedure" p))])))
-
-(define eval-core
-  (lambda (x) ((compile-core-expr x))))
-
-(include "libaltcogen.ss")
-
 
 )
 

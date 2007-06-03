@@ -415,7 +415,7 @@
            (lambda (sym)
              (record-symbol-call! sym)
              (prm 'mref (T (K sym))
-                  (K (- disp-symbol-record-proc symbol-ptag))))]
+                  (K (- disp-symbol-record-value symbol-ptag))))]
           [else (nonproc x)])]
        [(primref op) (V x)]
        [else (nonproc x)]))
@@ -468,7 +468,7 @@
         [cmpl ,closure-tag ,cp-register]
         [jne (label ,L1)]
         [movl (disp ,(- disp-symbol-record-value symbol-ptag) (obj ,symbol)) ,cp-register]
-        [movl ,cp-register (disp ,(- disp-symbol-record-proc symbol-ptag) (obj ,symbol))]
+        [movl ,cp-register (disp ,(- disp-symbol-record-value symbol-ptag) (obj ,symbol))]
         [jmp (disp ,(- disp-closure-code closure-tag) ,cp-register)]
         [label ,L1]
         [movl (disp ,(- disp-symbol-record-value symbol-ptag) (obj ,symbol)) %eax]
@@ -507,7 +507,8 @@
        (let ([code* (map Clambda code*)]
              [body (V body)])
          (make-codes code*
-           (make-seq (error-codes) body)))]
+           ;(make-seq (error-codes) body)
+           body))]
       [else (error 'specify-rep "invalid program ~s" x)]))
 
   (define (specify-representation x)
