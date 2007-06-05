@@ -1998,15 +1998,16 @@
     (record-case x 
       [(locals vars body)
        (init-vars! vars)
-       (let ([v (list->vector vars)])
-         (let ([call-live* (uncover-frame-conflicts body v)])
-           (let ([body (rewrite body v)])
+       (let ([varvec (list->vector vars)])
+         (let ([call-live* (uncover-frame-conflicts body varvec)])
+           (let ([body (rewrite body varvec)])
              (make-locals 
-               (let f ([vars vars])
-                 (cond
-                   [(null? vars) '()]
-                   [(var-loc (car vars)) (f (cdr vars))]
-                   [else (cons (car vars) (f (cdr vars)))]))
+               (cons varvec
+                 (let f ([vars vars])
+                   (cond
+                     [(null? vars) '()]
+                     [(var-loc (car vars)) (f (cdr vars))]
+                     [else (cons (car vars) (f (cdr vars)))])))
                body))))]
       [else (error 'assign-frame-sizes "invalid main ~s" x)]))
   ;;;
@@ -2212,7 +2213,7 @@
                    (values (cons sp spills) sp* env))))))]
       [else (error 'color-graph "whoaaa")]))
   ;;;
-  (define (substitute env x frm-graph)
+  (define (substitute env x)
     (define who 'substitute)
     (define (Var x)
       (cond
@@ -2288,24 +2289,20 @@
     ;(print-code x)
     (T x))
   ;;;
-  (define (do-spill sp* g)
+  (define (do-spill sp* varvec)
+    (import conflict-helpers)
     (define (find/set-loc x)
-      (let ([ls (set->list (node-neighbors x g))])
-        (define (conflicts? i ls)
-          (and (pair? ls)
-               (or (record-case (car ls)
-                      [(fvar j)
-                       (and (fixnum? j) (fx= i j))]
-                      [else #f])
-                   (conflicts? i (cdr ls)))))
-        (let f ([i 1])
+      (let f ([i 1] [conf (var-frm-conf x)])
+        (let ([fv (mkfvar i)])
           (cond
-            [(conflicts? i ls) (f (fxadd1 i))]
+            [(mem-frm? fv conf) (f (fxadd1 i) conf)]
             [else
-             (let ([fv (mkfvar i)])
-               (for-each (lambda (y) (add-edge! g y fv)) ls)
-               (delete-node! x g)
-               (cons x fv))]))))
+             (for-each-var (var-var-conf x) varvec
+               (lambda (y) 
+                 (set-var-frm-conf! y 
+                   (add-frm fv (var-frm-conf y)))))
+             (set-var-loc! x fv)
+             (cons x fv)]))))
     (map find/set-loc sp*))
   ;;;
   (define (add-unspillables un* x)
@@ -2477,8 +2474,8 @@
   (define (color-program x)
     (define who 'color-program)
     (record-case x 
-      [(locals sp* body)
-       (let ([frame-g (build-graph body fvar?)])
+      [(locals vars body)
+       (let ([varvec (car vars)] [sp* (cdr vars)])
          (let loop ([sp* (list->set sp*)] [un* (make-empty-set)] [body body])
            (let-values ([(un* body) (add-unspillables un* body)])
              (let ([g (build-graph body 
@@ -2487,10 +2484,10 @@
                              (memq x all-registers))))])
                (let-values ([(spills sp* env) (color-graph sp* un* g)])
                  (cond
-                   [(null? spills) (substitute env body frame-g)]
+                   [(null? spills) (substitute env body)]
                    [else 
-                    (let* ([env (do-spill spills frame-g)]
-                           [body (substitute env body frame-g)])
+                    (let* ([env (do-spill spills varvec)]
+                           [body (substitute env body)])
                       (loop sp* un* body))]))))))]))
   ;;;
   (define (color-by-chaitin x)
