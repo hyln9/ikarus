@@ -856,7 +856,7 @@
         (let ([p (open-output-file "ikarus.boot" 'replace)])
           (for-each 
             (lambda (x) 
-              (alt-compile-core-expr-to-port x p))
+              (compile-core-expr-to-port x p))
             core*)
           (close-output-port p)))))
 

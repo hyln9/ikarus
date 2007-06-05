@@ -5236,7 +5236,7 @@
           (tail-indirect-cpr-call))))
     SL_fx+_overflow]))
 
-(define (compile-core-expr->code p)
+(define (alt-compile-core-expr->code p)
   (let* ([p (recordize p)]
          [p (optimize-direct-calls p)]
          [p (optimize-letrec p)]
@@ -5273,7 +5273,7 @@
                ls*)])
         (car code*)))))
 
-(define (alt-compile-core-expr->code p)
+(define (compile-core-expr->code p)
   (let* ([p (recordize p)]
          [p (parameterize ([open-mvcalls #f])
               (optimize-direct-calls p))]
