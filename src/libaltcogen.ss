@@ -2929,7 +2929,9 @@
     (pretty-print (unparse x))))
 
 (define (alt-cogen x)
-  (verify-new-cogen-input x)
+  (define (time-it name proc)
+    (proc))
+  ;(verify-new-cogen-input x)
   (let* (
        ;[foo (printf "0")]
         [x (remove-primcalls x)]
