@@ -21,103 +21,6 @@
 ;;;  <Program> ::= (codes <clambda>* <Expr>)
 
 
-(define (verify-new-cogen-input x)
-  ;;;
-  (define who 'verify-new-cogen-input)
-  ;;;
-  (define (check-gensym x)
-    (unless (gensym? x)
-      (error who "invalid gensym ~s" x)))
-  ;;;
-  (define (check-label x)
-    (record-case x
-      [(code-loc label)
-       (check-gensym label)]
-      [else (error who "invalid label ~s" x)]))
-  ;;;
-  (define (check-var x)
-    (record-case x 
-      [(var) (void)]
-      [else (error who "invalid var ~s" x)]))
-  ;;;
-  (define (check-closure x)
-    (record-case x
-      [(closure label free*)
-       (check-label label)
-       (for-each check-var free*)]
-      [else (error who "invalid closure ~s" x)]))
-  ;;;
-  (define (check-jmp-target x)
-    (unless (or (gensym? x)
-                (and (pair? x)
-                     (eq? (car x) 'symbol-code)
-                     (symbol? (cdr x))))
-      (error who "invalid jmp target")))
-  ;;;
-  (define (Expr x)
-    (record-case x
-      [(constant) (void)]
-      [(var)      (void)]
-      [(primref)  (void)]
-      [(bind lhs* rhs* body)
-       (for-each check-var lhs*)
-       (for-each Expr rhs*)
-       (Expr body)]
-      [(fix lhs* rhs* body)
-       (for-each check-var lhs*)
-       (for-each check-closure rhs*)
-       (Expr body)]
-      [(conditional e0 e1 e2) 
-       (Expr e0) (Expr e1) (Expr e2)]
-      [(seq e0 e1)
-       (Expr e0) (Expr e1)]
-      [(closure) (check-closure x)]
-      [(primcall op arg*)
-       (for-each Expr arg*)]
-      [(forcall op arg*)
-       (for-each Expr arg*)]
-      [(funcall rator arg*)
-       (Expr rator)
-       (for-each Expr arg*)]
-      [(jmpcall label rator arg*)
-       (check-jmp-target label)
-       (Expr rator)
-       (for-each Expr arg*)]
-      [(mvcall rator k)
-       (Expr rator)
-       (Clambda k)]
-      [else (error who "invalid expr ~s" x)]))
-  ;;;
-  (define (check-info x)
-    (record-case x
-      [(case-info label args proper)
-       (check-gensym label)
-       (for-each check-var args)]
-      [else (error who "invalid case-info ~s" x)]))
-  ;;;
-  (define (ClambdaCase x)
-    (record-case x
-      [(clambda-case info body)
-       (check-info info)
-       (Expr body)]
-      [else (error who "invalid clambda-case ~s" x)]))
-  ;;;
-  (define (Clambda x)
-    (record-case x
-      [(clambda label case* free*)
-       (for-each check-var free*)
-       (for-each ClambdaCase case*)
-       (check-gensym label)]
-      [else (error who "invalid clambda ~s" x)]))
-  ;;;
-  (define (Program x)
-    (record-case x 
-      [(codes code* body)
-       (for-each Clambda code*)
-       (Expr body)]
-      [else (error who "invalid program ~s" x)]))
-  ;;;
-  (Program x))
 
 
 (module (must-open-code? prim-context)
@@ -298,9 +201,9 @@
 ;;; whole primcall business.
 
 
-(define (remove-primcalls x)
+(define (introduce-primcalls x)
   ;;;
-  (define who 'remove-primcalls)
+  (define who 'introduce-primcalls)
   ;;;
   (define (check-gensym x)
     (unless (gensym? x)
@@ -351,8 +254,6 @@
       [(seq e0 e1)
        (make-seq (Expr e0) (Expr e1))]
       [(closure) x]
-      [(primcall op arg*)
-       (mkfuncall (make-primref op) (map Expr arg*))]
       [(forcall op arg*)
        (make-forcall op (map Expr arg*))]
       [(funcall rator arg*)
@@ -2931,24 +2832,13 @@
 (define (alt-cogen x)
   (define (time-it name proc)
     (proc))
-  ;(verify-new-cogen-input x)
-  (let* (
-       ;[foo (printf "0")]
-        [x (remove-primcalls x)]
-       ;[foo (printf "1")]
-        [x (eliminate-fix x)]
-       ;[foo (printf "2")]
-        [x (specify-representation x)]
-       ;[foo (printf "4")]
-        [x (impose-calling-convention/evaluation-order x)]
-       ;[foo (printf "5")]
-        [x (time-it "frame" (lambda () (assign-frame-sizes x)))]
-       ;[foo (printf "6")]
-        [x (time-it "register" (lambda () (color-by-chaitin x)))]
-       ;[foo (printf "7")]
-        [ls (flatten-codes x)]
-       ;[foo (printf "8")]
-         )
+  (let* ([x (introduce-primcalls x)]
+         [x (eliminate-fix x)]
+         [x (specify-representation x)]
+         [x (impose-calling-convention/evaluation-order x)]
+         [x (time-it "frame" (lambda () (assign-frame-sizes x)))]
+         [x (time-it "register" (lambda () (color-by-chaitin x)))]
+         [ls (flatten-codes x)])
     ls))
   
 

@@ -532,7 +532,7 @@
     (cond
       [(null? ls) (make-constant '())]
       [else 
-       (make-primcall 'cons 
+       (make-funcall (make-primref 'cons) 
          (list (car ls) (make-conses (cdr ls))))]))      
   (define (properize lhs* rhs*)
     (cond
@@ -635,8 +635,6 @@
                    (make-clambda-case info (Expr body))]))
               cls*)
          #f)]
-      [(primcall rator rand*) 
-       (make-primcall rator (map Expr rand*))]
       [(funcall rator rand*)
        (inline (Expr rator) (map Expr rand*))]
       [(forcall rator rand*) 
@@ -711,7 +709,7 @@
         (let ([rhs* (do-rhs* 0 lhs* rhs* ref comp vref vcomp)])
           (let-values ([(slhs* srhs* llhs* lrhs* clhs* crhs*)
                         (partition-rhs* 0 lhs* rhs* vref vcomp)])
-           (let ([v* (map (lambda (x) (make-primcall 'void '())) clhs*)])
+           (let ([v* (map (lambda (x) (make-constant (void))) clhs*)])
              (make-bind slhs* srhs*
                (make-bind clhs* v*
                  (make-fix llhs* lrhs*
@@ -762,10 +760,6 @@
                        (make-clambda-case info body)))]))
               cls*)
          #f)]
-      [(primcall rator rand*) 
-       (unless (memq rator simple-primitives)
-         (comp))
-       (make-primcall rator (E* rand* ref comp))]
       [(funcall rator rand*)
        (let ([rator (E rator ref comp)] [rand* (E* rand* ref comp)])
          (record-case rator
@@ -859,6 +853,7 @@
   555 void
   645 list
 |#
+
 
 ;;; FIXME URGENT: should handle (+ x k), (- x k) where k is a fixnum
 ;;;               also fx+, fx-
@@ -972,7 +967,7 @@
                        (mk-seq a1
                          (optimize-primcall ctxt 'eq?
                            (list a0 (make-constant (car ls)))))]
-                      [else (make-primcall '$memq rand*)])))))
+                      [else (make-funcall (make-primref '$memq) rand*)])))))
          (giveup))]
     [(list)
      (case ctxt
@@ -1031,9 +1026,9 @@
                    (or (constant-value a1
                          (lambda (n1)
                            (mk-seq a1
-                             (make-primcall op
+                             (make-funcall (make-primref op)
                                 (list a0 (make-constant n1))))))
-                       (make-primcall op rand*))])))
+                       (make-funcall (make-primref op) rand*))])))
          (error 'optimize "~s rands to ~s" (map unparse rand*) op))]
     [(void)
      (or (and (null? rand*)
@@ -1063,7 +1058,7 @@
                              (mk-seq a
                                (make-constant
                                  (cadr v))))))
-                    (make-primcall op rand*))))
+                    (make-funcall (make-primref op) rand*))))
          (giveup))] 
     [(not null? pair? fixnum? vector? string? char? symbol?
       eof-object?)
@@ -1089,7 +1084,7 @@
                                  [else 
                                   (error 'optimize
                                     "huh ~s" op)])))))
-                       (make-primcall op rand*))])))
+                       (make-funcall (make-primref op) rand*))])))
          (giveup))]
     [($car $cdr)
      (or (and (fx= (length rand*) 1)
@@ -1121,7 +1116,7 @@
                                 (and (fixnum? t)
                                      (mk-seq a 
                                        (make-constant t)))))))
-                    (make-primcall op rand*))))
+                    (make-funcall (make-primref op) rand*))))
          (giveup))]
     [(fx+)
      (or (and (fx= (length rand*) 2)
@@ -1137,15 +1132,15 @@
                                                  (mk-seq (mk-seq a0 a1) 
                                                    (make-constant r)))))))
                                  (mk-seq a1 
-                                   (make-primcall op 
+                                   (make-funcall (make-primref op) 
                                      (list a0 (make-constant v1))))))))
                     (constant-value a0
                       (lambda (v0)
                         (and (fixnum? v0)
                              (mk-seq a0 
-                               (make-primcall op
+                               (make-funcall (make-primref op)
                                   (list (make-constant v0) a1))))))
-                    (make-primcall op rand*))))
+                    (make-funcall (make-primref op) rand*))))
          (giveup))]
     ;X; [(fx- fx+ fx*)
     ;X;  (or (and (fx= (length rand*) 2)
@@ -1190,7 +1185,7 @@
 
 (define (copy-propagate x)
   (define who 'copy-propagate)
-  (define the-void (make-primcall 'void '()))
+  (define the-void (make-constant (void)))
   (define (known-value x) 
     (record-case x 
       [(constant) x] ; known
@@ -1463,7 +1458,7 @@
       [(null? lhs*) body]
       [else
        (make-bind lhs*
-         (map (lambda (rhs) (make-primcall 'vector (list rhs))) rhs*)
+         (map (lambda (rhs) (make-funcall (make-primref 'vector) (list rhs))) rhs*)
          body)]))
   (define (Expr x)
     (record-case x
@@ -1471,7 +1466,7 @@
       [(var) 
        (cond
          [(var-assigned x) 
-          (make-primcall '$vector-ref (list x (make-constant 0)))]
+          (make-funcall (make-primref '$vector-ref) (list x (make-constant 0)))]
          [else x])]
       [(primref) x]
       [(bind lhs* rhs* body)
@@ -1496,8 +1491,6 @@
                           (bind-assigned a-lhs* a-rhs* (Expr body))))])]))
               cls*)
          #f)]
-      [(primcall op rand*)
-       (make-primcall op (map Expr rand*))]
       [(forcall op rand*)
        (make-forcall op (map Expr rand*))]
       [(funcall rator rand*)
@@ -1505,7 +1498,8 @@
       [(assign lhs rhs)
        (unless (var-assigned lhs)
          (error 'rewrite-assignments "not assigned ~s in ~s" lhs x))
-       (make-primcall '$vector-set! (list lhs (make-constant 0) (Expr rhs)))]
+       (make-funcall (make-primref '$vector-set!)
+         (list lhs (make-constant 0) (Expr rhs)))]
       [(mvcall p c) (make-mvcall (Expr p) (Expr c))]
       [else (error who "invalid expression ~s" (unparse x))]))
   (Expr x))
@@ -1551,7 +1545,7 @@
                            (let f ([fml* (cdr fml*)] [rand* rand*])
                              (cond
                                [(null? fml*) 
-                                (list (make-primcall 'list rand*))]
+                                (list (make-funcall (make-primref 'list) rand*))]
                                [else
                                 (cons (car rand*)
                                       (f (cdr fml*) (cdr rand*)))])))
@@ -1581,8 +1575,6 @@
                    (make-clambda-case info (Expr body))]))
               cls*)
          #f)]
-      [(primcall op rand*)
-       (make-primcall op (map Expr rand*))]
       [(forcall op rand*)
        (make-forcall op (map Expr rand*))]
       [(funcall rator rand*)
@@ -1666,9 +1658,6 @@
          (values (make-seq e0 e1) (union e0-free e1-free)))]
       [(clambda)
        (do-clambda ex)]
-      [(primcall op rand*)
-       (let-values ([(rand* rand*-free) (Expr* rand*)])
-         (values (make-primcall op rand*) rand*-free))]
       [(forcall op rand*)
        (let-values ([(rand* rand*-free) (Expr* rand*)])
          (values (make-forcall op rand*)  rand*-free))]
@@ -1830,7 +1819,6 @@
        (make-conditional (E test) (E conseq) (E altern))]
       [(seq e0 e1)           (make-seq (E e0) (E e1))]
       [(closure c free)      (optimize-one-closure c free)]
-      [(primcall op rand*)   (make-primcall op (map E rand*))]
       [(forcall op rand*)    (make-forcall op (map E rand*))]
       [(funcall rator rand*) (make-funcall (E rator) (map E rand*))]
       [(jmpcall label rator rand*) (make-jmpcall label (E rator) (map E rand*))]
@@ -1853,7 +1841,7 @@
 (include "libcogen1.ss")
 
 
-(define (insert-engine-checks x)
+(define (insert-engine-checks-not-working x)
   (define (Tail x)
     (make-seq
       (make-interrupt-call 
@@ -2430,17 +2418,6 @@
           (tail-indirect-cpr-call))))
     SL_fx+_overflow]))
 
-(define (alt-compile-core-expr->code p)
-  (let* ([p (recordize p)]
-         [p (optimize-direct-calls p)]
-         [p (optimize-letrec p)]
-         [p (uncover-assigned/referenced p)]
-         [p (copy-propagate p)]
-         [p (rewrite-assignments p)]
-         [p (optimize-for-direct-jumps p)]
-         [p (convert-closures p)]
-         [p (optimize-closures/lift-codes p)])
-    p ))
 
 (define (compile-core-expr->code p)
   (let* ([p (recordize p)]
