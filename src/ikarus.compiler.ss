@@ -664,7 +664,7 @@
       [else
        (cons (E (car x*) ref comp)
              (E* (cdr x*) ref comp))]))  
-  (define (do-rhs* i lhs* rhs* ref comp vref vcomp)
+  (define (do-rhs*-old i lhs* rhs* ref comp vref vcomp)
     (cond
       [(null? rhs*) '()]
       [else
@@ -681,7 +681,25 @@
                   (vector-set! vcomp i #t)
                   (comp))])
            (cons (E (car rhs*) ref comp)
-                 (do-rhs* (fxadd1 i) lhs* (cdr rhs*) ref comp vref vcomp))))]))
+                 (do-rhs* (fxadd1 i) lhs* (cdr rhs*) ref comp vref vcomp))))])) 
+  (define (do-rhs* i lhs* rhs* ref comp vref vcomp)
+    (cond
+      [(null? rhs*) '()]
+      [else
+       (let ([h (make-hash-table)]
+             [rest (do-rhs* (fxadd1 i) lhs* (cdr rhs*) ref comp vref vcomp)])
+         (let ([ref
+                (lambda (x)
+                  (unless (get-hash-table h x #f)
+                    (put-hash-table! h x #t)
+                    (ref x)
+                    (when (memq x lhs*)
+                      (vector-set! vref i #t))))]
+               [comp
+                (lambda ()
+                  (vector-set! vcomp i #t)
+                  (comp))])
+           (cons (E (car rhs*) ref comp) rest)))]))
   (define (partition-rhs* i lhs* rhs* vref vcomp)
     (cond
       [(null? lhs*) (values '() '() '() '() '() '())]
@@ -710,6 +728,13 @@
           (let-values ([(slhs* srhs* llhs* lrhs* clhs* crhs*)
                         (partition-rhs* 0 lhs* rhs* vref vcomp)])
            (let ([v* (map (lambda (x) (make-constant (void))) clhs*)])
+             ;(let ([ls 
+             ;       (let f ([ls clhs*])
+             ;         (cond
+             ;           [(null? ls) '()]
+             ;           [(var-assigned (car ls)) (f (cdr ls))]
+             ;           [else (cons (var-name (car ls)) (f (cdr ls)))]))])
+             ;  (unless (null? ls) (printf "complex: ~s\n" ls)))
              (make-bind slhs* srhs*
                (make-bind clhs* v*
                  (make-fix llhs* lrhs*
@@ -969,6 +994,17 @@
                            (list a0 (make-constant (car ls)))))]
                       [else (make-funcall (make-primref '$memq) rand*)])))))
          (giveup))]
+    [(length) 
+     (or (and (fx= (length rand*) 1)
+              (let ([a0 (car rand*)])
+                (constant-value a0
+                  (lambda (ls)
+                    (cond
+                      [(not (list? ls)) #f]
+                      [(eq? ctxt 'v) (make-constant (length ls))]
+                      [(eq? ctxt 'e) a0]
+                      [else (mk-seq a0 (make-constant #t))])))))
+         (giveup))] 
     [(list)
      (case ctxt
        [(v) (if (null? rand*) (make-constant '()) (giveup))]

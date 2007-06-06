@@ -1317,7 +1317,7 @@
          [(int-/overflow int+/overflow int*/overflow)
           (let ([v (exception-live-set)])
             (unless (vector? v)
-              (error who "unbound exception"))
+              (error who "unbound exception for ~s ~s" x v))
             (let ([vs (union-vars vs (vector-ref v 0))]
                   [rs (union-regs rs (vector-ref v 1))]
                   [fs (union-frms fs (vector-ref v 2))]
@@ -1407,7 +1407,7 @@
          [(interrupt) 
           (let ([v (exception-live-set)])
             (unless (vector? v)
-              (error who "unbound exception"))
+              (error who "unbound exception2"))
             (values (vector-ref v 0)
                     (vector-ref v 1)
                     (vector-ref v 2)

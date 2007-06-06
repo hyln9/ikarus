@@ -831,6 +831,7 @@
    (cond
      [(non-fixnum? a) (interrupt)]
      [else
+      (interrupt)
       (seq*
         (assert-fixnums a '())
         (prm 'int-/overflow (K 0) (T a)))])]
@@ -838,6 +839,7 @@
    (cond
      [(or (non-fixnum? a) (ormap non-fixnum? a*)) (interrupt)]
      [else
+      (interrupt)
       (seq*
         (assert-fixnums a a*)
         (let f ([a (T a)] [a* a*])
@@ -854,6 +856,7 @@
    (cond
      [(or (non-fixnum? a) (ormap non-fixnum? a*)) (interrupt)]
      [else
+      (interrupt)
       (seq*
         (assert-fixnums a a*)
         (let f ([a (T a)] [a* a*])
