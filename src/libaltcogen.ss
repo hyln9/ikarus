@@ -23,183 +23,6 @@
 
 
 
-(module (must-open-code? prim-context)
-  (define core-prims
-    ;;;ctxt: p=predicate v=value vt=true-value e=effect
-    '([pair?             p]
-      [vector?           p]
-      [null?             p]
-      [bwp-object?       p]
-      [eof-object?       p]
-      [eof-object        vt]
-      [$unbound-object?  p]
-      [procedure?        p]
-      [symbol?           p]
-      [boolean?          p]
-      [string?           p]
-      [char?             p]
-      [fixnum?           p]
-      [string?           p]
-      [immediate?        p]
-      [char?             p]
-      [eq?               p]
-      [not              pv]
-      [void              vt]
-      [$fx+              vt]
-      [$fx-              vt]
-      [$fx*              vt]
-      [$fxadd1           vt]
-      [$fxsub1           vt]
-      [$fxsll            vt]
-      [$fxsra            vt]
-      [$fxlogand         vt]
-      [$fxlogor          vt]
-      [$fxlogxor         vt]
-      [$fxlognot         vt]
-      [$fxmodulo         vt]
-      [$fxquotient       vt]
-      [$fxzero?          p]
-      [$fx>              p]
-      [$fx>=             p]
-      [$fx<              p]
-      [$fx<=             p]
-      [$fx=              p]
-      [-                 v]
-      [+                 v]
-      [=                 p]
-      [<                 p]
-      [<=                p]
-      [>                 p]
-      [>=                p]
-      [zero?             p]
-
-
-      [$char=            p]
-      [$char<            p]
-      [$char<=           p]
-      [$char>            p]
-      [$char>=           p]
-
-      [$char->fixnum     vt]
-      [$fixnum->char     vt]
-
-      [cons              vt]
-      [list              vt]
-      [list*             pv]
-      [car               v]
-      [cdr               v]
-      [$car              v]
-      [$cdr              v]
-      [set-car!          e]
-      [set-cdr!          e]
-      [$set-car!         e]
-      [$set-cdr!         e]
-
-
-      [vector            vt]
-      [$make-vector      vt]
-      [$vector-length    vt]
-      [vector-length     vt]
-      [$vector-ref       v]
-      [vector-ref        v]
-      [vector-set!       e]
-      [$vector-set!      e]
-
-      [$make-string      vt]
-      [$string-length    vt]
-      [$string-ref       vt]
-      [string-ref        vt]
-      [$string-set!      e]
-
-      [$make-symbol               vt]
-      [$set-symbol-value!         e]
-      [$symbol-string             v]
-      [$symbol-unique-string      v]
-      [$set-symbol-unique-string! e]
-      [$symbol-plist              vt]
-      [$set-symbol-plist!         e]
-      [$set-symbol-string!        e]
-      [top-level-value            v]
-      [$symbol-value              v]
-
-      [$memq                     pv]
-      [$procedure-check           v]
-
-      [$record           vt]
-      [$record/rtd?      p]
-      [$record-ref       v]
-      [$record-set!      e]
-      [$record?          p]
-      [$record-rtd       vt]
-      [$make-record      vt]
-
-      ;;; ports
-      [output-port?             p]
-      [input-port?              p]
-      [port?                    p]
-      [$make-port/input         vt]
-      [$make-port/output        vt]
-      [$make-port/both          vt]
-      [$port-handler            vt]
-      [$port-input-buffer       vt]
-      [$port-input-index        vt]
-      [$port-input-size         vt]
-      [$port-output-buffer      vt]
-      [$port-output-index       vt]
-      [$port-output-size        vt]
-      [$set-port-input-index!   e]
-      [$set-port-input-size!    e]
-      [$set-port-output-index!  e]
-      [$set-port-output-size!   e]
-
-      [$code?             p]
-      [$code-size         vt]
-      [$code-reloc-vector vt]
-      [$code-freevars     vt]
-      [$code-ref          vt]
-      [$code-set!         e]
-      [$code->closure     vt]
-      [$closure-code      vt]
-      
-      [$make-tcbucket         vt]
-      [$tcbucket-key           v]
-      [$tcbucket-val           v]
-      [$tcbucket-next         vt]
-      [$set-tcbucket-tconc!    e]
-      [$set-tcbucket-val!      e]
-      [$set-tcbucket-next!     e]
-      
-      [$cpref                  v]
-      [primitive-set!          e]
-      [primitive-ref           v]
-
-      [pointer-value          vt]
-      [$fp-at-base             p]
-      [$current-frame         vt]
-      [$seal-frame-and-call tail]
-      [$frame->continuation   vt]
-      [$forward-ptr?           p]
-
-      [$make-call-with-values-procedure vt]
-      [$make-values-procedure vt]
-      [$arg-list vt]
-      [$interrupted?       p]
-      [$unset-interrupted! e]
-
-      ))
-  (define (must-open-code? x)
-    (and (assq x core-prims) #t))
-  (define (prim-context x)
-    (cond
-      [(assq x core-prims) => cadr]
-      [else (error 'prim-context "~s is not a core prim" x)])))
-
-
-;;; the program so far includes both primcalls and funcalls to
-;;; primrefs.  This pass removes all primcalls.  Once everything
-;;; works, we need to fix all previous passes to eliminate this 
-;;; whole primcall business.
-
 
 (define (introduce-primcalls x)
   ;;;
@@ -376,8 +199,13 @@
 (define parameter-registers '(%edi)) 
 (define return-value-register '%eax)
 (define cp-register '%edi)
-(define all-registers '(%eax %edi %ebx %edx %ecx))
+(define all-registers '(%eax %edi %ebx %edx %ecx)) ; %esi %esp %ebp))
 (define argc-register '%eax)
+
+;;; apr = %ebp
+;;; esp = %esp
+;;; pcr = %esi
+;;; cpr = %edi
 
 (define (register-index x)
   (cond
@@ -1943,7 +1771,7 @@
   (define (set-for-each f s)
     (for-each f (set->list s)))
   ;;;
-  (define (build-graph x reg?)
+  (define (build-graph x)
     (define who 'build-graph)
     (define g (empty-graph))
     (define (R* ls)
@@ -1955,11 +1783,14 @@
         [(constant) (make-empty-set)]
         [(var) (list->set (list x))]
         [(disp s0 s1) (set-union (R s0) (R s1))]
-        [(fvar) (list->set (if (reg? x) (list x) '()))]
+        [(fvar) (make-empty-set)]
         [(code-loc) (make-empty-set)]
         [else
          (cond
-           [(symbol? x) (if (reg? x) (list->set (list x)) (make-empty-set))]
+           [(symbol? x) 
+            (if (memq x all-registers) 
+                (set-add x (make-empty-set))
+                (make-empty-set))]
            [else (error who "invalid R ~s" x)])]))
     ;;; build effect
     (define (E x s)
@@ -2379,10 +2210,7 @@
        (let ([varvec (car vars)] [sp* (cdr vars)])
          (let loop ([sp* (list->set sp*)] [un* (make-empty-set)] [body body])
            (let-values ([(un* body) (add-unspillables un* body)])
-             (let ([g (build-graph body 
-                        (lambda (x) 
-                          (and (symbol? x)
-                             (memq x all-registers))))])
+             (let ([g (build-graph body)])
                (let-values ([(spills sp* env) (color-graph sp* un* g)])
                  (cond
                    [(null? spills) (substitute env body)]
