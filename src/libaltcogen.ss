@@ -2031,6 +2031,8 @@
             [else
              (for-each-var (var-var-conf x) varvec
                (lambda (y) 
+                 (set-var-var-conf! y
+                   (rem-var x (var-var-conf y)))
                  (set-var-frm-conf! y 
                    (add-frm fv (var-frm-conf y)))))
              (set-var-loc! x fv)
