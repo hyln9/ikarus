@@ -568,6 +568,8 @@
       (cond
         [(fixnum? x) (fixnum->flonum x)]
         [(bignum? x) (bignum->flonum x)]
+        [(ratnum? x) 
+         (binary/ (exact->inexact ($ratnum-n x)) ($ratnum-d x))]
         [else
          (error 'exact->inexact 
                 "~s is not an exact number" x)])))

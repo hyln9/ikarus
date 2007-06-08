@@ -761,10 +761,10 @@
 
 
 (define-primop $ratnum-n unsafe
-  [(V x) (prm 'mref (T x) (K (- vector-tag disp-ratnum-num)))])
+  [(V x) (prm 'mref (T x) (K (- disp-ratnum-num vector-tag)))])
 
 (define-primop $ratnum-d unsafe
-  [(V x) (prm 'mref (T x) (K (- vector-tag disp-ratnum-den)))])
+  [(V x) (prm 'mref (T x) (K (- disp-ratnum-den vector-tag)))])
 
 /section)
 
