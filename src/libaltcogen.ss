@@ -9,7 +9,6 @@
 ;;;           | (conditional <Expr> <Expr> <Expr>)
 ;;;           | (seq <Expr> <Expr>)
 ;;;           | (closure <codeloc> <var>*)  ; thunk special case
-;;;           | (primcall op <Expr>*)
 ;;;           | (forcall "name" <Expr>*)
 ;;;           | (funcall <Expr> <Expr>*)
 ;;;           | (jmpcall <label> <Expr> <Expr>*)
@@ -354,6 +353,11 @@
           (S* rands
               (lambda (rands)
                 (make-set d (make-disp (car rands) (cadr rands)))))]
+         [(bref) 
+          (S* rands
+              (lambda (rands)
+                (make-asm-instr 'move-byte d 
+                  (make-disp (car rands) (cadr rands)))))]
          [(logand logxor logor int+ int- int*
                   int-/overflow int+/overflow int*/overflow)
           (make-seq
@@ -1213,7 +1217,7 @@
             (union-nfvs ns1 ns2)))]
       [(asm-instr op d s)
        (case op
-         [(move)
+         [(move move-byte)
           (cond
             [(reg? d)
              (cond
@@ -1584,13 +1588,13 @@
          (make-conditional (P e0) (E e1) (E e2))]
         [(asm-instr op d s)
          (case op
-           [(move) 
+           [(move move-byte) 
             (let ([d (R d)] [s (R s)])
               (cond
                 [(eq? d s) 
                  (make-primcall 'nop '())]
                 [else
-                 (make-asm-instr 'move d s)]))]
+                 (make-asm-instr op d s)]))]
            [(logand logor logxor int+ int- int* mset bset/c bset/h 
               sll sra srl
               cltd idiv int-/overflow int+/overflow int*/overflow)
@@ -1801,6 +1805,11 @@
             (let ([s (set-rem d s)])
               (set-for-each (lambda (y) (add-edge! g d y)) s)
               (set-union (R v) s))]
+           [(move-byte)
+            (let ([s (set-rem d s)])
+              (set-for-each (lambda (y) (add-edge! g d y)) s)
+              (for-each (lambda (r) (add-edge! g d r)) non-8bit-registers)
+              (set-union (R v) s))]
            [(int-/overflow int+/overflow int*/overflow)
             (unless (exception-live-set)
               (error who "uninitialized live set"))
@@ -1814,11 +1823,10 @@
            [(bset/c)
             (set-union (set-union (R v) (R d)) s)]
            [(bset/h)
-            (when (register? eax)
-              (when (var? v)
-                (for-each (lambda (r) (add-edge! g v r))
-                  non-8bit-registers)))
-              (set-union (set-union (R v) (R d)) s)]
+            (when (var? v)
+              (for-each (lambda (r) (add-edge! g v r))
+                non-8bit-registers))
+            (set-union (set-union (R v) (R d)) s)]
            [(cltd)
             (let ([s (set-rem edx s)])
               (when (register? edx)
@@ -2071,7 +2079,7 @@
          (make-conditional (P e0) (E e1) (E e2))]
         [(asm-instr op a b) 
          (case op
-           [(logor logxor logand int+ int- int* move
+           [(logor logxor logand int+ int- int* move move-byte
                    int-/overflow int+/overflow int*/overflow)
             (cond
               [(and (eq? op 'move) (eq? a b)) 
@@ -2285,11 +2293,25 @@
          `(disp ,s0 ,s1))]
       [else
        (if (symbol? x) x (error who "invalid R ~s" x))]))
+  (define (R/l x)
+    (record-case x
+      [(constant c) (C c)]
+      [(fvar i) (FVar i)]
+      [(disp s0 s1) 
+       (let ([s0 (D s0)] [s1 (D s1)])
+         `(disp ,s0 ,s1))]
+      [else
+       (if (symbol? x) (reg/l x) (error who "invalid R/l ~s" x))])) 
   (define (reg/h x)
     (cond
       [(assq x '([%eax %ah] [%ebx %bh] [%ecx %ch] [%edx %dh]))
        => cadr]
       [else (error who "invalid reg/h ~s" x)]))
+  (define (reg/l x)
+    (cond
+      [(assq x '([%eax %al] [%ebx %bl] [%ecx %cl] [%edx %dl]))
+       => cadr]
+      [else (error who "invalid reg/l ~s" x)])) 
   (define (R/cl x)
     (record-case x
       [(constant i) 
@@ -2383,6 +2405,10 @@
           (if (eq? d s)
               ac
               (cons `(movl ,(R s) ,(R d)) ac))]
+         [(move-byte) 
+          (if (eq? d s)
+              ac
+              (cons `(movb ,(R/l s) ,(R/l d)) ac))]
          [(bset/c) (cons `(movb ,(BYTE s) ,(R d)) ac)]
          [(bset/h) (cons `(movb ,(reg/h s) ,(R d)) ac)]
          [(sll)  (cons `(sall ,(R/cl s) ,(R d)) ac)]

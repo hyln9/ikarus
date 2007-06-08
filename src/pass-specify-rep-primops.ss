@@ -725,6 +725,7 @@
   [(P x) (sec-tag-test (T x) vector-mask vector-tag #f flonum-tag)]
   [(E x) (nop)])
 
+
 /section)
 
 (section ;;; ratnums
@@ -1115,15 +1116,12 @@
         (K fx-shift))]
      [else
       (prm 'sll
-        (prm 'srl ;;; FIXME: bref
-           (prm 'mref (T s)
+        (prm 'logand
+           (prm 'bref (T s)
                 (prm 'int+
                    (prm 'sra (T i) (K fixnum-shift))
-                   ;;; ENDIANNESS DEPENDENCY
-                   (K (- disp-bytevector-data 
-                         (- wordsize 1) 
-                         bytevector-tag))))
-           (K (* (- wordsize 1) 8)))
+                   (K (- disp-bytevector-data bytevector-tag))))
+           (K 255))
         (K fx-shift))])]
   [(P s i) (K #t)]
   [(E s i) (nop)])
@@ -1133,7 +1131,7 @@
    (record-case i
      [(constant i)
       (unless (fixnum? i) (interrupt))
-      (prm 'srl
+      (prm 'sra
         (prm 'sll
           (prm 'logand 
              (prm 'mref (T s)
@@ -1142,18 +1140,13 @@
           (K (- (* wordsize 8) 8)))
         (K (- (* wordsize 8) (+ 8 fx-shift))))]
      [else
-      (prm 'srl
+      (prm 'sra
         (prm 'sll
-          (prm 'srl ;;; FIXME: bref
-             (prm 'mref (T s)
-                  (prm 'int+
-                     (prm 'sra (T i) (K fixnum-shift))
-                     ;;; ENDIANNESS DEPENDENCY
-                     (K (- disp-bytevector-data 
-                           (- wordsize 1) 
-                           bytevector-tag))))
-             (K (* (- wordsize 1) 8)))
-          (K fx-shift))
+           (prm 'bref (T s)
+                (prm 'int+
+                   (prm 'sra (T i) (K fixnum-shift))
+                   (K (- disp-bytevector-data bytevector-tag))))
+           (K (- (* wordsize 8) 8)))
         (K (- (* wordsize 8) (+ 8 fx-shift))))])]
   [(P s i) (K #t)]
   [(E s i) (nop)])
