@@ -1808,7 +1808,10 @@
            [(move-byte)
             (let ([s (set-rem d s)])
               (set-for-each (lambda (y) (add-edge! g d y)) s)
-              (for-each (lambda (r) (add-edge! g d r)) non-8bit-registers)
+              (when (var? d)
+                (for-each (lambda (r) (add-edge! g d r)) non-8bit-registers))
+              (when (var? v)
+                (for-each (lambda (r) (add-edge! g v r)) non-8bit-registers))
               (set-union (R v) s))]
            [(int-/overflow int+/overflow int*/overflow)
             (unless (exception-live-set)

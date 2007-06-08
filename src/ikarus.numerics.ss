@@ -188,6 +188,8 @@
             (foreign-call "ikrt_fxbnmult" x y)]
            [(flonum? y)
             ($fl* (fixnum->flonum x) y)]
+           [(ratnum? y) 
+            (binary/ (binary* x ($ratnum-n y)) ($ratnum-d y))]
            [else 
             (error '* "~s is not a number" y)])]
         [(bignum? x)
@@ -198,6 +200,8 @@
             (foreign-call "ikrt_bnbnmult" x y)]
            [(flonum? y)
             ($fl* (bignum->flonum x) y)]
+           [(ratnum? y) 
+            (binary/ (binary* x ($ratnum-n y)) ($ratnum-d y))]
            [else 
             (error '* "~s is not a number" y)])]
         [(flonum? x)
@@ -208,8 +212,15 @@
             ($fl* x (bignum->flonum y))]
            [(flonum? y)
             ($fl* x y)]
+           [(ratnum? y) 
+            (binary/ (binary* x ($ratnum-n y)) ($ratnum-d y))]
            [else
             (error '* "~s is not a number" y)])]
+        [(ratnum? y) 
+         (if (ratnum? x) 
+             (binary/ (binary* ($ratnum-n x) ($ratnum-n y))
+                      (binary* ($ratnum-d x) ($ratnum-d y)))
+             (binary* y x))]
         [else (error '* "~s is not a number" x)])))
 
   (define +
