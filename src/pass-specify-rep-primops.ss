@@ -734,7 +734,7 @@
       (prm 'sll
         (prm 'logand 
            (prm 'bref (T s)
-             (K (+ i (- disp-flonum-data record-tag))))
+             (K (+ (- 7 i) (- disp-flonum-data record-tag))))
            (K 255))
         (K fx-shift))]
      [else (interrupt)])]
