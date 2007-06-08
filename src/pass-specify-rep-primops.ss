@@ -725,6 +725,21 @@
   [(P x) (sec-tag-test (T x) vector-mask vector-tag #f flonum-tag)]
   [(E x) (nop)])
 
+(define-primop $flonum-u8-ref unsafe
+  [(V s i)
+   (record-case i
+     [(constant i)
+      (unless (and (fixnum? i) (fx<= 0 i) (fx<= i 7))
+        (interrupt))
+      (prm 'sll
+        (prm 'logand 
+           (prm 'bref (T s)
+             (K (+ i (- disp-flonum-data record-tag))))
+           (K 255))
+        (K fx-shift))]
+     [else (interrupt)])]
+  [(P s i) (K #t)]
+  [(E s i) (nop)])
 
 /section)
 
@@ -1110,7 +1125,7 @@
       (unless (fixnum? i) (interrupt))
       (prm 'sll
         (prm 'logand 
-           (prm 'mref (T s)
+           (prm 'bref (T s)
              (K (+ i (- disp-bytevector-data bytevector-tag))))
            (K 255))
         (K fx-shift))]
@@ -1134,7 +1149,7 @@
       (prm 'sra
         (prm 'sll
           (prm 'logand 
-             (prm 'mref (T s)
+             (prm 'bref (T s)
                (K (+ i (- disp-bytevector-data bytevector-tag))))
              (K 255))
           (K (- (* wordsize 8) 8)))

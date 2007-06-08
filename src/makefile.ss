@@ -125,6 +125,7 @@
     [$strings    (ikarus system $strings)     #f]
     [$vectors    (ikarus system $vectors)     #f]
     [$bignums    (ikarus system $bignums)     #f]
+    [$flonums    (ikarus system $flonums)     #f]
     [$bytes      (ikarus system $bytevectors) #f]
     [$fx         (ikarus system $fx)          #f]
     [$rat        (ikarus system $ratnums)     #f]
@@ -154,6 +155,7 @@
     [$chars      (ikarus system $chars)       #f]
     [$strings    (ikarus system $strings)     #f]
     [$vectors    (ikarus system $vectors)     #f]
+    [$flonums    (ikarus system $flonums)     #f]
     [$bignums    (ikarus system $bignums)     #f]
     [$bytes      (ikarus system $bytevectors) #f]
     [$fx         (ikarus system $fx)          #f]
@@ -557,6 +559,8 @@
     [$bytevector-s8-ref $bytes]
     [$bytevector-u8-ref $bytes]
     [$bytevector-set!   $bytes]
+
+   ; [$flonum-u8-ref     $flonums]
 
     [$make-bignum       $bignums]
     [$bignum-positive?  $bignums]
