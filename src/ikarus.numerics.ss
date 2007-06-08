@@ -29,7 +29,8 @@
 (library (ikarus generic-arithmetic)
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
           positive? expt gcd lcm numerator denominator exact-integer-sqrt
-          quotient+remainder number->string string->number max)
+          quotient+remainder number->string string->number max
+          exact->inexact)
   (import 
     (ikarus system $fx)
     (ikarus system $ratnums)
@@ -39,6 +40,7 @@
     (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
             remainder quotient+remainder number->string positive?
             string->number expt gcd lcm numerator denominator
+            exact->inexact
             exact-integer-sqrt max))
 
   (define (fixnum->flonum x)

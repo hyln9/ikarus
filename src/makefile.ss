@@ -396,6 +396,7 @@
     [numerator               i r]
     [denominator             i r]
     [exact-integer-sqrt      i r]
+    [exact->inexact          i r]
     [symbol?                 i r symbols]
     [gensym?                 i symbols]
     [gensym                  i symbols]
@@ -560,7 +561,7 @@
     [$bytevector-u8-ref $bytes]
     [$bytevector-set!   $bytes]
 
-   ; [$flonum-u8-ref     $flonums]
+    [$flonum-u8-ref     $flonums]
 
     [$make-bignum       $bignums]
     [$bignum-positive?  $bignums]
