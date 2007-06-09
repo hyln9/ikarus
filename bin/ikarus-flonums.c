@@ -80,6 +80,14 @@ ikrt_fl_sqrt(ikp x, ikpcb* pcb){
   return r;
 }
 
+ikp
+ikrt_fl_log(ikp x, ikpcb* pcb){
+  ikp r = ik_alloc(pcb, flonum_size) + vector_tag;
+  ref(r, -vector_tag) = (ikp)flonum_tag;
+  flonum_data(r) = log(flonum_data(x));
+  return r;
+}
+
 
 
 
@@ -126,6 +134,17 @@ ikrt_fx_atan(ikp x, ikpcb* pcb){
   flonum_data(r) = atan(unfix(x));
   return r;
 }
+
+ikp
+ikrt_fx_log(ikp x, ikpcb* pcb){
+  ikp r = ik_alloc(pcb, flonum_size) + vector_tag;
+  ref(r, -vector_tag) = (ikp)flonum_tag;
+  flonum_data(r) = log(unfix(x));
+  return r;
+}
+
+
+
 
 ikp
 ikrt_flonum_to_bytevector(ikp x, ikp bv, ikpcb* pcb){
