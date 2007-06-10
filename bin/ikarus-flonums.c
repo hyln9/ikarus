@@ -125,8 +125,6 @@ ikrt_fx_sqrt(ikp x, ikpcb* pcb){
   return r;
 }
 
-
-
 ikp
 ikrt_fx_atan(ikp x, ikpcb* pcb){
   ikp r = ik_alloc(pcb, flonum_size) + vector_tag;
@@ -143,34 +141,6 @@ ikrt_fx_log(ikp x, ikpcb* pcb){
   return r;
 }
 
-
-
-
-ikp
-ikrt_flonum_to_bytevector(ikp x, ikp bv, ikpcb* pcb){
-  if(tagof(x) == vector_tag){
-    if(ref(x,-vector_tag) == flonum_tag){
-      char* buff = (char*) bv + off_bytevector_data;
-      int len = unfix(ref(bv, off_bytevector_data));
-      int n = snprintf(buff, len-2, "%.12G", flonum_data(x));
-      if(n >= 0){
-        int i=0;
-        while ((i<n) && (buff[i] != '.')){ i++; }
-        if(i == n){
-          buff[i] = '.';
-          buff[i+1] = '0';
-          buff[i+2] = 0;
-          n += 2;
-        } else {
-          buff[n] = 0;
-        }
-        ref(bv, off_bytevector_length) = fix(n);
-        return bv;
-      }
-    }
-  }
-  return false_object;
-}
 
 ikp
 ikrt_fixnum_to_flonum(ikp x, ikpcb* pcb){

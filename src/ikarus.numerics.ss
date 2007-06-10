@@ -1295,12 +1295,6 @@
     (only (ikarus flonums) flonum-parts)
     (except (ikarus) flonum->string string->flonum ))
   
-  ;(define (flonum->string x)
-  ;  (utf8-bytevector->string
-  ;    (or (foreign-call "ikrt_flonum_to_bytevector" x
-  ;          ($make-bytevector 80))
-  ;        (error 'flonum->string "~s is not a flonum" x))))
-  
   (define (even? n) 
     (= (remainder n 2) 0))
   
