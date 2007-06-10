@@ -566,6 +566,8 @@
     [$bytevector-set!   $bytes]
 
     [$flonum-u8-ref     $flonums]
+    [$make-flonum       $flonums]
+    [$flonum-set!       $flonums]
 
     [$make-bignum       $bignums]
     [$bignum-positive?  $bignums]

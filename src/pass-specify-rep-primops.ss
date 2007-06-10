@@ -741,6 +741,26 @@
   [(P s i) (K #t)]
   [(E s i) (nop)])
 
+(define-primop $make-flonum unsafe
+  [(V)
+   (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
+     (prm 'mset x (K (- vector-tag)) (K flonum-tag))
+     x)]
+  [(P str) (K #t)]
+  [(E str) (nop)])
+
+(define-primop $flonum-set! unsafe
+  [(E x i v)
+   (record-case i
+     [(constant i)
+      (unless (and (fixnum? i) (fx<= 0 i) (fx<= i 7))
+        (interrupt))
+      (prm 'bset/h (T x)
+         (K (+ (- 7 i) (- disp-bytevector-data bytevector-tag)))
+            (prm 'sll (T v) (K (- 8 fx-shift))))]
+     [else (interrupt)])])
+
+
 /section)
 
 (section ;;; ratnums
