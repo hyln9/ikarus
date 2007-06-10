@@ -186,17 +186,13 @@ ikrt_bignum_to_flonum(ikp x, ikpcb* pcb){
   ref(r, -vector_tag) = (ikp)flonum_tag;
   unsigned int fst = (unsigned int) ref(x, -vector_tag);
   int limbs = (fst >> bignum_length_shift);
-  fprintf(stderr, "limbs=%d\n", limbs);
   double fl;
   if(limbs == 1){
     fl = ((unsigned int)ref(x, disp_bignum_data - vector_tag));
   } else if(limbs == 2){
     fl = ((unsigned int)ref(x, wordsize+disp_bignum_data - vector_tag));
-    fprintf(stderr, "fl=%f\t", fl);
     fl *= exp2(32);
-    fprintf(stderr, "fl=%f\t", fl);
     fl += ((unsigned int)ref(x, disp_bignum_data - vector_tag));
-    fprintf(stderr, "fl=%f\n", fl);
   } else {
     fl = 
       ((unsigned int)ref(x, limbs * wordsize - wordsize + 
@@ -213,6 +209,7 @@ ikrt_bignum_to_flonum(ikp x, ikpcb* pcb){
     fl = -fl;
   }
   flonum_data(r) = fl;
+#if 0
   {
     int i;
     unsigned char* p = (unsigned char*)(r+disp_flonum_data-vector_tag);
@@ -221,6 +218,7 @@ ikrt_bignum_to_flonum(ikp x, ikpcb* pcb){
     }
     fprintf(stderr, "\n");
   }
+#endif
   return r;
 }
 
