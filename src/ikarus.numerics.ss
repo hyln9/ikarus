@@ -83,7 +83,7 @@
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
           positive? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number max
-          exact->inexact floor ceiling)
+          exact->inexact floor ceiling log)
   (import 
     (ikarus system $fx)
     (ikarus system $ratnums)
@@ -94,7 +94,7 @@
     (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
             remainder quotient+remainder number->string positive?
             string->number expt gcd lcm numerator denominator
-            exact->inexact floor ceiling
+            exact->inexact floor ceiling log
             exact-integer-sqrt max))
 
   (define (fixnum->flonum x)
@@ -1177,6 +1177,22 @@
       [else (error 'ceiling "~s is not a number" x)]))
 
 
+  (define log
+    (lambda (x)
+      (cond
+        [(fixnum? x) 
+         (cond
+           [($fx= x 1) 0]
+           [($fx= x 0) (error 'log "undefined around 0")]
+           [($fx> x 0) (foreign-call "ikrt_fx_log" x)]
+           [else (error 'log "negative argument ~s" x)])]
+        [(flonum? x) 
+         (cond
+           [(>= x 0) (foreign-call "ikrt_fl_log" x)]
+           [else (error 'log "negative argument ~s" x)])]
+        [(bignum? x) (log (exact->inexact x))]
+        [(ratnum? x) (- (log (numerator x)) (log (denominator x)))]
+        [else (error 'log "~s is not a number" x)])))
 
   (define string->number
     (lambda (x)

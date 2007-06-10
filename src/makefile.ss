@@ -393,6 +393,7 @@
     [gcd                     i r]
     [lcm                     i r]
     [max                     i r]
+    [log                     i r]
     [numerator               i r]
     [denominator             i r]
     [floor                   i r]
