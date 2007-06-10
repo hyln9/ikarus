@@ -756,7 +756,7 @@
       (unless (and (fixnum? i) (fx<= 0 i) (fx<= i 7))
         (interrupt))
       (prm 'bset/h (T x)
-         (K (+ (- 7 i) (- disp-bytevector-data bytevector-tag)))
+         (K (+ (- 7 i) (- disp-flonum-data vector-tag)))
             (prm 'sll (T v) (K (- 8 fx-shift))))]
      [else (interrupt)])])
 

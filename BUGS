@@ -1,3 +1,19 @@
+Email Will Clinger regarding:
+
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD
+Unix:unified)
+
+
+> (exact->inexact #xFFFFFFFFFFFFFFFF)
+9.223372036854776e18
+
+> #xFFFFFFFFFFFFFFFF
+18446744073709551615
+
+======================================================================
+
+
+
 * FIX: Error in generate-code: BUG: unhandles single rv.
 
 
@@ -9,6 +25,7 @@ Not applicable anymore:
 * In libcompile.ss:
   If you move the (initialize-system) call to the very bottom of the
   library, the system crashes on startup.  
+
 
 
 
@@ -27,4 +44,6 @@ Fixed:
    >
 
   Two displays occurred at the end.
+
+
 
