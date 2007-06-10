@@ -1166,36 +1166,6 @@
   [(P s i) (K #t)]
   [(E s i) (nop)])
 
-#;
-(define (assert-fixnum x)
-  (record-case x
-    [(constant i) 
-     (if (fixnum? i) (nop) (interrupt))]
-    [else (interrupt-unless (cogen-pred-fixnum? x))]))
-#;
-(define (assert-string x)
-  (record-case x
-    [(constant s) (if (string? s) (nop) (interrupt))]
-    [else (interrupt-unless (cogen-pred-string? x))]))
-#;
-(define-primop string-ref safe
-  [(V s i)
-   (seq*
-     (assert-fixnum i)
-     (assert-string s)
-     (interrupt-unless (prm 'u< (T i) (cogen-value-$string-length s)))
-     (cogen-value-$string-ref s i))]
-  [(P s i)
-   (seq*
-     (assert-fixnum i)
-     (assert-string s)
-     (interrupt-unless (prm 'u< (T i) (cogen-value-$string-length s)))
-     (K #t))]
-  [(E s i)
-   (seq*
-     (assert-fixnum i)
-     (assert-string s)
-     (interrupt-unless (prm 'u< (T i) (cogen-value-$string-length s))))])
 
 (define-primop $bytevector-set! unsafe
   [(E x i c)

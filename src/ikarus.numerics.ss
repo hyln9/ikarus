@@ -5,9 +5,10 @@
 
 
 (library (ikarus flonums)
-  (export string->flonum flonum->string)
+  (export string->flonum flonum->string $flonum->exact)
   (import 
     (ikarus system $bytevectors)
+    (ikarus system $flonums)
     (except (ikarus) flonum->string string->flonum))
   
   (define (flonum->string x)
@@ -22,7 +23,49 @@
        (foreign-call "ikrt_bytevector_to_flonum" 
          (string->utf8-bytevector x))]
       [else 
-       (error 'string->flonum "~s is not a string" x)])))
+       (error 'string->flonum "~s is not a string" x)]))
+  
+  (define (flonum-bytes f)
+    (unless (flonum? f) 
+      (error 'flonum-bytes "~s is not a flonum" f))
+    (values 
+      ($flonum-u8-ref f 0)
+      ($flonum-u8-ref f 1)
+      ($flonum-u8-ref f 2)
+      ($flonum-u8-ref f 3)
+      ($flonum-u8-ref f 4)
+      ($flonum-u8-ref f 5)
+      ($flonum-u8-ref f 6)
+      ($flonum-u8-ref f 7)))
+  
+  (define (flonum-parts x)
+    (unless (flonum? x) 
+      (error 'flonum-parts "~s is not a flonum" x))
+    (let-values ([(b0 b1 b2 b3 b4 b5 b6 b7) (flonum-bytes x)])
+      (values 
+        (zero? (fxlogand b0 128)) 
+        (+ (fxsll (fxlogand b0 127) 4)
+           (fxsra b1 4))
+        (+ (+ b7 (fxsll b6 8) (fxsll b5 16))
+           (* (+ b4
+                 (fxsll b3 8)
+                 (fxsll b2 16)
+                 (fxsll (fxlogand b1 #b1111) 24))
+              (expt 2 24))))))
+ 
+  (define ($flonum->exact x)
+    (let-values ([(pos? be m) (flonum-parts x)])
+      (cond
+        [(<= 1 be 2046) ; normalized flonum
+         (* (if pos? 1 -1)
+            (* (+ m (expt 2 52)) (expt 2 (- be 1075))))]
+        [(= be 0) 
+         (* (if pos? 1 -1) 
+            (* m (expt 2 -1074)))]
+        [else #f])))
+  
+  
+  )
 
 
 
@@ -30,17 +73,18 @@
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
           positive? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number max
-          exact->inexact)
+          exact->inexact floor ceiling)
   (import 
     (ikarus system $fx)
     (ikarus system $ratnums)
     (ikarus system $bignums)
     (ikarus system $chars)
     (ikarus system $strings)
+    (only (ikarus flonums) $flonum->exact)
     (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
             remainder quotient+remainder number->string positive?
             string->number expt gcd lcm numerator denominator
-            exact->inexact
+            exact->inexact floor ceiling
             exact-integer-sqrt max))
 
   (define (fixnum->flonum x)
@@ -943,7 +987,7 @@
         [(fixnum? m) 
          (if ($fx>= m 0)
              (fxexpt n m)
-             (error 'expt "power should be positive, got ~s" m))]
+             (/ 1 (expt n (- m))))]
         [(bignum? m) 
          (cond
            [(eq? n 0) 0]
@@ -953,11 +997,9 @@
                 (if (even-bignum? m)
                     1
                     -1)
-                (error 'expt "power should be positive, got ~s" m))]
+                (/ 1 (expt n (- m))))]
            [else 
-            (if (positive-bignum? m)
-                (error 'expt "(expt ~s ~s) is too big to compute" n m)
-                (error 'expt "power should be positive, got ~s" m))])]
+            (error 'expt "(expt ~s ~s) is too big to compute" n m)])]
         [else (error 'expt "~s is not a number" m)])))
 
   (define quotient
@@ -1090,6 +1132,41 @@
         [(ratnum? x) ($ratnum-d x)]
         [(or (fixnum? x) (bignum? x)) 1]
         [else (error 'denominator "~s is not an exact integer" x)])))
+
+
+  (define (floor x)
+    (define (ratnum-floor x)
+      (let ([n (numerator x)] [d (denominator x)])
+        (let ([q (quotient n d)])
+          (if (>= n 0) q (- q 1)))))
+    (cond
+      [(flonum? x) 
+       (let ([e (or ($flonum->exact x)
+                    (error 'floor "~s has no real value" x))])
+         (cond
+           [(ratnum? e) (ratnum-floor e)] 
+           [else e]))]
+      [(ratnum? x) (ratnum-floor x)]
+      [(or (fixnum? x) (bignum? x)) x]
+      [else (error 'floor "~s is not a number" x)]))
+  
+  (define (ceiling x)
+    (define (ratnum-ceiling x)
+      (let ([n (numerator x)] [d (denominator x)])
+        (let ([q (quotient n d)])
+          (if (< n 0) q (+ q 1)))))
+    (cond
+      [(flonum? x) 
+       (let ([e (or ($flonum->exact x)
+                    (error 'ceiling "~s has no real value" x))])
+         (cond
+           [(ratnum? e) (ratnum-ceiling e)] 
+           [else e]))]
+      [(ratnum? x) (ratnum-ceiling x)]
+      [(or (fixnum? x) (bignum? x)) x]
+      [else (error 'ceiling "~s is not a number" x)]))
+
+
 
   (define string->number
     (lambda (x)

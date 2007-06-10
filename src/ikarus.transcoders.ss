@@ -104,7 +104,8 @@
                            [(eq? mode 'replace) 
                             (f x i j ($fxadd1 n) mode)]
                            [else
-                            (error who "invalid byte sequence ~s ~s" b0 b1)]))]
+                            (error who "invalid byte sequence ~s ~s
+                                   in idx ~s of ~s" b0 b1 i bv)]))]
                       [(eq? mode 'ignore) n]
                       [(eq? mode 'replace) ($fxadd1 n)]
                       [else

@@ -102,7 +102,10 @@ verify_code_page(unsigned char* p, unsigned int s, unsigned int d,
     unsigned char* base, unsigned int* svec, unsigned int* dvec){
   ikp fst = ref(p, 0);
   fst += 0;
-  assert (fst == code_tag);
+  if(fst != code_tag){
+    fprintf(stderr, "non code object with tag %p found\n", fst);
+    exit(-1);
+  }
   int code_size = unfix(ref(p, disp_code_code_size));
   assert(code_size >= 0);
   int obj_size = align(code_size + disp_code_data);

@@ -234,4 +234,10 @@
 #define off_flonum_data (disp_flonum_data - vector_tag)
 #define flonum_data(x) (*((double*)(((ikp)(x))+off_flonum_data)))
 
+#define ratnum_tag  ((ikp) 0x27)
+#define ratnum_size        16
+#define disp_ratnum_num     4
+#define disp_ratnum_den     8
+#define disp_ratnum_unused 12
+
 #endif

@@ -1100,6 +1100,17 @@ add_object_proc(gc_t* gc, ikp x)
       ref(x, wordsize-vector_tag) = new;
       return new;
     }
+    else if(fst == ratnum_tag){
+      ikp y = gc_alloc_new_data(ratnum_size, gen, gc) + vector_tag;
+      ikp num = ref(x, disp_ratnum_num-vector_tag);
+      ikp den = ref(x, disp_ratnum_den-vector_tag);
+      ref(x, -vector_tag) = forward_ptr;
+      ref(x, wordsize-vector_tag) = y;
+      ref(y, -vector_tag) = fst;
+      ref(y, disp_ratnum_num-vector_tag) = add_object(gc, num, "num");
+      ref(y, disp_ratnum_den-vector_tag) = add_object(gc, den, "den");
+      return y;
+    }
     else {
       fprintf(stderr, "unhandled vector with fst=0x%08x\n", (int)fst);
       assert(0);
@@ -1109,12 +1120,12 @@ add_object_proc(gc_t* gc, ikp x)
   else if(tag == string_tag){
     if(is_fixnum(fst)){
       int strlen = unfix(fst);
-      int memreq = align(strlen*string_char_size + disp_string_data + 1);
+      int memreq = align(strlen*string_char_size + disp_string_data);
       ikp new_str = gc_alloc_new_data(memreq, gen, gc) + string_tag;
       ref(new_str, off_string_length) = fst;
       memcpy(new_str+off_string_data,
              x + off_string_data,
-             strlen*string_char_size + 1);
+             strlen*string_char_size);
       ref(x, -string_tag) = forward_ptr;
       ref(x, wordsize-string_tag) = new_str;
 #if accounting

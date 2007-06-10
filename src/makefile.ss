@@ -395,6 +395,8 @@
     [max                     i r]
     [numerator               i r]
     [denominator             i r]
+    [floor                   i r]
+    [ceiling                 i r]
     [exact-integer-sqrt      i r]
     [exact->inexact          i r]
     [symbol?                 i r symbols]
