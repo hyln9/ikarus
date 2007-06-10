@@ -5,11 +5,12 @@
 
 
 (library (ikarus flonums)
-  (export string->flonum flonum->string $flonum->exact)
+  (export string->flonum flonum->string $flonum->exact
+          inexact->exact)
   (import 
     (ikarus system $bytevectors)
     (ikarus system $flonums)
-    (except (ikarus) flonum->string string->flonum))
+    (except (ikarus) flonum->string string->flonum inexact->exact))
   
   (define (flonum->string x)
     (utf8-bytevector->string
@@ -64,6 +65,15 @@
             (* m (expt 2 -1074)))]
         [else #f])))
   
+
+  (define (inexact->exact x)
+    (cond
+      [(flonum? x)
+       (or ($flonum->exact x)
+           (error 'inexact->exact "~s has no real value" x))]
+      [(or (fixnum? x) (ratnum? x) (bignum? x)) x]
+      [else
+       (error 'inexact->exact "~s is not an inexact number" x)]))
   
   )
 
