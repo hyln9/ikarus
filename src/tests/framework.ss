@@ -12,4 +12,5 @@
                (error 'test-all "~s failed, got ~s" 
                       '(p0 e0) e))) 
            ...
-           (printf "[~s] Happy Happy Joy Joy\n" 'test-all)))])))
+           (printf "[~s: ~s] Happy Happy Joy Joy\n" 
+                   (length '(p0 ...))'test-all  )))])))

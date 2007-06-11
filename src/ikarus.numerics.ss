@@ -861,7 +861,8 @@
   (define-syntax mk<
     (syntax-rules ()
       [(_ name fxfx< fxbn< bnfx< bnbn<
-               fxfl< flfx< bnfl< flbn< flfl<)
+               fxfl< flfx< bnfl< flbn< flfl<
+               fxrt< rtfx< bnrt< rtbn< flrt< rtfl< rtrt<)
        (let ()
          (define err
            (lambda (x) (error 'name "~s is not a number" x)))
@@ -886,6 +887,12 @@
                     (if (fxfl< x y)
                         (flloopt y (car ls) (cdr ls))
                         (loopf (car ls) (cdr ls))))]
+               [(ratnum? y) 
+                (if (null? ls) 
+                    (fxrt< x y)
+                    (if (fxrt< x y)
+                        (rtloopt y (car ls) (cdr ls))
+                        (loopf (car ls) (cdr ls))))]
                [else (err y)])))
          (define bnloopt
            (lambda (x y ls)
@@ -907,6 +914,12 @@
                     (bnfl< x y)
                     (if (bnfl< x y)
                         (flloopt y (car ls) (cdr ls))
+                        (loopf (car ls) (cdr ls))))]
+               [(ratnum? y)
+                (if (null? ls)
+                    (bnrt< x y)
+                    (if (bnrt< x y)
+                        (rtloopt y (car ls) (cdr ls))
                         (loopf (car ls) (cdr ls))))]
                [else (err y)])))
          (define flloopt
@@ -930,7 +943,41 @@
                     (if (flfl< x y)
                         (flloopt y (car ls) (cdr ls))
                         (loopf (car ls) (cdr ls))))]
+               [(flonum? y)
+                (if (null? ls)
+                    (flrt< x y)
+                    (if (flrt< x y)
+                        (rtloopt y (car ls) (cdr ls))
+                        (loopf (car ls) (cdr ls))))]
                [else (err y)])))
+         (define rtloopt
+           (lambda (x y ls)
+             (cond
+               [(fixnum? y)
+                (if (null? ls)
+                    (rtfx< x y)
+                    (if (rtfx< x y)
+                        (fxloopt y (car ls) (cdr ls))
+                        (loopf (car ls) (cdr ls))))]
+               [(bignum? y)
+                (if (null? ls)
+                    (rtbn< x y)
+                    (if (rtbn< x y)
+                        (bnloopt y (car ls) (cdr ls))
+                        (loopf (car ls) (cdr ls))))]
+               [(flonum? y)
+                (if (null? ls)
+                    (rtfl< x y)
+                    (if (rtfl< x y)
+                        (flloopt y (car ls) (cdr ls))
+                        (loopf (car ls) (cdr ls))))]
+               [(flonum? y)
+                (if (null? ls)
+                    (rtrt< x y)
+                    (if (rtrt< x y)
+                        (rtloopt y (car ls) (cdr ls))
+                        (loopf (car ls) (cdr ls))))]
+               [else (err y)]))) 
          (define loopf
            (lambda (x ls)
              (cond
@@ -945,18 +992,28 @@
                  [(fixnum? y) (fxfx< x y)]
                  [(bignum? y) (fxbn< x y)]
                  [(flonum? y) (fxfl< x y)]
+                 [(ratnum? y) (fxrt< x y)]
                  [else (err y)])]
               [(bignum? x)
                (cond
                  [(fixnum? y) (bnfx< x y)]
                  [(bignum? y) (bnbn< x y)]
                  [(flonum? y) (bnfl< x y)]
+                 [(ratnum? y) (bnrt< x y)]
                  [else (err y)])]
               [(flonum? x)
                (cond
                  [(fixnum? y) (flfx< x y)]
                  [(bignum? y) (flbn< x y)]
                  [(flonum? y) (flfl< x y)]
+                 [(ratnum? y) (flrt< x y)]
+                 [else (err y)])]
+              [(ratnum? x)
+               (cond
+                 [(fixnum? y) (rtfx< x y)]
+                 [(bignum? y) (rtbn< x y)]
+                 [(flonum? y) (rtfl< x y)]
+                 [(ratnum? y) (rtrt< x y)]
                  [else (err y)])]
               [else (err x)])]
            [(x y z)
@@ -970,6 +1027,8 @@
                      (and (fxfx< x y) (fxbn< y z))]
                     [(flonum? z)
                      (and (fxfx< x y) (fxfl< y z))]
+                    [(ratnum? z)
+                     (and (fxfx< x y) (fxrt< y z))]
                     [else (err z)])]
                  [(bignum? y)
                   (cond
@@ -978,6 +1037,8 @@
                      (and (fxbn< x y) (bnbn< y z))]
                     [(flonum? z)
                      (and (fxbn< x y) (bnfl< y z))]
+                    [(ratnum? z)
+                     (and (fxbn< x y) (bnrt< y z))]
                     [else (err z)])]
                  [(flonum? y)
                   (cond
@@ -990,9 +1051,12 @@
                           (fxfl< x y)
                           (flbn< y z))]
                     [(flonum? z)
-                     (and (flfl< y z)
-                          (fxfl< x y))]
+                     (and (flfl< y z) (fxfl< x y))]
+                    [(ratnum? z)
+                     (and (fxfl< x y) (flrt< y z))]
                     [else (err z)])]
+                 [(ratnum? y) 
+                  (and (fxrt< x y) (name y z))]
                  [else (err y)])]
               [(bignum? x)
                (cond
@@ -1003,12 +1067,15 @@
                      (and (bnfx< x y) (bnfx< y z))]
                     [(flonum? z)
                      (and (bnfx< x y) (fxfl< y z))]
+                    [(ratnum? z)
+                     (and (bnfx< x y) (fxrt< y z))]
                     [else (err z)])]
                  [(bignum? y)
                   (cond
                     [(fixnum? z) (and (bnfx< y z) (bnbn< x y))]
                     [(bignum? z) (and (bnbn< x y) (bnbn< y z))]
                     [(flonum? z) (and (bnfl< y z) (bnbn< x y))]
+                    [(ratnum? z) (and (bnbn< x y) (bnrt< y z))]
                     [else (err z)])]
                  [(flonum? y) 
                   (cond
@@ -1018,7 +1085,11 @@
                      (and (bnfl< x y) (flbn< y z))]
                     [(flonum? z)
                      (and (flfl< y z) (bnfl< x y))]
+                    [(ratnum? z)
+                     (and (flrt< y z) (bnfl< x y))]
                     [else (err z)])]
+                 [(ratnum? y) 
+                  (and (bnrt< x y) (name y z))]
                  [else (err y)])]
               [(flonum? x) 
                (cond
@@ -1030,6 +1101,8 @@
                      (and (flfx< x y) (fxbn< y z))]
                     [(flonum? z)
                      (and (flfx< x y) (fxfl< y z))]
+                    [(ratnum? z)
+                     (and (flfx< x y) (fxrt< y z))]
                     [else (err z)])]
                  [(bignum? y)  
                   (cond
@@ -1039,6 +1112,8 @@
                      (and (bnbn< y z) (flbn< x y))]
                     [(flonum? z)
                      (and (flbn< x y) (bnfl< y z))]
+                    [(ratnum? z)
+                     (and (flbn< x y) (bnrt< y z))]
                     [else (err z)])]
                  [(flonum? y) 
                   (cond
@@ -1048,8 +1123,14 @@
                      (and (flfl< x y) (flbn< y z))]
                     [(flonum? z)
                      (and (flfl< x y) (flfl< y z))]
+                    [(ratnum? z)
+                     (and (flfl< x y) (flrt< y z))]
                     [else (err z)])]
+                 [(ratnum? y) 
+                  (and (flrt< x y) (name y z))]
                  [else (err y)])]
+              [(ratnum? x) 
+               (and (name x y) (name y z))]
               [else (err x)])]
            [(x) (if (number? x) #t (err x))]
            [(x y . ls) 
@@ -1057,6 +1138,7 @@
               [(fixnum? x) (fxloopt x y ls)]
               [(bignum? x) (bnloopt x y ls)]
               [(flonum? x) (flloopt x y ls)]
+              [(ratnum? x) (rtloopt x y ls)]
               [else (err x)])]))]))
 
   (define-syntax false (syntax-rules () [(_ x y) #f]))
@@ -1106,17 +1188,42 @@
   (flcmp flfl<= flfx<= fxfl<= flbn<= bnfl<= $fl<=)
   (flcmp flfl>= flfx>= fxfl>= flbn>= bnfl>= $fl>=)
 
+  (define-syntax flrt= (syntax-rules () [(_ x y) (= (inexact->exact x) y)]))
+  (define-syntax rtfl= (syntax-rules () [(_ x y) (= x (inexact->exact y))]))
+  (define-syntax flrt<  (syntax-rules () [(_ x y) (< (inexact->exact x) y)]))
+  (define-syntax rtfl<  (syntax-rules () [(_ x y) (< x (inexact->exact y))]))
+  (define-syntax flrt<= (syntax-rules () [(_ x y) (<= (inexact->exact x) y)]))
+  (define-syntax rtfl<= (syntax-rules () [(_ x y) (<= x (inexact->exact y))]))
+  (define-syntax flrt>  (syntax-rules () [(_ x y) (> (inexact->exact x) y)]))
+  (define-syntax rtfl>  (syntax-rules () [(_ x y) (> x (inexact->exact y))]))
+  (define-syntax flrt>= (syntax-rules () [(_ x y) (>= (inexact->exact x) y)]))
+  (define-syntax rtfl>= (syntax-rules () [(_ x y) (>= x (inexact->exact y))]))
+  (define (exrt< x y) (< (* x ($ratnum-d y)) ($ratnum-n y)))
+  (define (rtex< x y) (< ($ratnum-n x) (* y ($ratnum-d x))))
+  (define (rtrt< x y) (< (* ($ratnum-n x) ($ratnum-d y)) (* ($ratnum-n y) ($ratnum-d x))))
+  (define (rtrt<= x y) (<= (* ($ratnum-n x) ($ratnum-d y)) (* ($ratnum-n y) ($ratnum-d x))))
+  (define (exrt> x y) (> (* x ($ratnum-d y)) ($ratnum-n y)))
+  (define (rtex> x y) (> ($ratnum-n x) (* y ($ratnum-d x))))
+  (define (rtrt> x y) (> (* ($ratnum-n x) ($ratnum-d y)) (* ($ratnum-n y) ($ratnum-d x))))
+  (define (rtrt>= x y) (>= (* ($ratnum-n x) ($ratnum-d y)) (* ($ratnum-n y) ($ratnum-d x))))
+  (define (rtrt= x y)
+    (and (= ($ratnum-n x) ($ratnum-n y)) (= ($ratnum-d x) ($ratnum-d y))))
 
   (define = 
-    (mk< = $fx= false false bnbn= fxfl= flfx= bnfl= flbn= flfl=))
+    (mk< = $fx= false false bnbn= fxfl= flfx= bnfl= flbn= flfl=
+               false false false false flrt= rtfl= rtrt=))
   (define < 
-    (mk< < $fx< fxbn< bnfx< bnbn< fxfl< flfx< bnfl< flbn< flfl<))
+    (mk< < $fx< fxbn< bnfx< bnbn< fxfl< flfx< bnfl< flbn< flfl<
+               exrt< rtex< exrt< rtex< flrt< rtfl< rtrt<))
   (define >
-    (mk< > $fx> fxbn> bnfx> bnbn> fxfl> flfx> bnfl> flbn> flfl>))
+    (mk< > $fx> fxbn> bnfx> bnbn> fxfl> flfx> bnfl> flbn> flfl>
+               exrt> rtex> exrt> rtex> flrt> rtfl> rtrt>))
   (define <= 
-    (mk< <= $fx<= fxbn< bnfx< bnbn<= fxfl<= flfx<= bnfl<= flbn<= flfl<=))
+    (mk< <= $fx<= fxbn< bnfx< bnbn<= fxfl<= flfx<= bnfl<= flbn<= flfl<=
+               exrt< rtex< exrt< rtex< flrt<= rtfl<= rtrt<=))
   (define >= 
-    (mk< >= $fx>= fxbn> bnfx> bnbn>= fxfl>= flfx>= bnfl>= flbn>= flfl>=))
+    (mk< >= $fx>= fxbn> bnfx> bnbn>= fxfl>= flfx>= bnfl>= flbn>= flfl>=
+               exrt> rtex> exrt> rtex> flrt>= rtfl>= rtrt>=))
 
   (define add1
     (lambda (x)
@@ -1360,6 +1467,7 @@
         [(bignum? x) (log (exact->inexact x))]
         [(ratnum? x) (- (log (numerator x)) (log (denominator x)))]
         [else (error 'log "~s is not a number" x)])))
+
 
   (define string->number
     (lambda (x)
