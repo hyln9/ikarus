@@ -386,6 +386,9 @@
             (foreign-call "ikrt_fxbnminus" x y)]
            [(flonum? y)
             ($fl- (fixnum->flonum x) y)]
+           [(ratnum? y) 
+            (let ([n ($ratnum-n y)] [d ($ratnum-d y)])
+              (binary/ (binary- (binary* d x) n) d))]
            [else 
             (error '- "~s is not a number" y)])]
         [(bignum? x)
@@ -396,6 +399,9 @@
             (foreign-call "ikrt_bnbnminus" x y)]
            [(flonum? y)
             ($fl- (bignum->flonum x) y)]
+           [(ratnum? y) 
+            (let ([n ($ratnum-n y)] [d ($ratnum-d y)])
+              (binary/ (binary- (binary* d x) n) d))]
            [else 
             (error '- "~s is not a number" y)])]
         [(flonum? x)
@@ -406,8 +412,22 @@
             ($fl- x (bignum->flonum y))]
            [(flonum? y)
             ($fl- x y)]
+           [(ratnum? y) 
+            (let ([n ($ratnum-n y)] [d ($ratnum-d y)])
+              (binary/ (binary- (binary* d x) n) d))]
            [else
             (error '- "~s is not a number" y)])]
+        [(ratnum? x)
+         (let ([nx ($ratnum-n x)] [dx ($ratnum-d x)])
+           (cond
+             [(or (fixnum? y) (bignum? y) (flonum? y))
+              (binary/ (binary- nx (binary* dx y)) dx)]
+             [(ratnum? y)
+              (let ([ny ($ratnum-n y)] [dy ($ratnum-d y)])
+                (binary/ (binary- (binary* nx dy) (binary* ny dx))
+                         (binary* dx dy)))]
+             [else
+              (error '- "~s is not a number" y)]))]
         [else (error '- "~s is not a number" x)])))
 
   (define binary*
