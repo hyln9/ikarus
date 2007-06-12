@@ -1500,112 +1500,202 @@
         [(ratnum? x) (- (log (numerator x)) (log (denominator x)))]
         [else (error 'log "~s is not a number" x)])))
 
-
   (define string->number
     (lambda (x)
-      (define (convert-data str len pos? idx ac)
+      (define (convert-char c radix)
+        (case radix
+          [(10) 
+           (cond
+             [(char<=? #\0 c #\9) 
+              (fx- (char->integer c) (char->integer #\0))]
+             [else #f])]
+          [(16) 
+           (cond
+             [(char<=? #\0 c #\9) 
+              (fx- (char->integer c) (char->integer #\0))]
+             [(char<=? #\a c #\f) 
+              (fx- (char->integer c) (fx- (char->integer #\a) 10))]
+             [(char<=? #\A c #\F)
+              (fx- (char->integer c) (fx- (char->integer #\A) 10))]
+             [else #f])]
+          [(8) 
+           (cond
+             [(char<=? #\0 c #\7) 
+              (fx- (char->integer c) (char->integer #\0))]
+             [else #f])] 
+          [(2) 
+           (case c
+             [(#\0) 0]
+             [(#\1) 1]
+             [else #f])]
+          [else (error 'convert-char "invalid radix ~s" radix)]))
+      (define (parse-exponent-start x n i radix)
+        (define (parse-exponent x n i radix ac) 
+          (cond
+            [(fx= i n) ac]
+            [else
+             (let ([c (string-ref x i)])
+               (cond
+                 [(convert-char c radix) =>
+                  (lambda (d)
+                    (parse-exponent x n (fxadd1 i) radix
+                      (+ d (* ac radix))))]
+                 [else #f]))]))
+        (define (parse-exponent-sign x n i radix)
+          (cond
+            [(fx= i n) #f]
+            [else
+             (let ([c (string-ref x i)])
+               (cond
+                 [(convert-char c radix) =>
+                  (lambda (d) (parse-exponent x n (fxadd1 i) radix d))]
+                 [else #f]))]))
         (cond
-          [($fx= idx len) (if pos? ac (- 0 ac))]
+          [(fx= i n) #f]
           [else
-           (let ([c ($string-ref str idx)])
+           (let ([c (string-ref x i)])
              (cond
-               [(and ($char<= #\0 c) ($char<= c #\9))
-                (convert-data str len pos? ($fxadd1 idx) 
-                   (+ (* ac 10)
-                      ($fx- ($char->fixnum c) ($char->fixnum #\0))))]
+               [(convert-char c radix) =>
+                (lambda (d)
+                  (parse-exponent x n (fxadd1 i) radix d))]
+               [(char=? c #\+) 
+                (parse-exponent-sign x n (fxadd1 i) radix)]
+               [(char=? c #\-) 
+                (let ([v (parse-exponent-sign x n (fxadd1 i) radix)])
+                  (and v (- v)))]
                [else #f]))]))
-      (define (convert-data-init str len pos? idx c)
+      (define (parse-decimal x n i pos? radix exact? ac exp)
         (cond
-          [($char= c #\0) 
-           (if ($fx= idx len)
-               0
-               (convert-data-init str len pos? 
-                  ($fxadd1 idx) 
-                  ($string-ref str idx)))]
-          [(and ($char<= #\1 c) ($char<= c #\9))
-           (convert-data str len pos? idx
-              ($fx- ($char->fixnum c) ($char->fixnum #\0)))]
-          [else #f]))
-      (define (convert-num str len pos?)
-        (cond
-          [($fx> len 1)
-           (convert-data-init str len pos? 2 ($string-ref str 1))]
-          [else #f]))
-      (define (digit c radix)
-        (cond
-          [(and ($char<= #\0 c) ($char<= c #\9)) 
-           (let ([n ($fx- ($char->fixnum c) ($char->fixnum #\0))])
-             (and
-               (or ($fx>= radix 10)
-                   (and ($fx= radix 8) ($char<= c #\7))
-                   (and ($fx= radix 2) ($char<= c #\1)))
-               n))]
-          [(and ($char<= #\a c) ($char<= c #\f)) 
-           (let ([n ($fx+ 10 ($fx- ($char->fixnum c) ($char->fixnum #\a)))])
-             (and ($fx= radix 16) n))] 
-          [(and ($char<= #\A c) ($char<= c #\F)) 
-           (let ([n ($fx+ 10 ($fx- ($char->fixnum c) ($char->fixnum #\A)))])
-             (and ($fx= radix 16) n))] 
-          [else #f]))
-      (define (convert-subseq str idx len radix ac)
-        (cond
-          [($fx< idx len)
-           (let ([c (string-ref str idx)])
+          [(fx= i n) 
+           (let ([ac (* (if pos? ac (- ac)) (expt radix exp))])
+             (exact-conv (or exact? 'i) ac))]
+          [else
+           (let ([c (string-ref x i)])
              (cond
-               [(digit c radix) =>
-                (lambda (n) 
-                  (convert-subseq str ($fxadd1 idx) len radix
-                    (+ (* ac radix) n)))]
-               [else #f]))]
-          [else ac]))
-      (define (convert-init str idx len radix)
+               [(convert-char c radix) =>
+                (lambda (d)
+                  (parse-decimal x n (fxadd1 i) pos? radix exact? 
+                    (+ (* ac radix) d) (fxsub1 exp)))]
+               [(memv c '(#\e #\E)) 
+                (let ([ex (parse-exponent-start x n (fxadd1 i) radix)])
+                  (and ex 
+                       (exact-conv (or exact? 'i) 
+                         (* (if pos? ac (- ac)) (expt radix (+ exp ex))))))]
+               [else #f]))]))
+      (define (parse-decimal-no-digits x n i pos? radix exact?)
         (cond
-          [($fx< idx len)
-           (let ([c (string-ref str idx)])
+          [(fx= i n) #f]
+          [else
+           (let ([c (string-ref x i)])
              (cond
-               [(digit c radix) =>
-                (lambda (n) 
-                  (convert-subseq str ($fxadd1 idx) len radix n))]
-               [else #f]))]
-          [else #f]))
-      (define (convert-init-sign str idx len radix)
+               [(convert-char c radix) =>
+                (lambda (d)
+                  (parse-decimal x n (fxadd1 i) pos? radix exact?  d -1))]
+               [else #f]))])) 
+      (define (parse-integer x n i pos? radix exact? ac)
+        (define (parse-denom-start x n i radix)
+          (define (parse-denom x n i radix ac)
+            (cond
+              [(fx= n i) ac]
+              [else
+               (let ([c (string-ref x i)])
+                 (cond
+                   [(convert-char c radix) =>
+                    (lambda (d)
+                      (parse-denom x n (fxadd1 i) radix 
+                        (+ (* radix ac) d)))]
+                   [else #f]))]))
+          (cond
+            [(fx= n i) #f]
+            [else
+             (let ([c (string-ref x i)])
+               (cond
+                 [(convert-char c radix) =>
+                  (lambda (d) 
+                    (parse-denom x n (fxadd1 i) radix d))]
+                 [else #f]))]))
         (cond
-          [($fx< idx len)
-           (let ([c (string-ref str idx)])
+          [(fx= i n)
+           (let ([ac (exact-conv exact? ac)])
+             (if pos? ac (- ac)))]
+          [else
+           (let ([c (string-ref x i)])
              (cond
+               [(convert-char c radix) =>
+                (lambda (d)
+                  (parse-integer x n (fxadd1 i) pos? radix exact? (+ (* ac radix) d)))]
+               [(char=? c #\.) 
+                (parse-decimal x n (fxadd1 i) pos? radix exact? ac 0)]
+               [(char=? c #\/) 
+                (let ([denom (parse-denom-start x n (fxadd1 i) radix)])
+                  (and denom 
+                       (not (= denom 0))
+                       (let ([ac (exact-conv exact? ac)])
+                         (/ (if pos? ac (- ac)) denom))))]
+               [(memv c '(#\e #\E))
+                (let ([ex (parse-exponent-start x n (fxadd1 i) radix)])
+                  (and ex 
+                       (let ([ac (exact-conv (or exact? 'i) ac)])
+                         (* (if pos? ac (- ac)) (expt radix ex)))))]
+               [else #f]))]))
+      (define (parse-integer-no-digits x n i pos? radix exact?) 
+        (cond
+          [(fx= i n) #f]
+          [else
+           (let ([c (string-ref x i)])
+             (cond
+               [(convert-char c radix) =>
+                (lambda (d)
+                  (parse-integer x n (fxadd1 i) pos? radix exact? d))]
+               [(char=? c #\.) 
+                (parse-decimal-no-digits x n (fxadd1 i) pos? radix exact?)]
+               [else #f]))]))
+      (define (exact-conv exact? x)
+        (and x (if (eq? exact? 'i) (exact->inexact x) x)))
+      (define (start x n i exact? radix?)
+        (cond
+          [(fx= i n) #f]
+          [else
+           (let ([c (string-ref x i)])
+             (cond
+               [(char=? c #\-) 
+                (parse-integer-no-digits x n (fxadd1 i) #f (or radix? 10) exact?)]
                [(char=? c #\+)
-                (convert-init str ($fxadd1 idx) len radix)]
-               [(char=? c #\-)
-                (let ([n (convert-init str ($fxadd1 idx) len radix)])
-                  (and n (- n)))]
-               [else (convert-init str idx len radix)]))]
-          [else #f]))
-      (define (convert-radix str len)
+                (parse-integer-no-digits x n (fxadd1 i) #t (or radix? 10) exact?)]
+               [(char=? c #\#)
+                (let ([i (fxadd1 i)])
+                  (cond
+                    [(fx= i n) #f]
+                    [else
+                     (let ([c (string-ref x i)])
+                       (case c
+                         [(#\x #\X) 
+                          (and (not radix?) (start x n (fxadd1 i) exact? 16))]
+                         [(#\b #\B) 
+                          (and (not radix?) (start x n (fxadd1 i) exact? 2))]
+                         [(#\o #\O) 
+                          (and (not radix?) (start x n (fxadd1 i) exact? 8))]
+                         [(#\d #\D) 
+                          (and (not radix?) (start x n (fxadd1 i) exact? 10))]
+                         [(#\e #\E) 
+                          (and (not exact?) (start x n (fxadd1 i) 'e radix?))]
+                         [(#\i #\I) 
+                          (and (not exact?) (start x n (fxadd1 i) 'i radix?))]
+                         [else #f]))]))]
+               [(char=? c #\.)
+                (parse-decimal-no-digits x n (fxadd1 i) #t (or radix?  10) exact?)]
+               [(convert-char c (or radix? 10)) =>
+                (lambda (d)
+                  (parse-integer x n (fxadd1 i) #t (or radix? 10) exact? d))]
+               [else #f]))]))
+      ;;;
+      (unless (string? x)
+        (error 'string->number "~s is not a string" x))
+      (let ([n (string-length x)])
         (cond
-          [($fx>= len 2)
-           (let ([c (string-ref str 1)])
-             (case c
-               [(#\x #\X) (convert-init-sign str 2 len 16)]
-               [(#\b #\B) (convert-init-sign str 2 len 2)]
-               [(#\d #\D) (convert-init-sign str 2 len 10)]
-               [(#\o #\O) (convert-init-sign str 2 len 8)]
-               [else #f]))]
-          [else #f]))
-      (define (convert-sign str len)
-        (cond
-          [($fx> len 0)
-           (let ([c ($string-ref str 0)])
-             (case c
-               [(#\+) (convert-num str len #t)]
-               [(#\-) (convert-num str len #f)]
-               [(#\#) (convert-radix str len)]
-               [else
-                (convert-data-init str len #t 1 c)]))]
-          [else #f]))
-      (cond
-        [(string? x) 
-         (convert-sign x ($string-length x))]
-        [else (error 'string->number "~s is not a string" x)])))
+          [(fx> n 0) (start x n 0 #f #f)]
+          [else #f]))))
+
   )
 
 

@@ -3,7 +3,8 @@
 (import (ikarus)
         (tests reader)
         (tests bytevectors)
-        (tests bignum-to-flonum))
+        (tests bignum-to-flonum)
+        (tests string-to-number))
 
 (define (test-exact-integer-sqrt)
   (define (f i j inc)
@@ -22,4 +23,5 @@
 (test-bytevectors)
 (test-exact-integer-sqrt)
 (test-bignum-to-flonum)
+(test-string-to-number)
 (printf "Happy Happy Joy Joy\n")
