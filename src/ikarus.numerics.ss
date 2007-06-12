@@ -1016,162 +1016,49 @@
                [(number? x) 
                 (or (null? ls) (loopf (car ls) (cdr ls)))]
                [else (err x)])))
-         (case-lambda
-           [(x y)
-            (cond
-              [(fixnum? x)
-               (cond
-                 [(fixnum? y) (fxfx< x y)]
-                 [(bignum? y) (fxbn< x y)]
-                 [(flonum? y) (fxfl< x y)]
-                 [(ratnum? y) (fxrt< x y)]
-                 [else (err y)])]
-              [(bignum? x)
-               (cond
-                 [(fixnum? y) (bnfx< x y)]
-                 [(bignum? y) (bnbn< x y)]
-                 [(flonum? y) (bnfl< x y)]
-                 [(ratnum? y) (bnrt< x y)]
-                 [else (err y)])]
-              [(flonum? x)
-               (cond
-                 [(fixnum? y) (flfx< x y)]
-                 [(bignum? y) (flbn< x y)]
-                 [(flonum? y) (flfl< x y)]
-                 [(ratnum? y) (flrt< x y)]
-                 [else (err y)])]
-              [(ratnum? x)
-               (cond
-                 [(fixnum? y) (rtfx< x y)]
-                 [(bignum? y) (rtbn< x y)]
-                 [(flonum? y) (rtfl< x y)]
-                 [(ratnum? y) (rtrt< x y)]
-                 [else (err y)])]
-              [else (err x)])]
-           [(x y z)
-            (cond
-              [(fixnum? x)
-               (cond
-                 [(fixnum? y)
-                  (cond
-                    [(fixnum? z) (and (fxfx< x y) (fxfx< y z))]
-                    [(bignum? z)
-                     (and (fxfx< x y) (fxbn< y z))]
-                    [(flonum? z)
-                     (and (fxfx< x y) (fxfl< y z))]
-                    [(ratnum? z)
-                     (and (fxfx< x y) (fxrt< y z))]
-                    [else (err z)])]
-                 [(bignum? y)
-                  (cond
-                    [(fixnum? z) #f]
-                    [(bignum? z) 
-                     (and (fxbn< x y) (bnbn< y z))]
-                    [(flonum? z)
-                     (and (fxbn< x y) (bnfl< y z))]
-                    [(ratnum? z)
-                     (and (fxbn< x y) (bnrt< y z))]
-                    [else (err z)])]
-                 [(flonum? y)
-                  (cond
-                    [(fixnum? z) 
-                     (and (fxfx< x z) 
-                          (fxfl< x y)
-                          (flfx< y z))]
-                    [(bignum? z)
-                     (and (fxbn< x z)
-                          (fxfl< x y)
-                          (flbn< y z))]
-                    [(flonum? z)
-                     (and (flfl< y z) (fxfl< x y))]
-                    [(ratnum? z)
-                     (and (fxfl< x y) (flrt< y z))]
-                    [else (err z)])]
-                 [(ratnum? y) 
-                  (and (fxrt< x y) (name y z))]
-                 [else (err y)])]
-              [(bignum? x)
-               (cond
-                 [(fixnum? y)
-                  (cond
-                    [(fixnum? z) (and (fxfx< y z) (bnfx< x y))]
-                    [(bignum? z)
-                     (and (bnfx< x y) (bnfx< y z))]
-                    [(flonum? z)
-                     (and (bnfx< x y) (fxfl< y z))]
-                    [(ratnum? z)
-                     (and (bnfx< x y) (fxrt< y z))]
-                    [else (err z)])]
-                 [(bignum? y)
-                  (cond
-                    [(fixnum? z) (and (bnfx< y z) (bnbn< x y))]
-                    [(bignum? z) (and (bnbn< x y) (bnbn< y z))]
-                    [(flonum? z) (and (bnfl< y z) (bnbn< x y))]
-                    [(ratnum? z) (and (bnbn< x y) (bnrt< y z))]
-                    [else (err z)])]
-                 [(flonum? y) 
-                  (cond
-                    [(fixnum? z) 
-                     (and (flfx< y z) (bnfl< x y))]
-                    [(bignum? z)
-                     (and (bnfl< x y) (flbn< y z))]
-                    [(flonum? z)
-                     (and (flfl< y z) (bnfl< x y))]
-                    [(ratnum? z)
-                     (and (flrt< y z) (bnfl< x y))]
-                    [else (err z)])]
-                 [(ratnum? y) 
-                  (and (bnrt< x y) (name y z))]
-                 [else (err y)])]
-              [(flonum? x) 
-               (cond
-                 [(fixnum? y)  
-                  (cond
-                    [(fixnum? z)
-                     (and (fxfx< y z) (flfx< x y))]
-                    [(bignum? z)
-                     (and (flfx< x y) (fxbn< y z))]
-                    [(flonum? z)
-                     (and (flfx< x y) (fxfl< y z))]
-                    [(ratnum? z)
-                     (and (flfx< x y) (fxrt< y z))]
-                    [else (err z)])]
-                 [(bignum? y)  
-                  (cond
-                    [(fixnum? z)
-                     (and (bnfx< y z) (flbn< x y))]
-                    [(bignum? z)
-                     (and (bnbn< y z) (flbn< x y))]
-                    [(flonum? z)
-                     (and (flbn< x y) (bnfl< y z))]
-                    [(ratnum? z)
-                     (and (flbn< x y) (bnrt< y z))]
-                    [else (err z)])]
-                 [(flonum? y) 
-                  (cond
-                    [(fixnum? z)
-                     (and (flfx< y z) (flfl< x y))]
-                    [(bignum? z)
-                     (and (flfl< x y) (flbn< y z))]
-                    [(flonum? z)
-                     (and (flfl< x y) (flfl< y z))]
-                    [(ratnum? z)
-                     (and (flfl< x y) (flrt< y z))]
-                    [else (err z)])]
-                 [(ratnum? y) 
-                  (and (flrt< x y) (name y z))]
-                 [else (err y)])]
-              [(ratnum? x) 
-               (and (name x y) (name y z))]
-              [else (err x)])]
-           [(x) (if (number? x) #t (err x))]
-           [(x y . ls) 
-            (cond
-              [(fixnum? x) (fxloopt x y ls)]
-              [(bignum? x) (bnloopt x y ls)]
-              [(flonum? x) (flloopt x y ls)]
-              [(ratnum? x) (rtloopt x y ls)]
-              [else (err x)])]))]))
+         (define f
+           (case-lambda
+             [(x y)
+              (cond
+                [(fixnum? x)
+                 (cond
+                   [(fixnum? y) (fxfx< x y)]
+                   [(bignum? y) (fxbn< x y)]
+                   [(flonum? y) (fxfl< x y)]
+                   [(ratnum? y) (fxrt< x y)]
+                   [else (err y)])]
+                [(bignum? x)
+                 (cond
+                   [(fixnum? y) (bnfx< x y)]
+                   [(bignum? y) (bnbn< x y)]
+                   [(flonum? y) (bnfl< x y)]
+                   [(ratnum? y) (bnrt< x y)]
+                   [else (err y)])]
+                [(flonum? x)
+                 (cond
+                   [(fixnum? y) (flfx< x y)]
+                   [(bignum? y) (flbn< x y)]
+                   [(flonum? y) (flfl< x y)]
+                   [(ratnum? y) (flrt< x y)]
+                   [else (err y)])]
+                [(ratnum? x)
+                 (cond
+                   [(fixnum? y) (rtfx< x y)]
+                   [(bignum? y) (rtbn< x y)]
+                   [(flonum? y) (rtfl< x y)]
+                   [(ratnum? y) (rtrt< x y)]
+                   [else (err y)])]
+                [else (err x)])]
+             [(x y z) (and (f x y) (f y z))]
+             [(x) (if (number? x) #t (err x))]
+             [(x y . ls) 
+              (cond
+                [(fixnum? x) (fxloopt x y ls)]
+                [(bignum? x) (bnloopt x y ls)]
+                [(flonum? x) (flloopt x y ls)]
+                [(ratnum? x) (rtloopt x y ls)]
+                [else (err x)])]))
+         f)]))
 
   (define-syntax false (syntax-rules () [(_ x y) #f]))
   (define-syntax bnbncmp

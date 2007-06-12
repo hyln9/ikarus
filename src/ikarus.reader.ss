@@ -251,9 +251,17 @@
   (module (tok-exact tok-radix tok-real tok-real-sign tok-real-digit tok-real-decpt)
     (define (eof-error)
       (error 'tokenize "eof encountered while reading a number"))
+    ;(define-syntax digit? syntax-error)
     (define (digit? c)
       (memq c '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9 
                 #\a #\b #\c #\d #\e #\f #\A #\B #\C #\D #\E #\F)))
+    (define (digit/radix? c radix)
+      (case radix
+        [(10) (char<=? #\0 c #\9)]
+        [(16) (or (char<=? #\0 c #\9) (char<=? #\a c #\f) (char<=?  #\A c #\F))]
+        [(8) (char<=? #\0 c #\7)]
+        [(2) (memv c '(#\0 #\1))]
+        [else #f]))
     (define (exponent-marker? c)
       (memq c '(#\e #\E #\s #\S #\f #\F #\d #\D #\l #\L)))
     (define (tok-complex-sign p)
