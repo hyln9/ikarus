@@ -100,7 +100,7 @@
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
           positive? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number max
-          exact->inexact floor ceiling log)
+          exact->inexact floor ceiling log fl<?)
   (import 
     (ikarus system $fx)
     (ikarus system $flonums)
@@ -113,7 +113,8 @@
             remainder quotient+remainder number->string positive?
             string->number expt gcd lcm numerator denominator
             exact->inexact floor ceiling log
-            exact-integer-sqrt max))
+            exact-integer-sqrt max
+            fl<?))
 
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))
@@ -1134,6 +1135,48 @@
     (syntax-rules () [(_ x y) (foreign-call "ikrt_fl_less" y x)]))
   (define-syntax $fl>=
     (syntax-rules () [(_ x y) (foreign-call "ikrt_fl_less_or_equal" y x)]))
+
+  (define fl<?
+    (case-lambda
+      [(x y) 
+       (if (flonum? x)
+           (if (flonum? y) 
+               ($fl< x y)
+               (error 'fl<? "~s is not a flonum" y))
+           (error 'fl<? "~s is not a flonum" x))]
+      [(x y z) 
+       (if (flonum? x)
+           (if (flonum? y) 
+               (if (flonum? z) 
+                   (and ($fl< x y) ($fl< y z))
+                   (error 'fl<? "~s is not a flonum" z))
+               (error 'fl<? "~s is not a flonum" y))
+           (error 'fl<? "~s is not a flonum" x))]
+      [(x) 
+       (or (flonum? x)
+           (error 'fl<? "~s is not a flonum" x))]
+      [(x y . rest) 
+       (let ()
+         (define (loopf a ls)
+           (unless (flonum? a) 
+             (error 'fl<? "~s is not a flonum" a))
+           (if (null? ls) 
+               #f
+               (loopf (car ls) (cdr ls))))
+         (if (flonum? x) 
+             (if (flonum? y) 
+                 (if ($fl< x y) 
+                     (let f ([x y] [y (car rest)] [ls (cdr rest)])
+                       (if (flonum? y) 
+                           (if (null? ls)
+                               ($fl< x y)
+                               (if ($fl< x y) 
+                                   (f y (car ls) (cdr ls))
+                                   (loopf (car ls) (cdr ls))))
+                           (error 'fl<? "~s is not a flonum" y)))
+                     (loopf (car rest) (cdr rest)))
+                 (error 'fl<? "~s is not a flonum" y))
+             (error 'fl<? "~s is not a flonum" x)))]))
 
   (flcmp flfl= flfx= fxfl= flbn= bnfl= $fl=)
   (flcmp flfl< flfx< fxfl< flbn< bnfl< $fl<)
