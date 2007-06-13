@@ -14,6 +14,7 @@
             null? pair? weak-pair? symbol? code? not eq? eqv? equal?
             port? input-port? output-port?)
     (ikarus system $fx)
+    (ikarus system $flonums)
     (ikarus system $pairs)
     (ikarus system $chars)
     (ikarus system $strings)
@@ -76,7 +77,7 @@
         [(sys:fixnum? x) #t]
         [(sys:bignum? x) #t]
         [(sys:ratnum? x) #t]
-        [(sys:flonum? x) #f]
+        [(sys:flonum? x) ($flonum-rational? x)]
         [else (error 'rational? "~s is not a number" x)])))
 
   (define integer? 
@@ -85,7 +86,7 @@
         [(sys:fixnum? x) #t]
         [(sys:bignum? x) #t]
         [(sys:ratnum? x) #f]
-        [(sys:flonum? x) (error 'integer "dunno for ~s" x)]
+        [(sys:flonum? x) ($flonum-integer? x)]
         [else #f])))
 
   (define exact?
@@ -93,6 +94,7 @@
       (cond
         [(sys:fixnum? x) #t]
         [(sys:bignum? x) #t]
+        [(sys:ratnum? x) #t]
         [(sys:flonum? x) #f]
         [else 
          (error 'exact? "~s is not a number" x)])))

@@ -6,10 +6,12 @@
 
 
 (library (ikarus flonums)
-  (export $flonum->exact flonum-parts inexact->exact)
+  (export $flonum->exact $flonum-signed-biased-exponent flonum-parts
+          inexact->exact $flonum-rational? $flonum-integer?)
   (import 
     (ikarus system $bytevectors)
-    (ikarus system $flonums)
+    (except (ikarus system $flonums) $flonum-signed-biased-exponent
+            $flonum-rational? $flonum-integer?)
     (except (ikarus) inexact->exact))
   
   (define (flonum-bytes f)
@@ -38,7 +40,37 @@
                  (fxsll b2 16)
                  (fxsll (fxlogand b1 #b1111) 24))
               (expt 2 24))))))
- 
+
+  (define ($flonum-signed-biased-exponent x)
+    (let ([b0 ($flonum-u8-ref x 0)]
+          [b1 ($flonum-u8-ref x 1)])
+      (fxlogor (fxsll b0 4) (fxsra b1 4))))
+
+  (define ($flonum-rational? x)
+    (let ([be (fxlogand ($flonum-signed-biased-exponent x) (sub1 (fxsll 1 11)))])
+      (fx< be 2047)))
+
+  (define ($flonum-integer? x)
+    (let ([be (fxlogand ($flonum-signed-biased-exponent x) (sub1 (fxsll 1 11)))])
+      (cond
+        [(fx= be 2047)  ;;; nans and infs
+         #f]
+        [(fx>= be 1075) ;;; magnitue large enough
+         #t]
+        [(fx= be 0) ;;; denormalized double, only +/-0.0 is integer
+         (and (fx= ($flonum-u8-ref x 7) 0)
+              (fx= ($flonum-u8-ref x 6) 0) 
+              (fx= ($flonum-u8-ref x 5) 0) 
+              (fx= ($flonum-u8-ref x 4) 0) 
+              (fx= ($flonum-u8-ref x 3) 0) 
+              (fx= ($flonum-u8-ref x 2) 0) 
+              (fx= ($flonum-u8-ref x 1) 0))]
+        [(fx<= be (fx+ 1075 -52)) ;;; too small to be an integer
+         #f]
+        [else
+         (let ([v ($flonum->exact x)])
+           (or (fixnum? v) (bignum? v)))])))
+
   (define ($flonum->exact x)
     (let-values ([(pos? be m) (flonum-parts x)])
       (cond
