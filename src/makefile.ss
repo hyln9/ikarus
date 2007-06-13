@@ -373,6 +373,7 @@
     [fl>?                    i rfl]
     [fl>=?                   i rfl]
     [fl+                     i rfl]
+    [fl*                     i rfl]
     [fl-                     i rfl]
     [fixnum->string          i]
     [string->flonum          i]
