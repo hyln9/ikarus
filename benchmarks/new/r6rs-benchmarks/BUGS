@@ -1,0 +1,11 @@
+* conform needs char-downcase.
+* maze needs bitwise-and
+* ray needs call-with-output-file/truncate.
+
+* ctak crashes with a bus error.
+* fibc crashes with a segfault.
+* fibfp does not terminate
+* mbrot too slow
+* ntakl kinda slow
+* pnpoly kinda slow
+

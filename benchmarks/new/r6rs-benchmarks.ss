@@ -1,9 +1,60 @@
 
 (library (r6rs-benchmarks)
-  (export run-benchmark 
+  (export run-benchmark fatal-error include-source
      ack-iters 
-     fib-iters)
+     array1-iters
+     boyer-iters
+     browse-iters
+     cat-iters
+     conform-iters
+     cpstak-iters
+     ctak-iters
+     dderiv-iters
+     deriv-iters
+     destruc-iters
+     diviter-iters
+     divrec-iters
+     dynamic-iters
+     earley-iters
+     fib-iters
+     fibc-iters
+     fibfp-iters
+     gcbench-iters
+     gcold-iters
+     graphs-iters
+     lattice-iters
+     matrix-iters
+     mazefun-iters
+     mbrot-iters
+     nboyer-iters
+     nqueens-iters
+     takl-iters
+     paraffins-iters
+     parsing-iters
+     perm9-iters
+     pnpoly-iters
+     peval-iters
+     pi-iters)
   (import (ikarus))
+
+  (define-syntax include-source
+    (lambda (x)
+      (syntax-case x ()
+        [(ctxt name) 
+         (cons #'begin
+           (with-input-from-file 
+             (format "r6rs-benchmarks/~a" (syntax->datum #'name))
+             (lambda ()
+               (let f ()
+                 (let ([x (read)])
+                   (cond
+                     [(eof-object? x) '()]
+                     [else 
+                      (cons (datum->syntax #'ctxt x) (f))]))))))])))
+
+  (define (fatal-error . args)
+    (error 'fatal-error "~a"
+      (apply (lambda (x) (format "~a" x)) args)))
   
   (define (run-bench count run)
     (unless (= count 0)
