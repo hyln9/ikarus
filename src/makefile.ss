@@ -397,6 +397,7 @@
     [rational?               i r]
     [flonum?                 i]
     [positive?               i r]
+    [even?                   i r]
     [quotient                i r]
     [modulo                  i r]
     [remainder               i r]
