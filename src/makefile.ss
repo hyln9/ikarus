@@ -393,6 +393,7 @@
     [bignum?                 i]
     [ratnum?                 i]
     [integer?                i r]
+    [exact?                  i r]
     [rational?               i r]
     [flonum?                 i]
     [positive?               i r]
