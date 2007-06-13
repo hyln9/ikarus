@@ -118,6 +118,7 @@
           modulo even? odd?
           positive? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number min max
+          abs
           exact->inexact floor ceiling round log fl=? fl<? fl<=? fl>?
           fl>=? fl+ fl- fl* fl/ flsqrt flmin flzero? flnegative?)
   (import 
@@ -132,7 +133,7 @@
             remainder modulo even? odd? quotient+remainder number->string positive?
             string->number expt gcd lcm numerator denominator
             exact->inexact floor ceiling round log
-            exact-integer-sqrt min max
+            exact-integer-sqrt min max abs
             fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt flmin
             flzero? flnegative?))
 
@@ -869,6 +870,22 @@
            x 
            (error 'min "~s is not a number" x))]))
 
+  (define (abs x)
+    (cond
+      [(fixnum? x) 
+       (if ($fx< x 0) (- x) x)]
+      [(bignum? x)
+       (if ($bignum-positive? x) x (- x))]
+      [(flonum? x)
+       (if ($flnegative? x) 
+           ($fl* x (exact->inexact -1))
+           x)]
+      [(ratnum? x) 
+       (let ([n ($ratnum-n x)])
+         (if (< n 0) 
+             ($make-ratnum (- n) ($ratnum-d x))
+             x))]
+      [else (error 'abs "~s is not a number" x)]))
 
   (define flmin
     (case-lambda

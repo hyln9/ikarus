@@ -416,6 +416,7 @@
     [lcm                     i r]
     [max                     i r]
     [min                     i r]
+    [abs                     i r]
     [log                     i r]
     [numerator               i r]
     [denominator             i r]
