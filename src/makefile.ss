@@ -460,7 +460,7 @@
     [file-exists?            i]
     [display                 i r]
     [write                   i r]
-    [write-char              i]
+    [write-char              i r]
     [write-byte              i]
     [read                    i r]
     [read-char               i r]
