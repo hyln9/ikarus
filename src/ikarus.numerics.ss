@@ -98,6 +98,7 @@
 
 (library (ikarus generic-arithmetic)
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
+          modulo
           positive? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number min max
           exact->inexact floor ceiling round log fl=? fl<? fl<=? fl>?
@@ -111,7 +112,7 @@
     (ikarus system $strings)
     (only (ikarus flonums) $flonum->exact)
     (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
-            remainder quotient+remainder number->string positive?
+            remainder modulo quotient+remainder number->string positive?
             string->number expt gcd lcm numerator denominator
             exact->inexact floor ceiling round log
             exact-integer-sqrt min max

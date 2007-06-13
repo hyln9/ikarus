@@ -398,6 +398,7 @@
     [flonum?                 i]
     [positive?               i r]
     [quotient                i r]
+    [modulo                  i r]
     [remainder               i r]
     [quotient+remainder      i r]
     [number->string          i r]
