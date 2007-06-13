@@ -7,7 +7,7 @@
 
 (library (ikarus flonums)
   (export $flonum->exact $flonum-signed-biased-exponent flonum-parts
-          inexact->exact $flonum-rational? $flonum-integer?)
+          inexact->exact $flonum-rational? $flonum-integer? $flzero?)
   (import 
     (ikarus system $bytevectors)
     (except (ikarus system $flonums) $flonum-signed-biased-exponent
@@ -71,6 +71,18 @@
          (let ([v ($flonum->exact x)])
            (or (fixnum? v) (bignum? v)))])))
 
+  (define ($flzero? x)
+    (let ([be (fxlogand ($flonum-signed-biased-exponent x) (sub1 (fxsll 1 11)))])
+       (and 
+         (fx= be 0) ;;; denormalized double, only +/-0.0 is integer
+         (and (fx= ($flonum-u8-ref x 7) 0)
+              (fx= ($flonum-u8-ref x 6) 0) 
+              (fx= ($flonum-u8-ref x 5) 0) 
+              (fx= ($flonum-u8-ref x 4) 0) 
+              (fx= ($flonum-u8-ref x 3) 0) 
+              (fx= ($flonum-u8-ref x 2) 0) 
+              (fx= ($flonum-u8-ref x 1) 0)))))
+
   (define ($flonum->exact x)
     (let-values ([(pos? be m) (flonum-parts x)])
       (cond
@@ -102,7 +114,7 @@
           positive? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number min max
           exact->inexact floor ceiling round log fl=? fl<? fl<=? fl>?
-          fl>=? fl+ fl- fl* fl/ flsqrt)
+          fl>=? fl+ fl- fl* fl/ flsqrt flzero?)
   (import 
     (ikarus system $fx)
     (ikarus system $flonums)
@@ -110,13 +122,14 @@
     (ikarus system $bignums)
     (ikarus system $chars)
     (ikarus system $strings)
-    (only (ikarus flonums) $flonum->exact)
+    (only (ikarus flonums) $flonum->exact $flzero?)
     (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
             remainder modulo even? odd? quotient+remainder number->string positive?
             string->number expt gcd lcm numerator denominator
             exact->inexact floor ceiling round log
             exact-integer-sqrt min max
-            fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt))
+            fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt
+            flzero?))
 
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))
@@ -1462,6 +1475,12 @@
       (if (flonum? x) 
           (foreign-call "ikrt_fl_sqrt" x)
           (error 'flsqrt "~s is not a flonum" x))))
+
+  (define flzero?
+    (lambda (x)
+      (if (flonum? x) 
+          ($flzero? x)
+          (error 'flzero? "~s is not a flonum" x))))
 
   (define exact-integer-sqrt
     (lambda (x)

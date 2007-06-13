@@ -377,6 +377,7 @@
     [fl-                     i rfl]
     [fl/                     i rfl]
     [flsqrt                  i rfl]
+    [flzero?                 i rfl]
     [fixnum->string          i]
     [string->flonum          i]
     [-                       i r]
