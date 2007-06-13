@@ -975,7 +975,7 @@
                     (if (flfl< x y)
                         (flloopt y (car ls) (cdr ls))
                         (loopf (car ls) (cdr ls))))]
-               [(flonum? y)
+               [(ratnum? y)
                 (if (null? ls)
                     (flrt< x y)
                     (if (flrt< x y)
@@ -1003,7 +1003,7 @@
                     (if (rtfl< x y)
                         (flloopt y (car ls) (cdr ls))
                         (loopf (car ls) (cdr ls))))]
-               [(flonum? y)
+               [(ratnum? y)
                 (if (null? ls)
                     (rtrt< x y)
                     (if (rtrt< x y)
@@ -1014,7 +1014,9 @@
            (lambda (x ls)
              (cond
                [(number? x) 
-                (or (null? ls) (loopf (car ls) (cdr ls)))]
+                (if (null? ls) 
+                    #f
+                    (loopf (car ls) (cdr ls)))]
                [else (err x)])))
          (define f
            (case-lambda
