@@ -1,6 +1,11 @@
 * conform needs char-downcase.
 * maze needs bitwise-and
-* ray needs call-with-output-file/truncate.
+* ray needs many fl procedures
+* quicksort needs bignum modulo.
+* scheme needs complex? and other stuff.
+* simplex needs flpositive?
+* slatex needs string-ci=?
+* compiler needs string-downcase
 
 * ctak crashes with a bus error.
 * fibc crashes with a segfault.
@@ -8,4 +13,5 @@
 * mbrot too slow
 * ntakl kinda slow
 * pnpoly kinda slow
-
+* sumfp/fpsum too slow
+* string too slow

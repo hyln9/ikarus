@@ -69,7 +69,7 @@
     (let ((ray (unit-vector (fl- x (point-x eye))
                             (fl- y (point-y eye))
                             (fl- (point-z eye)))))
-      (flinexact->exact (flround (fl* (sendray eye ray) 255.0)))))
+      (inexact->exact (flround (fl* (sendray eye ray) 255.0)))))
   
   (define (sendray pt ray)
     (let* ((x (first-hit pt ray))

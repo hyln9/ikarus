@@ -1,6 +1,7 @@
 
 (library (r6rs-benchmarks)
-  (export run-benchmark fatal-error include-source
+  (export run-benchmark fatal-error include-source 
+    call-with-output-file/truncate
      ack-iters 
      array1-iters
      boyer-iters
@@ -19,6 +20,7 @@
      fib-iters
      fibc-iters
      fibfp-iters
+     fpsum-iters
      gcbench-iters
      gcold-iters
      graphs-iters
@@ -34,8 +36,28 @@
      perm9-iters
      pnpoly-iters
      peval-iters
-     pi-iters)
+     pi-iters
+     primes-iters
+     puzzle-iters
+     quicksort-iters
+     sboyer-iters
+     sum-iters
+     sum1-iters
+     string-iters
+     sumfp-iters
+     sumloop-iters
+     tail-iters
+     tak-iters
+     trav1-iters
+     trav2-iters
+     triangl-iters
+     wc-iters)
+
   (import (ikarus))
+
+  (define call-with-output-file/truncate
+    (lambda (file-name proc)
+      (call-with-output-file file-name proc 'truncate)))
 
   (define-syntax include-source
     (lambda (x)
@@ -138,6 +160,9 @@
   ; New benchmarks
   (define parsing-iters    1000)
   (define gcold-iters     10000)
+
+  (define quicksort-iters 1)
+  (define fpsum-iters 10)
   ;(define nbody-iters         1) ; nondeterministic (order of evaluation)
     )
   
