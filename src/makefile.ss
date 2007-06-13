@@ -376,6 +376,7 @@
     [fl*                     i rfl]
     [fl-                     i rfl]
     [fl/                     i rfl]
+    [flmin                   i rfl]
     [flsqrt                  i rfl]
     [flzero?                 i rfl]
     [flnegative?             i rfl]

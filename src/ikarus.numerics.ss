@@ -119,7 +119,7 @@
           positive? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number min max
           exact->inexact floor ceiling round log fl=? fl<? fl<=? fl>?
-          fl>=? fl+ fl- fl* fl/ flsqrt flzero? flnegative?)
+          fl>=? fl+ fl- fl* fl/ flsqrt flmin flzero? flnegative?)
   (import 
     (ikarus system $fx)
     (ikarus system $flonums)
@@ -133,7 +133,7 @@
             string->number expt gcd lcm numerator denominator
             exact->inexact floor ceiling round log
             exact-integer-sqrt min max
-            fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt
+            fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt flmin
             flzero? flnegative?))
 
   (define (fixnum->flonum x)
@@ -868,6 +868,26 @@
        (if (number? x) 
            x 
            (error 'min "~s is not a number" x))]))
+
+
+  (define flmin
+    (case-lambda
+      [(x y)
+       (if (flonum? x)
+           (if (flonum? y) 
+               (if ($fl< x y) x y)
+               (error 'flmin "~s is not a flonum" y))
+           (error 'flmin "~s is not a flonum" x))]
+      [(x y z . rest)
+       (let f ([a (flmin x y)] [b z] [ls rest])
+         (cond
+           [(null? ls) (flmin a b)]
+           [else
+            (f (flmin a b) (car ls) (cdr ls))]))]
+      [(x) 
+       (if (flonum? x) 
+           x 
+           (error 'flmin "~s is not a flonum" x))]))
 
   (define exact->inexact
     (lambda (x)
