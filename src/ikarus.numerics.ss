@@ -100,7 +100,7 @@
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
           positive? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number max
-          exact->inexact floor ceiling log fl<?)
+          exact->inexact floor ceiling log fl<? fl+ fl-)
   (import 
     (ikarus system $fx)
     (ikarus system $flonums)
@@ -114,7 +114,7 @@
             string->number expt gcd lcm numerator denominator
             exact->inexact floor ceiling log
             exact-integer-sqrt max
-            fl<?))
+            fl<? fl+ fl-))
 
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))
@@ -1177,6 +1177,48 @@
                      (loopf (car rest) (cdr rest)))
                  (error 'fl<? "~s is not a flonum" y))
              (error 'fl<? "~s is not a flonum" x)))]))
+
+  (define fl+ 
+    (case-lambda
+      [(x y) 
+       (if (flonum? x)
+           (if (flonum? y) 
+               ($fl+ x y)
+               (error 'fl+ "~s is not a flonum" y))
+           (error 'fl+ "~s is not a flonum" x))]
+      [(x y z) 
+       (fl+ (fl+ x y) z)]
+      [(x y z q . rest)
+       (let f ([ac (fl+ (fl+ (fl+ x y) z) q)] [rest rest])
+         (if (null? rest) 
+             ac
+             (f (fl+ ac (car rest)) (cdr rest))))]
+      [(x) 
+       (if (flonum? x) 
+           x
+           (error 'fl+ "~s is not a flonum" x))]
+      [() (exact->inexact 1)]))
+
+
+  (define fl-
+    (case-lambda
+      [(x y) 
+       (if (flonum? x)
+           (if (flonum? y) 
+               ($fl- x y)
+               (error 'fl- "~s is not a flonum" y))
+           (error 'fl- "~s is not a flonum" x))]
+      [(x y z) 
+       (fl- (fl- x y) z)]
+      [(x y z q . rest)
+       (let f ([ac (fl- (fl- (fl- x y) z) q)] [rest rest])
+         (if (null? rest) 
+             ac
+             (f (fl- ac (car rest)) (cdr rest))))]
+      [(x) 
+       (if (flonum? x) 
+           ($fl- (exact->inexact 0) x)
+           (error 'fl+ "~s is not a flonum" x))]))
 
   (flcmp flfl= flfx= fxfl= flbn= bnfl= $fl=)
   (flcmp flfl< flfx< fxfl< flbn< bnfl< $fl<)
