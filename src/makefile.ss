@@ -412,6 +412,7 @@
     [denominator             i r]
     [floor                   i r]
     [ceiling                 i r]
+    [round                   i r]
     [exact-integer-sqrt      i r]
     [exact->inexact          i r]
     [inexact->exact          i r]

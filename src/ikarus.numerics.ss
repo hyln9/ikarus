@@ -100,7 +100,7 @@
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
           positive? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number min max
-          exact->inexact floor ceiling log fl=? fl<? fl<=? fl>?
+          exact->inexact floor ceiling round log fl=? fl<? fl<=? fl>?
           fl>=? fl+ fl-)
   (import 
     (ikarus system $fx)
@@ -113,7 +113,7 @@
     (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
             remainder quotient+remainder number->string positive?
             string->number expt gcd lcm numerator denominator
-            exact->inexact floor ceiling log
+            exact->inexact floor ceiling round log
             exact-integer-sqrt min max
             fl=? fl<? fl<=? fl>? fl>=? fl+ fl-))
 
@@ -1497,6 +1497,33 @@
       [(or (fixnum? x) (bignum? x)) x]
       [else (error 'ceiling "~s is not a number" x)]))
 
+  (define (round x)
+    (define (ratnum-round x)
+      (let ([n ($ratnum-n x)] [d ($ratnum-d x)])
+        (let-values ([(q r) (quotient+remainder n d)])
+          (let ([r2 (+ r r)]) 
+            (if (> n 0) 
+                (cond
+                  [(< r2 d) q]
+                  [(> r2 d) (+ q 1)]
+                  [else
+                   (if (even? q) q (+ q 1))])
+                (let ([r2 (- r2)])
+                  (cond
+                    [(< r2 d) q]
+                    [(< r2 d) (- q 1)]
+                    [else
+                     (if (even? q) q (- q 1))])))))))
+    (cond
+      [(flonum? x) 
+       (let ([e ($flonum->exact x)])
+         (cond
+           [(not e) x] ;;; infs and nans round to themselves
+           [(ratnum? e) (exact->inexact (ratnum-round e))]
+           [else (exact->inexact e)]))]
+      [(ratnum? x) (ratnum-round x)]
+      [(or (fixnum? x) (bignum? x)) x]
+      [else (error 'round "~s is not a number" x)]))
 
   (define log
     (lambda (x)
