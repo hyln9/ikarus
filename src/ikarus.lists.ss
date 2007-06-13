@@ -2,13 +2,13 @@
 (library (ikarus lists)
   (export $memq list? list list* make-list append length list-ref reverse
           last-pair memq memv member assq assv assoc
-          map for-each andmap ormap)
+          map for-each andmap ormap list-tail)
   (import 
     (ikarus system $fx)
     (ikarus system $pairs)
     (except (ikarus) list? list list* make-list append reverse
             last-pair length list-ref memq memv member assq assv
-            assoc map for-each andmap ormap))
+            assoc map for-each andmap ormap list-tail))
 
   (define $memq
     (lambda (x ls)
@@ -94,6 +94,22 @@
             [else (error 'list-ref "~s is not a list" list)])))
       (unless (and (fixnum? index) ($fx>= index 0))
         (error 'list-ref "~s is not a valid index" index))
+      (f list index)))
+
+
+  (define list-tail
+    (lambda (list index)
+      (define f
+        (lambda (ls i)
+          (cond
+            [($fxzero? i) ls]
+            [(pair? ls)
+             (f ($cdr ls) ($fxsub1 i))]
+            [(null? ls) 
+             (error 'list-tail "index ~s is out of range for ~s" index list)]
+            [else (error 'list-tail "~s is not a list" list)])))
+      (unless (and (fixnum? index) ($fx>= index 0))
+        (error 'list-tail "~s is not a valid index" index))
       (f list index)))
 
   (module (append)

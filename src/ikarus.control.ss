@@ -5,7 +5,7 @@
   (import 
     (ikarus system $stack)
     (except (ikarus) call/cf call/cc call-with-current-continuation
-            dynamic-wind exit))
+            dynamic-wind exit list-tail))
 
   (define primitive-call/cf
     (lambda (f)

@@ -273,6 +273,7 @@
     [cddddr                  i r]
     [list                    i r]
     [list-ref                i r]
+    [list-tail               i r]
     [make-list               i r]
     [list*                   i]
     [list?                   i r]
