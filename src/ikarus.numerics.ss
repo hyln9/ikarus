@@ -102,7 +102,7 @@
           positive? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number min max
           exact->inexact floor ceiling round log fl=? fl<? fl<=? fl>?
-          fl>=? fl+ fl- fl* fl/)
+          fl>=? fl+ fl- fl* fl/ flsqrt)
   (import 
     (ikarus system $fx)
     (ikarus system $flonums)
@@ -116,7 +116,7 @@
             string->number expt gcd lcm numerator denominator
             exact->inexact floor ceiling round log
             exact-integer-sqrt min max
-            fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/))
+            fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt))
 
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))
@@ -1456,6 +1456,12 @@
         [(bignum? x) (error 'sqrt "BUG: bignum sqrt not implemented")]
         [(ratnum? x) (/ (sqrt ($ratnum-n x)) (sqrt ($ratnum-d x)))]
         [else (error 'sqrt "unsupported ~s" x)])))
+
+  (define flsqrt
+    (lambda (x)
+      (if (flonum? x) 
+          (foreign-call "ikrt_fl_sqrt" x)
+          (error 'flsqrt "~s is not a flonum" x))))
 
   (define exact-integer-sqrt
     (lambda (x)
