@@ -1,6 +1,8 @@
 
 (library (r6rs-benchmarks)
-  (export run-benchmark fib-iters)
+  (export run-benchmark 
+     ack-iters 
+     fib-iters)
   (import (ikarus))
   
   (define (run-bench count run)
