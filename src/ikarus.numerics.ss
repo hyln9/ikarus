@@ -7,7 +7,8 @@
 
 (library (ikarus flonums)
   (export $flonum->exact $flonum-signed-biased-exponent flonum-parts
-          inexact->exact $flonum-rational? $flonum-integer? $flzero?)
+          inexact->exact $flonum-rational? $flonum-integer? $flzero?
+          $flnegative?)
   (import 
     (ikarus system $bytevectors)
     (except (ikarus system $flonums) $flonum-signed-biased-exponent
@@ -83,6 +84,10 @@
               (fx= ($flonum-u8-ref x 2) 0) 
               (fx= ($flonum-u8-ref x 1) 0)))))
 
+  (define ($flnegative? x)
+    (let ([b0 ($flonum-u8-ref x 0)])
+      (fx> b0 127)))
+
   (define ($flonum->exact x)
     (let-values ([(pos? be m) (flonum-parts x)])
       (cond
@@ -114,7 +119,7 @@
           positive? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number min max
           exact->inexact floor ceiling round log fl=? fl<? fl<=? fl>?
-          fl>=? fl+ fl- fl* fl/ flsqrt flzero?)
+          fl>=? fl+ fl- fl* fl/ flsqrt flzero? flnegative?)
   (import 
     (ikarus system $fx)
     (ikarus system $flonums)
@@ -122,14 +127,14 @@
     (ikarus system $bignums)
     (ikarus system $chars)
     (ikarus system $strings)
-    (only (ikarus flonums) $flonum->exact $flzero?)
+    (only (ikarus flonums) $flonum->exact $flzero? $flnegative?)
     (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
             remainder modulo even? odd? quotient+remainder number->string positive?
             string->number expt gcd lcm numerator denominator
             exact->inexact floor ceiling round log
             exact-integer-sqrt min max
             fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt
-            flzero?))
+            flzero? flnegative?))
 
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))
@@ -1481,6 +1486,12 @@
       (if (flonum? x) 
           ($flzero? x)
           (error 'flzero? "~s is not a flonum" x))))
+
+  (define flnegative?
+    (lambda (x)
+      (if (flonum? x) 
+          ($flnegative? x)
+          (error 'flnegative? "~s is not a flonum" x))))
 
   (define exact-integer-sqrt
     (lambda (x)
