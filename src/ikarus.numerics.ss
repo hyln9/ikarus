@@ -99,7 +99,7 @@
 (library (ikarus generic-arithmetic)
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
           positive? expt gcd lcm numerator denominator exact-integer-sqrt
-          quotient+remainder number->string string->number max
+          quotient+remainder number->string string->number min max
           exact->inexact floor ceiling log fl=? fl<? fl<=? fl>?
           fl>=? fl+ fl-)
   (import 
@@ -114,7 +114,7 @@
             remainder quotient+remainder number->string positive?
             string->number expt gcd lcm numerator denominator
             exact->inexact floor ceiling log
-            exact-integer-sqrt max
+            exact-integer-sqrt min max
             fl=? fl<? fl<=? fl>? fl>=? fl+ fl-))
 
   (define (fixnum->flonum x)

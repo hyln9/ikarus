@@ -405,6 +405,7 @@
     [gcd                     i r]
     [lcm                     i r]
     [max                     i r]
+    [min                     i r]
     [log                     i r]
     [numerator               i r]
     [denominator             i r]
