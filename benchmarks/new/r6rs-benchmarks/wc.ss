@@ -30,7 +30,7 @@
             (wcport port)))))
   
   (define (go)
-    (set! inport (open-input-file "r6rs-benchmarks/bib"))
+    (set! inport (open-input-file "bib"))
     (set! nl 0)
     (set! nw 0)
     (set! nc 0)

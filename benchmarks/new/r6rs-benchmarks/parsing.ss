@@ -951,4 +951,4 @@
            y))))
   
   (define (main . args)
-    (parsing-benchmark parsing-iters "r6rs-benchmarks/parsing-test.sch")))
+    (parsing-benchmark parsing-iters "parsing-data.ss")))

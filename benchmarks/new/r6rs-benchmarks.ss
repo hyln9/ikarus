@@ -30,6 +30,7 @@
      mbrot-iters
      nboyer-iters
      nqueens-iters
+     nucleic-iters
      takl-iters
      paraffins-iters
      parsing-iters

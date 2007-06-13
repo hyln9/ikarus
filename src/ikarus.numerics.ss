@@ -120,7 +120,8 @@
           quotient+remainder number->string string->number min max
           abs
           exact->inexact floor ceiling round log fl=? fl<? fl<=? fl>?
-          fl>=? fl+ fl- fl* fl/ flsqrt flmin flzero? flnegative?)
+          fl>=? fl+ fl- fl* fl/ flsqrt flmin flzero? flnegative?
+          sin cos atan sqrt)
   (import 
     (ikarus system $fx)
     (ikarus system $flonums)
@@ -135,7 +136,8 @@
             exact->inexact floor ceiling round log
             exact-integer-sqrt min max abs
             fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt flmin
-            flzero? flnegative?))
+            flzero? flnegative?
+            sin cos atan sqrt))
 
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))
