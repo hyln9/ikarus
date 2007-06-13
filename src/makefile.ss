@@ -456,6 +456,7 @@
     [output-port-name        i]
     [open-input-file         i r]
     [with-input-from-file    i r]
+    [call-with-input-file    i r]
     [with-input-from-string  i]
     [with-output-to-file     i r]
     [open-output-file        i r]
