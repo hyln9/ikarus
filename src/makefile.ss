@@ -375,6 +375,7 @@
     [fl+                     i rfl]
     [fl*                     i rfl]
     [fl-                     i rfl]
+    [fl/                     i rfl]
     [fixnum->string          i]
     [string->flonum          i]
     [-                       i r]
@@ -461,7 +462,7 @@
     [with-output-to-file     i r]
     [open-output-file        i r]
     [open-output-string      i]
-    [open-input-string       i]
+    [open-input-string       i r] ; r6rs?
     [get-output-string       i]
     [with-output-to-string   i]
     [close-input-port        i r]
