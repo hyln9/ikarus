@@ -398,6 +398,7 @@
     [flonum?                 i]
     [positive?               i r]
     [even?                   i r]
+    [odd?                    i r]
     [quotient                i r]
     [modulo                  i r]
     [remainder               i r]
