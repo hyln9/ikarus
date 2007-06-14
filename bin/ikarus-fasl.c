@@ -514,8 +514,15 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     ref(pt, off_cdr) = do_read(pcb, p);
     return pair;
   }
-
-
+  else if(c == 'f'){
+    ikp x = ik_alloc(pcb, flonum_size) + vector_tag;
+    ref(x, -vector_tag) = flonum_tag;
+    fasl_read_buf(p, x+disp_flonum_data-vector_tag, 8);
+    if(put_mark_index){
+      p->marks[put_mark_index] = x;
+    }
+    return x;
+  }
   else {
     fprintf(stderr, "invalid type '%c' (0x%02x) found in fasl file\n", c, c);
     exit(-1);

@@ -880,7 +880,7 @@
        (if ($bignum-positive? x) x (- x))]
       [(flonum? x)
        (if ($flnegative? x) 
-           ($fl* x (exact->inexact -1))
+           ($fl* x -1.0)
            x)]
       [(ratnum? x) 
        (let ([n ($ratnum-n x)])
