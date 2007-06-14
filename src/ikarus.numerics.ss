@@ -334,8 +334,6 @@
           [(4)  (bignum/4->flonum x)]
           [(8)  (bignum/8->flonum x)]
           [else (bignum/n->flonum x bytes)]))))
-  ;(define (bignum->flonum x)
-  ;  (foreign-call "ikrt_bignum_to_flonum" x))
   (define (ratnum->flonum x) 
     (binary/ (exact->inexact ($ratnum-n x)) 
              (exact->inexact ($ratnum-d x))))
@@ -572,8 +570,7 @@
     (case-lambda
       [(x y) (binary- x y)]
       [(x y z) (binary- (binary- x y) z)]
-      [(a)
-       (binary- 0 a)]
+      [(a) (binary- 0 a)]
       [(a b c d . e*)
        (let f ([ac (binary- (binary- (binary- a b) c) d)]
                [e* e*])
