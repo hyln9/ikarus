@@ -1968,9 +1968,13 @@
                    (if pos?
                        (string d0 #\. #\0)
                        (string #\- d0 #\. #\0))
-                   (string-append
-                     (if pos? "" "-")
-                     (string d0) "e" (fixnum->string (- expt 1)))))]
+                   (if (= expt 0)
+                       (if pos?
+                           (string #\0 #\. d0)
+                           (string #\- #\0 #\. d0))
+                       (string-append
+                         (if pos? "" "-")
+                         (string d0) "e" (fixnum->string (- expt 1))))))]
           [(and (null? d*) (char=? d0 #\0)) (if pos? "0.0" "-0.0")]
           [(<= 1 expt 9)
            (sign pos? (format-flonum-no-expt expt d0 d*))]
