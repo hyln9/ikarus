@@ -450,6 +450,43 @@
          (tokenize-integer-no-digits p (cons c ls) exact? radix)]
         [else (num-error "invalid sequence" (cons c ls))])))
   (define (tokenize-integer p ls exact? radix ac) 
+    (define (tokenize-denom-start p ls exact? radix num)
+      (let ([c (read-char p)])
+        (cond
+          [(eof-object? c) (num-error "eof object" ls)]
+          [(radix-digit c radix) =>
+           (lambda (d) 
+             (tokenize-denom p (cons c ls) exact? radix num d))]
+          [(char=? c #\-)
+           (tokenize-denom-no-digits p (cons c ls) exact? radix (- num))]
+          [(char=? c #\+)
+           (tokenize-denom-no-digits p (cons c ls) exact? radix num)]
+          [else (num-error "invalid sequence" (cons c ls))])))
+    (define (tokenize-denom-no-digits p ls exact? radix num)
+      (let ([c (read-char p)])
+        (cond
+          [(eof-object? c) (num-error "eof object" ls)]
+          [(radix-digit c radix) =>
+           (lambda (d) 
+             (tokenize-denom p (cons c ls) exact? radix num d))]
+          [else (num-error "invalid sequence" (cons c ls))])))
+    (define (tokenize-denom p ls exact? radix num ac)
+      (let ([c (read-char p)])
+        (cond
+          [(eof-object? c) 
+           (if (= ac 0) 
+               (num-error "zero denominator" ls)
+               (convert/exact exact? (/ num ac)))]
+          [(radix-digit c radix) =>
+           (lambda (d) 
+             (tokenize-denom p (cons c ls) exact? radix num 
+                (+ (* radix ac) d)))]
+          [(delimiter? c) 
+           (unread-char c p)
+           (if (= ac 0) 
+               (num-error "zero denominator" ls)
+               (convert/exact exact? (/ num ac)))]
+          [else (num-error "invalid sequence" (cons c ls))])))
     (let ([c (read-char p)])
       (cond
         [(eof-object? c) (convert/exact exact? ac)]
@@ -462,7 +499,7 @@
            (num-error "invalid decimal" (cons c ls)))
          (tokenize-decimal p (cons c ls) exact? ac 0)]
         [(char=? c #\/)
-         (num-error "rational" (cons c ls))]
+         (tokenize-denom-start p (cons #\/ ls) exact? radix ac)]
         [(memv c '(#\e #\E)) ; exponent
          (unless (= radix 10)
            (num-error "invalid decimal" (cons c ls)))
