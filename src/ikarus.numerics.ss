@@ -441,7 +441,9 @@
            [(bignum? y)
             (foreign-call "ikrt_fxbnminus" x y)]
            [(flonum? y)
-            ($fl- (fixnum->flonum x) y)]
+            (if ($fx= x 0)
+                ($fl* y -1.0)
+                ($fl- (fixnum->flonum x) y))]
            [(ratnum? y) 
             (let ([n ($ratnum-n y)] [d ($ratnum-d y)])
               (binary/ (binary- (binary* d x) n) d))]
@@ -570,7 +572,8 @@
     (case-lambda
       [(x y) (binary- x y)]
       [(x y z) (binary- (binary- x y) z)]
-      [(a) (binary- 0 a)]
+      [(a)
+       (binary- 0 a)]
       [(a b c d . e*)
        (let f ([ac (binary- (binary- (binary- a b) c) d)]
                [e* e*])
@@ -1284,7 +1287,7 @@
              (f (fl- ac (car rest)) (cdr rest))))]
       [(x) 
        (if (flonum? x) 
-           ($fl- (exact->inexact 0) x)
+           ($fl- 0.0 x)
            (error 'fl+ "~s is not a flonum" x))]))
 
   (define fl*
@@ -1306,7 +1309,7 @@
        (if (flonum? x) 
            x
            (error 'fl* "~s is not a flonum" x))]
-      [() (exact->inexact 1)]))
+      [() 1.0]))
 
   (define fl/
     (case-lambda
@@ -1326,8 +1329,7 @@
       [(x) 
        (if (flonum? x) 
            x
-           (error 'fl/ "~s is not a flonum" x))]
-      [() (exact->inexact 1)])) 
+           (error 'fl/ "~s is not a flonum" x))])) 
 
   (flcmp flfl= flfx= fxfl= flbn= bnfl= $fl=)
   (flcmp flfl< flfx< fxfl< flbn< bnfl< $fl<)
@@ -1395,7 +1397,8 @@
       (cond
         [(fixnum? x) (eq? x 0)]
         [(bignum? x) #f]
-        [(flonum? x) (= x (exact->inexact 0))]
+        [(flonum? x)
+         (or ($fl= x 0.0) ($fl= x -0.0))]
         [else (error 'zero? "tag=~s / ~s  is not a number" 
                      ($fxlogand 255 
                       ($fxsll x 2))
@@ -1893,7 +1896,7 @@
           (let ([est (inexact->exact
                        (ceiling 
                          (- (* (+ e (len f) -1) (invlog2of B)) 
-                            (exact->inexact (expt 10 -10)))))])
+                            1e-10)))])
             (if (>= est 0)
                 (fixup r (* s (exptt B est)) m+ m- est B round?)
                 (let ([scale (exptt B (- est))])
