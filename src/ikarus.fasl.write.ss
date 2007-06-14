@@ -10,6 +10,8 @@
     (ikarus system $fx)
     (ikarus system $chars)
     (ikarus system $strings)
+    (ikarus system $flonums)
+    (ikarus system $bignums)
     (ikarus code-objects)
     (except (ikarus) fasl-write))
 
@@ -166,6 +168,30 @@
            (write-int n p)
            (write-bytevector x 0 n p))
          m]
+        [(flonum? x) 
+         (write-char #\f p)
+         (write-byte ($flonum-u8-ref x 0) p)
+         (write-byte ($flonum-u8-ref x 1) p)
+         (write-byte ($flonum-u8-ref x 2) p)
+         (write-byte ($flonum-u8-ref x 3) p)
+         (write-byte ($flonum-u8-ref x 4) p)
+         (write-byte ($flonum-u8-ref x 5) p)
+         (write-byte ($flonum-u8-ref x 6) p)
+         (write-byte ($flonum-u8-ref x 7) p)
+         m]
+        [(ratnum? x)
+         (write-char #\r p)
+         (fasl-write-object (numerator x) p h
+           (fasl-write-object (denominator x) p h m))]
+        [(bignum? x) 
+         (write-char #\b p) 
+         (let ([sz ($bignum-size x)])
+           (write-int (if ($bignum-positive? x) sz (- sz)) p)
+           (let f ([i 0])
+             (unless (fx= i sz)
+               (write-byte ($bignum-byte-ref x i) p)
+               (f (fxadd1 i)))))
+         m]
         [else (error 'fasl-write "~s is not fasl-writable" x)])))
   (define (write-bytevector x i j p)
     (unless ($fx= i j)
@@ -242,6 +268,11 @@
                          (code-freevars code)))
                 (make-graph code h))]
              [(bytevector? x) (void)]
+             [(flonum? x)     (void)]
+             [(bignum? x)     (void)]
+             [(ratnum? x) 
+              (make-graph (numerator x) h)
+              (make-graph (denominator x) h)]
              [else (error 'fasl-write "~s is not fasl-writable" x)])]))))
   (define fasl-write-to-port
     (lambda (x port)

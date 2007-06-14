@@ -28,6 +28,9 @@
 ;;;   "<" + 4-bytes(i) : dereference the object marked with index i
 ;;;   "x" : denotes code
 ;;;   "T" : Thunk; followed by code.
+;;;   "r" + numerator + denominator : ratnum
+;;;   "f" + 8-byte : IEEE flonum
+;;;   "b" + 4-byte(n) + n-bytes denotes a bignum (sign is sign of n).
 
 
 
