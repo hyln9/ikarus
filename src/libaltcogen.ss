@@ -2543,7 +2543,7 @@
              [(assq x '([= je] [!= jne] [< jl] [<= jle] [> jg] [>= jge]
                         [u< jb] [u<= jbe] [u> ja] [u>= jae]
                         [fl:= je] [fl:!= jne]
-                        [fl:< jl] [fl:> jg] [fl:<= jle] [fl:>= jge]))
+                        [fl:< jb] [fl:> ja] [fl:<= jbe] [fl:>= jae]))
               => cadr]
              [else (error who "invalid jmpname ~s" x)]))
          (define (revjmpname x)
