@@ -7,8 +7,8 @@
   (define (run n)
     (let loop ((i n) (sum 0.))
       (if (fl<? i 0.)
-        sum
-        (loop (fl- i 1.) (fl+ i sum)))))
+          sum
+          (loop (fl- i 1.) (fl+ i sum)))))
    
   (define (main . args)
     (run-benchmark
