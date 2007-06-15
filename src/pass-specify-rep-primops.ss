@@ -729,6 +729,11 @@
      (prm 'fl:store x (K (- disp-flonum-data vector-tag)))
      x))
 
+(define ($flcmp-aux op fl0 fl1)
+  (make-seq 
+    (prm 'fl:load (T fl0) (K (- disp-flonum-data vector-tag)))
+    (prm op (T fl1) (K (- disp-flonum-data vector-tag)))))
+
 (define-primop flonum? safe
   [(P x) (sec-tag-test (T x) vector-mask vector-tag #f flonum-tag)]
   [(E x) (nop)])
@@ -776,6 +781,17 @@
   [(V x y) ($flop-aux 'fl:mul! x y)])
 (define-primop $fl/ unsafe
   [(V x y) ($flop-aux 'fl:div! x y)])
+
+(define-primop $fl= unsafe
+  [(P x y) ($flcmp-aux 'fl:= x y)])
+(define-primop $fl< unsafe
+  [(P x y) ($flcmp-aux 'fl:< x y)])
+(define-primop $fl<= unsafe
+  [(P x y) ($flcmp-aux 'fl:<= x y)])
+(define-primop $fl> unsafe
+  [(P x y) ($flcmp-aux 'fl:> x y)])
+(define-primop $fl>= unsafe
+  [(P x y) ($flcmp-aux 'fl:>= x y)])
 
 /section)
 

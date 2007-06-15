@@ -607,6 +607,11 @@
     [$fl-                           $flonums]
     [$fl*                           $flonums]
     [$fl/                           $flonums]
+    [$fl=                           $flonums]
+    [$fl<                           $flonums]
+    [$fl<=                           $flonums]
+    [$fl>                           $flonums]
+    [$fl>=                           $flonums]
 
     [$make-bignum       $bignums]
     [$bignum-positive?  $bignums]

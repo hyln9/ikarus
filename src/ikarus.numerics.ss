@@ -338,19 +338,6 @@
     (binary/ (exact->inexact ($ratnum-n x)) 
              (exact->inexact ($ratnum-d x))))
 
-  #;
-  (begin
-    (define ($fl+ x y)
-      (foreign-call "ikrt_fl_plus" x y))
-    (define ($fl- x y)
-      (foreign-call "ikrt_fl_minus" x y))
-    (define ($fl* x y)
-      (foreign-call "ikrt_fl_times" x y))
-    (define ($fl/ x y)
-      (foreign-call "ikrt_fl_div" x y)))
-  
-
-
   (define binary+
     (lambda (x y)
       (cond
@@ -1187,16 +1174,18 @@
          (define-syntax bnfl? 
            (syntax-rules () [(_ x y) (fl? (bignum->flonum x) y)])))]))
 
-  (define-syntax $fl=
-    (syntax-rules () [(_ x y) (foreign-call "ikrt_fl_equal" x y)]))
-  (define-syntax $fl<
-    (syntax-rules () [(_ x y) (foreign-call "ikrt_fl_less" x y)]))
-  (define-syntax $fl<=
-    (syntax-rules () [(_ x y) (foreign-call "ikrt_fl_less_or_equal" x y)]))
-  (define-syntax $fl>
-    (syntax-rules () [(_ x y) (foreign-call "ikrt_fl_less" y x)]))
-  (define-syntax $fl>=
-    (syntax-rules () [(_ x y) (foreign-call "ikrt_fl_less_or_equal" y x)]))
+ ;;;  #;
+ ;;; (begin
+ ;;;   (define-syntax $fl=
+ ;;;     (syntax-rules () [(_ x y) (foreign-call "ikrt_fl_equal" x y)]))
+ ;;;   (define-syntax $fl<
+ ;;;     (syntax-rules () [(_ x y) (foreign-call "ikrt_fl_less" x y)]))
+ ;;;   (define-syntax $fl<=
+ ;;;     (syntax-rules () [(_ x y) (foreign-call "ikrt_fl_less_or_equal" x y)]))
+ ;;;   (define-syntax $fl>
+ ;;;     (syntax-rules () [(_ x y) (foreign-call "ikrt_fl_less" y x)]))
+ ;;;   (define-syntax $fl>=
+ ;;;     (syntax-rules () [(_ x y) (foreign-call "ikrt_fl_less_or_equal" y x)])))
 
   (define-syntax define-flcmp
     (syntax-rules ()

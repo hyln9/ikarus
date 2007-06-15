@@ -496,6 +496,11 @@
       [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
        (CODE #xF2 (CODE #x0F ((CODE/digit #x5E dst) src ac)))]
       [else (error who "invalid ~s" instr)])] 
+   [(ucomisd src dst)
+    (cond
+      [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
+       (CODE #x66 (CODE #x0F ((CODE/digit #x2E dst) src ac)))]
+      [else (error who "invalid ~s" instr)])]
    [(addl src dst)
     (cond   
       [(and (imm8? src) (reg? dst)) 

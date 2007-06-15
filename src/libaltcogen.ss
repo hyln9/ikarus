@@ -470,7 +470,6 @@
       [(bind lhs* rhs* e)
        (do-bind lhs* rhs* (P e))]
       [(primcall op rands)
-                (unless (pair? rands) (error 'car "ha ~s" x))
        (let ([a (car rands)] [b (cadr rands)])
          (cond
            [(and (constant? a) (constant? b))
@@ -2208,6 +2207,13 @@
         [(seq e0 e1) (make-seq (E e0) (P e1))]
         [(asm-instr op a b) 
          (cond
+           [(memq op '(fl:= fl:< fl:<= fl:> fl:>=)) 
+            (if (mem? a) 
+                (let ([u (mku)])
+                  (make-seq 
+                    (E (make-asm-instr 'move u a))
+                    (make-asm-instr op u b)))
+                x)]
            [(and (mem? a) (mem? b)) 
             (let ([u (mku)])
               (make-seq
@@ -2527,13 +2533,17 @@
          (define (notop x)
            (cond
              [(assq x '([= !=] [!= =] [< >=] [<= >] [> <=] [>= <]
-                        [u< u>=] [u<= u>] [u> u<=] [u>= u<]))
+                        [u< u>=] [u<= u>] [u> u<=] [u>= u<]
+                        [fl:= fl:!=] [fl:!= fl:=] 
+                        [fl:< fl:>=] [fl:<= fl:>] [fl:> fl:<=] [fl:>= fl:<]))
               => cadr]
              [else (error who "invalid op ~s" x)]))
          (define (jmpname x)
            (cond
              [(assq x '([= je] [!= jne] [< jl] [<= jle] [> jg] [>= jge]
-                        [u< jb] [u<= jbe] [u> ja] [u>= jae]))
+                        [u< jb] [u<= jbe] [u> ja] [u>= jae]
+                        [fl:= je] [fl:!= jne]
+                        [fl:< jl] [fl:> jg] [fl:<= jle] [fl:>= jge]))
               => cadr]
              [else (error who "invalid jmpname ~s" x)]))
          (define (revjmpname x)
@@ -2544,6 +2554,10 @@
              [else (error who "invalid jmpname ~s" x)]))
          (define (cmp op a0 a1 lab ac)
            (cond
+             [(memq op '(fl:= fl:!= fl:< fl:<= fl:> fl:>=))
+              (list* `(ucomisd ,(R (make-disp a0 a1)) xmm0)
+                     `(,(jmpname op) ,lab)
+                     ac)]
              [(or (symbol? a0) (constant? a1))
               (list* `(cmpl ,(R a1) ,(R a0))
                      `(,(jmpname op) ,lab)
