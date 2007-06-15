@@ -721,6 +721,14 @@
 
 (section ;;; flonums
 
+(define ($flop-aux op fl0 fl1)
+  (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
+     (prm 'mset x (K (- vector-tag)) (K flonum-tag))
+     (prm 'fl:load (T fl0) (K (- disp-flonum-data vector-tag)))
+     (prm op (T fl1) (K (- disp-flonum-data vector-tag)))
+     (prm 'fl:store x (K (- disp-flonum-data vector-tag)))
+     x))
+
 (define-primop flonum? safe
   [(P x) (sec-tag-test (T x) vector-mask vector-tag #f flonum-tag)]
   [(E x) (nop)])
@@ -760,6 +768,14 @@
             (prm 'sll (T v) (K (- 8 fx-shift))))]
      [else (interrupt)])])
 
+(define-primop $fl+ unsafe
+  [(V x y) ($flop-aux 'fl:add! x y)])
+(define-primop $fl- unsafe
+  [(V x y) ($flop-aux 'fl:sub! x y)])
+(define-primop $fl* unsafe
+  [(V x y) ($flop-aux 'fl:mul! x y)])
+(define-primop $fl/ unsafe
+  [(V x y) ($flop-aux 'fl:div! x y)])
 
 /section)
 

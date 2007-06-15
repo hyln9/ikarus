@@ -1,0 +1,42 @@
+* conform needs char-downcase.
+* maze needs bitwise-and
+* ray needs many fl procedures
+* quicksort needs bignum modulo.
+* scheme needs complex? and other stuff.
+* simplex needs flpositive?
+* slatex needs string-ci=?
+* compiler needs string-downcase
+
+* ctak crashes with a bus error.
+* fibc crashes with a segfault.
+* ntakl kinda slow
+* string too slow
+* nbody does not work
+
+* fibfp does not terminate
+* mbrot too slow
+* pnpoly kinda slow
+* sumfp/fpsum too slow
+
+BEFORE:
+  running stats for fibfp:
+      no collections
+      13316 ms elapsed cpu time
+      13984 ms elapsed real time
+      1433313736 bytes allocated
+  running stats for mbrot:
+      12145 collections
+      7608 ms elapsed cpu time
+      7660 ms elapsed real time
+      2215766392 bytes allocated
+  running stats for pnpoly:
+      81 collections
+      2622 ms elapsed cpu time
+      2637 ms elapsed real time
+      335204784 bytes allocated
+  running stats for sumfp:
+      no collections
+      13917 ms elapsed cpu time
+      30995 ms elapsed real time
+      1600160040 bytes allocated
+  

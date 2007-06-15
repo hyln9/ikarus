@@ -43,6 +43,14 @@
     [/5    0 5]
     [/6    0 6]
     [/7    0 7]
+    [xmm0 xmm 0]
+    [xmm1 xmm 1]
+    [xmm2 xmm 2]
+    [xmm3 xmm 3]
+    [xmm4 xmm 4]
+    [xmm5 xmm 5]
+    [xmm6 xmm 6]
+    [xmm7 xmm 7]
     ))
   
 (define register-index
@@ -55,14 +63,21 @@
   (lambda (x)
     (cond
       [(assq x register-mapping) =>
-       (lambda (x) (fx= (cadr x) 32))]
+       (lambda (x) (eqv? (cadr x) 32))]
       [else #f])))
 
 (define reg8?
   (lambda (x)
     (cond
       [(assq x register-mapping) =>
-       (lambda (x) (fx= (cadr x) 8))]
+       (lambda (x) (eqv? (cadr x) 8))]
+      [else #f])))
+
+(define xmmreg?
+  (lambda (x)
+    (cond
+      [(assq x register-mapping) =>
+       (lambda (x) (eqv? (cadr x) 'xmm))]
       [else #f])))
 
 (define reg?
@@ -343,7 +358,6 @@
               [else (error 'CODE/digit "unhandled ~s ~s" a0 a1)])))]
       [else (error 'CODE/digit "unhandled ~s" dst)])))
 
-
 (define CODEid
   (lambda (c /? n disp ac)
     (with-args disp
@@ -455,6 +469,33 @@
       [(and (reg8? src) (mem? dst)) (CODErd #x88 src dst ac)]
       [(and (mem? src) (reg8? dst)) (CODErd #x8A dst src ac)]
       [else (error who "invalid ~s" instr)])]
+   [(movsd src dst)
+    (cond
+      [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
+       (CODE #xF2 (CODE #x0F ((CODE/digit #x10 dst) src ac)))]
+      [(and (xmmreg? src) (or (xmmreg? dst) (mem? dst)))
+       (CODE #xF2 (CODE #x0F ((CODE/digit #x11 src) dst ac)))]
+      [else (error who "invalid ~s" instr)])]
+   [(addsd src dst)
+    (cond
+      [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
+       (CODE #xF2 (CODE #x0F ((CODE/digit #x58 dst) src ac)))]
+      [else (error who "invalid ~s" instr)])]
+   [(subsd src dst)
+    (cond
+      [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
+       (CODE #xF2 (CODE #x0F ((CODE/digit #x5C dst) src ac)))]
+      [else (error who "invalid ~s" instr)])]
+   [(mulsd src dst)
+    (cond
+      [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
+       (CODE #xF2 (CODE #x0F ((CODE/digit #x59 dst) src ac)))]
+      [else (error who "invalid ~s" instr)])] 
+   [(divsd src dst)
+    (cond
+      [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
+       (CODE #xF2 (CODE #x0F ((CODE/digit #x5E dst) src ac)))]
+      [else (error who "invalid ~s" instr)])] 
    [(addl src dst)
     (cond   
       [(and (imm8? src) (reg? dst)) 

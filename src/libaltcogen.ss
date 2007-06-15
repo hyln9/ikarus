@@ -443,6 +443,10 @@
                 (make-asm-instr op
                   (make-disp (car s*) (cadr s*)) 
                   (caddr s*))))]
+         [(fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!) 
+          (S* rands
+              (lambda (s*)
+                (make-asm-instr op (car s*) (cadr s*))))]
          [(nop interrupt) x]
          [else (error 'impose-effect "invalid instr ~s" x)])]
       [(funcall rator rands)
@@ -1394,7 +1398,8 @@
          [(cltd) 
           (mark-reg/vars-conf! edx vs)
           (R s vs (rem-reg edx rs) fs ns)]
-         [(mset bset/c bset/h) 
+         [(mset bset/c bset/h fl:load fl:store fl:add! fl:sub!
+                fl:mul! fl:div!) 
           (R* (list s d) vs rs fs ns)]
          [else (error who "invalid effect op ~s" (unparse x))])]
       [(ntcall target value args mask size)
@@ -1597,7 +1602,8 @@
                  (make-asm-instr op d s)]))]
            [(logand logor logxor int+ int- int* mset bset/c bset/h 
               sll sra srl
-              cltd idiv int-/overflow int+/overflow int*/overflow)
+              cltd idiv int-/overflow int+/overflow int*/overflow
+              fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!)
             (make-asm-instr op (R d) (R s))]
            [(nop) (make-primcall 'nop '())]
            [else (error who "invalid op ~s" op)])]
@@ -1843,7 +1849,7 @@
                   s))
               (set-union (set-union (R eax) (R edx))
                      (set-union (R v) s)))]
-           [(mset)
+           [(mset fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!)
             (set-union (R v) (set-union (R d) s))]
            [else (error who "invalid effect ~s" x)])]
         [(seq e0 e1) (E e0 (E e1 s))]
@@ -2167,6 +2173,14 @@
                         (E (make-asm-instr 'move u s2))
                         (E (make-asm-instr op (make-disp u s1) b))))]
                    [else x]))])]
+           [(fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!) 
+            (cond
+              [(mem? a) 
+               (let ([u (mku)])
+                 (make-seq
+                   (E (make-asm-instr 'move u a))
+                   (E (make-asm-instr op u b))))]
+              [else x])]
            [else (error who "invalid effect ~s" op)])]
         [(primcall op rands) 
          (case op
@@ -2437,6 +2451,18 @@
             (list* `(addl ,(R s) ,(R d)) 
                    `(jo ,L)
                    ac))]
+         [(fl:store) 
+          (cons `(movsd xmm0 ,(R (make-disp s d))) ac)]
+         [(fl:load) 
+          (cons `(movsd ,(R (make-disp s d)) xmm0) ac)]
+         [(fl:add!) 
+          (cons `(addsd ,(R (make-disp s d)) xmm0) ac)]
+         [(fl:sub!) 
+          (cons `(subsd ,(R (make-disp s d)) xmm0) ac)]
+         [(fl:mul!) 
+          (cons `(mulsd ,(R (make-disp s d)) xmm0) ac)]
+         [(fl:div!) 
+          (cons `(divsd ,(R (make-disp s d)) xmm0) ac)]
          [else (error who "invalid instr ~s" x)])]
       [(primcall op rands)
        (case op

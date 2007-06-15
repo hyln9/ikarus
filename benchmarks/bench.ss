@@ -2,7 +2,7 @@
 
 (import
   (ikarus)
-  (r6rs-benchmarks))
+  #;(r6rs-benchmarks))
 
 (define (run name)
   (eval '(main) (environment (list 'r6rs-benchmarks name))))

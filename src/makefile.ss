@@ -603,6 +603,10 @@
     [$flonum-signed-biased-exponent $flonums]
     [$flonum-rational?              $flonums]
     [$flonum-integer?               $flonums]
+    [$fl+                           $flonums]
+    [$fl-                           $flonums]
+    [$fl*                           $flonums]
+    [$fl/                           $flonums]
 
     [$make-bignum       $bignums]
     [$bignum-positive?  $bignums]

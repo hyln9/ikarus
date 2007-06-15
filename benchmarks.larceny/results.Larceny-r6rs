@@ -6362,3 +6362,63 @@ Words allocated: 151779700
 Words reclaimed: 0
 Elapsed time...: 4619 ms (User: 3127 ms; System: 1452 ms)
 Elapsed GC time: 276 ms (CPU: 252 in 579 collections.)
+
+****************************
+Benchmarking Larceny-r6rs on Thu Jun 14 20:31:38 AST 2007 under Darwin Vesuvius.local 8.9.1 Darwin Kernel Version 8.9.1: Thu Feb 22 20:55:00 PST 2007; root:xnu-792.18.15~1/RELEASE_I386 i386 i386
+
+Testing cpstak under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 318239872
+Words reclaimed: 0
+Elapsed time...: 1497 ms (User: 1479 ms; System: 10 ms)
+Elapsed GC time: 444 ms (CPU: 436 in 1214 collections.)
+
+****************************
+Benchmarking Larceny-r6rs on Thu Jun 14 20:34:33 AST 2007 under Darwin Vesuvius.local 8.9.1 Darwin Kernel Version 8.9.1: Thu Feb 22 20:55:00 PST 2007; root:xnu-792.18.15~1/RELEASE_I386 i386 i386
+
+Testing mbrot under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 551809361
+Words reclaimed: 0
+Elapsed time...: 2293 ms (User: 2246 ms; System: 24 ms)
+Elapsed GC time: 781 ms (CPU: 744 in 2105 collections.)
+
+****************************
+Benchmarking Larceny-r6rs on Thu Jun 14 20:38:10 AST 2007 under Darwin Vesuvius.local 8.9.1 Darwin Kernel Version 8.9.1: Thu Feb 22 20:55:00 PST 2007; root:xnu-792.18.15~1/RELEASE_I386 i386 i386
+
+Testing mbrot under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 551809361
+Words reclaimed: 0
+Elapsed time...: 2272 ms (User: 2241 ms; System: 20 ms)
+Elapsed GC time: 763 ms (CPU: 755 in 2105 collections.)

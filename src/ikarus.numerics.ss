@@ -337,14 +337,17 @@
   (define (ratnum->flonum x) 
     (binary/ (exact->inexact ($ratnum-n x)) 
              (exact->inexact ($ratnum-d x))))
-  (define ($fl+ x y)
-    (foreign-call "ikrt_fl_plus" x y))
-  (define ($fl- x y)
-    (foreign-call "ikrt_fl_minus" x y))
-  (define ($fl* x y)
-    (foreign-call "ikrt_fl_times" x y))
-  (define ($fl/ x y)
-    (foreign-call "ikrt_fl_div" x y))
+
+  #;
+  (begin
+    (define ($fl+ x y)
+      (foreign-call "ikrt_fl_plus" x y))
+    (define ($fl- x y)
+      (foreign-call "ikrt_fl_minus" x y))
+    (define ($fl* x y)
+      (foreign-call "ikrt_fl_times" x y))
+    (define ($fl/ x y)
+      (foreign-call "ikrt_fl_div" x y)))
   
 
 
@@ -440,7 +443,7 @@
             (foreign-call "ikrt_fxbnminus" x y)]
            [(flonum? y)
             (if ($fx= x 0)
-                ($fl* y -1.0)
+                (fl* y -1.0)
                 ($fl- (fixnum->flonum x) y))]
            [(ratnum? y) 
             (let ([n ($ratnum-n y)] [d ($ratnum-d y)])
@@ -880,7 +883,7 @@
        (if ($bignum-positive? x) x (- x))]
       [(flonum? x)
        (if ($flnegative? x) 
-           ($fl* x -1.0)
+           (fl* x -1.0)
            x)]
       [(ratnum? x) 
        (let ([n ($ratnum-n x)])
@@ -1284,7 +1287,7 @@
              (f (fl- ac (car rest)) (cdr rest))))]
       [(x) 
        (if (flonum? x) 
-           ($fl- 0.0 x)
+           (fl- 0.0 x)
            (error 'fl+ "~s is not a flonum" x))]))
 
   (define fl*
