@@ -8,12 +8,12 @@
 (library (ikarus flonums)
   (export $flonum->exact $flonum-signed-biased-exponent flonum-parts
           inexact->exact $flonum-rational? $flonum-integer? $flzero?
-          $flnegative?)
+          $flnegative? flpositive? flabs)
   (import 
     (ikarus system $bytevectors)
     (except (ikarus system $flonums) $flonum-signed-biased-exponent
             $flonum-rational? $flonum-integer?)
-    (except (ikarus) inexact->exact))
+    (except (ikarus) inexact->exact flpositive? flabs))
   
   (define (flonum-bytes f)
     (unless (flonum? f) 
@@ -108,7 +108,18 @@
       [(or (fixnum? x) (ratnum? x) (bignum? x)) x]
       [else
        (error 'inexact->exact "~s is not an inexact number" x)]))
+
+  (define (flpositive? x)
+    (if (flonum? x) 
+        ($fl> x 0.0)
+        (error 'flpositive? "~s is not a flonum" x)))
   
+  (define (flabs x)
+    (if (flonum? x) 
+        (if (flnegative? x) 
+            (fl* x -1.0)
+            x)
+        (error 'flabs "~s is not a flonum" x)))
   )
 
 
@@ -1317,7 +1328,7 @@
              (f (fl/ ac (car rest)) (cdr rest))))]
       [(x) 
        (if (flonum? x) 
-           x
+           (fl/ 1.0 x)
            (error 'fl/ "~s is not a flonum" x))])) 
 
   (flcmp flfl= flfx= fxfl= flbn= bnfl= $fl=)

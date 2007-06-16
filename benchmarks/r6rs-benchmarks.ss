@@ -42,6 +42,7 @@
      puzzle-iters
      quicksort-iters
      sboyer-iters
+     simplex-iters
      sum-iters
      sum1-iters
      string-iters

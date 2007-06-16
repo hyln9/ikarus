@@ -165,7 +165,7 @@
          (let loop ()
           (simp1 0 #f)
           (cond
-           ((f(run))lpositive? bmax)
+           ((flpositive? bmax)
             (simp2)
             (cond ((zero? ip) #t)
                   (else (simp3 #f)

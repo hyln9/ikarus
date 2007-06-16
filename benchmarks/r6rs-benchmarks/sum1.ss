@@ -16,7 +16,7 @@
     (sumport port 0.0))
   
   (define (go)
-    (set! inport (open-input-file "r6rs-benchmarks/rn100"))
+    (set! inport (open-input-file "rn100"))
     (let ((result (sum inport)))
       (close-input-port inport)
       result))

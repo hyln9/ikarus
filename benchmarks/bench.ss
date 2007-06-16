@@ -1,11 +1,14 @@
 #!/usr/bin/env ikarus --r6rs-script
 
-(import
-  (ikarus)
-  #;(r6rs-benchmarks))
+(import (ikarus))
 
 (define (run name)
-  (eval '(main) (environment (list 'r6rs-benchmarks name))))
+  (let ([proc (time-it (format "compile-~a" name) 
+                (lambda ()
+                  (eval 'main 
+                    (environment
+                      (list 'r6rs-benchmarks name)))))])
+    (proc)))
 
 (apply 
   (case-lambda

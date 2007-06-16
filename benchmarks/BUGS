@@ -62,3 +62,25 @@ AFTER $fl+, $fl-, $fl*, $fl/:
       1890 ms elapsed real time
       1600164776 bytes allocated
   
+AFTER $fl=, $fl<, $fl<=, $fl>, $fl>=
+  running stats for fibfp:
+      343 collections
+      1984 ms elapsed cpu time
+      1999 ms elapsed real time
+      1433318512 bytes allocated
+  running stats for mbrot:
+      530 collections
+      1856 ms elapsed cpu time
+      1872 ms elapsed real time
+      2215766432 bytes allocated
+  running stats for pnpoly:
+      81 collections
+      1404 ms elapsed cpu time
+      1413 ms elapsed real time
+      335204824 bytes allocated
+  running stats for sumfp:
+      382 collections
+      1496 ms elapsed cpu time
+      1506 ms elapsed real time
+      1600164816 bytes allocated
+  

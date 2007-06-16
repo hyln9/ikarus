@@ -381,6 +381,8 @@
     [flsqrt                  i rfl]
     [flzero?                 i rfl]
     [flnegative?             i rfl]
+    [flpositive?             i rfl]
+    [flabs                   i rfl]
     [fixnum->string          i]
     [string->flonum          i]
     [-                       i r]
