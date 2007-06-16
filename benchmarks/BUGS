@@ -3,7 +3,6 @@
 * ray needs many fl procedures
 * quicksort needs bignum modulo.
 * scheme needs complex? and other stuff.
-* simplex needs flpositive?
 * slatex needs string-ci=?
 * compiler needs string-downcase
 

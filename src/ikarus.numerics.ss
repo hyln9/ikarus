@@ -1328,7 +1328,7 @@
              (f (fl/ ac (car rest)) (cdr rest))))]
       [(x) 
        (if (flonum? x) 
-           (fl/ 1.0 x)
+           ($fl/ 1.0 x)
            (error 'fl/ "~s is not a flonum" x))])) 
 
   (flcmp flfl= flfx= fxfl= flbn= bnfl= $fl=)

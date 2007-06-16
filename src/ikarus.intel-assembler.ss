@@ -355,6 +355,8 @@
                (CODE c (ModRM 2 /d a0 (IMM32 a1 ac)))]
               [(and (reg? a0) (reg? a1)) 
                (CODE c (ModRM 1 /d '/4 (SIB 0 a0 a1 (IMM8 0 ac))))]
+              [(and (imm? a0) (imm? a1))
+               (CODE c (ModRM 0 /d '/5 (IMM32*2 a0 a1 ac)))]
               [else (error 'CODE/digit "unhandled ~s ~s" a0 a1)])))]
       [else (error 'CODE/digit "unhandled ~s" dst)])))
 
