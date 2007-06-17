@@ -74,7 +74,7 @@
 #define IK_CHAR_MASK      0xFF
 #define IK_CHAR_SHIFT        8
 #define IK_CHAR_VAL(x)    (((int)(x)) >> IK_CHAR_SHIFT)
-#define byte_to_scheme_char(x) ((ikp)(((x) << IK_CHAR_SHIFT) | IK_CHAR_TAG))
+#define int_to_scheme_char(x) ((ikp)(((x) << IK_CHAR_SHIFT) | IK_CHAR_TAG))
 #define IK_PAIR_SIZE     8
 #define pair_size 8
 #define pair_tag 1

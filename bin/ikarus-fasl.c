@@ -377,9 +377,9 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
   else if(c == 'N'){
     return IK_NULL_OBJECT;
   }
-  else if(c == 'C'){
-    char x = fasl_read_byte(p);
-    return byte_to_scheme_char(x);
+  else if(c == 'c'){
+    unsigned char x = (unsigned char) fasl_read_byte(p);
+    return int_to_scheme_char(x);
   }
   else if(c == 'G'){ 
     /* G is for gensym */
@@ -522,6 +522,11 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
       p->marks[put_mark_index] = x;
     }
     return x;
+  }
+  else if(c == 'C'){
+    int n;
+    fasl_read_buf(p, &n, sizeof(int));
+    return int_to_scheme_char(n);
   }
   else {
     fprintf(stderr, "invalid type '%c' (0x%02x) found in fasl file\n", c, c);

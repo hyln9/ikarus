@@ -68,7 +68,7 @@
 
 
 
-(let ([ls (map cat (get-unicode-data))])
+(let ([ls (map cat (get-unicode-data "UNIDATA/UnicodeData.txt"))])
   (let ([wanted 
          (codes-in-cats ls
            '(Lu Ll Lt Lm Lo Mn Mc Me Nd Nl No Pd Pc Po Sc Sm Sk So Co))])

@@ -1,7 +1,7 @@
 
 (library (ikarus writer)
   (export write display format printf print-error error-handler
-          error)
+          error print-unicode)
   (import 
     (ikarus system $chars)
     (ikarus system $strings)
@@ -12,9 +12,10 @@
     (ikarus system $bytevectors)
     (only (ikarus unicode-data) unicode-printable-char?) 
     (except (ikarus) write display format printf print-error
-            error-handler error))
+            error-handler error print-unicode))
 
-
+  (define print-unicode
+    (make-parameter #t))
 
   (define char-table ; first nonprintable chars
     '#("nul" "x1" "x2" "x3" "x4" "x5" "x6" "alarm"
@@ -53,7 +54,7 @@
              [(fx= i 127) 
               (write-char #\\ p)
               (write-char* "delete" p)]
-             [(unicode-printable-char? x) 
+             [(and (print-unicode) (unicode-printable-char? x))
               (write-char #\\ p)
               (write-char x p)]
              [else

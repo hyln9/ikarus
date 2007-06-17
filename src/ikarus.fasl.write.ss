@@ -37,8 +37,16 @@
          (write-char #\I p)
          (write-fixnum x p)]
         [(char? x)
-         (write-char #\C p)
-         (write-char x p)]
+         (let ([n ($char->fixnum x)])
+           (if ($fx<= n 255)
+               (begin
+                 (write-char #\c p)
+                 (write-byte n p))
+               (begin
+                 (write-char #\C p)
+                 (write-int n p))))]
+        ; (write-char #\C p)
+        ; (write-char x p)]
         [(boolean? x)
          (write-char (if x #\T #\F) p)]
         [(eof-object? x) (write-char #\E p)]

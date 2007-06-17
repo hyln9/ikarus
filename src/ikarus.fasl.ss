@@ -14,7 +14,8 @@
 ;;;   "E" : denoting the end of file object
 ;;;   "U" : denoting the unspecified value
 ;;;   "I" + 4-bytes : denoting a fixnum (in host byte order)
-;;;   "C" + 1-byte : denoting a character
+;;;   "c" + 1-byte : denoting a small character (<= 255)
+;;;   "C" + 4-byte word: big char.
 ;;;   "P" + object1 + object2 : a pair
 ;;;   "V" + 4-bytes(n) + object ... : a vector of length n followed by n objects
 ;;;   "v" + 4-byte(n) + octet ... : a bytevector of length n followed by n octets
