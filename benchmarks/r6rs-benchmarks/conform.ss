@@ -3,6 +3,7 @@
 (library (r6rs-benchmarks conform)
   (export main)
   (import (r6rs)
+          (r6rs unicode)
           (r6rs mutable-pairs)
           (r6rs-benchmarks))
   

@@ -1,4 +1,3 @@
-* conform needs char-downcase.
 * maze needs bitwise-and
 * ray needs many fl procedures
 * quicksort needs bignum modulo.

@@ -7430,3 +7430,23 @@ Words allocated: 126088226
 Words reclaimed: 0
 Elapsed time...: 42817 ms (User: 23073 ms; System: 19390 ms)
 Elapsed GC time: 196 ms (CPU: 198 in 481 collections.)
+
+****************************
+Benchmarking Larceny-r6rs on Sun Jun 17 17:31:39 AST 2007 under Darwin Vesuvius.local 8.9.1 Darwin Kernel Version 8.9.1: Thu Feb 22 20:55:00 PST 2007; root:xnu-792.18.15~1/RELEASE_I386 i386 i386
+
+Testing conform under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 22544130
+Words reclaimed: 0
+Elapsed time...: 1428 ms (User: 1399 ms; System: 23 ms)
+Elapsed GC time: 74 ms (CPU: 69 in 86 collections.)
