@@ -1,54 +1,9 @@
 #!/usr/bin/env ikarus --r6rs-script
 
-(import (ikarus))
+(import 
+  (ikarus)
+  (unicode-data))
 
-
-(define (read-line)
-  (let f ([ac '()])
-    (let ([x (read-char)])
-      (cond
-        [(eof-object? x)
-         (if (null? ac)
-             (eof-object) 
-             (list->string (reverse ac)))]
-        [(char=? x #\newline)
-         (if (null? ac) (f) (list->string (reverse ac)))]
-        [else (f (cons x ac))]))))
-
-(define (find-semi str i n)
-  (cond
-    [(or (fx= i n)
-         (char=? (string-ref str i) #\;)) i]
-    [else (find-semi str (+ i 1) n)]))
-
-(define (split str)
-  (let f ([i 0] [n (string-length str)])
-    (cond
-      [(= i n) '()]
-      [else
-       (let ([j (find-semi str i n)])
-         (cond
-           [(= j n) (list (substring str i j))]
-           [else
-            (cons (substring str i j)
-                  (f (+ j 1) n))]))])))
-
-(define (extract-uni-data)
-  (let f ([ls '()])
-    (let ([line (read-line)])
-      (cond
-        [(eof-object? line)
-         (reverse ls)]
-        [else
-         (let ([fields (split line)])
-           (let ([num (car fields)]
-                 [cat (caddr fields)])
-             (f (cons
-                  (cons
-                    (read 
-                      (open-input-string (format "#x~a" num)))
-                    (string->symbol cat))
-                  ls))))]))))
 
 (define (codes-in-cats ls cats)
   (let f ([ls ls] [ac '()])
@@ -78,7 +33,6 @@
              (cons i (f (+ i 1) #f ls))
              (f (+ i 1) #f ls))]))))
 
-(define (odd? n) (= (fxlogand n 1) 1))
 
 (define (search-on? n v)
   (let ([k (- (vector-length v) 1)])
@@ -105,12 +59,16 @@
         (f (+ i 1) ls)))))
                       
 
+(define (cat fields)
+  (let ([num (car fields)]
+        [cat (caddr fields)])
+     (cons
+       (read (open-input-string (format "#x~a" num)))
+       (string->symbol cat))))
 
 
-(let ([ls
-       (with-input-from-file 
-         "UNIDATA/UnicodeData.txt"
-         extract-uni-data)])
+
+(let ([ls (map cat (get-unicode-data))])
   (let ([wanted 
          (codes-in-cats ls
            '(Lu Ll Lt Lm Lo Mn Mc Me Nd Nl No Pd Pc Po Sc Sm Sk So Co))])
