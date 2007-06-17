@@ -10,7 +10,7 @@
     (ikarus system $pairs)
     (ikarus system $symbols)
     (ikarus system $bytevectors)
-    (ikarus unicode-data)
+    (only (ikarus unicode-data) unicode-printable-char?) 
     (except (ikarus) write display format printf print-error
             error-handler error))
 

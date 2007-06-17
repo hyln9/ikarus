@@ -6,7 +6,7 @@
     (ikarus system $fx)
     (ikarus system $pairs)
     (ikarus system $bytevectors)
-    (ikarus unicode-data)
+    (only (ikarus unicode-data) unicode-printable-char?) 
     (except (ikarus) read read-token comment-handler))
 
   (define delimiter?

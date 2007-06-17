@@ -116,8 +116,8 @@
   
   (define (flabs x)
     (if (flonum? x) 
-        (if (flnegative? x) 
-            (fl* x -1.0)
+        (if ($fl> x 0.0) 
+            ($fl* x -1.0)
             x)
         (error 'flabs "~s is not a flonum" x)))
   )
@@ -441,7 +441,7 @@
             (foreign-call "ikrt_fxbnminus" x y)]
            [(flonum? y)
             (if ($fx= x 0)
-                (fl* y -1.0)
+                ($fl* y -1.0)
                 ($fl- (fixnum->flonum x) y))]
            [(ratnum? y) 
             (let ([n ($ratnum-n y)] [d ($ratnum-d y)])
@@ -881,7 +881,7 @@
        (if ($bignum-positive? x) x (- x))]
       [(flonum? x)
        (if ($flnegative? x) 
-           (fl* x -1.0)
+           ($fl* x -1.0)
            x)]
       [(ratnum? x) 
        (let ([n ($ratnum-n x)])
@@ -1287,7 +1287,7 @@
              (f (fl- ac (car rest)) (cdr rest))))]
       [(x) 
        (if (flonum? x) 
-           (fl- 0.0 x)
+           ($fl* -1.0 x)
            (error 'fl+ "~s is not a flonum" x))]))
 
   (define fl*
@@ -1532,7 +1532,7 @@
   (define flnegative?
     (lambda (x)
       (if (flonum? x) 
-          ($flnegative? x)
+          ($fl< x 0.0)
           (error 'flnegative? "~s is not a flonum" x))))
 
   (define exact-integer-sqrt

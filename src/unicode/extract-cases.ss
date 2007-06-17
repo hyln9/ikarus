@@ -28,24 +28,27 @@
 
 (define (compute-foldcase ls)
   (define (find-vec idx)
-    (let f ([ls ls])
-      (cond
-        [(null? ls) (error 'find-vec "cannot find ~s" idx)]
-        [(= (caar ls) idx) (cdar ls)]
-        [else (f (cdr ls))])))
-  (let ([v (list->vector (map cdr ls))])
-    (define (upper i)
-      (+ i (vector-ref (find-vec i) 0)))
-    (define (lower i)
-      (+ i (vector-ref (find-vec i) 1)))
-    (define (set-folder! i j)
-      (vector-set! (find-vec i) 3 (- j i)))
-    (for-each 
-      (lambda (x)
-        (let ([idx (car x)] [vec (cdr x)])
-          (vector-set! vec 3 
-            (- (lower (upper idx)) idx))))
-      ls))
+    (cond
+      [(assq idx ls) => cdr]
+      [else (error 'find-vec "~s is missing" idx)]))
+  (define (upper i)
+    (+ i (vector-ref (find-vec i) 0)))
+  (define (lower i)
+    (+ i (vector-ref (find-vec i) 1)))
+  (define (set-folder! i j)
+    (vector-set! (find-vec i) 3 (- j i)))
+  (for-each 
+    (lambda (x)
+      (let ([idx (car x)] [vec (cdr x)])
+        (vector-set! vec 3 
+          (- (lower (upper idx)) idx))))
+    ls)
+  (for-each
+    (lambda (idx) 
+      (let ([vec (find-vec idx)])
+        (vector-set! vec 3 0)))
+    ;; turkic chars 
+    '(#x130 #x131))
   ls)
 
 (define uc-index 12)
