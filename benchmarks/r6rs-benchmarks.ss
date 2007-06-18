@@ -17,6 +17,7 @@
      divrec-iters
      dynamic-iters
      earley-iters
+     fft-iters
      fib-iters
      fibc-iters
      fibfp-iters

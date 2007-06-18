@@ -954,6 +954,26 @@
      (cogen-pred-$fxzero? x))]
   [(E x) (interrupt-unless (cogen-pred-fixnum? x))])
 
+(define-primop quotient safe
+  [(V x n) 
+   (record-case n
+    [(constant i) 
+     (if (eqv? i 2) 
+         (seq* 
+           (interrupt-unless (cogen-pred-fixnum? x)) 
+           (make-conditional
+             (prm '< (T x) (K 0))
+             (prm 'logand
+               (prm 'int+ 
+                 (prm 'sra (T x) (K 1))
+                 (K (fxsll 1 (sub1 fx-shift))))
+               (K (fxsll -1 fx-shift)))
+             (prm 'logand
+               (prm 'sra (T x) (K 1))
+               (K (fxsll -1 fx-shift)))))
+         (interrupt))]
+    [else (interrupt)])])
+
 /section)
 
 (section ;;; records

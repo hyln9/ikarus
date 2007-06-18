@@ -1,5 +1,4 @@
 * maze needs bitwise-and
-* ray needs many fl procedures
 * quicksort needs bignum modulo.
 * scheme needs complex? and other stuff.
 * slatex needs char-alphabetic?
