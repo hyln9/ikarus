@@ -2,7 +2,7 @@
 * ray needs many fl procedures
 * quicksort needs bignum modulo.
 * scheme needs complex? and other stuff.
-* slatex needs string-ci=?
+* slatex needs char-alphabetic?
 * compiler needs string-downcase
 
 * ctak crashes with a bus error.

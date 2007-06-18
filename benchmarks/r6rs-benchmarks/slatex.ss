@@ -10,6 +10,7 @@
     (r6rs) 
     (r6rs unicode)
     (r6rs mutable-pairs)
+    (r6rs i/o simple)
     (r6rs-benchmarks))
 
   (define *op-sys* 'unix)

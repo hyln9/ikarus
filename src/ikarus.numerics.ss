@@ -132,7 +132,8 @@
           abs
           exact->inexact floor ceiling round log fl=? fl<? fl<=? fl>?
           fl>=? fl+ fl- fl* fl/ flsqrt flmin flzero? flnegative?
-          sin cos atan sqrt)
+          sin cos atan sqrt
+          flround)
   (import 
     (ikarus system $fx)
     (ikarus system $flonums)
@@ -148,7 +149,8 @@
             exact-integer-sqrt min max abs
             fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt flmin
             flzero? flnegative?
-            sin cos atan sqrt))
+            sin cos atan sqrt
+            flround))
 
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))
@@ -1618,31 +1620,40 @@
       [(or (fixnum? x) (bignum? x)) x]
       [else (error 'ceiling "~s is not a number" x)]))
 
-  (define (round x)
-    (define (ratnum-round x)
-      (let ([n ($ratnum-n x)] [d ($ratnum-d x)])
-        (let-values ([(q r) (quotient+remainder n d)])
-          (let ([r2 (+ r r)]) 
-            (if (> n 0) 
+
+  (define ($ratnum-round x)
+    (let ([n ($ratnum-n x)] [d ($ratnum-d x)])
+      (let-values ([(q r) (quotient+remainder n d)])
+        (let ([r2 (+ r r)]) 
+          (if (> n 0) 
+              (cond
+                [(< r2 d) q]
+                [(> r2 d) (+ q 1)]
+                [else
+                 (if (even? q) q (+ q 1))])
+              (let ([r2 (- r2)])
                 (cond
                   [(< r2 d) q]
-                  [(> r2 d) (+ q 1)]
+                  [(< r2 d) (- q 1)]
                   [else
-                   (if (even? q) q (+ q 1))])
-                (let ([r2 (- r2)])
-                  (cond
-                    [(< r2 d) q]
-                    [(< r2 d) (- q 1)]
-                    [else
-                     (if (even? q) q (- q 1))])))))))
+                   (if (even? q) q (- q 1))])))))))
+
+  (define ($flround x)
+    (let ([e ($flonum->exact x)])
+      (cond
+        [(not e) x] ;;; infs and nans round to themselves
+        [(ratnum? e) (exact->inexact ($ratnum-round e))]
+        [else (exact->inexact e)])))
+
+  (define (flround x)
+    (if (flonum? x)
+        ($flround x)
+        (error 'flround "~s is not a flonum" x)))
+
+  (define (round x)
     (cond
-      [(flonum? x) 
-       (let ([e ($flonum->exact x)])
-         (cond
-           [(not e) x] ;;; infs and nans round to themselves
-           [(ratnum? e) (exact->inexact (ratnum-round e))]
-           [else (exact->inexact e)]))]
-      [(ratnum? x) (ratnum-round x)]
+      [(flonum? x) ($flround x)]
+      [(ratnum? x) ($ratnum-round x)]
       [(or (fixnum? x) (bignum? x)) x]
       [else (error 'round "~s is not a number" x)]))
 

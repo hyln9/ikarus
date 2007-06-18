@@ -398,6 +398,7 @@
     [flnegative?             i rfl]
     [flpositive?             i rfl]
     [flabs                   i rfl]
+    [flround                 i rfl]
     [fixnum->string          i]
     [string->flonum          i]
     [-                       i r]
