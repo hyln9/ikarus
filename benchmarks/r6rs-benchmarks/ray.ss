@@ -71,6 +71,8 @@
                             (fl- (point-z eye)))))
       (inexact->exact (flround (fl* (sendray eye ray) 255.0)))))
   
+
+
   (define (sendray pt ray)
     (let* ((x (first-hit pt ray))
            (s (vector-ref x 0))

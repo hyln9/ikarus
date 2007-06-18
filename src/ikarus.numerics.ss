@@ -154,6 +154,7 @@
 
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))
+
   (module (bignum->flonum)
     ;  sbe         f6     f5       f4       f3       f2       f1       f0
     ;SEEEEEEE|EEEEmmmm|mmmmmmmm|mmmmmmmm|mmmmmmmm|mmmmmmmm|mmmmmmmm|mmmmmmmm 
@@ -1660,11 +1661,13 @@
                    (if (even? q) q (- q 1))])))))))
 
   (define ($flround x)
-    (let ([e ($flonum->exact x)])
-      (cond
-        [(not e) x] ;;; infs and nans round to themselves
-        [(ratnum? e) (exact->inexact ($ratnum-round e))]
-        [else (exact->inexact e)])))
+    (foreign-call "ikrt_fl_round" x ($make-flonum)))
+
+  ;  (let ([e ($flonum->exact x)])
+  ;    (cond
+  ;      [(not e) x] ;;; infs and nans round to themselves
+  ;      [(ratnum? e) (exact->inexact ($ratnum-round e))]
+  ;      [else (exact->inexact e)])))
 
   (define (flround x)
     (if (flonum? x)

@@ -6,6 +6,12 @@
 #include <math.h>
 
 ikp
+ikrt_fl_round(ikp x, ikp y){
+  flonum_data(y) = round(flonum_data(x));
+  return y;
+}
+
+ikp
 ikrt_bytevector_to_flonum(ikp x, ikpcb* pcb){
   double v = strtod((char*)x+off_bytevector_data, NULL);
   ikp r = ik_alloc(pcb, flonum_size) + vector_tag;

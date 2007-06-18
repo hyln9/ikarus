@@ -773,6 +773,14 @@
             (prm 'sll (T v) (K (- 8 fx-shift))))]
      [else (interrupt)])])
 
+(define-primop $fixnum->flonum unsafe
+  [(V fx) 
+   (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
+     (prm 'mset x (K (- vector-tag)) (K flonum-tag))
+     (prm 'fl:from-int (prm 'sll (T fx) (K fx-shift)))
+     (prm 'fl:store x (K (- disp-flonum-data vector-tag)))
+     x)])
+
 (define-primop $fl+ unsafe
   [(V x y) ($flop-aux 'fl:add! x y)])
 (define-primop $fl- unsafe

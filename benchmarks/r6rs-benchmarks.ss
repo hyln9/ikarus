@@ -41,6 +41,7 @@
      primes-iters
      puzzle-iters
      quicksort-iters
+     ray-iters
      sboyer-iters
      simplex-iters
      sum-iters
