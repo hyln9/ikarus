@@ -777,7 +777,9 @@
   [(V fx) 
    (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
      (prm 'mset x (K (- vector-tag)) (K flonum-tag))
-     (prm 'fl:from-int (prm 'sll (T fx) (K fx-shift)))
+     (prm 'fl:from-int
+          (K 0) ; dummy
+          (prm 'sra (T fx) (K fx-shift)))
      (prm 'fl:store x (K (- disp-flonum-data vector-tag)))
      x)])
 

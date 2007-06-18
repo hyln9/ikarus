@@ -152,8 +152,7 @@
             sin cos atan sqrt
             flround flmax))
 
-  (define (fixnum->flonum x)
-    (foreign-call "ikrt_fixnum_to_flonum" x))
+;    (foreign-call "ikrt_fixnum_to_flonum" x))
 
   (module (bignum->flonum)
     ;  sbe         f6     f5       f4       f3       f2       f1       f0
@@ -362,7 +361,7 @@
            [(bignum? y)
             (foreign-call "ikrt_fxbnplus" x y)]
            [(flonum? y)
-            ($fl+ (fixnum->flonum x) y)]
+            ($fl+ ($fixnum->flonum x) y)]
            [(ratnum? y)
             ($make-ratnum
               (+ (* x ($ratnum-d y)) ($ratnum-n y))
@@ -386,7 +385,7 @@
         [(flonum? x)
          (cond
            [(fixnum? y)
-            ($fl+ x (fixnum->flonum y))]
+            ($fl+ x ($fixnum->flonum y))]
            [(bignum? y)
             ($fl+ x (bignum->flonum y))]
            [(flonum? y)
@@ -445,7 +444,7 @@
            [(flonum? y)
             (if ($fx= x 0)
                 ($fl* y -1.0)
-                ($fl- (fixnum->flonum x) y))]
+                ($fl- ($fixnum->flonum x) y))]
            [(ratnum? y) 
             (let ([n ($ratnum-n y)] [d ($ratnum-d y)])
               (binary/ (binary- (binary* d x) n) d))]
@@ -467,7 +466,7 @@
         [(flonum? x)
          (cond
            [(fixnum? y)
-            ($fl- x (fixnum->flonum y))]
+            ($fl- x ($fixnum->flonum y))]
            [(bignum? y)
             ($fl- x (bignum->flonum y))]
            [(flonum? y)
@@ -500,7 +499,7 @@
            [(bignum? y)
             (foreign-call "ikrt_fxbnmult" x y)]
            [(flonum? y)
-            ($fl* (fixnum->flonum x) y)]
+            ($fl* ($fixnum->flonum x) y)]
            [(ratnum? y) 
             (binary/ (binary* x ($ratnum-n y)) ($ratnum-d y))]
            [else 
@@ -520,7 +519,7 @@
         [(flonum? x)
          (cond
            [(fixnum? y)
-            ($fl* x (fixnum->flonum y))]
+            ($fl* x ($fixnum->flonum y))]
            [(bignum? y)
             ($fl* x (bignum->flonum y))]
            [(flonum? y)
@@ -684,13 +683,13 @@
         [(flonum? x)
          (cond
            [(flonum? y) ($fl/ x y)]
-           [(fixnum? y) ($fl/ x (fixnum->flonum y))]
+           [(fixnum? y) ($fl/ x ($fixnum->flonum y))]
            [(bignum? y) ($fl/ x (bignum->flonum y))]
            [(ratnum? y) ($fl/ x (ratnum->flonum y))]
            [else (error '/ "unspported ~s ~s" x y)])]
         [(fixnum? x)
          (cond
-           [(flonum? y) ($fl/ (fixnum->flonum x) y)]
+           [(flonum? y) ($fl/ ($fixnum->flonum x) y)]
            [(fixnum? y)
             (cond
               [($fx= y 0) (error '/ "division by 0")]
@@ -936,7 +935,7 @@
   (define exact->inexact
     (lambda (x)
       (cond
-        [(fixnum? x) (fixnum->flonum x)]
+        [(fixnum? x) ($fixnum->flonum x)]
         [(bignum? x) (bignum->flonum x)]
         [(ratnum? x) 
          (binary/ (exact->inexact ($ratnum-n x)) ($ratnum-d x))]
@@ -1201,11 +1200,11 @@
          (define-syntax flfl? 
            (syntax-rules () [(_ x y) (fl? x y)]))
          (define-syntax flfx? 
-           (syntax-rules () [(_ x y) (fl? x (fixnum->flonum y))]))
+           (syntax-rules () [(_ x y) (fl? x ($fixnum->flonum y))]))
          (define-syntax flbn? 
            (syntax-rules () [(_ x y) (fl? x (bignum->flonum y))]))
          (define-syntax fxfl? 
-           (syntax-rules () [(_ x y) (fl? (fixnum->flonum x) y)]))
+           (syntax-rules () [(_ x y) (fl? ($fixnum->flonum x) y)]))
          (define-syntax bnfl? 
            (syntax-rules () [(_ x y) (fl? (bignum->flonum x) y)])))]))
 
