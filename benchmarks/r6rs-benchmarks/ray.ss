@@ -88,7 +88,7 @@
             (let ((h (intersect s pt ray)))
               (if h
                   (let ((d (distance h pt)))
-                    (if (fl< d dist)
+                    (if (fl<? d dist)
                         (loop (cdr lst) s h d)
                         (loop (cdr lst) surface hit dist)))
                   (loop (cdr lst) surface hit dist)))))))

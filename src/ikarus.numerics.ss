@@ -133,7 +133,7 @@
           exact->inexact floor ceiling round log fl=? fl<? fl<=? fl>?
           fl>=? fl+ fl- fl* fl/ flsqrt flmin flzero? flnegative?
           sin cos atan sqrt
-          flround)
+          flround flmax)
   (import 
     (ikarus system $fx)
     (ikarus system $flonums)
@@ -150,7 +150,7 @@
             fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt flmin
             flzero? flnegative?
             sin cos atan sqrt
-            flround))
+            flround flmax))
 
   (define (fixnum->flonum x)
     (foreign-call "ikrt_fixnum_to_flonum" x))
@@ -814,6 +814,27 @@
            [(null? rest) (binary/ a b)]
            [else (f (binary/ a b) (car ls) (cdr ls))]))]))
 
+
+  (define flmax
+    (case-lambda
+      [(x y)
+       (if (flonum? x) 
+           (if (flonum? y) 
+               (if ($fl< x y) 
+                   y
+                   x)
+               (error 'flmax "~s is not a flonum" y))
+           (error 'flmax "~s is not a flonum" x))]
+      [(x y z . rest)
+       (let f ([a (flmax x y)] [b z] [ls rest])
+         (cond
+           [(null? ls) (flmax a b)]
+           [else
+            (f (flmax a b) (car ls) (cdr ls))]))]
+      [(x) 
+       (if (flonum? x) 
+           x 
+           (error 'flmax "~s is not a number" x))]))
 
   (define max
     (case-lambda
