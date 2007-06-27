@@ -460,13 +460,6 @@
   [(P str) (K #t)]
   [(E str) (nop)])
 
-;(define-primop primitive-set! unsafe
-;  [(E x v) (mem-assign v (T x) (- disp-symbol-system-value symbol-tag))])
-;
-;(define-primop primitive-ref unsafe
-;  [(V x) (prm 'mref (T x) (K (- disp-symbol-system-value symbol-tag)))]
-;  [(E x) (nop)])
-
 (define-primop $symbol-string unsafe
   [(V x) (prm 'mref (T x) (K (- disp-symbol-record-string symbol-ptag)))]
   [(E x) (nop)])
@@ -496,8 +489,6 @@
   [(E x v)
    (with-tmp ([x (T x)])
      (prm 'mset x (K (- disp-symbol-record-value symbol-ptag)) (T v))
-     ;(prm 'mset x (K (- disp-symbol-function symbol-tag))
-     ;     (prm 'mref x (K (- disp-symbol-error-function symbol-tag))))
      (dirty-vector-set x))])
 
 
