@@ -237,7 +237,7 @@ gc_tconc_push_extending(gc_t* gc, ikp tcbucket){
         gc->pcb);
   gc->segment_vector = gc->pcb->segment_vector;
   bzero(ap, pagesize);
-  ikp nap = ap + wordsize;
+  ikp nap = ap + 2*wordsize;
   gc->tconc_base = ap;
   gc->tconc_ap = nap;
   gc->tconc_ep = ap + pagesize;
@@ -248,7 +248,7 @@ gc_tconc_push_extending(gc_t* gc, ikp tcbucket){
 static inline void
 gc_tconc_push(gc_t* gc, ikp tcbucket){
   ikp ap = gc->tconc_ap;
-  ikp nap = ap + wordsize;
+  ikp nap = ap + 2*wordsize;
   if(nap > gc->tconc_ep){
     gc_tconc_push_extending(gc, tcbucket);
   } else {
@@ -1799,7 +1799,7 @@ gc_add_tconcs(gc_t* gc){
     ikp q = gc->tconc_ap;
     while(p < q){
       add_one_tconc(pcb, ref(p,0));
-      p += wordsize;
+      p += 2*wordsize;
     }
   }
   ikpages* qu = gc->tconc_queue;
@@ -1809,7 +1809,7 @@ gc_add_tconcs(gc_t* gc){
     while(p < q){
       add_one_tconc(pcb, ref(p,0));
       ref(p,0) = 0;
-      p += wordsize;
+      p += 2*wordsize;
     }
     ikpages* next = qu->next;
     ik_free(qu, sizeof(ikpages));
