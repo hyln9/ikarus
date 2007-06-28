@@ -230,7 +230,13 @@ gc_tconc_push_extending(gc_t* gc, ikp tcbucket){
     p->next = gc->tconc_queue;
     gc->tconc_queue = p;
   }
-  ikp ap = ik_mmap(pagesize);
+  /* Wrong MR! */
+  ikp ap = 
+     ik_mmap_typed(pagesize, 
+        meta_mt[meta_ptrs] | next_gen_tag[0],
+        gc->pcb);
+  gc->segment_vector = gc->pcb->segment_vector;
+  bzero(ap, pagesize);
   ikp nap = ap + wordsize;
   gc->tconc_base = ap;
   gc->tconc_ap = nap;
@@ -1770,6 +1776,7 @@ add_one_tconc(ikpcb* pcb, ikp tcbucket){
   assert(tagof(tc) == pair_tag);
   ikp d = ref(tc, off_cdr);
   assert(tagof(d) == pair_tag);
+  /* Wrong MR! */
   ikp new_pair = ik_alloc(pcb, pair_size) + pair_tag;
   ref(d, off_car) = tcbucket;
   ref(d, off_cdr) = new_pair;
@@ -1801,6 +1808,7 @@ gc_add_tconcs(gc_t* gc){
     ikp q = p + qu->size;
     while(p < q){
       add_one_tconc(pcb, ref(p,0));
+      ref(p,0) = 0;
       p += wordsize;
     }
     ikpages* next = qu->next;
