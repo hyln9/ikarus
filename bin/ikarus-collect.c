@@ -1771,13 +1771,14 @@ fix_new_pages(gc_t* gc){
 
 
 static void
-add_one_tconc(ikpcb* pcb, ikp tcbucket){
+add_one_tconc(ikpcb* pcb, ikp p){
+  ikp tcbucket = ref(p,0);
   ikp tc = ref(tcbucket, off_tcbucket_tconc);
   assert(tagof(tc) == pair_tag);
   ikp d = ref(tc, off_cdr);
   assert(tagof(d) == pair_tag);
   /* Wrong MR! */
-  ikp new_pair = ik_alloc(pcb, pair_size) + pair_tag;
+  ikp new_pair = p + pair_tag; //ik_alloc(pcb, pair_size) + pair_tag;
   ref(d, off_car) = tcbucket;
   ref(d, off_cdr) = new_pair;
   ref(new_pair, off_car) = false_object;
@@ -1798,7 +1799,7 @@ gc_add_tconcs(gc_t* gc){
     ikp p = gc->tconc_base;
     ikp q = gc->tconc_ap;
     while(p < q){
-      add_one_tconc(pcb, ref(p,0));
+      add_one_tconc(pcb, p);
       p += 2*wordsize;
     }
   }
@@ -1807,8 +1808,7 @@ gc_add_tconcs(gc_t* gc){
     ikp p = qu->base;
     ikp q = p + qu->size;
     while(p < q){
-      add_one_tconc(pcb, ref(p,0));
-      ref(p,0) = 0;
+      add_one_tconc(pcb, p);
       p += 2*wordsize;
     }
     ikpages* next = qu->next;
