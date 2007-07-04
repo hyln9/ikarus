@@ -668,6 +668,7 @@
     [$fx+               $fx]
     [$fx*               $fx]
     [$fx-               $fx]
+    [$fxinthash         $fx]
 
     [$make-symbol               $symbols]
     [$symbol-unique-string      $symbols]

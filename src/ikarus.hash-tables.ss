@@ -23,7 +23,11 @@
               ($set-cdr! x #f)
               v)))))
 
-  (define inthash
+  (define-syntax inthash
+    (syntax-rules ()
+      [(_ x) ($fxinthash x)]))
+
+  #;(define inthash
     (lambda (key)
       ;static int inthash(int key) { /* from Bob Jenkin's */
       ;  key += ~(key << 15);

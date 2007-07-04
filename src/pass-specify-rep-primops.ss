@@ -658,6 +658,38 @@
   [(P a b) (K #t)]
   [(E a b) (nop)])
 
+(define-primop $fxinthash unsafe
+  [(V key)
+   (with-tmp ([k (T key)])
+     (with-tmp ([k (prm 'int+ k (prm 'logxor (prm 'sll k (K 15)) (K -1)))])
+       (with-tmp ([k (prm 'logxor k (prm 'sra k (K 10)))])
+         (with-tmp ([k (prm 'int+ k (prm 'sll k (K 3)))])
+           (with-tmp ([k (prm 'logxor k (prm 'sra k (K 6)))])
+             (with-tmp ([k (prm 'int+ k (prm 'logxor (prm 'sll k (K 11)) (K -1)))])
+               (with-tmp ([k (prm 'logxor k (prm 'sra k (K 16)))])
+                 (prm 'sll k (K fx-shift)))))))))])
+           
+
+;(define inthash
+;    (lambda (key)
+;      ;static int inthash(int key) { /* from Bob Jenkin's */
+;      ;  key += ~(key << 15);
+;      ;  key ^=  (key >> 10);
+;      ;  key +=  (key << 3);
+;      ;  key ^=  (key >> 6);
+;      ;  key += ~(key << 11);
+;      ;  key ^=  (key >> 16);
+;      ;  return key;
+;      ;}
+;      (let* ([key ($fx+ key ($fxlognot ($fxsll key 15)))]
+;             [key ($fxlogxor key ($fxsra key 10))]
+;             [key ($fx+ key ($fxsll key 3))]
+;             [key ($fxlogxor key ($fxsra key 6))]
+;             [key ($fx+ key ($fxlognot ($fxsll key 11)))]
+;             [key ($fxlogxor key ($fxsra key 16))])
+;        key)))
+
+
 /section)
 
 (section ;;; bignums
