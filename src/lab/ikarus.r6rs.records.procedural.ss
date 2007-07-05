@@ -6,10 +6,12 @@
     record-accessor record-mutator
     record-constructor record-predicate)
   (import 
-    (except (ikarus) record-constructor record-predicate)
+    (except (ikarus) record-constructor record-predicate
+            set-rtd-printer!)
     (ikarus system $records))
 
-  (define-record rtd (name size parent sealed? opaque? uid fields))
+  (define-record rtd 
+    (name size old-fields printer symbol parent sealed? opaque? uid fields))
   (define rtd-alist '())
   (define (intern-rtd! uid rtd)
     (set! rtd-alist (cons (cons uid rtd) rtd-alist)))
@@ -24,7 +26,7 @@
   (module (make-record-type-descriptor)
     (define who 'make-record-type-descriptor)
     (define (make-rtd-aux name parent uid sealed? opaque? fields)
-      (make-rtd name (vector-length fields) parent sealed? opaque? uid fields))
+      (make-rtd name (vector-length fields) #f #f #f parent sealed? opaque? uid fields))
     (define (convert-fields pfv sv)
       (unless (vector? sv) 
         (error who "invalid fields argument ~s" sv))
@@ -151,6 +153,7 @@
     (if (= i n)
         '()
         (cons i (iota (+ i 1) n))))
+
   (define (sym n)
     (string->symbol (format "v~s" n)))
 
@@ -207,7 +210,7 @@
        (let ([v (let ([v (vector-ref extended-constructors n)])
                   (or v 
                       (let ([v (make-vector (+ n 1) #f)])
-                        (vector-set! extended-constructors n)
+                        (vector-set! extended-constructors n v)
                         v)))])
          (or (vector-ref v m)
              (let* ([vars-0m (map sym (iota 0 m))]
@@ -228,23 +231,33 @@
     (unless (rcd? rcd)
       (error who "~s is not a record constructor descriptor" rcd))
     (let ([rtd (rcd-rtd rcd)]
-          [prcd (rcd-prcd rcd)]
-          [proc (rcd-proc rcd)])
-      (cond
-        [(not prcd)
-         (cond
-           [(not proc) 
-            ((base-constructor-maker (rtd-size rtd)) rtd)]
-           [(rtd-parent rtd) =>
-            (lambda (parent)
-              (let ([n (rtd-size rtd)]
-                    [m (rtd-size parent)])
-                (let ([c0 ((base-constructor-maker n) rtd)])
-                  (let ([c1 ((extended-constructor-maker n m) c0)])
-                    (proc c1)))))]
-           [else 
-            (proc ((base-constructor-maker (rtd-size rtd)) rtd))])]
-        [else (error who "BUG22")])))
+          [prcd (rcd-prcd rcd)])
+      (let ([c*
+             (let ([n (rtd-size rtd)])
+               (printf "base=~s\n" n)
+               (let f ([c0 ((base-constructor-maker n) rtd)]
+                       [prcd prcd]
+                       [n n])
+                 (cond
+                   [(not prcd) c0]
+                   [else
+                    (let ([r (rcd-rtd prcd)])
+                      (let ([m (rtd-size r)])
+                        (printf "ext ~s ~s\n" n m)
+                        (f ((extended-constructor-maker n m) c0)
+                           (rcd-prcd prcd)
+                           m)))])))])
+        (let f ([rcd rcd])
+          (cond
+            [(not rcd) c*]
+            [else
+             (let ([c* (f (rcd-prcd rcd))])
+               (let ([proc (rcd-proc rcd)])
+                 (if proc (proc c*) c*)))])))))
+
+
+
+
 
   (define (record-accessor rtd k) 
     (define who 'record-accessor)
