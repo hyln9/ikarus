@@ -120,30 +120,32 @@
            (generate-rtd name parent uid sealed? opaque? fields)]
           [else (error who "~s is not a valid uid" uid)]))))
 
-  (define-record rcd (rtd pproc proc))
-  (define make-record-constructor-descriptor
-    (lambda (rtd parent protocol)
-      (define who 'make-record-constructor-descriptor)
-      (define (make-rcd/default-proto&prcd rtd) 
-        (make-rcd rtd #f #f))
-      (define (make-rcd/default-proto rtd parent)
-        (cond
-          [(not parent) 
-           (make-rcd/default-proto&prcd rtd)]
-          [(rcd? parent) 
-           (error who "BUG1")]
-          [else (error who "~s is not a valid record constructor descriptor"
-                       parent)]))
-      (define (make-rcd/procedure-proto rtd parent protocol) 
-        (error who "BUG2"))
-      (unless (rtd? rtd)
-        (error who "~s is not an rtd" rtd))
+  (define-record rcd (rtd prcd proc))
+  (define (is-parent-of? prtd rtd)
+    (let ([p (rtd-parent rtd)])
       (cond
-        [(not protocol) 
-         (make-rcd/default-proto rtd parent)]
-        [(procedure? protocol) 
-         (make-rcd/procedure-proto rtd parent protocol)]
-        [else (error who "~s is not a valid protocol" protocol)])))
+        [(eq? p prtd) #t]
+        [(not p) #f]
+        [else (is-parent-of? prtd p)])))
+        
+  (define make-record-constructor-descriptor
+    (lambda (rtd prcd protocol)
+      (define who 'make-record-constructor-descriptor)
+      (unless (rtd? rtd)
+        (error who "~s is not a record type descriptor" rtd))
+      (unless (or (not protocol) (procedure? protocol))
+        (error who "invalid protocol ~s" protocol))
+      (let ([prtd (rtd-parent rtd)])
+        (cond
+          [(not prcd) 
+           (make-rcd rtd #f protocol)]
+          [(rcd? prcd) 
+           (unless (is-parent-of? (rcd-rtd prcd) rtd)
+             (error who "descriptor ~s does not apply to ~s" 
+                    prcd rtd))
+           (make-rcd rtd prcd protocol)]
+          [else (error who "~s is not a valid record constructor
+                       descriptor" prcd)]))))
 
   (define (iota i n)
     (if (= i n)
@@ -152,30 +154,97 @@
   (define (sym n)
     (string->symbol (format "v~s" n)))
 
-  (define (default-constructor-maker n) 
-    ;;; FIXME: should cache compiled procedures
-    (let ([vars (map sym (iota 0 n))])
-      (eval `(lambda (rtd) 
-               (lambda ,vars 
-                 ($record rtd . ,vars)))
-            (environment '(ikarus) '(ikarus system $records)))))
+  (define general-base-constructor 
+    (lambda (n)
+      (lambda (rtd)
+        (lambda args
+          (unless (= (length args) n) 
+            (error 'record-constructor 
+              "incorrect number of arguments to constructor"))
+          (let f ([r ($make-record rtd n)] [i 0] [args args])
+            (cond
+              [(null? args) r]
+              [else
+               ($record-set! r i (car args))
+               (f r (add1 i) (cdr args))]))))))
 
+  (define base-constructors 
+    '#(#f #f #f #f #f #f #f #f #f #f #f #f))
 
+  (define (base-constructor-maker n) 
+    (cond
+      [(< n (vector-length base-constructors)) 
+       (or (vector-ref base-constructors n)
+           (let ([vars (map sym (iota 0 n))])
+             (let ([proc 
+                    (eval `(lambda (rtd) 
+                             (lambda ,vars 
+                               ($record rtd . ,vars)))
+                          (environment
+                            '(ikarus) 
+                            '(ikarus system $records)))])
+               (vector-set! base-constructors n proc)
+               proc)))]
+      [else (general-base-constructor n)]))
+
+  (define extended-constructors 
+    '#(#f #f #f #f #f #f #f #f #f #f #f #f))
+
+  (define general-extended-constructor
+    (lambda (n m)
+      (lambda (record-constructor) 
+        (lambda args-n
+          (unless (= (length args-n) n)
+            (error 'record-constructor "incorrect arguments"))
+          (lambda args-m
+            (unless (= (length args-m) m)
+              (error 'record-constructor "incorrect arguments"))
+            (apply record-constructor (append args-n args-m)))))))
+
+  (define (extended-constructor-maker n m)
+    (cond
+      [(< n (vector-length extended-constructors))
+       (let ([v (let ([v (vector-ref extended-constructors n)])
+                  (or v 
+                      (let ([v (make-vector (+ n 1) #f)])
+                        (vector-set! extended-constructors n)
+                        v)))])
+         (or (vector-ref v m)
+             (let* ([vars-0m (map sym (iota 0 m))]
+                    [vars-mn (map sym (iota m n))]
+                    [proc 
+                     (eval
+                       `(lambda (record-constructor) 
+                          (lambda ,vars-0m
+                            (lambda ,vars-mn
+                              (record-constructor ,@vars-0m ,@vars-mn))))
+                       (environment '(ikarus)))])
+               (vector-set! v m proc)
+               proc)))]
+      [else (general-extended-constructor n m)]))
 
   (define (record-constructor rcd)
     (define who 'record-constructor)
     (unless (rcd? rcd)
       (error who "~s is not a record constructor descriptor" rcd))
     (let ([rtd (rcd-rtd rcd)]
-          [pproc (rcd-pproc rcd)]
+          [prcd (rcd-prcd rcd)]
           [proc (rcd-proc rcd)])
       (cond
-        [(not pproc)
+        [(not prcd)
          (cond
            [(not proc) 
-            ((default-constructor-maker (rtd-size rtd)) rtd)]
-           [else (error who "BUG")])]
-        [else (error who "BUG")])))
+            ((base-constructor-maker (rtd-size rtd)) rtd)]
+           [(rtd-parent rtd) =>
+            (lambda (parent)
+              (let ([n (rtd-size rtd)]
+                    [m (rtd-size parent)])
+                (let ([c0 ((base-constructor-maker n) rtd)])
+                  (let ([c1 ((extended-constructor-maker n m) c0)])
+                    (proc c1)))))]
+           [else 
+            (proc ((base-constructor-maker (rtd-size rtd)) rtd))])]
+        [else (error who "BUG22")])))
 
   (define (record-accessor rtd k) 
     (define who 'record-accessor)

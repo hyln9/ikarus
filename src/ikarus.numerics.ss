@@ -528,8 +528,8 @@
             (binary/ (binary* x ($ratnum-n y)) ($ratnum-d y))]
            [else
             (error '* "~s is not a number" y)])]
-        [(ratnum? y) 
-         (if (ratnum? x) 
+        [(ratnum? x) 
+         (if (ratnum? y) 
              (binary/ (binary* ($ratnum-n x) ($ratnum-n y))
                       (binary* ($ratnum-d x) ($ratnum-d y)))
              (binary* y x))]
