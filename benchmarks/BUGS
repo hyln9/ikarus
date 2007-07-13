@@ -4,8 +4,6 @@
 * slatex needs char-alphabetic?
 * compiler needs string-downcase
 
-* ctak crashes with a bus error.
-* fibc crashes with a segfault.
 * ntakl kinda slow
 * string too slow
 * nbody does not work

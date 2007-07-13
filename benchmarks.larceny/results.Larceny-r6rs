@@ -8130,3 +8130,63 @@ Words allocated: 6553342
 Words reclaimed: 0
 Elapsed time...: 3454 ms (User: 2052 ms; System: 1399 ms)
 Elapsed GC time: 8 ms (CPU: 9 in 25 collections.)
+
+****************************
+Benchmarking Larceny-r6rs on Fri Jul 13 13:49:43 AST 2007 under Darwin Vesuvius.local 8.9.1 Darwin Kernel Version 8.9.1: Thu Feb 22 20:55:00 PST 2007; root:xnu-792.18.15~1/RELEASE_I386 i386 i386
+
+Testing ctak under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 265286850
+Words reclaimed: 0
+Elapsed time...: 4836 ms (User: 4824 ms; System: 10 ms)
+Elapsed GC time: 369 ms (CPU: 363 in 1012 collections.)
+
+****************************
+Benchmarking Larceny-r6rs on Fri Jul 13 13:50:43 AST 2007 under Darwin Vesuvius.local 8.9.1 Darwin Kernel Version 8.9.1: Thu Feb 22 20:55:00 PST 2007; root:xnu-792.18.15~1/RELEASE_I386 i386 i386
+
+Testing fibc under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 192411298
+Words reclaimed: 0
+Elapsed time...: 4098 ms (User: 4087 ms; System: 9 ms)
+Elapsed GC time: 280 ms (CPU: 270 in 734 collections.)
+
+****************************
+Benchmarking Larceny-r6rs on Fri Jul 13 13:53:01 AST 2007 under Darwin Vesuvius.local 8.9.1 Darwin Kernel Version 8.9.1: Thu Feb 22 20:55:00 PST 2007; root:xnu-792.18.15~1/RELEASE_I386 i386 i386
+
+Testing mbrot under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 551809361
+Words reclaimed: 0
+Elapsed time...: 2246 ms (User: 2230 ms; System: 15 ms)
+Elapsed GC time: 753 ms (CPU: 762 in 2105 collections.)

@@ -192,6 +192,47 @@
 
 (include "pass-specify-rep.ss")
 
+
+(define (insert-stack-overflow-check x)
+  (define who 'insert-stack-overflow-check)
+  
+  (define (Tail x) #t)
+
+  (define (insert-check x)
+    (make-seq 
+      (make-shortcut 
+        (make-conditional 
+          (make-primcall '< 
+            (list esp (make-primcall 'mref (list pcr (make-constant 16)))))
+          (make-primcall 'interrupt '())
+          (make-primcall 'nop '()))
+        (make-forcall "ik_stack_overflow" '()))
+      x))
+
+  (define (ClambdaCase x) 
+    (record-case x
+      [(clambda-case info body)
+       (make-clambda-case info (Main body))]))
+  ;;;
+  (define (Clambda x)
+    (record-case x
+      [(clambda label case* free*)
+       (make-clambda label (map ClambdaCase case*) free*)]))
+  ;;;
+  (define (Main x)
+    (if (Tail x) 
+        (insert-check x) 
+        x))
+  ;;;
+  (define (Program x)
+    (record-case x 
+      [(codes code* body)
+       (make-codes (map Clambda code*) (Main body))]))
+  ;;;
+  (Program x))
+
+
+
 (define parameter-registers '(%edi)) 
 (define return-value-register '%eax)
 (define cp-register '%edi)
@@ -2737,6 +2778,7 @@
   (let* ([x (introduce-primcalls x)]
          [x (eliminate-fix x)]
          [x (specify-representation x)]
+         [x (insert-stack-overflow-check x)]
          [x (impose-calling-convention/evaluation-order x)]
          [x (time-it "frame" (lambda () (assign-frame-sizes x)))]
          [x (time-it "register" (lambda () (color-by-chaitin x)))]
