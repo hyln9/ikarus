@@ -56,9 +56,6 @@
        (cond
          [(primop? name)
           (make-primcall name arg*)]
-         [(open-codeable? name)
-          (error 'chaitin-compiler "primitive ~s is not supported"
-                 name)]
          [else (make-funcall op arg*)])]
       [else (make-funcall op arg*)]))
   ;;;

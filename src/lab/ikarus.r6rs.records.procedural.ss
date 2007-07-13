@@ -4,14 +4,20 @@
     make-record-type-descriptor
     make-record-constructor-descriptor
     record-accessor record-mutator
-    record-constructor record-predicate)
+    record-constructor record-predicate
+    record? record-rtd record-type-name
+    record-type-parent record-type-uid record-type-generative?
+    record-type-sealed? record-type-opaque? record-type-field-names)
   (import 
-    (except (ikarus) record-constructor record-predicate
-            set-rtd-printer!)
+    (except (ikarus) record-constructor record-predicate set-rtd-printer!
+            record? record-type-name record-type-parent
+            record-type-field-names)
+    (prefix (only (ikarus) set-rtd-printer!) core:)
     (ikarus system $records))
 
   (define-record rtd 
     (name size old-fields printer symbol parent sealed? opaque? uid fields))
+
   (define rtd-alist '())
   (define (intern-rtd! uid rtd)
     (set! rtd-alist (cons (cons uid rtd) rtd-alist)))
@@ -23,20 +29,78 @@
 
   (define (record-type-descriptor? x) (rtd? x))
 
+  (define (record? x)
+    (and ($record? x) 
+         (let ([rtd ($record-rtd x)])
+           (and (rtd? rtd) 
+                (not (rtd-opaque? rtd))))))
+
+  (define (record-rtd x)
+    (define (err x)
+      (error 'record-rtd "~s is not a record" x))
+    (if ($record? x)
+        (let ([rtd ($record-rtd x)])
+          (if (rtd? rtd)
+              (if (not (rtd-opaque? rtd))
+                  rtd
+                  (err x))
+              (err x)))
+        (err x)))
+
+  (define (record-type-name x)
+    (if (rtd? x)
+        (rtd-name x)
+        (error 'record-type-name "~s is not an rtd" x)))
+
+  (define (record-type-parent x)
+    (if (rtd? x)
+        (rtd-parent x)
+        (error 'record-type-parent "~s is not an rtd" x)))
+
+  (define (record-type-uid x)
+    (if (rtd? x)
+        (rtd-uid x)
+        (error 'record-type-uid "~s is not an rtd" x)))
+
+  (define (record-type-sealed? x)
+    (if (rtd? x)
+        (rtd-sealed? x)
+        (error 'record-type-sealed? "~s is not an rtd" x)))
+
+  (define (record-type-opaque? x)
+    (if (rtd? x)
+        (rtd-opaque? x)
+        (error 'record-type-opaque? "~s is not an rtd" x)))
+
+  (define (record-type-generative? x)
+    (if (rtd? x)
+        (not (rtd-sealed? x))
+        (error 'record-type-generative? "~s is not an rtd" x)))
+
+  (define (record-type-field-names x)
+    (if (rtd? x)
+        (let ([v (rtd-fields x)])
+          (let ([n (vector-length v)])
+            (let f ([x (make-vector n)] [v v] [n n] [i 0])
+              (if (= i n) 
+                  x
+                  (begin
+                    (vector-set! x i (cdr (vector-ref v i)))
+                    (f x v n (fxadd1 i)))))))
+        (error 'record-type-field-names "~s is not an rtd" x)))
+
+
   (module (make-record-type-descriptor)
     (define who 'make-record-type-descriptor)
-    (define (make-rtd-aux name parent uid sealed? opaque? fields)
-      (make-rtd name (vector-length fields) #f #f #f parent sealed? opaque? uid fields))
-    (define (convert-fields pfv sv)
+    (define (make-rtd-aux name parent uid sealed? opaque?
+                          parent-size fields)
+      (make-rtd name (+ parent-size (vector-length fields))
+          #f #f #f parent sealed? opaque? uid fields))
+    (define (convert-fields sv)
       (unless (vector? sv) 
         (error who "invalid fields argument ~s" sv))
-      (let ([n1 (vector-length pfv)]
-            [n2 (vector-length sv)])
-        (let ([v (make-vector (+ n1 n2))])
-          (let f ([i 0])
-            (unless (= i n1) 
-              (vector-set! v i (vector-ref pfv i))
-              (f (add1 i))))
+      (let ([n2 (vector-length sv)])
+        (let ([v (make-vector n2)])
           (let f ([i 0])
             (unless (= i n2)
               (let ([x (vector-ref sv i)])
@@ -46,7 +110,7 @@
                           (let ([name (car x)])
                             (unless (and (null? (cdr x)) (symbol? name))
                               (error who "invalid fields argument ~s" sv))
-                            (vector-set! v (+ i n1) 
+                            (vector-set! v i
                               (cons (case m/u
                                       [(mutable)   #t]
                                       [(immutable) #f]
@@ -65,10 +129,11 @@
              (error who "cannot extend sealed parent ~s" parent))
            (make-rtd-aux name parent uid sealed? 
              (or opaque? (rtd-opaque? parent))
-             (convert-fields (rtd-fields parent) fields))]
+             (rtd-size parent)
+             (convert-fields fields))]
           [(eqv? parent #f) 
-           (make-rtd-aux name parent uid sealed? opaque?
-             (convert-fields '#() fields))]
+           (make-rtd-aux name parent uid sealed? opaque? 0
+             (convert-fields fields))]
           [else (error who "~s is not a valid parent" parent)])))
     (define (same-fields-as-rtd? fields rtd)
       (let* ([fv (rtd-fields rtd)]
@@ -146,8 +211,8 @@
              (error who "descriptor ~s does not apply to ~s" 
                     prcd rtd))
            (make-rcd rtd prcd protocol)]
-          [else (error who "~s is not a valid record constructor
-                       descriptor" prcd)]))))
+          [else
+           (error who "~s is not a valid record constructor descriptor" prcd)]))))
 
   (define (iota i n)
     (if (= i n)
@@ -234,7 +299,6 @@
           [prcd (rcd-prcd rcd)])
       (let ([c*
              (let ([n (rtd-size rtd)])
-               (printf "base=~s\n" n)
                (let f ([c0 ((base-constructor-maker n) rtd)]
                        [prcd prcd]
                        [n n])
@@ -243,7 +307,6 @@
                    [else
                     (let ([r (rcd-rtd prcd)])
                       (let ([m (rtd-size r)])
-                        (printf "ext ~s ~s\n" n m)
                         (f ((extended-constructor-maker n m) c0)
                            (rcd-prcd prcd)
                            m)))])))])
@@ -254,10 +317,6 @@
              (let ([c* (f (rcd-prcd rcd))])
                (let ([proc (rcd-proc rcd)])
                  (if proc (proc c*) c*)))])))))
-
-
-
-
 
   (define (record-accessor rtd k) 
     (define who 'record-accessor)
@@ -332,7 +391,14 @@
                        [else (f (rtd-parent prtd) rtd)]))))]
            [else #f]))))
 
+  (core:set-rtd-printer! (type-descriptor rtd)
+    (lambda (x p) 
+      (display (format "#<record-type-descriptor ~s>" (rtd-name x)) p)))
 
+  (core:set-rtd-printer! (type-descriptor rcd)
+    (lambda (x p) 
+      (display (format "#<record-constructor-descriptor ~s>"
+                       (rtd-name (rcd-rtd x))) p)))
                   
 
 
