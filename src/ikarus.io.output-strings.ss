@@ -112,16 +112,16 @@
             [(write-byte b p)
              (if (and (fixnum? b) ($fx<= 0 b) ($fx<= b 255))
                  (if (output-port? p)
-                     (let ([idx ($port-output-index p)])
-                       (if ($fx< idx ($port-output-size p))
+                     (let ([idx ($port-index p)])
+                       (if ($fx< idx ($port-size p))
                            (begin
-                             ($bytevector-set! ($port-output-buffer p) idx b)
-                             ($set-port-output-index! p ($fxadd1 idx)))
+                             ($bytevector-set! ($port-buffer p) idx b)
+                             ($set-port-index! p ($fxadd1 idx)))
                            (if open?
-                             (let ([buff ($port-output-buffer p)])
+                             (let ([buff ($port-buffer p)])
                                (set! buffer-list (cons (bv-copy buff) buffer-list))
                                ($bytevector-set! buff 0 b)
-                               ($set-port-output-index! p 1))
+                               ($set-port-index! p 1))
                              (error 'write-byte "port ~s is closed" p))))
                      (error 'write-byte "~s is not an output-port" p))
                  (error 'write-byte "~s is not a byte" b))]
@@ -142,8 +142,8 @@
             [(get-output-string p) 
              (utf8-bytevector->string
                (concat 
-                 ($port-output-buffer p) 
-                 ($port-output-index p)
+                 ($port-buffer p) 
+                 ($port-index p)
                  buffer-list))]
             [else (error 'output-handler 
                          "unhandled message ~s" (cons msg args))])))

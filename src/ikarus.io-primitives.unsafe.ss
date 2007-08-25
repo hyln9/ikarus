@@ -42,10 +42,10 @@
   (define $write-byte
     (lambda (b p)
       (let ([idx (port-output-index p)])
-        (if ($fx< idx ($port-output-size p))
+        (if ($fx< idx ($port-size p))
             (begin
-              ($bytevector-set! ($port-output-buffer p) idx b)
-              ($set-port-output-index! p ($fxadd1 idx)))
+              ($bytevector-set! ($port-buffer p) idx b)
+              ($set-port-index! p ($fxadd1 idx)))
             (($port-handler p) 'write-byte b p)))))
 
   (define $read-char

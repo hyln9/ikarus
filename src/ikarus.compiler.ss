@@ -1800,15 +1800,14 @@
   (define port-tag              #x3F)
   (define output-port-tag       #x7F)
   (define input-port-tag        #xBF)
-  ;(define input/output-port-tag #xFF)
   (define port-mask             #x3F)
   (define disp-port-buffer         4)
   (define disp-port-index          8)
   (define disp-port-size          12)
   (define disp-port-handler       16)
-  (define disp-port-output-buffer 20)
-  (define disp-port-output-index  24)
-  (define disp-port-output-size   28)
+  (define disp-port-unused1   20)
+  (define disp-port-unused2   24)
+  (define disp-port-unused3   28)
   (define port-size               32)
 
 

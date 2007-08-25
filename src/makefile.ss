@@ -699,13 +699,6 @@
     [$set-port-index!         $ports]
     [$set-port-size!          $ports]
     
-    [$port-output-buffer      $ports]
-    [$port-output-index       $ports]
-    [$port-output-size        $ports]
-    [$set-port-output-index!  $ports]
-    [$set-port-output-size!   $ports]
-
-
     [$closure-code            $codes]
     [$code->closure           $codes]
     [$code-reloc-vector       $codes]

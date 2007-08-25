@@ -76,15 +76,15 @@
             [(write-byte b p)
              (if (and (fixnum? b) ($fx<= 0 b) ($fx<= b 255))
                  (if (output-port? p)
-                     (let ([idx ($port-output-index p)])
-                       (if ($fx< idx ($port-output-size p))
+                     (let ([idx ($port-index p)])
+                       (if ($fx< idx ($port-size p))
                            (begin
-                             ($bytevector-set! ($port-output-buffer p) idx b)
-                             ($set-port-output-index! p ($fxadd1 idx)))
+                             ($bytevector-set! ($port-buffer p) idx b)
+                             ($set-port-index! p ($fxadd1 idx)))
                            (if open?
                              (let ([bytes (do-write-buffer fd port-name
-                                             ($port-output-buffer p) idx 'write-char)])
-                               ($set-port-output-index! p 0)
+                                             ($port-buffer p) idx 'write-char)])
+                               ($set-port-index! p 0)
                                ($write-byte b p))
                              (error 'write-byte "port ~s is closed" p))))
                      (error 'write-byte "~s is not an output-port" p))
@@ -102,16 +102,16 @@
              (if (output-port? p)
                  (if open?
                      (let ([bytes (do-write-buffer fd port-name
-                                     ($port-output-buffer p) 
-                                     ($port-output-index p) 
+                                     ($port-buffer p) 
+                                     ($port-index p) 
                                      'flush-output-port)])
-                       ($set-port-output-index! p 0))
+                       ($set-port-index! p 0))
                      (error 'flush-output-port "port ~s is closed" p))
                  (error 'flush-output-port "~s is not an output-port" p))]
             [(close-port p)
              (when open?
                (flush-output-port p)
-               ($set-port-output-size! p 0)
+               ($set-port-size! p 0)
                (set! open? #f)
                (unless (foreign-call "ikrt_close_file" fd)
                  (error 'close-output-port "cannot close ~s" port-name)))]
