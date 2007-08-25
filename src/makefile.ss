@@ -692,8 +692,13 @@
 
     [$make-port/input         $ports]
     [$make-port/output        $ports]
-    [$make-port/both          $ports]
     [$port-handler            $ports]
+    [$port-buffer             $ports]
+    [$port-index              $ports]
+    [$port-size               $ports]
+    [$set-port-index!         $ports]
+    [$set-port-size!          $ports]
+    
     [$port-input-buffer       $ports]
     [$port-input-index        $ports]
     [$port-input-size         $ports]
@@ -704,6 +709,7 @@
     [$set-port-input-size!    $ports]
     [$set-port-output-index!  $ports]
     [$set-port-output-size!   $ports]
+
 
     [$closure-code            $codes]
     [$code->closure           $codes]

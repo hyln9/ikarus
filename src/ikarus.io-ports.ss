@@ -1,6 +1,6 @@
 
 (library (ikarus io-ports)
-  (export make-input-port make-output-port make-input/output-port
+  (export make-input-port make-output-port ;make-input/output-port
           port-handler
           port-input-buffer  port-output-buffer 
           port-input-index   set-port-input-index!
@@ -12,8 +12,10 @@
     (ikarus system $strings)
     (ikarus system $bytevectors)
     (ikarus system $fx)
-    (except (ikarus)  make-input-port make-output-port 
-         make-input/output-port port-handler
+    (except (ikarus)  
+         make-input-port make-output-port 
+         ;make-input/output-port 
+         port-handler
          port-input-buffer  port-output-buffer
          port-input-index   set-port-input-index!
          port-input-size    set-port-input-size!
@@ -75,21 +77,21 @@
               (error 'make-output-port "~s is not a bytevector" buffer))
           (error 'make-output-port "~s is not a procedure" handler))))
   ;;;
-  (define $make-input/output-port
-    (lambda (handler input-buffer output-buffer)
-       ($make-port/both handler
-                  input-buffer 0 ($bytevector-length input-buffer)
-                  output-buffer 0 ($bytevector-length output-buffer))))
+  ;(define $make-input/output-port
+  ;  (lambda (handler input-buffer output-buffer)
+  ;     ($make-port/both handler
+  ;                input-buffer 0 ($bytevector-length input-buffer)
+  ;                output-buffer 0 ($bytevector-length output-buffer))))
   ;;;
-  (define make-input/output-port
-    (lambda (handler input-buffer output-buffer)
-      (if (procedure? handler)
-          (if (bytevector? input-buffer)
-              (if (bytevector? output-buffer)
-                  ($make-input/output-port handler input-buffer output-buffer) 
-                  (error 'make-input/output-port "~s is not a bytevector" output-buffer))
-              (error 'make-input/output-port "~s is not a bytevector" input-buffer))
-          (error 'make-input/output-port "~s is not a procedure" handler))))
+  ;(define make-input/output-port
+  ;  (lambda (handler input-buffer output-buffer)
+  ;    (if (procedure? handler)
+  ;        (if (bytevector? input-buffer)
+  ;            (if (bytevector? output-buffer)
+  ;                ($make-input/output-port handler input-buffer output-buffer) 
+  ;                (error 'make-input/output-port "~s is not a bytevector" output-buffer))
+  ;            (error 'make-input/output-port "~s is not a bytevector" input-buffer))
+  ;        (error 'make-input/output-port "~s is not a procedure" handler))))
   ;;;
   (define port-handler
     (lambda (x)
