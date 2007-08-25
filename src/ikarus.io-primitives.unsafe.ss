@@ -50,21 +50,21 @@
 
   (define $read-char
     (lambda (p)
-      (let ([idx ($port-input-index p)])
-        (if ($fx< idx ($port-input-size p))
-            (let ([b ($bytevector-u8-ref ($port-input-buffer p) idx)])
+      (let ([idx ($port-index p)])
+        (if ($fx< idx ($port-size p))
+            (let ([b ($bytevector-u8-ref ($port-buffer p) idx)])
               (cond
                 [($fx<= b 127) 
-                 ($set-port-input-index! p ($fxadd1 idx))
+                 ($set-port-index! p ($fxadd1 idx))
                  ($fixnum->char b)]
                 [else (($port-handler p) 'read-char p)]))
             (($port-handler p) 'read-char p)))))
 
   (define $peek-char
     (lambda (p)
-      (let ([idx ($port-input-index p)])
-        (if ($fx< idx ($port-input-size p))
-            (let ([b ($bytevector-u8-ref ($port-input-buffer p) idx)])
+      (let ([idx ($port-index p)])
+        (if ($fx< idx ($port-size p))
+            (let ([b ($bytevector-u8-ref ($port-buffer p) idx)])
                 (cond
                   [($fx<= b 127) 
                    ($fixnum->char b)]
@@ -73,19 +73,19 @@
 
   (define $unread-char
     (lambda (c p)
-      (let ([idx ($fxsub1 ($port-input-index p))]
+      (let ([idx ($fxsub1 ($port-index p))]
             [b ($char->fixnum c)])
         (if (and ($fx<= b 127)
                  ($fx>= idx 0)
-                 ($fx< idx ($port-input-size p)))
+                 ($fx< idx ($port-size p)))
             (begin
-              ($set-port-input-index! p idx)
-              ($bytevector-set! ($port-input-buffer p) idx b))
+              ($set-port-index! p idx)
+              ($bytevector-set! ($port-buffer p) idx b))
             (($port-handler p) 'unread-char c p)))))
 
   (define $reset-input-port!
     (lambda (p)
-      ($set-port-input-size! p 0)))
+      ($set-port-size! p 0)))
 
   (define $close-input-port
     (lambda (p)

@@ -102,19 +102,19 @@
   (define port-input-buffer
     (lambda (x)
       (if (input-port? x)
-          ($port-input-buffer x)
+          ($port-buffer x)
           (error 'port-input-buffer "~s is not an input-port" x))))
   ;;;
   (define port-input-index
     (lambda (x)
       (if (input-port? x)
-          ($port-input-index x)
+          ($port-index x)
           (error 'port-input-index "~s is not an input-port" x))))
   ;;;
   (define port-input-size
     (lambda (x)
       (if (input-port? x)
-          ($port-input-size x)
+          ($port-size x)
           (error 'port-input-size "~s is not an input-port" x))))
   ;;;
   (define port-output-buffer
@@ -140,8 +140,8 @@
       (if (input-port? p)
           (if (fixnum? i)
               (if ($fx>= i 0)
-                  (if ($fx<= i ($port-input-size p))
-                      ($set-port-input-index! p i)
+                  (if ($fx<= i ($port-size p))
+                      ($set-port-index! p i)
                       (error 'set-port-input-index! "index ~s is too big" i))
                   (error 'set-port-input-index! "index ~s is negative" i))
               (error 'set-port-input-index! "~s is not a valid index" i))
@@ -152,10 +152,10 @@
       (if (input-port? p)
           (if (fixnum? i)
               (if ($fx>= i 0)
-                  (if ($fx<= i ($bytevector-length ($port-input-buffer p)))
+                  (if ($fx<= i ($bytevector-length ($port-buffer p)))
                       (begin
-                        ($set-port-input-index! p 0)
-                        ($set-port-input-size! p i))
+                        ($set-port-index! p 0)
+                        ($set-port-size! p i))
                       (error 'set-port-input-size! "size ~s is too big" i))
                   (error 'set-port-input-size! "size ~s is negative" i))
               (error 'set-port-input-size! "~s is not a valid size" i))

@@ -1459,27 +1459,14 @@
      (prm 'mset (T x) (K (- disp-port-index vector-tag)) (K 0))
      (prm 'mset (T x) (K (- disp-port-size vector-tag)) (T i)))])
 
-(define-primop $port-input-buffer unsafe
-  [(V x) (prm 'mref (T x) (K (- disp-port-buffer vector-tag)))])
-(define-primop $port-input-index unsafe
-  [(V x) (prm 'mref (T x) (K (- disp-port-index vector-tag)))])
-(define-primop $port-input-size unsafe
-  [(V x) (prm 'mref (T x) (K (- disp-port-size vector-tag)))])
 (define-primop $port-output-buffer unsafe
   [(V x) (prm 'mref (T x) (K (- disp-port-output-buffer vector-tag)))])
 (define-primop $port-output-index unsafe
   [(V x) (prm 'mref (T x) (K (- disp-port-output-index vector-tag)))])
 (define-primop $port-output-size unsafe
   [(V x) (prm 'mref (T x) (K (- disp-port-output-size vector-tag)))])
-(define-primop $set-port-input-index! unsafe
-  [(E x i) (prm 'mset (T x) (K (- disp-port-index vector-tag)) (T i))])
 (define-primop $set-port-output-index! unsafe
   [(E x i) (prm 'mset (T x) (K (- disp-port-output-index vector-tag)) (T i))])
-(define-primop $set-port-input-size! unsafe
-  [(E x i) 
-   (seq*
-     (prm 'mset (T x) (K (- disp-port-index vector-tag)) (K 0))
-     (prm 'mset (T x) (K (- disp-port-size vector-tag)) (T i)))])
 (define-primop $set-port-output-size! unsafe
   [(E x i) 
    (seq*

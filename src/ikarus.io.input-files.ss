@@ -52,19 +52,19 @@
 
   (define read-multibyte-char 
     (lambda (p b0)
-      (let ([idx ($port-input-index p)] 
-            [size ($port-input-size p)])
+      (let ([idx ($port-index p)] 
+            [size ($port-size p)])
         (cond
           [($fx= ($fxlogand b0 #b11100000) #b11000000) 
            ;;; 2-byte utf8 sequence
            (unless ($fx< ($fx+ idx 1) size)
              (refill-buffer! p 1))
            (let ([b1 ($bytevector-u8-ref 
-                       ($port-input-buffer p)
+                       ($port-buffer p)
                        ($fxadd1 idx))])
              (unless ($fx= ($fxlogand b1 #b11000000) #b10000000)
                (error 'read-char "invalid utf8 sequence ~a ~a" b0 b1))
-             ($set-port-input-index! p ($fx+ idx 2))
+             ($set-port-index! p ($fx+ idx 2))
              ($fixnum->char 
                ($fx+ ($fxsll ($fxlogand b0 #b11111) 6)
                      ($fxlogand b1 #b111111))))]
@@ -87,21 +87,21 @@
             [(read-char p)
              (unless (input-port? p)
                (error 'read-char "~s is not an input port" p))
-             (let ([idx ($port-input-index p)])
-               (if ($fx< idx ($port-input-size p))
-                   (let ([b ($bytevector-u8-ref ($port-input-buffer p) idx)])
+             (let ([idx ($port-index p)])
+               (if ($fx< idx ($port-size p))
+                   (let ([b ($bytevector-u8-ref ($port-buffer p) idx)])
                      (cond
                        [($fx< b 128) 
-                        ($set-port-input-index! p ($fxadd1 idx))
+                        ($set-port-index! p ($fxadd1 idx))
                         ($fixnum->char b)]
                        [else (read-multibyte-char p b)]))
                    (if open?
                        (let ([bytes
                               (foreign-call "ikrt_read" 
-                                 fd ($port-input-buffer p))])
+                                 fd ($port-buffer p))])
                          (cond
                            [($fx> bytes 0)
-                            ($set-port-input-size! p bytes)
+                            ($set-port-size! p bytes)
                             ($read-char p)]
                            [($fx= bytes 0)
                             (eof-object)]
@@ -112,9 +112,9 @@
             [(peek-char p)
              (unless (input-port? p)
                (error 'peek-char "~s is not an input port" p))
-             (let ([idx ($port-input-index p)])
-               (if ($fx< idx ($port-input-size p))
-                   (let ([b ($bytevector-u8-ref ($port-input-buffer p) idx)])
+             (let ([idx ($port-index p)])
+               (if ($fx< idx ($port-size p))
+                   (let ([b ($bytevector-u8-ref ($port-buffer p) idx)])
                      (cond
                        [($fx< b 128) ($fixnum->char b)]
                        [else (peek-multibyte-char p)]))
@@ -129,21 +129,21 @@
                            [($fx= bytes 0)
                             (eof-object)]
                            [else
-                            ($set-port-input-size! p bytes)
+                            ($set-port-size! p bytes)
                             ($peek-char p)]))
                        (error 'peek-char "port ~s is closed" p))))]
             [(unread-char c p)
              (unless (input-port? p)
                (error 'unread-char "~s is not an input port" p))
-             (let ([idx ($fxsub1 ($port-input-index p))]
+             (let ([idx ($fxsub1 ($port-index p))]
                    [b (if (char? c) 
                           ($char->fixnum c)
                           (error 'unread-char "~s is not a char" c))])
                (if (and ($fx>= idx 0)
-                        ($fx< idx ($port-input-size p)))
+                        ($fx< idx ($port-size p)))
                    (cond
                      [($fx< b 128)
-                      ($set-port-input-index! p idx)]
+                      ($set-port-index! p idx)]
                      [else (unread-multibyte-char c p)])
                    (if open?
                        (error 'unread-char "port ~s is closed" p)
@@ -153,7 +153,7 @@
              (unless (input-port? p)
                (error 'close-input-port "~s is not an input port" p))
              (when open?
-               ($set-port-input-size! p 0)
+               ($set-port-size! p 0)
                (set! open? #f)
                (unless (foreign-call "ikrt_close_file" fd)
                   (error 'close-input-port "cannot close ~s" port-name)))]
