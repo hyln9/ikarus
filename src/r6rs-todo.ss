@@ -33,20 +33,12 @@
     ))
 
 (define status-names
-  '([D deferred]
+  '(
     [P progress]
     [S scheduled]
     [C completed]
+    [D deferred]
     [U unknown]))
-
-
-
-
-
-
-
-
-
 
 (define identifier-names
   '(
@@ -426,7 +418,6 @@
     [condition-message                          D co]
     [condition-predicate                        D co]
     [condition-who                              D co]
-    [condition?                                 D co]
     [define-condition-type                      D co]
     [&error                                     D co]
     [error?                                     D co]
@@ -496,10 +487,7 @@
     [raise                                      D ex]
     [raise-continuable                          D ex]
     [with-exception-handler                     D ex]
-    [with-exception-handler                     D ex]
     [guard                                      D ex]
-    [raise                                      D ex]
-    [raise-continuable                          D ex]
 
     [binary-port?                               D ip]
     [buffer-mode                                D ip]
@@ -508,7 +496,6 @@
     [call-with-bytevector-output-port           D ip]
     [call-with-port                             D ip]
     [call-with-string-output-port               D ip]
-
 
     [assoc                                      C ls]
     [assp                                       S ls]
@@ -678,8 +665,6 @@
     [hashtable-copy                             S ht]
     [hashtable-delete!                          S ht]
     [hashtable-entries                          S ht]
-    [hashtable-equivalence-function             S ht]
-    [hashtable-hash-function                    S ht]
     [hashtable-keys                             S ht]
     [hashtable-mutable?                         S ht]
     [hashtable-ref                              S ht]
@@ -689,7 +674,9 @@
     [hashtable?                                 S ht]
     [make-eq-hashtable                          S ht]
     [make-eqv-hashtable                         S ht]
-    [make-hashtable                             S ht]
+    [hashtable-hash-function                    D ht]
+    [make-hashtable                             D ht]
+    [hashtable-equivalence-function             D ht]
     [equal-hash                                 D ht]
     [string-hash                                D ht]
     [string-ci-hash                             D ht]
@@ -700,7 +687,7 @@
     [vector-sort!                               S sr]
 
     [file-exists?                               C fi]
-    [delete-file                                S fi]
+    [delete-file                                C fi]
 
     [define-record-type                         D rs]
     [fields                                     D rs]
@@ -777,5 +764,95 @@
     [string-normalize-nfkd                      S uc]
     [string-titlecase                           S uc]
     [string-upcase                              S uc]
+    ))
+
+
+(define (no-dups ls)
+  (unless (null? ls)
+    (when (memq (car ls) (cdr ls))
+      (error #f "duplicate ~s" (car ls)))
+    (no-dups (cdr ls))))
+
+(define (assert-id x)
+  (unless (and (>= (length x) 3)
+               (let ([name (car x)]
+                     [status (cadr x)]
+                     [libs (cddr x)])
+                 (no-dups libs)
+                 (and (assq status status-names)
+                      (andmap (lambda (x) 
+                                (assq x library-names))
+                        libs))))
+    (error #f "invalid id ~s" x)))
+
+(define (filter p? ls) 
+  (cond
+    [(null? ls) '()]
+    [(p? (car ls)) 
+     (cons (car ls) (filter p? (cdr ls)))]
+    [else (filter p? (cdr ls))]))
+
+(define (filter* ls) 
+  (filter 
+    (lambda (x) 
+      (not (null? (filter 
+                    (lambda (x) 
+                      (memq x ls))
+                    (cdr x)))))
+    identifier-names))
+
+(define (count-status x)
+  (length (filter* (list x))))
+
+(define (print-ids ls) 
+  (define (split ls n) 
+    (cond
+      [(null? ls) (values '() '())]
+      [(> (string-length (symbol->string (car ls))) n) 
+       (values '() ls)]
+      [else
+       (let-values ([(fst rest) 
+                     (split (cdr ls) 
+                        (- n 
+                           (string-length (symbol->string (car ls)))
+                           1))])
+         (values (cons (car ls) fst) rest))]))
+  (unless (null? ls) 
+    (let-values ([(ls rest) 
+                  (split ls 80)])
+      (for-each
+        (lambda (x)
+          (printf "~s " x))
+        ls)
+      (newline) 
+      (print-ids rest))))
+
+(no-dups (map car identifier-names))
+(no-dups (map car library-names))
+(no-dups (map car status-names))
+(for-each assert-id identifier-names)
+
+
+
+(let ([args (cdr (command-line-arguments))]
+      [exe (car (command-line-arguments))])
+  (cond
+    [(null? args) 
+     (printf "usage:  ~a (<status>|<libname>)*\n\n" exe)
+     (printf "Library Names:\n")
+     (for-each 
+       (lambda (x) 
+         (printf "   ~a  ~a\n" (car x) (cadr x)))
+       library-names)
+     (printf "Status Codes:\n")
+     (for-each 
+       (lambda (x) 
+         (printf "   ~a  ~a  (~s ids)\n" (car x) (cadr x)
+           (count-status (car x))))
+       status-names)]
+    [else
+     (let ([ls (filter* (map string->symbol args))])
+       (printf "~s identifiers\n" (length ls))
+       (print-ids (map car ls)))]
     ))
 

@@ -1,6 +1,6 @@
 
 (library (ikarus io-ports)
-  (export make-input-port make-output-port ;make-input/output-port
+  (export make-input-port make-output-port 
           port-handler
           port-input-buffer  port-output-buffer 
           port-input-index   set-port-input-index!
@@ -14,7 +14,6 @@
     (ikarus system $fx)
     (except (ikarus)  
          make-input-port make-output-port 
-         ;make-input/output-port 
          port-handler
          port-input-buffer  port-output-buffer
          port-input-index   set-port-input-index!
@@ -27,7 +26,6 @@
   ;;; * Constructors:
   ;;;   (make-input-port handler input-buffer)
   ;;;   (make-output-port handler output-buffer)
-  ;;;   (make-input/output-port handler input-buffer output-buffer)
   ;;;
   ;;; * Predicates:
   ;;;   (port? x)
@@ -36,22 +34,13 @@
   ;;;
   ;;; * Accessors:
   ;;;   (port-handler port)
-  ;;;   (port-input-buffer port)
-  ;;;   (port-input-index port)
-  ;;;   (port-input-size port)
-  ;;;   (port-output-buffer port)
-  ;;;   (port-output-index port)
-  ;;;   (port-output-size port)
+  ;;;   (port-buffer port)
+  ;;;   (port-index port)
+  ;;;   (port-size port)
   ;;;
   ;;; * Mutators:
-  ;;;   (set-port-handler! port proc)
-  ;;;   (set-port-input-buffer! port string)
-  ;;;   (set-port-input-index! port fixnum)
-  ;;;   (set-port-input-size! port fixnum)
-  ;;;   (set-port-output-buffer! port string)
-  ;;;   (set-port-output-index! port fixnum)
-  ;;;   (set-port-output-size! port fixnum)
-  ;;;
+  ;;;   (set-port-index! port fixnum)
+  ;;;   (set-port-size! port fixnum)
   ;;;
   (define $make-input-port
     (lambda (handler buffer)
@@ -170,3 +159,6 @@
                   (error 'set-port-output-size! "size ~s is negative" i))
               (error 'set-port-output-size! "~s is not a valid size" i))
           (error 'set-port-output-size! "~s is not an output-port" p)))))
+
+
+
