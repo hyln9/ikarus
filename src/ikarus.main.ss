@@ -49,7 +49,7 @@
        (load-r6rs-top-level script)
        ;(load script)
        (exit 0)]
-      [script ; no greeting, no cafe
+      [(eq? script-type 'script) ; no greeting, no cafe
        (command-line-arguments (cons script args))
        (for-each load files)
        (load script)

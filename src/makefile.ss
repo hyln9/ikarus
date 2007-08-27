@@ -550,6 +550,7 @@
     [environment?            i]
     [time-it                 i]
     [command-line-arguments  i]
+    [command-line            i r]
     [record?                 i]
     [make-record-type        i]
     [record-type-descriptor  i]

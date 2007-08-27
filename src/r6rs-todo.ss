@@ -524,8 +524,8 @@
     [string-set!                                C ms]
     [string-fill!                               S ms]
 
-    [command-line                               S pr]
-    [exit                                       S pr]
+    [command-line                               C pr]
+    [exit                                       C pr]
 
     [delay                                      D r5]
     [exact->inexact                             D r5]
@@ -804,34 +804,65 @@
 (define (count-status x)
   (length (filter* (list x))))
 
+(define (join s ls) 
+  (cond
+    [(null? ls) ""]
+    [(null? (cdr ls)) (format "~a" (car ls))]
+    [else
+     (format "~a~a~a" (car ls) s (join s (cdr ls)))]))
+
+(define (status-str x)
+  (cond
+    [(assq x identifier-names) 
+     =>
+     (lambda (x) 
+       (let ([st (cadr x)] [libs (cddr x)])
+         (format "(~a ~a)" st (join "," libs))))]
+    [else (error)]))
+
 (define (print-ids ls) 
   (define (split ls n) 
     (cond
       [(null? ls) (values '() '())]
-      [(> (string-length (symbol->string (car ls))) n) 
+      [(> (string-length (car ls)) n) 
        (values '() ls)]
       [else
        (let-values ([(fst rest) 
                      (split (cdr ls) 
                         (- n 
-                           (string-length (symbol->string (car ls)))
-                           1))])
+                           (string-length (car ls))))])
          (values (cons (car ls) fst) rest))]))
-  (unless (null? ls) 
-    (let-values ([(ls rest) 
-                  (split ls 80)])
-      (for-each
-        (lambda (x)
-          (printf "~s " x))
-        ls)
-      (newline) 
-      (print-ids rest))))
+  (define (print-ids ls)
+    (unless (null? ls) 
+      (let-values ([(ls rest) 
+                    (split ls 80)])
+        (for-each display ls)
+        (newline)
+        (print-ids rest))))
+  (print-ids 
+    (map (lambda (x) (format "~s ~a   " x (status-str x))) ls)))
+
+
+(define (split p ls) 
+  (cond
+    [(null? ls) (values '() '())]
+    [else
+     (let-values ([(ls1 ls2) 
+                   (split p (cdr ls))])
+       (if (p (car ls))
+           (values (cons (car ls) ls1) ls2)
+           (values ls1 (cons (car ls) ls2))))]))
+
+(define (null-intersection? ls1 ls2)
+  (cond
+    [(null? ls1) #t]
+    [(memq (car ls1) ls2) #f]
+    [else (null-intersection? (cdr ls1) ls2)]))
 
 (no-dups (map car identifier-names))
 (no-dups (map car library-names))
 (no-dups (map car status-names))
 (for-each assert-id identifier-names)
-
 
 
 (let ([args (cdr (command-line-arguments))]
@@ -851,8 +882,27 @@
            (count-status (car x))))
        status-names)]
     [else
-     (let ([ls (filter* (map string->symbol args))])
-       (printf "~s identifiers\n" (length ls))
-       (print-ids (map car ls)))]
+     (let-values ([(s* l*)
+                   (split 
+                     (lambda (x) 
+                       (cond
+                         [(assq x status-names)  #t]
+                         [(assq x library-names) #f]
+                         [else (error #f "invalid argument ~a" x)]))
+                     (map string->symbol args))])
+       (let ([ls (filter
+                   (lambda (x) 
+                     (let ([s (cadr x)]
+                           [libs (cddr x)])
+                       (cond
+                         [(null? l*) (memq s s*)]
+                         [(null? s*)
+                          (not (null-intersection? l* libs))]
+                         [else 
+                          (and (memq s s*) 
+                               (not (null-intersection? l* libs)))])))
+                   identifier-names)])
+         (printf "~s identifiers\n" (length ls))
+         (print-ids (map car ls))))]
     ))
 
