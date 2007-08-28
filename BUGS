@@ -2,6 +2,7 @@ BUG:
 
 * symbol calls are not checking for non-procedure.
 * set! on global names is not working.
+* Ensure immutable exports
 
 
 Email Will Clinger regarding:

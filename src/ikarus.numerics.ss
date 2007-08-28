@@ -127,7 +127,7 @@
 (library (ikarus generic-arithmetic)
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
           modulo even? odd?
-          positive? expt gcd lcm numerator denominator exact-integer-sqrt
+          positive? negative? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number min max
           abs
           exact->inexact floor ceiling round log fl=? fl<? fl<=? fl>?
@@ -143,7 +143,8 @@
     (ikarus system $strings)
     (only (ikarus flonums) $flonum->exact $flzero? $flnegative?)
     (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
-            remainder modulo even? odd? quotient+remainder number->string positive?
+            remainder modulo even? odd? quotient+remainder number->string 
+            positive? negative?
             string->number expt gcd lcm numerator denominator
             exact->inexact floor ceiling round log
             exact-integer-sqrt min max abs
@@ -1500,14 +1501,18 @@
     (lambda (x)
       (cond
         [(fixnum? x) ($fx> x 0)]
+        [(flonum? x) ($fl> x 0.0)]
         [(bignum? x) (positive-bignum? x)]
+        [(ratnum? x) (positive? ($ratnum-n x))]
         [else (error 'positive? "~s is not a number" x)])))
 
   (define negative?
     (lambda (x)
       (cond
         [(fixnum? x) ($fx< x 0)]
+        [(flonum? x) ($fl< x 0.0)]
         [(bignum? x) (not (positive-bignum? x))]
+        [(ratnum? x) (negative? ($ratnum-n x))]
         [else (error 'negative? "~s is not a number" x)])))
 
   (define sin
@@ -1619,8 +1624,9 @@
        (let ([e (or ($flonum->exact x)
                     (error 'floor "~s has no real value" x))])
          (cond
-           [(ratnum? e) (ratnum-floor e)] 
-           [else e]))]
+           [(ratnum? e) 
+            (exact->inexact (ratnum-floor e))] 
+           [else x]))]
       [(ratnum? x) (ratnum-floor x)]
       [(or (fixnum? x) (bignum? x)) x]
       [else (error 'floor "~s is not a number" x)]))
@@ -1635,8 +1641,8 @@
        (let ([e (or ($flonum->exact x)
                     (error 'ceiling "~s has no real value" x))])
          (cond
-           [(ratnum? e) (ratnum-ceiling e)] 
-           [else e]))]
+           [(ratnum? e) (exact->inexact (ratnum-ceiling e))] 
+           [else x]))]
       [(ratnum? x) (ratnum-ceiling x)]
       [(or (fixnum? x) (bignum? x)) x]
       [else (error 'ceiling "~s is not a number" x)]))

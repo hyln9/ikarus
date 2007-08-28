@@ -2,7 +2,7 @@
 (library (ikarus strings)
   (export string-length string-ref string-set! make-string string->list string=?
           string-append substring string list->string uuid
-          string-copy)
+          string-copy string-for-each)
   (import 
     (ikarus system $strings)
     (ikarus system $fx)
@@ -11,7 +11,7 @@
     (ikarus system $pairs)
     (except (ikarus) string-length string-ref string-set! make-string
             string->list string=? string-append substring string
-            list->string uuid string-copy))
+            list->string uuid string-copy string-for-each))
 
 
   (define string-length
@@ -238,6 +238,67 @@
           (let ([s ($make-string n)])
             (fill-strings s s* 0))))))
 
+
+  (module (string-for-each)
+    (define who 'string-for-each)
+    (define string-for-each
+      (case-lambda
+        [(p v) 
+         (unless (procedure? p) 
+           (error who "~s is not a procedure" p))
+         (unless (string? v) 
+           (error who "~s is not a string" v))
+         (let f ([p p] [v v] [i 0] [n (string-length v)])
+           (cond
+             [($fx= i n) (void)]
+             [else 
+              (p (string-ref v i))
+              (f p v ($fxadd1 i) n)]))]
+        [(p v0 v1) 
+         (unless (procedure? p) 
+           (error who "~s is not a procedure" p))
+         (unless (string? v0) 
+           (error who "~s is not a string" v0))
+         (unless (string? v1) 
+           (error who "~s is not a string" v1))
+         (let ([n (string-length v0)])
+           (unless ($fx= n ($string-length v1))
+             (error who "length mismatch between ~s and ~s" v0 v1))
+           (let f ([p p] [v0 v0] [v1 v1] [i 0] [n n])
+             (cond
+               [($fx= i n) (void)]
+               [else 
+                (p ($string-ref v0 i) ($string-ref v1 i))
+                (f p v0 v1 ($fxadd1 i) n)])))]
+        [(p v0 v1 . v*) 
+         (unless (procedure? p) 
+           (error who "~s is not a procedure" p))
+         (unless (string? v0) 
+           (error who "~s is not a string" v0))
+         (unless (string? v1) 
+           (error who "~s is not a string" v1))
+         (let ([n (string-length v0)])
+           (unless ($fx= n ($string-length v1))
+             (error who "length mismatch between ~s and ~s" v0 v1))
+           (let f ([v* v*] [n n])
+             (unless (null? v*) 
+               (let ([a ($car v*)])
+                 (unless (string? a) 
+                   (error who "~s is not a string" a))
+                 (unless ($fx= ($string-length a) n) 
+                   (error who "length mismatch")))
+               (f ($cdr v*) n)))
+           (let f ([p p] [v0 v0] [v1 v1] [v* v*] [i 0] [n n])
+             (cond
+               [($fx= i n) (void)] 
+               [else 
+                (apply p ($string-ref v0 i) ($string-ref v1 i)
+                  (let f ([i i] [v* v*]) 
+                    (if (null? v*) 
+                        '()
+                        (cons ($string-ref ($car v*) i) 
+                              (f i ($cdr v*))))))
+                (f p v0 v1 v* ($fxadd1 i) n)])))])))
 
   (define uuid
     (lambda ()
