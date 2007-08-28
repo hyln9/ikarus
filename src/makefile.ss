@@ -466,6 +466,8 @@
     [exact-integer-sqrt      i r]
     [exact->inexact          i r]
     [inexact->exact          i r]
+    [exact                   i r]
+    [inexact                 i r]
     [symbol?                 i r symbols]
     [symbol=?                i r symbols]
     [gensym?                 i symbols]

@@ -7,13 +7,13 @@
 
 (library (ikarus flonums)
   (export $flonum->exact $flonum-signed-biased-exponent flonum-parts
-          inexact->exact $flonum-rational? $flonum-integer? $flzero?
+          inexact->exact exact $flonum-rational? $flonum-integer? $flzero?
           $flnegative? flpositive? flabs)
   (import 
     (ikarus system $bytevectors)
     (except (ikarus system $flonums) $flonum-signed-biased-exponent
             $flonum-rational? $flonum-integer?)
-    (except (ikarus) inexact->exact flpositive? flabs))
+    (except (ikarus) inexact->exact exact flpositive? flabs))
   
   (define (flonum-bytes f)
     (unless (flonum? f) 
@@ -109,6 +109,16 @@
       [else
        (error 'inexact->exact "~s is not an inexact number" x)]))
 
+  (define (exact x)
+    (cond
+      [(flonum? x)
+       (or ($flonum->exact x)
+           (error 'exact "~s has no real value" x))]
+      [(or (fixnum? x) (ratnum? x) (bignum? x)) x]
+      [else
+       (error 'exact "~s is not an inexact number" x)]))
+
+
   (define (flpositive? x)
     (if (flonum? x) 
         ($fl> x 0.0)
@@ -130,7 +140,7 @@
           positive? negative? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number min max
           abs
-          exact->inexact floor ceiling round log fl=? fl<? fl<=? fl>?
+          exact->inexact inexact floor ceiling round log fl=? fl<? fl<=? fl>?
           fl>=? fl+ fl- fl* fl/ flsqrt flmin flzero? flnegative?
           sin cos atan sqrt
           flround flmax)
@@ -146,7 +156,7 @@
             remainder modulo even? odd? quotient+remainder number->string 
             positive? negative?
             string->number expt gcd lcm numerator denominator
-            exact->inexact floor ceiling round log
+            exact->inexact inexact floor ceiling round log
             exact-integer-sqrt min max abs
             fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt flmin
             flzero? flnegative?
@@ -943,6 +953,17 @@
         [else
          (error 'exact->inexact 
                 "~s is not an exact number" x)])))
+
+  (define inexact
+    (lambda (x)
+      (cond
+        [(fixnum? x) ($fixnum->flonum x)]
+        [(bignum? x) (bignum->flonum x)]
+        [(ratnum? x) 
+         (binary/ (exact->inexact ($ratnum-n x)) ($ratnum-d x))]
+        [(flonum? x) x]
+        [else
+         (error 'inexact "~s is not a number" x)])))
 
   (define inexact?
     (lambda (x) 

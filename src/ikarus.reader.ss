@@ -613,7 +613,7 @@
          (tokenize-decimal-no-digits p (cons c ls) exact?)]
         [else (num-error "invalid sequence" (cons c ls))])))
   (define (num-error str ls)
-    (error "invalid numeric sequence ~a"
+    (error 'read "invalid numeric sequence ~a"
       (list->string (reverse ls))))
   (define (tokenize-hashnum p n)
     (let ([c (read-char p)])
