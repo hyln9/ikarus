@@ -4,15 +4,15 @@
   (export fixnum? flonum? bignum? ratnum? number? complex? real? rational?
           integer? exact? eof-object? bwp-object? immediate?
           boolean? char? vector? bytevector? string? procedure? null? pair?
-          symbol? code? not weak-pair? eq? eqv? equal?) 
+          symbol? code? not weak-pair? eq? eqv? equal? boolean=?
+          symbol=?) 
 
   (import 
-
     (except (ikarus) fixnum? flonum? bignum? ratnum? number? complex? real?
             rational? integer? exact? eof-object? bwp-object?
             immediate? boolean? char? vector? bytevector? string? procedure?
             null? pair? weak-pair? symbol? code? not eq? eqv? equal?
-            port? input-port? output-port?)
+            port? input-port? output-port? boolean=? symbol=?)
     (ikarus system $fx)
     (ikarus system $flonums)
     (ikarus system $pairs)
@@ -128,7 +128,26 @@
       (or (sys:eq? x y)
           (and (number? x) (number? y) (= x y)))))
 
+  (define boolean=?
+    (lambda (x y) 
+      (if (sys:boolean? x)
+          (if (sys:eq? x y) 
+              #t
+              (if (sys:boolean? y) 
+                  #f
+                  (error 'boolean=? "~s is not a boolean" y)))
+          (error 'boolean=? "~s is not a boolean" x))))
 
+
+  (define symbol=?
+    (lambda (x y) 
+      (if (sys:symbol? x)
+          (if (sys:eq? x y) 
+              #t
+              (if (sys:symbol? y) 
+                  #f
+                  (error 'symbol=? "~s is not a symbol" y)))
+          (error 'symbol=? "~s is not a symbol" x))))
 
   (module (equal?)
     (define vector-loop
