@@ -32,8 +32,8 @@
 (define (dirty-vector-set address)
   (prm 'mset 
      (prm 'int+
-          (prm 'mref pcr (K 28)) ;;; FIXME: make srl
-          (prm 'sll (prm 'sra address (K pageshift)) (K wordshift)))
+          (prm 'mref pcr (K 28)) 
+          (prm 'sll (prm 'srl address (K pageshift)) (K wordshift)))
      (K 0)
      (K dirty-word)))
 
