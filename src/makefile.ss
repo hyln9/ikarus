@@ -235,9 +235,9 @@
     [and               i r]
     [or                i r]
     [...               i r]
-    [=>               i r]
-    [else               i r]
-    [_               i r]
+    [=>                i r]
+    [else              i r]
+    [_                 i r]
     ))
 
 (define ikarus-procedures-map
@@ -331,6 +331,7 @@
     [string=?                i r]
     [string-ci=?             i unicode]
     [substring               i r]
+    [string-copy             i r]
     [string-append           i r]
     [string->list            i r]
     [list->string            i r]

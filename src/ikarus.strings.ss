@@ -1,7 +1,8 @@
 
 (library (ikarus strings)
   (export string-length string-ref string-set! make-string string->list string=?
-          string-append substring string list->string uuid)
+          string-append substring string list->string uuid
+          string-copy)
   (import 
     (ikarus system $strings)
     (ikarus system $fx)
@@ -10,7 +11,7 @@
     (ikarus system $pairs)
     (except (ikarus) string-length string-ref string-set! make-string
             string->list string=? string-append substring string
-            list->string uuid))
+            list->string uuid string-copy))
 
 
   (define string-length
@@ -117,6 +118,12 @@
                  ""
                  (fill s ($make-string len) n m 0)))))))
 
+  (define string-copy 
+    (lambda (s)
+      (if (string? s)
+          (substring s 0 (string-length s))
+          (error 'string-copy "~s is not a string" s))))
+  
   (module (string=?)
     (define bstring=?
       (lambda (s1 s2 i j)

@@ -33,10 +33,6 @@
             (match-and-bind targs (msg-arg* ...) (begin b b* ...))] ...
            [else else1 else2 ...]))]))
   
-  (define string-copy 
-    (lambda (s)
-      (substring s 0 (string-length s))))
-
   (define concat-old
     (lambda (str i ls)
       (let ([n (sum i ls)])
