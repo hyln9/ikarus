@@ -5,40 +5,40 @@
 ;;; library names:
 
 (define library-names
-  '([ba (rnrs base (6))]
-    [bw (rnrs arithmetic bitwise (6))]
-    [fx (rnrs arithmetic fixnums (6))]
-    [fl (rnrs arithmetic flonums (6))]
-    [bv (rnrs bytevectors (6))]
-    [co (rnrs conditions (6))]
+  '(
     [ct (rnrs control (6))]
-    [en (rnrs enums (6))]
     [ev (rnrs eval (6))]
-    [ex (rnrs exceptions (6))]
     [fi (rnrs files (6))]
-    [ht (rnrs hashtables (6))]
-    [ip (rnrs io ports (6))]
-    [is (rnrs io simple (6))]
-    [ls (rnrs lists (6))]
+    [pr (rnrs programs (6))]
     [mp (rnrs mutable-pairs (6))]
     [ms (rnrs mutable-strings (6))]
-    [pr (rnrs programs (6))]
-    [r5 (rnrs r5rs (6))]
-    [ri (rnrs records inspection (6))]
-    [rp (rnrs records procedural (6))]
-    [rs (rnrs records syntactic (6))]
+    [ba (rnrs base (6))]
+    [ls (rnrs lists (6))]
+    [is (rnrs io simple (6))]
+    [bv (rnrs bytevectors (6))]
     [sr (rnrs sorting (6))]
     [sc (rnrs syntax-case (6))]
     [uc (rnrs unicode (6))]
+    [ex (rnrs exceptions (6))]
+    [bw (rnrs arithmetic bitwise (6))]
+    [fx (rnrs arithmetic fixnums (6))]
+    [fl (rnrs arithmetic flonums (6))]
+    [ht (rnrs hashtables (6))]
+    [ip (rnrs io ports (6))]
+    [en (rnrs enums (6))]
+    [co (rnrs conditions (6))]
+    [ri (rnrs records inspection (6))]
+    [rp (rnrs records procedural (6))]
+    [rs (rnrs records syntactic (6))]
+    [r5 (rnrs r5rs (6))]
     ))
 
 (define status-names
   '(
-    [P progress]
     [S scheduled]
-    [C completed]
     [D deferred]
-    [U unknown]))
+    [C completed]
+    ))
 
 (define identifier-names
   '(
@@ -138,9 +138,9 @@
     [div0-and-mod0                              S ba]
     [dynamic-wind                               C ba]
     [eq?                                        C ba]
-    [equal?                                     P ba]
+    [equal?                                     S ba]
     [eqv?                                       C ba]
-    [error                                      P ba]
+    [error                                      S ba]
     [even?                                      C ba]
     [exact                                      S ba]
     [exact-integer-sqrt                         C ba]
@@ -484,10 +484,10 @@
     [environment                                C ev]
     [eval                                       C ev]
 
-    [raise                                      D ex]
-    [raise-continuable                          D ex]
-    [with-exception-handler                     D ex]
-    [guard                                      D ex]
+    [raise                                      S ex]
+    [raise-continuable                          S ex]
+    [with-exception-handler                     S ex]
+    [guard                                      S ex]
 
     [binary-port?                               D ip]
     [buffer-mode                                D ip]
@@ -859,6 +859,26 @@
     [(memq (car ls1) ls2) #f]
     [else (null-intersection? (cdr ls1) ls2)]))
 
+
+(define (library-info lib) 
+  (let ([inf (map (lambda (x) (cons (car x) 0)) status-names)])
+    (for-each 
+      (lambda (x) 
+        (let ([s (cadr x)]
+              [l* (cddr x)]) 
+          (cond
+            [(and (memq lib l*) (assq s inf)) =>
+             (lambda (x) 
+               (set-cdr! x (add1 (cdr x))))])))
+      identifier-names)
+    (join " " 
+       (map (lambda (x) 
+              (format "~a=~a" (car x) (cdr x)))
+            (filter 
+              (lambda (x) 
+                (not (zero? (cdr x))))
+              inf)))))
+
 (no-dups (map car identifier-names))
 (no-dups (map car library-names))
 (no-dups (map car status-names))
@@ -873,7 +893,8 @@
      (printf "Library Names:\n")
      (for-each 
        (lambda (x) 
-         (printf "   ~a  ~a\n" (car x) (cadr x)))
+         (printf "   ~a  ~a   ~a\n" (car x) (cadr x)
+                 (library-info (car x))))
        library-names)
      (printf "Status Codes:\n")
      (for-each 
