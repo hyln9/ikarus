@@ -225,7 +225,7 @@
     [vector-fill!                               S ba]
     [vector-for-each                            S ba]
     [vector-length                              C ba]
-    [vector-map                                 S ba]
+    [vector-map                                 C ba]
     [vector-ref                                 C ba]
     [vector-set!                                C ba]
     [vector?                                    C ba]
