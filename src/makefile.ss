@@ -110,6 +110,9 @@
     [and               (macro . and)]
     [or                (macro . or)]
     [...               (macro . ...)]
+    [=>                (macro . =>)]
+    [else              (macro . else)]
+    [_                 (macro . _)]
     ))
 
 (define library-legend
@@ -232,6 +235,9 @@
     [and               i r]
     [or                i r]
     [...               i r]
+    [=>               i r]
+    [else               i r]
+    [_               i r]
     ))
 
 (define ikarus-procedures-map

@@ -1567,8 +1567,7 @@
            [(quasiquote)        quasiquote-macro]
            [(with-syntax)       with-syntax-macro]
            [(identifier-syntax) identifier-syntax-macro]
-           [(...)               incorrect-usage-macro]
-           [(=>)                incorrect-usage-macro]
+           [(... => _ else)     incorrect-usage-macro]
            [else (error 'macro-transformer "invalid macro ~s" x)])]
         [else (error 'core-macro-transformer "invalid macro ~s" x)])))
   (define (local-macro-transformer x)
