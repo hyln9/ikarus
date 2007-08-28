@@ -1063,6 +1063,8 @@
                                           "~s is not a record of type ~s"
                                           x ',rtd)))))
                        setters i*))))])))
+  (define incorrect-usage-macro
+    (lambda (e) (stx-error e "incorrect usage of auxilary keyword")))
   (define parameterize-transformer ;;; go away
     (lambda (e r mr)
       (syntax-match e ()
@@ -1553,18 +1555,20 @@
         [(procedure? x) x]
         [(symbol? x)
          (case x
-           [(define-record) define-record-macro]
-           [(include)       include-macro]
-           [(cond)          cond-macro]
-           [(let)           let-macro]
-           [(do)            do-macro]
-           [(or)            or-macro]
-           [(and)           and-macro]
-           [(let*)          let*-macro]
-           [(syntax-rules)  syntax-rules-macro]
-           [(quasiquote)    quasiquote-macro]
-           [(with-syntax)   with-syntax-macro]
-           [(identifier-syntax)   identifier-syntax-macro]
+           [(define-record)     define-record-macro]
+           [(include)           include-macro]
+           [(cond)              cond-macro]
+           [(let)               let-macro]
+           [(do)                do-macro]
+           [(or)                or-macro]
+           [(and)               and-macro]
+           [(let*)              let*-macro]
+           [(syntax-rules)      syntax-rules-macro]
+           [(quasiquote)        quasiquote-macro]
+           [(with-syntax)       with-syntax-macro]
+           [(identifier-syntax) identifier-syntax-macro]
+           [(...)               incorrect-usage-macro]
+           [(=>)                incorrect-usage-macro]
            [else (error 'macro-transformer "invalid macro ~s" x)])]
         [else (error 'core-macro-transformer "invalid macro ~s" x)])))
   (define (local-macro-transformer x)

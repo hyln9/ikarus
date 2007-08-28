@@ -230,7 +230,7 @@
     [vector-set!                                C ba]
     [vector?                                    C ba]
     [zero?                                      C ba]
-    [...                                        S ba sc]
+    [...                                        C ba sc]
     [=>                                         S ba ex]
     [_                                          S ba sc]
     [else                                       S ba ex]
