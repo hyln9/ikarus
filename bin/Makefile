@@ -1,7 +1,7 @@
 
 CFLAGS = -I/opt/local/include -Wall -DNDEBUG -O3 #-fomit-frame-pointer
 #CFLAGS = -I/opt/local/include -Wall -g
-LDFLAGS = -L/opt/local/lib -g -ldl -lgmp -lz #-rdynamic
+LDFLAGS = -L/opt/local/lib -g -ldl -lgmp -lz -lm #-rdynamic
 CC = gcc
 all: ikarus
 

@@ -1,11 +1,11 @@
 
 (library (ikarus vectors)
   (export make-vector vector vector-length vector-ref vector-set!
-          vector->list list->vector vector-map)
+          vector->list list->vector vector-map vector-for-each)
   (import 
     (except (ikarus) make-vector vector 
             vector-length vector-ref vector-set!
-            vector->list list->vector vector-map)
+            vector->list list->vector vector-map vector-for-each)
     (ikarus system $fx)
     (ikarus system $pairs)
     (ikarus system $vectors))
@@ -191,4 +191,65 @@
                                    (f i ($cdr v*))))))
                      ac))])))])))
 
+
+  (module (vector-for-each)
+    (define who 'vector-for-each)
+    (define vector-for-each
+      (case-lambda
+        [(p v) 
+         (unless (procedure? p) 
+           (error who "~s is not a procedure" p))
+         (unless (vector? v) 
+           (error who "~s is not a vector" v))
+         (let f ([p p] [v v] [i 0] [n (vector-length v)])
+           (cond
+             [($fx= i n) (void)]
+             [else 
+              (p (vector-ref v i))
+              (f p v ($fxadd1 i) n)]))]
+        [(p v0 v1) 
+         (unless (procedure? p) 
+           (error who "~s is not a procedure" p))
+         (unless (vector? v0) 
+           (error who "~s is not a vector" v0))
+         (unless (vector? v1) 
+           (error who "~s is not a vector" v1))
+         (let ([n (vector-length v0)])
+           (unless ($fx= n ($vector-length v1))
+             (error who "length mismatch between ~s and ~s" v0 v1))
+           (let f ([p p] [v0 v0] [v1 v1] [i 0] [n n])
+             (cond
+               [($fx= i n) (void)]
+               [else 
+                (p ($vector-ref v0 i) ($vector-ref v1 i))
+                (f p v0 v1 ($fxadd1 i) n)])))]
+        [(p v0 v1 . v*) 
+         (unless (procedure? p) 
+           (error who "~s is not a procedure" p))
+         (unless (vector? v0) 
+           (error who "~s is not a vector" v0))
+         (unless (vector? v1) 
+           (error who "~s is not a vector" v1))
+         (let ([n (vector-length v0)])
+           (unless ($fx= n ($vector-length v1))
+             (error who "length mismatch between ~s and ~s" v0 v1))
+           (let f ([v* v*] [n n])
+             (unless (null? v*) 
+               (let ([a ($car v*)])
+                 (unless (vector? a) 
+                   (error who "~s is not a vector" a))
+                 (unless ($fx= ($vector-length a) n) 
+                   (error who "length mismatch")))
+               (f ($cdr v*) n)))
+           (let f ([p p] [v0 v0] [v1 v1] [v* v*] [i 0] [n n])
+             (cond
+               [($fx= i n) (void)] 
+               [else 
+                (apply p ($vector-ref v0 i) ($vector-ref v1 i)
+                  (let f ([i i] [v* v*]) 
+                    (if (null? v*) 
+                        '()
+                        (cons ($vector-ref ($car v*) i) 
+                              (f i ($cdr v*))))))
+                (f p v0 v1 v* ($fxadd1 i) n)])))])))
   )

@@ -189,7 +189,7 @@ int main(int argc, char** argv){
          struct sigaction * restrict oact);
 #endif
 
-void handler(int signo, struct __siginfo* info, ucontext_t* uap){
+void handler(int signo, struct __siginfo* info, void* uap){
   the_pcb->engine_counter = -1;
   the_pcb->interrupted = 1;
 }

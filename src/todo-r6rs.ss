@@ -223,7 +223,7 @@
     [vector                                     C ba]
     [vector->list                               C ba]
     [vector-fill!                               S ba]
-    [vector-for-each                            S ba]
+    [vector-for-each                            C ba]
     [vector-length                              C ba]
     [vector-map                                 C ba]
     [vector-ref                                 C ba]

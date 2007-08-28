@@ -348,6 +348,7 @@
     [list->vector            i r]
     [vector->list            i r]
     [vector-map              i r]
+    [vector-for-each         i r]
     [make-bytevector         i]
     [bytevector-length       i]
     [bytevector-s8-ref       i]
