@@ -414,6 +414,7 @@
                   [else #f])) =>
            (lambda (sym)
              (record-symbol-call! sym)
+             (reset-symbol-proc! sym)
              (prm 'mref (T (K sym))
                   (K (- disp-symbol-record-proc symbol-ptag))))]
           [else (nonproc x)])]
@@ -423,6 +424,7 @@
 
   (define encountered-symbol-calls '())
   (define (record-symbol-call! x)
+    
     (unless (memq x encountered-symbol-calls)
       (set! encountered-symbol-calls 
         (cons x encountered-symbol-calls))))

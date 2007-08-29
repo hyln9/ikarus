@@ -483,6 +483,7 @@
     [symbol-value            i symbols]
     [top-level-value         i symbols]
     [set-symbol-value!       i symbols]
+    [reset-symbol-proc!      i symbols]
     [make-guardian           i]
     [make-input-port         i]
     [make-output-port        i]

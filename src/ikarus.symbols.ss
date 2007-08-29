@@ -4,7 +4,8 @@
           gensym-count print-gensym string->symbol symbol->string
           getprop putprop remprop property-list
           top-level-value top-level-bound? set-top-level-value!
-          symbol-value symbol-bound? set-symbol-value!)
+          symbol-value symbol-bound? set-symbol-value!
+          reset-symbol-proc!)
   (import 
     (ikarus system $symbols)
     (ikarus system $pairs)
@@ -14,7 +15,7 @@
       string->symbol symbol->string
       getprop putprop remprop property-list
       top-level-value top-level-bound? set-top-level-value!
-      symbol-value symbol-bound? set-symbol-value!))
+      symbol-value symbol-bound? set-symbol-value! reset-symbol-proc!))
 
   (define gensym
     (case-lambda
@@ -72,7 +73,22 @@
     (lambda (x v)
       (unless (symbol? x)
         (error 'set-symbol-value! "~s is not a symbol" x))
-      ($set-symbol-value! x v)))
+      ($set-symbol-value! x v)
+      ($set-symbol-proc! x 
+        (if (procedure? v) v 
+            (lambda args
+              (error 'apply "~s is not a procedure" 
+                     ($symbol-value x)))))))
+         
+  (define reset-symbol-proc!
+    (lambda (x) 
+      (let ([v ($symbol-value x)])
+        ($set-symbol-proc! x
+          (if (procedure? v)
+              v
+              (lambda args
+                (error 'apply "~s is not a procedure" 
+                       ($symbol-value x))))))))
 
   (define string->symbol
     (lambda (x)
