@@ -696,6 +696,7 @@
     [$symbol-string             $symbols]
     [$symbol-plist              $symbols]
     [$set-symbol-value!         $symbols]
+    [$set-symbol-proc!          $symbols]
     [$set-symbol-string!        $symbols]
     [$set-symbol-unique-string! $symbols]
     [$set-symbol-plist!         $symbols]

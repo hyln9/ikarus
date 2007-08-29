@@ -452,10 +452,6 @@
      (prm 'mset x (K (- disp-symbol-record-value symbol-ptag))   (K unbound))
      (prm 'mset x (K (- disp-symbol-record-proc symbol-ptag))    (K unbound))
      (prm 'mset x (K (- disp-symbol-record-plist symbol-ptag))   (K nil))
-     ;(prm 'mset x (K (- disp-symbol-system-value symbol-tag)) (K unbound))
-     ;(prm 'mset x (K (- disp-symbol-function symbol-ptag)) (K 0))
-     ;(prm 'mset x (K (- disp-symbol-error-function symbol-ptag)) (K 0)) 
-     ;(prm 'mset x (K (- disp-symbol-unused symbol-tag)) (K 0))
      x)]
   [(P str) (K #t)]
   [(E str) (nop)])
@@ -491,6 +487,11 @@
      (prm 'mset x (K (- disp-symbol-record-value symbol-ptag)) (T v))
      (dirty-vector-set x))])
 
+(define-primop $set-symbol-proc! unsafe
+  [(E x v)
+   (with-tmp ([x (T x)])
+     (prm 'mset x (K (- disp-symbol-record-proc symbol-ptag)) (T v))
+     (dirty-vector-set x))])
 
 (define-primop top-level-value safe
   [(V x)

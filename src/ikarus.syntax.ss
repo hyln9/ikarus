@@ -2272,7 +2272,7 @@
                macro*))))
   (define (library-expander x)
     (let-values ([(name imp* inv* vis* invoke-code macro* export-subst export-env)
-                    (core-library-expander x)])
+                  (core-library-expander x)])
       (let ([id (gensym)]
             [name name]
             [ver '()]  ;;; FIXME
@@ -2295,7 +2295,8 @@
   (define build-export
     (lambda (x)
       ;;; exports use the same gensym
-      `(#%$set-symbol-value! ',x ,x)))
+      `(begin
+         (#%$set-symbol-value! ',x ,x))))
   (define (make-export-subst int* ext* rib)
     (map
       (lambda (int ext)
