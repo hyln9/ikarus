@@ -189,7 +189,8 @@ int main(int argc, char** argv){
          struct sigaction * restrict oact);
 #endif
 
-void handler(int signo, struct __siginfo* info, void* uap){
+//void handler(int signo, struct __siginfo* info, void* uap){
+void handler(int signo, siginfo_t* info, void* uap){
   the_pcb->engine_counter = -1;
   the_pcb->interrupted = 1;
 }
@@ -197,7 +198,7 @@ void handler(int signo, struct __siginfo* info, void* uap){
 void
 register_handlers(){
   struct sigaction sa;
-  sa.sa_sigaction = (void(*)(int,struct __siginfo*,void*)) handler;
+  sa.sa_sigaction = handler;
   sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
   sa.sa_mask = 0;
   int err = sigaction(SIGINT, &sa, 0);
