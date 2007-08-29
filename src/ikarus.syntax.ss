@@ -2193,8 +2193,8 @@
                     (let ([invoke-body (if (and (null? init*) (null? lex*))
                                            (build-void)
                                            (build-sequence no-source
-                                             (append
-                                               (map build-export lex*)
+                                             (cons
+                                               (build-exports lex*)
                                                (chi-expr* init* r mr))))])
                       (unseal-rib! rib)
                       (let ([export-subst (make-export-subst exp-int* exp-ext* rib)])
@@ -2296,7 +2296,33 @@
     (lambda (x)
       ;;; exports use the same gensym
       `(begin
-         (#%$set-symbol-value! ',x ,x))))
+         (#%$set-symbol-value! ',x ,x)
+         (#%$set-symbol-proc! ',x 
+           (if (#%procedure? ,x) ,x 
+               (case-lambda 
+                 [,(gensym) 
+                  (#%error 'apply '"~s is not a procedure" 
+                   (#%$symbol-value ',x))]))))))
+  (define build-exports
+    (lambda (ls) 
+      (define f (gensym))
+      (define name (gensym))
+      (define val (gensym))
+      `((case-lambda 
+          [(,f) 
+           (begin '#f
+             ,@(map (lambda (x) `(,f ',x ,x)) ls))])
+        (case-lambda
+          [(,name ,val) 
+           (begin
+             (#%$set-symbol-value! ,name ,val)
+             (#%$set-symbol-proc! ,name 
+               (if (#%procedure? ,val) ,val 
+                   (case-lambda 
+                     [,(gensym) 
+                      (#%error 'apply '"~s is not a procedure" 
+                       (#%$symbol-value ,name))]))))]))))
+               
   (define (make-export-subst int* ext* rib)
     (map
       (lambda (int ext)

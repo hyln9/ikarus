@@ -357,7 +357,7 @@
                       (make-object
                         (primref->symbol 
                           'do-overflow)))
-                    (make-constant (- disp-symbol-record-value symbol-ptag))))
+                    (make-constant (- disp-symbol-record-proc symbol-ptag))))
            (list size)))))
   ;;; impose value
   (define (V d x)

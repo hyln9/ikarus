@@ -415,7 +415,7 @@
            (lambda (sym)
              (record-symbol-call! sym)
              (prm 'mref (T (K sym))
-                  (K (- disp-symbol-record-value symbol-ptag))))]
+                  (K (- disp-symbol-record-proc symbol-ptag))))]
           [else (nonproc x)])]
        [(primref op) (V x)]
        [else (nonproc x)]))
@@ -458,57 +458,12 @@
           free*)]
       [else (error 'specify-rep "invalid clambda ~s" x)]))
   ;;;
-  (define (error-codes)
-    (define (code-list symbol)
-      (define L1 (gensym))
-      (define L2 (gensym))
-      `(0
-        [movl (disp ,(- disp-symbol-record-value symbol-ptag) (obj ,symbol)) ,cp-register]
-        [andl ,closure-mask ,cp-register]
-        [cmpl ,closure-tag ,cp-register]
-        [jne (label ,L1)]
-        [movl (disp ,(- disp-symbol-record-value symbol-ptag) (obj ,symbol)) ,cp-register]
-        [movl ,cp-register (disp ,(- disp-symbol-record-value symbol-ptag) (obj ,symbol))]
-        [jmp (disp ,(- disp-closure-code closure-tag) ,cp-register)]
-        [label ,L1]
-        [movl (disp ,(- disp-symbol-record-value symbol-ptag) (obj ,symbol)) %eax]
-        [cmpl ,unbound %eax]
-        [je (label ,L2)]
-        [movl (obj apply) (disp -4 %esp)]
-        [movl (obj "~s is not a procedure") (disp -8 %esp)]
-        [movl %eax (disp -12 %esp)]
-        [movl (obj ,(primref->symbol 'error)) ,cp-register]
-        [movl (disp ,(- disp-symbol-record-value symbol-ptag)
-                    ,cp-register) ,cp-register]
-        [movl ,(argc-convention 3) %eax]
-        [jmp (disp ,(- disp-closure-code closure-tag) ,cp-register)]
-        [label ,L2]
-        [movl (obj ,symbol) (disp -4 %esp)]
-        [movl (obj ,(primref->symbol 'top-level-value)) ,cp-register]
-        [movl (disp ,(- disp-symbol-record-value symbol-ptag)
-                    ,cp-register) ,cp-register]
-        [movl ,(argc-convention 1) %eax]
-        [jmp (disp ,(- disp-closure-code closure-tag) ,cp-register)]))
-    (let ([ls encountered-symbol-calls])
-      (let ([c* (map code-list ls)])
-        (let ([c* (assemble-sources (lambda (x) #f) c*)])
-          (let ([p* (map (lambda (x) ($code->closure x)) c*)])
-            (let f ([ls ls] [p* p*])
-              (cond
-                [(null? ls) (prm 'nop)]
-                [else 
-                 (make-seq
-                   (with-tmp ([p (V (K (car p*)))] [s (V (K (car ls)))])
-                     (E (prm '$init-symbol-function! s p)))
-                   (f (cdr ls) (cdr p*)))])))))))
   (define (Program x)
     (record-case x 
       [(codes code* body)
        (let ([code* (map Clambda code*)]
              [body (V body)])
-         (make-codes code*
-           ;(make-seq (error-codes) body)
-           body))]
+         (make-codes code* body))]
       [else (error 'specify-rep "invalid program ~s" x)]))
 
   (define (specify-representation x)

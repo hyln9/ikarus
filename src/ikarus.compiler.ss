@@ -1934,7 +1934,7 @@
      (error 'compile "cannot find location of primitive ~s" op)]))
 
 (define (primref-loc op)
-  (mem (fx- disp-symbol-record-value record-tag) 
+  (mem (fx- disp-symbol-record-proc record-tag) 
        (obj (primref->symbol op))))
 
 
