@@ -182,7 +182,7 @@ ik_relocate_code(ikp code){
         fprintf(stderr, "foreign name is not a bytevector\n");
         exit(-1);
       }
-      dlerror(); 
+      dlerror();
       void* sym = dlsym(RTLD_DEFAULT, name);
       char* err = dlerror();
       if(err){

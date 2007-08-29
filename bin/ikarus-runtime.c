@@ -15,8 +15,6 @@
 #include <sys/resource.h>
 #include <sys/wait.h>
 
-#include <uuid/uuid.h>
-
 int total_allocated_pages = 0;
          
 extern char **environ;
