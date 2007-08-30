@@ -133,7 +133,9 @@
   [(E x) (nop)])
 
 (define-primop pointer-value unsafe
-  [(V x) (prm 'logand (T x) (K (* -1 fixnum-scale)))]
+  [(V x) (prm 'logand 
+           (prm 'srl (T x) (K 1))
+           (K (* -1 fixnum-scale)))]
   [(P x) (K #t)]
   [(E x) (nop)])
 
