@@ -784,6 +784,11 @@
              (bless `(letrec ([,f (lambda ,lhs* ,b . ,b*)])
                         (,f . ,rhs*)))
              (stx-error stx "invalid syntax"))])))
+  (define time-macro
+    (lambda (stx)
+      (syntax-match stx ()
+        [(_ expr) 
+         (bless `(time-it ',expr (lambda () ,expr)))])))
   (define identifier-syntax-macro
     (lambda (stx)
       (syntax-match stx ()
@@ -1567,6 +1572,7 @@
            [(quasiquote)        quasiquote-macro]
            [(with-syntax)       with-syntax-macro]
            [(identifier-syntax) identifier-syntax-macro]
+           [(time)              time-macro]
            [(... => _ else)     incorrect-usage-macro]
            [else (error 'macro-transformer "invalid macro ~s" x)])]
         [else (error 'core-macro-transformer "invalid macro ~s" x)])))

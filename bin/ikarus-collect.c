@@ -230,7 +230,6 @@ gc_tconc_push_extending(gc_t* gc, ikp tcbucket){
     p->next = gc->tconc_queue;
     gc->tconc_queue = p;
   }
-  /* Wrong MR! */
   ikp ap = 
      ik_mmap_typed(pagesize, 
         meta_mt[meta_ptrs] | next_gen_tag[0],
@@ -1070,7 +1069,7 @@ add_object_proc(gc_t* gc, ikp x)
       if((! is_fixnum(key)) && (tagof(key) != immediate_tag)){
         unsigned int kt = gc->segment_vector[page_index(key)];
         if((kt & gen_mask) <= gc->collect_gen){
-          /* key is moved */
+          /* key will be moved */
           gc_tconc_push(gc, y);
         }
       }
@@ -1777,8 +1776,7 @@ add_one_tconc(ikpcb* pcb, ikp p){
   assert(tagof(tc) == pair_tag);
   ikp d = ref(tc, off_cdr);
   assert(tagof(d) == pair_tag);
-  /* Wrong MR! */
-  ikp new_pair = p + pair_tag; //ik_alloc(pcb, pair_size) + pair_tag;
+  ikp new_pair = p + pair_tag; 
   ref(d, off_car) = tcbucket;
   ref(d, off_cdr) = new_pair;
   ref(new_pair, off_car) = false_object;
