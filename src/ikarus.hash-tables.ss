@@ -25,6 +25,10 @@
 
   (define-syntax inthash
     (syntax-rules ()
+      [(_ x) x]))
+
+  #;(define-syntax inthash
+    (syntax-rules ()
       [(_ x) ($fxinthash x)]))
 
   #;(define inthash

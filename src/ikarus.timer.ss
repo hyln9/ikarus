@@ -21,7 +21,7 @@
 
   (define (print-stats message bytes t1 t0)
     (define (print-time msg msecs gc-msecs)
-      (printf "    ~a ms elapsed ~a time (~a ms collecting)\n" msecs msg
+      (printf "    ~a ms elapsed ~a time, including ~a ms collecting\n" msecs msg
               gc-msecs))
     (define (msecs s1 s0 u1 u0)
       (+ (* (- s1 s0) 1000) (quotient (- u1 u0) 1000)))
