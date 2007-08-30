@@ -14,21 +14,22 @@ extern int hash_table_count;
 
 #define most_bytes_in_minor 0x10000000
 
-#define old_gen_mask    0x00000007
-#define new_gen_mask    0x00000008
-#define gen_mask        0x0000000F
-#define new_gen_tag     0x00000008
-#define meta_dirty_mask 0x000000F0
-#define type_mask       0x00000F00
-#define scannable_mask  0x0000F000
-#define dealloc_mask    0x000F0000
+#define old_gen_mask       0x00000007
+#define new_gen_mask       0x00000008
+#define gen_mask           0x0000000F
+#define new_gen_tag        0x00000008
+#define meta_dirty_mask    0x000000F0
+#define type_mask          0x00000F00
+#define scannable_mask     0x0000F000
+#define dealloc_mask       0x000F0000
+#define large_object_mask  0x00100000
 #define meta_dirty_shift 4
 
 #define hole_type       0x00000000
 #define mainheap_type   0x00000100
 #define mainstack_type  0x00000200
 #define pointers_type   0x00000300
-#define dat_type       0x00000400
+#define dat_type        0x00000400
 #define code_type       0x00000500
 #define weak_pairs_type 0x00000600
 #define symbols_type    0x00000700
@@ -38,6 +39,8 @@ extern int hash_table_count;
 
 #define dealloc_tag     0x00010000
 #define retain_tag      0x00000000
+
+#define large_object_tag   0x00100000
 
 #define hole_mt         (hole_type       | unscannable_tag | retain_tag)
 #define mainheap_mt     (mainheap_type   | unscannable_tag | retain_tag)

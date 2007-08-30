@@ -57,7 +57,7 @@ static int extension_amount[meta_count] = {
   1 * pagesize,
   1 * pagesize,
   1 * pagesize,
-  1 * pagesize
+  1 * pagesize,
 };
 
 static unsigned int meta_mt[meta_count] = {
@@ -149,6 +149,43 @@ gc_alloc_new_ptr(int size, int old_gen, gc_t* gc){
   return meta_alloc(size, old_gen, gc, meta_ptrs);
 }
 
+static inline ikp 
+gc_alloc_new_large_ptr(int size, int old_gen, gc_t* gc){
+  int memreq = align_to_next_page(size);
+  ikp mem = 
+      ik_mmap_typed(memreq, 
+        pointers_mt | large_object_tag | next_gen_tag[old_gen],
+        gc->pcb);
+  gc->segment_vector = gc->pcb->segment_vector;
+  qupages_t* p = ik_malloc(sizeof(qupages_t));
+  p->p = mem;
+  p->q = mem+size;
+  bzero(mem+size, memreq-size);
+  p->next = gc->queues[meta_ptrs];
+  gc->queues[meta_ptrs] = p;
+  return mem;
+}
+
+
+static inline void 
+enqueue_large_ptr(ikp mem, int size, int old_gen, gc_t* gc){
+  int i = page_index(mem);
+  int j = page_index(mem+size-1);
+  while(i<=j){
+    gc->segment_vector[i] = 
+      pointers_mt | large_object_tag | next_gen_tag[old_gen];
+    i++;
+  }
+  qupages_t* p = ik_malloc(sizeof(qupages_t));
+  p->p = mem;
+  p->q = mem+size;
+  p->next = gc->queues[meta_ptrs];
+  gc->queues[meta_ptrs] = p;
+}
+
+
+
+
 #if 0
 static inline ikp 
 gc_alloc_new_symbol(int old_gen, gc_t* gc){
@@ -220,6 +257,9 @@ gc_alloc_new_code(int size, int old_gen, gc_t* gc){
     return mem;
   }
 }
+
+
+
 
 static void
 gc_tconc_push_extending(gc_t* gc, ikp tcbucket){
@@ -989,16 +1029,32 @@ add_object_proc(gc_t* gc, ikp x)
       int size = (int)fst;
       assert(size >= 0);
       int memreq = align(size + disp_vector_data);
-      ikp y = gc_alloc_new_ptr(memreq, gen, gc) + vector_tag;
-      ref(y, disp_vector_length-vector_tag) = fst;
-      ref(y, memreq-vector_tag-wordsize) = 0;
-      memcpy(y+off_vector_data, x+off_vector_data, size);
-      ref(x,-vector_tag) = forward_ptr;
-      ref(x,wordsize-vector_tag) = y;
+      if(memreq >= pagesize){
+        if((t & large_object_mask) == large_object_tag){
+          enqueue_large_ptr(x-vector_tag, size+disp_vector_data, gen, gc);
+          return x;
+        } else {
+          ikp y = gc_alloc_new_large_ptr(size+disp_vector_data, gen, gc) +
+            vector_tag;
+          ref(y, disp_vector_length-vector_tag) = fst;
+          ref(y, memreq-vector_tag-wordsize) = 0;
+          memcpy(y+off_vector_data, x+off_vector_data, size);
+          ref(x,-vector_tag) = forward_ptr;
+          ref(x,wordsize-vector_tag) = y;
+          return y;
+        }
+      } else {
+        ikp y = gc_alloc_new_ptr(memreq, gen, gc) + vector_tag;
+        ref(y, disp_vector_length-vector_tag) = fst;
+        ref(y, memreq-vector_tag-wordsize) = 0;
+        memcpy(y+off_vector_data, x+off_vector_data, size);
+        ref(x,-vector_tag) = forward_ptr;
+        ref(x,wordsize-vector_tag) = y;
+        return y;
+      }
 #if accounting
       vector_count++;
 #endif
-      return y;
     } 
     else if(fst == symbol_record_tag){
       ikp y = gc_alloc_new_symbol_record(gen, gc) + record_tag;
