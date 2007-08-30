@@ -921,6 +921,12 @@ ikrt_stats_now(ikp t, ikpcb* pcb){
   ref(t, off_record_data + 4 * wordsize) = fix(s.tv_sec);
   ref(t, off_record_data + 5 * wordsize) = fix(s.tv_usec);
   ref(t, off_record_data + 6 * wordsize) = fix(pcb->collection_id);
+  ref(t, off_record_data + 7 * wordsize) = fix(pcb->collect_utime.tv_sec);
+  ref(t, off_record_data + 8 * wordsize) = fix(pcb->collect_utime.tv_usec);
+  ref(t, off_record_data + 9 * wordsize) = fix(pcb->collect_stime.tv_sec);
+  ref(t, off_record_data + 10 * wordsize) = fix(pcb->collect_stime.tv_usec);
+  ref(t, off_record_data + 11 * wordsize) = fix(pcb->collect_rtime.tv_sec);
+  ref(t, off_record_data + 12 * wordsize) = fix(pcb->collect_rtime.tv_usec);
   return void_object;
 }
 

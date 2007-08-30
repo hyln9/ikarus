@@ -144,7 +144,7 @@ typedef struct ikpcb{
   int allocation_count_major;
   struct timeval collect_utime;
   struct timeval collect_stime;
-  
+  struct timeval collect_rtime; 
 } ikpcb;
 
 

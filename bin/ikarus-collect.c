@@ -258,6 +258,16 @@ gc_alloc_new_code(int size, int old_gen, gc_t* gc){
   }
 }
 
+static void 
+add_to_collect_count(ikpcb* pcb, int bytes){
+  int minor = bytes + pcb->allocation_count_minor;
+  while(minor >= most_bytes_in_minor){
+    minor -= most_bytes_in_minor;
+    pcb->allocation_count_major++;
+  }
+  pcb->allocation_count_minor = minor;
+}
+
 
 
 
@@ -272,8 +282,10 @@ gc_tconc_push_extending(gc_t* gc, ikp tcbucket){
   }
   ikp ap = 
      ik_mmap_typed(pagesize, 
-        meta_mt[meta_ptrs] | next_gen_tag[0],
+        meta_mt[meta_ptrs] | next_gen_tag[gc->collect_gen],
+        //meta_mt[meta_ptrs] | next_gen_tag[0],
         gc->pcb);
+  add_to_collect_count(gc->pcb, pagesize);
   gc->segment_vector = gc->pcb->segment_vector;
   bzero(ap, pagesize);
   ikp nap = ap + 2*wordsize;
@@ -351,6 +363,7 @@ static void fix_new_pages(gc_t* gc);
 
 extern void verify_integrity(ikpcb* pcb, char*);
 
+
 ikpcb* 
 ik_collect(int mem_req, ikpcb* pcb){
 #ifndef NDEBUG
@@ -359,17 +372,13 @@ ik_collect(int mem_req, ikpcb* pcb){
   { /* ACCOUNTING */
     int bytes = ((int)pcb->allocation_pointer) -
                 ((int)pcb->heap_base);
-    int minor = bytes + pcb->allocation_count_minor;
-    while(minor >= most_bytes_in_minor){
-      minor -= most_bytes_in_minor;
-      pcb->allocation_count_major++;
-    }
-    pcb->allocation_count_minor = minor;
+    add_to_collect_count(pcb, bytes);
   }
 
 
   struct rusage t0, t1;
-   
+  struct timeval rt0, rt1;
+  gettimeofday(&rt0, 0);
   getrusage(RUSAGE_SELF, &t0);
 
   gc_t gc;
@@ -448,29 +457,10 @@ ik_collect(int mem_req, ikpcb* pcb){
 #ifndef NDEBUG
   fprintf(stderr, "collect done\n");
 #endif
-  getrusage(RUSAGE_SELF, &t1);
-  pcb->collect_utime.tv_usec += t1.ru_utime.tv_usec - t0.ru_utime.tv_usec;
-  pcb->collect_utime.tv_sec += t1.ru_utime.tv_sec - t0.ru_utime.tv_sec;
-  if (pcb->collect_utime.tv_usec >= 1000000){
-   pcb->collect_utime.tv_usec -= 1000000;
-   pcb->collect_utime.tv_sec += 1;
-  }
-  else if (pcb->collect_utime.tv_usec < 0){
-   pcb->collect_utime.tv_usec += 1000000;
-   pcb->collect_utime.tv_sec -= 1;
-  }
- 
-  pcb->collect_stime.tv_usec += t1.ru_stime.tv_usec - t0.ru_stime.tv_usec;
-  pcb->collect_stime.tv_sec += t1.ru_stime.tv_sec - t0.ru_stime.tv_sec;
-  if (pcb->collect_stime.tv_usec >= 1000000){
-   pcb->collect_stime.tv_usec -= 1000000;
-   pcb->collect_stime.tv_sec += 1;
-  }
-  else if (pcb->collect_stime.tv_usec < 0){
-   pcb->collect_stime.tv_usec += 1000000;
-   pcb->collect_stime.tv_sec -= 1;
-  }
- 
+
+
+
+
   /* delete all old heap pages */
   if(old_heap_pages){
     ikpages* p = old_heap_pages;
@@ -512,6 +502,44 @@ ik_collect(int mem_req, ikpcb* pcb){
 #ifndef NDEBUG
   verify_integrity(pcb, "exit");
 #endif
+
+  getrusage(RUSAGE_SELF, &t1);
+  gettimeofday(&rt1, 0);
+
+  pcb->collect_utime.tv_usec += t1.ru_utime.tv_usec - t0.ru_utime.tv_usec;
+  pcb->collect_utime.tv_sec += t1.ru_utime.tv_sec - t0.ru_utime.tv_sec;
+  if (pcb->collect_utime.tv_usec >= 1000000){
+   pcb->collect_utime.tv_usec -= 1000000;
+   pcb->collect_utime.tv_sec += 1;
+  }
+  else if (pcb->collect_utime.tv_usec < 0){
+   pcb->collect_utime.tv_usec += 1000000;
+   pcb->collect_utime.tv_sec -= 1;
+  }
+ 
+  pcb->collect_stime.tv_usec += t1.ru_stime.tv_usec - t0.ru_stime.tv_usec;
+  pcb->collect_stime.tv_sec += t1.ru_stime.tv_sec - t0.ru_stime.tv_sec;
+  if (pcb->collect_stime.tv_usec >= 1000000){
+   pcb->collect_stime.tv_usec -= 1000000;
+   pcb->collect_stime.tv_sec += 1;
+  }
+  else if (pcb->collect_stime.tv_usec < 0){
+   pcb->collect_stime.tv_usec += 1000000;
+   pcb->collect_stime.tv_sec -= 1;
+  }
+ 
+  pcb->collect_rtime.tv_usec += rt1.tv_usec - rt0.tv_usec;
+  pcb->collect_rtime.tv_sec += rt1.tv_sec - rt0.tv_sec;
+  if (pcb->collect_rtime.tv_usec >= 1000000){
+   pcb->collect_rtime.tv_usec -= 1000000;
+   pcb->collect_rtime.tv_sec += 1;
+  }
+  else if (pcb->collect_rtime.tv_usec < 0){
+   pcb->collect_rtime.tv_usec += 1000000;
+   pcb->collect_rtime.tv_sec -= 1;
+  }
+ 
+
   return pcb;
 }
 

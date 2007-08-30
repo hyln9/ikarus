@@ -4,10 +4,17 @@
   (import (except (ikarus) time-it))
 
   (define-record stats 
-    (user-secs user-usecs sys-secs sys-usecs real-secs real-usecs collection-id))
+    (user-secs user-usecs 
+     sys-secs sys-usecs 
+     real-secs real-usecs
+     collection-id
+     gc-user-secs gc-user-usecs
+     gc-sys-secs gc-sys-usecs 
+     gc-real-secs gc-real-usecs
+     ))
 
   (define (mk-stats)
-    (make-stats #f #f #f #f #f #f #f))
+    (make-stats #f #f #f #f #f #f #f #f #f #f #f #f #f))
 
   (define (set-stats! t)
     (foreign-call "ikrt_stats_now" t))
