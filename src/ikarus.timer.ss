@@ -20,8 +20,9 @@
     (foreign-call "ikrt_stats_now" t))
 
   (define (print-stats message bytes t1 t0)
-    (define (print-time msg msecs)
-      (printf "    ~a ms elapsed ~a time\n" msecs msg))
+    (define (print-time msg msecs gc-msecs)
+      (printf "    ~a ms elapsed ~a time (~a ms collecting)\n" msecs msg
+              gc-msecs))
     (define (msecs s1 s0 u1 u0)
       (+ (* (- s1 s0) 1000) (quotient (- u1 u0) 1000)))
     (if message
@@ -37,10 +38,16 @@
        (+ (msecs (stats-user-secs t1)  (stats-user-secs t0)
                  (stats-user-usecs t1) (stats-user-usecs t0))
           (msecs (stats-sys-secs t1)  (stats-sys-secs t0)
-                 (stats-sys-usecs t1) (stats-sys-usecs t0))))
+                 (stats-sys-usecs t1) (stats-sys-usecs t0)))
+       (+ (msecs (stats-gc-user-secs t1)  (stats-gc-user-secs t0)
+                 (stats-gc-user-usecs t1) (stats-gc-user-usecs t0))
+          (msecs (stats-gc-sys-secs t1)  (stats-gc-sys-secs t0)
+                 (stats-gc-sys-usecs t1) (stats-gc-sys-usecs t0))))
     (print-time "real" 
         (msecs (stats-real-secs t1) (stats-real-secs t0)
-               (stats-real-usecs t1) (stats-real-usecs t0)))
+               (stats-real-usecs t1) (stats-real-usecs t0))
+        (msecs (stats-gc-real-secs t1) (stats-gc-real-secs t0)
+               (stats-gc-real-usecs t1) (stats-gc-real-usecs t0)))
     (printf "    ~a bytes allocated\n" bytes))
 
   (define (print-stats-old message bytes t1 t0)
