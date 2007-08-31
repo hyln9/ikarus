@@ -381,6 +381,7 @@ ik_collect(int mem_req, ikpcb* pcb){
   gettimeofday(&rt0, 0);
   getrusage(RUSAGE_SELF, &t0);
 
+  pcb->collect_key = false_object;
   gc_t gc;
   bzero(&gc, sizeof(gc_t));
   gc.pcb = pcb;

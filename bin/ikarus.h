@@ -120,6 +120,7 @@ typedef struct ikpcb{
   int   engine_counter;               /* offset = 36 */
   int   interrupted;                  /* offset = 40 */
   ikp   base_rtd;                     /* offset = 44 */
+  ikp   collect_key;                  /* offset = 48 */
   /* the rest are not used by any scheme code        */
   /* they only support the runtime system (gc, etc.) */
   unsigned int* segment_vector; 
