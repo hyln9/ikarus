@@ -761,6 +761,7 @@
     [$unread-char           $io]
 
     [$arg-list              $arg-list]
+    [$collect-key           $arg-list]
 
     [$$apply                          $stack]
     [$fp-at-base                      $stack]
@@ -796,6 +797,7 @@
     [do-overflow-words                 ]
     [do-vararg-overflow                ]
     [collect                           i]
+    [collect-key                       i]
     [do-stack-overflow                 ]
     [syntax-dispatch                   ]
     ))

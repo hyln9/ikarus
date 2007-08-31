@@ -1,10 +1,11 @@
 
 (library (ikarus collect)
   (export do-overflow do-overflow-words do-vararg-overflow collect
-          do-stack-overflow)
+          do-stack-overflow collect-key)
   (import 
-    (except (ikarus) collect)
-    (ikarus system $fx))
+    (except (ikarus) collect collect-key)
+    (ikarus system $fx)
+    (ikarus system $arg-list))
 
 (define do-overflow
   (lambda (n)
@@ -36,4 +37,11 @@
 (define dump-dirty-vector
   (lambda ()
     (foreign-call "ik_dump_dirty_vector")))
+
+(define (collect-key)
+  (or ($collect-key) 
+      (begin
+        ($collect-key (string #\k))
+        (collect-key))))
+
 )

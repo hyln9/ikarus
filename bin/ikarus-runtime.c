@@ -263,6 +263,7 @@ ikp ik_mmap_protected(int size){
 ikpcb* ik_make_pcb(){
   ikpcb* pcb = ik_malloc(sizeof(ikpcb));
   bzero(pcb, sizeof(ikpcb));
+  pcb->collect_key = false_object;
   #define HEAPSIZE (1024 * 4096)
   #define STAKSIZE (1024 * 4096)
   //#define STAKSIZE (256 * 4096)
