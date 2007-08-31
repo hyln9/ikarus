@@ -1273,3 +1273,21 @@ ikrt_bignum_to_bytevector(ikp x, ikpcb* pcb){
   return bv + bytevector_tag;
 }
 
+
+ikp 
+ikrt_fxrandom(ikp x){
+  int mask = 1; 
+  int n = unfix(x); 
+  {
+    while(mask < n){
+      mask = (mask << 1) | 1;
+    }
+  }
+  while(1){
+    long r = random() & mask;
+    if(r < n){
+      return fix(r);
+    }
+  }
+}
+
