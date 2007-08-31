@@ -144,6 +144,10 @@
   [(P) (K #t)]
   [(E) (nop)])
 
+(define-primop $collect-key unsafe
+  [(V) (prm 'mref pcr (K 48))]
+  [(E x) (prm 'mset pcr (K 48) (T x))])
+
 (define-primop $memq safe
   [(P x ls)
    (record-case ls
