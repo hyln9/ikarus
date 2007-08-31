@@ -143,7 +143,7 @@
           exact->inexact inexact floor ceiling round log fl=? fl<? fl<=? fl>?
           fl>=? fl+ fl- fl* fl/ flsqrt flmin flzero? flnegative?
           sin cos atan sqrt
-          flround flmax)
+          flround flmax random)
   (import 
     (ikarus system $fx)
     (ikarus system $flonums)
@@ -161,7 +161,7 @@
             fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt flmin
             flzero? flnegative?
             sin cos atan sqrt
-            flround flmax))
+            flround flmax random))
 
 ;    (foreign-call "ikrt_fixnum_to_flonum" x))
 
@@ -1920,6 +1920,15 @@
           [(fx> n 0) (start x n 0 #f #f)]
           [else #f]))))
 
+
+  (define (random n) 
+    (if (fixnum? n) 
+        (if (fx> n 1) 
+            (foreign-call "ikrt_fxrandom" n) 
+            (if (fx= n 1) 
+                0
+                (error 'random "incorrect argument ~s" n)))
+        (error 'random "~s is not a fixnum" n)))
   )
 
 
@@ -2074,4 +2083,5 @@
       [else 
        (error 'string->flonum "~s is not a string" x)]))
   
+
   )

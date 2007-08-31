@@ -480,6 +480,7 @@
     [inexact->exact          i r]
     [exact                   i r]
     [inexact                 i r]
+    [random                  i]
     [symbol?                 i r symbols]
     [symbol=?                i r symbols]
     [gensym?                 i symbols]
