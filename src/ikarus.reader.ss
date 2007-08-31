@@ -264,6 +264,13 @@
         [($char= #\\ c) (tokenize-char p)]
         [($char= #\( c) 'vparen]
         [($char= #\' c) '(macro . syntax)]
+        [($char= #\` c) '(macro . quasisyntax)]
+        [($char= #\, c)
+         (let ([c (peek-char p)])
+           (cond
+             [(eqv? c #\@) (read-char p)
+              '(macro . unsyntax-splicing)]
+             [else '(macro . unsyntax)]))]
         [($char= #\; c) 'hash-semi]
         [($char= #\% c) '(macro . |#primitive|)]
         [($char= #\| c) (multiline-comment p) (tokenize p)]
