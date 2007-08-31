@@ -506,6 +506,9 @@
   (set-fmt! 'unquote-splicing '(read-macro . ",@"))
   (set-fmt! 'quasiquote '(read-macro . "`"))
   (set-fmt! 'syntax '(read-macro . "#'"))
+  (set-fmt! 'quasisyntax '(read-macro . "#`"))
+  (set-fmt! 'unsyntax '(read-macro . "#,"))
+  (set-fmt! 'unsyntax-splicing '(read-macro . "#,@"))
   (set-fmt! '|#primitive| '(read-macro . "#%"))
   (set-fmt! 'let '(alt 
                     (_ (0 [e 0 e] ...) tab e ...)

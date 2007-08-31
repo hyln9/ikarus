@@ -421,27 +421,37 @@
       (loop x 0 (string-length x) p)))
   
   (define macro
-    (lambda (x)
+    (lambda (x h)
       (define macro-forms
-        '([quote .            "'"]
-          [quasiquote .       "`"]
-          [unquote .          ","]
-          [unquote-splicing . ",@"]
-          [syntax .           "#'"]
+        '([quote .             "'"]
+          [quasiquote .        "`"]
+          [unquote .           ","]
+          [unquote-splicing .  ",@"]
+          [syntax .            "#'"]
+          [quasisyntax .       "#`"]
+          [unsyntax .          "#,"]
+          [unsyntax-splicing . "#,@"]
           [|#primitive| .     "#%"]))
       (and (pair? x)
            (let ([d ($cdr x)])
              (and (pair? d)
-                  (null? ($cdr d))))
+                  (null? ($cdr d))
+                  (not (get-hash-table h x #f))))
            (assq ($car x) macro-forms))))
   
   (define write-pair
     (lambda (x p m h i)
-      (write-char #\( p)
-      (let ([i (writer (car x) p m h i)])
-        (let ([i (write-list (cdr x) p m h i)])
-          (write-char #\) p)
-          i))))
+      (cond
+        [(macro x h) =>
+         (lambda (a) 
+           (display (cdr a) p) 
+           (writer (cadr x) p m h i))]
+        [else
+         (write-char #\( p)
+         (let ([i (writer (car x) p m h i)])
+           (let ([i (write-list (cdr x) p m h i)])
+             (write-char #\) p)
+             i))])))
   
   (define write-ref
     (lambda (n p)
