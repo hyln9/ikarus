@@ -114,6 +114,10 @@
     [=>                (macro . =>)]
     [else              (macro . else)]
     [_                 (macro . _)]
+    [unquote           (macro . unquote)]
+    [unquote-splicing  (macro . unquote-splicing)]
+    [unsyntax          (macro . unsyntax)]
+    [unsyntax-splicing (macro . unsyntax-splicing)]
     ))
 
 (define library-legend
@@ -242,6 +246,10 @@
     [=>                i r]
     [else              i r]
     [_                 i r]
+    [unquote           i r]
+    [unquote-splicing  i r]
+    [unsyntax          i r]
+    [unsyntax-splicing i r]
     ))
 
 (define ikarus-procedures-map

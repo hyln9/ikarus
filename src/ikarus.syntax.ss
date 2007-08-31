@@ -1573,7 +1573,9 @@
            [(with-syntax)       with-syntax-macro]
            [(identifier-syntax) identifier-syntax-macro]
            [(time)              time-macro]
-           [(... => _ else)     incorrect-usage-macro]
+           [(... => _ else unquote unquote-splicing 
+             unsyntax unsyntax-splicing)
+            incorrect-usage-macro]
            [else (error 'macro-transformer "invalid macro ~s" x)])]
         [else (error 'core-macro-transformer "invalid macro ~s" x)])))
   (define (local-macro-transformer x)
