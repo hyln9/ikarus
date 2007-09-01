@@ -41,7 +41,7 @@
 (define (collect-key)
   (or ($collect-key) 
       (begin
-        ($collect-key (string #\k))
+        ($collect-key (gensym))
         (collect-key))))
 
 )
