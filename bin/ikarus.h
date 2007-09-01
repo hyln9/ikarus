@@ -135,7 +135,9 @@ typedef struct ikpcb{
   int   stack_size;
   ikp   symbol_table;
   ikp   gensym_table;
-  ik_guardian_table* guardians[generation_count];
+  ikp guardians[generation_count];
+  ikp guardians_forward[generation_count];
+  ikp guardians_dropped[generation_count];
   unsigned int* dirty_vector_base;
   unsigned int* segment_vector_base;
   unsigned char* memory_base;

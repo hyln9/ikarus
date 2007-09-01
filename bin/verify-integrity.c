@@ -155,6 +155,9 @@ verify_page(unsigned char* p, unsigned char* base, unsigned int* svec, unsigned 
   else if(type == pointers_type){
     return verify_pointers_page(p,s,d,base,svec,dvec);
   }
+  else if(type == weak_pairs_type){
+    return verify_pointers_page(p,s,d,base,svec,dvec);
+  }
   else if(type == symbols_type){
     return verify_pointers_page(p,s,d,base,svec,dvec);
   }

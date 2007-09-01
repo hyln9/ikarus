@@ -148,7 +148,7 @@
     [$records    (ikarus system $records)     #f]
     [$ports      (ikarus system $ports)       #f]
     [$codes      (ikarus system $codes)       #f]
-    [$tcbuckets  (ikarus system $tcbuckets)   #f]
+    [$tcbuckets  (ikarus system $tcbuckets)   #t]
     [$io         (ikarus system $io)          #f]
     [$arg-list   (ikarus system $arg-list)    #f]
     [$stack      (ikarus system $stack)       #f]

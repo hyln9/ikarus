@@ -319,10 +319,10 @@ static ikp add_object_proc(gc_t* gc, ikp x);
 
 static void collect_stack(gc_t*, ikp top, ikp base);
 static void collect_loop(gc_t*);
-static void guardians_loop(gc_t*);
+static void forward_guardians(gc_t*);
 static void fix_weak_pointers(gc_t*);
 static void gc_add_tconcs(gc_t*);
-static void gc_add_guardians(gc_t*);
+static void empty_dropped_guardians(gc_t*);
 
 /* ik_collect is called from scheme under the following conditions:
  * 1. An attempt is made to allocate a small object and the ap is above
@@ -420,7 +420,16 @@ ik_collect(int mem_req, ikpcb* pcb){
   
   /* next we trace all guardian/guarded objects,
      the procedure does a collect_loop at the end */
-  guardians_loop(&gc);
+#ifndef NDEBUG
+  fprintf(stderr, "forwarding guardians ...\n");
+#endif
+  forward_guardians(&gc);
+#ifndef NDEBUG
+  fprintf(stderr, "done\n");
+#endif
+  collect_loop(&gc);
+
+  //guardians_loop_old(&gc);
 
   /* does not allocate, only bwp's dead pointers */
   fix_weak_pointers(&gc); 
@@ -429,8 +438,16 @@ ik_collect(int mem_req, ikpcb* pcb){
 
   fix_new_pages(&gc);
   pcb->allocation_pointer = pcb->heap_base;
+  /* does not allocate */
   gc_add_tconcs(&gc);
-  gc_add_guardians(&gc);
+  /* does not allocate */
+#ifndef NDEBUG
+  fprintf(stderr, "emptying guardians ...\n");
+#endif
+  empty_dropped_guardians(&gc);
+#ifndef NDEBUG
+  fprintf(stderr, "done\n");
+#endif
   pcb->weak_pairs_ap = 0;
   pcb->weak_pairs_ep = 0;
 
@@ -588,9 +605,155 @@ next_gen(int i){
   return ((i == generation_count) ? generation_count : (i+1));
 }
 
+static void 
+forward_guardians(gc_t* gc){
+  ikpcb* pcb = gc->pcb;
+  int gen;
+  for(gen = gc->collect_gen; gen>=0; gen--){
+    /* must move backwards from older to younger generations */
+    ikp todo = pcb->guardians[gen];
+    pcb->guardians[gen] = null_object;
+    ikp forward = pcb->guardians[next_gen(gen)];
+    ikp dropped = null_object;
+    while(todo != null_object){
+      ikp next = ref(todo, off_cdr);
+      ikp a = ref(todo, off_car);
+      /* ikp tc = ref(a, off_car); */
+      ikp obj = ref(a, off_cdr);
+      if(is_live(obj, gc)){
+        ref(todo, off_cdr) = forward;
+        forward = todo;
+      } else {
+        ref(todo, off_cdr) = dropped;
+        dropped = todo;
+      }
+      todo = next;
+    }
+    pcb->guardians[next_gen(gen)] = forward;
+    pcb->guardians_dropped[gen] = dropped;
+  }
+  for(gen = next_gen(gc->collect_gen); gen>=0; gen--){
+    pcb->guardians[gen] = add_object(gc, pcb->guardians[gen], "guardians");
+  }
+  for(gen = gc->collect_gen; gen>=0; gen--){
+    pcb->guardians_dropped[gen] = 
+      add_object(gc, pcb->guardians_dropped[gen], "guardians dropped");
+  }
 
+}
+
+static void 
+empty_dropped_guardians(gc_t* gc){
+  ikpcb* pcb = gc->pcb;
+  int gen;
+  for(gen = gc->collect_gen; gen>=0; gen--){
+    ikp ls = pcb->guardians_dropped[gen];
+    while(ls != null_object){
+      ikp next = ref(ls, off_cdr);
+      ikp a = ref(ls, off_car);
+      ikp tc = ref(a, off_car);
+      ikp obj = ref(a, off_cdr);
+      assert(tagof(tc) == pair_tag);
+      ikp d = ref(tc, off_cdr);
+      assert(tagof(d) == pair_tag);
+      ref(d, off_car) = obj;
+      ref(d, off_cdr) = a;
+      ref(a, off_car) = false_object;
+      ref(a, off_cdr) = false_object;
+      ref(tc, off_cdr) = a;
+      pcb->dirty_vector[page_index(tc)] = -1;
+      pcb->dirty_vector[page_index(d)] = -1;
+      ls = next;
+    }
+    pcb->guardians_dropped[gen] = null_object;
+  }
+}
+
+ 
+ 
+
+
+
+#if 0
+static void 
+forward_guardians(gc_t* gc){
+  ik_guardian_table* dropped_lists[generation_count];
+  ik_guardian_table* forward_lists[generation_count];
+  int collect_gen = gc->collect_gen;
+  ikpcb* pcb = gc->pcb;
+  /* split collected tc/obj pairs into ones to forward to next 
+     generation (live objs) and ones to drop (dead objects) */
+  int gen;
+  for(gen=0; gen<=collect_gen; gen++){
+    ik_guardian_table* todo = pcb->guardians[gen];
+    pcb->guardians[gen] = 0;
+    ik_guardian_table* forward_list = 0;
+    ik_guardian_table* dropped_list = 0;
+    while(todo){
+      int n = todo->count;
+      int i;
+      for(i=0; i<n; i++){
+        ikp tc = todo->p[i].tc;
+        ikp obj = todo->p[i].obj;
+        if(is_live(obj, gc)){
+          forward_list = move_guardian(tc, obj, forward_list);
+        } else {
+          dropped_list = move_guardian(tc, obj, forward_list);
+        }
+      }
+      ik_guardian_table* next = todo->next;
+      ik_munmap(todo, sizeof(ik_guardian_table));
+      todo = next;
+    }
+    forward_lists[gen] = forward_list;
+    dropped_lists[gen] = dropped_list;
+  }
+  /* next, everything in the forward_lists is forwarded to
+     the guardians list of the next generation.
+    FIXME: if tconc is dead, why are we forwarding it?
+   */
+  for(gen=0; gen<=collect_gen; gen++){
+    ik_guardian_table* src = forward_lists[gen];
+    ik_guardian_table* dst = pcb->guardians[next_gen(gen)];
+    while(src){
+      int n = src->count;
+      int i;
+      for(i=0; i<n; i++){
+        ikp tc = add_object(gc, src->p[i].tc, "guardian tc");
+        ikp obj = add_object(gc, src->p[i].obj, "guardian obj");
+        dst = move_guardian(tc, obj, dst);
+      }
+      ik_guardian_table* next = src->next;
+      ik_munmap(src, sizeof(ik_guardian_table));
+      src = next;
+    }
+  }
+  /* next, everything in the dropped_lists is forwarded to the
+     next generation (e.g. marked live).
+    FIXME: if tconc is dead, why are we forwarding it?
+   */
+  for(gen=0; gen<=collect_gen; gen++){
+    ik_guardian_table* src = dropped_lists[gen];
+    while(src){
+      int n = src->count;
+      int i;
+      for(i=0; i<n; i++){
+        src->p[i].tc = add_object(gc, src->p[i].tc, "guardian tc");
+        src->p[i].obj = add_object(gc, src->p[i].obj, "guardian obj");
+      }
+      src = src->next;
+    }
+  }
+   
+
+}
+#endif
+
+
+
+#if 0
 static void  
-guardians_loop(gc_t* gc){
+guardians_loop_old(gc_t* gc){
   ikpcb* pcb = gc->pcb;
   int gen = gc->collect_gen;
   ik_guardian_table* pending_hold[generation_count]; 
@@ -712,7 +875,7 @@ guardians_loop(gc_t* gc){
     }
   }
 }  
-
+#endif
 
 
 
@@ -1900,31 +2063,4 @@ gc_add_tconcs(gc_t* gc){
   }
 }
 
-static void
-gc_add_guardians(gc_t* gc){
-  ik_guardian_table* t = gc->final_guardians;
-  ikpcb* pcb = gc->pcb;
-  while(t){
-    int i;
-    int count = t->count;
-    for(i=0; i<count; i++){
-      ikp tc = t->p[i].tc;
-      ikp obj = t->p[i].obj;
-      assert(tagof(tc) == pair_tag);
-      ikp d = ref(tc, off_cdr);
-      assert(tagof(d) == pair_tag);
-      ikp new_pair = ik_alloc(pcb, pair_size) + pair_tag;
-      ref(d, off_car) = obj;
-      ref(d, off_cdr) = new_pair;
-      ref(new_pair, off_car) = false_object;
-      ref(new_pair, off_cdr) = false_object;
-      ref(tc, off_cdr) = new_pair;
-      pcb->dirty_vector[page_index(tc)] = -1;
-      pcb->dirty_vector[page_index(d)] = -1;
-    }
-    ik_guardian_table* next = t->next;
-    ik_munmap(t, sizeof(ik_guardian_table));
-    t = next;
-  }
-  gc->final_guardians = 0;
-}
+

@@ -264,6 +264,14 @@ ikpcb* ik_make_pcb(){
   ikpcb* pcb = ik_malloc(sizeof(ikpcb));
   bzero(pcb, sizeof(ikpcb));
   pcb->collect_key = false_object;
+  {
+    int i;
+    for(i=0; i<generation_count; i++){
+      pcb->guardians[i] = null_object;
+      pcb->guardians_forward[i] = null_object;
+      pcb->guardians_dropped[i] = null_object;
+    }
+  }
   #define HEAPSIZE (1024 * 4096)
   #define STAKSIZE (1024 * 4096)
   //#define STAKSIZE (256 * 4096)
@@ -885,12 +893,13 @@ ikrt_write_char(){
 
 
 
+#if 0
 ikp 
 ikrt_register_guardian(ikp tc, ikp obj, ikpcb* pcb){
   ik_guardian_table* g = pcb->guardians[0];
   if((!g) || (g->count == ik_guardian_table_size)){
     if(sizeof(ik_guardian_table) != pagesize){
-      fprintf(stderr, "ERR: invaldi guardian table size\n");
+      fprintf(stderr, "ERR: invalid guardian table size\n");
       exit(-1);
     }
     ik_guardian_table* p = 
@@ -906,6 +915,21 @@ ikrt_register_guardian(ikp tc, ikp obj, ikpcb* pcb){
   g->count++;
   return 0;
 }
+#endif
+
+ikp 
+ikrt_register_guardian(ikp tc, ikp obj, ikpcb* pcb){
+  ikp p0 = ik_alloc(pcb, pair_size) + pair_tag;
+  ikp p1 = ik_alloc(pcb, pair_size) + pair_tag;
+  ref(p0, off_car) = tc;
+  ref(p0, off_cdr) = obj;
+  ref(p1, off_car) = p0;
+  ref(p1, off_cdr) = pcb->guardians[0];
+  pcb->guardians[0] = p1;
+  return void_object;
+}
+
+
 
 
 ikp 
