@@ -90,20 +90,16 @@ typedef struct ikdl{ /* double-link */
   struct ikdl* next;
 } ikdl;
 
-typedef struct ik_guardian_pair{
-  ikp tc;
-  ikp obj;
-} ik_guardian_pair;
 
-#define ik_guardian_table_size \
-  ((pagesize - sizeof(int) - sizeof(struct ik_guardian_table*))/sizeof(ik_guardian_pair))
+#define ik_ptr_page_size \
+  ((pagesize - sizeof(int) - sizeof(struct ik_ptr_page*))/sizeof(ikp))
 
-typedef struct ik_guardian_table{
+typedef struct ik_ptr_page{
   int count;
-  struct ik_guardian_table* next;
-  ik_guardian_pair p[ik_guardian_table_size];
-} ik_guardian_table;
-  
+  struct ik_ptr_page* next;
+  ikp ptr[ik_ptr_page_size];
+} ik_ptr_page;
+ 
 
 typedef struct ikpcb{
   /* the first locations may be accessed by some     */
@@ -135,9 +131,8 @@ typedef struct ikpcb{
   int   stack_size;
   ikp   symbol_table;
   ikp   gensym_table;
-  ikp guardians[generation_count];
-  ikp guardians_forward[generation_count];
-  ikp guardians_dropped[generation_count];
+  ik_ptr_page* guardians[generation_count];
+  ik_ptr_page* guardians_dropped[generation_count];
   unsigned int* dirty_vector_base;
   unsigned int* segment_vector_base;
   unsigned char* memory_base;

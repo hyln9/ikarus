@@ -79,7 +79,7 @@ typedef struct gc_t{
   ikp tconc_ep;
   ikp tconc_base;
   ikpages* tconc_queue;
-  ik_guardian_table* final_guardians;
+  //ik_guardian_table* final_guardians;
 } gc_t;
 
 static unsigned int 
@@ -581,91 +581,112 @@ is_live(ikp x, gc_t* gc){
   return 0;
 }
 
-static ik_guardian_table*
-move_guardian(ikp tc, ikp obj, ik_guardian_table* t){
-  if(t && (t->count < ik_guardian_table_size)){
-    ik_guardian_pair* p = &t->p[t->count];
-    p->tc = tc;
-    p->obj = obj;
-    t->count++;
-    return t;
-  } else {
-    ik_guardian_table* nt = 
-      (ik_guardian_table*)ik_mmap(sizeof(ik_guardian_table));
-    nt->next = t;
-    nt->count = 1;
-    nt->p[0].tc = tc;
-    nt->p[0].obj = obj;
-    return nt;
-  }
-}
-
 static inline int 
 next_gen(int i){
   return ((i == generation_count) ? generation_count : (i+1));
 }
 
+static ik_ptr_page* 
+move_guarded(ikp x, ik_ptr_page* dst){
+  if((dst == 0) || (dst->count == ik_ptr_page_size)){
+    ik_ptr_page* y = ik_mmap(sizeof(ik_ptr_page));
+    y->count = 0;
+    y->next = dst;
+    dst = y;
+  }
+  dst->ptr[dst->count++] = x;
+  return dst;
+}
+
+
 static void 
 forward_guardians(gc_t* gc){
   ikpcb* pcb = gc->pcb;
   int gen;
+  ik_ptr_page* forward_list[generation_count];
   for(gen = gc->collect_gen; gen>=0; gen--){
     /* must move backwards from older to younger generations */
-    ikp todo = pcb->guardians[gen];
-    pcb->guardians[gen] = null_object;
-    ikp forward = pcb->guardians[next_gen(gen)];
-    ikp dropped = null_object;
-    while(todo != null_object){
-      ikp next = ref(todo, off_cdr);
-      ikp a = ref(todo, off_car);
-      /* ikp tc = ref(a, off_car); */
-      ikp obj = ref(a, off_cdr);
-      if(is_live(obj, gc)){
-        ref(todo, off_cdr) = forward;
-        forward = todo;
-      } else {
-        ref(todo, off_cdr) = dropped;
-        dropped = todo;
+    ik_ptr_page* todo = pcb->guardians[gen];
+    pcb->guardians[gen] = 0;
+    ik_ptr_page* forward = 0;
+    ik_ptr_page* dropped = 0;
+    while(todo){
+      int i;
+      int n = todo->count;
+      for(i=0; i<n; i++){
+        ikp a = todo->ptr[i];
+        ikp obj = ref(a, off_cdr);
+        if(is_live(obj, gc)){
+          forward = move_guarded(a, forward);
+        } else {
+          dropped = move_guarded(a, dropped);
+        }
       }
+      ik_ptr_page* next = todo->next;
+      ik_munmap(todo, sizeof(ik_ptr_page));
       todo = next;
     }
-    pcb->guardians[next_gen(gen)] = forward;
+    forward_list[gen] = forward;
     pcb->guardians_dropped[gen] = dropped;
   }
-  for(gen = next_gen(gc->collect_gen); gen>=0; gen--){
-    pcb->guardians[gen] = add_object(gc, pcb->guardians[gen], "guardians");
+  for(gen=0; gen<=gc->collect_gen; gen++){
+    ik_ptr_page* src = forward_list[gen];
+    ik_ptr_page* dst = pcb->guardians[next_gen(gen)];
+    while(src){
+      int i;
+      int n = src->count;
+      for(i=0; i<n; i++){
+        ikp a = add_object(gc, src->ptr[i], "prot");
+        dst = move_guarded(a, dst);
+      }
+      ik_ptr_page* next = src->next;
+      ik_munmap(src, sizeof(ik_ptr_page));
+      src = next;
+    }
+    pcb->guardians[next_gen(gen)] = dst;
   }
-  for(gen = gc->collect_gen; gen>=0; gen--){
-    pcb->guardians_dropped[gen] = 
-      add_object(gc, pcb->guardians_dropped[gen], "guardians dropped");
+  for(gen = 0; gen<=gc->collect_gen; gen++){
+    ik_ptr_page* src = pcb->guardians_dropped[gen];
+    while(src){
+      int i;
+      int n = src->count;
+      for(i=0; i<n; i++){
+        src->ptr[i] = add_object(gc, src->ptr[i], "prot");
+      }
+      src = src->next;
+    }
   }
-
 }
 
 static void 
 empty_dropped_guardians(gc_t* gc){
   ikpcb* pcb = gc->pcb;
   int gen;
-  for(gen = gc->collect_gen; gen>=0; gen--){
-    ikp ls = pcb->guardians_dropped[gen];
-    while(ls != null_object){
-      ikp next = ref(ls, off_cdr);
-      ikp a = ref(ls, off_car);
-      ikp tc = ref(a, off_car);
-      ikp obj = ref(a, off_cdr);
-      assert(tagof(tc) == pair_tag);
-      ikp d = ref(tc, off_cdr);
-      assert(tagof(d) == pair_tag);
-      ref(d, off_car) = obj;
-      ref(d, off_cdr) = a;
-      ref(a, off_car) = false_object;
-      ref(a, off_cdr) = false_object;
-      ref(tc, off_cdr) = a;
-      pcb->dirty_vector[page_index(tc)] = -1;
-      pcb->dirty_vector[page_index(d)] = -1;
-      ls = next;
+  for(gen = 0; gen<=gc->collect_gen; gen++){
+    ik_ptr_page* src = pcb->guardians_dropped[gen];
+    while(src){
+      int i;
+      int n = src->count;
+      for(i=0; i<n; i++){
+        ikp a = src->ptr[i];
+        ikp tc = ref(a, off_car);
+        ikp obj = ref(a, off_cdr);
+        assert(tagof(tc) == pair_tag);
+        ikp d = ref(tc, off_cdr);
+        assert(tagof(d) == pair_tag);
+        ref(d, off_car) = obj;
+        ref(d, off_cdr) = a;
+        ref(a, off_car) = false_object;
+        ref(a, off_cdr) = false_object;
+        ref(tc, off_cdr) = a;
+        pcb->dirty_vector[page_index(tc)] = -1;
+        pcb->dirty_vector[page_index(d)] = -1;
+      }
+      ik_ptr_page* next = src->next;
+      ik_munmap(src, sizeof(ik_ptr_page));
+      src = next;
     }
-    pcb->guardians_dropped[gen] = null_object;
+    pcb->guardians_dropped[gen] = 0;
   }
 }
 
