@@ -20,5 +20,5 @@
                     (set-cdr! x #f)
                     y)))]
           [(obj) 
-           (foreign-call "ikrt_register_guardian" tc obj)
+           (foreign-call "ikrt_register_guardian_pair" (cons tc obj))
            (void)])))))
