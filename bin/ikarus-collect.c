@@ -635,12 +635,12 @@ forward_guardians(gc_t* gc){
     while(src){
       int i;
       int n = src->count;
-      for(i=0; i<n; i++){
-        ikp a = add_object(gc, src->ptr[i], "prot");
-        dst = move_guarded(a, dst);
-      }
       ik_ptr_page* next = src->next;
-      ik_munmap(src, sizeof(ik_ptr_page));
+      src->next = dst;
+      dst = src;
+      for(i=0; i<n; i++){
+        src->ptr[i] = add_object(gc, src->ptr[i], "prot");
+      }
       src = next;
     }
     pcb->guardians[next_gen(gen)] = dst;
