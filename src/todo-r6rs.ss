@@ -535,7 +535,7 @@
     [inexact->exact                             C r5 se]
     [modulo                                     C r5 se]
     [remainder                                  C r5 se]
-    [null-environment                           S r5 se]
+    [null-environment                           C r5 se]
     [quotient                                   C r5 se]
     [scheme-report-environment                  S r5 se]
     ;;;

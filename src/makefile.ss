@@ -589,6 +589,7 @@
     [new-cafe                i]
     [eval                    i ev]
     [environment             i ev]
+    [null-environment        i]
     [environment?            i]
     [time-it                 i]
     [command-line-arguments  i]

@@ -10,7 +10,8 @@
           eval generate-temporaries free-identifier=?
           bound-identifier=? syntax-error datum->syntax
           syntax->datum make-variable-transformer
-          eval-r6rs-top-level boot-library-expand eval-top-level)
+          eval-r6rs-top-level boot-library-expand eval-top-level
+          null-environment)
   (import
     (r6rs)
     (except (ikarus library-manager) installed-libraries)
@@ -2379,6 +2380,10 @@
         (make-eval-environment subst imp*))))
   (define environment?
     (lambda (x) (eval-environment? x)))
+  (define (null-environment n)
+    (unless (eqv? n 5) 
+      (error 'null-environment "~s is not 5" n))
+    (environment '(ikarus null-environment-5)))
   (define eval
     (lambda (x env)
       (unless (eval-environment? env)
