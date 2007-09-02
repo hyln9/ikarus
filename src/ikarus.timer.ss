@@ -16,6 +16,8 @@
   (define (mk-stats)
     (make-stats #f #f #f #f #f #f #f #f #f #f #f #f #f))
 
+  (define verbose-timer (make-parameter #f))
+
   (define (set-stats! t)
     (foreign-call "ikrt_stats_now" t))
 
@@ -48,16 +50,17 @@
                (stats-real-usecs t1) (stats-real-usecs t0))
         (msecs (stats-gc-real-secs t1) (stats-gc-real-secs t0)
                (stats-gc-real-usecs t1) (stats-gc-real-usecs t0)))
-    (print-time "user"  
-       (msecs (stats-user-secs t1)  (stats-user-secs t0)
-              (stats-user-usecs t1) (stats-user-usecs t0))
-       (msecs (stats-gc-user-secs t1)  (stats-gc-user-secs t0)
-              (stats-gc-user-usecs t1) (stats-gc-user-usecs t0)))
-    (print-time "sys"  
-       (msecs (stats-sys-secs t1)  (stats-sys-secs t0)
-              (stats-sys-usecs t1) (stats-sys-usecs t0))
-       (msecs (stats-gc-sys-secs t1)  (stats-gc-sys-secs t0)
-              (stats-gc-sys-usecs t1) (stats-gc-sys-usecs t0)))
+    (when (verbose-timer)
+      (print-time "user"  
+         (msecs (stats-user-secs t1)  (stats-user-secs t0)
+                (stats-user-usecs t1) (stats-user-usecs t0))
+         (msecs (stats-gc-user-secs t1)  (stats-gc-user-secs t0)
+                (stats-gc-user-usecs t1) (stats-gc-user-usecs t0)))
+      (print-time "sys"  
+         (msecs (stats-sys-secs t1)  (stats-sys-secs t0)
+                (stats-sys-usecs t1) (stats-sys-usecs t0))
+         (msecs (stats-gc-sys-secs t1)  (stats-gc-sys-secs t0)
+                (stats-gc-sys-usecs t1) (stats-gc-sys-usecs t0))))
     (printf "    ~a bytes allocated\n" bytes))
 
   (define (print-stats-old message bytes t1 t0)

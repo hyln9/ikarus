@@ -9,7 +9,7 @@
   (export identifier? syntax-dispatch environment environment? 
           eval generate-temporaries free-identifier=?
           bound-identifier=? syntax-error datum->syntax
-          syntax->datum
+          syntax->datum make-variable-transformer
           eval-r6rs-top-level boot-library-expand eval-top-level)
   (import
     (r6rs)
@@ -136,7 +136,7 @@
     (set-rtd-printer! (type-descriptor stx)
       (lambda (x p)
         (display "#<syntax " p)
-        (display (stx->datum x) p)
+        (write (stx->datum x) p)
         (display ">" p))))
   (define (seal-rib! rib)
     (let ([sym* (rib-sym* rib)])
@@ -442,7 +442,7 @@
     (lambda (x)
       (syntax-case x ()
         [(_ stx) #'(error #f "invalid syntax ~s" (strip stx '()))]
-        [(_ stx msg) #'(error #f "~a: ~s" msg (strip stx '()))])))
+        [(_ stx msg) #'(error #f "~a ~s" msg (strip stx '()))])))
   (define sanitize-binding
     (lambda (x src)
       (cond
@@ -451,6 +451,12 @@
          (list* 'local-macro! (cdr x) src)]
         [(and (pair? x) (eq? (car x) '$rtd)) x]
         [else (error 'expand "invalid transformer ~s" x)])))
+  (define make-variable-transformer
+    (lambda (x) 
+      (if (procedure? x) 
+          (cons 'macro! x)
+          (error 'make-variable-transformer
+                 "~s is not a procedure" x))))
   (define make-eval-transformer
     (lambda (x)
       (sanitize-binding (eval-core x) x)))
@@ -635,7 +641,7 @@
         (syntax-match e ()
           [(_ ([lhs* rhs*] ...) b b* ...)
            (if (not (valid-bound-ids? lhs*))
-               (stx-error e "duplicate identifiers")
+               (stx-error e "invalid identifiers")
                (let ([lex* (map gen-lexical lhs*)]
                      [lab* (map gen-label lhs*)])
                  (let ([rib (make-full-rib lhs* lab*)]
@@ -779,7 +785,7 @@
         [(_ ([lhs* rhs*] ...) b b* ...)
          (if (valid-bound-ids? lhs*)
              (bless `((lambda ,lhs* ,b . ,b*) . ,rhs*))
-             (stx-error stx "duplicate bindings"))]
+             (stx-error stx "invalid bindings"))]
         [(_ f ([lhs* rhs*] ...) b b* ...) (id? f)
          (if (valid-bound-ids? lhs*)
              (bless `(letrec ([,f (lambda ,lhs* ,b . ,b*)])
@@ -823,7 +829,7 @@
                                    ,@command* 
                                    (loop ,@step*))))])
                      (loop ,@init*)))
-                (stx-error stx "duplicate bindings"))])])))
+                (stx-error stx "invalid bindings"))])])))
   (define let*-macro
     (lambda (stx)
       (syntax-match stx ()
@@ -1770,7 +1776,7 @@
            (syntax-match e ()
              [(_ ([xlhs* xrhs*] ...) xbody xbody* ...)
               (unless (valid-bound-ids? xlhs*) 
-                (stx-error e "duplicate identifiers"))
+                (stx-error e "invalid identifiers"))
               (let* ([xlab* (map gen-label xlhs*)]
                      [xrib (make-full-rib xlhs* xlab*)]
                      [xb* (map (lambda (x) 
@@ -1974,7 +1980,7 @@
                   (syntax-match e ()
                     [(_ ([xlhs* xrhs*] ...) xbody* ...)
                      (unless (valid-bound-ids? xlhs*)
-                       (stx-error e "duplicate identifiers"))
+                       (stx-error e "invalid identifiers"))
                      (let* ([xlab* (map gen-label xlhs*)]
                             [xrib (make-full-rib xlhs* xlab*)]
                             [xb* (map (lambda (x) 
@@ -2107,7 +2113,7 @@
         [(null? exp*)
          (let ([id* (map (lambda (x) (stx x top-mark* '())) ext*)])
            (unless (valid-bound-ids? id*)
-             (error #f "duplicate exports of ~s" (find-dups id*))))
+             (error #f "invalid exports of ~s" (find-dups id*))))
          (values int* ext*)]
         [else
          (syntax-match (car exp*) ()
@@ -2502,9 +2508,7 @@
     (lambda (x . args)
       (unless (andmap string? args)
         (error 'syntax-error "invalid argument ~s" args))
-      (error #f "~a: ~s"
-             (apply string-append args)
-             (strip x '()))))
+      (error #f "~s ~a" (strip x '()) (apply string-append args))))
   (define identifier? (lambda (x) (id? x)))
   (define datum->syntax
     (lambda (id datum)

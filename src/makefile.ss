@@ -609,6 +609,7 @@
     [bound-identifier=?      i syncase]
     [syntax->datum           i syncase]
     [datum->syntax           i syncase]
+    [make-variable-transformer i syncase]
     [code?                   i]
     [immediate?              i]
     [pointer-value           i]
