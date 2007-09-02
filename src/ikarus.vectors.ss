@@ -1,11 +1,13 @@
 
 (library (ikarus vectors)
   (export make-vector vector vector-length vector-ref vector-set!
-          vector->list list->vector vector-map vector-for-each)
+          vector->list list->vector vector-map vector-for-each
+          vector-fill!)
   (import 
     (except (ikarus) make-vector vector 
             vector-length vector-ref vector-set!
-            vector->list list->vector vector-map vector-for-each)
+            vector->list list->vector vector-map vector-for-each
+            vector-fill!)
     (ikarus system $fx)
     (ikarus system $pairs)
     (ikarus system $vectors))
@@ -252,4 +254,13 @@
                         (cons ($vector-ref ($car v*) i) 
                               (f i ($cdr v*))))))
                 (f p v0 v1 v* ($fxadd1 i) n)])))])))
+
+  (define (vector-fill! v fill)
+    (unless (vector? v) 
+      (error 'vector-fill! "~s is not a vector" v))
+    (let f ([v v] [i 0] [n ($vector-length v)] [fill fill])
+      (unless ($fx= i n) 
+        ($vector-set! v i fill)
+        (f v ($fxadd1 i) n fill))))
+
   )

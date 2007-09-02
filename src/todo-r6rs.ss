@@ -224,7 +224,7 @@
     [values                                     C ba se]
     [vector                                     C ba se]
     [vector->list                               C ba se]
-    [vector-fill!                               S ba se]
+    [vector-fill!                               C ba se]
     [vector-for-each                            C ba]
     [vector-length                              C ba se]
     [vector-map                                 C ba]
@@ -524,7 +524,7 @@
     [set-cdr!                                   C mp se]
     ;;;
     [string-set!                                C ms se]
-    [string-fill!                               S ms se]
+    [string-fill!                               C ms se]
     ;;;
     [command-line                               C pr]
     [exit                                       C pr]

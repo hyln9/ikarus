@@ -2,7 +2,7 @@
 (library (ikarus strings)
   (export string-length string-ref string-set! make-string string->list string=?
           string-append substring string list->string uuid
-          string-copy string-for-each)
+          string-copy string-for-each string-fill!)
   (import 
     (ikarus system $strings)
     (ikarus system $fx)
@@ -11,7 +11,8 @@
     (ikarus system $pairs)
     (except (ikarus) string-length string-ref string-set! make-string
             string->list string=? string-append substring string
-            list->string uuid string-copy string-for-each))
+            list->string uuid string-copy string-for-each
+            string-fill!))
 
 
   (define string-length
@@ -62,7 +63,7 @@
           [(n) 
            (unless (and (fixnum? n) (fx>= n 0))
              (error 'make-string "~s is not a valid length" n))
-           ($make-string n)]
+           (fill! ($make-string n) 0 n (integer->char 0))]
           [(n c)
            (unless (and (fixnum? n) (fx>= n 0))
              (error 'make-string "~s is not a valid length" n))
@@ -299,6 +300,16 @@
                         (cons ($string-ref ($car v*) i) 
                               (f i ($cdr v*))))))
                 (f p v0 v1 v* ($fxadd1 i) n)])))])))
+
+  (define (string-fill! v fill)
+    (unless (string? v) 
+      (error 'string-fill! "~s is not a vector" v))
+    (unless (char? fill)
+      (error 'string-fill! "~s is not a character" fill))
+    (let f ([v v] [i 0] [n ($string-length v)] [fill fill])
+      (unless ($fx= i n) 
+        ($string-set! v i fill)
+        (f v ($fxadd1 i) n fill))))
 
   (define uuid
     (lambda ()
