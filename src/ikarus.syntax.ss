@@ -19,7 +19,8 @@
     (ikarus symbols)
     (ikarus parameters)
     (only (ikarus) error printf ormap andmap list* format
-          make-record-type void set-rtd-printer! type-descriptor)
+          make-record-type void set-rtd-printer! type-descriptor
+          pretty-print)
     (only (r6rs syntax-case) syntax-case syntax with-syntax)
     (prefix (r6rs syntax-case) sys:))
   (define who 'expander)
@@ -1014,6 +1015,114 @@
       (lambda (x)
         (syntax-match x ()
           [(_ e) (quasi e 0)]))))
+  (define quasisyntax-macro
+    (let ()
+      (define-syntax app
+        (syntax-rules (quote)
+          [(_ 'x arg* ...)
+           (list (scheme-stx 'x) arg* ...)]))
+      (define-syntax app*
+        (syntax-rules (quote)
+          [(_ 'x arg* ... last)
+           (list* (scheme-stx 'x) arg* ... last)]))
+      (define quasilist*
+        (lambda (x y)
+          (let f ((x x))
+            (if (null? x) y (quasicons (car x) (f (cdr x)))))))
+      (define quasicons
+        (lambda (x y)
+          (syntax-match y (syntax list)
+            [(syntax dy)
+             (syntax-match x (syntax)
+               [(syntax dx) (app 'syntax (cons dx dy))]
+               [_
+                (syntax-match dy ()
+                  [() (app 'list x)]
+                  [_  (app 'cons x y)])])]
+            [(list stuff ...)
+             (app* 'list x stuff)]
+            [_ (app 'cons x y)])))
+      (define quasiappend
+        (lambda (x y)
+          (let ([ls (let f ((x x))
+                      (if (null? x)
+                          (syntax-match y (syntax)
+                            [(syntax ()) '()]
+                            [_ (list y)])
+                          (syntax-match (car x) (syntax)
+                            [(syntax ()) (f (cdr x))]
+                            [_ (cons (car x) (f (cdr x)))])))])
+            (cond
+              [(null? ls) (app 'syntax '())]
+              [(null? (cdr ls)) (car ls)]
+              [else (app* 'append ls)]))))
+      (define quasivector
+        (lambda (x)
+          (let ((pat-x x))
+            (syntax-match pat-x (syntax)
+              [(syntax (x* ...)) (app 'syntax (list->vector x*))]
+              [_ (let f ((x x) (k (lambda (ls) (app* 'vector ls))))
+                   (syntax-match x (syntax list cons)
+                     [(syntax (x* ...))
+                      (k (map (lambda (x) (app 'syntax x)) x*))]
+                     [(list x* ...)
+                      (k x*)]
+                     [(cons x y)
+                      (f y (lambda (ls) (k (cons x ls))))]
+                     [_ (app 'list->vector pat-x)]))]))))
+      (define vquasi
+        (lambda (p lev)
+          (syntax-match p ()
+            [(p . q)
+             (syntax-match p (unsyntax unsyntax-splicing)
+               [(unsyntax p ...)
+                (if (= lev 0)
+                    (quasilist* p (vquasi q lev))
+                    (quasicons
+                      (quasicons (app 'quote 'unsyntax) (quasi p (- lev 1)))
+                      (vquasi q lev)))]
+               [(unsyntax-splicing p ...)
+                (if (= lev 0)
+                    (quasiappend p (vquasi q lev))
+                    (quasicons
+                      (quasicons
+                        (app 'quote 'unsyntax-splicing)
+                        (quasi p (- lev 1)))
+                      (vquasi q lev)))]
+               [p (quasicons (quasi p lev) (vquasi q lev))])]
+            [() (app 'syntax '())])))
+      (define quasi
+        (lambda (p lev)
+          (syntax-match p (unsyntax unsyntax-splicing quasisyntax)
+            [(unsyntax p)
+             (if (= lev 0)
+                 p
+                 (quasicons (app 'syntax 'unsyntax) (quasi (list p) (- lev 1))))]
+            [((unsyntax p ...) . q)
+             (if (= lev 0)
+                 (quasilist* p (quasi q lev))
+                 (quasicons
+                   (quasicons (app 'syntax 'unsyntax) (quasi p (- lev 1)))
+                   (quasi q lev)))]
+            [((unsyntax-splicing p ...) . q)
+             (if (= lev 0)
+                 (quasiappend p (quasi q lev))
+                 (quasicons
+                   (quasicons
+                     (app 'syntax 'unsyntax-splicing)
+                     (quasi p (- lev 1)))
+                   (quasi q lev)))]
+            [(quasisyntax p)
+             (quasicons (app 'syntax 'quasisyntax) (quasi (list p) (+ lev 1)))]
+            [(p . q) (quasicons (quasi p lev) (quasi q lev))]
+            [#(x ...) (quasivector (vquasi x lev))]
+            [p (app 'syntax p)])))
+      (lambda (x)
+        (syntax-match x ()
+          [(_ e) 
+           (let ([v (quasi e 0)])
+             ;(pretty-print (syntax->datum v))
+             v)]))))
   (define define-record-macro
     (lambda (e)
       (define enumerate
@@ -1167,6 +1276,11 @@
       (cvt pattern 0 '())))
   (define syntax-dispatch
     (lambda (e p)
+      (define stx^ 
+        (lambda (e m* s*) 
+          (if (and (null? m*) (null? s*)) 
+              e
+              (stx e m* s*))))
       (define match-each
         (lambda (e p m* s*)
           (cond
@@ -1206,7 +1320,7 @@
           (cond
             ((pair? e)
              (let ((l (match-each-any (cdr e) m* s*)))
-               (and l (cons (stx (car e) m* s*) l))))
+               (and l (cons (stx^ (car e) m* s*) l))))
             ((null? e) '())
             ((stx? e)
              (let-values (((m* s*) (join-wraps m* s* e)))
@@ -1256,7 +1370,7 @@
                       (and r* (combine r* r)))))
                ((free-id)
                 (and (symbol? e)
-                     (free-id=? (stx e m* s*) (vector-ref p 1))
+                     (free-id=? (stx^ e m* s*) (vector-ref p 1))
                      r))
                ((each+)
                 (let-values (((xr* y-pat r)
@@ -1277,11 +1391,14 @@
           (cond
             ((not r) #f)
             ((eq? p '_) r)
-            ((eq? p 'any) (cons (stx e m* s*) r))
+            ((eq? p 'any) (cons (stx^ e m* s*) r))
             ((stx? e)
              (let-values (((m* s*) (join-wraps m* s* e)))
                (match (stx-expr e) p m* s* r)))
             (else (match* e p m* s* r)))))
+      ;(let ([v (match e p '() '() '())])
+      ;  (printf "match ~s ~s = ~s\n" e p v)
+      ;  v)))
       (match e p '() '() '())))
   (define ellipsis?
     (lambda (x)
@@ -1445,7 +1562,7 @@
                (let-values ([(lsnew maps)
                              (gen-syntax src ls r maps ellipsis? #t)])
                  (values (gen-vector e ls lsnew) maps))]
-              [() (values '(quote ()) maps)]
+              ;[() (values '(quote ()) maps)]
               [_ (values `(quote ,e) maps)])))
         (define gen-ref
           (lambda (src var level maps)
@@ -1570,6 +1687,7 @@
            [(let*)              let*-macro]
            [(syntax-rules)      syntax-rules-macro]
            [(quasiquote)        quasiquote-macro]
+           [(quasisyntax)       quasisyntax-macro]
            [(with-syntax)       with-syntax-macro]
            [(identifier-syntax) identifier-syntax-macro]
            [(time)              time-macro]
