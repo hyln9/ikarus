@@ -13,6 +13,7 @@
     [pr (rnrs programs (6))]
     [sc (rnrs syntax-case (6))]
     [fi (rnrs files (6))]
+    [ne (null-environment)]
     [ba (rnrs base (6))]
     [ls (rnrs lists (6))]
     [is (rnrs io simple (6))]
@@ -32,7 +33,6 @@
     [rs (rnrs records syntactic (6))]
     [r5 (rnrs r5rs (6))]
     [se (scheme-report-environment)]
-    [ne (null-environment)]
     ))
 
 (define status-names
