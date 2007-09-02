@@ -71,6 +71,7 @@
     "ikarus.posix.ss"
     "ikarus.timer.ss"
     "ikarus.bytevectors.ss"
+    "ikarus.promises.ss"
     "ikarus.main.ss"))
 
 (define ikarus-system-macros
@@ -111,6 +112,7 @@
     [and               (macro . and)]
     [or                (macro . or)]
     [time              (macro . time)]
+    [delay             (macro . delay)]
     [...               (macro . ...)]
     [=>                (macro . =>)]
     [else              (macro . else)]
@@ -244,6 +246,7 @@
     [and               i r]
     [or                i r]
     [time              i]
+    [delay               i]
     [...               i r]
     [=>                i r]
     [else              i r]
@@ -805,6 +808,9 @@
     [collect-key                       i]
     [do-stack-overflow                 ]
     [syntax-dispatch                   ]
+    [make-promise                      ]
+    [force                            i]
+
     ))
 
 (define (verify-map)

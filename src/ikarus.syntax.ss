@@ -796,6 +796,11 @@
       (syntax-match stx ()
         [(_ expr) 
          (bless `(time-it ',expr (lambda () ,expr)))])))
+  (define delay-macro
+    (lambda (stx)
+      (syntax-match stx ()
+        [(_ expr) 
+         (bless `(make-promise (lambda () ,expr)))])))
   (define identifier-syntax-macro
     (lambda (stx)
       (syntax-match stx ()
@@ -1697,6 +1702,7 @@
            [(with-syntax)       with-syntax-macro]
            [(identifier-syntax) identifier-syntax-macro]
            [(time)              time-macro]
+           [(delay)             delay-macro]
            [(... => _ else unquote unquote-splicing 
              unsyntax unsyntax-splicing)
             incorrect-usage-macro]
