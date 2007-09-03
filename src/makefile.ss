@@ -492,6 +492,7 @@
     [exact-integer-sqrt      i r]
     [exact->inexact          i r]
     [inexact->exact          i r]
+    [fixnum->flonum          i r]
     [exact                   i r]
     [inexact                 i r]
     [random                  i]

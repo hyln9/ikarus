@@ -298,7 +298,7 @@
     [fxxor                                      D fx]
     [fxzero?                                    D fx]
     ;;;
-    [fixnum->flonum                             S fl]
+    [fixnum->flonum                             C fl]
     [fl*                                        C fl]
     [fl+                                        C fl]
     [fl-                                        C fl]
