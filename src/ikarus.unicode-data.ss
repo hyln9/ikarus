@@ -3,8 +3,8 @@
   (export unicode-printable-char?
           char-downcase char-upcase char-titlecase char-foldcase
           char-ci=? char-ci<? char-ci<=? char-ci>? char-ci>=?
-          string-foldcase
-          string-ci=?)
+          string-ci=?  string-ci<?  string-ci<=?  string-ci>?  string-ci>=?
+          string-foldcase)
   (import 
     (ikarus system $fx)
     (ikarus system $vectors)
@@ -14,8 +14,8 @@
     (ikarus system $io)
     (except (ikarus) char-downcase char-upcase char-titlecase char-foldcase
             char-ci=? char-ci<? char-ci<=? char-ci>? char-ci>=?
-            string-foldcase
-            string-ci=?))
+            string-ci=?  string-ci<?  string-ci<=?  string-ci>?  string-ci>=?
+            string-foldcase))
 
   (include "unicode/unicode-constituents.ss")
   (include "unicode/unicode-char-cases.ss")
@@ -160,12 +160,52 @@
         ($string-foldcase str)
         (error 'string-foldcase "~s is not a string" str)))
 
-  (define (string-ci=? s1 s2)
-    (if (string? s1)
-        (if (string? s2) 
-            (string=? ($string-foldcase s1) ($string-foldcase s2))
-            (error 'string-ci=? "~s is not a string" s2))
-        (error 'string-ci=? "~s is not a string" s1)))
+  (define string-ci-cmp
+    (lambda (who cmp)
+      (case-lambda
+        [(s1 s2) 
+         (if (string? s1)
+             (if (string? s2) 
+                 (cmp ($string-foldcase s1) ($string-foldcase s2))
+                 (error who "~s is not a string" s2))
+             (error who "~s is not a string" s1))]
+        [(s1 . s*) 
+         (if (string? s1) 
+             (let ([s1 ($string-foldcase s1)])
+               (let f ([s1 s1] [s* s*]) 
+                 (cond
+                   [(null? s*) #t]
+                   [else
+                    (let ([s2 (car s*)])
+                      (if (string? s2) 
+                          (let ([s2 ($string-foldcase s2)])
+                            (if (cmp s1 s2) 
+                                (f s2 (cdr s*))
+                                (let f ([s* (cdr s*)])
+                                  (cond
+                                    [(null? s*) #f]
+                                    [(string? (car s*)) 
+                                     (f (cdr s*))]
+                                    [else 
+                                     (error who "~s is not a string" 
+                                       (car s*))]))))
+                          (error who "~s is not a string" s2)))])))
+             (error who "~s is not a string" s1))])))
+
+
+  (define string-ci=?  (string-ci-cmp 'string-ci=? string=?))
+  (define string-ci<?  (string-ci-cmp 'string-ci<? string<?))
+  (define string-ci<=? (string-ci-cmp 'string-ci<=? string<=?))
+  (define string-ci>?  (string-ci-cmp 'string-ci>? string>?))
+  (define string-ci>=? (string-ci-cmp 'string-ci>=? string>=?))
+
+
+  ;(define (string-ci=? s1 s2)
+  ;  (if (string? s1)
+  ;      (if (string? s2) 
+  ;          (string=? ($string-foldcase s1) ($string-foldcase s2))
+  ;          (error 'string-ci=? "~s is not a string" s2))
+  ;      (error 'string-ci=? "~s is not a string" s1)))
 
 
   )

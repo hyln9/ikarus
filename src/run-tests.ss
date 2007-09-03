@@ -3,6 +3,7 @@
 (import (ikarus)
         (tests reader)
         (tests bytevectors)
+        (tests strings)
         (tests bignum-to-flonum)
         (tests string-to-number))
 
@@ -21,6 +22,7 @@
 
 (test-reader)
 (test-bytevectors)
+(test-strings)
 (test-exact-integer-sqrt)
 (test-bignum-to-flonum)
 (test-string-to-number)
