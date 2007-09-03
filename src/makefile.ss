@@ -586,6 +586,7 @@
     [comment-handler         i]
     [print-gensym            i symbols]
     [print-unicode           i]
+    [char-general-category   i]
     [gensym-count            i symbols]
     [gensym-prefix           i symbols]
     [make-hash-table         i]

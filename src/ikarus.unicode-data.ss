@@ -4,7 +4,7 @@
           char-downcase char-upcase char-titlecase char-foldcase
           char-ci=? char-ci<? char-ci<=? char-ci>? char-ci>=?
           string-ci=?  string-ci<?  string-ci<=?  string-ci>?  string-ci>=?
-          string-foldcase)
+          string-foldcase char-general-category )
   (import 
     (ikarus system $fx)
     (ikarus system $vectors)
@@ -15,7 +15,7 @@
     (except (ikarus) char-downcase char-upcase char-titlecase char-foldcase
             char-ci=? char-ci<? char-ci<=? char-ci>? char-ci>=?
             string-ci=?  string-ci<?  string-ci<=?  string-ci>?  string-ci>=?
-            string-foldcase))
+            string-foldcase char-general-category))
 
   (include "unicode/unicode-constituents.ss")
   (include "unicode/unicode-char-cases.ss")
@@ -30,6 +30,27 @@
              (cond
                [($fx<= ($vector-ref v j) n) (f j k n v)]
                [else (f i ($fx- j 1) n v)]))]))))
+
+  (define (char-general-category c)
+    (let ([v unicode-categories-lookup-vector]
+          [t unicode-categories-values-vector])
+      (define (f i k n) 
+        (cond
+          [(fx= i k) 
+           (let ([idx (vector-ref t i)])
+             (if (fixnum? idx) 
+                 idx
+                 (let ([idx2 (fx- n (vector-ref v i))])
+                   (vector-ref idx idx2))))]
+          [else
+           (let ([j (fxsra (fx+ i (fx+ k 1)) 1)])
+             (cond
+               [(fx<= (vector-ref v j) n) (f j k n)]
+               [else (f i (fx- j 1) n)]))]))
+      (if (char? c) 
+          (vector-ref unicode-categories-name-vector
+            (f 0 (fx- (vector-length v) 1) (char->integer c)))
+          (error 'char-general-category "~s is not a char" c))))
 
   (define (binary-search-on? n v)
     ($fx= ($fxlogand (binary-search n v) 1) 1))
@@ -198,14 +219,6 @@
   (define string-ci<=? (string-ci-cmp 'string-ci<=? string<=?))
   (define string-ci>?  (string-ci-cmp 'string-ci>? string>?))
   (define string-ci>=? (string-ci-cmp 'string-ci>=? string>=?))
-
-
-  ;(define (string-ci=? s1 s2)
-  ;  (if (string? s1)
-  ;      (if (string? s2) 
-  ;          (string=? ($string-foldcase s1) ($string-foldcase s2))
-  ;          (error 'string-ci=? "~s is not a string" s2))
-  ;      (error 'string-ci=? "~s is not a string" s1)))
 
 
   )

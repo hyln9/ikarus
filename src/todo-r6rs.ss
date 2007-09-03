@@ -747,7 +747,7 @@
     [char-foldcase                              C uc]
     [char-titlecase                             C uc]
     [char-upcase                                C uc se]
-    [char-general-category                      S uc]
+    [char-general-category                      C uc]
     [char-lower-case?                           S uc se]
     [char-numeric?                              S uc se]
     [char-title-case?                           S uc]
