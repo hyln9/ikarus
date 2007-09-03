@@ -16,6 +16,7 @@
       (let ([n (hex->num num)])
         (define (f x)
           (if (string=? x "") 0 (- (hex->num x) n)))
+        ;#(UC LC TC FC string-FC)
         (cons n (vector (f uc) (f lc) (f tc) #f 0))))))
 
 (define (remove-dups ls)
@@ -98,25 +99,12 @@
                   (convert-full-fold-fields (cdr ls)))))]
            [else (convert-full-fold-fields (cdr ls))])))]))
 
-
-#;
-(define (convert-index ls)
-  (let ([alist
-         (let f ([i 0] [ls ls])
-           (cond
-             [(null? ls) '()]
-             [else 
-              (cons (cons (car ls) (- i (car ls)))
-                    (f (add1 i) (cdr ls)))]))])
-    (map
-      (lambda (x)
-        (cons (car x) (+ (car x) (cdr x))))
-      (remove-dups alist))))
-
 (let ([ls 
+       ;;; get initial table
        (compute-foldcase
          (map data-case 
            (get-unicode-data "UNIDATA/UnicodeData.txt")))])
+  ;;; compute the string-foldcase data
   (for-each
     (lambda (x) 
       (let ([n (car x)] [chars (cdr x)])
@@ -127,6 +115,7 @@
           [else (error #f "~s is not there" n)])))
     (convert-full-fold-fields
       (get-unicode-data "UNIDATA/CaseFolding.txt")))
+  ;;; done
   (let ([ls (remove-dups ls)])
     (define (p name idx) 
       (pretty-print 
@@ -137,14 +126,6 @@
         (with-output-to-file "unicode-char-cases.ss"
           (lambda ()
             (printf ";;; DO NOT EDIT\n;;; automatically generated\n")
-            #;
-            (let ([ls (convert-index (map car ls))])
-              (pretty-print 
-                `(define char-search-index-vector 
-                   ',(list->vector (map car ls))))
-              (pretty-print 
-                `(define char-adjustment-index-vector 
-                   ',(list->vector (map cdr ls)))))
             (printf ";;; ~s entries in table\n" (vector-length v0))
             (pretty-print `(define charcase-search-vector ',v0))
             (p 'char-upcase-adjustment-vector 0)

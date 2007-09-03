@@ -76,6 +76,30 @@
               [($char= #\n c) (tokenize-string (cons #\newline ls) p)]
               [($char= #\r c) (tokenize-string (cons #\return ls) p)]
               [($char= #\t c) (tokenize-string (cons #\tab ls) p)]
+              [($char= #\x c) ;;; unicode escape \xXXX;
+               (let ([c (read-char p)])
+                 (cond
+                   [(eof-object? c) 
+                    (error 'tokenize "invalid eof inside string")]
+                   [(hex c) =>
+                    (lambda (n)
+                      (let f ([n n])
+                        (let ([c (read-char p)])
+                          (cond
+                            [(eof-object? n) 
+                             (error 'tokenize "invalid eof inside string")]
+                            [(hex c) =>
+                             (lambda (v) (f (+ (* n 16) v)))]
+                            [($char= c #\;) 
+                             (tokenize-string
+                               (cons (integer->char n) ls) p)]
+                            [else
+                             (error 'tokenize
+                               "invalid char ~a in escape sequence"
+                               c)]))))]
+                   [else 
+                    (error 'tokenize
+                      "invalid char ~a in escape sequence" c)]))]
               [else (error 'tokenize "invalid string escape \\~a" c)]))]
          [else
           (tokenize-string (cons c ls) p)]))))
