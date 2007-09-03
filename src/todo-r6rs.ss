@@ -84,7 +84,7 @@
     [append                                     C ba se]
     [apply                                      C ba se]
     [asin                                       S ba se]
-    [assert                                     S ba]
+    [assert                                     C ba]
     [assertion-violation                        S ba]
     [atan                                       S ba se]
     [boolean=?                                  C ba]

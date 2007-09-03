@@ -802,6 +802,12 @@
       (syntax-match stx ()
         [(_ expr) 
          (bless `(make-promise (lambda () ,expr)))])))
+  (define assert-macro
+    (lambda (stx)
+      (syntax-match stx ()
+        [(_ expr) 
+         (bless `(unless ,expr
+                   (error 'assert "~s failed" ',expr)))])))
   (define identifier-syntax-macro
     (lambda (stx)
       (syntax-match stx ()
@@ -1704,6 +1710,7 @@
            [(identifier-syntax) identifier-syntax-macro]
            [(time)              time-macro]
            [(delay)             delay-macro]
+           [(assert)            assert-macro]
            [(... => _ else unquote unquote-splicing 
              unsyntax unsyntax-splicing)
             incorrect-usage-macro]
