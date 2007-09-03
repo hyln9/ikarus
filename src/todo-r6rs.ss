@@ -155,7 +155,7 @@
     [gcd                                        C ba se]
     [imag-part                                  D ba se]
     [inexact                                    C ba]
-    [inexact?                                   S ba se]
+    [inexact?                                   C ba se]
     [infinite?                                  S ba]
     [integer->char                              C ba se]
     [integer-valued?                            S ba]

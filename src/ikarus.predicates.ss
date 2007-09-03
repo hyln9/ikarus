@@ -2,14 +2,14 @@
 (library (ikarus predicates)
 
   (export fixnum? flonum? bignum? ratnum? number? complex? real? rational?
-          integer? exact? eof-object? bwp-object? immediate?
+          integer? exact? inexact? eof-object? bwp-object? immediate?
           boolean? char? vector? bytevector? string? procedure? null? pair?
           symbol? code? not weak-pair? eq? eqv? equal? boolean=?
           symbol=?) 
 
   (import 
     (except (ikarus) fixnum? flonum? bignum? ratnum? number? complex? real?
-            rational? integer? exact? eof-object? bwp-object?
+            rational? integer? exact? inexact? eof-object? bwp-object?
             immediate? boolean? char? vector? bytevector? string? procedure?
             null? pair? weak-pair? symbol? code? not eq? eqv? equal?
             port? input-port? output-port? boolean=? symbol=?)
@@ -99,6 +99,17 @@
         [else 
          (error 'exact? "~s is not a number" x)])))
   
+
+  (define inexact?
+    (lambda (x) 
+      (cond
+        [(sys:flonum? x) #t]
+        [(sys:fixnum? x) #f]
+        [(sys:bignum? x) #f]
+        [(sys:ratnum? x) #f]
+        [else 
+         (error 'inexact? "~s is not a number" x)])))
+
   (define eof-object? (lambda (x) (sys:eof-object? x)))
   (define bwp-object? (lambda (x) (sys:bwp-object? x)))
   (define immediate? (lambda (x) (sys:immediate? x)))

@@ -479,6 +479,7 @@
     [ratnum?                 i]
     [integer?                i r]
     [exact?                  i r]
+    [inexact?                i r]
     [rational?               i r]
     [flonum?                 i]
     [positive?               i r]

@@ -1002,14 +1002,6 @@
         [else
          (error 'inexact "~s is not a number" x)])))
 
-  (define inexact?
-    (lambda (x) 
-      (cond
-        [(fixnum? x) #f]
-        [(bignum? x) #f]
-        [(flonum? x) #t]
-        [else 
-         (error 'inexact? "~s is not a number" x)])))
 
   (define positive-bignum?
     (lambda (x) 
