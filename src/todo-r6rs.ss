@@ -86,7 +86,7 @@
     [asin                                       S ba se]
     [assert                                     C ba]
     [assertion-violation                        S ba]
-    [atan                                       S ba se]
+    [atan                                       C ba se]
     [boolean=?                                  C ba]
     [boolean?                                   C ba se]
     [car                                        C ba se]
