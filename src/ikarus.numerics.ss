@@ -8,13 +8,14 @@
 (library (ikarus flonums)
   (export $flonum->exact $flonum-signed-biased-exponent flonum-parts
           inexact->exact exact $flonum-rational? $flonum-integer? $flzero?
-          $flnegative? flpositive? flabs fixnum->flonum)
+          $flnegative? flpositive? flabs fixnum->flonum
+          flsin flcos fltan flasin flacos flatan)
   (import 
     (ikarus system $bytevectors)
     (except (ikarus system $flonums) $flonum-signed-biased-exponent
             $flonum-rational? $flonum-integer?)
     (except (ikarus) inexact->exact exact flpositive? flabs
-            fixnum->flonum))
+            fixnum->flonum flsin flcos fltan flasin flacos flatan))
   
   (define (flonum-bytes f)
     (unless (flonum? f) 
@@ -137,6 +138,35 @@
         ($fixnum->flonum x)
         (error 'fixnum->flonum "~s is not a fixnum")))
 
+  (define (flsin x)
+    (if (flonum? x) 
+        (foreign-call "ikrt_fl_sin" x)
+        (error 'flsin "~s is not a flonum" x)))
+
+  (define (flcos x)
+    (if (flonum? x) 
+        (foreign-call "ikrt_fl_cos" x)
+        (error 'flcos "~s is not a flonum" x)))
+
+  (define (fltan x)
+    (if (flonum? x) 
+        (foreign-call "ikrt_fl_tan" x)
+        (error 'fltan "~s is not a flonum" x)))
+
+  (define (flasin x)
+    (if (flonum? x) 
+        (foreign-call "ikrt_fl_asin" x)
+        (error 'flasin "~s is not a flonum" x)))
+
+  (define (flacos x)
+    (if (flonum? x) 
+        (foreign-call "ikrt_fl_acos" x)
+        (error 'flacos "~s is not a flonum" x)))
+
+  (define (flatan x)
+    (if (flonum? x) 
+        (foreign-call "ikrt_fl_atan" x)
+        (error 'flatan "~s is not a flonum" x)))
   )
 
 
