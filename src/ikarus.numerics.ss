@@ -142,7 +142,7 @@
           abs
           exact->inexact inexact floor ceiling round log fl=? fl<? fl<=? fl>?
           fl>=? fl+ fl- fl* fl/ flsqrt flmin flzero? flnegative?
-          sin cos atan sqrt
+          sin cos tan asin acos atan sqrt
           flround flmax random)
   (import 
     (ikarus system $fx)
@@ -160,7 +160,7 @@
             exact-integer-sqrt min max abs
             fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt flmin
             flzero? flnegative?
-            sin cos atan sqrt
+            sin cos tan asin acos atan sqrt
             flround flmax random))
 
 ;    (foreign-call "ikrt_fixnum_to_flonum" x))
@@ -1549,6 +1549,27 @@
         [(flonum? x) (foreign-call "ikrt_fl_cos" x)]
         [(fixnum? x) (foreign-call "ikrt_fx_cos" x)]
         [else (error 'cos "unsupported ~s" x)])))
+
+  (define tan
+    (lambda (x)
+      (cond
+        [(flonum? x) (foreign-call "ikrt_fl_tan" x)]
+        [(fixnum? x) (foreign-call "ikrt_fx_tan" x)]
+        [else (error 'tan "unsupported ~s" x)])))
+
+  (define asin
+    (lambda (x)
+      (cond
+        [(flonum? x) (foreign-call "ikrt_fl_asin" x)]
+        [(fixnum? x) (foreign-call "ikrt_fx_asin" x)]
+        [else (error 'asin "unsupported ~s" x)])))
+
+  (define acos
+    (lambda (x)
+      (cond
+        [(flonum? x) (foreign-call "ikrt_fl_acos" x)]
+        [(fixnum? x) (foreign-call "ikrt_fx_acos" x)]
+        [else (error 'acos "unsupported ~s" x)])))
 
   (define atan
     (lambda (x)
