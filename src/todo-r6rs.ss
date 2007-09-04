@@ -584,7 +584,7 @@
     [i/o-write-error?                           D ip is fi]
     [lookahead-char                             D ip]
     [lookahead-u8                               D ip]
-    [make-bytevector                            D bv]
+    [make-bytevector                            C bv]
     [make-custom-binary-input-port              D ip]
     [make-custom-binary-input/output-port       D ip]
     [make-custom-binary-output-port             D ip]

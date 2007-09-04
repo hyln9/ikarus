@@ -1759,7 +1759,7 @@
   (define bytevector-mask 7)
   (define bytevector-tag 2)
   (define disp-bytevector-length 0)
-  (define disp-bytevector-data 4)
+  (define disp-bytevector-data 8)
 
   (define ptag-mask 7)
   (define symbol-ptag 5)
