@@ -3,12 +3,14 @@
   (export
     make-code code-reloc-vector code-freevars
     code-size code-ref code-set! set-code-reloc-vector!
+    set-code-annotation!
     code->thunk)
   (import
     (ikarus system $fx)
     (ikarus system $codes)
     (except (ikarus) make-code code-reloc-vector code-freevars
-            code-size code-ref code-set! set-code-reloc-vector!))
+            code-size code-ref code-set! set-code-reloc-vector!
+            set-code-annotation!))
 
   (define make-code
     (lambda (code-size freevars)
@@ -62,6 +64,13 @@
       (unless (vector? v)
         (error 'set-code-reloc-vector! "~s is not a vector" v))
       (foreign-call "ikrt_set_code_reloc_vector" x v)))
+
+
+  (define set-code-annotation!
+    (lambda (x v)
+      (unless (code? x) 
+        (error 'set-code-annotation! "~s is not a code" x))
+      (foreign-call "ikrt_set_code_annotation" x v)))
 
   (define code->thunk
     (lambda (x)

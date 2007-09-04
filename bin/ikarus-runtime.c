@@ -747,6 +747,7 @@ ikrt_make_code(ikp codesizeptr, ikp freevars, ikp rvec, ikpcb* pcb){
   ref(mem, disp_code_code_size) = codesizeptr;
   ref(mem, disp_code_freevars) = freevars;
   ref(mem, disp_code_reloc_vector) = rvec;
+  ref(mem, disp_code_annotation) = false_object;
   ik_relocate_code(mem);
   return mem+vector_tag;
 }
@@ -758,6 +759,15 @@ ikrt_set_code_reloc_vector(ikp code, ikp vec, ikpcb* pcb){
   pcb->dirty_vector[page_index(code)] = -1;
   return void_object;
 }
+
+ikp
+ikrt_set_code_annotation(ikp code, ikp annot, ikpcb* pcb){
+  ref(code, off_code_annotation) = annot;
+  pcb->dirty_vector[page_index(code)] = -1;
+  return void_object;
+}
+
+
 
 ikp
 ikrt_bvftime(ikp outbv, ikp fmtbv){

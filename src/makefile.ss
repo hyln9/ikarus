@@ -775,8 +775,10 @@
     [$code-reloc-vector       $codes]
     [$code-freevars           $codes]
     [$code-size               $codes]
+    [$code-annotation         $codes]
     [$code-ref                $codes]
     [$code-set!               $codes]
+    [$set-code-annotation!    $codes]
 
     [$make-tcbucket           $tcbuckets]
     [$tcbucket-key            $tcbuckets]

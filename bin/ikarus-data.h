@@ -10,7 +10,9 @@
 #define disp_code_code_size 4
 #define disp_code_reloc_vector 8
 #define disp_code_freevars 12
+#define disp_code_annotation 16
 #define disp_code_data 24
+#define off_code_annotation (disp_code_annotation - code_pri_tag)
 #define off_code_data (disp_code_data - code_pri_tag)
 #define off_code_reloc_vector (disp_code_reloc_vector - code_pri_tag)
 

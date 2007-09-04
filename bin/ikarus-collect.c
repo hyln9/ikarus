@@ -886,6 +886,7 @@ add_code_entry(gc_t* gc, ikp entry){
   int code_size = unfix(ref(x, disp_code_code_size));
   ikp reloc_vec = ref(x, disp_code_reloc_vector);
   ikp freevars = ref(x, disp_code_freevars);
+  ikp annotation = ref(x, disp_code_annotation);
   int required_mem = align(disp_code_data + code_size);
   if(required_mem >= pagesize){
     int new_tag = next_gen_tag[gen];
@@ -907,6 +908,7 @@ add_code_entry(gc_t* gc, ikp entry){
     ref(y, disp_code_code_size) = fix(code_size);
     ref(y, disp_code_reloc_vector) = reloc_vec;
     ref(y, disp_code_freevars) = freevars;
+    ref(y, disp_code_annotation) = annotation;
     memcpy(y+disp_code_data, x+disp_code_data, code_size);
     ref(x, 0) = forward_ptr;
     ref(x, wordsize) = y + vector_tag;
@@ -1354,6 +1356,8 @@ relocate_new_code(ikp x, gc_t* gc){
   ikp relocvector = ref(x, disp_code_reloc_vector);
   relocvector = add_object(gc, relocvector, "relocvec");
   ref(x, disp_code_reloc_vector) = relocvector;
+  ref(x, disp_code_annotation) = 
+    add_object(gc, ref(x, disp_code_annotation), "annotation");
   int relocsize = (int)ref(relocvector, off_vector_length);
   ikp p = relocvector + off_vector_data;
   ikp q = p + relocsize;

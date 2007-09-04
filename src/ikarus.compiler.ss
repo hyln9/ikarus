@@ -1795,6 +1795,7 @@
   (define disp-code-instrsize      4)
   (define disp-code-relocsize      8)
   (define disp-code-freevars      12)
+  (define disp-code-annotation    16)
   (define disp-code-data          24)
   
   (define port-tag              #x3F)

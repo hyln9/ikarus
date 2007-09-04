@@ -1579,6 +1579,9 @@
 (define-primop $code-size unsafe
   [(V x) (prm 'mref (T x) (K (- disp-code-instrsize vector-tag)))])
 
+(define-primop $code-annotation unsafe
+  [(V x) (prm 'mref (T x) (K (- disp-code-annotation vector-tag)))])
+
 (define-primop $code->closure unsafe
   [(V x) 
    (with-tmp ([v (prm 'alloc
@@ -1609,6 +1612,8 @@
              (K (- disp-code-data vector-tag)))
         (prm 'sll (T v) (K (- 8 fixnum-shift))))])
 
+(define-primop $set-code-annotation! unsafe
+  [(E x v) (mem-assign v (T x) (- disp-code-annotation vector-tag))])
 
 /section)
 
