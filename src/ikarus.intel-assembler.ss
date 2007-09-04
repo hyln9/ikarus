@@ -1,7 +1,7 @@
 
 
 (library (ikarus intel-assembler)
-  (export assemble-sources)
+  (export assemble-sources code-entry-adjustment)
   (import 
     (ikarus)
     (ikarus code-objects)
@@ -908,6 +908,12 @@
           [else (f (cdr ls))])))))
 
 
+(define code-entry-adjustment
+  (let ([v #f])
+    (case-lambda
+      [() (or v (error 'code-entry-adjustment "uninitialized"))]
+      [(x) (set! v x)])))
+
 (define whack-reloc
   (lambda (thunk?-label code vec)
     (define reloc-idx 0)
@@ -957,7 +963,8 @@
            (let ([loc (label-loc v)])
              (let ([obj (car loc)] [disp (cadr loc)])
                (vector-set! vec reloc-idx (fxlogor 2 (fxsll idx 2)))
-               (vector-set! vec (fx+ reloc-idx 1) (fx+ disp 11))
+               (vector-set! vec (fx+ reloc-idx 1) 
+                  (fx+ disp (code-entry-adjustment)))
                (vector-set! vec (fx+ reloc-idx 2) obj)))
            (set! reloc-idx (fx+ reloc-idx 3))]
           [(local-relative)
@@ -977,7 +984,8 @@
                  (error 'whack-reloc "invalid relative jump obj=~s  disp=~s\n" 
                         obj disp))
                (vector-set! vec reloc-idx (fxlogor 3 (fxsll idx 2)))
-               (vector-set! vec (fx+ reloc-idx 1) (fx+ disp 11))
+               (vector-set! vec (fx+ reloc-idx 1) 
+                 (fx+ disp (code-entry-adjustment)))
                (vector-set! vec (fx+ reloc-idx 2) obj)))
            (set! reloc-idx (fx+ reloc-idx 3))]
           [else (error 'whack-reloc "invalid reloc type ~s" type)]))

@@ -1795,7 +1795,7 @@
   (define disp-code-instrsize      4)
   (define disp-code-relocsize      8)
   (define disp-code-freevars      12)
-  (define disp-code-data          16)
+  (define disp-code-data          24)
   
   (define port-tag              #x3F)
   (define output-port-tag       #x7F)
@@ -1827,6 +1827,10 @@
   (define object-alignment 8)
   (define align-shift 3)
   (define dirty-word -1))
+
+(module ()
+  ;;; initialize the cogen
+  (code-entry-adjustment (- disp-code-data vector-tag)))
 
 (begin ;;; COGEN HELERS
   (define (align n)
