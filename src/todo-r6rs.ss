@@ -684,8 +684,8 @@
     [string-ci-hash                             D ht]
     [symbol-hash                                D ht]
     ;;;
-    [list-sort                                  S sr]
-    [vector-sort                                S sr]
+    [list-sort                                  C sr]
+    [vector-sort                                C sr]
     [vector-sort!                               S sr]
     ;;;
     [file-exists?                               C fi]

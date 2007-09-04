@@ -71,6 +71,7 @@
     "ikarus.posix.ss"
     "ikarus.timer.ss"
     "ikarus.bytevectors.ss"
+    "ikarus.sort.ss"
     "ikarus.promises.ss"
     "ikarus.main.ss"))
 
@@ -323,6 +324,8 @@
     [memq                    i r]
     [memv                    i r]
     [member                  i r]
+    [list-sort               i]
+    [vector-sort             i]
     [bwp-object?             i]
     [weak-cons               i]
     [weak-pair?              i]
