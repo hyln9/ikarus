@@ -12,7 +12,7 @@
     (ikarus system $strings)
     (ikarus system $flonums)
     (ikarus system $bignums)
-    (ikarus code-objects)
+    (except (ikarus code-objects) procedure-annotation)
     (except (ikarus) fasl-write))
 
   (define write-fixnum 

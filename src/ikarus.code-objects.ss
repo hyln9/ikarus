@@ -3,13 +3,14 @@
   (export
     make-code code-reloc-vector code-freevars
     code-size code-ref code-set! set-code-reloc-vector!
-    set-code-annotation!
+    set-code-annotation! procedure-annotation
     code->thunk)
   (import
     (ikarus system $fx)
     (ikarus system $codes)
     (except (ikarus) make-code code-reloc-vector code-freevars
             code-size code-ref code-set! set-code-reloc-vector!
+            procedure-annotation
             set-code-annotation!))
 
   (define make-code
@@ -79,6 +80,11 @@
       (unless ($fxzero? ($code-freevars x))
         (error 'code->thunk "~s has free variables" x))
       ($code->closure x)))
+
+  (define (procedure-annotation x)
+    (if (procedure? x) 
+        ($code-annotation ($closure-code x))
+        (error 'procedure-annotation "~s is not a procedure" x)))
 
   )
 

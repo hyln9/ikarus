@@ -41,7 +41,7 @@
 (library (ikarus fasl read)
   (export fasl-read)
   (import (ikarus)
-          (ikarus code-objects)
+          (except (ikarus code-objects) procedure-annotation)
           (ikarus system $codes)
           (ikarus system $records))
 

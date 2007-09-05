@@ -4,7 +4,7 @@
   (export assemble-sources code-entry-adjustment)
   (import 
     (ikarus)
-    (ikarus code-objects)
+    (except (ikarus code-objects) procedure-annotation)
     (ikarus system $pairs))
 
 (define fold

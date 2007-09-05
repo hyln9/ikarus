@@ -779,6 +779,7 @@
     [$code-ref                $codes]
     [$code-set!               $codes]
     [$set-code-annotation!    $codes]
+    [procedure-annotation     i]
 
     [$make-tcbucket           $tcbuckets]
     [$tcbucket-key            $tcbuckets]

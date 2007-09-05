@@ -281,6 +281,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     ref(code, 0) = code_tag;
     ref(code, disp_code_code_size) = fix(code_size);
     ref(code, disp_code_freevars) = freevars;
+    ref(code, disp_code_annotation) = false_object;
     fasl_read_buf(p, code+disp_code_data, code_size);
     if(put_mark_index){
       p->marks[put_mark_index] = code+vector_tag;
