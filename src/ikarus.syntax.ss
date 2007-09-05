@@ -2444,11 +2444,20 @@
       (values invoke-code export-subst export-env)))
   (define build-export
     (lambda (x)
+      (define c (gensym))
       ;;; exports use the same gensym
       `(begin
          (#%$set-symbol-value! ',x ,x)
-         (#%$set-symbol-proc! ',x 
-           (if (#%procedure? ,x) ,x 
+         (if (#%procedure? ,x) 
+             (begin
+               (#%$set-symbol-proc! ',x ,x)
+               ((case-lambda
+                  [(,c) 
+                 ;  (if (#%$code-annotation ,c)
+                 ;      (#%void) 
+                   (#%$set-code-annotation! ,c ',x)])
+                (#%$closure-code ,x)))
+             (#%$set-symbol-proc! ',x 
                (case-lambda 
                  [,(gensym) 
                   (#%error 'apply '"~s is not a procedure" 
@@ -2458,6 +2467,7 @@
       (define f (gensym))
       (define name (gensym))
       (define val (gensym))
+      (define c (gensym))
       `((case-lambda 
           [(,f) 
            (begin '#f
@@ -2466,8 +2476,22 @@
           [(,name ,val) 
            (begin
              (#%$set-symbol-value! ,name ,val)
-             (#%$set-symbol-proc! ,name 
-               (if (#%procedure? ,val) ,val 
+             ;(#%$set-symbol-proc! ,name 
+             ;  (if (#%procedure? ,val) ,val 
+             ;      (case-lambda 
+             ;        [,(gensym) 
+             ;         (#%error 'apply '"~s is not a procedure" 
+             ;          (#%$symbol-value ,name))])))
+             (if (#%procedure? ,val) 
+                 (begin
+                   (#%$set-symbol-proc! ,name ,val)
+                   ((case-lambda
+                      [(,c) 
+                       (if (#%$code-annotation ,c)
+                           (#%void) 
+                           (#%$set-code-annotation! ,c ,name))])
+                    (#%$closure-code ,val)))
+                 (#%$set-symbol-proc! ,name 
                    (case-lambda 
                      [,(gensym) 
                       (#%error 'apply '"~s is not a procedure" 
