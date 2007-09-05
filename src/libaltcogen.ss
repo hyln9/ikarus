@@ -193,6 +193,25 @@
 (include "pass-specify-rep.ss")
 
 
+(define (insert-engine-checks x)
+  (define (Tail x)
+    (make-seq
+      (make-primcall '$do-event '())
+      x))
+  (define (CaseExpr x)
+    (record-case x 
+      [(clambda-case info body)
+       (make-clambda-case info (Tail body))]))
+  (define (CodeExpr x)
+    (record-case x
+      [(clambda L cases free)
+       (make-clambda L (map CaseExpr cases) free)]))
+  (define (CodesExpr x)
+    (record-case x 
+      [(codes list body)
+       (make-codes (map CodeExpr list) (Tail body))]))
+  (CodesExpr x))
+
 (define (insert-stack-overflow-check x)
   (define who 'insert-stack-overflow-check)
   
@@ -486,7 +505,7 @@
           (S* rands
               (lambda (s*)
                 (make-asm-instr op (car s*) (cadr s*))))]
-         [(nop interrupt) x]
+         [(nop interrupt incr/zero?) x]
          [else (error 'impose-effect "invalid instr ~s" x)])]
       [(funcall rator rands)
        (handle-nontail-call rator rands #f #f)]
@@ -1451,7 +1470,7 @@
       [(primcall op args)
        (case op
          [(nop) (values vs rs fs ns)]
-         [(interrupt) 
+         [(interrupt incr/zero?) 
           (let ([v (exception-live-set)])
             (unless (vector? v)
               (error who "unbound exception2"))
@@ -1742,7 +1761,7 @@
              (NFE (fxsub1 i) (make-mask (fxsub1 i)) body)))]
         [(primcall op args)
          (case op
-           [(nop interrupt) x]
+           [(nop interrupt incr/zero?) x]
            [else (error who "invalid effect prim ~s" op)])]
         [(shortcut body handler)
          (make-shortcut (E body) (E handler))]
@@ -1901,7 +1920,7 @@
         [(primcall op arg*)
          (case op
            [(nop) s]
-           [(interrupt) 
+           [(interrupt incr/zero?) 
             (or (exception-live-set) (error who "uninitialized exception"))]
            [else (error who "invalid effect primcall ~s" op)])]
         [(shortcut body handler)
@@ -2225,7 +2244,7 @@
            [else (error who "invalid effect ~s" op)])]
         [(primcall op rands) 
          (case op
-           [(nop interrupt) x]
+           [(nop interrupt incr/zero?) x]
            [else (error who "invalid op in ~s" (unparse x))])]
         [(ntcall) x]
         [(shortcut body handler)
@@ -2521,6 +2540,13 @@
           (let ([l (or (exception-label)
                        (error who "no exception label"))])
             (cons `(jmp ,l) ac))]
+         [(incr/zero?) 
+          (let ([l (or (exception-label)
+                       (error who "no exception label"))])
+            (list* 
+              `(addl 1 ,(R (make-disp (car rands) (cadr rands))))
+              `(je ,l)
+              ac))]
          [else (error who "invalid effect ~s" (unparse x))])]
       [(shortcut body handler)
        (let ([L (unique-interrupt-label)] [L2 (unique-label)])
@@ -2581,7 +2607,7 @@
                         [fl:= fl:!=] [fl:!= fl:=] 
                         [fl:< fl:>=] [fl:<= fl:>] [fl:> fl:<=] [fl:>= fl:<]))
               => cadr]
-             [else (error who "invalid op ~s" x)]))
+             [else (error who "invalid notop ~s" x)]))
          (define (jmpname x)
            (cond
              [(assq x '([= je] [!= jne] [< jl] [<= jle] [> jg] [>= jge]
@@ -2610,7 +2636,7 @@
               (list* `(cmpl ,(R a0) ,(R a1))
                      `(,(revjmpname op) ,lab)
                      ac)]
-             [else (error who "invalid ops ~s ~s" a0 a1)]))
+             [else (error who "invalid cmpops ~s ~s" a0 a1)]))
          (cond
            [(and lt lf)
             (cmp op a0 a1 lt
@@ -2777,6 +2803,7 @@
     (proc))
   (let* ([x (introduce-primcalls x)]
          [x (eliminate-fix x)]
+         [x (insert-engine-checks x)]
          [x (specify-representation x)]
          [x (insert-stack-overflow-check x)]
          [x (impose-calling-convention/evaluation-order x)]

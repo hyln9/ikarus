@@ -1679,7 +1679,7 @@
 
 
 
-(define (insert-engine-checks-not-working x)
+(define (insert-engine-checks x)
   (define (Tail x)
     (make-seq
       (make-interrupt-call 

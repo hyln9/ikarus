@@ -1474,6 +1474,12 @@
 (define-primop $unset-interrupted! unsafe
   [(E) (prm 'mset pcr (K 40) (K 0))])
 
+(define-primop $do-event safe
+  [(E) 
+   (begin
+     (interrupt)
+     (prm 'incr/zero? pcr (K 36)))])
+
 /section)
 
 (section ;;; control operations
