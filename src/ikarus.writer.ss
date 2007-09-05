@@ -505,7 +505,14 @@
          (write-character x p m)
          i]
         [(procedure? x)
-         (write-char* "#<procedure>" p)
+         (cond
+           [(let ([name (procedure-annotation x)])
+              (and (symbol? name) name)) =>
+            (lambda (name) 
+              (write-char* "#<procedure " p) 
+              (write-char* (symbol->string name) p)
+              (write-char* ">" p))]
+           [else (write-char* "#<procedure>" p)])
          i]
         [(output-port? x)
          (write-char* "#<output-port " p)
