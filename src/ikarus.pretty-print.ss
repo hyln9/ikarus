@@ -12,7 +12,6 @@
   (define (pretty-width) 80)
   (define (pretty-indent) 1)
   (define-record cbox (length boxes))
-  (define-record sbox (length string))
   (define-record pbox (length ls last))
   (define-record mbox (length str val))
   (define-record vbox (length ls))
@@ -21,7 +20,6 @@
     (cond
       [(string? x) (string-length x)]
       [(cbox? x)   (cbox-length x)]
-      [(sbox? x)   (sbox-length x)]
       [(pbox? x)   (pbox-length x)]
       [(mbox? x)   (mbox-length x)]
       [(vbox? x)   (vbox-length x)]
@@ -168,27 +166,6 @@
                     (return sep* (cons (boxify/fmt (sub-fmt fmt) a) ls)))])))]
             [else 
              (return (gensep*-default ls) (map1ltr boxify ls))])))
-    (define (boxify-string x)
-      (define (count s i j n)
-        (cond
-          [(fx= i j) n]
-          [else
-           (let ([c (string-ref s i)])
-             (let ([int (char->integer c)])
-               (cond
-                 [(assv int string-esc-table) =>
-                  (lambda (t)
-                    (count s (fxadd1 i) j 
-                           (fx+ (fx+ n 1) (string-length (cdr t)))))]
-                 [(and (fx<= 32 int) (fx<= int 127))
-                  (count s (fxadd1 i) j (fxadd1 n))]
-                 [else 
-                  (count s (fxadd1 i) j (fx+ n 3))])))]))
-      (let ([n (string-length x)])
-        (let ([m (count x 0 n 0)])
-          (if (fx= n m)
-              (conc "\"" x "\"")
-              (make-sbox (fx+ m 2) x)))))
     (define (boxify-pair x)
       (let-values ([(ls last)
                     (let f ([x x])
@@ -217,7 +194,6 @@
                     (f (cdr ls) (fx+ n (box-length (car ls))))]))])
           (make-vbox (fx+ (fx+ n 2) (vector-length x)) ls))))
     (cond
-     ; [(string? x)    (boxify-string x)]
       [(null? x)      "()"]
       [(vector? x)    (boxify-vector x)]
       [(list? x)      (boxify-list x '())]
@@ -238,33 +214,6 @@
       [(fx< n 10) (integer->char (fx+ n (char->integer #\0)))]
       [else (integer->char (fx+ (fx- n 10) (char->integer #\A)))]))
   (define (output x p) 
-    (define (output-sbox x p col)
-      (display  #\" p)
-      (let ([str (sbox-string x)])
-        (let f ([i 0] [n (string-length str)] [str str] [p p] [col col])
-          (cond
-            [(fx= i n)
-             (display #\" p)
-             (fx+ col 2)]
-            [else
-             (let ([c (string-ref str i)])
-               (let ([int (char->integer c)])
-                 (cond
-                   [(assv int string-esc-table) =>
-                    (lambda (t)
-                      (display #\\ p)
-                      (display (cdr t) p)
-                      (f (fxadd1 i) n str p 
-                         (fx+ col (fxadd1 (string-length (cdr t))))))]
-                   [(and (fx<= 32 int) (fx<= int 127))
-                    (display c p)
-                    (f (fxadd1 i) n str p (fxadd1 col))]
-                   [else 
-                    (display #\\ p)
-                    (display (hexify (fxquotient int 16)) p)
-                    (display (hexify (fxremainder int 16)) p)
-                    (f (fxadd1 i) n str p 
-                       (fx+ col 3))])))]))))
     (define (output-cbox x p col)
       (let g ([ls (cbox-boxes x)] [p p] [col col])
         (cond
@@ -476,7 +425,6 @@
          (display x p)
          (fx+ col (string-length x))]
         [(cbox? x)   (output-cbox x p col)]
-        [(sbox? x)   (output-sbox x p col)]
         [(pbox? x)   (output-pbox x p col)]
         [(mbox? x)   (output-mbox x p col)]
         [(vbox? x)   (output-vbox x p col)]
@@ -486,9 +434,7 @@
     (newline p))
   ;;;
   (define (pretty x p)
-    ;(write x) (newline)
     (let ([x (boxify x)])
-      ;(write x) (newline)
       (output x p)))
   ;;;
   (define *pretty-format* '*pretty-format*)

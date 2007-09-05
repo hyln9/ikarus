@@ -1,6 +1,6 @@
 BUG:
 
-* symbol calls are not checking for non-procedure.
+* pretty-print goes into infinite loop on cyclic data
 * set! on global names is not working.
 * Ensure immutable exports
 
@@ -19,6 +19,7 @@ Unix:unified)
 
 ======================================================================
 
+* FIXED symbol calls are not checking for non-procedure.
 
 
 * FIX: Error in generate-code: BUG: unhandles single rv.
