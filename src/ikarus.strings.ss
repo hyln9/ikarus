@@ -169,34 +169,26 @@
 
 
   (define string-cmp
-    (lambda (who cmp)
-      (case-lambda
-        [(s1 s2) 
-         (if (string? s1)
-             (if (string? s2) 
-                 (cmp s1 s2)
-                 (error who "~s is not a string" s2))
-             (error who "~s is not a string" s1))]
-        [(s1 . s*) 
-         (if (string? s1) 
-             (let f ([s1 s1] [s* s*]) 
-               (cond
-                 [(null? s*) #t]
-                 [else
-                  (let ([s2 (car s*)])
-                    (if (string? s2) 
-                        (if (cmp s1 s2) 
-                            (f s2 (cdr s*))
-                            (let f ([s* (cdr s*)])
-                              (cond
-                                [(null? s*) #f]
-                                [(string? (car s*)) 
-                                 (f (cdr s*))]
-                                [else 
-                                 (error who "~s is not a string" 
-                                   (car s*))]))))
-                        (error who "~s is not a string" s2))])))
-             (error who "~s is not a string" s1)])))
+    (lambda (who cmp s1 s*)
+      (if (string? s1) 
+          (let f ([s1 s1] [s* s*]) 
+            (cond
+              [(null? s*) #t]
+              [else
+               (let ([s2 (car s*)])
+                 (if (string? s2) 
+                     (if (cmp s1 s2) 
+                         (f s2 (cdr s*))
+                         (let f ([s* (cdr s*)])
+                           (cond
+                             [(null? s*) #f]
+                             [(string? (car s*)) 
+                              (f (cdr s*))]
+                             [else 
+                              (error who "~s is not a string" 
+                                (car s*))]))))
+                     (error who "~s is not a string" s2))])))
+          (error who "~s is not a string" s1)))
   
   (define ($string<? s1 s2)
     (let ([n1 ($string-length s1)]
@@ -223,7 +215,6 @@
                           (f ($fxadd1 i) n s1 s2)
                           #f))))))))
 
-
   (define ($string<=? s1 s2)
     (let ([n1 ($string-length s1)]
           [n2 ($string-length s2)])
@@ -248,15 +239,56 @@
                       (if ($char= c1 c2) 
                           (f ($fxadd1 i) n s1 s2)
                           #f))))))))
+
   (define ($string>? s1 s2) 
     ($string<? s2 s1))
+  
   (define ($string>=? s1 s2) 
     ($string<=? s2 s1))
 
-  (define string<? (string-cmp 'string<? $string<?))
-  (define string<=? (string-cmp 'string<=? $string<=?))
-  (define string>? (string-cmp 'string>? $string>?))
-  (define string>=? (string-cmp 'string>=? $string>=?))
+  (define string<?
+    (case-lambda
+      [(s1 s2) 
+       (if (string? s1)
+           (if (string? s2) 
+               ($string<? s1 s2)
+               (error 'string<? "~s is not a string" s2))
+           (error 'string<? "~s is not a string" s2))]
+      [(s . s*) 
+       (string-cmp 'string<? $string<? s s*)]))
+
+  (define string<=?
+    (case-lambda
+      [(s1 s2) 
+       (if (string? s1)
+           (if (string? s2) 
+               ($string<=? s1 s2)
+               (error 'string<=? "~s is not a string" s2))
+           (error 'string<=? "~s is not a string" s2))]
+      [(s . s*) 
+       (string-cmp 'string<=? $string<=? s s*)]))
+
+  (define string>?
+    (case-lambda
+      [(s1 s2) 
+       (if (string? s1)
+           (if (string? s2) 
+               ($string>? s1 s2)
+               (error 'string>? "~s is not a string" s2))
+           (error 'string>? "~s is not a string" s2))]
+      [(s . s*) 
+       (string-cmp 'string>? $string>? s s*)]))
+
+  (define string>=?
+    (case-lambda
+      [(s1 s2) 
+       (if (string? s1)
+           (if (string? s2) 
+               ($string>=? s1 s2)
+               (error 'string>=? "~s is not a string" s2))
+           (error 'string>=? "~s is not a string" s2))]
+      [(s . s*) 
+       (string-cmp 'string>=? $string>=? s s*)]))
 
   (define string->list
     (lambda (x)

@@ -76,6 +76,8 @@
 
   (define call/cc
     (lambda (f)
+      (unless (procedure? f) 
+        (error 'call/cc "~s is not a procedure" f))
       (primitive-call/cc
         (lambda (k)
           (let ([save winders])
@@ -87,11 +89,20 @@
                   (apply k v1 v2 v*)])))))))
 
   (define call-with-current-continuation
-          ;; look at how verbose I am ;;
-    (lambda (f) (call/cc f)))
+    (lambda (f)
+      (unless (procedure? f) 
+        (error 'call-with-current-continuation
+            "~s is not a procedure" f))
+      (call/cc f)))
 
   (define dynamic-wind
     (lambda (in body out)
+      (unless (procedure? in)
+        (error 'dynamic-wind "~s is not a procedure" in))
+      (unless (procedure? body)
+        (error 'dynamic-wind "~s is not a procedure" body))
+      (unless (procedure? out)
+        (error 'dynamic-wind "~s is not a procedure" out))
       (in)
       (set! winders (cons (cons in out) winders))
       (call-with-values
