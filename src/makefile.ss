@@ -588,6 +588,7 @@
     [pretty-print            i]
     [comment-handler         i]
     [print-gensym            i symbols]
+    [print-graph             i]
     [print-unicode           i]
     [char-general-category   i]
     [gensym-count            i symbols]

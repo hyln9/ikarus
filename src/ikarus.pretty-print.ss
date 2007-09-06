@@ -198,6 +198,12 @@
       [(vector? x)    (boxify-vector x)]
       [(list? x)      (boxify-list x '())]
       [(pair? x)      (boxify-pair x)]
+      [(setbox? x) 
+       (let ([i (format "#~a=" (setbox-idx x))]
+             [b (boxify (setbox-data x))])
+         (make-cbox (+ (string-length i) (box-length b))
+           (list i b)))]
+      [(refbox? x) (format "#~a#" (refbox-idx x))]
       [else           (format "~s" x)]))
   (define string-esc-table
     '((7 . "a")
@@ -433,9 +439,141 @@
     (f x p 0)
     (newline p))
   ;;;
+
+  (define (hasher x h)
+    (define (vec-graph x i j)
+      (unless (fx= i j)
+        (graph (vector-ref x i))
+        (vec-graph x (fxadd1 i) j h)))
+    (define (vec-dynamic x i j)
+      (unless (fx= i j)
+        (dynamic (vector-ref x i))
+        (vec-dynamic x (fxadd1 i) j)))
+    (define rv #f)
+    (define (graph x)
+      (cond
+        [(pair? x)
+         (cond
+           [(get-hash-table h x #f) =>
+            (lambda (n)
+              (set! rv #t)
+              (put-hash-table! h x (fxadd1 n)))]
+           [else
+            (put-hash-table! h x 0)
+            (graph (car x))
+            (graph (cdr x))])]
+        [(vector? x)
+         (cond
+           [(get-hash-table h x #f) =>
+            (lambda (n)
+              (set! rv #t)
+              (put-hash-table! h x (fxadd1 n)))]
+           [else
+            (put-hash-table! h x 0)
+            (vec-graph x 0 (vector-length x))])]
+        [(gensym? x)
+         (cond
+           [(get-hash-table h x #f) =>
+            (lambda (n)
+              (set! rv #t)
+              (put-hash-table! h x (fxadd1 n)))])]))
+    (define (dynamic x)
+      (cond
+        [(pair? x)
+         (cond
+           [(get-hash-table h x #f) =>
+            (lambda (n)
+              (set! rv #t)
+              (put-hash-table! h x (fxadd1 n)))]
+           [else
+            (put-hash-table! h x 0)
+            (dynamic (car x))
+            (dynamic (cdr x))
+            (when (and (get-hash-table h x #f)
+                       (fxzero? (get-hash-table h x #f)))
+              (put-hash-table! h x #f))])]
+        [(vector? x)
+         (cond
+           [(get-hash-table h x #f) =>
+            (lambda (n)
+              (set! rv #t)
+              (put-hash-table! h x (fxadd1 n)))]
+           [else
+            (put-hash-table! h x 0)
+            (vec-dynamic x 0 (vector-length x))
+            (when (and (get-hash-table h x #f)
+                       (fxzero? (get-hash-table h x #f)))
+              (put-hash-table! h x #f))])])) 
+    (if (print-graph) 
+        (graph x)
+        (dynamic x))
+    rv)
+
+  (define-record setbox (idx data))
+  (define-record refbox (idx))
+
+  (define (rewrite-shared x h)
+    (define counter 0)
+    (let f ([x x])
+      (cond
+        [(pair? x) 
+         (cond
+           [(get-hash-table h x #f) =>
+            (lambda (n) 
+              (cond
+                [(setbox? n)
+                 (make-refbox (setbox-idx n))] 
+                [(and (fixnum? n) (fx> n 0))
+                 (let ([box (make-setbox counter #f)])
+                   (set! counter (add1 counter))
+                   (put-hash-table! h x box)
+                   (let* ([a (f (car x))]
+                          [d (f (cdr x))])
+                     (set-setbox-data! box (cons a d))
+                     box))]
+                [else
+                 (let* ([a (f (car x))]
+                        [d (f (cdr x))])
+                   (if (and (eq? a (car x))
+                            (eq? d (cdr x)))
+                       x
+                       (cons a d)))]))]
+           [else
+            (let* ([a (f (car x))]
+                   [d (f (cdr x))])
+              (if (and (eq? a (car x))
+                       (eq? d (cdr x)))
+                  x
+                  (cons a d)))])]
+        [(vector? x)
+         (cond
+           [(get-hash-table h x #f) =>
+            (lambda (n) 
+              (cond
+                [(setbox? n)
+                 (make-refbox (setbox-idx n))]
+                [(and (fixnum? n) (fx> n 0))
+                 (let ([box (make-setbox counter #f)])
+                   (set! counter (add1 counter))
+                   (put-hash-table! h x box)
+                   (set-setbox-data! box
+                     (list->vector
+                       (map1ltr f (vector->list x))))
+                   box)]
+                [else 
+                 (list->vector (map1ltr f (vector->list x)))]))]
+           [else
+            (list->vector (map1ltr f (vector->list x)))])]
+        [else x])))
+
+  (define (unshare x) 
+    (let ([h (make-hash-table)])
+      (if (hasher x h)
+          (rewrite-shared x h)
+          x)))
+  ;;;
   (define (pretty x p)
-    (let ([x (boxify x)])
-      (output x p)))
+    (output (boxify (unshare x)) p))
   ;;;
   (define *pretty-format* '*pretty-format*)
   (define (set-fmt! name fmt)

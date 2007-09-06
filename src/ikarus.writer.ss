@@ -1,7 +1,7 @@
 
 (library (ikarus writer)
   (export write display format printf print-error error-handler
-          error print-unicode)
+          error print-unicode print-graph)
   (import 
     (ikarus system $chars)
     (ikarus system $strings)
@@ -12,7 +12,7 @@
     (ikarus system $bytevectors)
     (only (ikarus unicode-data) unicode-printable-char?) 
     (except (ikarus) write display format printf print-error
-            error-handler error print-unicode))
+            error-handler error print-unicode print-graph))
 
   (define print-unicode
     (make-parameter #t))
