@@ -369,6 +369,7 @@ ik_collect(int mem_req, ikpcb* pcb){
 #ifndef NDEBUG
   verify_integrity(pcb, "entry");
 #endif
+
   { /* ACCOUNTING */
     int bytes = ((int)pcb->allocation_pointer) -
                 ((int)pcb->heap_base);
@@ -409,6 +410,7 @@ ik_collect(int mem_req, ikpcb* pcb){
    */
 
   scan_dirty_pages(&gc);
+
   collect_stack(&gc, pcb->frame_pointer, pcb->frame_base - wordsize);
   pcb->next_k = add_object(&gc, pcb->next_k, "next_k"); 
   pcb->symbol_table = add_object(&gc, pcb->symbol_table, "symbol_table"); 
@@ -826,7 +828,6 @@ forward_guardians(gc_t* gc){
     ik_munmap(cache, sizeof(ik_ptr_page));
     cache = next;
   }
-  //exit(-1);
 }
 
 static void 
@@ -851,7 +852,15 @@ empty_dropped_guardians(gc_t* gc){
         ref(a, off_cdr) = false_object;
         ref(tc, off_cdr) = a;
         pcb->dirty_vector[page_index(tc)] = -1;
-        pcb->dirty_vector[page_index(d)] = -1;
+        //pcb->dirty_vector[page_index(d)] = -1;
+        {
+          int dgen = pcb->segment_vector[page_index(d)] & gen_mask;
+          if( (dgen > (pcb->segment_vector[page_index(obj)] & gen_mask)) 
+              ||
+              (dgen > (pcb->segment_vector[page_index(a)] & gen_mask))){
+            pcb->dirty_vector[page_index(d)] = -1;
+          }
+        }
       }
       ik_ptr_page* next = src->next;
       ik_munmap(src, sizeof(ik_ptr_page));
@@ -1628,9 +1637,10 @@ fix_weak_pointers(gc_t* gc){
   int collect_gen = gc->collect_gen;
   while(i < hi_idx){
     unsigned int t = segment_vec[i];
-    if((t & type_mask) == weak_pairs_type){
-      int gen = t & gen_mask;
-      if(gen > collect_gen){
+    if((t & (type_mask|new_gen_mask)) ==
+        (weak_pairs_type|new_gen_tag)){
+      //int gen = t & gen_mask;
+      if (1) { //(gen > collect_gen){
         ikp p = (ikp)(i << pageshift);
         ikp q = p + pagesize;
         while(p < q){
@@ -1640,13 +1650,22 @@ fix_weak_pointers(gc_t* gc){
             if(tag != immediate_tag){
               ikp fst = ref(x, -tag);
               if(fst == forward_ptr){
-                ref(p, 0) = ref(x, wordsize-tag); } 
-              else {
+                ref(p, 0) = ref(x, wordsize-tag);
+              } else {
                 int x_gen = segment_vec[page_index(x)] & gen_mask;
                 if(x_gen <= collect_gen){
-                  ref(p, 0) = bwp_object; } } } }
-          p += (2*wordsize); } } }
-    i++; } }
+                  ref(p, 0) = bwp_object;
+                } 
+              }
+            }
+          }
+          p += (2*wordsize); 
+        }
+      }
+    }
+    i++;
+  }
+}
 
 static unsigned int dirty_mask[generation_count] = {
   0x88888888,
@@ -1750,38 +1769,6 @@ scan_dirty_code_page(gc_t* gc, int page_idx, unsigned int mask){
   dirty_vec[page_idx] = new_d;
 }
 
-/* scanning dirty weak pointers should add the cdrs of the pairs
- * but leave the cars unmodified.  The dirty mask is also kept 
- * unmodified so that the after-pass fixes it.
- */
-
-static void 
-scan_dirty_weak_pointers_page(gc_t* gc, int page_idx, int mask){
-  unsigned int* dirty_vec = gc->pcb->dirty_vector;
-  unsigned int d = dirty_vec[page_idx];
-  unsigned int masked_d = d & mask;
-  ikp p = (ikp)(page_idx << pageshift);
-  int j;
-  for(j=0; j<cards_per_page; j++){
-    if(masked_d & (0xF << (j*meta_dirty_shift))){
-      /* dirty card */
-      ikp q = p + cardsize;
-      while(p < q){
-        ikp x = ref(p, wordsize);
-        if(is_fixnum(x) || tagof(x) == immediate_tag){
-          /* do nothing */
-        } else {
-          ikp y = add_object(gc, x, "nothing3");
-          ref(p, wordsize) = y;
-        }
-        p += (2*wordsize);
-      }
-    } else {
-      p += cardsize;
-    }
-  }
-}
-
 
 
 
@@ -1813,11 +1800,9 @@ scan_dirty_pages(gc_t* gc){
           segment_vec = pcb->segment_vector;
         }
         else if (type == weak_pairs_type){
-          if((t & gen_mask) > collect_gen){
-            scan_dirty_weak_pointers_page(gc, i, mask);
-            dirty_vec = pcb->dirty_vector;
-            segment_vec = pcb->segment_vector;
-          }
+          scan_dirty_pointers_page(gc, i, mask);
+          dirty_vec = pcb->dirty_vector;
+          segment_vec = pcb->segment_vector;
         }
         else if (type == code_type){
           if((t & gen_mask) > collect_gen){
@@ -1879,8 +1864,9 @@ fix_new_pages(gc_t* gc){
   int i = lo_idx;
   while(i < hi_idx){
     unsigned int t = segment_vec[i];
-    if((t & new_gen_mask) ||
-       ((t & type_mask) == weak_pairs_type)){
+//    if((t & new_gen_mask) ||
+//       ((t & type_mask) == weak_pairs_type)){
+    if(t & new_gen_mask){
       segment_vec[i] = t & ~new_gen_mask;
       int page_gen = t & old_gen_mask;
       if(((t & type_mask) == pointers_type) ||
