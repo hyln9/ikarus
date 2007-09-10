@@ -1,14 +1,14 @@
 
 (library (ikarus lists)
   (export $memq list? list cons* make-list append length list-ref reverse
-          last-pair memq memv member assq assv assoc
+          last-pair memq memp memv member assq assp assv assoc
           map for-each andmap ormap list-tail)
   (import 
     (ikarus system $fx)
     (ikarus system $pairs)
     (except (ikarus) list? list cons* make-list append reverse
-            last-pair length list-ref memq memv member assq assv
-            assoc map for-each andmap ormap list-tail))
+            last-pair length list-ref memq memp memv member assq
+            assp assv assoc map for-each andmap ormap list-tail))
 
   (define $memq
     (lambda (x ls)
@@ -248,6 +248,32 @@
        (lambda (x ls)
          (race ls ls ls x))))
 
+
+  (define memp
+    (letrec ([race
+              (lambda (h t ls p)
+                 (if (pair? h)
+                     (if (p ($car h))
+                         h
+                         (let ([h ($cdr h)])
+                           (if (pair? h)
+                               (if (p ($car h))
+                                   h
+                                   (if (not (eq? h t))
+                                       (race ($cdr h) ($cdr t) ls p)
+                                       (error 'memp "circular list ~s" ls)))
+                               (if (null? h)
+                                   '#f
+                                   (error 'memp "~s is not a proper list" ls)))))
+                     (if (null? h)
+                         '#f
+                         (error 'memp "~s is not a proper list" ls))))])
+       (lambda (p ls)
+         (unless (procedure? p)
+           (error 'memp "~s is not a procedure" p))
+         (race ls ls ls p))))
+
+
   (define assq
     (letrec ([race
               (lambda (x h t ls)
@@ -275,6 +301,37 @@
                         (error 'assq "~s is not a proper list" ls))))])
        (lambda (x ls) 
          (race x ls ls ls))))
+
+
+  (define assp
+    (letrec ([race
+              (lambda (p h t ls)
+                (if (pair? h)
+                    (let ([a ($car h)] [h ($cdr h)])
+                       (if (pair? a)
+                           (if (p ($car a))
+                               a
+                               (if (pair? h)
+                                   (if (not (eq? h t))
+                                       (let ([a ($car h)])
+                                          (if (pair? a)
+                                              (if (p ($car a))
+                                                  a
+                                                  (race p ($cdr h) ($cdr t) ls))
+                                              (error 'assp "malformed alist ~s"
+                                                     ls)))
+                                       (error 'assp "circular list ~s" ls))
+                                   (if (null? h)
+                                       #f
+                                       (error 'assp "~s is not a proper list" ls))))
+                           (error 'assp "malformed alist ~s" ls)))
+                    (if (null? h)
+                        #f
+                        (error 'assp "~s is not a proper list" ls))))])
+       (lambda (p ls)
+         (unless (procedure? p) 
+           (error 'assp "~s is not a procedure" p))
+         (race p ls ls ls))))
 
   (define assv
     (letrec ([race
