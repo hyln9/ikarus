@@ -381,7 +381,7 @@
     [bytevector-sint-ref                        C bv]
     [bytevector-sint-set!                       C bv]
     [bytevector-u16-native-ref                  C bv]
-    [bytevector-u16-native-set!                 S bv]
+    [bytevector-u16-native-set!                 C bv]
     [bytevector-u16-ref                         C bv]
     [bytevector-u16-set!                        S bv]
     [bytevector-u32-native-ref                  S bv]

@@ -197,6 +197,19 @@
     [(lambda (x) (= x -3))
      (bytevector-s16-ref '#vu8(255 253) 0 'big)]
 
+    [(lambda (x) (= x 12345))
+     (let ([v (make-bytevector 2)])
+       (bytevector-u16-native-set! v 0 12345)
+       (bytevector-u16-native-ref v 0))]
+    [(lambda (x) (= x 12345))
+     (let ([v (make-bytevector 2)])
+       (bytevector-u16-set! v 0 12345 'little)
+       (bytevector-u16-ref v 0 'little))]
+    [(lambda (x) (= x 12345))
+     (let ([v (make-bytevector 2)])
+       (bytevector-u16-set! v 0 12345 'big)
+       (bytevector-u16-ref v 0 'big))]
+
     ))
 
 
