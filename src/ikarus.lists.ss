@@ -536,7 +536,27 @@
                  (void)
                  (error who "length mismatch"))]
             [else (error who "not a list")])]
-         [_ (error who "vararg not supported yet")])))
+         [(f ls . ls*)
+          (unless (procedure? f) 
+            (error 'for-each "~s is not a procedure" f))
+          (unless (list? ls) 
+            (error 'for-each "~s is not a list" ls))
+          (let ([n (length ls)])
+            (for-each 
+              (lambda (x) 
+                (unless (and (list? x) (= (length x) n))
+                  (error 'for-each "~s is not a list" x)))
+              ls*)
+            (let loop ([n (length ls)] [ls ls] [ls* ls*])
+              (cond
+                [($fx= n 0) 
+                 (unless (and (null? ls) (andmap null? ls*))
+                   (error 'for-each "list modified by ~s" f))]
+                [else
+                 (unless (and (pair? ls) (andmap pair? ls*))
+                   (error 'for-each "list modified by ~s" f))
+                 (apply f (car ls) (map car ls*))
+                 (loop (fx- n 1) (cdr ls) (map cdr ls*))])))])))
 
   (module (andmap)
     (define who 'andmap)
