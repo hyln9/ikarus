@@ -188,6 +188,11 @@
        (bytevector-sint-set! b 0 (- (expt 2 32)) 'big 5)
        (bytevector-sint-ref b 0 'big 5))]
 
+    [(lambda (x) (= x 65023))
+     (bytevector-u16-ref '#vu8(255 253) 0 'little)]
+    [(lambda (x) (= x 65533))
+     (bytevector-u16-ref '#vu8(255 253) 0 'big)]
+
     ))
 
 
