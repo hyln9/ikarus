@@ -192,6 +192,10 @@
      (bytevector-u16-ref '#vu8(255 253) 0 'little)]
     [(lambda (x) (= x 65533))
      (bytevector-u16-ref '#vu8(255 253) 0 'big)]
+    [(lambda (x) (= x -513))
+     (bytevector-s16-ref '#vu8(255 253) 0 'little)]
+    [(lambda (x) (= x -3))
+     (bytevector-s16-ref '#vu8(255 253) 0 'big)]
 
     ))
 

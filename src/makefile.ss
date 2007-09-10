@@ -393,6 +393,8 @@
     [bytevector-u8-set!      i]
     [bytevector-u16-ref       i]
     [bytevector-u16-native-ref i]
+    [bytevector-s16-ref       i]
+    [bytevector-s16-native-ref i]
     [bytevector->u8-list     i]
     [u8-list->bytevector     i]
     [bytevector-copy!        i]
