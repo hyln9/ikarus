@@ -515,10 +515,10 @@
     [memq                                       C ls se]
     [memv                                       C ls se]
     [partition                                  S ls]
-    [remove                                     S ls]
+    [remq                                       C ls]
     [remp                                       S ls]
-    [remq                                       S ls]
     [remv                                       S ls]
+    [remove                                     S ls]
     ;;;
     [set-car!                                   C mp se]
     [set-cdr!                                   C mp se]

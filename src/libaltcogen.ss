@@ -1123,7 +1123,7 @@
   (begin
     (define (add-frm x s)      (set-add (fvar-idx x) s))
     (define (rem-nfv x s) 
-      (remq x s))
+      (remq1 x s))
     (define (init-var! x i)
       (set-var-index! x i)
       (set-var-var-move! x (empty-var-set))

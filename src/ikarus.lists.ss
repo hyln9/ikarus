@@ -2,13 +2,14 @@
 (library (ikarus lists)
   (export $memq list? list cons* make-list append length list-ref reverse
           last-pair memq memp memv member assq assp assv assoc
-          map for-each andmap ormap list-tail)
+          remq remv remove remp map for-each andmap ormap list-tail)
   (import 
     (ikarus system $fx)
     (ikarus system $pairs)
     (except (ikarus) list? list cons* make-list append reverse
             last-pair length list-ref memq memp memv member assq
-            assp assv assoc map for-each andmap ormap list-tail))
+            assp assv assoc remq remv remove remp 
+            map for-each andmap ormap list-tail))
 
   (define $memq
     (lambda (x ls)
@@ -388,6 +389,51 @@
                         (error 'assoc "~s is not a proper list" ls))))])
        (lambda (x ls) 
          (race x ls ls ls))))
+
+
+  (module (remq remv remove remp)
+    (define-syntax define-remover 
+      (syntax-rules ()
+        [(_ name cmp check)
+         (define name
+           (letrec ([race
+                     (lambda (h t ls x)
+                        (if (pair? h)
+                            (if (cmp ($car h) x)
+                                (let ([h ($cdr h)])
+                                  (if (pair? h)
+                                      (if (not (eq? h t))
+                                          (if (cmp ($car h) x)
+                                              (race ($cdr h) ($cdr t) ls x)
+                                              (cons ($car h) (race ($cdr h) ($cdr t) ls x)))
+                                          (error 'name "circular list ~s" ls))
+                                      (if (null? h)
+                                          '()
+                                          (error 'name "~s is not a proper list" ls))))
+                                (let ([a0 ($car h)] [h ($cdr h)])
+                                  (if (pair? h)
+                                      (if (not (eq? h t))
+                                          (if (cmp ($car h) x)
+                                              (cons a0 (race ($cdr h) ($cdr t) ls x))
+                                              (cons* a0 ($car h) (race ($cdr h) ($cdr t) ls x)))
+                                          (error 'name "circular list ~s" ls))
+                                      (if (null? h)
+                                          (list a0)
+                                          (error 'name "~s is not a proper list" ls)))))
+                            (if (null? h)
+                                '()
+                                (error 'name "~s is not a proper list" ls))))])
+              (lambda (x ls)
+                (check x ls)
+                (race ls ls ls x))))]))
+    (define-remover remq eq? (lambda (x ls) #t))
+    (define-remover remv eqv? (lambda (x ls) #t))
+    (define-remover remove equal? (lambda (x ls) #t))
+    (define-remover remp (lambda (elt p) (p elt))
+      (lambda (x ls) 
+        (unless (procedure? x)
+          (error 'remp "~s is not a procedure" x)))))
+
 
   (module (map)
     (define who 'map)

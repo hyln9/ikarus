@@ -1,10 +1,11 @@
 
-(define (remq x ls)
+
+(define (remq1 x ls)
   (cond
     [(null? ls) '()]
     [(eq? x (car ls)) (cdr ls)]
     [else
-     (let ([t (remq x (cdr ls))])
+     (let ([t (remq1 x (cdr ls))])
        (cond
          [(eq? t (cdr ls)) ls]
          [else (cons (car ls) t)]))]))
@@ -29,7 +30,7 @@
   (define (rem* s1 s2)
     (cond
      [(null? s1) s2]
-     [else (remq (car s1) (rem* (cdr s1) s2))]))
+     [else (remq1 (car s1) (rem* (cdr s1) s2))]))
   (cond
    [(null? s1) '()]
    [(null? s2) s1]
