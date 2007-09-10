@@ -1,14 +1,14 @@
 
 (library (ikarus lists)
   (export $memq list? list cons* make-list append length list-ref reverse
-          last-pair memq memp memv member assq assp assv assoc
+          last-pair memq memp memv member find assq assp assv assoc
           remq remv remove remp filter map for-each andmap ormap list-tail)
   (import 
     (ikarus system $fx)
     (ikarus system $pairs)
     (except (ikarus) list? list cons* make-list append reverse
-            last-pair length list-ref memq memp memv member assq
-            assp assv assoc remq remv remove remp filter
+            last-pair length list-ref memq memp memv member find
+            assq assp assv assoc remq remv remove remp filter
             map for-each andmap ormap list-tail))
 
   (define $memq
@@ -274,6 +274,31 @@
            (error 'memp "~s is not a procedure" p))
          (race ls ls ls p))))
 
+  (define find
+    (letrec ([race
+              (lambda (h t ls p)
+                 (if (pair? h)
+                     (let ([a ($car h)])
+                       (if (p a)
+                           a
+                           (let ([h ($cdr h)])
+                             (if (pair? h)
+                                 (let ([a ($car h)])
+                                   (if (p a)
+                                       a
+                                       (if (not (eq? h t))
+                                           (race ($cdr h) ($cdr t) ls p)
+                                           (error 'find "circular list ~s" ls))))
+                                 (if (null? h)
+                                     '#f
+                                     (error 'find "~s is not a proper list" ls))))))
+                     (if (null? h)
+                         '#f
+                         (error 'find "~s is not a proper list" ls))))])
+       (lambda (p ls)
+         (unless (procedure? p)
+           (error 'find "~s is not a procedure" p))
+         (race ls ls ls p))))
 
   (define assq
     (letrec ([race

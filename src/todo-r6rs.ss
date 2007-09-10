@@ -505,7 +505,7 @@
     [assv                                       C ls se]
     [cons*                                      C ls]
     [filter                                     C ls]
-    [find                                       S ls]
+    [find                                       C ls]
     [fold-left                                  S ls]
     [fold-right                                 S ls]
     [for-all                                    S ls]
