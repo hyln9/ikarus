@@ -1,9 +1,9 @@
 
 (library (ikarus.sort)
-  (export list-sort vector-sort)
+  (export list-sort vector-sort vector-sort!)
   (import 
     (ikarus system $fx)
-    (except (ikarus) list-sort vector-sort))
+    (except (ikarus) list-sort vector-sort vector-sort!))
   
 
   (define (merge1 <? a1 ls1 ls2) 
@@ -72,6 +72,18 @@
       (error 'vector-sort "~s is not a vector" v))
     (list->vector 
       (sort-tail <? (vector->list v) (vector-length v))))
+
+  (define (vector-sort! <? v) 
+    (unless (procedure? <?)
+      (error 'vector-sort! "~s is not a procedure" <?))
+    (unless (vector? v)
+      (error 'vector-sort! "~s is not a vector" v))
+    (let f ([i 0] [v v] 
+            [ls (sort-tail <? (vector->list v) (vector-length v))])
+      (unless (null? ls) 
+        (vector-set! v i (car ls))
+        (f (fx+ i 1) v (cdr ls)))))
+    
   )
 
 

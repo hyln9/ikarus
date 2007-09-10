@@ -326,6 +326,7 @@
     [member                  i r]
     [list-sort               i]
     [vector-sort             i]
+    [vector-sort!            i]
     [bwp-object?             i]
     [weak-cons               i]
     [weak-pair?              i]

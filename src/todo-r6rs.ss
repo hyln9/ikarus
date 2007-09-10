@@ -14,11 +14,11 @@
     [sc (rnrs syntax-case (6))]
     [fi (rnrs files (6))]
     [ne (null-environment)]
+    [sr (rnrs sorting (6))]
     [ba (rnrs base (6))]
     [ls (rnrs lists (6))]
     [is (rnrs io simple (6))]
     [bv (rnrs bytevectors (6))]
-    [sr (rnrs sorting (6))]
     [uc (rnrs unicode (6))]
     [ex (rnrs exceptions (6))]
     [bw (rnrs arithmetic bitwise (6))]
@@ -686,7 +686,7 @@
     ;;;
     [list-sort                                  C sr]
     [vector-sort                                C sr]
-    [vector-sort!                               S sr]
+    [vector-sort!                               C sr]
     ;;;
     [file-exists?                               C fi]
     [delete-file                                C fi]
