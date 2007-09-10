@@ -504,7 +504,7 @@
     [assq                                       C ls se]
     [assv                                       C ls se]
     [cons*                                      C ls]
-    [filter                                     S ls]
+    [filter                                     C ls]
     [find                                       S ls]
     [fold-left                                  S ls]
     [fold-right                                 S ls]
@@ -516,9 +516,9 @@
     [memv                                       C ls se]
     [partition                                  S ls]
     [remq                                       C ls]
-    [remp                                       S ls]
-    [remv                                       S ls]
-    [remove                                     S ls]
+    [remp                                       C ls]
+    [remv                                       C ls]
+    [remove                                     C ls]
     ;;;
     [set-car!                                   C mp se]
     [set-cdr!                                   C mp se]
@@ -792,12 +792,6 @@
                         libs))))
     (error #f "invalid id ~s" x)))
 
-(define (filter p? ls) 
-  (cond
-    [(null? ls) '()]
-    [(p? (car ls)) 
-     (cons (car ls) (filter p? (cdr ls)))]
-    [else (filter p? (cdr ls))]))
 
 (define (filter* ls) 
   (filter 

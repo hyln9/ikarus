@@ -332,6 +332,7 @@
     [remp                    i]
     [remv                    i]
     [remove                  i]
+    [filter                  i]
     [list-sort               i]
     [vector-sort             i]
     [vector-sort!            i]

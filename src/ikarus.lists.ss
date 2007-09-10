@@ -2,13 +2,13 @@
 (library (ikarus lists)
   (export $memq list? list cons* make-list append length list-ref reverse
           last-pair memq memp memv member assq assp assv assoc
-          remq remv remove remp map for-each andmap ormap list-tail)
+          remq remv remove remp filter map for-each andmap ormap list-tail)
   (import 
     (ikarus system $fx)
     (ikarus system $pairs)
     (except (ikarus) list? list cons* make-list append reverse
             last-pair length list-ref memq memp memv member assq
-            assp assv assoc remq remv remove remp 
+            assp assv assoc remq remv remove remp filter
             map for-each andmap ormap list-tail))
 
   (define $memq
@@ -391,7 +391,7 @@
          (race x ls ls ls))))
 
 
-  (module (remq remv remove remp)
+  (module (remq remv remove remp filter)
     (define-syntax define-remover 
       (syntax-rules ()
         [(_ name cmp check)
@@ -432,7 +432,11 @@
     (define-remover remp (lambda (elt p) (p elt))
       (lambda (x ls) 
         (unless (procedure? x)
-          (error 'remp "~s is not a procedure" x)))))
+          (error 'remp "~s is not a procedure" x)))) 
+    (define-remover filter (lambda (elt p) (not (p elt)))
+      (lambda (x ls) 
+        (unless (procedure? x)
+          (error 'filter "~s is not a procedure" x)))))
 
 
   (module (map)
