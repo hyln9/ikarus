@@ -345,7 +345,7 @@
                         frm-args)])
         (let* ([call 
                 (make-ntcall call-targ value-dest 
-                  (list* argc-register 
+                  (cons* argc-register 
                          pcr esp apr
                          (append reg-locs frmt*))
                   #f #f)]
@@ -555,12 +555,12 @@
                 [target 
                  (make-primcall 'direct-jump 
                    (cons target 
-                    (list* argc-register
+                    (cons* argc-register
                            pcr esp apr
                            locs)))]
                 [else 
                  (make-primcall 'indirect-jump 
-                   (list* argc-register 
+                   (cons* argc-register 
                           pcr esp apr
                           locs))]))])
        (let f ([args (reverse args)] 
@@ -597,7 +597,7 @@
                 [handler (car rands)]
                 [proc (cadr rands)]
                 [k (caddr rands)])
-            (set! locals (list* t0 t1 t2 locals))
+            (set! locals (cons* t0 t1 t2 locals))
             (seq*
               (V t0 handler)
               (V t1 k)
@@ -1013,7 +1013,7 @@
            (set-graph-ls! g (cons (cons x (single y)) ls)))]
         [else 
          (set-graph-ls! g 
-           (list* (cons x (single y))
+           (cons* (cons x (single y))
                   (cons y (single x))
                   ls))])))
   (define (print-graph g)
@@ -1081,7 +1081,7 @@
            (set-graph-ls! g (cons (cons x (single y)) ls)))]
         [else 
          (set-graph-ls! g 
-           (list* (cons x (single y))
+           (cons* (cons x (single y))
                   (cons y (single x))
                   ls))])))
   (define (print-graph g)
@@ -2428,7 +2428,7 @@
           (let ([lf (unique-label)] [le (unique-label)])
             (P e0 #f lf
                (E e1 
-                  (list* `(jmp ,le) lf
+                  (cons* `(jmp ,le) lf
                      (E e2 (cons le ac))))))])]
       [(ntcall target value args mask size) 
        (let ([LCALL (unique-label)])
@@ -2438,7 +2438,7 @@
                (label-address (sl-mv-ignore-rp-label))))
          (cond
            [(string? target) ;; foreign call
-            (list* `(subl ,(* (fxsub1 size) wordsize) ,fpr)
+            (cons* `(subl ,(* (fxsub1 size) wordsize) ,fpr)
                    `(movl (foreign-label "ik_foreign_call") %ebx)
                    `(jmp ,LCALL)
                    `(byte-vector ,mask)
@@ -2453,7 +2453,7 @@
                    `(addl ,(* (fxsub1 size) wordsize) ,fpr)
                    ac)]
            [target ;;; known call
-            (list* `(subl ,(* (fxsub1 size) wordsize) ,fpr)
+            (cons* `(subl ,(* (fxsub1 size) wordsize) ,fpr)
                    `(jmp ,LCALL)
                    `(byte-vector ,mask)
                    `(int ,(* size wordsize))
@@ -2464,7 +2464,7 @@
                    `(addl ,(* (fxsub1 size) wordsize) ,fpr)
                    ac)]
            [else
-            (list* `(subl ,(* (fxsub1 size) wordsize) ,fpr)
+            (cons* `(subl ,(* (fxsub1 size) wordsize) ,fpr)
                    `(jmp ,LCALL)
                    `(byte-vector ,mask)
                    `(int ,(* size wordsize))
@@ -2503,19 +2503,19 @@
          [(int-/overflow)
           (let ([L (or (exception-label) 
                        (error who "no exception label"))])
-            (list* `(subl ,(R s) ,(R d)) 
+            (cons* `(subl ,(R s) ,(R d)) 
                    `(jo ,L)
                    ac))]
          [(int*/overflow)
           (let ([L (or (exception-label) 
                        (error who "no exception label"))])
-            (list* `(imull ,(R s) ,(R d)) 
+            (cons* `(imull ,(R s) ,(R d)) 
                    `(jo ,L)
                    ac))] 
          [(int+/overflow)
           (let ([L (or (exception-label) 
                        (error who "no exception label"))])
-            (list* `(addl ,(R s) ,(R d)) 
+            (cons* `(addl ,(R s) ,(R d)) 
                    `(jo ,L)
                    ac))]
          [(fl:store) 
@@ -2543,7 +2543,7 @@
          [(incr/zero?) 
           (let ([l (or (exception-label)
                        (error who "no exception label"))])
-            (list* 
+            (cons* 
               `(addl 1 ,(R (make-disp (car rands) (cadr rands))))
               `(je ,l)
               ac))]
@@ -2625,15 +2625,15 @@
          (define (cmp op a0 a1 lab ac)
            (cond
              [(memq op '(fl:= fl:!= fl:< fl:<= fl:> fl:>=))
-              (list* `(ucomisd ,(R (make-disp a0 a1)) xmm0)
+              (cons* `(ucomisd ,(R (make-disp a0 a1)) xmm0)
                      `(,(jmpname op) ,lab)
                      ac)]
              [(or (symbol? a0) (constant? a1))
-              (list* `(cmpl ,(R a1) ,(R a0))
+              (cons* `(cmpl ,(R a1) ,(R a0))
                      `(,(jmpname op) ,lab)
                      ac)]
              [(or (symbol? a1) (constant? a0))
-              (list* `(cmpl ,(R a0) ,(R a1))
+              (cons* `(cmpl ,(R a0) ,(R a1))
                      `(,(revjmpname op) ,lab)
                      ac)]
              [else (error who "invalid cmpops ~s ~s" a0 a1)]))
@@ -2687,7 +2687,7 @@
     (define CONS_LABEL (unique-label))
     (define LOOP_HEAD (unique-label))
     (define L_CALL (unique-label))
-    (list* (cmpl (int (argc-convention (fxsub1 fml-count))) eax)
+    (cons* (cmpl (int (argc-convention (fxsub1 fml-count))) eax)
            ;(jg (label SL_invalid_args))
            (jl CONS_LABEL)
            (movl (int nil) ebx)
@@ -2750,7 +2750,7 @@
        (record-case info
          [(case-info L args proper)
           (let ([lothers (unique-label)])
-            (list* `(cmpl ,(argc-convention 
+            (cons* `(cmpl ,(argc-convention 
                              (if proper 
                                  (length (cdr args))
                                  (length (cddr args))))
@@ -2768,7 +2768,7 @@
   (define (Clambda x)
     (record-case x
       [(clambda L case* free*)
-       (list* (length free*) 
+       (cons* (length free*) 
               (label L)
           (let ([ac (list '(nop))])
             (parameterize ([exceptions-conc ac])
@@ -2784,7 +2784,7 @@
   (define (Program x)
     (record-case x 
       [(codes code* body)
-       (cons (list* 0 
+       (cons (cons* 0 
                     (label (gensym))
                     (let ([ac (list '(nop))])
                       (parameterize ([exceptions-conc ac])

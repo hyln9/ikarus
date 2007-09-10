@@ -313,6 +313,7 @@
     [list-tail               i r]
     [make-list               i r]
     [list*                   i]
+    [cons*                   i r]
     [list?                   i r]
     [append                  i r]
     [last-pair               i r]
@@ -985,7 +986,7 @@
                   (make-system-data subst env)])
       (let ([code (build-system-library export-subst export-env export-locs)])
         (values 
-          (reverse (list* (car code*) code (cdr code*)))
+          (reverse (cons* (car code*) code (cdr code*)))
           export-locs)))))
 
 (verify-map)

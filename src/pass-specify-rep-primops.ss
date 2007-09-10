@@ -268,6 +268,28 @@
   [(P . arg*) (K #t)]
   [(E . arg*) (nop)])
 
+(define-primop cons* safe
+  [(V) (interrupt)]
+  [(V x) (T x)]
+  [(V a . a*)
+   (let ([t* (map T a*)] [n (length a*)])
+     (with-tmp ([v (prm 'alloc (K (* n pair-size)) (K pair-tag))])
+       (prm 'mset v (K (- disp-car pair-tag)) (T a))
+       (let f ([t* t*] [i pair-size])
+         (cond
+           [(null? (cdr t*)) 
+            (seq* (prm 'mset v (K (- i disp-cdr pair-tag)) (car t*)) v)]
+           [else
+            (with-tmp ([tmp (prm 'int+ v (K i))])
+              (prm 'mset tmp (K (- disp-car pair-tag)) (car t*))
+              (prm 'mset tmp (K (- (- disp-cdr pair-tag) pair-size)) tmp)
+              (f (cdr t*) (+ i pair-size)))]))))]
+  [(P) (interrupt)]
+  [(P x) (P x)]
+  [(P a . a*) (K #t)]
+  [(E) (interrupt)]
+  [(E . a*) (nop)])
+
 
 (define-primop list* safe
   [(V) (interrupt)]
