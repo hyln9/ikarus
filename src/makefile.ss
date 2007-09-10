@@ -312,7 +312,6 @@
     [list-ref                i r]
     [list-tail               i r]
     [make-list               i r]
-    [list*                   i]
     [cons*                   i r]
     [list?                   i r]
     [append                  i r]

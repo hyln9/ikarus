@@ -2102,7 +2102,7 @@
           [(<= 1 expt 9)
            (sign pos? (format-flonum-no-expt expt d0 d*))]
           [(<= -3 expt 0)
-           (sign pos? (list* #\0 #\. (format-flonum-no-expt/neg expt digits)))]
+           (sign pos? (cons* #\0 #\. (format-flonum-no-expt/neg expt digits)))]
           [else 
            (string-append
              (if pos? "" "-")

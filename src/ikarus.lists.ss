@@ -1,12 +1,12 @@
 
 (library (ikarus lists)
-  (export $memq list? list list* cons* make-list append length list-ref reverse
+  (export $memq list? list cons* make-list append length list-ref reverse
           last-pair memq memv member assq assv assoc
           map for-each andmap ormap list-tail)
   (import 
     (ikarus system $fx)
     (ikarus system $pairs)
-    (except (ikarus) list? list list* cons* make-list append reverse
+    (except (ikarus) list? list cons* make-list append reverse
             last-pair length list-ref memq memv member assq assv
             assoc map for-each andmap ormap list-tail))
 
@@ -21,14 +21,6 @@
   (define list (lambda x x))
 
   (define cons*
-    (lambda (fst . rest)
-      (let f ([fst fst] [rest rest])
-        (cond
-          [(null? rest) fst]
-          [else 
-           (cons fst (f ($car rest) ($cdr rest)))]))))
-
-  (define list*
     (lambda (fst . rest)
       (let f ([fst fst] [rest rest])
         (cond

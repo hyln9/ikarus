@@ -123,7 +123,7 @@
 
 (define reloc-word+
   (lambda (x d)
-    (list* 'reloc-word+ x d)))
+    (cons* 'reloc-word+ x d)))
 
 (define byte?
   (lambda (x)
@@ -167,7 +167,7 @@
     (cond
       [(int? n) 
        (if (fixnum? n)
-           (list* 
+           (cons* 
              (byte n)
              (byte (fxsra n 8))
              (byte (fxsra n 16))
@@ -175,7 +175,7 @@
              ac)
            (let* ([lo (remainder n 256)]
                   [hi (quotient (if (< n 0) (- n 255) n) 256)])
-             (list* 
+             (cons* 
                (byte lo)
                (byte hi)
                (byte (fxsra hi 8))
@@ -200,7 +200,7 @@
   (lambda (n ac)
     (cond
       [(int? n) 
-       (list* (byte n) ac)]
+       (cons* (byte n) ac)]
       [else (error 'IMM8 "invalid ~s" n)])))
 
 
@@ -281,7 +281,7 @@
       [(eq? r3 '%esp) (error 'assembler "BUG: invalid src %esp")]
       [(eq? r1 '%ebp) (error 'assembler "BUG: invalid src %ebp")]
       [else 
-       (list*
+       (cons*
          (byte (fxlogor 4 (fxsll (register-index r1) 3)))
          (byte (fxlogor (register-index r2) 
                         (fxsll (register-index r3) 3)))

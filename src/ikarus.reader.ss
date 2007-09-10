@@ -427,14 +427,14 @@
              [(eof-object? c1) 
               (num-error "eof object" (cons c ls))]
              [(memv c1 '(#\b #\B)) 
-              (tokenize-radix/exactness-marks p (list* c1 c ls) exact? 2)]
+              (tokenize-radix/exactness-marks p (cons* c1 c ls) exact? 2)]
              [(memv c1 '(#\x #\X)) 
-              (tokenize-radix/exactness-marks p (list* c1 c ls) exact? 16)]
+              (tokenize-radix/exactness-marks p (cons* c1 c ls) exact? 16)]
              [(memv c1 '(#\o #\O)) 
-              (tokenize-radix/exactness-marks p (list* c1 c ls) exact? 8)]
+              (tokenize-radix/exactness-marks p (cons* c1 c ls) exact? 8)]
              [(memv c1 '(#\d #\D)) 
-              (tokenize-radix/exactness-marks p (list* c1 c ls) exact? 10)]
-             [else (num-error "invalid sequence" (list* c1 c ls))]))]
+              (tokenize-radix/exactness-marks p (cons* c1 c ls) exact? 10)]
+             [else (num-error "invalid sequence" (cons* c1 c ls))]))]
         [else (num-error "invalid sequence" (cons c ls))]))) 
   (define (tokenize-radix-mark p ls radix)
     (let ([c (read-char p)])
@@ -462,7 +462,7 @@
              [(memv c1 '(#\i #\I)) 
               (tokenize-radix/exactness-marks p (cons c1 (cons c ls))
                 'i radix)]
-             [else (num-error "invalid sequence" (list* c1 c ls))]))]
+             [else (num-error "invalid sequence" (cons* c1 c ls))]))]
         [else (num-error "invalid sequence" (cons c ls))])))
   (define (tokenize-radix/exactness-marks p ls exact? radix) 
     (let ([c (read-char p)])
@@ -757,7 +757,7 @@
              [($char= c #\>)
               (read-char p)
               (let ([ls (tokenize-identifier '() p)])
-                (let ([str (list->string (list* #\- #\> (reverse ls)))])
+                (let ([str (list->string (cons* #\- #\> (reverse ls)))])
                   (cons 'datum (string->symbol str))))]
              [else
               (cons 'datum

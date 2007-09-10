@@ -19,7 +19,7 @@
     (chez modules)
     (ikarus symbols)
     (ikarus parameters)
-    (only (ikarus) error printf ormap andmap list* format
+    (only (ikarus) error printf ormap andmap cons* format
           make-record-type void set-rtd-printer! type-descriptor
           pretty-print)
     (only (r6rs syntax-case) syntax-case syntax with-syntax)
@@ -447,9 +447,9 @@
   (define sanitize-binding
     (lambda (x src)
       (cond
-        [(procedure? x) (list* 'local-macro x src)]
+        [(procedure? x) (cons* 'local-macro x src)]
         [(and (pair? x) (eq? (car x) 'macro!) (procedure? (cdr x)))
-         (list* 'local-macro! (cdr x) src)]
+         (cons* 'local-macro! (cdr x) src)]
         [(and (pair? x) (eq? (car x) '$rtd)) x]
         [else (error 'expand "invalid transformer ~s" x)])))
   (define make-variable-transformer
@@ -600,7 +600,7 @@
   ;;; macros
   (define add-lexical
     (lambda (lab lex r)
-      (cons (list* lab 'lexical lex) r)))
+      (cons (cons* lab 'lexical lex) r)))
   ;;;
   (define add-lexicals
     (lambda (lab* lex* r)
@@ -938,8 +938,8 @@
       (define-syntax app*
         (syntax-rules (quote)
           [(_ 'x arg* ... last)
-           (list* (scheme-stx 'x) arg* ... last)]))
-      (define quasilist*
+           (cons* (scheme-stx 'x) arg* ... last)]))
+      (define quasicons*
         (lambda (x y)
           (let f ((x x))
             (if (null? x) y (quasicons (car x) (f (cdr x)))))))
@@ -991,7 +991,7 @@
              (syntax-match p (unquote unquote-splicing)
                [(unquote p ...)
                 (if (= lev 0)
-                    (quasilist* p (vquasi q lev))
+                    (quasicons* p (vquasi q lev))
                     (quasicons
                       (quasicons (app 'quote 'unquote)
                                  (quasi p (- lev 1)))
@@ -1015,7 +1015,7 @@
                  (quasicons (app 'quote 'unquote) (quasi (list p) (- lev 1))))]
             [((unquote p ...) . q)
              (if (= lev 0)
-                 (quasilist* p (quasi q lev))
+                 (quasicons* p (quasi q lev))
                  (quasicons
                    (quasicons (app 'quote 'unquote) (quasi p (- lev 1)))
                    (quasi q lev)))]
@@ -1571,7 +1571,7 @@
                                     (lambda (x) (cdr (assq (cadr x) r))))
                                   (cdr e))])
                    `(map (primitive ,(car e)) . ,args))]
-                [else (list* 'map (list 'lambda formals e) actuals)]))))
+                [else (cons* 'map (list 'lambda formals e) actuals)]))))
         (define gen-cons
           (lambda (e x y xnew ynew)
             (case (car ynew)
@@ -2463,12 +2463,12 @@
              (case (binding-type b)
                [(lexical)
                 (f (cdr r)
-                   (cons (list* label 'global (binding-value b)) env)
+                   (cons (cons* label 'global (binding-value b)) env)
                    macro*)]
                [(local-macro)
                 (let ([loc (gensym)])
                   (f (cdr r)
-                     (cons (list* label 'global-macro loc) env)
+                     (cons (cons* label 'global-macro loc) env)
                      (cons (cons loc (binding-value b)) macro*)))]
                [($rtd $module) (f (cdr r) (cons x env) macro*)]
                [else

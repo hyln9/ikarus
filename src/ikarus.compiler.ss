@@ -654,7 +654,6 @@
 
 
 #|FIXME:missing-optimizations
-  128 list*
   111 cadr
   464 $record/rtd?
   404 memq
@@ -819,7 +818,7 @@
                 [(null? d) (make-seq a (make-constant #t))]
                 [else
                  (f (make-seq a (car d)) (cdr d))])))])]
-    [(list*)
+    [(cons*)
      (case ctxt
        [(e) 
         (cond
@@ -847,7 +846,7 @@
         (cond
           [(null? rand*) (giveup)]
           [(null? (cdr rand*)) (car rand*)]
-          [else (giveup)])])]
+          [else (giveup)])])] 
     [(cons)
      (or (and (fx= (length rand*) 2)
               (let ([a0 (car rand*)] [a1 (cadr rand*)])
