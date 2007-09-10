@@ -108,9 +108,7 @@
   
   (define $do-event
     (lambda ()
-      (if ($interrupted?)
-          (begin
-            ($unset-interrupted!)
-            ((interrupt-handler)))
-          (display "Engine Expired\n" (console-output-port)))))
+      (when ($interrupted?)
+        ($unset-interrupted!)
+        ((interrupt-handler)))))
   )

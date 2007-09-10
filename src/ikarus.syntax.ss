@@ -771,6 +771,8 @@
           (cond
             [(pair? x) (cons (f (car x)) (f (cdr x)))]
             [(symbol? x) (scheme-stx x)]
+            [(vector? x) 
+             (list->vector (map f (vector->list x)))]
             [else x]))
         '() '())))
   (define with-syntax-macro
@@ -1035,112 +1037,58 @@
           [(_ e) (quasi e 0)]))))
   (define quasisyntax-macro
     (let ()
-      (define-syntax app
-        (syntax-rules (quote)
-          [(_ 'x arg* ...)
-           (list (scheme-stx 'x) arg* ...)]))
-      (define-syntax app*
-        (syntax-rules (quote)
-          [(_ 'x arg* ... last)
-           (list* (scheme-stx 'x) arg* ... last)]))
-      (define quasilist*
-        (lambda (x y)
-          (let f ((x x))
-            (if (null? x) y (quasicons (car x) (f (cdr x)))))))
-      (define quasicons
-        (lambda (x y)
-          (syntax-match y (syntax list)
-            [(syntax dy)
-             (syntax-match x (syntax)
-               [(syntax dx) (app 'syntax (cons dx dy))]
-               [_
-                (syntax-match dy ()
-                  [() (app 'list x)]
-                  [_  (app 'cons x y)])])]
-            [(list stuff ...)
-             (app* 'list x stuff)]
-            [_ (app 'cons x y)])))
-      (define quasiappend
-        (lambda (x y)
-          (let ([ls (let f ((x x))
-                      (if (null? x)
-                          (syntax-match y (syntax)
-                            [(syntax ()) '()]
-                            [_ (list y)])
-                          (syntax-match (car x) (syntax)
-                            [(syntax ()) (f (cdr x))]
-                            [_ (cons (car x) (f (cdr x)))])))])
-            (cond
-              [(null? ls) (app 'syntax '())]
-              [(null? (cdr ls)) (car ls)]
-              [else (app* 'append ls)]))))
-      (define quasivector
-        (lambda (x)
-          (let ((pat-x x))
-            (syntax-match pat-x (syntax)
-              [(syntax (x* ...)) (app 'syntax (list->vector x*))]
-              [_ (let f ((x x) (k (lambda (ls) (app* 'vector ls))))
-                   (syntax-match x (syntax list cons)
-                     [(syntax (x* ...))
-                      (k (map (lambda (x) (app 'syntax x)) x*))]
-                     [(list x* ...)
-                      (k x*)]
-                     [(cons x y)
-                      (f y (lambda (ls) (k (cons x ls))))]
-                     [_ (app 'list->vector pat-x)]))]))))
-      (define vquasi
-        (lambda (p lev)
-          (syntax-match p ()
-            [(p . q)
-             (syntax-match p (unsyntax unsyntax-splicing)
-               [(unsyntax p ...)
-                (if (= lev 0)
-                    (quasilist* p (vquasi q lev))
-                    (quasicons
-                      (quasicons (app 'quote 'unsyntax) (quasi p (- lev 1)))
-                      (vquasi q lev)))]
-               [(unsyntax-splicing p ...)
-                (if (= lev 0)
-                    (quasiappend p (vquasi q lev))
-                    (quasicons
-                      (quasicons
-                        (app 'quote 'unsyntax-splicing)
-                        (quasi p (- lev 1)))
-                      (vquasi q lev)))]
-               [p (quasicons (quasi p lev) (vquasi q lev))])]
-            [() (app 'syntax '())])))
       (define quasi
         (lambda (p lev)
           (syntax-match p (unsyntax unsyntax-splicing quasisyntax)
             [(unsyntax p)
              (if (= lev 0)
-                 p
-                 (quasicons (app 'syntax 'unsyntax) (quasi (list p) (- lev 1))))]
-            [((unsyntax p ...) . q)
-             (if (= lev 0)
-                 (quasilist* p (quasi q lev))
-                 (quasicons
-                   (quasicons (app 'syntax 'unsyntax) (quasi p (- lev 1)))
-                   (quasi q lev)))]
-            [((unsyntax-splicing p ...) . q)
-             (if (= lev 0)
-                 (quasiappend p (quasi q lev))
-                 (quasicons
-                   (quasicons
-                     (app 'syntax 'unsyntax-splicing)
-                     (quasi p (- lev 1)))
-                   (quasi q lev)))]
+                 (let ([g (gensym)])
+                   (values (list g) (list p) g))
+                 (let-values ([(lhs* rhs* p) (quasi p (- lev 1))])
+                   (values lhs* rhs* (list 'unsyntax p))))]
+            [unsyntax (= lev 0)
+             (stx-error p "incorrect use of unsyntax")]
+            [((unsyntax-splicing p) . q) 
+             (let-values ([(lhs* rhs* q) (quasi q lev)])
+               (if (= lev 0) 
+                   (let ([g (gensym)])
+                     (values (cons `(,g ...) lhs*) (cons p rhs*) 
+                        `(,g ... . ,q)))
+                   (let-values ([(lhs2* rhs2* p) (quasi p (- lev 1))])
+                     (values (append lhs2* lhs*) 
+                             (append rhs2* rhs*)
+                             `((unsyntax-splicing ,p) . ,q)))))]
+            [unsyntax-splicing (= lev 0) 
+             (stx-error p "incorrect use of unsyntax-splicing")]
             [(quasisyntax p)
-             (quasicons (app 'syntax 'quasisyntax) (quasi (list p) (+ lev 1)))]
-            [(p . q) (quasicons (quasi p lev) (quasi q lev))]
-            [#(x ...) (quasivector (vquasi x lev))]
-            [p (app 'syntax p)])))
+             (let-values ([(lhs* rhs* p) (quasi p (+ lev 1))])
+                (values lhs* rhs* `(quasisyntax ,p)))]
+            [(p . q) 
+             (let-values ([(lhs* rhs* p) (quasi p lev)]
+                          [(lhs2* rhs2* q) (quasi q lev)])
+                (values (append lhs2* lhs*) 
+                        (append rhs2* rhs*)
+                        (cons p q)))]
+            [#(x ...) 
+             (let-values ([(lhs* rhs* x*)
+                           (let f ([x x]) 
+                             (cond
+                               [(null? x) (values '() '() '())]
+                               [else 
+                                (let-values ([(lhs* rhs* a) (quasi (car x) lev)])
+                                  (let-values ([(lhs2* rhs2* d) (f (cdr x))]) 
+                                     (values (append lhs* lhs2*) 
+                                             (append rhs* rhs2*)
+                                             (cons a d))))]))])
+                (values lhs* rhs* (list->vector x*)))]
+            [_ (values '() '() p)])))
       (lambda (x)
         (syntax-match x ()
           [(_ e) 
-           (let ([v (quasi e 0)])
-             ;(pretty-print (syntax->datum v))
-             v)]))))
+           (let-values ([(lhs* rhs* v) (quasi e 0)])
+              (bless 
+                `(syntax-case (list ,@rhs*) ()
+                   [,lhs* #',v])))]))))
   (define define-record-macro
     (lambda (e)
       (define enumerate
@@ -1580,7 +1528,6 @@
                (let-values ([(lsnew maps)
                              (gen-syntax src ls r maps ellipsis? #t)])
                  (values (gen-vector e ls lsnew) maps))]
-              ;[() (values '(quote ()) maps)]
               [_ (values `(quote ,e) maps)])))
         (define gen-ref
           (lambda (src var level maps)
