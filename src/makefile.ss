@@ -114,6 +114,7 @@
     [or                (macro . or)]
     [time              (macro . time)]
     [delay             (macro . delay)]
+    [endianness        (macro . endianness)]
     [assert            (macro . assert)]
     [...               (macro . ...)]
     [=>                (macro . =>)]
@@ -251,6 +252,7 @@
     [or                i r ne]
     [time              i]
     [delay               i ne]
+    [endianness        i ]
     [assert            i r]
     [...               i r ne]
     [=>                i r ne]
@@ -415,6 +417,7 @@
     [sint-list->bytevector   i]
     [string->utf8-bytevector i]
     [utf8-bytevector->string i]
+    [native-endianness       i]
 
     [for-each                i r]
     [map                     i r]

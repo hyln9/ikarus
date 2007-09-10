@@ -11,7 +11,8 @@
           bytevector-uint-ref bytevector-sint-ref 
           bytevector-uint-set!  bytevector-sint-set!
           bytevector->uint-list bytevector->sint-list
-          uint-list->bytevector sint-list->bytevector)
+          uint-list->bytevector sint-list->bytevector
+          native-endianness)
   (import 
     (except (ikarus) 
         make-bytevector bytevector-length bytevector-s8-ref
@@ -25,11 +26,15 @@
         bytevector-uint-ref bytevector-sint-ref
         bytevector-uint-set!  bytevector-sint-set!
         bytevector->uint-list bytevector->sint-list
-        uint-list->bytevector sint-list->bytevector)
+        uint-list->bytevector sint-list->bytevector
+        native-endianness)
     (ikarus system $fx)
     (ikarus system $bignums)
     (ikarus system $pairs)
     (ikarus system $bytevectors))
+
+  (define (native-endianness) 'big) ;;; HARDCODED
+
 
   (define ($bytevector-fill x i j fill)
     (cond
@@ -101,7 +106,7 @@
               (error 'bytevector-u8-set! "invalid index ~s for ~s" i x))
           (error 'bytevector-u8-set! "~s is not a bytevector" x))))
 
-  (define bytevector-u16-native-ref
+  (define bytevector-u16-native-ref ;;; HARDCODED
     (lambda (x i) 
       (if (bytevector? x) 
           (if (and (fixnum? i)
@@ -114,7 +119,7 @@
               (error 'bytevector-u16-native-ref "invalid index ~s" i))
           (error 'bytevector-u16-native-ref "~s is not a bytevector" x))))
 
-  (define bytevector-u16-native-set!
+  (define bytevector-u16-native-set! ;;; HARDCODED
     (lambda (x i n) 
       (if (bytevector? x) 
           (if (and (fixnum? n) 
@@ -132,7 +137,7 @@
           (error 'bytevector-u16-native-set! "~s is not a bytevector" x))))
 
 
-  (define bytevector-s16-native-set!
+  (define bytevector-s16-native-set! ;;; HARDCODED
     (lambda (x i n) 
       (if (bytevector? x) 
           (if (and (fixnum? n) 
@@ -149,7 +154,7 @@
               (error 'bytevector-s16-native-set! "invalid value ~s" n))
           (error 'bytevector-s16-native-set! "~s is not a bytevector" x))))
 
-  (define bytevector-s16-native-ref
+  (define bytevector-s16-native-ref ;;; HARDCODED
     (lambda (x i) 
       (if (bytevector? x) 
           (if (and (fixnum? i)

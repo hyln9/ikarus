@@ -810,6 +810,14 @@
         [(_ expr) 
          (bless `(unless ,expr
                    (error 'assert "~s failed" ',expr)))])))
+  (define endianness-macro
+    (lambda (stx) 
+      (syntax-match stx ()
+        [(_ e) 
+         (case (syntax->datum e)
+           [(little) (bless `'little)]
+           [(big)    (bless `'big)]
+           [else (stx-error stx "endianness must be big or little")])])))
   (define identifier-syntax-macro
     (lambda (stx)
       (syntax-match stx ()
@@ -1658,6 +1666,7 @@
            [(time)              time-macro]
            [(delay)             delay-macro]
            [(assert)            assert-macro]
+           [(endianness)        endianness-macro]
            [(... => _ else unquote unquote-splicing 
              unsyntax unsyntax-splicing)
             incorrect-usage-macro]
