@@ -1,10 +1,10 @@
 
 CFLAGS = -I/opt/local/include -Wall -DNDEBUG -O3 
 #CFLAGS = -I/opt/local/include -Wall -g
-LDFLAGS = -L/opt/local/lib -g -ldl -lgmp -lz -lm 
+LDFLAGS = -L/opt/local/lib -g -ldl -lgmp -lm
 CC = gcc
 
-ifeq ($(shell /usr/bin/uname), "Linux")
+ifeq ("$(shell uname)", "Linux")
   LDFLAGS += -rdynamic # dlsym(local_symbol) won't work otherwise
 endif
 
@@ -57,7 +57,7 @@ ikarus.h: ikarus-data.h
 	touch ikarus.h
 
 clean:
-	rm -f $(obj)
+	rm -f $(objects)
 
 realclean:
-	rm -f $(obj) ikarus
+	rm -f $(objects) ikarus

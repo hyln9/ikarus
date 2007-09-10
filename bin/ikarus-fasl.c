@@ -13,7 +13,6 @@
 #include <sys/mman.h>
 #include <dlfcn.h>
 
-#include <zlib.h>
 
 #ifndef RTLD_DEFAULT
 #define RTLD_DEFAULT 0

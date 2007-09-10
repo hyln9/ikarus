@@ -170,6 +170,8 @@ int main(int argc, char** argv){
 }
 
 #if 0
+Notice how the bsd manpages have incorrect type for the handler.
+
      #include <signal.h>
 
      struct  sigaction {
@@ -189,7 +191,7 @@ int main(int argc, char** argv){
          struct sigaction * restrict oact);
 #endif
 
-void handler(int signo, struct __siginfo* info, void* uap){
+void handler(int signo, siginfo_t* info, void* uap){
   the_pcb->engine_counter = -1;
   the_pcb->interrupted = 1;
 }
