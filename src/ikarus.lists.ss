@@ -2,14 +2,15 @@
 (library (ikarus lists)
   (export $memq list? list cons* make-list append length list-ref reverse
           last-pair memq memp memv member find assq assp assv assoc
-          remq remv remove remp filter map for-each andmap ormap list-tail)
+          remq remv remove remp filter map for-each andmap ormap list-tail
+          partition)
   (import 
     (ikarus system $fx)
     (ikarus system $pairs)
     (except (ikarus) list? list cons* make-list append reverse
             last-pair length list-ref memq memp memv member find
             assq assp assv assoc remq remv remove remp filter
-            map for-each andmap ormap list-tail))
+            map for-each andmap ormap list-tail partition))
 
   (define $memq
     (lambda (x ls)
@@ -813,6 +814,38 @@
             [(null? ls) #f]
             [else (error who "improper list")])]
          [_ (error who "vararg not supported yet")])))
+
+
+
+  (define partition
+    (letrec ([race
+              (lambda (h t ls p)
+                 (if (pair? h)
+                     (let ([a0 ($car h)] [h ($cdr h)])
+                        (if (pair? h)
+                            (if (eq? h t)
+                                (error 'partition "circular list ~s" ls)
+                                (let ([a1 ($car h)])
+                                  (let-values ([(a* b*) (race ($cdr h) ($cdr t) ls p)])
+                                    (if (p a0) 
+                                        (if (p a1) 
+                                            (values (cons* a0 a1 a*) b*)
+                                            (values (cons a0 a*) (cons a1 b*)))
+                                        (if (p a1) 
+                                            (values (cons a0 a*) (cons a1 b*))
+                                            (values a* (cons* a0 a1 b*)))))))
+                            (if (null? h)
+                                (if (p a0)
+                                    (values (list a0) '())
+                                    (values '() (list a0)))
+                                (error 'parititon "~s is not a proper list" ls))))
+                     (if (null? h)
+                         (values '() '())
+                         (error 'parition "~s is not a proper list" ls))))])
+       (lambda (p ls)
+         (unless (procedure? p) 
+           (error 'partition "~s is not a procedure" p))
+         (race ls ls ls p))))
 
   )
 

@@ -514,7 +514,7 @@
     [memp                                       C ls]
     [memq                                       C ls se]
     [memv                                       C ls se]
-    [partition                                  S ls]
+    [partition                                  C ls]
     [remq                                       C ls]
     [remp                                       C ls]
     [remv                                       C ls]

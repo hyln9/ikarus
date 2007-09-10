@@ -334,6 +334,7 @@
     [remove                  i]
     [filter                  i]
     [find                    i]
+    [partition               i]
     [list-sort               i]
     [vector-sort             i]
     [vector-sort!            i]
