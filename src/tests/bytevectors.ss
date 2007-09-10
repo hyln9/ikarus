@@ -210,6 +210,35 @@
        (bytevector-u16-set! v 0 12345 'big)
        (bytevector-u16-ref v 0 'big))]
 
+    [(lambda (x) (= x 12345))
+     (let ([v (make-bytevector 2)])
+       (bytevector-s16-native-set! v 0 12345)
+       (bytevector-s16-native-ref v 0))]
+    [(lambda (x) (= x 12345))
+     (let ([v (make-bytevector 2)])
+       (bytevector-s16-set! v 0 12345 'little)
+       (bytevector-s16-ref v 0 'little))]
+    [(lambda (x) (= x 12345))
+     (let ([v (make-bytevector 2)])
+       (bytevector-s16-set! v 0 12345 'big)
+       (bytevector-s16-ref v 0 'big))]
+
+    [(lambda (x) (= x -12345))
+     (let ([v (make-bytevector 2)])
+       (bytevector-s16-native-set! v 0 -12345)
+       (bytevector-s16-native-ref v 0))]
+    [(lambda (x) (= x -12345))
+     (let ([v (make-bytevector 2)])
+       (bytevector-s16-set! v 0 -12345 'little)
+       (bytevector-s16-ref v 0 'little))]
+    [(lambda (x) (= x -12345))
+     (let ([v (make-bytevector 2)])
+       (bytevector-s16-set! v 0 -12345 'big)
+       (bytevector-s16-ref v 0 'big))]
+
+
+
+
     ))
 
 

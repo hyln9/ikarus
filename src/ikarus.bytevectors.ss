@@ -5,8 +5,8 @@
           bytevector-copy! u8-list->bytevector bytevector->u8-list
           bytevector-u16-native-ref bytevector-u16-native-set!
           bytevector-u16-ref bytevector-u16-set!
-          bytevector-s16-native-ref
-          bytevector-s16-ref
+          bytevector-s16-native-ref bytevector-s16-native-set!
+          bytevector-s16-ref bytevector-s16-set!
           bytevector-fill! bytevector-copy bytevector=?
           bytevector-uint-ref bytevector-sint-ref 
           bytevector-uint-set!  bytevector-sint-set!
@@ -19,8 +19,8 @@
         bytevector-copy! u8-list->bytevector bytevector->u8-list
         bytevector-u16-native-ref bytevector-u16-native-set!
         bytevector-u16-ref bytevector-u16-set!
-        bytevector-s16-native-ref
-        bytevector-s16-ref
+        bytevector-s16-native-ref bytevector-s16-native-set!
+        bytevector-s16-ref bytevector-s16-set!
         bytevector-fill! bytevector-copy bytevector=?
         bytevector-uint-ref bytevector-sint-ref
         bytevector-uint-set!  bytevector-sint-set!
@@ -119,7 +119,7 @@
       (if (bytevector? x) 
           (if (and (fixnum? n) 
                    ($fx<= 0 n) 
-                   ($fx<= n (expt 2 16)))
+                   ($fx<= n #xFFFF))
               (if (and (fixnum? i)
                        ($fx<= 0 i)
                        ($fx< i ($fxsub1 ($bytevector-length x)))
@@ -130,6 +130,24 @@
                   (error 'bytevector-u16-native-set! "invalid index ~s" i))
               (error 'bytevector-u8-native-set! "invalid value ~s" n))
           (error 'bytevector-u16-native-set! "~s is not a bytevector" x))))
+
+
+  (define bytevector-s16-native-set!
+    (lambda (x i n) 
+      (if (bytevector? x) 
+          (if (and (fixnum? n) 
+                   ($fx<= #x-8000 n) 
+                   ($fx<= n #x7FFF))
+              (if (and (fixnum? i)
+                       ($fx<= 0 i)
+                       ($fx< i ($fxsub1 ($bytevector-length x)))
+                       ($fxzero? ($fxlogand i 1)))
+                  (begin
+                    ($bytevector-set! x i ($fxsra n 8)) 
+                    ($bytevector-set! x ($fxadd1 i) n))
+                  (error 'bytevector-s16-native-set! "invalid index ~s" i))
+              (error 'bytevector-s16-native-set! "invalid value ~s" n))
+          (error 'bytevector-s16-native-set! "~s is not a bytevector" x))))
 
   (define bytevector-s16-native-ref
     (lambda (x i) 
@@ -202,6 +220,28 @@
                 [else (error 'bytevector-s16-ref "invalid endianness ~s" end)])
               (error 'bytevector-s16-ref "invalid index ~s" i))
           (error 'bytevector-s16-ref "~s is not a bytevector" x))))
+
+
+  (define bytevector-s16-set!
+    (lambda (x i n end) 
+      (if (bytevector? x) 
+          (if (and (fixnum? n) 
+                   ($fx<= #x-8000 n) 
+                   ($fx<= n #x7FFF))
+              (if (and (fixnum? i)
+                       ($fx<= 0 i)
+                       ($fx< i ($fxsub1 ($bytevector-length x))))
+                  (case end
+                    [(big) 
+                     ($bytevector-set! x i ($fxsra n 8))
+                     ($bytevector-set! x ($fxadd1 i) n)]
+                    [(little) 
+                     ($bytevector-set! x i n)
+                     ($bytevector-set! x ($fxadd1 i) (fxsra n 8))]
+                    [else (error 'bytevector-s16-ref "invalid endianness ~s" end)])
+                  (error 'bytevector-s16-set! "invalid index ~s" i))
+              (error 'bytevector-s16-set! "invalid value ~s" n))
+          (error 'bytevector-s16-set! "~s is not a bytevector" x))))
 
   (define bytevector->u8-list
     (lambda (x)
