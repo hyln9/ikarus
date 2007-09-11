@@ -9,15 +9,16 @@
   (export $flonum->exact $flonum-signed-biased-exponent flonum-parts
           inexact->exact exact $flonum-rational? $flonum-integer? $flzero?
           $flnegative? flpositive? flabs fixnum->flonum
-          flsin flcos fltan flasin flacos flatan
+          flsin flcos fltan flasin flacos flatan fleven? flodd?
           flinteger? flonum-bytes flnan? flfinite? flinfinite?)
   (import 
     (ikarus system $bytevectors)
-    (only (ikarus system $fx) $fxzero? $fxlogand)
+    (ikarus system $fx) 
+    (ikarus system $bignums)
     (except (ikarus system $flonums) $flonum-signed-biased-exponent
             $flonum-rational? $flonum-integer?)
-    (except (ikarus) inexact->exact exact flpositive? flabs
-            fixnum->flonum flsin flcos fltan flasin flacos flatan
+    (except (ikarus) inexact->exact exact flpositive? flabs fixnum->flonum
+            flsin flcos fltan flasin flacos flatan fleven? flodd?
             flinteger? flonum-parts flonum-bytes flnan? flfinite? flinfinite?))
   
   (define (flonum-bytes f)
@@ -86,6 +87,27 @@
         [else
          (let ([v ($flonum->exact x)])
            (or (fixnum? v) (bignum? v)))])))
+
+
+  (define (fleven? x)
+    (unless (flonum? x) 
+      (error 'fleven? "~s is not a flonum" x))
+    (let ([v ($flonum->exact x)])
+      (cond
+        [(fixnum? v) ($fx= ($fxlogand v 1) 0)]
+        [(bignum? v) 
+         (foreign-call "ikrt_even_bn" v)]
+        [else (error 'fleven? "~s is not an integer flonum" x)])))
+
+  (define (flodd? x)
+    (unless (flonum? x) 
+      (error 'flodd? "~s is not a flonum" x))
+    (let ([v ($flonum->exact x)])
+      (cond
+        [(fixnum? v) ($fx= ($fxlogand v 1) 1)]
+        [(bignum? v) 
+         (not (foreign-call "ikrt_even_bn" v))]
+        [else (error 'flodd? "~s is not an integer flonum" x)])))
 
   (define (flinteger? x)
     (if (flonum? x)

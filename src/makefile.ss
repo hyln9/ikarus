@@ -506,6 +506,8 @@
     [flfinite?               i]
     [flinfinite?             i]
     [flnan?                  i]
+    [fleven?                 i]
+    [flodd?                  i]
     [exact?                  i r]
     [inexact?                i r]
     [rational?               i r]
