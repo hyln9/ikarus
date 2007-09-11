@@ -664,10 +664,10 @@
          (tokenize-decimal-no-digits p (cons c ls) #f)]
         [(char=? c #\i) 
          (read-char* p (cons #\i ls) "nf.0" "number sequence")
-         (/ 1.0 0.0)]
+         +inf.0]
         [(char=? c #\n)
          (read-char* p (cons #\i ls) "an.0" "number sequence")
-         (/ (/ 1.0 0.0) (/ 1.0 0.0))]
+         +nan.0]
         [else (num-error "invalid sequence" (cons c ls))]))) 
   (define (tokenize-integer-no-digits p ls exact? radix?)
     (let ([c (read-char p)])
