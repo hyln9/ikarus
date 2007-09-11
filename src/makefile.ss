@@ -480,6 +480,7 @@
     [flceiling               i rfl]
     [flnumerator             i rfl]
     [fldenominator           i rfl]
+    [flexp                   i rfl]
     [fixnum->string          i]
     [string->flonum          i]
     [-                       i r]

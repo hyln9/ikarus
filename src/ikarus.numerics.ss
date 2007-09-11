@@ -10,7 +10,7 @@
           inexact->exact exact $flonum-rational? $flonum-integer? $flzero?
           $flnegative? flpositive? flabs fixnum->flonum
           flsin flcos fltan flasin flacos flatan fleven? flodd?
-          flfloor flceiling flnumerator fldenominator
+          flfloor flceiling flnumerator fldenominator flexp
           flinteger? flonum-bytes flnan? flfinite? flinfinite?)
   (import 
     (ikarus system $bytevectors)
@@ -20,7 +20,7 @@
             $flonum-rational? $flonum-integer?)
     (except (ikarus) inexact->exact exact flpositive? flabs fixnum->flonum
             flsin flcos fltan flasin flacos flatan fleven? flodd?
-            flfloor flceiling flnumerator fldenominator
+            flfloor flceiling flnumerator fldenominator flexp
             flinteger? flonum-parts flonum-bytes flnan? flfinite? flinfinite?))
   
   (define (flonum-bytes f)
@@ -272,6 +272,11 @@
             (exact->inexact (ceiling e))] 
            [else x]))]
       [else (error 'flceiling "~s is not a flonum" x)]))
+
+  (define (flexp x)
+    (if (flonum? x) 
+        (foreign-call "ikrt_fl_exp" x ($make-flonum))
+        (error 'flexp "~s is not a flonum" x)))
 
   )
 
