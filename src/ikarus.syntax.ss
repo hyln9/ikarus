@@ -7,7 +7,7 @@
 
 (library (ikarus syntax)
   (export identifier? syntax-dispatch environment environment? 
-          eval generate-temporaries free-identifier=?
+          eval expand generate-temporaries free-identifier=?
           bound-identifier=? syntax-error datum->syntax
           syntax->datum make-variable-transformer
           eval-r6rs-top-level boot-library-expand eval-top-level
@@ -2363,6 +2363,21 @@
                 (seal-rib! rib)
                 (for-each invoke-library (rtc))
                 (eval-core x)))))))
+  (define expand
+    (lambda (x env)
+      (unless (eval-environment? env)
+        (error 'expand "~s is not an environment" env))
+      (let ([subst (eval-environment-subst env)])
+        (let ([rib (make-top-rib subst)])
+          (let ([x (stx x top-mark* (list rib))]
+                [rtc (make-collector)]
+                [vtc (make-collector)])
+              (let ([x 
+                     (parameterize ([inv-collector rtc]
+                                    [vis-collector vtc])
+                        (chi-expr x '() '()))])
+                (seal-rib! rib)
+                (values x (rtc))))))))
   (define (visit! macro*)
     (for-each (lambda (x)
                 (let ([loc (car x)] [proc (cadr x)])

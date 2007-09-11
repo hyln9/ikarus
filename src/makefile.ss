@@ -652,6 +652,7 @@
     [assembler-output        i]
     [new-cafe                i]
     [eval                    i ev]
+    [expand                  i]
     [environment             i ev]
     [null-environment        i]
     [environment?            i]
