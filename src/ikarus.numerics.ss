@@ -10,6 +10,7 @@
           inexact->exact exact $flonum-rational? $flonum-integer? $flzero?
           $flnegative? flpositive? flabs fixnum->flonum
           flsin flcos fltan flasin flacos flatan fleven? flodd?
+          flfloor flceiling
           flinteger? flonum-bytes flnan? flfinite? flinfinite?)
   (import 
     (ikarus system $bytevectors)
@@ -19,6 +20,7 @@
             $flonum-rational? $flonum-integer?)
     (except (ikarus) inexact->exact exact flpositive? flabs fixnum->flonum
             flsin flcos fltan flasin flacos flatan fleven? flodd?
+            flfloor flceiling
             flinteger? flonum-parts flonum-bytes flnan? flfinite? flinfinite?))
   
   (define (flonum-bytes f)
@@ -227,7 +229,35 @@
     (if (flonum? x) 
         (foreign-call "ikrt_fl_atan" x)
         (error 'flatan "~s is not a flonum" x)))
+
+
+  (define (flfloor x)
+    (define (ratnum-floor x)
+      (let ([n (numerator x)] [d (denominator x)])
+        (let ([q (quotient n d)])
+          (if (>= n 0) q (- q 1)))))
+    (cond
+      [(flonum? x) 
+       (let ([e ($flonum->exact x)])
+         (cond
+           [(ratnum? e)
+            (exact->inexact (ratnum-floor e))] 
+           [else x]))]
+      [else (error 'flfloor "~s is not a flonum" x)]))
+
+  (define (flceiling x)
+    (cond
+      [(flonum? x) 
+       (let ([e ($flonum->exact x)])
+         (cond
+           [(ratnum? e)
+            (exact->inexact (ceiling e))] 
+           [else x]))]
+      [else (error 'flceiling "~s is not a flonum" x)]))
+
   )
+
+
 
 
 
@@ -1796,8 +1826,8 @@
                   [else
                    (if (even? q) q (- q 1))])))))))
 
-  (define ($flround x)
-    (foreign-call "ikrt_fl_round" x ($make-flonum)))
+  ;(define ($flround x)
+  ;  (foreign-call "ikrt_fl_round" x ($make-flonum)))
 
   ;  (let ([e ($flonum->exact x)])
   ;    (cond
@@ -1807,12 +1837,20 @@
 
   (define (flround x)
     (if (flonum? x)
-        ($flround x)
+        (let ([e ($flonum->exact x)])
+           (cond
+             [(ratnum? e) (exact->inexact ($ratnum-round e))]
+             [else x]))
         (error 'flround "~s is not a flonum" x)))
 
   (define (round x)
     (cond
-      [(flonum? x) ($flround x)]
+      [(flonum? x) 
+       (let ([e (or ($flonum->exact x) 
+                    (error 'round "~s has no real value" x))])
+         (cond
+           [(ratnum? e) (exact->inexact ($ratnum-round e))]
+           [else x]))]
       [(ratnum? x) ($ratnum-round x)]
       [(or (fixnum? x) (bignum? x)) x]
       [else (error 'round "~s is not a number" x)]))
