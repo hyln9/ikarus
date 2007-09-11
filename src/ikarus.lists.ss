@@ -769,7 +769,11 @@
                  #t
                  (error who "length mismatch"))]
             [else (error who "not a list")])]
-         [(f . ls*) (error who "vararg not supported yet in ~s" (length ls*))])))
+         [(f ls . ls*)
+          (unless (procedure? f) 
+            (error who "~s is not a procedure" f))
+          (error who "vararg not yet supported")])))
+
 
 
 

@@ -335,7 +335,7 @@
     [flnegative?                                S fl]
     [flnumerator                                S fl]
     [flodd?                                     S fl]
-    [flonum?                                    S fl]
+    [flonum?                                    C fl]
     [flpositive?                                S fl]
     [flround                                    C fl]
     [flsin                                      C fl]

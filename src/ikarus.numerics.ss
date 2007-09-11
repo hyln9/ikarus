@@ -9,13 +9,15 @@
   (export $flonum->exact $flonum-signed-biased-exponent flonum-parts
           inexact->exact exact $flonum-rational? $flonum-integer? $flzero?
           $flnegative? flpositive? flabs fixnum->flonum
-          flsin flcos fltan flasin flacos flatan)
+          flsin flcos fltan flasin flacos flatan
+          flinteger?)
   (import 
     (ikarus system $bytevectors)
     (except (ikarus system $flonums) $flonum-signed-biased-exponent
             $flonum-rational? $flonum-integer?)
     (except (ikarus) inexact->exact exact flpositive? flabs
-            fixnum->flonum flsin flcos fltan flasin flacos flatan))
+            fixnum->flonum flsin flcos fltan flasin flacos flatan
+            flinteger?))
   
   (define (flonum-bytes f)
     (unless (flonum? f) 
@@ -68,11 +70,17 @@
               (fx= ($flonum-u8-ref x 3) 0) 
               (fx= ($flonum-u8-ref x 2) 0) 
               (fx= ($flonum-u8-ref x 1) 0))]
-        [(fx<= be (fx+ 1075 -52)) ;;; too small to be an integer
+        [(fx< be (fx+ 1075 -52)) ;;; too small to be an integer
          #f]
         [else
          (let ([v ($flonum->exact x)])
            (or (fixnum? v) (bignum? v)))])))
+
+  (define (flinteger? x)
+    (if (flonum? x)
+        ($flonum-integer? x)
+        (error 'flinteger? "~s is not a flonum" x)))
+
 
   (define ($flzero? x)
     (let ([be (fxlogand ($flonum-signed-biased-exponent x) (sub1 (fxsll 1 11)))])

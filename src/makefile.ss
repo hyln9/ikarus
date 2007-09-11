@@ -502,6 +502,7 @@
     [bignum?                 i]
     [ratnum?                 i]
     [integer?                i r]
+    [flinteger?              i]
     [exact?                  i r]
     [inexact?                i r]
     [rational?               i r]
