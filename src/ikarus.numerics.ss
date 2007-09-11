@@ -297,7 +297,7 @@
           modulo even? odd?
           positive? negative? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number min max
-          abs
+          abs truncate fltruncate
           exact->inexact inexact floor ceiling round log fl=? fl<? fl<=? fl>?
           fl>=? fl+ fl- fl* fl/ flsqrt flmin flzero? flnegative?
           sin cos tan asin acos atan sqrt
@@ -318,7 +318,7 @@
             exact-integer-sqrt min max abs
             fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt flmin
             flzero? flnegative?
-            sin cos tan asin acos atan sqrt
+            sin cos tan asin acos atan sqrt truncate fltruncate
             flround flmax random))
 
 ;    (foreign-call "ikrt_fixnum_to_flonum" x))
@@ -1857,6 +1857,11 @@
                   [else
                    (if (even? q) q (- q 1))])))))))
 
+
+  (define ($ratnum-truncate x)
+    (let ([n ($ratnum-n x)] [d ($ratnum-d x)])
+      (quotient n d)))
+
   ;(define ($flround x)
   ;  (foreign-call "ikrt_fl_round" x ($make-flonum)))
 
@@ -1874,8 +1879,6 @@
              [else x]))
         (error 'flround "~s is not a flonum" x)))
 
-
-
   (define (round x)
     (cond
       [(flonum? x) 
@@ -1887,6 +1890,26 @@
       [(ratnum? x) ($ratnum-round x)]
       [(or (fixnum? x) (bignum? x)) x]
       [else (error 'round "~s is not a number" x)]))
+
+  (define (truncate x)
+    (cond
+      [(flonum? x) 
+       (let ([e (or ($flonum->exact x) 
+                    (error 'truncate "~s has no real value" x))])
+         (cond
+           [(ratnum? e) (exact->inexact ($ratnum-truncate e))]
+           [else x]))]
+      [(ratnum? x) ($ratnum-truncate x)]
+      [(or (fixnum? x) (bignum? x)) x]
+      [else (error 'truncate "~s is not a number" x)]))
+  
+  (define (fltruncate x)
+    (unless (flonum? x)
+      (error 'fltruncate "~s is not a flonum" x))
+    (let ([v ($flonum->exact x)])
+      (cond
+        [(ratnum? v) (exact->inexact ($ratnum-truncate x))]
+        [else x])))
 
   (define log
     (lambda (x)
