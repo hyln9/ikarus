@@ -631,6 +631,44 @@
          [(#\1) 1]
          [else #f])]
       [else (error 'radix-digit "invalid radix ~s" radix)]))
+  (define (read-char* p ls str who) 
+    (let f ([i 0] [ls ls])
+      (let ([c (read-char p)])
+        (cond
+          [(fx= i (string-length str)) 
+           (cond
+             [(eof-object? c) (void)]
+             [(delimiter? c) (unread-char c p)]
+             [else
+              (unread-char c p)
+              (error 'tokenize "invalid ~a: ~s" who 
+                (list->string (reverse (cons c ls))))])]
+          [else
+           (cond
+             [(eof-object? c) 
+              (error 'tokenize "invalid eof inside ~a" who)]
+             [(char=? c (string-ref str i)) 
+              (f (add1 i) (cons c ls))]
+             [else 
+              (unread-char c p)
+              (error 'tokenize "invalid ~a: ~s" who
+                 (list->string (reverse (cons c ls))))])]))))
+  (define (tokenize-integer/nan/inf-no-digits p ls)
+    (let ([c (read-char p)])
+      (cond
+        [(eof-object? c) (num-error "invalid eof" ls)]
+        [(radix-digit c 10) =>
+         (lambda (d)
+           (tokenize-integer p (cons c ls) #f 10 d))]
+        [(char=? c #\.) 
+         (tokenize-decimal-no-digits p (cons c ls) #f)]
+        [(char=? c #\i) 
+         (read-char* p (cons #\i ls) "nf.0" "number sequence")
+         (/ 1.0 0.0)]
+        [(char=? c #\n)
+         (read-char* p (cons #\i ls) "an.0" "number sequence")
+         (/ (/ 1.0 0.0) (/ 1.0 0.0))]
+        [else (num-error "invalid sequence" (cons c ls))]))) 
   (define (tokenize-integer-no-digits p ls exact? radix?)
     (let ([c (read-char p)])
       (cond
@@ -748,7 +786,7 @@
              [(delimiter? c)  '(datum . +)]
              [else
               (cons 'datum
-                (tokenize-integer-no-digits p '(#\+) #f 10))]))]
+                (tokenize-integer/nan/inf-no-digits p '(#\+)))]))]
         [(memq c '(#\-))
          (let ([c (peek-char p)])
            (cond
@@ -761,7 +799,7 @@
                   (cons 'datum (string->symbol str))))]
              [else
               (cons 'datum
-                (- (tokenize-integer-no-digits p '(#\-) #f 10)))]))]
+                (- (tokenize-integer/nan/inf-no-digits p '(#\-))))]))]
         [($char= #\. c)
          (tokenize-dot p)]
         [($char= #\| c)

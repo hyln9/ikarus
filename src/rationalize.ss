@@ -2,6 +2,7 @@
 (import (ikarus))
 
 
+      
 
 (define (rationalize x eps) 
   (simplest (- x eps) (+ x eps)))
@@ -41,4 +42,8 @@
 (test 314/100 1/100 22/7)
 (test (exact 0.3) 1/10 1/3)
 (test 0.3 1/10 #i1/3) 
+(test (/ 1.0 0.0) 3 (/ 1.0 0.0))
+;;; dead
+(test (/ 1.0 0.0) (/ 1.0 0.0) (/ (/ 0.0 0.0) (/ 1.0 0.0)))
+
 
