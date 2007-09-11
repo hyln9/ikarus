@@ -478,6 +478,8 @@
     [flfloor                 i rfl]
     [flround                 i rfl]
     [flceiling               i rfl]
+    [flnumerator             i rfl]
+    [fldenominator           i rfl]
     [fixnum->string          i]
     [string->flonum          i]
     [-                       i r]

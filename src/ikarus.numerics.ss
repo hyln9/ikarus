@@ -10,7 +10,7 @@
           inexact->exact exact $flonum-rational? $flonum-integer? $flzero?
           $flnegative? flpositive? flabs fixnum->flonum
           flsin flcos fltan flasin flacos flatan fleven? flodd?
-          flfloor flceiling
+          flfloor flceiling flnumerator fldenominator
           flinteger? flonum-bytes flnan? flfinite? flinfinite?)
   (import 
     (ikarus system $bytevectors)
@@ -20,7 +20,7 @@
             $flonum-rational? $flonum-integer?)
     (except (ikarus) inexact->exact exact flpositive? flabs fixnum->flonum
             flsin flcos fltan flasin flacos flatan fleven? flodd?
-            flfloor flceiling
+            flfloor flceiling flnumerator fldenominator
             flinteger? flonum-parts flonum-bytes flnan? flfinite? flinfinite?))
   
   (define (flonum-bytes f)
@@ -90,6 +90,24 @@
          (let ([v ($flonum->exact x)])
            (or (fixnum? v) (bignum? v)))])))
 
+  (define (flnumerator x) 
+    (unless (flonum? x) 
+      (error 'flnumerator "~s is not a flonum" x))
+    (cond
+      [($flonum-integer? x) x]
+      [($flonum-rational? x) 
+       (exact->inexact (numerator ($flonum->exact x)))]
+      [else x]))
+
+  (define (fldenominator x) 
+    (unless (flonum? x) 
+      (error 'fldenominator "~s is not a flonum" x))
+    (cond
+      [($flonum-integer? x) 1.0]
+      [($flonum-rational? x) 
+       (exact->inexact (numerator ($flonum->exact x)))]
+      [(flnan? x) x]
+      [else 1.0]))
 
   (define (fleven? x)
     (unless (flonum? x) 
@@ -1842,6 +1860,8 @@
              [(ratnum? e) (exact->inexact ($ratnum-round e))]
              [else x]))
         (error 'flround "~s is not a flonum" x)))
+
+
 
   (define (round x)
     (cond
