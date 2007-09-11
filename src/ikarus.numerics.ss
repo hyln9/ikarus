@@ -10,14 +10,15 @@
           inexact->exact exact $flonum-rational? $flonum-integer? $flzero?
           $flnegative? flpositive? flabs fixnum->flonum
           flsin flcos fltan flasin flacos flatan
-          flinteger?)
+          flinteger? flonum-bytes flnan? flfinite? flinfinite?)
   (import 
     (ikarus system $bytevectors)
+    (only (ikarus system $fx) $fxzero? $fxlogand)
     (except (ikarus system $flonums) $flonum-signed-biased-exponent
             $flonum-rational? $flonum-integer?)
     (except (ikarus) inexact->exact exact flpositive? flabs
             fixnum->flonum flsin flcos fltan flasin flacos flatan
-            flinteger?))
+            flinteger? flonum-parts flonum-bytes flnan? flfinite? flinfinite?))
   
   (define (flonum-bytes f)
     (unless (flonum? f) 
@@ -45,6 +46,16 @@
                  (fxsll b2 16)
                  (fxsll (fxlogand b1 #b1111) 24))
               (expt 2 24))))))
+  (define ($zero-m? f) 
+    (and ($fxzero? ($flonum-u8-ref f 7))
+         ($fxzero? ($flonum-u8-ref f 6))
+         ($fxzero? ($flonum-u8-ref f 5))
+         ($fxzero? ($flonum-u8-ref f 4))
+         ($fxzero? ($flonum-u8-ref f 3))
+         ($fxzero? ($flonum-u8-ref f 2))
+         ($fxzero? ($fxlogand ($flonum-u8-ref f 1) #b1111))))
+
+
 
   (define ($flonum-signed-biased-exponent x)
     (let ([b0 ($flonum-u8-ref x 0)]
@@ -81,7 +92,26 @@
         ($flonum-integer? x)
         (error 'flinteger? "~s is not a flonum" x)))
 
+  (define (flinfinite? x) 
+    (if (flonum? x) 
+        (let ([be (fxlogand ($flonum-signed-biased-exponent x) (sub1 (fxsll 1 11)))])
+          (and (fx= be 2047)  ;;; nans and infs
+               ($zero-m? x)))
+        (error 'flinfinite? "~s is not a flonum" x)))
 
+  (define (flnan? x) 
+    (if (flonum? x) 
+        (let ([be (fxlogand ($flonum-signed-biased-exponent x) (sub1 (fxsll 1 11)))])
+          (and (fx= be 2047)  ;;; nans and infs
+               (not ($zero-m? x))))
+        (error 'flnan? "~s is not a flonum" x)))
+
+  (define (flfinite? x) 
+    (if (flonum? x) 
+        (let ([be (fxlogand ($flonum-signed-biased-exponent x) (sub1 (fxsll 1 11)))])
+          (not (fx= be 2047)))
+        (error 'flfinite? "~s is not a flonum" x)))
+  
   (define ($flzero? x)
     (let ([be (fxlogand ($flonum-signed-biased-exponent x) (sub1 (fxsll 1 11)))])
        (and 
@@ -1995,7 +2025,6 @@
   (import 
     (ikarus system $bytevectors)
     (ikarus system $flonums)
-    (only (ikarus flonums) flonum-parts)
     (except (ikarus) flonum->string string->flonum ))
   
   (module (flonum->string)
@@ -2130,7 +2159,8 @@
           [(= be 2047)
            (if (= m 0) 
                (if pos? "+inf.0" "-inf.0") 
-               (if pos? "+nan.0" "-nan.0"))]
+               ;;; Gee!  nans have no sign!
+               "+nan.0")]
           [else (error 'flonum->string "cannot happen")]))))
 
   (define (string->flonum x)
