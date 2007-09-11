@@ -106,7 +106,7 @@
     (cond
       [($flonum-integer? x) 1.0]
       [($flonum-rational? x) 
-       (exact->inexact (numerator ($flonum->exact x)))]
+       (exact->inexact (denominator ($flonum->exact x)))]
       [(flnan? x) x]
       [else 1.0]))
 
@@ -1653,8 +1653,15 @@
             (values (fxquotient x y)
                     (fxremainder x y))]
            [(bignum? y) (values 0 x)]
-           [else (error 'quotient+remainder 
-                        "~s is not a number" y)])]
+           [(flonum? y) 
+            (let ([v ($flonum->exact y)])
+              (cond
+                [(or (fixnum? v) (bignum? v)) 
+                 (let-values ([(q r) (quotient+remainder x v)])
+                   (values (inexact q) (inexact r)))]
+                [else
+                 (error 'quotient+remainder "~s is not an integer" y)]))]
+           [else (error 'quotient+remainder "~s is not a number" y)])]
         [(bignum? x)
          (cond
            [(fixnum? y)
@@ -1663,10 +1670,23 @@
            [(bignum? y)
             (let ([p (foreign-call "ikrt_bnbndivrem" x y)])
               (values (car p) (cdr p)))]
-           [else (error 'quotient+remainder 
-                        "~s is not a number" y)])]
-        [else (error 'quotient+remainder 
-                  "~s is not a number" x)])))
+           [(flonum? y) 
+            (let ([v ($flonum->exact y)])
+              (cond
+                [(or (fixnum? v) (bignum? v)) 
+                 (let-values ([(q r) (quotient+remainder x v)])
+                   (values (inexact q) (inexact r)))]
+                [else
+                 (error 'quotient+remainder "~s is not an integer" y)]))] 
+           [else (error 'quotient+remainder "~s is not a number" y)])]
+        [(flonum? x) 
+         (let ([v ($flonum->exact x)])
+           (cond
+             [(or (fixnum? v) (bignum? v)) 
+              (let-values ([(q r) (quotient+remainder v y)])
+                (values (inexact q) (inexact r)))]
+             [else (error 'quotient+remainder "~s is not an integer" x)]))]
+        [else (error 'quotient+remainder "~s is not a number" x)])))
 
   (define positive?
     (lambda (x)
@@ -1796,6 +1816,7 @@
       (cond
         [(ratnum? x) ($ratnum-n x)]
         [(or (fixnum? x) (bignum? x)) x]
+        [(flonum? x) (flnumerator x)]
         [else (error 'numerator "~s is not an exact integer" x)])))
 
   (define denominator
@@ -1803,6 +1824,7 @@
       (cond
         [(ratnum? x) ($ratnum-d x)]
         [(or (fixnum? x) (bignum? x)) 1]
+        [(flonum? x) (fldenominator x)]
         [else (error 'denominator "~s is not an exact integer" x)])))
 
 
