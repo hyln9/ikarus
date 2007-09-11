@@ -190,6 +190,8 @@
                   (and ($fx= n ($string-length y))
                        (string-loop x y 0 n))))]
           [(number? x) (and (number? y) (= x y))]
+          [(sys:bytevector? x)
+           (and (sys:bytevector? y) (bytevector=? x y))]
           [else #f]))))
 
   (define port?
