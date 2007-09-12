@@ -17,6 +17,13 @@ ikrt_fl_exp(ikp x, ikp y){
   return y;
 }
 
+ikp
+ikrt_flfl_expt(ikp a, ikp b, ikp z){
+  flonum_data(z) = exp(flonum_data(b) * log(flonum_data(a)));
+  return z;
+}
+
+
 
 
 

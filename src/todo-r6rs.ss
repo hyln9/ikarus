@@ -321,7 +321,7 @@
     [fldiv0-and-mod0                            D fl]
     [fleven?                                    C fl]
     [flexp                                      C fl]
-    [flexpt                                     S fl]
+    [flexpt                                     C fl]
     [flfinite?                                  C fl]
     [flfloor                                    C fl]
     [flinfinite?                                C fl]

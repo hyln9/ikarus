@@ -498,6 +498,7 @@
     [add1                    i]
     [sub1                    i]
     [expt                    i r]
+    [flexpt                  i]
     [sin                     i r]
     [cos                     i r]
     [tan                     i r]

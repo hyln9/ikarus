@@ -11,7 +11,8 @@
           $flnegative? flpositive? flabs fixnum->flonum
           flsin flcos fltan flasin flacos flatan fleven? flodd?
           flfloor flceiling flnumerator fldenominator flexp fllog
-          flinteger? flonum-bytes flnan? flfinite? flinfinite?)
+          flinteger? flonum-bytes flnan? flfinite? flinfinite?
+          flexpt)
   (import 
     (ikarus system $bytevectors)
     (ikarus system $fx) 
@@ -22,7 +23,8 @@
     (except (ikarus) inexact->exact exact flpositive? flabs fixnum->flonum
             flsin flcos fltan flasin flacos flatan fleven? flodd?
             flfloor flceiling flnumerator fldenominator flexp fllog
-            flinteger? flonum-parts flonum-bytes flnan? flfinite? flinfinite?))
+            flexpt flinteger? flonum-parts flonum-bytes flnan? flfinite?
+            flinfinite?))
   
   (define (flonum-bytes f)
     (unless (flonum? f) 
@@ -285,6 +287,19 @@
             (foreign-call "ikrt_fl_log" x)
             (error 'fllog "argument ~s should not be negative" x))
         (error 'fllog "~s is not a flonum" x)))
+
+  (define (flexpt x y)
+    (if (flonum? x)
+        (if (flonum? y)
+            (let ([y^ ($flonum->exact y)])
+              (cond
+                [(fixnum? y^) (inexact (expt x y^))]
+                [(bignum? y^) (inexact (expt x y^))]
+                [else
+                 (foreign-call "ikrt_flfl_expt" x y ($make-flonum))]))
+            (error 'flexpt "~s is not a flonum" y))
+        (error 'fllog "~s is not a flonum" x)))
+
 
   )
 
