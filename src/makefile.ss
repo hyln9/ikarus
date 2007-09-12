@@ -427,6 +427,7 @@
     [string->utf8-bytevector i]
     [utf8-bytevector->string i]
     [native-endianness       i]
+    [$two-bignums            i]
 
     [for-each                i r]
     [map                     i r]
@@ -450,6 +451,7 @@
     [fxsll                   i]
     [fxsra                   i]
     [fxlogand                i]
+    [logand                  i]
     [fxlogxor                i]
     [fxlogor                 i]
     [fxlognot                i]

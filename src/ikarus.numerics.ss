@@ -309,7 +309,7 @@
 
 (library (ikarus generic-arithmetic)
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
-          modulo even? odd?
+          modulo even? odd? logand $two-bignums
           positive? negative? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number min max
           abs truncate fltruncate
@@ -327,7 +327,7 @@
     (only (ikarus flonums) $flonum->exact $flzero? $flnegative?)
     (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
             remainder modulo even? odd? quotient+remainder number->string 
-            positive? negative?
+            positive? negative? logand $two-bignums
             string->number expt gcd lcm numerator denominator
             exact->inexact inexact floor ceiling round log
             exact-integer-sqrt min max abs
@@ -336,6 +336,12 @@
             sin cos tan asin acos atan sqrt truncate fltruncate
             flround flmax random))
 
+  (define ($two-bignums)
+    (list 1234567890 -1234567890
+          12345678901234567890
+          -12345678901234567890
+          1234567890123456789012345678901234567890
+          -1234567890123456789012345678901234567890))
 ;    (foreign-call "ikrt_fixnum_to_flonum" x))
 
   (module (bignum->flonum)

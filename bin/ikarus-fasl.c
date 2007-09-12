@@ -529,6 +529,28 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     fasl_read_buf(p, &n, sizeof(int));
     return int_to_scheme_char(n);
   }
+  else if(c == 'b'){
+    int len;
+    int sign = 0;
+    fasl_read_buf(p, &len, sizeof(int));
+    if(len < 0) {
+      sign = 1;
+      len = -len;
+    }
+    if(len & 3){
+      fprintf(stderr, "Error in fasl-read: invalid bignum length %d\n", len);
+      exit(-1);
+    }
+    unsigned int tag = bignum_tag | (sign << bignum_sign_shift) | 
+      ((len >> 2) << bignum_length_shift);
+    ikp x = ik_alloc(pcb, align(len + disp_bignum_data)) + vector_tag;
+    ref(x, -vector_tag) = (ikp) tag;
+    fasl_read_buf(p, x+off_bignum_data, len);
+    if(put_mark_index){
+      p->marks[put_mark_index] = x;
+    }
+    return x;
+  }
   else {
     fprintf(stderr, "invalid type '%c' (0x%02x) found in fasl file\n", c, c);
     exit(-1);
