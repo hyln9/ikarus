@@ -5,14 +5,15 @@
           integer? exact? inexact? eof-object? bwp-object? immediate?
           boolean? char? vector? bytevector? string? procedure? null? pair?
           symbol? code? not weak-pair? eq? eqv? equal? boolean=?
-          symbol=?) 
+          symbol=? finite? infinite? nan?) 
 
   (import 
     (except (ikarus) fixnum? flonum? bignum? ratnum? number? complex? real?
             rational? integer? exact? inexact? eof-object? bwp-object?
             immediate? boolean? char? vector? bytevector? string? procedure?
             null? pair? weak-pair? symbol? code? not eq? eqv? equal?
-            port? input-port? output-port? boolean=? symbol=?)
+            port? input-port? output-port? boolean=? symbol=?
+            finite? infinite? nan?)
     (ikarus system $fx)
     (ikarus system $flonums)
     (ikarus system $pairs)
@@ -109,6 +110,39 @@
         [(sys:ratnum? x) #f]
         [else 
          (error 'inexact? "~s is not a number" x)])))
+
+  (define finite?
+    (lambda (x)
+      (cond
+        [(sys:flonum? x) (flfinite? x)]
+        [(sys:fixnum? x) #t]
+        [(sys:bignum? x) #t]
+        [(sys:ratnum? x) #t]
+        [else 
+         (error 'finite? "~s is not a number" x)])))
+
+  (define infinite?
+    (lambda (x)
+      (cond
+        [(sys:flonum? x) (flinfinite? x)]
+        [(sys:fixnum? x) #f]
+        [(sys:bignum? x) #f]
+        [(sys:ratnum? x) #f]
+        [else 
+         (error 'infinite? "~s is not a number" x)])))
+
+  (define nan?
+    (lambda (x)
+      (cond
+        [(sys:flonum? x) (flnan? x)]
+        [(sys:fixnum? x) #f]
+        [(sys:bignum? x) #f]
+        [(sys:ratnum? x) #f]
+        [else 
+         (error 'nan? "~s is not a number" x)])))
+
+
+
 
   (define eof-object? (lambda (x) (sys:eof-object? x)))
   (define bwp-object? (lambda (x) (sys:bwp-object? x)))
