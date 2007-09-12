@@ -551,6 +551,7 @@
     [fixnum->flonum          i r]
     [exact                   i r]
     [inexact                 i r]
+    [rationalize             i]
     [random                  i]
     [symbol?                 i r symbols]
     [symbol=?                i r symbols]

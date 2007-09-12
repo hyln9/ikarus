@@ -763,6 +763,8 @@
    [(jnle dst)   (conditional-jump #x8F dst ac)]
    [(jne dst)    (conditional-jump #x85 dst ac)]
    [(jo dst)     (conditional-jump #x80 dst ac)]
+   [(jp dst)     (conditional-jump #x8A dst ac)]
+   [(jnp dst)    (conditional-jump #x8B dst ac)]
    [(byte x)
     (unless (byte? x) (error who "~s is not a byte" x))
     (cons (byte x) ac)]

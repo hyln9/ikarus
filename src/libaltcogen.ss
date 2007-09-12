@@ -2604,8 +2604,10 @@
            (cond
              [(assq x '([= !=] [!= =] [< >=] [<= >] [> <=] [>= <]
                         [u< u>=] [u<= u>] [u> u<=] [u>= u<]
-                        [fl:= fl:!=] [fl:!= fl:=] 
-                        [fl:< fl:>=] [fl:<= fl:>] [fl:> fl:<=] [fl:>= fl:<]))
+                        [fl:= fl:o!=] [fl:!= fl:o=] 
+                        [fl:< fl:o>=] [fl:<= fl:o>] 
+                        [fl:> fl:o<=] [fl:>= fl:o<]
+                        ))
               => cadr]
              [else (error who "invalid notop ~s" x)]))
          (define (jmpname x)
@@ -2613,7 +2615,10 @@
              [(assq x '([= je] [!= jne] [< jl] [<= jle] [> jg] [>= jge]
                         [u< jb] [u<= jbe] [u> ja] [u>= jae]
                         [fl:= je] [fl:!= jne]
-                        [fl:< jb] [fl:> ja] [fl:<= jbe] [fl:>= jae]))
+                        [fl:< jb] [fl:> ja] [fl:<= jbe] [fl:>= jae]
+                        [fl:o= je] [fl:o!= jne]
+                        [fl:o< jb] [fl:o> ja] [fl:o<= jbe] [fl:o>= jae]
+                        ))
               => cadr]
              [else (error who "invalid jmpname ~s" x)]))
          (define (revjmpname x)
@@ -2626,6 +2631,12 @@
            (cond
              [(memq op '(fl:= fl:!= fl:< fl:<= fl:> fl:>=))
               (cons* `(ucomisd ,(R (make-disp a0 a1)) xmm0)
+                     `(,(jmpname op) ,lab)
+                     ;;; BOGUS!
+                     ac)]
+             [(memq op '(fl:o= fl:o!= fl:o< fl:o<= fl:o> fl:o>=))
+              (cons* `(ucomisd ,(R (make-disp a0 a1)) xmm0)
+                     `(jp ,lab)
                      `(,(jmpname op) ,lab)
                      ac)]
              [(or (symbol? a0) (constant? a1))

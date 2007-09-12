@@ -192,7 +192,7 @@
     [procedure?                                 C ba se]
     [rational-valued?                           S ba]
     [rational?                                  C ba se]
-    [rationalize                                S ba se]
+    [rationalize                                C ba se]
     [real-part                                  D ba se]
     [real-valued?                               S ba]
     [real?                                      C ba se]

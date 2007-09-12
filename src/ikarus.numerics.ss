@@ -2307,14 +2307,67 @@
                ;;; Gee!  nans have no sign!
                "+nan.0")]
           [else (error 'flonum->string "cannot happen")]))))
-
+  ;;;
   (define (string->flonum x)
     (cond
       [(string? x)
        (foreign-call "ikrt_bytevector_to_flonum" 
          (string->utf8-bytevector x))]
       [else 
-       (error 'string->flonum "~s is not a string" x)]))
-  
+       (error 'string->flonum "~s is not a string" x)])) )
 
-  )
+(library (ikarus rationalize)
+  (export rationalize)
+  (import 
+    (except (ikarus) rationalize))
+ 
+  (define (rationalize x eps) 
+    (define who 'rationalize)
+    (define (simplest x y) 
+      (cond
+        [(< y x) (simplest y x)]
+        [(= x y) x]
+        [(> x 0)
+         (let ([n (numerator x)] [d (denominator x)]
+               [n^ (numerator y)] [d^ (denominator y)])
+           (simplest^ n d n^ d^))]
+        [(< y 0) 
+         (let ([n (numerator x)] [d (denominator x)]
+               [n^ (numerator y)] [d^ (denominator y)])
+           (- (simplest^ (- n^) d^ (- n) d)))]
+        [else 1]))
+    (define (simplest^ n d n^ d^)
+      (let-values ([(q r) (quotient+remainder n d)])
+        (if (= r 0) 
+            q
+            (let-values ([(q^ r^) (quotient+remainder n^ d^)])
+              (if (= q q^) 
+                  (let ([v (simplest^ d^ r^ d r)])
+                    (let ([n^^ (numerator v)] [d^^ (denominator v)])
+                      (/ (+ (* q n^^) d^^) n^^)))
+                  (+ q 1))))))
+    (define (go x eps)
+      (simplest (- x eps) (+ x eps)))
+    (cond
+      [(flonum? x) 
+       (if (flfinite? x)
+           (cond
+             [(flonum? eps) 
+              (if (flfinite? eps) (go x eps) +nan.0)]
+             [(or (fixnum? eps) (bignum? eps) (ratnum? eps))
+              (go x eps)]
+             [else (error who "~s is not a number" eps)])
+           (cond
+             [(flonum? eps) 
+              (if (flfinite? eps) x +nan.0)]
+             [(or (fixnum? eps) (bignum? eps) (ratnum? eps))
+              x]
+             [else (error who "~s is not a number" eps)]))]
+      [(or (fixnum? x) (bignum? x) (ratnum? x))
+       (cond
+         [(flonum? eps) 
+          (if (flfinite? eps) (go x eps) +nan.0)]
+         [(or (fixnum? eps) (bignum? eps) (ratnum? eps))
+          (go x eps)]
+         [else (error who "~s is not a number" eps)])]
+      [else (error who "~s is not a number" x)])))
