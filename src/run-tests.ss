@@ -5,6 +5,7 @@
         (tests bytevectors)
         (tests strings)
         (tests numbers)
+        (tests bignums)
         (tests bignum-to-flonum)
         (tests string-to-number))
 
@@ -28,4 +29,5 @@
 (test-bignum-to-flonum)
 (test-string-to-number)
 (test-div-and-mod)
+(test-bignums)
 (printf "Happy Happy Joy Joy\n")

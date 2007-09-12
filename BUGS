@@ -1,4 +1,6 @@
 BUG:
+* (exact->inexact (/ (expt 2 3000) (- (expt 2 3000) 1)))
+  should return 1.0, not +nan.0.
 
 * pretty-print goes into infinite loop on cyclic data
 * set! on global names is not working.

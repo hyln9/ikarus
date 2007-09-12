@@ -831,10 +831,7 @@ normalize_bignum(int limbs, int sign, ikp r){
       }
     }
   }
-  ref(r, 0) = (ikp)
-    (bignum_tag |
-     sign |
-     (limbs << bignum_length_shift));
+  ref(r, 0) = (ikp) (bignum_tag | sign | (limbs << bignum_length_shift));
   return BN(r+vector_tag);
 }
 
@@ -954,6 +951,7 @@ ikrt_bnbncomp(ikp bn1, ikp bn2){
   }
 }
 
+/* FIXME: Too complicated! */
 ikp
 ikrt_fxbnlogand(ikp x, ikp y, ikpcb* pcb){
   int n1 = unfix(x);
@@ -1014,6 +1012,31 @@ count_leading_ffs(int n, unsigned int* x){
   return n;
 }
 
+static void
+bits_compliment(unsigned int* src, unsigned int* dst, int n){
+  int carry = 1;
+  int i;
+  for(i=0; i<n; i++){
+    unsigned int d = src[i];
+    unsigned int c = carry + ~ d;
+    dst[i] = c;
+    carry = (carry && ! d);
+  }
+}
+
+static void
+bits_compliment_logand(unsigned int* s1, unsigned int* s2, unsigned int* dst, int n){
+  int carry = 1;
+  int i;
+  for(i=0; i<n; i++){
+    unsigned int d = s1[i];
+    unsigned int c = carry + ~ d;
+    dst[i] = c & s2[i];
+    carry = (carry && ! d);
+  }
+}
+
+
 ikp
 ikrt_bnbnlogand(ikp x, ikp y, ikpcb* pcb){
   ikp xfst = ref(x, -vector_tag);
@@ -1022,8 +1045,18 @@ ikrt_bnbnlogand(ikp x, ikp y, ikpcb* pcb){
   int n2 = ((unsigned int) yfst) >> bignum_length_shift;
   if(bignum_sign_mask & (unsigned int) xfst){
     if(bignum_sign_mask & (unsigned int) yfst){
-      fprintf(stderr, "not yet for bnbnlogand\n");
-      exit(-1);
+      unsigned int* s1 = ((unsigned int*)(x+disp_bignum_data-vector_tag));
+      unsigned int* s2 = ((unsigned int*)(y+disp_bignum_data-vector_tag));
+      if(n1 >= n2){
+        ikp r = ik_alloc(pcb, align(disp_bignum_data + n1*wordsize));
+        unsigned int* s = ((unsigned int*)(r+disp_bignum_data));
+        bits_compliment(s1, s, n1);
+        bits_compliment_logand(s2, s, s, n2);
+        bits_compliment(s, s, n1);
+        return normalize_bignum(n1, 1<<bignum_sign_shift, r);
+      } else {
+        return ikrt_bnbnlogand(y,x,pcb);
+      }
     } else {
       return ikrt_bnbnlogand(y,x,pcb);
     }
@@ -1033,31 +1066,10 @@ ikrt_bnbnlogand(ikp x, ikp y, ikpcb* pcb){
       /*  the result is at most n1 words long */
       unsigned int* s1 = ((unsigned int*)(x+disp_bignum_data-vector_tag));
       unsigned int* s2 = ((unsigned int*)(y+disp_bignum_data-vector_tag));
-      if(n1 <= n2){
-        int i = n1-1;
-        while(i >= 0){
-          unsigned int t = s1[i] & (1+~s2[i]);
-          if(t != 0){
-            if((i == 0) && (t <= most_positive_fixnum)){
-              return fix(t);
-            }
-            ikp r = ik_alloc(pcb, align(disp_bignum_data+(i+1)*wordsize));
-            ref(r, 0) = (ikp) (bignum_tag | ((i+1) << bignum_length_shift));
-            unsigned int* s = (unsigned int*)(r+disp_bignum_data);
-            s[i] = t;
-            for(i--; i>=0; i--){
-              s[i] = s1[i] & (1+~s2[i]);
-            }
-            return r+vector_tag;
-          } else {
-            i--;
-          }
-        }
-        return 0;
-      } else {
-        fprintf(stderr, "not yet for bnbnlogand\n");
-        exit(-1);
-      }
+      ikp r = ik_alloc(pcb, align(disp_bignum_data + n1*wordsize));
+      unsigned int* s = ((unsigned int*)(r+disp_bignum_data));
+      bits_compliment_logand(s2, s1, s, n1);
+      return normalize_bignum(n1, 0, r);
     } else {
       /* both positive */
       int n = (n1<n2)?n1:n2;

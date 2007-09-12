@@ -537,9 +537,17 @@
           [(4)  (bignum/4->flonum x)]
           [(8)  (bignum/8->flonum x)]
           [else (bignum/n->flonum x bytes)]))))
+  
   (define (ratnum->flonum x) 
-    (binary/ (exact->inexact ($ratnum-n x)) 
-             (exact->inexact ($ratnum-d x))))
+    (let f ([n ($ratnum-n x)] [d ($ratnum-d x)])
+      (let-values ([(q r) (quotient+remainder n d)])
+        (if (= q 0) 
+            (/ 1.0 (f d n))
+            (if (= r 0)
+                (inexact q)
+                (+ q (f r d)))))))
+    ;(binary/ (exact->inexact ($ratnum-n x)) 
+    ;         (exact->inexact ($ratnum-d x))))
 
   (define binary+
     (lambda (x y)
@@ -610,16 +618,16 @@
            [(bignum? y)
             (foreign-call "ikrt_fxbnlogand" x y)]
            [else 
-            (error 'logand "~s is not a number" y)])]
+            (error 'logand "~s is not an exact integer" y)])]
         [(bignum? x)
          (cond
            [(fixnum? y)
             (foreign-call "ikrt_fxbnlogand" y x)]
-           [(bignum? y)
+           [(bignum? y) 
             (foreign-call "ikrt_bnbnlogand" x y)]
-           [else 
-            (error 'logand "~s is not a number" y)])]
-        [else (error 'logand "~s is not a number" x)])))
+           [else
+            (error 'logand "~s is not an exact integer" y)])]
+        [else (error 'logand "~s is not an exact integer" x)])))
 
 
   (define binary-
@@ -1127,8 +1135,7 @@
       (cond
         [(fixnum? x) ($fixnum->flonum x)]
         [(bignum? x) (bignum->flonum x)]
-        [(ratnum? x) 
-         (binary/ (exact->inexact ($ratnum-n x)) ($ratnum-d x))]
+        [(ratnum? x) (ratnum->flonum x)]
         [else
          (error 'exact->inexact 
                 "~s is not an exact number" x)])))
@@ -1138,8 +1145,7 @@
       (cond
         [(fixnum? x) ($fixnum->flonum x)]
         [(bignum? x) (bignum->flonum x)]
-        [(ratnum? x) 
-         (binary/ (exact->inexact ($ratnum-n x)) ($ratnum-d x))]
+        [(ratnum? x) (ratnum->flonum x)]
         [(flonum? x) x]
         [else
          (error 'inexact "~s is not a number" x)])))
