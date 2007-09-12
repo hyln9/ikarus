@@ -5,7 +5,8 @@
           integer? exact? inexact? eof-object? bwp-object? immediate?
           boolean? char? vector? bytevector? string? procedure? null? pair?
           symbol? code? not weak-pair? eq? eqv? equal? boolean=?
-          symbol=? finite? infinite? nan?) 
+          symbol=? finite? infinite? nan? real-valued?
+          rational-valued? integer-valued?)
 
   (import 
     (except (ikarus) fixnum? flonum? bignum? ratnum? number? complex? real?
@@ -13,7 +14,8 @@
             immediate? boolean? char? vector? bytevector? string? procedure?
             null? pair? weak-pair? symbol? code? not eq? eqv? equal?
             port? input-port? output-port? boolean=? symbol=?
-            finite? infinite? nan?)
+            finite? infinite? nan? real-valued? rational-valued? 
+            integer-valued?)
     (ikarus system $fx)
     (ikarus system $flonums)
     (ikarus system $pairs)
@@ -71,7 +73,10 @@
   
   (define real?
     (lambda (x) (number? x)))
-  
+
+  (define real-valued?
+    (lambda (x) (number? x)))
+
   (define rational?
     (lambda (x) 
       (cond
@@ -79,7 +84,10 @@
         [(sys:bignum? x) #t]
         [(sys:ratnum? x) #t]
         [(sys:flonum? x) ($flonum-rational? x)]
-        [else (error 'rational? "~s is not a number" x)])))
+        [else #f])))
+
+  (define rational-valued? 
+    (lambda (x) (rational? x)))
 
   (define integer? 
     (lambda (x) 
@@ -89,6 +97,9 @@
         [(sys:ratnum? x) #f]
         [(sys:flonum? x) ($flonum-integer? x)]
         [else #f])))
+
+  (define integer-valued? 
+    (lambda (x) (integer? x)))
 
   (define exact?
     (lambda (x) 
