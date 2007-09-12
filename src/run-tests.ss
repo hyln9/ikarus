@@ -4,6 +4,7 @@
         (tests reader)
         (tests bytevectors)
         (tests strings)
+        (tests numbers)
         (tests bignum-to-flonum)
         (tests string-to-number))
 
@@ -26,4 +27,5 @@
 (test-exact-integer-sqrt)
 (test-bignum-to-flonum)
 (test-string-to-number)
+(test-div-and-mod)
 (printf "Happy Happy Joy Joy\n")

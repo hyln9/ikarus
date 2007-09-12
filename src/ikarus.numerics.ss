@@ -2371,3 +2371,57 @@
           (go x eps)]
          [else (error who "~s is not a number" eps)])]
       [else (error who "~s is not a number" x)])))
+
+
+(library (ikarus r6rs-fu div/mod)
+  (export div mod div-and-mod div0 mod0 div0-and-mod0)
+  (import 
+    (except (ikarus) 
+      div mod div-and-mod div0 mod0 div0-and-mod0))
+
+  (define (div-and-mod x y) 
+    (define who 'div-and-mod)
+    (unless (integer? x)
+      (error who "~s is not an integer" x))
+    (unless (and (integer? y) (not (= y 0)))
+      (error who "~s is not an integer" y))
+    (if (> x 0) 
+        (quotient+remainder x y)
+        (if (> y 0) 
+            (let-values ([(q r) (quotient+remainder (- x y) y)])
+              (values q (+ r y)))
+            (let-values ([(q r) (quotient+remainder (+ x y) y)])
+              (values q (- r y))))))
+  
+  (define (div x y) 
+    (let-values ([(n m) (div-and-mod x y)])
+       n))
+  
+  (define (mod x y) 
+    (let-values ([(n m) (div-and-mod x y)])
+       m))
+  
+  (define (div0-and-mod0 x y) 
+    (define who 'div0-and-mod0)
+    (unless (integer? x)
+      (error who "~s is not an integer" x))
+    (unless (and (integer? y) (not (= y 0)))
+      (error who "~s is not an integer" y))
+    (let-values ([(d m) (div-and-mod x y)])
+      (if (> y 0) 
+          (if (< m (/ y 2))
+              (values d m)
+              (values (+ d 1) (- m y)))
+          (if (> m (/ y -2))
+              (values (- d 1) (+ m y))
+              (values d m)))))
+  
+  (define (div0 x y) 
+    (let-values ([(n m) (div0-and-mod0 x y)])
+       n))
+  
+  (define (mod0 x y) 
+    (let-values ([(n m) (div0-and-mod0 x y)])
+       m)))
+  
+
