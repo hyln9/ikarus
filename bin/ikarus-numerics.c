@@ -1222,13 +1222,31 @@ ikrt_bignum_shift_right(ikp x, ikp y, ikpcb* pcb){
 
 ikp
 ikrt_fixnum_shift_left(ikp x, ikp y, ikpcb* pcb){
-  fprintf(stderr, "fxshiftleft\n");
-  exit(-1);
+  int m = unfix(y);
+  int n = unfix(x);
+  int limb_count = (m >> 5) + 2; /* FIXME: 5 are the bits in 32-bit num */
+  int bit_shift = m & 31;
+  ikp r = ik_alloc(pcb, align(disp_bignum_data + limb_count * wordsize));
+  unsigned int* s = (unsigned int*)(r+disp_bignum_data);
+  bzero(s, limb_count * wordsize);
+  if(n >= 0){
+    if(bit_shift){
+      s[limb_count-1] = n >> (32 - bit_shift);
+    }
+    s[limb_count-2] = n << bit_shift;
+  } else {
+    if(bit_shift){
+      s[limb_count-1] = (-n) >> (32 - bit_shift);
+    }
+    s[limb_count-2] = (-n) << bit_shift;
+  }
+  return normalize_bignum(limb_count, (n>=0)?(0):(1<<bignum_sign_shift), r);
 }
+
 
 ikp
 ikrt_bignum_shift_left(ikp x, ikp y, ikpcb* pcb){
-  fprintf(stderr, "bnshiftleft\n");
+  fprintf(stderr, "bignum_shift_left is not supported yet\n");
   exit(-1);
 }
 
