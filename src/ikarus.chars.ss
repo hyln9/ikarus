@@ -1,13 +1,15 @@
 
 (library (ikarus chars)
-  (export char=? char<? char<=? char>? char>=? char-whitespace?
+  (export char=? char<? char<=? char>? char>=? ;char-whitespace?
           char->integer integer->char
-          char-alphabetic? char-downcase)
+          ;char-alphabetic? 
+          char-downcase)
   (import 
     (except (ikarus)
       char=? char<? char<=? char>? char>=?
       integer->char char->integer
-      char-whitespace? char-alphabetic? char-downcase)
+      ;char-whitespace? char-alphabetic?
+      char-downcase)
     (ikarus system $pairs)
     (ikarus system $chars)
     (ikarus system $fx))
@@ -216,24 +218,25 @@
                          (err c2)))))
              (err c1))])))
 
-  (define char-whitespace?
-    (lambda (c)
-      (cond 
-        [(memq c '(#\space #\tab #\newline #\return)) #t]
-        [(char? c) #f]
-        [else
-         (error 'char-whitespace? "~s is not a character" c)])))
+
+  ;;; XXX (define char-whitespace?
+  ;;; XXX   (lambda (c)
+  ;;; XXX     (cond 
+  ;;; XXX       [(memq c '(#\space #\tab #\newline #\return)) #t]
+  ;;; XXX       [(char? c) #f]
+  ;;; XXX       [else
+  ;;; XXX        (error 'char-whitespace? "~s is not a character" c)])))
   
-  (define char-alphabetic?
-    (lambda (c)
-      (cond
-        [(char? c)
-         (cond
-           [($char<= #\a c) ($char<= c #\z)]
-           [($char<= #\A c) ($char<= c #\Z)]
-           [else #f])]
-        [else 
-         (error 'char-alphabetic?  "~s is not a character" c)])))
+  ;;; XXX (define char-alphabetic?
+  ;;; XXX   (lambda (c)
+  ;;; XXX     (cond
+  ;;; XXX       [(char? c)
+  ;;; XXX        (cond
+  ;;; XXX          [($char<= #\a c) ($char<= c #\z)]
+  ;;; XXX          [($char<= #\A c) ($char<= c #\Z)]
+  ;;; XXX          [else #f])]
+  ;;; XXX       [else 
+  ;;; XXX        (error 'char-alphabetic?  "~s is not a character" c)])))
   
   (define char-downcase
     (lambda (c)

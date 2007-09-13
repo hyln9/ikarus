@@ -1,10 +1,17 @@
 
+
+ 
+
 (library (ikarus unicode-data)
-  (export unicode-printable-char?
-          char-downcase char-upcase char-titlecase char-foldcase
-          char-ci=? char-ci<? char-ci<=? char-ci>? char-ci>=?
-          string-ci=?  string-ci<?  string-ci<=?  string-ci>?  string-ci>=?
-          string-foldcase char-general-category )
+  
+  (export 
+    unicode-printable-char?  char-downcase char-upcase
+    char-titlecase char-foldcase char-ci=? char-ci<?  char-ci<=?
+    char-ci>? char-ci>=?  string-ci=?  string-ci<?  string-ci<=?
+    string-ci>?  string-ci>=?  string-foldcase char-general-category
+    char-alphabetic?  char-numeric?  char-whitespace?
+    char-upper-case?  char-lower-case?  char-title-case?  )
+
   (import 
     (ikarus system $fx)
     (ikarus system $vectors)
@@ -12,12 +19,14 @@
     (ikarus system $pairs)
     (ikarus system $strings)
     (ikarus system $io)
-    (except (ikarus) char-downcase char-upcase char-titlecase char-foldcase
-            char-ci=? char-ci<? char-ci<=? char-ci>? char-ci>=?
-            string-ci=?  string-ci<?  string-ci<=?  string-ci>?  string-ci>=?
-            string-foldcase char-general-category))
+    (except (ikarus) 
+      char-downcase char-upcase char-titlecase char-foldcase
+      char-ci=? char-ci<? char-ci<=? char-ci>? char-ci>=?
+      string-ci=?  string-ci<?  string-ci<=?  string-ci>?
+      string-ci>=?  string-foldcase char-general-category
+      char-alphabetic?  char-numeric?  char-whitespace?
+      char-upper-case?  char-lower-case?  char-title-case?  ))
 
- ; (include "unicode/unicode-constituents.ss")
   (include "unicode/unicode-char-cases.ss")
   (include "unicode/unicode-charinfo.ss")
 
@@ -56,18 +65,29 @@
           (fxlogand 63 (lookup-char-info c)))
         (error 'char-general-category "~s is not a char" c)))
 
-  (define (binary-search-on? n v)
-    ($fx= ($fxlogand (binary-search n v) 1) 1))
-
-  ;(define (unicode-printable-char? c)
-  ;  (binary-search-on?
-  ;    ($char->fixnum c) 
-  ;    unicode-constituents-vector))
-  (define (unicode-printable-char? c) 
+  (define (char-has-property? c prop-val who)
     (if (char? c) 
-        (not (fxzero? (fxlogand (lookup-char-info c) constituent-property)))
-        (error 'unicode-printable-char? "~s is not a char" c)))
+        (not (fxzero? (fxlogand (lookup-char-info c) prop-val)))
+        (error who "~s is not a char" c)))
+
+  (define (unicode-printable-char? c) 
+    (char-has-property? c constituent-property 'unicode-printable-char?))
+  (define (char-alphabetic? c) 
+    (char-has-property? c alphabetic-property 'char-alphabetic?))
+  (define (char-numeric? c) 
+    (char-has-property? c numeric-property 'char-numeric?))
+  (define (char-whitespace? c) 
+    (char-has-property? c whitespace-property 'char-whitespace?))
+  (define (char-upper-case? c) 
+    (char-has-property? c uppercase-property 'char-upper-case?))
+  (define (char-lower-case? c) 
+    (char-has-property? c lowercase-property 'char-lower-case?))
+  (define (char-title-case? c) 
+    (char-has-property? c titlecase-property 'char-title-case?))
   
+
+
+
   (define (convert-char x adjustment-vec)
     (let ([n ($char->fixnum x)])
       (let ([idx (binary-search n charcase-search-vector)])
