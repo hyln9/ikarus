@@ -124,9 +124,9 @@
     [Mn ,(+ 05 constituent-property)  "Mark, Nonspacing"]
     [Mc ,(+ 06 constituent-property)  "Mark, Spacing Combining"]
     [Me ,(+ 07 constituent-property)  "Mark, Enclosing"]
-    [Nd ,(+ 08 constituent-property numeric-property)  "Number, Decimal Digit"]
-    [Nl ,(+ 09 constituent-property alphabetic-property numeric-property)  "Number, Letter"]
-    [No ,(+ 10 constituent-property numeric-property)  "Number, Other"]
+    [Nd ,(+ 08 constituent-property)  "Number, Decimal Digit"]
+    [Nl ,(+ 09 constituent-property alphabetic-property)  "Number, Letter"]
+    [No ,(+ 10 constituent-property)  "Number, Other"]
     [Pc ,(+ 11 constituent-property)  "Punctuation, Connector"]
     [Pd ,(+ 12 constituent-property)  "Punctuation, Dash"]
     [Ps ,(+ 13 )                      "Punctuation, Open"]
@@ -215,11 +215,16 @@
     ;;; interesting parts of each element in ls are:
     ;;; field0: the character index, numeric
     ;;; field2: the category, symbolic
+    ;;; field8: if set, then the char has the numeric property
     (for-each 
       (lambda (x) 
         (let ([idx (hex-string->number (list-ref x 0))]
-              [cat (category-index (string->symbol (list-ref x 2)))])
-          (vector-set! v idx cat)))
+              [cat (category-index (string->symbol (list-ref x 2)))]
+              [num? (list-ref x 8)])
+          (vector-set! v idx 
+            (if (string=? num? "")
+                cat
+                (fxlogor cat numeric-property)))))
       ls))
   ;;; every element of v now maps to the category-index.
   (let ([ls (get-unicode-data "UNIDATA/PropList.txt")])

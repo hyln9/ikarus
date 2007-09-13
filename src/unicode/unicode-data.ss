@@ -21,7 +21,7 @@
       [(or (fx= i n) (memv (string-ref str i) '(#\; #\#))) i]
       [else (find-semi/hash str (+ i 1) n)]))
   
-  (define (cleanup str)
+  (define (cleanup^ str)
     (let ([lo 
            (let f ([i 0] [n (string-length str)])
              (cond
@@ -35,10 +35,18 @@
                [(< i 0) i]
                [(char=? #\space (string-ref str i)) 
                 (f (sub1 i))]
-               [else i]))])
-      (if (> hi lo) 
-          (substring str lo (+ hi 1))
+               [else (+ i 1)]))])
+      (if (> hi lo)
+          (substring str lo hi)
           "")))
+
+(define (cleanup str)
+  (let ([s (cleanup^ str)])
+    (when 
+      (and (= (string-length str) 1)
+           (not (= (string-length s) 1)))
+      (error 'cleanup "duuh ~s ~s" s str))
+    s))
 
   (define (split str)
     (let f ([i 0] [n (string-length str)])
