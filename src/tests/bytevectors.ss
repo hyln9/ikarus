@@ -236,6 +236,49 @@
        (bytevector-s16-set! v 0 -12345 'big)
        (bytevector-s16-ref v 0 'big))]
 
+    [(lambda (x) (= x 4261412863))
+     (let ([v (u8-list->bytevector '(255 255 255 253))])
+       (bytevector-u32-ref v 0 'little))]
+    [(lambda (x) (= x 4294967293))
+     (let ([v (u8-list->bytevector '(255 255 255 253))])
+       (bytevector-u32-ref v 0 'big))]
+
+    [(lambda (x) (= x -33554433))
+     (let ([v (u8-list->bytevector '(255 255 255 253))])
+       (bytevector-s32-ref v 0 'little))]
+    [(lambda (x) (= x -3))
+     (let ([v (u8-list->bytevector '(255 255 255 253))])
+       (bytevector-s32-ref v 0 'big))]
+
+    [(lambda (x) (= x 12345))
+     (let ([v (make-bytevector 4)])
+       (bytevector-u32-set! v 0 12345 'little)
+       (bytevector-u32-ref v 0 'little))]
+    [(lambda (x) (= x 12345))
+     (let ([v (make-bytevector 4)])
+       (bytevector-u32-set! v 0 12345 'big)
+       (bytevector-u32-ref v 0 'big))]
+
+    [(lambda (x) (= x 12345))
+     (let ([v (make-bytevector 4)])
+       (bytevector-s32-set! v 0 12345 'little)
+       (bytevector-s32-ref v 0 'little))]
+    [(lambda (x) (= x 12345))
+     (let ([v (make-bytevector 4)])
+       (bytevector-s32-set! v 0 12345 'big)
+       (bytevector-s32-ref v 0 'big))]
+
+    [(lambda (x) (= x -12345))
+     (let ([v (make-bytevector 4)])
+       (bytevector-s32-set! v 0 -12345 'little)
+       (bytevector-s32-ref v 0 'little))]
+    [(lambda (x) (= x -12345))
+     (let ([v (make-bytevector 4)])
+       (bytevector-s32-set! v 0 -12345 'big)
+       (bytevector-s32-ref v 0 'big))]
+
+
+
 
 
 
