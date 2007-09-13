@@ -46,17 +46,17 @@
           [t unicode-categories-values-vector])
       (define (f i k n) 
         (cond
-          [(fx= i k) 
-           (let ([idx (vector-ref t i)])
+          [($fx= i k) 
+           (let ([idx ($vector-ref t i)])
              (if (fixnum? idx) 
                  idx
-                 (let ([idx2 (fx- n (vector-ref v i))])
-                   (vector-ref idx idx2))))]
+                 (let ([idx2 ($fx- n ($vector-ref v i))])
+                   ($vector-ref idx idx2))))]
           [else
-           (let ([j (fxsra (fx+ i (fx+ k 1)) 1)])
+           (let ([j ($fxsra ($fx+ i ($fx+ k 1)) 1)])
              (cond
-               [(fx<= (vector-ref v j) n) (f j k n)]
-               [else (f i (fx- j 1) n)]))]))
+               [($fx<= ($vector-ref v j) n) (f j k n)]
+               [else (f i ($fx- j 1) n)]))]))
       (f 0 (fx- (vector-length v) 1) (char->integer c))))
 
   (define (char-general-category c)
