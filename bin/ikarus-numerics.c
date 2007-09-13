@@ -1148,6 +1148,19 @@ copy_bits_shifting_right(unsigned int* src, unsigned int* dst, int n, int m){
   dst[n-1] = carry;
 }
 
+static void
+copy_bits_shifting_left(unsigned int* src, unsigned int* dst, int n, int m){
+  unsigned int carry = 0;
+  int i;
+  for(i=0; i<n; i++){
+    unsigned int b = src[i];
+    dst[i] = (b << m) | carry;
+    carry = b >> (32-m);
+  }
+  dst[n] = carry;
+}
+
+
 
 
 
@@ -1246,8 +1259,30 @@ ikrt_fixnum_shift_left(ikp x, ikp y, ikpcb* pcb){
 
 ikp
 ikrt_bignum_shift_left(ikp x, ikp y, ikpcb* pcb){
-  fprintf(stderr, "bignum_shift_left is not supported yet\n");
-  exit(-1);
+  int m = unfix(y);
+  ikp fst = ref(x, -vector_tag);
+  int n = ((unsigned int) fst) >> bignum_length_shift;
+  int whole_limb_shift = m >> 5; /* FIXME: 5 are the bits in 32-bit num */
+  int bit_shift = m & 31;
+  if(bit_shift == 0){
+    int limb_count = n + whole_limb_shift;
+    ikp r = ik_alloc(pcb, align(disp_bignum_data + limb_count * wordsize));
+    unsigned int* s = (unsigned int*)(r+disp_bignum_data);
+    bzero(s, whole_limb_shift*wordsize);
+    memcpy(s+whole_limb_shift, x+off_bignum_data, n*wordsize);
+    return normalize_bignum(limb_count, (unsigned int)fst & bignum_sign_mask, r);
+  } else {
+    int limb_count = n + whole_limb_shift + 1;
+    ikp r = ik_alloc(pcb, align(disp_bignum_data + limb_count * wordsize));
+    unsigned int* s = (unsigned int*)(r+disp_bignum_data);
+    bzero(s, whole_limb_shift*wordsize);
+    copy_bits_shifting_left(
+        (unsigned int*)(x+off_bignum_data),
+        s+whole_limb_shift,
+        n,
+        bit_shift);
+    return normalize_bignum(limb_count, (unsigned int)fst & bignum_sign_mask, r);
+  }
 }
 
 
