@@ -2,14 +2,18 @@
 (library (ikarus fixnums)
   (export fxzero? fxadd1 fxsub1 fxlognot fx+ fx- fx* fxquotient
           fxremainder fxmodulo fxlogor fxlogand fxlogxor fxsll fxsra
-          fx= fx< fx<= fx> fx>= fixnum->string)
+          fx= fx< fx<= fx> fx>= 
+          fx=? fx<? fx<=? fx>? fx>=? 
+          fixnum->string)
   (import 
     (ikarus system $fx)
     (ikarus system $chars)
+    (ikarus system $pairs)
     (ikarus system $strings)
     (except (ikarus) fxzero? fxadd1 fxsub1 fxlognot fx+ fx- fx*
             fxquotient fxremainder fxmodulo fxlogor fxlogand
             fxlogxor fxsll fxsra fx= fx< fx<= fx> fx>=
+            fx=? fx<? fx<=? fx>? fx>=? 
             fixnum->string))
 
   (define fxzero?
@@ -61,45 +65,54 @@
         (error 'fx* "~s is not a fixnum" y))
       ($fx* x y)))
   
-  (define fx=
-    (lambda (x y) 
-      (unless (fixnum? x)
-        (error 'fx= "~s is not a fixnum" x))
-      (unless (fixnum? y)
-        (error 'fx= "~s is not a fixnum" y))
-      ($fx= x y))) 
+  (define false-loop
+    (lambda (who ls)
+      (if (pair? ls) 
+          (if (fixnum? ($car ls)) 
+              (false-loop who ($cdr ls))
+              (error who "~s is not a fixnum" ($car ls)))
+          #f)))
+
+  (define-syntax fxcmp 
+    (syntax-rules ()
+      [(_ who $op)
+       (case-lambda
+         [(x y) 
+          (unless (fixnum? x)
+            (error 'who "~s is not a fixnum" x))
+          (unless (fixnum? y)
+            (error 'who "~s is not a fixnum" y))
+          ($op x y)]
+         [(x y . ls)
+          (if (fixnum? x)
+              (if (fixnum? y) 
+                  (if ($op x y) 
+                      (let f ([x y] [ls ls]) 
+                        (if (pair? ls) 
+                            (let ([y ($car ls)] [ls ($cdr ls)])
+                              (if (fixnum? y) 
+                                  (if ($op x y) 
+                                      (f y ls)
+                                      (false-loop 'who ls))
+                                  (error 'who "~s is not a fixnum" y)))
+                            #t))
+                      (false-loop 'who ls))
+                  (error 'who "~s is not a fixnum" y))
+              (error 'who "~s is not a fixnum" x))]
+         [(x) 
+          (if (fixnum? x) #t (error 'who "~s is not a fixnum" x))])]))
   
-  (define fx<
-    (lambda (x y) 
-      (unless (fixnum? x)
-        (error 'fx< "~s is not a fixnum" x))
-      (unless (fixnum? y)
-        (error 'fx< "~s is not a fixnum" y))
-      ($fx< x y)))
-  
-  (define fx<=
-    (lambda (x y) 
-      (unless (fixnum? x)
-        (error 'fx<= "~s is not a fixnum" x))
-      (unless (fixnum? y)
-        (error 'fx<= "~s is not a fixnum" y))
-      ($fx<= x y)))
-   
-  (define fx>
-    (lambda (x y) 
-      (unless (fixnum? x)
-        (error 'fx> "~s is not a fixnum" x))
-      (unless (fixnum? y)
-        (error 'fx> "~s is not a fixnum" y))
-      ($fx> x y)))
-  
-  (define fx>=
-    (lambda (x y) 
-      (unless (fixnum? x)
-        (error 'fx>= "~s is not a fixnum" x))
-      (unless (fixnum? y)
-        (error 'fx>= "~s is not a fixnum" y))
-      ($fx>= x y)))
+  (define fx=   (fxcmp fx= $fx=))
+  (define fx<   (fxcmp fx< $fx<))
+  (define fx<=  (fxcmp fx<= $fx<=))
+  (define fx>   (fxcmp fx> $fx>))
+  (define fx>=  (fxcmp fx>= $fx>=))
+  (define fx=?  (fxcmp fx=? $fx=))
+  (define fx<?  (fxcmp fx<? $fx<))
+  (define fx<=? (fxcmp fx<=? $fx<=))
+  (define fx>?  (fxcmp fx>? $fx>))
+  (define fx>=? (fxcmp fx>=? $fx>=))
+
 
   (define fxquotient
     (lambda (x y) 
