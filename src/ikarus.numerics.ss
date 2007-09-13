@@ -312,7 +312,7 @@
           modulo even? odd? logand $two-bignums
           positive? negative? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number min max
-          abs truncate fltruncate
+          abs truncate fltruncate sra sll
           exact->inexact inexact floor ceiling round log fl=? fl<? fl<=? fl>?
           fl>=? fl+ fl- fl* fl/ flsqrt flmin flzero? flnegative?
           sin cos tan asin acos atan sqrt
@@ -332,7 +332,7 @@
             exact->inexact inexact floor ceiling round log
             exact-integer-sqrt min max abs
             fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt flmin
-            flzero? flnegative?
+            flzero? flnegative? sra sll
             sin cos tan asin acos atan sqrt truncate fltruncate
             flround flmax random))
 
@@ -546,8 +546,6 @@
             (if (= r 0)
                 (inexact q)
                 (+ q (f r d)))))))
-    ;(binary/ (exact->inexact ($ratnum-n x)) 
-    ;         (exact->inexact ($ratnum-d x))))
 
   (define binary+
     (lambda (x y)
@@ -2189,6 +2187,43 @@
                 0
                 (error 'random "incorrect argument ~s" n)))
         (error 'random "~s is not a fixnum" n)))
+
+
+  (define (sra n m) 
+    (unless (fixnum? m)
+      (error 'sra "shift amount ~s is not a fixnum"))
+    (cond
+      [(fixnum? n) 
+       (cond
+         [($fx>= m 0) ($fxsra n m)]
+         [else (error 'sra "offset ~s must be non-negative" m)])]
+      [(bignum? n) 
+       (cond
+         [($fx> m 0)  
+          (foreign-call "ikrt_bignum_shift_right" n m)]
+         [($fx= m 0) n]
+         [else (error 'sra "offset ~s must be non-negative" m)])]
+      [else (error 'sra "~s is not an exact integer" n)]))
+
+
+  (define (sll n m) 
+    (unless (fixnum? m)
+      (error 'sll "shift amount ~s is not a fixnum"))
+    (cond
+      [(fixnum? n)
+       (cond
+         [($fx> m 0) 
+          (foreign-call "ikrt_fixnum_shift_left" n m)]
+         [($fx= m 0) n]
+         [else (error 'sll "offset ~s must be non-negative" m)])]
+      [(bignum? n) 
+       (cond
+         [($fx> m 0) 
+          (foreign-call "ikrt_bignum_shift_left" n m)]
+         [($fx= m 0) n]
+         [else (error 'sll "offset ~s must be non-negative" m)])]
+      [else (error 'sll "~s is not an exact integer" n)]))
+
   )
 
 

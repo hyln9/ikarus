@@ -450,6 +450,8 @@
     [fxmodulo                i]
     [fxsll                   i]
     [fxsra                   i]
+    [sra                     i]
+    [sll                     i]
     [fxlogand                i]
     [logand                  i]
     [fxlogxor                i]

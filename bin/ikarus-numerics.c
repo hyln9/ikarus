@@ -1025,6 +1025,18 @@ bits_compliment(unsigned int* src, unsigned int* dst, int n){
 }
 
 static void
+bits_compliment_with_carry(unsigned int* src, unsigned int* dst, int
+    n, int carry){
+  int i;
+  for(i=0; i<n; i++){
+    unsigned int d = src[i];
+    unsigned int c = carry + ~ d;
+    dst[i] = c;
+    carry = (carry && ! d);
+  }
+}
+
+static void
 bits_compliment_logand(unsigned int* s1, unsigned int* s2, unsigned int* dst, int n){
   int carry = 1;
   int i;
@@ -1035,6 +1047,27 @@ bits_compliment_logand(unsigned int* s1, unsigned int* s2, unsigned int* dst, in
     carry = (carry && ! d);
   }
 }
+
+static int
+bits_carry(unsigned int* s, int n){
+  /*
+  int carry = 1;
+  int i;
+  for(i=0; i<n; i++){
+    unsigned int d = s[i];
+    carry = (carry && ! d);
+  }
+  return carry;
+  */
+  int i;
+  for(i=0; i<n; i++){
+    if (s[i] != 0){
+      return 0;
+    }
+  }
+  return 1;
+}
+
 
 
 ikp
@@ -1101,6 +1134,104 @@ ikrt_bnbnlogand(ikp x, ikp y, ikpcb* pcb){
     }
   }
 }
+
+
+static void
+copy_bits_shifting_right(unsigned int* src, unsigned int* dst, int n, int m){
+  unsigned int carry = src[0] >> m;
+  int i;
+  for(i=1; i<n; i++){
+    unsigned int b = src[i];
+    dst[i-1] = (b << (32-m)) | carry;
+    carry = b >> m;
+  }
+  dst[n-1] = carry;
+}
+
+
+
+
+ikp
+ikrt_bignum_shift_right(ikp x, ikp y, ikpcb* pcb){
+  int m = unfix(y);
+  ikp fst = ref(x, -vector_tag);
+  int n = ((unsigned int) fst) >> bignum_length_shift;
+  int whole_limb_shift = m >> 5; /* FIXME: 5 are the bits in 32-bit num */
+  int bit_shift = m & 31;
+  int new_limb_count = n - whole_limb_shift;
+  if(bignum_sign_mask & (unsigned int) fst){
+    if(new_limb_count <= 0){
+      return fix(-1);
+    }
+    if(bit_shift == 0){
+      ikp r = ik_alloc(pcb, align(disp_bignum_data + new_limb_count * wordsize));
+      bits_compliment_with_carry(
+          (unsigned int*)(x+off_bignum_data+whole_limb_shift*wordsize),
+          (unsigned int*)(r+disp_bignum_data),
+          new_limb_count,
+          bits_carry((unsigned int*)(x+off_bignum_data), whole_limb_shift));
+      bits_compliment(
+          (unsigned int*)(r+disp_bignum_data),
+          (unsigned int*)(r+disp_bignum_data),
+          new_limb_count);
+      return normalize_bignum(new_limb_count, 1 << bignum_sign_shift, r);
+    } else {
+      ikp r = ik_alloc(pcb, align(disp_bignum_data + new_limb_count * wordsize));
+      bits_compliment_with_carry(
+          (unsigned int*)(x+off_bignum_data+whole_limb_shift*wordsize),
+          (unsigned int*)(r+disp_bignum_data),
+          new_limb_count,
+          bits_carry((unsigned int*)(x+off_bignum_data), whole_limb_shift));
+      copy_bits_shifting_right(
+          (unsigned int*)(r+disp_bignum_data),
+          (unsigned int*)(r+disp_bignum_data),
+          new_limb_count,
+          bit_shift);
+      *((unsigned int*)(r+disp_bignum_data+(new_limb_count-1)*wordsize))
+          |= (-1 << (32 - bit_shift));
+      bits_compliment(
+          (unsigned int*)(r+disp_bignum_data),
+          (unsigned int*)(r+disp_bignum_data),
+          new_limb_count);
+      return normalize_bignum(new_limb_count, 1 << bignum_sign_shift, r);
+      fprintf(stderr, "not yet for negative bignum_shift\n");
+      exit(-1);
+    }
+  } else {
+    if(new_limb_count <= 0){
+      return 0;
+    }
+    if(bit_shift == 0){
+      ikp r = ik_alloc(pcb, align(disp_bignum_data + new_limb_count * wordsize));
+      memcpy(r+disp_bignum_data,
+              x+off_bignum_data+whole_limb_shift*wordsize,
+              new_limb_count * wordsize);
+      return normalize_bignum(new_limb_count, 0, r);
+    } else {
+      ikp r = ik_alloc(pcb, align(disp_bignum_data + new_limb_count * wordsize));
+      copy_bits_shifting_right(
+          (unsigned int*)(x+off_bignum_data+whole_limb_shift*wordsize),
+          (unsigned int*)(r+disp_bignum_data),
+          new_limb_count,
+          bit_shift);
+      return normalize_bignum(new_limb_count, 0, r);
+    }
+  }
+}
+
+
+ikp
+ikrt_fixnum_shift_left(ikp x, ikp y, ikpcb* pcb){
+  fprintf(stderr, "fxshiftleft\n");
+  exit(-1);
+}
+
+ikp
+ikrt_bignum_shift_left(ikp x, ikp y, ikpcb* pcb){
+  fprintf(stderr, "bnshiftleft\n");
+  exit(-1);
+}
+
 
 #if 0
 From TFM:
