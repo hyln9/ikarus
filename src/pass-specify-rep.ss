@@ -39,6 +39,16 @@
   (define (interrupt) 
     ((interrupt-handler))
     (prm 'interrupt))
+  (define (primop-interrupt-handler x)
+    (case x
+      [(fx+)          'error@fx+]
+      [else                    x]))
+  (define (make-interrupt-call op args)
+    (make-funcall 
+      (V (make-primref (primop-interrupt-handler op)))
+      args))
+  (define (make-no-interrupt-call op args)
+    (make-funcall (V (make-primref op)) args))
   (define (with-interrupt-handler p x ctxt args k)
     (cond
       [(not (PH-interruptable? p))
@@ -56,26 +66,25 @@
            (cond
              [(not interrupted?) body]
              [(eq? ctxt 'V)
-              (let ([h (make-funcall (V (make-primref x)) args)])
+              (let ([h (make-interrupt-call x args)])
                 (if (record-case body
                       [(primcall op) (eq? op 'interrupt)]
                       [else #f])
-                     h
+                     (make-no-interrupt-call x args)
                      (make-shortcut body h)))]
              [(eq? ctxt 'E)
-              (let ([h (make-funcall (V (make-primref x)) args)])
+              (let ([h (make-interrupt-call x args)])
                 (if (record-case body
                       [(primcall op) (eq? op 'interrupt)]
                       [else #f])
-                     h
+                     (make-no-interrupt-call x args)
                      (make-shortcut body h)))]
              [(eq? ctxt 'P)
-              (let ([h (prm '!= (make-funcall (V (make-primref x)) args)
-                            (K bool-f))])
+              (let ([h (prm '!= (make-interrupt-call x args) (K bool-f))])
                 (if (record-case body
                       [(primcall op) (eq? op 'interrupt)]
                       [else #f])
-                     h
+                     (prm '!= (make-no-interrupt-call x args) (K bool-f))
                      (make-shortcut body h)))]
              [else (error 'with-interrupt-handler "invalid context ~s" ctxt)])))]))
   (define-syntax with-tmp

@@ -441,6 +441,15 @@
     [utf8-bytevector->string i]
     [native-endianness       i]
     [$two-bignums            i]
+            
+    [fxior i]
+    [fxand i]
+    [fxxor i]
+    [fxnot i]
+    [fxeven?  i]
+    [fxodd?   i]
+    [fxpositive? i]
+    [fxnegative? i]
 
     [for-each                i r]
     [map                     i r]
@@ -923,6 +932,7 @@
     [syntax-dispatch                   ]
     [make-promise                      ]
     [force                            i]
+    [error@fx+ ]
 
     ))
 

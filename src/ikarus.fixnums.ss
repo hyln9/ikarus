@@ -4,16 +4,24 @@
           fxremainder fxmodulo fxlogor fxlogand fxlogxor fxsll fxsra
           fx= fx< fx<= fx> fx>= 
           fx=? fx<? fx<=? fx>? fx>=? 
-          fixnum->string)
+          fxior fxand fxxor fxnot
+          fxpositive? fxnegative?
+          fxeven? fxodd?
+          fixnum->string 
+          error@fx+)
   (import 
     (ikarus system $fx)
     (ikarus system $chars)
     (ikarus system $pairs)
     (ikarus system $strings)
+    (prefix (only (ikarus) fx+) sys:)
     (except (ikarus) fxzero? fxadd1 fxsub1 fxlognot fx+ fx- fx*
             fxquotient fxremainder fxmodulo fxlogor fxlogand
             fxlogxor fxsll fxsra fx= fx< fx<= fx> fx>=
             fx=? fx<? fx<=? fx>? fx>=? 
+            fxior fxand fxxor fxnot
+            fxpositive? fxnegative?
+            fxeven? fxodd?
             fixnum->string))
 
   (define fxzero?
@@ -41,13 +49,23 @@
         (error 'fxlognot "~s is not a fixnum" x))
       ($fxlognot x)))
 
+  (define fxnot 
+    (lambda (x)
+      (unless (fixnum? x) 
+        (error 'fxnot "~s is not a fixnum" x))
+      ($fxlognot x)))
+  
+  (define error@fx+
+    (lambda (x y) 
+      (if (fixnum? x) 
+          (if (fixnum? y) 
+              (error 'fx+ "overflow when adding ~s and ~s" x y)
+              (error 'fx+ "~s is not a fixnum" y))
+          (error 'fx+ "~s is not a fixnum" x))))
+
   (define fx+ 
     (lambda (x y) 
-      (unless (fixnum? x)
-        (error 'fx+ "~s is not a fixnum" x))
-      (unless (fixnum? y)
-        (error 'fx+ "~s is not a fixnum" y))
-      ($fx+ x y)))
+      (sys:fx+ x y)))
 
   (define fx-
     (lambda (x y) 
@@ -145,30 +163,39 @@
         (error 'fxmodulo "zero dividend ~s" y))
       ($fxmodulo x y)))
 
-  (define fxlogor
-    (lambda (x y) 
-      (unless (fixnum? x)
-        (error 'fxlogor "~s is not a fixnum" x))
-      (unless (fixnum? y)
-        (error 'fxlogor "~s is not a fixnum" y))
-      ($fxlogor x y)))
+  (define-syntax fxbitop
+    (syntax-rules ()
+      [(_ who $op identity)
+       (case-lambda 
+         [(x y) 
+          (if (fixnum? x) 
+              (if (fixnum? y) 
+                  ($op x y)
+                  (error 'who "~s is not a fixnum" y))
+              (error 'who "~s is not a fixnum" x))]
+         [(x y . ls) 
+          (if (fixnum? x)
+              (if (fixnum? y) 
+                  (let f ([a ($op x y)] [ls ls])
+                    (cond
+                      [(pair? ls) 
+                       (let ([b ($car ls)])
+                         (if (fixnum? b) 
+                             (f ($op a b) ($cdr ls))
+                             (error 'who "~s is not a fixnum" b)))]
+                      [else a]))
+                  (error 'who "~s is not a fixnum" y))
+              (error 'who "~s is not a fixnum" x))]
+         [(x) (if (fixnum? x) x (error 'who "~s is not a fixnum" x))]
+         [()   identity])]))
+
+  (define fxlogor (fxbitop fxlogor $fxlogor 0))
+  (define fxlogand (fxbitop fxlogand $fxlogand -1))
+  (define fxlogxor (fxbitop fxlogxor $fxlogxor 0))
+  (define fxior (fxbitop fxior $fxlogor 0))
+  (define fxand (fxbitop fxand $fxlogand -1))
+  (define fxxor (fxbitop fxxor $fxlogxor 0))
   
-  (define fxlogxor
-    (lambda (x y) 
-      (unless (fixnum? x)
-        (error 'fxlogxor "~s is not a fixnum" x))
-      (unless (fixnum? y)
-        (error 'fxlogxor "~s is not a fixnum" y))
-      ($fxlogxor x y)))
-    
-  (define fxlogand
-    (lambda (x y) 
-      (unless (fixnum? x)
-        (error 'fxlogand "~s is not a fixnum" x))
-      (unless (fixnum? y)
-        (error 'fxlogand "~s is not a fixnum" y))
-      ($fxlogand x y)))
-   
   (define fxsra
     (lambda (x y) 
       (unless (fixnum? x)
@@ -188,6 +215,26 @@
       (unless ($fx>= y 0)
         (error 'fxsll "negative shift not allowed, got ~s" y))
       ($fxsll x y))) 
+
+  (define (fxpositive? x)
+    (if (fixnum? x) 
+        ($fx> x 0)
+        (error 'fxpositive? "~s is not a fixnum" x)))
+
+  (define (fxnegative? x)
+    (if (fixnum? x) 
+        ($fx< x 0)
+        (error 'fxnegative? "~s is not a fixnum" x)))
+  
+  (define (fxeven? x)
+    (if (fixnum? x) 
+        ($fxzero? ($fxlogand x 1))
+        (error 'fxeven? "~s is not a fixnum" x)))
+
+  (define (fxodd? x)
+    (if (fixnum? x) 
+        (not ($fxzero? ($fxlogand x 1)))
+        (error 'fxodd? "~s is not a fixnum" x)))
 
   (module (fixnum->string)
     (define f
