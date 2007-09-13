@@ -17,8 +17,9 @@
             string-ci=?  string-ci<?  string-ci<=?  string-ci>?  string-ci>=?
             string-foldcase char-general-category))
 
-  (include "unicode/unicode-constituents.ss")
+ ; (include "unicode/unicode-constituents.ss")
   (include "unicode/unicode-char-cases.ss")
+  (include "unicode/unicode-charinfo.ss")
 
   (define (binary-search n v)
     (let ([k ($fx- ($vector-length v) 1)])
@@ -31,7 +32,7 @@
                [($fx<= ($vector-ref v j) n) (f j k n v)]
                [else (f i ($fx- j 1) n v)]))]))))
 
-  (define (char-general-category c)
+  (define (lookup-char-info c)
     (let ([v unicode-categories-lookup-vector]
           [t unicode-categories-values-vector])
       (define (f i k n) 
@@ -47,18 +48,25 @@
              (cond
                [(fx<= (vector-ref v j) n) (f j k n)]
                [else (f i (fx- j 1) n)]))]))
-      (if (char? c) 
-          (vector-ref unicode-categories-name-vector
-            (f 0 (fx- (vector-length v) 1) (char->integer c)))
-          (error 'char-general-category "~s is not a char" c))))
+      (f 0 (fx- (vector-length v) 1) (char->integer c))))
+
+  (define (char-general-category c)
+    (if (char? c) 
+        (vector-ref unicode-categories-name-vector
+          (fxlogand 63 (lookup-char-info c)))
+        (error 'char-general-category "~s is not a char" c)))
 
   (define (binary-search-on? n v)
     ($fx= ($fxlogand (binary-search n v) 1) 1))
 
-  (define (unicode-printable-char? c)
-    (binary-search-on?
-      ($char->fixnum c) 
-      unicode-constituents-vector))
+  ;(define (unicode-printable-char? c)
+  ;  (binary-search-on?
+  ;    ($char->fixnum c) 
+  ;    unicode-constituents-vector))
+  (define (unicode-printable-char? c) 
+    (if (char? c) 
+        (not (fxzero? (fxlogand (lookup-char-info c) constituent-property)))
+        (error 'unicode-printable-char? "~s is not a char" c)))
   
   (define (convert-char x adjustment-vec)
     (let ([n ($char->fixnum x)])
