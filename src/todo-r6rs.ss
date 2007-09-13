@@ -238,9 +238,9 @@
     [else                                       C ba ex]
     ;;;
     [bitwise-and                                D bw]
-    [bitwise-arithmetic-shift                   D bw]
-    [bitwise-arithmetic-shift-left              D bw]
-    [bitwise-arithmetic-shift-right             D bw]
+    [bitwise-arithmetic-shift                   C bw]
+    [bitwise-arithmetic-shift-left              C bw]
+    [bitwise-arithmetic-shift-right             C bw]
     [bitwise-bit-count                          D bw]
     [bitwise-bit-field                          D bw]
     [bitwise-bit-set?                           D bw]

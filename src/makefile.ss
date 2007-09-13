@@ -457,6 +457,12 @@
     [fxlogxor                i]
     [fxlogor                 i]
     [fxlognot                i]
+
+            
+    [bitwise-arithmetic-shift-right i]
+    [bitwise-arithmetic-shift-left  i]
+    [bitwise-arithmetic-shift       i]
+
     [fl=?                    i rfl]
     [fl<?                    i rfl]
     [fl<=?                   i rfl]

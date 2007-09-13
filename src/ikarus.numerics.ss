@@ -310,6 +310,7 @@
 (library (ikarus generic-arithmetic)
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
           modulo even? odd? logand $two-bignums
+          bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left bitwise-arithmetic-shift 
           positive? negative? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number min max
           abs truncate fltruncate sra sll
@@ -327,6 +328,7 @@
     (only (ikarus flonums) $flonum->exact $flzero? $flnegative?)
     (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
             remainder modulo even? odd? quotient+remainder number->string 
+            bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left bitwise-arithmetic-shift 
             positive? negative? logand $two-bignums
             string->number expt gcd lcm numerator denominator
             exact->inexact inexact floor ceiling round log
@@ -2189,40 +2191,77 @@
         (error 'random "~s is not a fixnum" n)))
 
 
-  (define (sra n m) 
+  (define (shift-right-arithmetic n m who) 
     (unless (fixnum? m)
-      (error 'sra "shift amount ~s is not a fixnum"))
+      (error who "shift amount ~s is not a fixnum"))
     (cond
       [(fixnum? n) 
        (cond
          [($fx>= m 0) ($fxsra n m)]
-         [else (error 'sra "offset ~s must be non-negative" m)])]
+         [else (error who "offset ~s must be non-negative" m)])]
       [(bignum? n) 
        (cond
          [($fx> m 0)  
           (foreign-call "ikrt_bignum_shift_right" n m)]
          [($fx= m 0) n]
-         [else (error 'sra "offset ~s must be non-negative" m)])]
-      [else (error 'sra "~s is not an exact integer" n)]))
+         [else (error who "offset ~s must be non-negative" m)])]
+      [else (error who "~s is not an exact integer" n)]))
 
+  (define (sra n m)
+    (shift-right-arithmetic n m 'sra))
 
-  (define (sll n m) 
+  (define (shift-left-logical n m who) 
     (unless (fixnum? m)
-      (error 'sll "shift amount ~s is not a fixnum"))
+      (error who "shift amount ~s is not a fixnum"))
     (cond
       [(fixnum? n)
        (cond
          [($fx> m 0) 
           (foreign-call "ikrt_fixnum_shift_left" n m)]
          [($fx= m 0) n]
-         [else (error 'sll "offset ~s must be non-negative" m)])]
+         [else (error who "offset ~s must be non-negative" m)])]
       [(bignum? n) 
        (cond
          [($fx> m 0) 
           (foreign-call "ikrt_bignum_shift_left" n m)]
          [($fx= m 0) n]
-         [else (error 'sll "offset ~s must be non-negative" m)])]
-      [else (error 'sll "~s is not an exact integer" n)]))
+         [else (error who "offset ~s must be non-negative" m)])]
+      [else (error who "~s is not an exact integer" n)]))
+
+  (define (sll n m)
+    (shift-left-logical n m 'sll))
+
+  (define (bitwise-arithmetic-shift-right n m) 
+    (shift-right-arithmetic n m 'bitwise-arithmetic-shift-right))
+  (define (bitwise-arithmetic-shift-left n m) 
+    (shift-left-logical n m 'bitwise-arithmetic-shift-left))
+  (define (bitwise-arithmetic-shift n m)
+    (define who 'bitwise-arithmetic-shift)
+    (unless (fixnum? m)
+      (error who "shift amount ~s is not a fixnum"))
+    (cond
+      [(fixnum? n)
+       (cond
+         [($fx> m 0) 
+          (foreign-call "ikrt_fixnum_shift_left" n m)]
+         [($fx= m 0) n]
+         [else
+          (let ([m^ (- m)])
+            (unless (fixnum? m^) 
+              (error who "shift amount ~s is too big" m))
+            ($fxsra n m^))])]
+      [(bignum? n)
+       (cond
+         [($fx> m 0) 
+          (foreign-call "ikrt_bignum_shift_left" n m)]
+         [($fx= m 0) n]
+         [else
+          (let ([m^ (- m)])
+            (unless (fixnum? m^) 
+              (error who "shift amount ~s is too big" m))
+            (foreign-call "ikrt_bignum_shift_right" n m^))])]
+      [else (error who "~s is not an exact integer" n)]))
+
 
   )
 
