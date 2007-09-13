@@ -142,16 +142,32 @@
     ;;; field0: the character index, numeric
     ;;; field2: the category, symbolic
     ;;; field8: if set, then the char has the numeric property
-    (for-each 
-      (lambda (x) 
-        (let ([idx (hex-string->number (list-ref x 0))]
-              [cat (category-index (string->symbol (list-ref x 2)))]
-              [num? (list-ref x 8)])
-          (vector-set! v idx 
-            (if (string=? num? "")
-                cat
-                (fxlogor cat numeric-property)))))
-      ls))
+    (define (setprop idx prop) 
+      (vector-set! v idx prop))
+    (let ([ls (map 
+                (lambda (x) 
+                  (let ([idx (hex-string->number (list-ref x 0))]
+                        [cat (category-index (string->symbol (list-ref x 2)))]
+                        [num? (list-ref x 8)])
+                    (cons idx
+                      (if (string=? num? "")
+                          cat
+                          (fxlogor cat numeric-property)))))
+                ls)])
+      (let f ([ls ls])
+        (cond
+          [(null? ls) (void)]
+          [(null? (cdr ls)) (setprop (caar ls) (cdar ls))]
+          [(or (= (+ 1 (caar ls)) (caadr ls))
+               (not (= (cdar ls) (cdadr ls))))
+           (setprop (caar ls) (cdar ls)) 
+           (f (cdr ls))]
+          [else
+           (let f ([i (caar ls)] [j (caadr ls)] [p (cdar ls)])
+             (unless (> i j) 
+               (setprop i p)
+               (f (add1 i) j p)))
+           (f (cddr ls))]))))
   ;;; every element of v now maps to the category-index.
   (let ([ls (get-unicode-data "UNIDATA/PropList.txt")])
     ;;; field0 is a range
