@@ -794,6 +794,43 @@
              (bless `(letrec ([,f (lambda ,lhs* ,b . ,b*)])
                         (,f . ,rhs*)))
              (stx-error stx "invalid syntax"))])))
+  (define trace-lambda-macro
+    (lambda (stx)
+      (syntax-match stx ()
+        [(_ who (fmls ...) b b* ...) 
+         (if (valid-bound-ids? fmls) 
+             (bless `(make-traced-procedure ',who
+                       (lambda ,fmls ,b . ,b*)))
+             (stx-error stx "invalid formals"))]
+        [(_  who (fmls ... . last) b b* ...)
+         (if (valid-bound-ids? (cons last fmls))
+             (bless `(make-traced-procedure ',who
+                       (lambda (,@fmls . ,last) ,b . ,b*)))
+             (stx-error stx "invalid formals"))])))
+  (define trace-define-macro
+    (lambda (stx)
+      (syntax-match stx ()
+        [(_ (who fmls ...) b b* ...)
+         (if (valid-bound-ids? fmls) 
+             (bless `(define ,who
+                       (make-traced-procedure ',who
+                         (lambda ,fmls ,b . ,b*))))
+             (stx-error stx "invalid formals"))]
+        [(_ (who fmls ... . last) b b* ...)
+         (if (valid-bound-ids? (cons last fmls))
+             (bless `(define ,who
+                       (make-traced-procedure ',who
+                         (lambda (,@fmls . ,last) ,b . ,b*))))
+             (stx-error stx "invalid formals"))]
+        [(_ who expr)
+         (if (id? who) 
+             (bless `(define ,who
+                       (let ([v ,expr])
+                         (if (procedure? v) 
+                             (make-traced-procedure ',who v)
+                             (error 'trace-define 
+                                "~s is not a procedure" v)))))
+             (stx-error stx "invalid formals"))])))
   (define time-macro
     (lambda (stx)
       (syntax-match stx ()
@@ -1667,6 +1704,8 @@
            [(delay)             delay-macro]
            [(assert)            assert-macro]
            [(endianness)        endianness-macro]
+           [(trace-lambda)      trace-lambda-macro]
+           [(trace-define)      trace-define-macro]
            [(... => _ else unquote unquote-splicing 
              unsyntax unsyntax-splicing)
             incorrect-usage-macro]

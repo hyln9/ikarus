@@ -124,6 +124,8 @@
     [unquote-splicing  (macro . unquote-splicing)]
     [unsyntax          (macro . unsyntax)]
     [unsyntax-splicing (macro . unsyntax-splicing)]
+    [trace-lambda      (macro . trace-lambda)]
+    [trace-define      (macro . trace-define)]
     ))
 
 (define library-legend
@@ -262,6 +264,8 @@
     [unquote-splicing  i r ne]
     [unsyntax          i r]
     [unsyntax-splicing i r]
+    [trace-lambda      i]
+    [trace-define      i]
     ))
 
 (define ikarus-procedures-map
@@ -932,6 +936,7 @@
     [syntax-dispatch                   ]
     [make-promise                      ]
     [force                            i]
+    [make-traced-procedure            i]
     [error@fx+ ]
 
     ))

@@ -1,7 +1,7 @@
 
 (library (ikarus trace)
-  (export make-traced-procedure trace-symbol! untrace-symbol!)
-  (import (ikarus))
+  (export make-traced-procedure) 
+  (import (except (ikarus) make-traced-procedure))
 
   (define k* '())
   
@@ -53,7 +53,29 @@
                        (apply values v*))))
                  (lambda () (set! k* (cdr k*))))]))))))
       
-  (define traced-symbols '())
+
+  
+
+  )
+
+
+#!eof
+  
+(define traced-symbols '())
+
+  (define untrace-symbol!
+    (lambda (s)
+      (define loop
+        (lambda (ls)
+          (cond
+            [(null? ls) '()]
+            [(eq? s (caar ls))
+             (let ([a (cdar ls)])
+               (when (eq? (cdr a) (symbol-value s))
+                 (set-symbol-value! s (car a)))
+               (cdr ls))]
+            [else (cons (car ls) (loop (cdr ls)))])))
+      (set! traced-symbols (loop traced-symbols))))
 
   (define trace-symbol!
     (lambda (s)
@@ -81,27 +103,6 @@
              (set! traced-symbols 
                (cons (cons s (cons v p)) traced-symbols))
              (set-symbol-value! s p)))])))
-  
-  (define untrace-symbol!
-    (lambda (s)
-      (define loop
-        (lambda (ls)
-          (cond
-            [(null? ls) '()]
-            [(eq? s (caar ls))
-             (let ([a (cdar ls)])
-               (when (eq? (cdr a) (symbol-value s))
-                 (set-symbol-value! s (car a)))
-               (cdr ls))]
-            [else (cons (car ls) (loop (cdr ls)))])))
-      (set! traced-symbols (loop traced-symbols))))
-
-  )
-
-
-#!eof
-
-
 Try:
 
 (trace-define fact
