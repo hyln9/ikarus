@@ -641,11 +641,18 @@
    (record-case i
      [(constant i) 
       (unless (fixnum? i) (interrupt))
-      (prm 'logand (prm 'sra (T x) (K i)) (K (* -1 fixnum-scale)))]
+      (prm 'logand 
+           (prm 'sra (T x) (K (if (> i 31) 31 i)))
+           (K (* -1 fixnum-scale)))]
      [else 
-      (prm 'logand
-           (prm 'sra (T x) (prm 'sra (T i) (K fixnum-shift)))
-           (K (* -1 fixnum-scale)))])]
+      (with-tmp ([i (prm 'sra (T i) (K fixnum-shift))])
+        (with-tmp ([i (make-conditional
+                        (prm '< i (K 32))
+                        i
+                        (K 31))])
+           (prm 'logand
+                (prm 'sra (T x) i)
+                (K (* -1 fixnum-scale)))))])]
   [(P x i) (K #t)]
   [(E x i) (nop)])
 

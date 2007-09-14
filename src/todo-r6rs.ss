@@ -288,7 +288,7 @@
     [fxmax                                      S fx]
     [fxmin                                      S fx]
     [fxmod                                      D fx]
-    [fxmod0                                     S fx]
+    [fxmod0                                     D fx]
     [fxnegative?                                C fx]
     [fxnot                                      C fx]
     [fxodd?                                     C fx]
