@@ -257,6 +257,9 @@
     [bitwise-rotate-bit-field                   D bw]
     ;;;
     [fixnum?                                    C fx]
+    [fixnum-width                               C fx] 
+    [least-fixnum                               C fx] 
+    [greatest-fixnum                            C fx] 
     [fx*                                        C fx]
     [fx*/carry                                  D fx]
     [fx+                                        C fx]
