@@ -5,7 +5,7 @@
           fxremainder fxmodulo fxlogor fxlogand fxlogxor fxsll fxsra
           fx= fx< fx<= fx> fx>= 
           fx=? fx<? fx<=? fx>? fx>=? 
-          fxior fxand fxxor fxnot
+          fxior fxand fxxor fxnot fxif
           fxpositive? fxnegative?
           fxeven? fxodd?
           fixnum->string 
@@ -22,7 +22,7 @@
             fxquotient fxremainder fxmodulo fxlogor fxlogand
             fxlogxor fxsll fxsra fx= fx< fx<= fx> fx>=
             fx=? fx<? fx<=? fx>? fx>=? 
-            fxior fxand fxxor fxnot
+            fxior fxand fxxor fxnot fxif
             fxpositive? fxnegative?
             fxeven? fxodd?
             fxarithmetic-shift-left fxarithmetic-shift-right fxarithmetic-shift
@@ -89,6 +89,7 @@
         (error 'fx* "~s is not a fixnum" y))
       ($fx* x y)))
   
+
   (define false-loop
     (lambda (who ls)
       (if (pair? ls) 
@@ -202,6 +203,17 @@
   (define fxand (fxbitop fxand $fxlogand -1))
   (define fxxor (fxbitop fxxor $fxlogxor 0))
   
+  (define (fxif x y z)
+    (if (fixnum? x)
+        (if (fixnum? y) 
+            (if (fixnum? z) 
+                ($fxlogor 
+                  ($fxlogand x y) 
+                  ($fxlogand ($fxlognot x) z))
+                (error 'fxif "~s is not a fixnum" z))
+            (error 'fxif "~s is not a fixnum" y))
+        (error 'fxif "~s is not a fixnum" x)))
+
   (define fxsra
     (lambda (x y) 
       (unless (fixnum? x)

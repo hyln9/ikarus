@@ -450,6 +450,7 @@
     [fxand i]
     [fxxor i]
     [fxnot i]
+    [fxif i]
     [fxeven?  i]
     [fxodd?   i]
     [fxpositive? i]

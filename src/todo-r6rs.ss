@@ -286,7 +286,7 @@
     [fxdiv0-and-mod0                            D fx]
     [fxeven?                                    C fx]
     [fxfirst-bit-set                            D fx]
-    [fxif                                       D fx]
+    [fxif                                       C fx]
     [fxior                                      C fx]
     [fxlength                                   D fx]
     [fxmax                                      C fx]
