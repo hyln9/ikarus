@@ -250,7 +250,9 @@
         (error 'fxarithmetic-shift "~s is not a fixnum" y))
       (if ($fx>= y 0)
           ($fxsll x y)
-          ($fxsra x ($fx- 0 y)))))
+          (if ($fx< x -100) ;;; arbitrary number < (fixnum-width)
+              ($fxsra x 32)
+              ($fxsra x ($fx- 0 y))))))
 
   (define (fxpositive? x)
     (if (fixnum? x) 

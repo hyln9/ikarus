@@ -457,7 +457,6 @@ char* ik_uuid(char* str){
 static const char* uuid_chars = 
 "!$%&/0123456789<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 static int uuid_strlen = 1;
-
 ikp ik_uuid(ikp str){
   static int fd = -1;
   if(fd == -1){

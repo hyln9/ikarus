@@ -18,7 +18,6 @@
   (define fixnum-mask 3))
 
 (module primops (primop? get-primop set-primop!)
-
   (define cookie (gensym))
   (define (primop? x)
     (and (getprop x cookie) #t))

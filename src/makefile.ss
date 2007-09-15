@@ -459,6 +459,7 @@
     [fxarithmetic-shift       i]
     [fxmin       i]
     [fxmax       i]
+    [fixnum-width i]
 
     [for-each                i r]
     [map                     i r]

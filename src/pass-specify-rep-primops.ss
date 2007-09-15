@@ -545,6 +545,15 @@
   [(P x) (tag-test (T x) fixnum-mask fixnum-tag)]
   [(E x) (nop)])
 
+;(define-primop foo safe
+;  [(V) (K 0)])
+
+;(define-primop fixnum-width safe
+;  [(V) (K 0)] ;(K (fxsll (- (* wordsize 8) fx-shift) fx-shift))]
+;  ;[(E) (nop)]
+;  ;[(P) (K #t)]
+;  )
+
 (define-primop $fxzero? unsafe
   [(P x) (prm '= (T x) (K 0))]
   [(E x) (nop)])
