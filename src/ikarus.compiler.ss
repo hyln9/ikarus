@@ -12,7 +12,8 @@
         compile-core-expr-to-port assembler-output
         current-primitive-locations eval-core)
     (ikarus intel-assembler)
-    (ikarus fasl write))
+    ;(ikarus fasl write)
+    )
 
 
 (define-syntax record-case

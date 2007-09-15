@@ -8,6 +8,7 @@
           fxpositive? fxnegative?
           fxeven? fxodd?
           fixnum->string 
+          fxarithmetic-shift-left fxarithmetic-shift-right fxarithmetic-shift
           error@fx+)
   (import 
     (ikarus system $fx)
@@ -22,6 +23,7 @@
             fxior fxand fxxor fxnot
             fxpositive? fxnegative?
             fxeven? fxodd?
+            fxarithmetic-shift-left fxarithmetic-shift-right fxarithmetic-shift
             fixnum->string))
 
   (define fxzero?
@@ -206,6 +208,17 @@
         (error 'fxsra "negative shift not allowed, got ~s" y))
       ($fxsra x y)))
    
+
+  (define fxarithmetic-shift-right
+    (lambda (x y) 
+      (unless (fixnum? x)
+        (error 'fxarithmetic-shift-right "~s is not a fixnum" x))
+      (unless (fixnum? y)
+        (error 'fxarithmetic-shift-right "~s is not a fixnum" y))
+      (unless ($fx>= y 0)
+        (error 'fxarithmetic-shift-right "negative shift not allowed, got ~s" y))
+      ($fxsra x y)))
+
   (define fxsll
     (lambda (x y) 
       (unless (fixnum? x)
@@ -215,6 +228,27 @@
       (unless ($fx>= y 0)
         (error 'fxsll "negative shift not allowed, got ~s" y))
       ($fxsll x y))) 
+
+
+  (define fxarithmetic-shift-left
+    (lambda (x y) 
+      (unless (fixnum? x)
+        (error 'fxarithmetic-shift-left "~s is not a fixnum" x))
+      (unless (fixnum? y)
+        (error 'fxarithmetic-shift-left "~s is not a fixnum" y))
+      (unless ($fx>= y 0)
+        (error 'fxarithmetic-shift-left "negative shift not allowed, got ~s" y))
+      ($fxsll x y)))
+
+  (define fxarithmetic-shift
+    (lambda (x y) 
+      (unless (fixnum? x)
+        (error 'fxarithmetic-shift "~s is not a fixnum" x))
+      (unless (fixnum? y)
+        (error 'fxarithmetic-shift "~s is not a fixnum" y))
+      (if ($fx>= y 0)
+          ($fxsll x y)
+          ($fxsra x ($fx- 0 y)))))
 
   (define (fxpositive? x)
     (if (fixnum? x) 

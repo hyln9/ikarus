@@ -316,7 +316,7 @@
           abs truncate fltruncate sra sll
           exact->inexact inexact floor ceiling round log fl=? fl<? fl<=? fl>?
           fl>=? fl+ fl- fl* fl/ flsqrt flmin flzero? flnegative?
-          sin cos tan asin acos atan sqrt
+          sin cos tan asin acos atan sqrt exp
           flround flmax random)
   (import 
     (ikarus system $fx)
@@ -334,7 +334,7 @@
             exact->inexact inexact floor ceiling round log
             exact-integer-sqrt min max abs
             fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt flmin
-            flzero? flnegative? sra sll
+            flzero? flnegative? sra sll exp
             sin cos tan asin acos atan sqrt truncate fltruncate
             flround flmax random))
 
@@ -2261,6 +2261,15 @@
               (error who "shift amount ~s is too big" m))
             (foreign-call "ikrt_bignum_shift_right" n m^))])]
       [else (error who "~s is not an exact integer" n)]))
+
+  (define (exp x) 
+    (cond
+      [(flonum? x) (flexp x)]
+      [(fixnum? x) 
+       (if ($fx= x 0) 1 (flexp (fixnum->flonum x)))]
+      [(bignum? x) (flexp (bignum->flonum x))]
+      [(ratnum? x) (flexp (ratnum->flonum x))]
+      [else (error 'exp "~s is not a number" x)]))
 
 
   )

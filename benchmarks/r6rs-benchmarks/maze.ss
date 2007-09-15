@@ -196,8 +196,8 @@
   (define (set-cell:mark o v)      (vector-set! o 5 v))
   
   ;;; Iterates in reverse order.
-  
-  (define (vector-for-each proc v)
+  ;;; AZIZ: appended rev to the name
+  (define (vector-for-each-rev proc v)
     (let lp ((i (- (vector-length v) 1)))
       (cond ((>= i 0)
              (proc (vector-ref v i))
@@ -222,7 +222,7 @@
   (define (dig-maze walls ncells)
     (call-with-current-continuation
       (lambda (quit)
-        (vector-for-each
+        (vector-for-each-rev
          (lambda (wall)                   ; For each wall,
            (let* ((c1   (wall:owner wall)) ; find the cells on
                   (set1 (cell:reachable c1))
@@ -373,7 +373,7 @@
   
   
   (define (harr-for-each proc harr)
-    (vector-for-each proc (harr:elts harr)))
+    (vector-for-each-rev proc (harr:elts harr)))
   
   ;------------------------------------------------------------------------------
   ; Was file "hex.scm".

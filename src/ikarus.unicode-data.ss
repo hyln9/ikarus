@@ -209,6 +209,8 @@
         ($string-foldcase str)
         (error 'string-foldcase "~s is not a string" str)))
 
+  ;;; FIXME: case-insensitive comparison procedures are slow.
+
   (define string-ci-cmp
     (lambda (who cmp)
       (case-lambda

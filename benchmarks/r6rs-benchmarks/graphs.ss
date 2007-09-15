@@ -59,11 +59,12 @@
                   ((= i len)
                       state)))))
   
-  (define vector-map
-      (lambda (vec proc)
-          (proc->vector (vector-length vec)
-              (lambda (i)
-                  (proc (vector-ref vec i))))))
+  ; AZIZ: r6rs has vector-map, this is not even used
+  ;(define vector-map
+  ;    (lambda (vec proc)
+  ;        (proc->vector (vector-length vec)
+  ;            (lambda (i)
+  ;                (proc (vector-ref vec i))))))
   
   ; Given limit, return the list 0, 1, ..., limit-1.
   (define giota

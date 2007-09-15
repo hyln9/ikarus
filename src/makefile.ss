@@ -364,7 +364,7 @@
     [char-ci>=?              i unicode]
     [char-alphabetic?        i unicode] 
     [char-numeric?           i unicode] 
-    [char-whitespace?        i unicode] 
+    [char-whitespace?        i r unicode] 
     [char-upper-case?        i unicode]
     [char-lower-case?        i unicode] 
     [char-title-case?        i unicode]
@@ -454,6 +454,9 @@
     [fxodd?   i]
     [fxpositive? i]
     [fxnegative? i]
+    [fxarithmetic-shift-left  i]
+    [fxarithmetic-shift-right i]
+    [fxarithmetic-shift       i]
 
     [for-each                i r]
     [map                     i r]
@@ -539,6 +542,7 @@
     [add1                    i]
     [sub1                    i]
     [expt                    i r]
+    [exp                     i r]
     [flexpt                  i]
     [sin                     i r]
     [cos                     i r]
@@ -938,7 +942,7 @@
     [force                            i]
     [make-traced-procedure            i]
     [error@fx+ ]
-
+    [fasl-write                       i]
     ))
 
 (define (verify-map)

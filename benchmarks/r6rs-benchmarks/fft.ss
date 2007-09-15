@@ -4,7 +4,7 @@
   (export main)
   (import (r6rs) (r6rs arithmetic flonums) (r6rs-benchmarks))
 
-  (define flsin sin)
+  ;(define flsin sin)
 
   (define (four1 data)
     (let ((n (vector-length data))

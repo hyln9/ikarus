@@ -1,8 +1,8 @@
 * maze needs bitwise-and
 * quicksort needs bignum modulo.
 * scheme needs complex? and other stuff.
-* slatex needs char-alphabetic?
 * compiler needs string-downcase
+* nbody needs real-part
 
 * ntakl kinda slow
 * string too slow

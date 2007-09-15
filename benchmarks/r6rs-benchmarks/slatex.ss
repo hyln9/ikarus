@@ -2345,4 +2345,4 @@
       slatex-iters
       (lambda (result) #t)
       (lambda (filename) (lambda () (slatex.process-main-tex-file filename)))
-      "../../src/test")))
+      "r6rs-benchmarks/slatex-data/test")))

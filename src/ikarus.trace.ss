@@ -51,12 +51,7 @@
                               (write (car v*))
                               (f (cdr v*))])))
                        (apply values v*))))
-                 (lambda () (set! k* (cdr k*))))]))))))
-      
-
-  
-
-  )
+                 (lambda () (set! k* (cdr k*))))])))))))
 
 
 #!eof
@@ -123,10 +118,32 @@ Try:
   (cond
     [(zero? n) (k m)]
     [else (begin (fact (sub1 n) (* n m) k) 0)]))
+
+
 (call/cc
   (lambda (k)
     (fact 6 1
       (trace-lambda escape (v) (k v)))))
+
+
+(call/cc
+  (lambda k*
+    (trace-define (fact n)
+      (cond
+        [(zero? n) 
+         (call/cc
+           (lambda (k) 
+             (set! k* (cons k k*)) 
+             1))]
+        [else (* n (fact (sub1 n)))]))
+    (fact 9)
+    (let ([k (car k*)])
+      (set! k* (cdr k*))
+      (k 100000))))
+
+
+
+
 
 (trace-define (infinite-loop n)
   (infinite-loop (add1 n)))

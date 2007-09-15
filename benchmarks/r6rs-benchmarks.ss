@@ -45,6 +45,7 @@
      ray-iters
      sboyer-iters
      simplex-iters
+     slatex-iters
      sum-iters
      sum1-iters
      string-iters
