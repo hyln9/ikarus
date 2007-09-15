@@ -6,6 +6,7 @@
         (tests strings)
         (tests numbers)
         (tests bignums)
+        (tests fxcarry)
         (tests bignum-to-flonum)
         (tests string-to-number))
 
@@ -30,4 +31,5 @@
 (test-string-to-number)
 (test-div-and-mod)
 (test-bignums)
+(test-fxcarry)
 (printf "Happy Happy Joy Joy\n")

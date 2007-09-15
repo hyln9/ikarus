@@ -1,6 +1,7 @@
 
 (library (ikarus fixnums)
   (export fxzero? fxadd1 fxsub1 fxlognot fx+ fx- fx* fxquotient
+          fx+/carry fx*/carry fx-/carry
           fxremainder fxmodulo fxlogor fxlogand fxlogxor fxsll fxsra
           fx= fx< fx<= fx> fx>= 
           fx=? fx<? fx<=? fx>? fx>=? 
@@ -25,6 +26,7 @@
             fxpositive? fxnegative?
             fxeven? fxodd?
             fxarithmetic-shift-left fxarithmetic-shift-right fxarithmetic-shift
+            fx+/carry fx*/carry fx-/carry
             fxmin fxmax
             fixnum->string))
 
@@ -320,6 +322,24 @@
              (error 'fxmax "~s is not a fixnum" z)))]
       [(x) (if (fixnum? x) x (error 'fxmax "~s is not a fixnum" x))]))
 
+  (define (fx*/carry fx1 fx2 fx3)
+    (let ([s0 ($fx+ ($fx* fx1 fx2) fx3)])
+      (values 
+        s0
+        (sra (+ (* fx1 fx2) (- fx3 s0)) (fixnum-width)))))
+  
+  (define (fx+/carry fx1 fx2 fx3)
+    (let ([s0 ($fx+ ($fx+ fx1 fx2) fx3)])
+      (values 
+        s0
+        (sra (+ (+ fx1 fx2) (- fx3 s0)) (fixnum-width)))))
+  
+  (define (fx-/carry fx1 fx2 fx3)
+    (let ([s0 ($fx- ($fx- fx1 fx2) fx3)])
+      (values 
+        s0
+        (sra (- (- fx1 fx2) (+ s0 fx3)) (fixnum-width)))))
+
   (module (fixnum->string)
     (define f
       (lambda (n i j)
@@ -352,5 +372,6 @@
              (lambda (str j)
                ($string-set! str 0 #\-)
                str))]))))
+
 
   )

@@ -462,6 +462,10 @@
     [fixnum-width    i]
     [least-fixnum    i]
     [greatest-fixnum i]
+            
+    [fx+/carry  i]
+    [fx*/carry  i]
+    [fx-/carry  i]
 
     [for-each                i r]
     [map                     i r]
