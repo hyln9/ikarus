@@ -457,6 +457,8 @@
     [fxarithmetic-shift-left  i]
     [fxarithmetic-shift-right i]
     [fxarithmetic-shift       i]
+    [fxmin       i]
+    [fxmax       i]
 
     [for-each                i r]
     [map                     i r]

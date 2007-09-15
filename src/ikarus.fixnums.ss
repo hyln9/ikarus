@@ -9,6 +9,7 @@
           fxeven? fxodd?
           fixnum->string 
           fxarithmetic-shift-left fxarithmetic-shift-right fxarithmetic-shift
+          fxmin fxmax
           error@fx+)
   (import 
     (ikarus system $fx)
@@ -24,6 +25,7 @@
             fxpositive? fxnegative?
             fxeven? fxodd?
             fxarithmetic-shift-left fxarithmetic-shift-right fxarithmetic-shift
+            fxmin fxmax
             fixnum->string))
 
   (define fxzero?
@@ -269,6 +271,52 @@
     (if (fixnum? x) 
         (not ($fxzero? ($fxlogand x 1)))
         (error 'fxodd? "~s is not a fixnum" x)))
+
+  (define fxmin
+    (case-lambda 
+      [(x y) 
+       (if (fixnum? x) 
+           (if (fixnum? y) 
+               (if ($fx< x y) x y)
+               (error 'fxmin "~s is not a fixnum" y))
+           (error 'fxmin "~s is not a fixnum" x))]
+      [(x y z . ls)
+       (fxmin (fxmin x y) 
+         (if (fixnum? z) 
+             (let f ([z z] [ls ls])
+               (if (null? ls)
+                   z
+                   (let ([a ($car ls)])
+                     (if (fixnum? a) 
+                         (if ($fx< a z) 
+                             (f a ($cdr ls))
+                             (f z ($cdr ls)))
+                         (error 'fxmin "~s is not a fixnum" a)))))
+             (error 'fxmin "~s is not a fixnum" z)))]
+      [(x) (if (fixnum? x) x (error 'fxmin "~s is not a fixnum" x))]))
+
+  (define fxmax
+    (case-lambda 
+      [(x y)
+       (if (fixnum? x) 
+           (if (fixnum? y) 
+               (if ($fx> x y) x y)
+               (error 'fxmax "~s is not a fixnum" y))
+           (error 'fxmax "~s is not a fixnum" x))]
+      [(x y z . ls)
+       (fxmax (fxmax x y) 
+         (if (fixnum? z) 
+             (let f ([z z] [ls ls])
+               (if (null? ls)
+                   z
+                   (let ([a ($car ls)])
+                     (if (fixnum? a) 
+                         (if ($fx> a z)
+                             (f a ($cdr ls))
+                             (f z ($cdr ls)))
+                         (error 'fxmax "~s is not a fixnum" a)))))
+             (error 'fxmax "~s is not a fixnum" z)))]
+      [(x) (if (fixnum? x) x (error 'fxmax "~s is not a fixnum" x))]))
 
   (module (fixnum->string)
     (define f
