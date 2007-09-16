@@ -1817,6 +1817,8 @@
                 value
                 (chi-expr v r mr))]
              ;;; FIXME: handle macro!
+             [(global core-prim)
+              (stx-error e "cannot modify imported identifier in")]
              [else (stx-error e)]))])))
   (define chi-lambda-clause
     (lambda (fmls body* r mr)
@@ -2052,9 +2054,11 @@
                           mod** kwd* rib top?)
                       (values e* r mr lex* rhs* mod** kwd*))]))))])))
   (define set-global-macro-binding!
-    (lambda (loc b) (error 'set-global-macro-binding! "not yet")))
+    (lambda (sym loc b)
+      (extend-library-subst! (interaction-library) sym loc)
+      (extend-library-env! (interaction-library) loc b)))
   (define gen-global-macro-binding
-    (lambda (id) (error 'gen-global-macro-binding "not yet")))
+    (lambda (id ctxt) (gen-global-var-binding id ctxt)))
   (define gen-global-var-binding
     (lambda (id ctxt) 
       (let ([label (id->label id)])
@@ -2068,7 +2072,14 @@
                     loc]
                    [else 
                     (stx-error ctxt "cannot modify imported binding")])))]
-            [else (stx-error ctxt "cannot modify")])))))
+            [else (stx-error ctxt "cannot modify binding in")])))))
+  (define chi-top-set!
+    (lambda (e)
+      (syntax-match e ()
+        [(_ id rhs) (id? id)
+         (let ([loc (gen-global-var-binding id e)])
+           (let ([rhs (chi-expr rhs '() '())])
+             (values loc rhs)))])))
   (define chi-top*
     (lambda (e* init*)
       (cond
@@ -2082,12 +2093,15 @@
                   (let ([loc (gen-global-var-binding id e)])
                     (let ([rhs (chi-rhs rhs '() '())])
                       (chi-top* (cdr e*) (cons (cons loc rhs) init*)))))]
+               [(set!)
+                (let-values ([(loc rhs) (chi-top-set! e)])
+                  (chi-top* (cdr e*) (cons (cons loc rhs) init*)))]
                [(define-syntax)
                 (let-values ([(id rhs) (parse-define-syntax e)])
-                  (let ([loc (gen-global-macro-binding id)])
+                  (let ([loc (gen-global-macro-binding id e)])
                     (let ([expanded-rhs (expand-transformer rhs '())])
                       (let ([b (make-eval-transformer expanded-rhs)])
-                        (set-global-macro-binding! loc b)
+                        (set-global-macro-binding! (id->sym id) loc b)
                         (chi-top* (cdr e*) init*)))))]
                [(begin)
                 (syntax-match e ()
@@ -2560,7 +2574,9 @@
     (lambda (x . args)
       (unless (andmap string? args)
         (error 'syntax-error "invalid argument ~s" args))
-      (error #f "~s ~a" (strip x '()) (apply string-append args))))
+      (if (null? args) 
+          (error #f "invalid syntax ~s" (strip x '()))
+          (error #f "~s ~a" (strip x '()) (apply string-append args)))))
   (define identifier? (lambda (x) (id? x)))
   (define datum->syntax
     (lambda (id datum)
