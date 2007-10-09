@@ -1,14 +1,12 @@
 
 (library (ikarus hash-tables)
-   (export hash-table? make-hash-table get-hash-table put-hash-table!
-           make-hashtable hashtable-ref hashtable-set!)
+   (export make-hashtable hashtable-ref hashtable-set! hashtable?)
    (import 
      (ikarus system $pairs)
      (ikarus system $vectors)
      (ikarus system $tcbuckets)
      (ikarus system $fx)
-     (except (ikarus) hash-table? make-hash-table get-hash-table
-             make-hashtable put-hash-table! hashtable-ref hashtable-set!))
+     (except (ikarus) make-hashtable hashtable-ref hashtable-set! hashtable?))
 
    (define-record hasht (vec count tc))
 
@@ -178,27 +176,24 @@
       (init-vec (make-vector n) 0 n)))
 
   ;;; public interface
-  (define (hash-table? x) (hasht? x))
+  (define (hashtable? x) (hasht? x))
 
-  (define (make-hash-table)
+  (define (make-hashtable)
     (let ([x (cons #f #f)])
       (let ([tc (cons x x)])
         (make-hasht (make-base-vec 32) 0 tc))))
 
-  (define get-hash-table
+  (define hashtable-ref
     (lambda (h x v)
       (if (hasht? h)
           (get-hash h x v)
-          (error 'get-hash-table "~s is not a hash table" h))))
+          (error 'hashtable-ref "~s is not a hash table" h))))
 
-  (define put-hash-table!
+  (define hashtable-set!
     (lambda (h x v)
       (if (hasht? h)
           (put-hash! h x v)
-          (error 'put-hash-table! "~s is not a hash table" h))))
+          (error 'hashtable-set! "~s is not a hash table" h))))
 
-  (define hashtable-ref get-hash-table)
-  (define hashtable-set! put-hash-table!)
-  (define make-hashtable make-hash-table)
 
 )

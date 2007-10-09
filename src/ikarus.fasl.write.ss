@@ -2,6 +2,7 @@
 (library (ikarus fasl write)
   (export fasl-write)
   (import
+    (rnrs hashtables)
     (ikarus system $codes)
     (ikarus system $pairs)
     (ikarus system $records)
@@ -61,7 +62,7 @@
 
   (define (count-unshared-cdrs x h n)
     (cond
-      [(and (pair? x) (eq? (get-hash-table h x #f) 0))
+      [(and (pair? x) (eq? (hashtable-ref h x #f) 0))
        (count-unshared-cdrs ($cdr x) h ($fxadd1 n))]
       [else n]))
 
@@ -209,7 +210,7 @@
     (lambda (x p h m)
       (cond
         [(immediate? x) (fasl-write-immediate x p) m]
-        [(get-hash-table h x #f) =>
+        [(hashtable-ref h x #f) =>
          (lambda (mark)
            (unless (fixnum? mark)
              (error 'fasl-write "BUG: invalid mark ~s" mark))
@@ -217,7 +218,7 @@
              [(fx= mark 0) ; singly referenced
               (do-write x p h m)]
              [(fx> mark 0) ; marked but not written
-              (put-hash-table! h x (fx- 0 m))
+              (hashtable-set! h x (fx- 0 m))
               (write-char #\> p)
               (write-int m p)
               (do-write x p h (fxadd1 m))]
@@ -230,11 +231,11 @@
     (lambda (x h)
       (unless (immediate? x)
         (cond
-          [(get-hash-table h x #f) =>
+          [(hashtable-ref h x #f) =>
            (lambda (i) 
-             (put-hash-table! h x (fxadd1 i)))]
+             (hashtable-set! h x (fxadd1 i)))]
           [else
-           (put-hash-table! h x 0)
+           (hashtable-set! h x 0)
            (cond
              [(pair? x) 
               (make-graph (car x) h)
@@ -284,7 +285,7 @@
              [else (error 'fasl-write "~s is not fasl-writable" x)])]))))
   (define fasl-write-to-port
     (lambda (x port)
-      (let ([h (make-hash-table)])
+      (let ([h (make-hashtable)])
          (make-graph x h)
          (write-char #\# port)
          (write-char #\@ port)

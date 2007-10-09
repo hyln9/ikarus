@@ -3,6 +3,7 @@
   (export write display format printf print-error error-handler
           error print-unicode print-graph)
   (import 
+    (rnrs hashtables)
     (ikarus system $chars)
     (ikarus system $strings)
     (ikarus system $vectors)
@@ -67,8 +68,8 @@
     (lambda (x p m h i)
       (cond
        [(and (pair? x) 
-             (or (not (get-hash-table h x #f))
-                 (fxzero? (get-hash-table h x 0))))
+             (or (not (hashtable-ref h x #f))
+                 (fxzero? (hashtable-ref h x 0))))
         (write-char #\space p)
         (write-list (cdr x) p m h 
           (writer (car x) p m h i))]
@@ -436,7 +437,7 @@
            (let ([d ($cdr x)])
              (and (pair? d)
                   (null? ($cdr d))
-                  (not (get-hash-table h x #f))))
+                  (not (hashtable-ref h x #f))))
            (assq ($car x) macro-forms))))
   
   (define write-pair
@@ -468,7 +469,7 @@
   (define write-shareable
     (lambda (x p m h i k)
       (cond
-        [(get-hash-table h x #f) =>
+        [(hashtable-ref h x #f) =>
          (lambda (n)
            (cond
              [(fx< n 0) 
@@ -478,7 +479,7 @@
               (k x p m h i)]
              [else
               (let ([i (fx- i 1)])
-                (put-hash-table! h x i)
+                (hashtable-set! h x i)
                 (write-mark i p)
                 (k x p m h i))]))]
         [else (k x p m h i)])))
@@ -541,8 +542,8 @@
         [(bwp-object? x)
          (write-char* "#!bwp" p)
          i]
-        [(hash-table? x)
-         (write-char* "#<hash-table>" p)
+        [(hashtable? x)
+         (write-char* "#<hashtable>" p)
          i]
         [(record? x)
          (let ([printer (record-printer x)])
@@ -579,63 +580,63 @@
       (cond
         [(pair? x)
          (cond
-           [(get-hash-table h x #f) =>
+           [(hashtable-ref h x #f) =>
             (lambda (n)
-              (put-hash-table! h x (fxadd1 n)))]
+              (hashtable-set! h x (fxadd1 n)))]
            [else
-            (put-hash-table! h x 0)
+            (hashtable-set! h x 0)
             (graph (car x) h)
             (graph (cdr x) h)])]
         [(vector? x)
          (cond
-           [(get-hash-table h x #f) =>
+           [(hashtable-ref h x #f) =>
             (lambda (n)
-              (put-hash-table! h x (fxadd1 n)))]
+              (hashtable-set! h x (fxadd1 n)))]
            [else
-            (put-hash-table! h x 0)
+            (hashtable-set! h x 0)
             (vec-graph x 0 (vector-length x) h)])]
         [(gensym? x)
          (cond
-           [(get-hash-table h x #f) =>
+           [(hashtable-ref h x #f) =>
             (lambda (n)
-              (put-hash-table! h x (fxadd1 n)))])]))
+              (hashtable-set! h x (fxadd1 n)))])]))
     (define (dynamic x h)
       (cond
         [(pair? x)
          (cond
-           [(get-hash-table h x #f) =>
+           [(hashtable-ref h x #f) =>
             (lambda (n)
-              (put-hash-table! h x (fxadd1 n)))]
+              (hashtable-set! h x (fxadd1 n)))]
            [else
-            (put-hash-table! h x 0)
+            (hashtable-set! h x 0)
             (dynamic (car x) h)
             (dynamic (cdr x) h)
-            (when (and (get-hash-table h x #f)
-                       (fxzero? (get-hash-table h x #f)))
-              (put-hash-table! h x #f))])]
+            (when (and (hashtable-ref h x #f)
+                       (fxzero? (hashtable-ref h x #f)))
+              (hashtable-set! h x #f))])]
         [(vector? x)
          (cond
-           [(get-hash-table h x #f) =>
+           [(hashtable-ref h x #f) =>
             (lambda (n)
-              (put-hash-table! h x (fxadd1 n)))]
+              (hashtable-set! h x (fxadd1 n)))]
            [else
-            (put-hash-table! h x 0)
+            (hashtable-set! h x 0)
             (vec-dynamic x 0 (vector-length x) h)
-            (when (and (get-hash-table h x #f)
-                       (fxzero? (get-hash-table h x #f)))
-              (put-hash-table! h x #f))])])) 
+            (when (and (hashtable-ref h x #f)
+                       (fxzero? (hashtable-ref h x #f)))
+              (hashtable-set! h x #f))])])) 
     (if (print-graph) 
         (graph x h)
         (dynamic x h)))
   
   (define (write-to-port x p)
-    (let ([h (make-hash-table)])
+    (let ([h (make-hashtable)])
       (hasher x h)
       (writer x p #t h 0))
     (flush-output-port p))
   
   (define (display-to-port x p)
-    (let ([h (make-hash-table)])
+    (let ([h (make-hashtable)])
       (hasher x h)
       (writer x p #f h 0))
     (flush-output-port p))

@@ -4,6 +4,7 @@
           assembler-output
           current-primitive-locations eval-core)
   (import 
+    (rnrs hashtables)
     (ikarus system $fx)
     (ikarus system $pairs)
     (only (ikarus system $codes) $code->closure)
@@ -473,10 +474,10 @@
 (define (optimize-letrec x)
   (define who 'optimize-letrec)
   (define (extend-hash lhs* h ref)
-    (for-each (lambda (lhs) (put-hash-table! h lhs #t)) lhs*)
+    (for-each (lambda (lhs) (hashtable-set! h lhs #t)) lhs*)
     (lambda (x)
-      (unless (get-hash-table h x #f)
-        (put-hash-table! h x #t)
+      (unless (hashtable-ref h x #f)
+        (hashtable-set! h x #t)
         (ref x))))
   (define (E* x* ref comp)
     (cond
@@ -488,11 +489,11 @@
     (cond
       [(null? rhs*) '()]
       [else
-       (let ([h (make-hash-table)])
+       (let ([h (make-hashtable)])
          (let ([ref
                 (lambda (x)
-                  (unless (get-hash-table h x #f)
-                    (put-hash-table! h x #t)
+                  (unless (hashtable-ref h x #f)
+                    (hashtable-set! h x #t)
                     (ref x)
                     (when (memq x lhs*)
                       (vector-set! vref i #t))))]
@@ -506,12 +507,12 @@
     (cond
       [(null? rhs*) '()]
       [else
-       (let ([h (make-hash-table)]
+       (let ([h (make-hashtable)]
              [rest (do-rhs* (fxadd1 i) lhs* (cdr rhs*) ref comp vref vcomp)])
          (let ([ref
                 (lambda (x)
-                  (unless (get-hash-table h x #f)
-                    (put-hash-table! h x #t)
+                  (unless (hashtable-ref h x #f)
+                    (hashtable-set! h x #t)
                     (ref x)
                     (when (memq x lhs*)
                       (vector-set! vref i #t))))]
@@ -539,7 +540,7 @@
             (values (cons lhs slhs*) (cons rhs srhs*) llhs* lrhs* clhs* crhs*)]
            ))]))
   (define (do-recbind lhs* rhs* body ref comp letrec?)
-    (let ([h (make-hash-table)]
+    (let ([h (make-hashtable)]
           [vref (make-vector (length lhs*) #f)]
           [vcomp (make-vector (length lhs*) #f)])
       (let* ([ref (extend-hash lhs* h ref)]
@@ -581,7 +582,7 @@
       [(primref) x]
       [(bind lhs* rhs* body)
        (let ([rhs* (E* rhs* ref comp)])
-         (let ([h (make-hash-table)])
+         (let ([h (make-hashtable)])
            (let ([body (E body (extend-hash lhs* h ref) comp)])
              (make-bind lhs* rhs* body))))]
       [(recbind lhs* rhs* body)
@@ -600,7 +601,7 @@
          (map (lambda (x)
                 (record-case x
                   [(clambda-case info body)
-                   (let ([h (make-hash-table)])
+                   (let ([h (make-hashtable)])
                      (let ([body (E body (extend-hash (case-info-args info) h ref) void)])
                        (make-clambda-case info body)))]))
               cls*)
