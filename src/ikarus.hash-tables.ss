@@ -1,13 +1,14 @@
 
 (library (ikarus hash-tables)
-   (export hash-table? make-hash-table get-hash-table put-hash-table!)
+   (export hash-table? make-hash-table get-hash-table put-hash-table!
+           make-hashtable hashtable-ref hashtable-set!)
    (import 
      (ikarus system $pairs)
      (ikarus system $vectors)
      (ikarus system $tcbuckets)
      (ikarus system $fx)
      (except (ikarus) hash-table? make-hash-table get-hash-table
-             put-hash-table!))
+             make-hashtable put-hash-table! hashtable-ref hashtable-set!))
 
    (define-record hasht (vec count tc))
 
@@ -26,29 +27,6 @@
   (define-syntax inthash
     (syntax-rules ()
       [(_ x) x]))
-
-  #;(define-syntax inthash
-    (syntax-rules ()
-      [(_ x) ($fxinthash x)]))
-
-  #;(define inthash
-    (lambda (key)
-      ;static int inthash(int key) { /* from Bob Jenkin's */
-      ;  key += ~(key << 15);
-      ;  key ^=  (key >> 10);
-      ;  key +=  (key << 3);
-      ;  key ^=  (key >> 6);
-      ;  key += ~(key << 11);
-      ;  key ^=  (key >> 16);
-      ;  return key;
-      ;}
-      (let* ([key ($fx+ key ($fxlognot ($fxsll key 15)))]
-             [key ($fxlogxor key ($fxsra key 10))]
-             [key ($fx+ key ($fxsll key 3))]
-             [key ($fxlogxor key ($fxsra key 6))]
-             [key ($fx+ key ($fxlognot ($fxsll key 11)))]
-             [key ($fxlogxor key ($fxsra key 16))])
-        key)))
 
   ;;; assq-like lookup
   (define direct-lookup 
@@ -218,5 +196,9 @@
       (if (hasht? h)
           (put-hash! h x v)
           (error 'put-hash-table! "~s is not a hash table" h))))
+
+  (define hashtable-ref get-hash-table)
+  (define hashtable-set! put-hash-table!)
+  (define make-hashtable make-hash-table)
 
 )

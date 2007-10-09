@@ -1,6 +1,7 @@
 
 (library (ikarus io output-strings)
-  (export open-output-string get-output-string with-output-to-string)
+  (export open-output-string get-output-string with-output-to-string
+          open-string-output-port)
   (import 
     (ikarus system $strings)
     (ikarus system $bytevectors)
@@ -9,7 +10,8 @@
     (ikarus system $pairs)
     (ikarus system $ports)
     (ikarus system $io)
-    (except (ikarus) open-output-string get-output-string with-output-to-string))
+    (except (ikarus) open-output-string get-output-string with-output-to-string
+            open-string-output-port))
 
   (define-syntax message-case
     (syntax-rules (else)
@@ -165,5 +167,10 @@
         (parameterize ([current-output-port p]) (f))
         (get-output-string p))))
   
+  (define (open-string-output-port)
+    (let ([p (open-output-string)])
+      ;;; FIXME: should empty string
+      (values p (lambda () (get-output-string p)))))
+
 
 )

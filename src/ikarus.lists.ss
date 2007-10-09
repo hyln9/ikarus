@@ -3,14 +3,15 @@
   (export $memq list? list cons* make-list append length list-ref reverse
           last-pair memq memp memv member find assq assp assv assoc
           remq remv remove remp filter map for-each andmap ormap list-tail
-          partition)
+          partition for-all exists)
   (import 
     (ikarus system $fx)
     (ikarus system $pairs)
     (except (ikarus) list? list cons* make-list append reverse
             last-pair length list-ref memq memp memv member find
             assq assp assv assoc remq remv remove remp filter
-            map for-each andmap ormap list-tail partition))
+            map for-each andmap ormap list-tail partition
+            for-all exists))
 
   (define $memq
     (lambda (x ls)
@@ -850,6 +851,10 @@
          (unless (procedure? p) 
            (error 'partition "~s is not a procedure" p))
          (race ls ls ls p))))
+
+  ;;; FIXME: lost in crash.
+  (define for-all andmap)
+  (define exists ormap)
 
   )
 

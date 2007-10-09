@@ -63,8 +63,7 @@
     "ikarus.fasl.write.ss"
     "ikarus.fasl.ss"
     "ikarus.compiler.ss"
-    "ikarus.library-manager.ss"
-    ;"psyntax.library-manager.ss"
+    "psyntax.library-manager.ss"
     "ikarus.syntax.ss"
     "ikarus.load.ss"
     "ikarus.pretty-print.ss"
@@ -217,7 +216,7 @@
     [foreign-call                                i]
     [type-descriptor                             i]
     [parameterize                                i parameters]
-    [define-record                               i r]
+    [define-record                               i]
     [include                                     i r]
     [time                                        i]
     [trace-lambda                                i]
@@ -2027,7 +2026,7 @@
   (let ([code `(library (ikarus primlocs)
                   (export) ;;; must be empty
                   (import 
-                    (only (ikarus library-manager)
+                    (only (psyntax library-manager)
                           install-library)
                     (only (ikarus compiler)
                           current-primitive-locations)

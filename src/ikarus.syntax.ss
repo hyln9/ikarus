@@ -17,12 +17,13 @@
       environment environment? identifier?  eval
       generate-temporaries free-identifier=?  bound-identifier=?
       datum->syntax syntax->datum make-variable-transformer
-      null-environment)
+      null-environment define-record)
+    (psyntax compat)
     (rnrs base)
     (rnrs lists)
     (rnrs control)
     (rnrs io simple)
-    (except (ikarus library-manager) installed-libraries)
+    (except (psyntax library-manager) installed-libraries)
     (only (ikarus system $bootstrap) eval-core)
     (chez modules)
     (ikarus symbols)
