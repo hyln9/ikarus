@@ -13,7 +13,15 @@
           eval-r6rs-top-level boot-library-expand eval-top-level
           null-environment)
   (import
-    (rnrs)
+    (except (rnrs)
+      environment environment? identifier?  eval
+      generate-temporaries free-identifier=?  bound-identifier=?
+      datum->syntax syntax->datum make-variable-transformer
+      null-environment)
+    (rnrs base)
+    (rnrs lists)
+    (rnrs control)
+    (rnrs io simple)
     (except (ikarus library-manager) installed-libraries)
     (only (ikarus system $bootstrap) eval-core)
     (chez modules)
