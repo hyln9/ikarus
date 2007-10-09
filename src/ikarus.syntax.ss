@@ -13,7 +13,7 @@
           eval-r6rs-top-level boot-library-expand eval-top-level
           null-environment)
   (import
-    (r6rs)
+    (rnrs)
     (except (ikarus library-manager) installed-libraries)
     (only (ikarus system $bootstrap) eval-core)
     (chez modules)
@@ -22,8 +22,8 @@
     (only (ikarus) error printf ormap andmap cons* format
           make-record-type void set-rtd-printer! type-descriptor
           pretty-print)
-    (only (r6rs syntax-case) syntax-case syntax with-syntax)
-    (prefix (r6rs syntax-case) sys:))
+    (only (rnrs syntax-case) syntax-case syntax with-syntax)
+    (prefix (rnrs syntax-case) sys:))
   (define who 'expander)
   (define-syntax no-source
     (lambda (x) #f))
