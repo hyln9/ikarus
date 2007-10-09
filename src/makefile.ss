@@ -65,7 +65,6 @@
     "ikarus.compiler.ss"
     "psyntax.compat.ss"
     "psyntax.library-manager.ss"
-    ;"ikarus.syntax.ss"
     "psyntax.internal.ss"
     "psyntax.config.ss"
     "psyntax.builders.ss"
@@ -133,12 +132,6 @@
     [trace-define      (macro . trace-define)]
     ))
 
-(define (macro-identifier? x) 
-  (and (assq x ikarus-system-macros) #t))
-
-(define (procedure-identifier? x)
-  (not (macro-identifier? x)))
-
 (define library-legend
   ;; abbr.       name                             visible? required?
   '([i           (ikarus)                              #t     #t]
@@ -193,28 +186,9 @@
     [$arg-list   (ikarus system $arg-list)             #f     #t]
     [$stack      (ikarus system $stack)                #f     #t]
     [$interrupts (ikarus system $interrupts)           #f     #t]
-    [$all        (ikarus system $all)                  #f     #t]
-    [$all2       (psyntax system $all)                 #f     #t]
+    [$all       (psyntax system $all)                 #f     #t]
     [$boot       (ikarus system $bootstrap)            #f     #t]
     ))
-
-
-(define bootstrap-collection
-  (let ([ls 
-         (let f ([ls library-legend])
-           (define required? cadddr)
-           (define library-name cadr)
-           (cond
-             [(null? ls) '()]
-             [(required? (car ls)) 
-              (cons (find-library-by-name (library-name (car ls)))
-                    (f (cdr ls)))]
-             [else (f (cdr ls))]))])
-    (case-lambda
-      [() ls]
-      [(x) (unless (memq x ls) 
-             (set! ls (cons x ls)))])))
-
 
 (define identifier->library-map
   '(
@@ -1223,6 +1197,27 @@
     [syntax-error                                i sc]
   ))
 
+(define (macro-identifier? x) 
+  (and (assq x ikarus-system-macros) #t))
+
+(define (procedure-identifier? x)
+  (not (macro-identifier? x)))
+
+(define bootstrap-collection
+  (let ([ls 
+         (let f ([ls library-legend])
+           (define required? cadddr)
+           (define library-name cadr)
+           (cond
+             [(null? ls) '()]
+             [(required? (car ls)) 
+              (cons (find-library-by-name (library-name (car ls)))
+                    (f (cdr ls)))]
+             [else (f (cdr ls))]))])
+    (case-lambda
+      [() ls]
+      [(x) (unless (memq x ls) 
+             (set! ls (cons x ls)))])))
 
 (define (verify-map)
   (define (f x)
@@ -1340,6 +1335,11 @@
                   (boot-library-expand code)])
        code)))
 
+;;; the first code to run on the system is one that initializes
+;;; the value and proc fields of the location of $init-symbol-value!
+;;; Otherwise, all subsequent inits to any global variable will
+;;; segfault.  
+
 (define (make-init-code)
   (define proc (gensym))
   (define loc (gensym))
@@ -1368,6 +1368,8 @@
     `([,label . (global . ,loc)])))
 
 (define (expand-all files)
+  ;;; remove all re-exported identifiers (those with labels in
+  ;;; subst but not binding in env).
   (define (prune-subst subst env)
     (cond 
       ((null? subst) '()) 
