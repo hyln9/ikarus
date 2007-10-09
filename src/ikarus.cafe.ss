@@ -25,7 +25,7 @@ description:
 (library (ikarus cafe)
   (export new-cafe)
   (import 
-    (only (ikarus syntax) eval-top-level)
+    (only (psyntax expander) eval-top-level)
     (except (ikarus) new-cafe))
 
   (define with-error-handler

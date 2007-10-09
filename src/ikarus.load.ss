@@ -3,7 +3,7 @@
   (export load load-r6rs-top-level)
   (import 
     (except (ikarus) load)
-    (only (ikarus syntax) eval-top-level eval-r6rs-top-level)
+    (only (psyntax expander) eval-top-level eval-r6rs-top-level)
     (only (ikarus reader) read-initial))
 
   (define load-handler

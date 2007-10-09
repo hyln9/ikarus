@@ -153,6 +153,8 @@
   (define (Var x)
     (or (getprop x *cookie*) 
         (error 'recordize "unbound ~s" x)))
+  (define (lexical x) 
+    (getprop x *cookie*))
   (define (E x)
     (cond
       [(pair? x)
@@ -165,7 +167,14 @@
             (E (cadddr x)))]
          [(set!)
           (let ([lhs (cadr x)] [rhs (caddr x)])
-            (make-assign (Var lhs) (E rhs)))]
+            (cond
+              [(lexical lhs) => 
+               (lambda (lhs) 
+                 (make-assign lhs (E rhs)))]
+              [else
+               (make-funcall (make-primref '$init-symbol-value!)
+                 (list (make-constant lhs)
+                       (E rhs)))]))]
          [(begin)
           (let f ([a (E (cadr x))] [d (cddr x)])
             (cond
@@ -210,6 +219,9 @@
          [(|#primitive|)
           (let ([var (cadr x)])
             (make-primref var))]
+         [(primitive)
+          (let ([var (cadr x)])
+            (make-primref var))]
          [(top-level-value)
           (let ([var (quoted-sym (cadr x))])
              (make-funcall
@@ -222,7 +234,11 @@
           (make-constant (void))]
          [else
           (make-funcall (E (car x)) (map E (cdr x)))])]
-      [(symbol? x) (Var x)]
+      [(symbol? x)
+       (or (lexical x) 
+           (make-funcall 
+             (make-primref 'top-level-value) 
+             (list (make-constant x))))]
       [else (error 'recordize "invalid expression ~s" x)]))
   (E x))
 
