@@ -133,11 +133,12 @@
          (write-char #\x p)
          (write-int (code-size x) p)
          (write-fixnum (code-freevars x) p)
-         (let f ([i 0] [n (code-size x)])
-           (unless (fx= i n)
-             (write-byte (code-ref x i) p)
-             (f (fxadd1 i) n)))
-         (fasl-write-object (code-reloc-vector x) p h m)]
+         (let ([m (fasl-write-object ($code-annotation x) p h m)])
+           (let f ([i 0] [n (code-size x)])
+             (unless (fx= i n)
+               (write-byte (code-ref x i) p)
+               (f (fxadd1 i) n)))
+           (fasl-write-object (code-reloc-vector x) p h m))]
         [(record? x)
          (let ([rtd (record-type-descriptor x)])
            (cond
@@ -250,6 +251,7 @@
               (when (gensym? x) (make-graph (gensym->unique-string x) h))]
              [(string? x) (void)]
              [(code? x) 
+              (make-graph ($code-annotation x) h)
               (make-graph (code-reloc-vector x) h)]
              [(record? x)
               (when (eq? x (base-rtd))

@@ -91,8 +91,8 @@
   ;;;
   (define (Clambda x)
     (record-case x
-      [(clambda label case* free*)
-       (make-clambda label (map ClambdaCase case*) free*)]
+      [(clambda label case* free* name)
+       (make-clambda label (map ClambdaCase case*) free* name)]
       [else (error who "invalid clambda ~s" x)]))
   ;;;
   (define (Program x)
@@ -167,9 +167,9 @@
   ;;;
   (define (Clambda x)
     (record-case x
-      [(clambda label case* free*)
+      [(clambda label case* free* name)
        (make-clambda label (map (ClambdaCase free*) case*) 
-                     free*)]
+                     free* name)]
       [else (error who "invalid clambda ~s" x)]))
   ;;;
   (define (Program x)
@@ -204,8 +204,8 @@
        (make-clambda-case info (Tail body))]))
   (define (CodeExpr x)
     (record-case x
-      [(clambda L cases free)
-       (make-clambda L (map CaseExpr cases) free)]))
+      [(clambda L cases free name)
+       (make-clambda L (map CaseExpr cases) free name)]))
   (define (CodesExpr x)
     (record-case x 
       [(codes list body)
@@ -235,8 +235,8 @@
   ;;;
   (define (Clambda x)
     (record-case x
-      [(clambda label case* free*)
-       (make-clambda label (map ClambdaCase case*) free*)]))
+      [(clambda label case* free* name)
+       (make-clambda label (map ClambdaCase case*) free* name)]))
   ;;;
   (define (Main x)
     (if (Tail x) 
@@ -682,8 +682,8 @@
   ;;;
   (define (Clambda x)
     (record-case x
-      [(clambda label case* free*)
-       (make-clambda label (map ClambdaCase case*) free*)]))
+      [(clambda label case* free* name)
+       (make-clambda label (map ClambdaCase case*) free* name)]))
   ;;;
   (define (Main x)
     (set! locals '())
@@ -1815,8 +1815,8 @@
   ;;;
   (define (Clambda x)
     (record-case x
-      [(clambda label case* free*)
-       (make-clambda label (map ClambdaCase case*) free*)]))
+      [(clambda label case* free* name)
+       (make-clambda label (map ClambdaCase case*) free* name)]))
   ;;;
   (define (Program x)
     (record-case x 
@@ -2322,8 +2322,8 @@
     ;;;
     (define (Clambda x)
       (record-case x
-        [(clambda label case* free*)
-         (make-clambda label (map ClambdaCase case*) free*)]))
+        [(clambda label case* free* name)
+         (make-clambda label (map ClambdaCase case*) free* name)]))
     ;;;
     (define (Program x)
       (record-case x 
@@ -2778,8 +2778,9 @@
   ;;;
   (define (Clambda x)
     (record-case x
-      [(clambda L case* free*)
+      [(clambda L case* free* name)
        (cons* (length free*) 
+              `(name ,name)
               (label L)
           (let ([ac (list '(nop))])
             (parameterize ([exceptions-conc ac])

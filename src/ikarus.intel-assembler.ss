@@ -1007,8 +1007,19 @@
 
   (define assemble-sources
     (lambda (thunk?-label ls*)
+      (define (code-list ls)
+        (if (let ([a (cadr ls)])
+              (and (pair? a) (eq? (car a) 'name)))
+            (cddr ls)
+            (cdr ls)))
+      (define (code-name ls)
+        (let ([a (cadr ls)])
+           (and (pair? a) 
+                (eq? (car a) 'name))
+                (cadr a)))
       (let ([closure-size* (map car ls*)]
-            [ls* (map cdr ls*)])
+            [code-name* (map code-name ls*)]
+            [ls* (map code-list ls*)])
         (let* ([ls* (map convert-instructions ls*)]
                [ls* (map optimize-local-jumps ls*)])
           (let ([n* (map compute-code-size ls*)]
@@ -1024,6 +1035,10 @@
                 ;            (printf "RV=~s\n" x))
                 ;          relv*)
                 (for-each set-code-reloc-vector! code* relv*)
+                (for-each (lambda (code name)
+                            (when name
+                              (set-code-annotation! code name)))
+                          code* code-name*)
                 code*)))))))
   
 

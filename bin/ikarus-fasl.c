@@ -276,11 +276,12 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     ikp freevars;
     fasl_read_buf(p, &code_size, sizeof(int));
     fasl_read_buf(p, &freevars, sizeof(ikp));
+    ikp annotation = do_read(pcb, p);
     ikp code = alloc_code(align(code_size+disp_code_data), pcb);
     ref(code, 0) = code_tag;
     ref(code, disp_code_code_size) = fix(code_size);
     ref(code, disp_code_freevars) = freevars;
-    ref(code, disp_code_annotation) = false_object;
+    ref(code, disp_code_annotation) = annotation;
     fasl_read_buf(p, code+disp_code_data, code_size);
     if(put_mark_index){
       p->marks[put_mark_index] = code+vector_tag;

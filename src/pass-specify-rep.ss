@@ -462,10 +462,10 @@
   ;;;
   (define (Clambda x)
     (record-case x
-      [(clambda label case* free*)
+      [(clambda label case* free* name)
        (make-clambda label 
           (map ClambdaCase case*)
-          free*)]
+          free* name)]
       [else (error 'specify-rep "invalid clambda ~s" x)]))
   ;;;
   (define (Program x)
