@@ -2340,7 +2340,7 @@
 (define eval-core
   (lambda (x) ((compile-core-expr x))))
 
-(include "libaltcogen.ss")
+(include "ikarus.compiler.altcogen.ss")
 
 (define current-primitive-locations
   (let ([plocs (lambda (x) #f)])
