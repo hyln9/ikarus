@@ -3,7 +3,7 @@
 
 (import (except (ikarus) assembler-output)
         (ikarus compiler)
-        (except (ikarus system $bootstrap)
+        (except (psyntax system $bootstrap)
                 eval-core
                 current-primitive-locations
                 compile-core-expr-to-port))
@@ -186,8 +186,8 @@
     [$arg-list   (ikarus system $arg-list)             #f     #t]
     [$stack      (ikarus system $stack)                #f     #t]
     [$interrupts (ikarus system $interrupts)           #f     #t]
-    [$all       (psyntax system $all)                 #f     #t]
-    [$boot       (ikarus system $bootstrap)            #f     #t]
+    [$all        (psyntax system $all)                 #f     #t]
+    [$boot       (psyntax system $bootstrap)           #f     #t]
     ))
 
 (define identifier->library-map

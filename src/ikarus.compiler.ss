@@ -229,6 +229,8 @@
                              body)))))
                    (cdr x))])
             (make-clambda (gensym) cls* #f ctxt))]
+         [(lambda) 
+          (E `(case-lambda ,(cdr x)) ctxt)]
          [(foreign-call)
           (let ([name (quoted-string (cadr x))] [arg* (cddr x)])
             (make-forcall name (map (lambda (x) (E x #f)) arg*)))]
