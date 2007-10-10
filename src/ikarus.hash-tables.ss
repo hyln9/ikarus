@@ -1,12 +1,16 @@
 
 (library (ikarus hash-tables)
-   (export make-eq-hashtable hashtable-ref hashtable-set! hashtable?)
+   (export make-eq-hashtable hashtable-ref hashtable-set! hashtable?
+           hashtable-size hashtable-delete! hashtable-contains?
+           hashtable-update!)
    (import 
      (ikarus system $pairs)
      (ikarus system $vectors)
      (ikarus system $tcbuckets)
      (ikarus system $fx)
-     (except (ikarus) make-eq-hashtable hashtable-ref hashtable-set! hashtable?))
+     (except (ikarus) make-eq-hashtable hashtable-ref hashtable-set! hashtable?
+             hashtable-size hashtable-delete! hashtable-contains?
+             hashtable-update!))
 
    (define-record hasht (vec count tc))
 
@@ -92,20 +96,47 @@
                 ($vector-set! vec idx b)
                 (void))))))))
 
-  (define get-hash
-    (lambda (h x v)
-      (let ([pv (pointer-value x)]
-            [vec (hasht-vec h)])
-        (let ([ih (inthash pv)])
-          (let ([idx ($fxlogand ih ($fx- ($vector-length vec) 1))])
-            (let ([b ($vector-ref vec idx)])
-              (cond
-                [(or (direct-lookup x b) (rehash-lookup h (hasht-tc h) x))
-                 =>
-                 (lambda (b)
-                   ($tcbucket-val b))]
-                [else v])))))))
-  
+
+  (define unlink! 
+    (lambda (h b)
+      (let ([vec (hasht-vec h)]
+            [next ($tcbucket-next b)])
+        ;;; first remove it from its old place
+        (let ([idx 
+               (if (fixnum? next)
+                   next
+                   (get-bucket-index next))])
+          (let ([fst ($vector-ref vec idx)])
+            (cond
+              [(eq? fst b) 
+               ($vector-set! vec idx next)]
+              [else 
+               (replace! fst b next)])))
+        ;;; set next to be #f, denoting, not in table
+        ($set-tcbucket-next! b #f))))
+
+  (define (get-bucket h x)
+    (let ([pv (pointer-value x)]
+          [vec (hasht-vec h)])
+      (let ([ih (inthash pv)])
+        (let ([idx ($fxlogand ih ($fx- ($vector-length vec) 1))])
+          (let ([b ($vector-ref vec idx)])
+            (or (direct-lookup x b)
+                (rehash-lookup h (hasht-tc h) x)))))))
+
+  (define (get-hash h x v)
+    (cond
+      [(get-bucket h x) =>
+       (lambda (b) ($tcbucket-val b))]
+      [else v]))
+
+  (define (in-hash? h x) 
+    (and (get-bucket h x) #t))
+
+  (define (del-hash h x)
+    (cond
+      [(get-bucket h x) => (lambda (b) (unlink! h b))]))
+
   (define put-hash!
     (lambda (h x v)
       (let ([pv (pointer-value x)]
@@ -133,6 +164,16 @@
                    (set-hasht-count! h ($fxadd1 ct))
                    (when ($fx> ct ($vector-length vec))
                      (enlarge-table h)))])))))))
+
+
+          
+  (define (update-hash! h x proc default)
+    (cond
+      [(get-bucket h x) =>
+       (lambda (b) ($set-tcbucket-val! b (proc ($tcbucket-val b))))]
+      [else (put-hash! h x (proc default))]))
+
+
 
   (define insert-b
     (lambda (b vec mask)
@@ -197,11 +238,43 @@
           (get-hash h x v)
           (error 'hashtable-ref "~s is not a hash table" h))))
 
+
+  (define hashtable-contains?
+    (lambda (h x)
+      (if (hasht? h)
+          (in-hash? h x)
+          (error 'hashtable-contains? "~s is not a hash table" h))))
+
   (define hashtable-set!
     (lambda (h x v)
       (if (hasht? h)
           (put-hash! h x v)
           (error 'hashtable-set! "~s is not a hash table" h))))
 
+
+  (define hashtable-update!
+    (lambda (h x proc default)
+      (if (hasht? h)
+          (if (procedure? proc)
+              (update-hash! h x proc default)
+              (error 'hashtable-update! "~s is not a procedure" proc))
+          (error 'hashtable-update! "~s is not a hash table" h))))
+
+
+  (define hashtable-size
+    (lambda (h)
+      (if (hasht? h) 
+          (hasht-count h)
+          (error 'hashtable-size "~s is not a hash table" h))))
+
+  (define hashtable-delete!
+    (lambda (h x) 
+      ;;; FIXME: should shrink table if number of keys drops below
+      ;;; (sqrt (vector-length (hasht-vec h)))
+      (if (hasht? h)
+          (del-hash h x)
+          (error 'hashtable-delete! "~s is not a hash table" h))))
+
+  
 
 )
