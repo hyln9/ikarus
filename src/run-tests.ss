@@ -5,6 +5,7 @@
         (tests lists)
         (tests bytevectors)
         (tests strings)
+        (tests hashtables)
         ;(tests numbers)
         ;(tests bignums)
         (tests fxcarry)
@@ -34,4 +35,5 @@
 ;(test-bignums)
 (test-fxcarry)
 (test-lists)
+(test-hashtables)
 (printf "Happy Happy Joy Joy\n")

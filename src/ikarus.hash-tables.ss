@@ -2,7 +2,8 @@
 (library (ikarus hash-tables)
    (export make-eq-hashtable hashtable-ref hashtable-set! hashtable?
            hashtable-size hashtable-delete! hashtable-contains?
-           hashtable-update!)
+           hashtable-update! hashtable-keys hashtable-mutable?
+           hashtable-clear!)
    (import 
      (ikarus system $pairs)
      (ikarus system $vectors)
@@ -10,9 +11,10 @@
      (ikarus system $fx)
      (except (ikarus) make-eq-hashtable hashtable-ref hashtable-set! hashtable?
              hashtable-size hashtable-delete! hashtable-contains?
-             hashtable-update!))
+             hashtable-update! hashtable-keys hashtable-mutable?
+             hashtable-clear!))
 
-   (define-record hasht (vec count tc))
+   (define-record hasht (vec count tc mutable?))
 
   ;;; directly from Dybvig's paper
   (define tc-pop
@@ -216,6 +218,33 @@
     (lambda (n)
       (init-vec (make-vector n) 0 n)))
 
+  (define (clear-hash! h) 
+    (let ([v (hasht-vec h)])
+      (init-vec v 0 (vector-length v)))
+    (set-hasht-tc! h 
+      (let ([x (cons #f #f)])
+        (cons x x)))
+    (set-hasht-count! h 0))
+
+  (define (get-keys h)
+    (let ([v (hasht-vec h)] [n (hasht-count h)])
+      (let ([kv (make-vector n)])
+        (let f ([i ($fxsub1 n)] [j ($fxsub1 (vector-length v))] [kv kv] [v v])
+          (cond
+            [($fx= i -1) kv]
+            [else 
+             (let ([b ($vector-ref v j)])
+               (if (fixnum? b) 
+                   (f i ($fxsub1 j) kv v)
+                   (f (let f ([i i] [b b] [kv kv])
+                        ($vector-set! kv i ($tcbucket-key b))
+                        (let ([b ($tcbucket-next b)]
+                              [i ($fxsub1 i)])
+                          (cond
+                            [(fixnum? b) i]
+                            [else (f i b kv)])))
+                      ($fxsub1 j) kv v)))])))))
+
   ;;; public interface
   (define (hashtable? x) (hasht? x))
 
@@ -224,7 +253,7 @@
       [()
        (let ([x (cons #f #f)])
          (let ([tc (cons x x)])
-           (make-hasht (make-base-vec 32) 0 tc)))]
+           (make-hasht (make-base-vec 32) 0 tc #t)))]
       [(k) 
        (if (and (or (fixnum? k) (bignum? k))
                 (>= k 0))
@@ -248,16 +277,20 @@
   (define hashtable-set!
     (lambda (h x v)
       (if (hasht? h)
-          (put-hash! h x v)
+          (if (hasht-mutable? h) 
+              (put-hash! h x v)
+              (error 'hashtable-set! "~s is immutable" h))
           (error 'hashtable-set! "~s is not a hash table" h))))
 
 
   (define hashtable-update!
     (lambda (h x proc default)
       (if (hasht? h)
-          (if (procedure? proc)
-              (update-hash! h x proc default)
-              (error 'hashtable-update! "~s is not a procedure" proc))
+          (if (hasht-mutable? h)
+              (if (procedure? proc)
+                  (update-hash! h x proc default)
+                  (error 'hashtable-update! "~s is not a procedure" proc))
+              (error 'hashtable-update! "~s is immutable" h))
           (error 'hashtable-update! "~s is not a hash table" h))))
 
 
@@ -272,9 +305,25 @@
       ;;; FIXME: should shrink table if number of keys drops below
       ;;; (sqrt (vector-length (hasht-vec h)))
       (if (hasht? h)
-          (del-hash h x)
+          (if (hasht-mutable? h)
+              (del-hash h x)
+              (error 'hashtable-delete! "~s is immutable" h))
           (error 'hashtable-delete! "~s is not a hash table" h))))
 
-  
+  (define (hashtable-keys h)
+    (if (hasht? h) 
+        (get-keys h)
+        (error 'hashtable-keys "~s is not a hash table" h)))
 
+  (define (hashtable-mutable? h)
+    (if (hasht? h) 
+        (hasht-mutable? h)
+        (error 'hashtable-mutable? "~s is not a hash table" h)))
+
+  (define (hashtable-clear! h)
+    (if (hasht? h) 
+        (if (hasht-mutable? h)
+            (clear-hash! h)
+            (error 'hashtable-clear! "~s is immutable" h))
+        (error 'hashtable-clear! "~s is not a hash table" h)))
 )
