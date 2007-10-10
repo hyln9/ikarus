@@ -2155,7 +2155,9 @@
                         (chi-body* e* r mr lex* rhs* mod** kwd* rib #f)))
               (let ((exp-lab*
                      (map (lambda (x)
-                             (or (id->label (add-subst rib x))
+                             (or (id->label 
+                                   (mkstx (id->sym x) (stx-mark* x)
+                                     (list rib)))
                                  (stx-error x "cannot find module export")))
                           exp-id*))
                     (mod** (cons e* mod**)))
