@@ -287,7 +287,7 @@
              [else (error 'fasl-write "~s is not fasl-writable" x)])]))))
   (define fasl-write-to-port
     (lambda (x port)
-      (let ([h (make-hashtable)])
+      (let ([h (make-eq-hashtable)])
          (make-graph x h)
          (write-char #\# port)
          (write-char #\@ port)

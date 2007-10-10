@@ -1,12 +1,12 @@
 
 (library (ikarus hash-tables)
-   (export make-hashtable hashtable-ref hashtable-set! hashtable?)
+   (export make-eq-hashtable hashtable-ref hashtable-set! hashtable?)
    (import 
      (ikarus system $pairs)
      (ikarus system $vectors)
      (ikarus system $tcbuckets)
      (ikarus system $fx)
-     (except (ikarus) make-hashtable hashtable-ref hashtable-set! hashtable?))
+     (except (ikarus) make-eq-hashtable hashtable-ref hashtable-set! hashtable?))
 
    (define-record hasht (vec count tc))
 
@@ -178,10 +178,18 @@
   ;;; public interface
   (define (hashtable? x) (hasht? x))
 
-  (define (make-hashtable)
-    (let ([x (cons #f #f)])
-      (let ([tc (cons x x)])
-        (make-hasht (make-base-vec 32) 0 tc))))
+  (define make-eq-hashtable
+    (case-lambda
+      [()
+       (let ([x (cons #f #f)])
+         (let ([tc (cons x x)])
+           (make-hasht (make-base-vec 32) 0 tc)))]
+      [(k) 
+       (if (and (or (fixnum? k) (bignum? k))
+                (>= k 0))
+           (make-eq-hashtable)
+           (error 'make-eq-hashtable
+             "invalid initial capacity ~s" k))]))
 
   (define hashtable-ref
     (lambda (h x v)

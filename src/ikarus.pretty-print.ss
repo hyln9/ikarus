@@ -569,7 +569,7 @@
         [else x])))
 
   (define (unshare x) 
-    (let ([h (make-hashtable)])
+    (let ([h (make-eq-hashtable)])
       (if (hasher x h)
           (rewrite-shared x h)
           x)))

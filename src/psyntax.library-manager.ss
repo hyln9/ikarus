@@ -179,7 +179,7 @@
             (lambda (x) (eq? id (library-id x))))
           (error #f "cannot find library with spec ~s" spec))))
 
-  (define label->binding-table (make-hashtable))
+  (define label->binding-table (make-eq-hashtable))
 
   (define (install-library-record lib)
     (let ((exp-env (library-env lib)))

@@ -501,7 +501,7 @@
     (cond
       [(null? rhs*) '()]
       [else
-       (let ([h (make-hashtable)])
+       (let ([h (make-eq-hashtable)])
          (let ([ref
                 (lambda (x)
                   (unless (hashtable-ref h x #f)
@@ -519,7 +519,7 @@
     (cond
       [(null? rhs*) '()]
       [else
-       (let ([h (make-hashtable)]
+       (let ([h (make-eq-hashtable)]
              [rest (do-rhs* (fxadd1 i) lhs* (cdr rhs*) ref comp vref vcomp)])
          (let ([ref
                 (lambda (x)
@@ -552,7 +552,7 @@
             (values (cons lhs slhs*) (cons rhs srhs*) llhs* lrhs* clhs* crhs*)]
            ))]))
   (define (do-recbind lhs* rhs* body ref comp letrec?)
-    (let ([h (make-hashtable)]
+    (let ([h (make-eq-hashtable)]
           [vref (make-vector (length lhs*) #f)]
           [vcomp (make-vector (length lhs*) #f)])
       (let* ([ref (extend-hash lhs* h ref)]
@@ -594,7 +594,7 @@
       [(primref) x]
       [(bind lhs* rhs* body)
        (let ([rhs* (E* rhs* ref comp)])
-         (let ([h (make-hashtable)])
+         (let ([h (make-eq-hashtable)])
            (let ([body (E body (extend-hash lhs* h ref) comp)])
              (make-bind lhs* rhs* body))))]
       [(recbind lhs* rhs* body)
@@ -613,7 +613,7 @@
          (map (lambda (x)
                 (record-case x
                   [(clambda-case info body)
-                   (let ([h (make-hashtable)])
+                   (let ([h (make-eq-hashtable)])
                      (let ([body (E body (extend-hash (case-info-args info) h ref) void)])
                        (make-clambda-case info body)))]))
               cls*)

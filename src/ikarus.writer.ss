@@ -630,13 +630,13 @@
         (dynamic x h)))
   
   (define (write-to-port x p)
-    (let ([h (make-hashtable)])
+    (let ([h (make-eq-hashtable)])
       (hasher x h)
       (writer x p #t h 0))
     (flush-output-port p))
   
   (define (display-to-port x p)
-    (let ([h (make-hashtable)])
+    (let ([h (make-eq-hashtable)])
       (hasher x h)
       (writer x p #f h 0))
     (flush-output-port p))
