@@ -156,6 +156,21 @@
         (error 'recordize "unbound ~s" x)))
   (define (lexical x) 
     (getprop x *cookie*))
+  (define (get-fmls x args) 
+    (define (matching? fmls args)
+      (cond
+        [(null? fmls) (null? args)]
+        [(pair? fmls) (and (pair? args) (matching? (cdr fmls) (cdr args)))]
+        [else #t]))
+    (cond
+      [(and (pair? x) (eq? (car x) 'case-lambda))
+       (let f ([cls* (cdr x)])
+         (cond
+           [(null? cls*) '()]
+           [(matching? (caar cls*) args) 
+            (caar cls*)]
+           [else (f (cdr cls*))]))]
+      [else '()]))
   (define (E x ctxt)
     (cond
       [(pair? x)
@@ -221,10 +236,17 @@
           (let ([var (cadr x)])
             (make-primref var))]
          [else
-           ;;; should annotate expanded let.
-          (make-funcall 
-            (E (car x) #f) 
-            (map (lambda (x) (E x #f)) (cdr x)))])]
+          (let ([names (get-fmls (car x) (cdr x))])
+            (make-funcall 
+              (E (car x) #f) 
+              (let f ([arg* (cdr x)] [names names])
+                (cond
+                  [(pair? names)
+                   (cons 
+                     (E (car arg*) (car names))
+                     (f (cdr arg*) (cdr names)))]
+                  [else
+                   (map (lambda (x) (E x #f)) arg*)]))))])]
       [(symbol? x)
        (or (lexical x) 
            (make-funcall 
