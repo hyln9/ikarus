@@ -2,11 +2,13 @@
 (library (ikarus codecs)
   (export latin-1-codec utf-8-codec utf-16-codec native-eol-style
           make-transcoder native-transcoder buffer-mode?
-          file-options-spec)
+          file-options-spec transcoder-codec transcoder-eol-style
+          transcoder-error-handling-mode)
   (import 
     (except (ikarus) latin-1-codec utf-8-codec utf-16-codec 
       native-eol-style make-transcoder native-transcoder
-      buffer-mode? file-options-spec)
+      buffer-mode? file-options-spec transcoder-codec
+      transcoder-eol-style transcoder-error-handling-mode)
     (ikarus system $transcoders))
   (define (latin-1-codec) 'latin-1-codec)
   (define (utf-8-codec)   'utf-8-codec)
@@ -17,6 +19,7 @@
     '([ignore .  #b01]
       [raise .   #b10]
       [replace . #b11]))
+  (define error-handling-mode-mask #b11)
 
   (define eol-style-alist
     '([none .   #b00000]
@@ -26,11 +29,19 @@
       [nel .    #b10000]
       [crnel .  #b10100]
       [ls .     #b11000]))
+  (define eol-style-mask #b11100)
 
   (define codec-alist
     '([latin-1-codec . #b0100000]
       [utf-8-codec .   #b1000000]
       [utf-16-codec .  #b1100000]))
+  (define codec-mask #b11100000)
+
+  (define (rev-lookup n ls)
+    (cond
+      [(null? ls) #f]
+      [(= (cdar ls) n) (caar ls)]
+      [else (rev-lookup n (cdr ls))]))
 
   (define (codec->fixnum x who)
     (cond
@@ -62,6 +73,30 @@
 
   (define (native-transcoder) 
     (make-transcoder 'utf-8-codec 'none 'replace))
+
+  (define (transcoder-codec x) 
+    (define who 'transcoder-codec)
+    (if ($transcoder? x) 
+        (let ([tag (fxlogand ($transcoder->data x) codec-mask)])
+          (or (rev-lookup tag codec-alist)
+              (error who "~s has no codec" x)))
+        (error who "~s is not a transcoder" x)))
+
+  (define (transcoder-eol-style x) 
+    (define who 'transcoder-eol-style)
+    (if ($transcoder? x) 
+        (let ([tag (fxlogand ($transcoder->data x) eol-style-mask)])
+          (or (rev-lookup tag eol-style-alist)
+              (error who "~s has no eol-style" x)))
+        (error who "~s is not a transcoder" x)))
+
+  (define (transcoder-error-handling-mode x) 
+    (define who 'transcoder-error-handling-mode)
+    (if ($transcoder? x) 
+        (let ([tag (fxlogand ($transcoder->data x) error-handling-mode-mask)])
+          (or (rev-lookup tag error-handling-mode-alist)
+              (error who "~s has no error-handling mode" x)))
+        (error who "~s is not a transcoder" x)))
 
   (define (buffer-mode? x)
     (and (memq x '(none line block)) #t))

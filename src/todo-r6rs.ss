@@ -637,9 +637,9 @@
     [string->bytevector                         S ip]
     [textual-port?                              S ip]
     [transcoded-port                            S ip]
-    [transcoder-codec                           S ip]
-    [transcoder-eol-style                       S ip]
-    [transcoder-error-handling-mode             S ip]
+    [transcoder-codec                           C ip]
+    [transcoder-eol-style                       C ip]
+    [transcoder-error-handling-mode             C ip]
     [utf-16-codec                               C ip]
     [utf-8-codec                                C ip]
     ;;;
