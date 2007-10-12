@@ -887,7 +887,7 @@
                   [(p) (mk-seq (mk-seq a0 a1) (make-constant #t))]
                   [else (giveup)])))
          (giveup))]
-    [($record-ref $record/rtd? $struct-ref $struct/rtd?)
+    [($struct-ref $struct/rtd?)
      (or (and (fx= (length rand*) 2)
               (let ([a0 (car rand*)] [a1 (cadr rand*)])
                 (case ctxt

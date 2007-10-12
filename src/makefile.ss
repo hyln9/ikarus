@@ -38,6 +38,7 @@
     "ikarus.fixnums.ss"
     "ikarus.chars.ss"
     "ikarus.structs.ss"
+    "ikarus.records.procedural.ss"
     "ikarus.strings.ss"
     "ikarus.transcoders.ss"
     "ikarus.date-string.ss"
