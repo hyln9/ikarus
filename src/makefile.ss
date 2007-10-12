@@ -178,6 +178,7 @@
     [$flonums    (ikarus system $flonums)              #f     #t]
     [$bignums    (ikarus system $bignums)              #f     #t]
     [$bytes      (ikarus system $bytevectors)          #f     #t]
+    [$transc     (ikarus system $transcoders)          #f     #t]
     [$fx         (ikarus system $fx)                   #f     #t]
     [$rat        (ikarus system $ratnums)              #f     #t]
     [$symbols    (ikarus system $symbols)              #f     #t]
@@ -1029,9 +1030,9 @@
     [make-i/o-read-error                         r ip is fi]
     [make-i/o-write-error                        r ip is fi]
     [latin-1-codec                               i r ip]
-    [make-transcoder                             r ip]
+    [make-transcoder                             i r ip]
     [native-eol-style                            i r ip]
-    [native-transcoder                           r ip]
+    [native-transcoder                           i r ip]
     [open-bytevector-input-port                  r ip]
     [open-bytevector-output-port                 r ip]
     [open-file-input-port                        r ip]
@@ -1194,6 +1195,9 @@
     [module                                      i cm]
     [syntax-dispatch                             ]
     [syntax-error                                i sc]
+    [$transcoder?                                $transc]
+    [$transcoder->data                           $transc]
+    [$data->transcoder                           $transc]
   ))
 
 (define (macro-identifier? x) 

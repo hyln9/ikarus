@@ -1829,20 +1829,20 @@
   (define disp-code-annotation    16)
   (define disp-code-data          24)
   
-  (define transcoder-tag               #x3F) ;;; 0011
-  (define transcoder-input-tag         #x7F) ;;; 0111
-  (define transcoder-output-tag        #xBF) ;;; 1011
-  (define transcoder-input/output-tag  #xFF) ;;; 1111
-  (define transcoder-write-utf8-mask  #x100) 
-  (define transcoder-write-byte-mask  #x200) 
-  (define transcoder-read-utf8-mask   #x400) 
-  (define transcoder-read-byte-mask   #x800) 
-  (define transcoder-handling-mode-shift  8)
-  (define transcoder-handling-mode-bits   2)
-  (define transcoder-eol-style-shift     10)
-  (define transcoder-eol-style-bits       3)
-  (define transcoder-codec-shift         13)
-  (define transcoder-codec-bits           3)
+  (define transcoder-mask                  #xFF) ;;; 0011
+  (define transcoder-tag                   #x7F) ;;; 0011
+  (define transcoder-payload-shift           10)
+
+  (define transcoder-write-utf8-mask     #x1000) 
+  (define transcoder-write-byte-mask     #x2000) 
+  (define transcoder-read-utf8-mask      #x4000) 
+  (define transcoder-read-byte-mask      #x8000) 
+  (define transcoder-handling-mode-shift     16)
+  (define transcoder-handling-mode-bits       2)
+  (define transcoder-eol-style-shift         18)
+  (define transcoder-eol-style-bits           3)
+  (define transcoder-codec-shift             21)
+  (define transcoder-codec-bits               3)
   
   (define transcoder-handling-mode:none    #b00)
   (define transcoder-handling-mode:ignore  #b01)

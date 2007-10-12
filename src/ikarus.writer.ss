@@ -11,6 +11,7 @@
     (ikarus system $pairs)
     (ikarus system $symbols)
     (ikarus system $bytevectors)
+    (ikarus system $transcoders)
     (only (ikarus unicode-data) unicode-printable-char?) 
     (except (ikarus) write display format printf print-error
             error-handler error print-unicode print-graph))
@@ -561,6 +562,11 @@
         [(number? x)
          (write-char* (number->string x) p)
          i]
+        [($transcoder? x) 
+         (write-char* "#<transcoder " p)
+         (let ([n ($transcoder->data x)])
+           (write-char* (number->string n) p))
+         (write-char* ">" p)]
         [else 
          (write-char* "#<unknown>" p)
          i])))
