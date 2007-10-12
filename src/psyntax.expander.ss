@@ -1914,6 +1914,9 @@
            ((eol-style)         
             (lambda (x) 
               (symbol-macro x '(none lf cr crlf nel crnel ls))))
+           ((error-handling-mode)         
+            (lambda (x) 
+              (symbol-macro x '(ignore raise replace))))
            ((... => _ else unquote unquote-splicing
              unsyntax unsyntax-splicing)
             incorrect-usage-macro)

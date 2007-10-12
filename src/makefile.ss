@@ -132,6 +132,7 @@
     [trace-lambda      (macro . trace-lambda)]
     [trace-define      (macro . trace-define)]
     [eol-style         (macro . eol-style)]
+    [error-handling-mode (macro . error-handling-mode)]
     ))
 
 (define library-legend
@@ -965,7 +966,7 @@
     [scheme-report-environment                   r5 se]
     [close-port                                  r ip]
     [eol-style                                   i r ip]
-    [error-handling-mode                         r ip]
+    [error-handling-mode                         i r ip]
     [file-options                                r ip]
     [flush-output-port                           i r ip]
     [get-bytevector-all                          r ip]
