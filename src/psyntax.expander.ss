@@ -1917,6 +1917,9 @@
            ((error-handling-mode)         
             (lambda (x) 
               (symbol-macro x '(ignore raise replace))))
+           ((buffer-mode)         
+            (lambda (x) 
+              (symbol-macro x '(none line block))))
            ((... => _ else unquote unquote-splicing
              unsyntax unsyntax-splicing)
             incorrect-usage-macro)

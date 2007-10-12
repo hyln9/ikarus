@@ -496,8 +496,8 @@
     [guard                                      X ex]
     ;;;
     [binary-port?                               S ip]
-    [buffer-mode                                S ip]
-    [buffer-mode?                               S ip]
+    [buffer-mode                                C ip]
+    [buffer-mode?                               C ip]
     [bytevector->string                         S ip]
     [call-with-bytevector-output-port           S ip]
     [call-with-port                             S ip]

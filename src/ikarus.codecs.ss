@@ -1,10 +1,11 @@
 
 (library (ikarus codecs)
   (export latin-1-codec utf-8-codec utf-16-codec native-eol-style
-          make-transcoder native-transcoder)
+          make-transcoder native-transcoder buffer-mode?)
   (import 
     (except (ikarus) latin-1-codec utf-8-codec utf-16-codec 
-      native-eol-style make-transcoder native-transcoder)
+      native-eol-style make-transcoder native-transcoder
+      buffer-mode?)
     (ikarus system $transcoders))
   (define (latin-1-codec) 'latin-1-codec)
   (define (utf-8-codec)   'utf-8-codec)
@@ -60,6 +61,9 @@
 
   (define (native-transcoder) 
     (make-transcoder 'utf-8-codec 'none 'replace))
+
+  (define (buffer-mode? x)
+    (and (memq x '(none line block)) #t))
 
   )
 
