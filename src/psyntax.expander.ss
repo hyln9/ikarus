@@ -1929,7 +1929,9 @@
               (symbol-macro x '(none line block))))
            ((file-options)     file-options-macro)
            ((... => _ else unquote unquote-splicing
-             unsyntax unsyntax-splicing)
+             unsyntax unsyntax-splicing 
+             fields mutable immutable parent protocol
+             sealed opaque nongenerative parent-rtd)
             incorrect-usage-macro)
            (else (error 'macro-transformer "invalid macro ~s" x))))
         (else (error 'core-macro-transformer "invalid macro ~s" x)))))
