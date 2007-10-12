@@ -131,6 +131,7 @@
     [unsyntax-splicing (macro . unsyntax-splicing)]
     [trace-lambda      (macro . trace-lambda)]
     [trace-define      (macro . trace-define)]
+    [eol-style         (macro . eol-style)]
     ))
 
 (define library-legend
@@ -963,7 +964,7 @@
     [quotient                                    i r r5 se]
     [scheme-report-environment                   r5 se]
     [close-port                                  r ip]
-    [eol-style                                   r ip]
+    [eol-style                                   i r ip]
     [error-handling-mode                         r ip]
     [file-options                                r ip]
     [flush-output-port                           i r ip]
@@ -1028,7 +1029,7 @@
     [make-i/o-write-error                        r ip is fi]
     [latin-1-codec                               i r ip]
     [make-transcoder                             r ip]
-    [native-eol-style                            r ip]
+    [native-eol-style                            i r ip]
     [native-transcoder                           r ip]
     [open-bytevector-input-port                  r ip]
     [open-bytevector-output-port                 r ip]

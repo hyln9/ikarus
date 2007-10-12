@@ -1879,6 +1879,13 @@
         ((type-descriptor) type-descriptor-transformer)
         (else (error 'macro-transformer "cannot find ~s" name)))))
   
+  (define symbol-macro
+    (lambda (x set)
+      (syntax-match x ()
+        ((_ name)
+         (and (id? name) (memq (id->sym name) set))
+         (bless `(quote ,name))))))
+
   (define macro-transformer
     (lambda (x)
       (cond
@@ -1904,6 +1911,9 @@
            ((endianness)        endianness-macro)
            ((trace-lambda)      trace-lambda-macro)
            ((trace-define)      trace-define-macro)
+           ((eol-style)         
+            (lambda (x) 
+              (symbol-macro x '(none lf cr crlf nel crnel ls))))
            ((... => _ else unquote unquote-splicing
              unsyntax unsyntax-splicing)
             incorrect-usage-macro)

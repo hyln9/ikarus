@@ -544,7 +544,7 @@
     [scheme-report-environment                  C r5 se]
     ;;;
     [close-port                                 S ip]
-    [eol-style                                  S ip]
+    [eol-style                                  C ip]
     [error-handling-mode                        S ip]
     [file-options                               S ip]
     [flush-output-port                          S ip]
@@ -609,7 +609,7 @@
     [make-i/o-write-error                       X ip is fi]
     [latin-1-codec                              C ip]
     [make-transcoder                            S ip]
-    [native-eol-style                           S ip]
+    [native-eol-style                           C ip]
     [native-transcoder                          S ip]
     [open-bytevector-input-port                 S ip]
     [open-bytevector-output-port                S ip]
