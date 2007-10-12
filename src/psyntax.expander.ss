@@ -1879,6 +1879,13 @@
         ((type-descriptor) type-descriptor-transformer)
         (else (error 'macro-transformer "cannot find ~s" name)))))
   
+  (define file-options-macro
+    (lambda (x)
+      (syntax-match x ()
+        ((_ opt* ...)
+         (and (for-all id? opt*) (file-options-spec (map id->sym opt*)))
+         (bless `(quote ,(file-options-spec (map id->sym opt*))))))))
+
   (define symbol-macro
     (lambda (x set)
       (syntax-match x ()
@@ -1920,6 +1927,7 @@
            ((buffer-mode)         
             (lambda (x) 
               (symbol-macro x '(none line block))))
+           ((file-options)     file-options-macro)
            ((... => _ else unquote unquote-splicing
              unsyntax unsyntax-splicing)
             incorrect-usage-macro)

@@ -1,7 +1,8 @@
 
 (library (psyntax compat)
   (export define-record make-parameter parameterize format gensym
-          eval-core make-record-type symbol-value set-symbol-value!)
+          eval-core make-record-type symbol-value set-symbol-value!
+          file-options-spec)
   (import 
     (only (ikarus compiler) eval-core)
     (rename (ikarus) (define-record sys.define-record)))

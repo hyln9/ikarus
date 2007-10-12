@@ -546,7 +546,7 @@
     [close-port                                 S ip]
     [eol-style                                  C ip]
     [error-handling-mode                        C ip]
-    [file-options                               S ip]
+    [file-options                               C ip]
     [flush-output-port                          S ip]
     [get-bytevector-all                         S ip]
     [get-bytevector-n                           S ip]

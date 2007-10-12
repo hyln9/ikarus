@@ -133,6 +133,7 @@
     [trace-define        (macro . trace-define)]
     [eol-style           (macro . eol-style)]
     [buffer-mode         (macro . buffer-mode)]
+    [file-options        (macro . file-options)]
     [error-handling-mode (macro . error-handling-mode)]
     ))
 
@@ -969,7 +970,7 @@
     [close-port                                  r ip]
     [eol-style                                   i r ip]
     [error-handling-mode                         i r ip]
-    [file-options                                r ip]
+    [file-options                                i r ip]
     [flush-output-port                           i r ip]
     [get-bytevector-all                          r ip]
     [get-bytevector-n                            r ip]
@@ -1199,6 +1200,7 @@
     [$transcoder?                                $transc]
     [$transcoder->data                           $transc]
     [$data->transcoder                           $transc]
+    [file-options-spec                           i]
   ))
 
 (define (macro-identifier? x) 

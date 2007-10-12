@@ -1,11 +1,12 @@
 
 (library (ikarus codecs)
   (export latin-1-codec utf-8-codec utf-16-codec native-eol-style
-          make-transcoder native-transcoder buffer-mode?)
+          make-transcoder native-transcoder buffer-mode?
+          file-options-spec)
   (import 
     (except (ikarus) latin-1-codec utf-8-codec utf-16-codec 
       native-eol-style make-transcoder native-transcoder
-      buffer-mode?)
+      buffer-mode? file-options-spec)
     (ikarus system $transcoders))
   (define (latin-1-codec) 'latin-1-codec)
   (define (utf-8-codec)   'utf-8-codec)
@@ -64,6 +65,32 @@
 
   (define (buffer-mode? x)
     (and (memq x '(none line block)) #t))
+
+  (define file-options-vec
+    '#(fo:default
+       fo:no-create
+       fo:no-fail
+       fo:no-fail/no-create
+       fo:no-truncate
+       fo:no-truncate/no-create
+       fo:no-truncate/no-fail
+       fo:no-truncate/no-fail/no-create))
+
+  (define file-options-alist
+    '([no-create .   #b001]
+      [no-fail .     #b010]
+      [no-truncate . #b100]))
+      
+  (define (file-options-spec ls)
+    (unless (list? ls) 
+      (error 'file-options-spec "~s is not a list" ls))
+    (let f ([ls ls] [n 0])
+      (cond
+        [(null? ls) (vector-ref file-options-vec n)]
+        [(assq (car ls) file-options-alist) => 
+         (lambda (a) 
+           (f (cdr ls) (fxlogor (cdr a) n)))]
+        [else #f])))
 
   )
 
