@@ -3,6 +3,7 @@
   (export posix-fork fork waitpid system file-exists? delete-file
           env environ)
   (import 
+    (rnrs bytevectors)
     (except (ikarus)
        posix-fork fork waitpid system file-exists? delete-file
        env environ))
@@ -31,7 +32,7 @@
       (unless (string? x)
         (error 'system "~s is not a string" x))
       (let ([rv (foreign-call "ik_system"
-                  (string->utf8-bytevector x))])
+                  (string->utf8 x))])
         (if (fx= rv -1)
             (error 'system "failed")
             rv))))
@@ -41,7 +42,7 @@
       (unless (string? x)
         (error 'file-exists? "filename ~s is not a string" x))
       (let ([v (foreign-call "ikrt_file_exists" 
-                  (string->utf8-bytevector x))])
+                  (string->utf8 x))])
         (cond
           [(boolean? v) v]
           [else
@@ -61,7 +62,7 @@
       (unless (string? x)
         (error 'delete-file "filename ~s is not a string" x))
       (let ([v (foreign-call "ikrt_delete_file"
-                 (string->utf8-bytevector x))])
+                 (string->utf8 x))])
         (case v
           [(0) (void)]
           [else

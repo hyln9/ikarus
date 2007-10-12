@@ -10,6 +10,7 @@
     (ikarus system $chars)
     (ikarus system $bytevectors)
     (ikarus system $fx)
+    (rnrs bytevectors)
     (except (ikarus)
             standard-output-port standard-error-port   
             console-output-port current-output-port    
@@ -132,7 +133,7 @@
       (close-ports)
       (let ([fd/error 
              (foreign-call "ikrt_open_output_file" 
-                           (string->utf8-bytevector filename)
+                           (string->utf8 filename)
                            (option-id options))])
         (if (fixnum? fd/error)
             (let ([port

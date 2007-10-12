@@ -138,7 +138,7 @@
              (set! open? #f)]
             [(port-name p) 'string-port]
             [(get-output-string p) 
-             (utf8-bytevector->string
+             (utf8->string
                (concat 
                  ($port-buffer p) 
                  ($port-index p)

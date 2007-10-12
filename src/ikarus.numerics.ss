@@ -1177,7 +1177,7 @@
 
   (define bignum->string
     (lambda (x)
-      (utf8-bytevector->string
+      (utf8->string
         (foreign-call "ikrt_bignum_to_bytevector" x))))
   
   (define ratnum->string
@@ -2278,6 +2278,7 @@
 (library (ikarus flonum-conversion)
   (export string->flonum flonum->string)
   (import 
+    (rnrs bytevectors)
     (ikarus system $bytevectors)
     (ikarus system $flonums)
     (except (ikarus) flonum->string string->flonum ))
@@ -2422,7 +2423,7 @@
     (cond
       [(string? x)
        (foreign-call "ikrt_bytevector_to_flonum" 
-         (string->utf8-bytevector x))]
+         (string->utf8 x))]
       [else 
        (error 'string->flonum "~s is not a string" x)])) )
 

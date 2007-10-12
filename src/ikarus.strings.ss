@@ -439,7 +439,7 @@
   (define uuid
     (lambda ()
       (let ([s ($make-bytevector 16)])
-        (utf8-bytevector->string
+        (utf8->string
           (or (foreign-call "ik_uuid" s)
               (error 'uuid "failed!"))))))
   )

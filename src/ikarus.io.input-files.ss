@@ -9,6 +9,7 @@
     (ikarus system $strings)
     (ikarus system $bytevectors)
     (ikarus system $chars)
+    (rnrs bytevectors)
     (except (ikarus)
             open-input-file current-input-port console-input-port
             with-input-from-file call-with-input-file
@@ -165,7 +166,7 @@
     (lambda (filename)
       (close-ports)
       (let ([fd/error (foreign-call "ikrt_open_input_file" 
-                        (string->utf8-bytevector filename))])
+                        (string->utf8 filename))])
         (if (fixnum? fd/error)
             (let ([port (make-input-port 
                           (make-input-file-handler fd/error filename)

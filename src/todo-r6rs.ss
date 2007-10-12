@@ -407,10 +407,10 @@
     [sint-list->bytevector                      C bv]
     [string->utf16                              S bv]
     [string->utf32                              S bv]
-    [string->utf8                               S bv]
+    [string->utf8                               C bv]
     [u8-list->bytevector                        C bv]
     [uint-list->bytevector                      C bv]
-    [utf8->string                               S bv]
+    [utf8->string                               C bv]
     [utf16->string                              S bv]
     [utf32->string                              S bv]
     ;;;

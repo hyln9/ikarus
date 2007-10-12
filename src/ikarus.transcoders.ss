@@ -1,8 +1,7 @@
 
 (library (ikarus transcoders)
-  (export string->utf8-bytevector
-          utf8-bytevector->string)
-  (import (except (ikarus) string->utf8-bytevector utf8-bytevector->string)
+  (export string->utf8 utf8->string)
+  (import (except (ikarus) string->utf8 utf8->string)
           (ikarus system $strings)
           (ikarus system $bytevectors)
           (ikarus system $fx)
@@ -22,7 +21,7 @@
   ;;; replace: places a U+FFFD in place of the malformed bytes
   ;;; raise: raises an error
 
-  (define string->utf8-bytevector
+  (define string->utf8
     (lambda (str)
       (define (utf8-string-size str)
         (let f ([str str] [i 0] [j ($string-length str)] [n 0])
@@ -74,14 +73,16 @@
                      ($fxlogor #b10000000 ($fxlogand b #b111111)))
                    (f bv str ($fxadd1 i) ($fx+ j 4) n)])))])))
       (unless (string? str) 
-        (error 'string->utf8-bytevector "~s is not a string" str))
+        (error 'string->utf8 "~s is not a string" str))
       (fill-utf8-bytevector
         ($make-bytevector (utf8-string-size str))
         str)))
 
-  (define utf8-bytevector->string
+  (define (utf8->string x) (decode-utf8-bytevector x 'replace))
+
+  (define decode-utf8-bytevector
     (let ()
-      (define who 'utf8-bytevector->string)
+      (define who 'decode-utf8-bytevector)
       (define (count bv mode)
         (let f ([x bv] [i 0] [j ($bytevector-length bv)] [n 0] [mode mode])
           (cond
@@ -241,7 +242,7 @@
         [(bv) (convert bv 'raise)]
         [(bv handling-mode)
          (unless (memq handling-mode '(ignore replace raise)) 
-           (error 'utf8-bytevector->string
+           (error 'decode-utf8-bytevector
                   "~s is not a valid handling mode"
                   handling-mode))
          (convert bv handling-mode)])))

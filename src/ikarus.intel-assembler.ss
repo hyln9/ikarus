@@ -4,6 +4,7 @@
   (export assemble-sources code-entry-adjustment)
   (import 
     (ikarus)
+    (rnrs bytevectors)
     (except (ikarus code-objects) procedure-annotation)
     (ikarus system $pairs))
 
@@ -903,7 +904,7 @@
       (let f ([ls mem])
         (cond
           [(null? ls) 
-           (let ([bv (string->utf8-bytevector x)])
+           (let ([bv (string->utf8 x)])
              (set! mem (cons (cons x bv) mem))
              bv)]
           [(string=? x (caar ls)) (cdar ls)]
