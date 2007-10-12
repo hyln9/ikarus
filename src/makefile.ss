@@ -37,7 +37,7 @@
     "ikarus.lists.ss"
     "ikarus.fixnums.ss"
     "ikarus.chars.ss"
-    "ikarus.records.ss"
+    "ikarus.structs.ss"
     "ikarus.strings.ss"
     "ikarus.transcoders.ss"
     "ikarus.date-string.ss"
@@ -104,7 +104,7 @@
     [parameterize        (core-macro . parameterize)]
     [case                (core-macro . case)]
     [let-values          (core-macro . let-values)]
-    [define-record       (macro . define-record)]
+    [define-struct       (macro . define-struct)]
     [include             (macro . include)]
     [syntax-rules        (macro . syntax-rules)]
     [quasiquote          (macro . quasiquote)]
@@ -193,7 +193,7 @@
     [$fx         (ikarus system $fx)                   #f     #t]
     [$rat        (ikarus system $ratnums)              #f     #t]
     [$symbols    (ikarus system $symbols)              #f     #t]
-    [$records    (ikarus system $records)              #f     #t]
+    [$structs    (ikarus system $structs)              #f     #t]
     [$ports      (ikarus system $ports)                #f     #t]
     [$codes      (ikarus system $codes)                #f     #t]
     [$tcbuckets  (ikarus system $tcbuckets)            #f     #t]
@@ -211,7 +211,7 @@
     [foreign-call                                i]
     [type-descriptor                             i]
     [parameterize                                i parameters]
-    [define-record                               i]
+    [define-struct                               i]
     [include                                     i r]
     [time                                        i]
     [trace-lambda                                i]
@@ -310,16 +310,19 @@
     [environment?                                i]
     [time-it                                     i]
     [command-line-arguments                      i]
-    [make-record-type                            i]
-    [record-type-symbol                          i]
     [set-rtd-printer!                            i]
-    [record-name                                 i]
-    [record-length                               i]
-    [record-printer                              i]
-    [record-ref                                  i]
-    [record-set!                                 i]
-    [record-field-accessor                       i]
-    [record-field-mutator                        i]
+    [make-record-type                            i]
+    [struct?                                     i]
+    [make-struct-type                            i]
+    [struct-type-name                            i]
+    [struct-type-symbol                          i]
+    [struct-type-field-names                     i]
+    [struct-field-accessor                       i]
+    [struct-length                               i]
+    [struct-ref                                  i]
+    [struct-printer                              i]
+    [struct-name                                 i]
+    [struct-type-descriptor                      i]
     [code?                                       i]
     [immediate?                                  i]
     [pointer-value                               i]
@@ -413,14 +416,16 @@
     [$set-symbol-plist!                          $symbols]
     [$init-symbol-value!                         ]
     [$unbound-object?                            $symbols]
-    [base-rtd                                    $records]
-    [$record-set!                                $records]
-    [$record-ref                                 $records]
-    [$record-rtd                                 $records]
-    [$record                                     $records]
-    [$make-record                                $records]
-    [$record?                                    $records]
-    [$record/rtd?                                $records]
+    
+    [base-rtd                                    $structs]
+    [$struct-set!                                $structs]
+    [$struct-ref                                 $structs]
+    [$struct-rtd                                 $structs]
+    [$struct                                     $structs]
+    [$make-struct                                $structs]
+    [$struct?                                    $structs]
+    [$struct/rtd?                                $structs]
+
     [$make-port/input                            $ports]
     [$make-port/output                           $ports]
     [$port-handler                               $ports]
@@ -1129,25 +1134,25 @@
     [parent-rtd                                  i r rs]
     [protocol                                    i r rs]
     [record-constructor-descriptor               r rs]
-    [record-type-descriptor                      i r rs]
+    [record-type-descriptor                      r rs]
     [sealed                                      i r rs]
     [nongenerative                               i r rs]
     [record-field-mutable?                       r ri]
     [record-rtd                                  r ri]
-    [record-type-field-names                     i r ri]
+    [record-type-field-names                     r ri]
     [record-type-generative?                     r ri]
-    [record-type-name                            i r ri]
+    [record-type-name                            r ri]
     [record-type-opaque?                         r ri]
     [record-type-parent                          r ri]
     [record-type-sealed?                         r ri]
     [record-type-uid                             r ri]
-    [record?                                     i r ri]
+    [record?                                     r ri]
     [make-record-constructor-descriptor          r rp]
     [make-record-type-descriptor                 r rp]
     [record-accessor                             r rp]
-    [record-constructor                          i r rp]
+    [record-constructor                          r rp]
     [record-mutator                              r rp]
-    [record-predicate                            i r rp]
+    [record-predicate                            r rp]
     [record-type-descriptor?                     r rp]
     [bound-identifier=?                          i r sc]
     [datum->syntax                               i r sc]
@@ -1246,6 +1251,20 @@
       [() set]
       [(x) (set! set (cons x set))])))
 
+(define (assq1 x ls)
+  (let f ([x x] [ls ls] [p #f])
+    (cond
+      [(null? ls) p]
+      [(eq? x (caar ls)) 
+       (if p
+           (if (pair? p) 
+               (if (eq? (cdr p) (cdar ls))
+                   (f x (cdr ls) p)
+                   (f x (cdr ls) 2))
+               (f x (cdr ls) (+ p 1)))
+           (f x (cdr ls) (car ls)))]
+      [else (f x (cdr ls) p)])))
+      
 (define (make-system-data subst env)
   (define who 'make-system-data)
   (let ([export-subst    (make-collection)] 
@@ -1264,9 +1283,11 @@
           (cond
             [(assq x (export-subst))
              (error who "ambiguous export of ~s" x)]
-            [(assq x subst) =>
+            [(assq1 x subst) =>
              ;;; primitive defined (exported) within the compiled libraries
              (lambda (p)
+               (unless (pair? p) 
+                 (error who "~s exports of ~s" p x))
                (let ([label (cdr p)])
                  (cond
                    [(assq label env) =>

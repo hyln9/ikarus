@@ -5,7 +5,7 @@
     (rnrs hashtables)
     (ikarus system $codes)
     (ikarus system $pairs)
-    (ikarus system $records)
+    (ikarus system $structs)
     (ikarus system $io)
     (ikarus system $bytevectors)
     (ikarus system $fx)
@@ -139,16 +139,16 @@
                (write-byte (code-ref x i) p)
                (f (fxadd1 i) n)))
            (fasl-write-object (code-reloc-vector x) p h m))]
-        [(record? x)
-         (let ([rtd (record-type-descriptor x)])
+        [(struct? x)
+         (let ([rtd (struct-type-descriptor x)])
            (cond
              [(eq? rtd (base-rtd))
               ;;; rtd record
               (write-char #\R p)
-              (let ([names (record-type-field-names x)]
+              (let ([names (struct-type-field-names x)]
                     [m 
-                     (fasl-write-object (record-type-symbol x) p h
-                       (fasl-write-object (record-type-name x) p h m))])
+                     (fasl-write-object (struct-type-symbol x) p h
+                       (fasl-write-object (struct-type-name x) p h m))])
                 (write-int (length names) p)
                 (let f ([names names] [m m])
                   (cond
@@ -159,15 +159,15 @@
              [else
               ;;; non-rtd record
               (write-char #\{ p)
-              (write-int (length (record-type-field-names rtd)) p)
-              (let f ([names (record-type-field-names rtd)] 
+              (write-int (length (struct-type-field-names rtd)) p)
+              (let f ([names (struct-type-field-names rtd)] 
                       [m (fasl-write-object rtd p h m)])
                 (cond
                   [(null? names) m]
                   [else
                    (f (cdr names) 
                       (fasl-write-object 
-                         ((record-field-accessor rtd (car names)) x)
+                         ((struct-field-accessor rtd (car names)) x)
                          p h m))]))]))]
         [(procedure? x)
          (write-char #\Q p)
@@ -253,24 +253,24 @@
              [(code? x) 
               (make-graph ($code-annotation x) h)
               (make-graph (code-reloc-vector x) h)]
-             [(record? x)
+             [(struct? x)
               (when (eq? x (base-rtd))
                 (error 'fasl-write "base-rtd is not writable"))
-              (let ([rtd (record-type-descriptor x)])
+              (let ([rtd (struct-type-descriptor x)])
                 (cond
                   [(eq? rtd (base-rtd))
                    ;;; this is an rtd
-                   (make-graph (record-type-name x) h)
-                   (make-graph (record-type-symbol x) h)
+                   (make-graph (struct-type-name x) h)
+                   (make-graph (struct-type-symbol x) h)
                    (for-each (lambda (x) (make-graph x h))
-                     (record-type-field-names x))]
+                     (struct-type-field-names x))]
                   [else
                    ;;; this is a record
                    (make-graph rtd h)
                    (for-each 
                      (lambda (name) 
-                       (make-graph ((record-field-accessor rtd name) x) h))
-                     (record-type-field-names rtd))]))]
+                       (make-graph ((struct-field-accessor rtd name) x) h))
+                     (struct-type-field-names rtd))]))]
              [(procedure? x)
               (let ([code ($closure-code x)])
                 (unless (fxzero? (code-freevars code))

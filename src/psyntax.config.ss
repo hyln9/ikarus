@@ -19,7 +19,8 @@
 ;;; DEALINGS IN THE SOFTWARE. 
 
 (library (psyntax config)
-  (export if-wants-define-record if-wants-case-lambda
+  (export if-wants-define-record if-wants-define-struct 
+          if-wants-case-lambda
           if-wants-letrec* if-wants-global-defines)
   (import (rnrs))
   (define-syntax define-option
@@ -34,6 +35,7 @@
            ((_ sk fk) fk))))))
   
   (define-option if-wants-define-record  #t)
+  (define-option if-wants-define-struct  #t)
   ;;; define-record is an ikarus-specific extension.
   ;;; should be disabled for all other implementations
   ;;; the source is included to illustrate how

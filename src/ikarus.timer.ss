@@ -3,7 +3,7 @@
   (export time-it)
   (import (except (ikarus) time-it))
 
-  (define-record stats 
+  (define-struct stats 
     (user-secs user-usecs 
      sys-secs sys-usecs 
      real-secs real-usecs

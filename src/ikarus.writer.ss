@@ -119,12 +119,12 @@
       (write-char #\) p)
       i))
 
-  (define write-record
+  (define write-struct
     (lambda (x p m h i)
       (write-char #\# p)
       (write-char #\[ p)
-      (let ([i (writer (record-name x) p m h i)])
-        (let ([n (record-length x)])
+      (let ([i (writer (struct-name x) p m h i)])
+        (let ([n (struct-length x)])
           (let f ([idx 0] [i i])
             (cond
               [(fx= idx n)
@@ -133,7 +133,7 @@
               [else 
                (write-char #\space p)
                (f (fxadd1 idx) 
-                  (writer (record-ref x idx) p m h i))]))))))
+                  (writer (struct-ref x idx) p m h i))]))))))
   
   (define initial?
     (lambda (c)
@@ -546,11 +546,11 @@
         [(hashtable? x)
          (write-char* "#<hashtable>" p)
          i]
-        [(record? x)
-         (let ([printer (record-printer x)])
+        [(struct? x)
+         (let ([printer (struct-printer x)])
            (if (procedure? printer)
                (begin (printer x p) i)
-               (write-shareable x p m h i write-record)))]
+               (write-shareable x p m h i write-struct)))]
         [(code? x)
          (write-char* "#<code>" p)]
         [($unbound-object? x)

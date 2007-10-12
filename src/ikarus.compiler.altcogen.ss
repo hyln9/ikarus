@@ -32,18 +32,18 @@
       (error who "invalid gensym ~s" x)))
   ;;;
   (define (check-label x)
-    (record-case x
+    (struct-case x
       [(code-loc label)
        (check-gensym label)]
       [else (error who "invalid label ~s" x)]))
   ;;;
   (define (check-var x)
-    (record-case x 
+    (struct-case x 
       [(var) (void)]
       [else (error who "invalid var ~s" x)]))
   ;;;
   (define (check-closure x)
-    (record-case x
+    (struct-case x
       [(closure label free*)
        (check-label label)
        (for-each check-var free*)]
@@ -51,7 +51,7 @@
   ;;;
   (define (mkfuncall op arg*)
     (import primops)
-    (record-case op
+    (struct-case op
       [(primref name)
        (cond
          [(primop? name)
@@ -60,7 +60,7 @@
       [else (make-funcall op arg*)]))
   ;;;
   (define (Expr x)
-    (record-case x
+    (struct-case x
       [(constant) x]
       [(var)      x]
       [(primref)  x]
@@ -84,19 +84,19 @@
       [else (error who "invalid expr ~s" x)]))
   ;;;
   (define (ClambdaCase x)
-    (record-case x
+    (struct-case x
       [(clambda-case info body)
        (make-clambda-case info (Expr body))]
       [else (error who "invalid clambda-case ~s" x)]))
   ;;;
   (define (Clambda x)
-    (record-case x
+    (struct-case x
       [(clambda label case* free* name)
        (make-clambda label (map ClambdaCase case*) free* name)]
       [else (error who "invalid clambda ~s" x)]))
   ;;;
   (define (Program x)
-    (record-case x 
+    (struct-case x 
       [(codes code* body)
        (make-codes (map Clambda code*) (Expr body))]
       [else (error who "invalid program ~s" x)]))
@@ -120,12 +120,12 @@
           [else (f (cdr free*) (fxadd1 i))])))
     (define (do-fix lhs* rhs* body)
       (define (handle-closure x)
-        (record-case x
+        (struct-case x
           [(closure code free*) 
            (make-closure code (map Var free*))]))
       (make-fix lhs* (map handle-closure rhs*) body))
     (define (Expr x)
-      (record-case x
+      (struct-case x
         [(constant) x]
         [(var)      (Var x)]
         [(primref)  x]
@@ -155,9 +155,9 @@
   ;;;
   (define (ClambdaCase free*)
     (lambda (x)
-      (record-case x
+      (struct-case x
         [(clambda-case info body)
-         (record-case info
+         (struct-case info
            [(case-info label args proper)
             (let ([cp (unique-var 'cp)])
               (make-clambda-case 
@@ -166,14 +166,14 @@
         [else (error who "invalid clambda-case ~s" x)])))
   ;;;
   (define (Clambda x)
-    (record-case x
+    (struct-case x
       [(clambda label case* free* name)
        (make-clambda label (map (ClambdaCase free*) case*) 
                      free* name)]
       [else (error who "invalid clambda ~s" x)]))
   ;;;
   (define (Program x)
-    (record-case x 
+    (struct-case x 
       [(codes code* body)
        (make-codes (map Clambda code*) ((Expr #f '()) body))]
       [else (error who "invalid program ~s" x)]))
@@ -199,15 +199,15 @@
       (make-primcall '$do-event '())
       x))
   (define (CaseExpr x)
-    (record-case x 
+    (struct-case x 
       [(clambda-case info body)
        (make-clambda-case info (Tail body))]))
   (define (CodeExpr x)
-    (record-case x
+    (struct-case x
       [(clambda L cases free name)
        (make-clambda L (map CaseExpr cases) free name)]))
   (define (CodesExpr x)
-    (record-case x 
+    (struct-case x 
       [(codes list body)
        (make-codes (map CodeExpr list) (Tail body))]))
   (CodesExpr x))
@@ -229,12 +229,12 @@
       x))
 
   (define (ClambdaCase x) 
-    (record-case x
+    (struct-case x
       [(clambda-case info body)
        (make-clambda-case info (Main body))]))
   ;;;
   (define (Clambda x)
-    (record-case x
+    (struct-case x
       [(clambda label case* free* name)
        (make-clambda label (map ClambdaCase case*) free* name)]))
   ;;;
@@ -244,7 +244,7 @@
         x))
   ;;;
   (define (Program x)
-    (record-case x 
+    (struct-case x 
       [(codes code* body)
        (make-codes (map Clambda code*) (Main body))]))
   ;;;
@@ -288,7 +288,7 @@
                   (k (cons a d))))))]))
   ;;;
   (define (S x k)
-    (record-case x
+    (struct-case x
       [(bind lhs* rhs* body)
        (do-bind lhs* rhs* (S body k))]
       [(seq e0 e1)
@@ -380,7 +380,7 @@
            (list size)))))
   ;;; impose value
   (define (V d x)
-    (record-case x 
+    (struct-case x 
       [(constant) (make-set d x)]
       [(var)      
        (cond
@@ -486,7 +486,7 @@
            (make-primcall 'return (list return-value-register))))))
   ;;; impose effect
   (define (E x)
-    (record-case x
+    (struct-case x
       [(seq e0 e1) (make-seq (E e0) (E e1))]
       [(conditional e0 e1 e2)
        (make-conditional (P e0) (E e1) (E e2))]
@@ -520,7 +520,7 @@
       [else (error who "invalid effect ~s" x)]))
   ;;; impose pred
   (define (P x)
-    (record-case x
+    (struct-case x
       [(constant) x]
       [(seq e0 e1) (make-seq (E e0) (P e1))]
       [(conditional e0 e1 e2)
@@ -585,7 +585,7 @@
                 (f (cdr args) (cdr locs) 
                    (cons t targs) (cons (car locs) tlocs))))]))))
   (define (Tail x)
-    (record-case x 
+    (struct-case x 
       [(constant) (VT x)]
       [(var)      (VT x)]
       [(primcall op rands) 
@@ -661,9 +661,9 @@
                    fargs flocs))])))
   ;;;
   (define (ClambdaCase x) 
-    (record-case x
+    (struct-case x
       [(clambda-case info body)
-       (record-case info
+       (struct-case info
          [(case-info label args proper)
           (let-values ([(rargs rlocs fargs flocs)
                         (partition-formals args)])
@@ -681,7 +681,7 @@
                 (make-locals locals body))))])]))
   ;;;
   (define (Clambda x)
-    (record-case x
+    (struct-case x
       [(clambda label case* free* name)
        (make-clambda label (map ClambdaCase case*) free* name)]))
   ;;;
@@ -691,7 +691,7 @@
       (make-locals locals x)))
   ;;;
   (define (Program x)
-    (record-case x 
+    (struct-case x 
       [(codes code* body)
        (make-codes (map Clambda code*) (Main body))]))
   ;;;
@@ -703,7 +703,7 @@
    empty-set?
    set->list list->set)
 
-  (define-record set (v))
+  (define-struct set (v))
 
   (define (make-empty-set) (make-set '()))
   (define (set-member? x s) 
@@ -983,7 +983,7 @@
    delete-node!)
   (import ListySet)
   ;;;
-  (define-record graph (ls))
+  (define-struct graph (ls))
   ;;;
   (define (empty-graph) (make-graph '()))
   ;;;
@@ -1051,7 +1051,7 @@
    delete-node!)
   (import IntegerSet)
   ;;;
-  (define-record graph (ls))
+  (define-struct graph (ls))
   ;;;
   (define (empty-graph) (make-graph '()))
   ;;;
@@ -1262,7 +1262,7 @@
        (let-values ([(vs rs fs ns) (R (car ls) vs rs fs ns)])
           (R* (cdr ls) vs rs fs ns))]))
   (define (E x vs rs fs ns)
-    (record-case x
+    (struct-case x
       [(seq e0 e1) 
        (let-values ([(vs rs fs ns) (E e1 vs rs fs ns)])
          (E e0 vs rs fs ns))]
@@ -1488,7 +1488,7 @@
   (define (P x vst rst fst nst 
                vsf rsf fsf nsf
                vsu rsu fsu nsu)
-    (record-case x
+    (struct-case x
       [(seq e0 e1) 
        (let-values ([(vs rs fs ns) 
                      (P e1 vst rst fst nst 
@@ -1529,7 +1529,7 @@
                     vsu rsu fsu nsu)))]
       [else (error who "invalid pred ~s" (unparse x))]))
   (define (T x)
-    (record-case x
+    (struct-case x
       [(seq e0 e1) 
        (let-values ([(vs rs fs ns) (T e1)])
          (E e0 vs rs fs ns))]
@@ -1609,7 +1609,7 @@
         (or (assign-move x)
             (assign-any))))
     (define (NFE idx mask x)
-      (record-case x
+      (struct-case x
         [(seq e0 e1) 
          (let ([e0 (E e0)])
            (make-seq e0 (NFE idx mask e1)))]
@@ -1642,7 +1642,7 @@
          (make-disp (R (disp-s0 x)) (R (disp-s1 x)))]
         [else (error who "invalid R ~s" (unparse x))]))
     (define (E x)
-      (record-case x
+      (struct-case x
         [(seq e0 e1)
          (let ([e0 (E e0)])
            (make-seq e0 (E e1)))]
@@ -1767,7 +1767,7 @@
          (make-shortcut (E body) (E handler))]
         [else (error who "invalid effect ~s" (unparse x))]))
     (define (P x)
-      (record-case x
+      (struct-case x
         [(seq e0 e1)
          (let ([e0 (E e0)])
            (make-seq e0 (P e1)))]
@@ -1779,7 +1779,7 @@
          (make-shortcut (P body) (P handler))]
         [else (error who "invalid pred ~s" (unparse x))]))
     (define (T x)
-      (record-case x
+      (struct-case x
         [(seq e0 e1)
          (let ([e0 (E e0)])
            (make-seq e0 (T e1)))]
@@ -1792,7 +1792,7 @@
     (T x))
   ;;;
   (define (Main x)
-    (record-case x 
+    (struct-case x 
       [(locals vars body)
        (init-vars! vars)
        (let ([varvec (list->vector vars)])
@@ -1809,17 +1809,17 @@
       [else (error 'assign-frame-sizes "invalid main ~s" x)]))
   ;;;
   (define (ClambdaCase x) 
-    (record-case x
+    (struct-case x
       [(clambda-case info body)
        (make-clambda-case info (Main body))]))
   ;;;
   (define (Clambda x)
-    (record-case x
+    (struct-case x
       [(clambda label case* free* name)
        (make-clambda label (map ClambdaCase case*) free* name)]))
   ;;;
   (define (Program x)
-    (record-case x 
+    (struct-case x 
       [(codes code* body)
        (make-codes (map Clambda code*) (Main body))]))
   ;;;
@@ -1847,7 +1847,7 @@
         [(null? ls) (make-empty-set)]
         [else (set-union (R (car ls)) (R* (cdr ls)))]))
     (define (R x)
-      (record-case x
+      (struct-case x
         [(constant) (make-empty-set)]
         [(var) (list->set (list x))]
         [(disp s0 s1) (set-union (R s0) (R s1))]
@@ -1862,7 +1862,7 @@
            [else (error who "invalid R ~s" x)])]))
     ;;; build effect
     (define (E x s)
-      (record-case x
+      (struct-case x
         [(asm-instr op d v)
          (case op
            [(move)
@@ -1929,7 +1929,7 @@
              (E body s)))]
         [else (error who "invalid effect ~s" (unparse x))]))
     (define (P x st sf su)
-      (record-case x
+      (struct-case x
         [(constant c) (if c st sf)]
         [(seq e0 e1)
          (E e0 (P e1 st sf su))]
@@ -1944,7 +1944,7 @@
              (P body st sf su)))]
         [else (error who "invalid pred ~s" (unparse x))]))
     (define (T x)
-      (record-case x
+      (struct-case x
         [(conditional e0 e1 e2)
          (let ([s1 (T e1)] [s2 (T e2)])
            (P e0 s1 s2 (set-union s1 s2)))]
@@ -2028,30 +2028,30 @@
         [(assq x env) => cdr]
         [else x]))
     (define (Rhs x)
-      (record-case x
+      (struct-case x
         [(var) (Var x)]
         [(primcall op rand*)
          (make-primcall op (map Rand rand*))]
         [else x]))
     (define (Rand x) 
-      (record-case x
+      (struct-case x
         [(var) (Var x)]
         [else x]))
     (define (Lhs x)
-      (record-case x
+      (struct-case x
         [(var) (Var x)]
         [(nfv confs loc) 
          (or loc (error who "LHS not set ~s" x))]
         [else x]))
     (define (D x)
-      (record-case x
+      (struct-case x
         [(constant) x]
         [(var) (Var x)]
         [(fvar) x]
         [else
          (if (symbol? x) x (error who "invalid D ~s" x))]))
     (define (R x)
-      (record-case x
+      (struct-case x
         [(constant) x]
         [(var) (Var x)]
         [(fvar)     x]
@@ -2062,7 +2062,7 @@
          (if (symbol? x) x (error who "invalid R ~s" x))]))
     ;;; substitute effect
     (define (E x)
-      (record-case x
+      (struct-case x
         [(seq e0 e1) (make-seq (E e0) (E e1))]
         [(conditional e0 e1 e2) 
          (make-conditional (P e0) (E e1) (E e2))]
@@ -2075,7 +2075,7 @@
          (make-shortcut (E body) (E handler))]
         [else (error who "invalid effect ~s" (unparse x))]))
     (define (P x)
-      (record-case x
+      (struct-case x
         [(constant) x]
         [(asm-instr op x v)
          (make-asm-instr op (R x) (R v))]
@@ -2086,7 +2086,7 @@
          (make-shortcut (P body) (P handler))]
         [else (error who "invalid pred ~s" (unparse x))])) 
     (define (T x)
-      (record-case x
+      (struct-case x
         [(primcall op rands) x]
         [(conditional e0 e1 e2) 
          (make-conditional (P e0) (T e1) (T e2))]
@@ -2141,7 +2141,7 @@
       (or (disp? x) (fvar? x)))
     ;;; unspillable effect
     (define (E x)
-      (record-case x
+      (struct-case x
         [(seq e0 e1) (make-seq (E e0) (E e1))]
         [(conditional e0 e1 e2)
          (make-conditional (P e0) (E e1) (E e2))]
@@ -2252,7 +2252,7 @@
            (make-shortcut body (E handler)))]
         [else (error who "invalid effect ~s" (unparse x))]))
     (define (P x)
-      (record-case x
+      (struct-case x
         [(constant) x]
         [(primcall op rands)
          (let ([a0 (car rands)] [a1 (cadr rands)])
@@ -2286,7 +2286,7 @@
            (make-shortcut body (P handler)))]
         [else (error who "invalid pred ~s" (unparse x))]))
     (define (T x)
-      (record-case x
+      (struct-case x
         [(primcall op rands) x]
         [(conditional e0 e1 e2)
          (make-conditional (P e0) (T e1) (T e2))]
@@ -2299,7 +2299,7 @@
   ;;;
   (define (color-program x)
     (define who 'color-program)
-    (record-case x 
+    (struct-case x 
       [(locals vars body)
        (let ([varvec (car vars)] [sp* (cdr vars)])
          (let loop ([sp* (list->set sp*)] [un* (make-empty-set)] [body body])
@@ -2316,17 +2316,17 @@
   (define (color-by-chaitin x)
     ;;;
     (define (ClambdaCase x) 
-      (record-case x
+      (struct-case x
         [(clambda-case info body)
          (make-clambda-case info (color-program body))]))
     ;;;
     (define (Clambda x)
-      (record-case x
+      (struct-case x
         [(clambda label case* free* name)
          (make-clambda label (map ClambdaCase case*) free* name)]))
     ;;;
     (define (Program x)
-      (record-case x 
+      (struct-case x 
         [(codes code* body)
          (make-codes (map Clambda code*) (color-program body))]))
     ;;;
@@ -2344,7 +2344,7 @@
     `(disp ,(* i (- wordsize)) ,fpr))
   ;;;
   (define (C x)
-    (record-case x
+    (struct-case x
       [(code-loc label) (label-address label)]
       [(foreign-label L) `(foreign-label ,L)]
       [(closure label free*)
@@ -2357,19 +2357,19 @@
            x
            (error who "invalid constant C ~s" x))]))
   (define (BYTE x)
-    (record-case x
+    (struct-case x
       [(constant x)
        (unless (and (integer? x) (fx<= x 255) (fx<= -128 x))
          (error who "invalid byte ~s" x))
        x]
       [else (error who "invalid byte ~s" x)]))
   (define (D x)
-    (record-case x
+    (struct-case x
       [(constant c) (C c)]
       [else
        (if (symbol? x) x (error who "invalid D ~s" x))]))
   (define (R x)
-    (record-case x
+    (struct-case x
       [(constant c) (C c)]
       [(fvar i) (FVar i)]
       [(disp s0 s1) 
@@ -2378,7 +2378,7 @@
       [else
        (if (symbol? x) x (error who "invalid R ~s" x))]))
   (define (R/l x)
-    (record-case x
+    (struct-case x
       [(constant c) (C c)]
       [(fvar i) (FVar i)]
       [(disp s0 s1) 
@@ -2397,7 +2397,7 @@
        => cadr]
       [else (error who "invalid reg/l ~s" x)])) 
   (define (R/cl x)
-    (record-case x
+    (struct-case x
       [(constant i) 
        (unless (fixnum? i)
          (error who "invalid R/cl ~s" x))
@@ -2407,12 +2407,12 @@
            '%cl
            (error who "invalid R/cl ~s" x))]))
   (define (interrupt? x)
-    (record-case x
+    (struct-case x
       [(primcall op args) (eq? op 'interrupt)]
       [else #f]))
   ;;; flatten effect
   (define (E x ac)
-    (record-case x
+    (struct-case x
       [(seq e0 e1) (E e0 (E e1 ac))]
       [(conditional e0 e1 e2)
        (cond
@@ -2568,7 +2568,7 @@
     (label (gensym)))
   ;;;
   (define (P x lt lf ac)
-    (record-case x
+    (struct-case x
       [(constant c) 
        (if c
            (if lt (cons `(jmp ,lt) ac) ac)
@@ -2668,7 +2668,7 @@
       [else (error who "invalid pred ~s" x)]))
   ;;;
   (define (T x ac)
-    (record-case x
+    (struct-case x
       [(seq e0 e1) (E e0 (T e1 ac))]
       [(conditional e0 e1 e2)
        (let ([L (unique-label)])
@@ -2756,9 +2756,9 @@
        (handle-vararg (length (cdr args)) ac)]))
   ;;;
   (define (ClambdaCase x ac) 
-    (record-case x
+    (struct-case x
       [(clambda-case info body)
-       (record-case info
+       (struct-case info
          [(case-info L args proper)
           (let ([lothers (unique-label)])
             (cons* `(cmpl ,(argc-convention 
@@ -2777,7 +2777,7 @@
                         (T body (cons lothers ac))))))])]))
   ;;;
   (define (Clambda x)
-    (record-case x
+    (struct-case x
       [(clambda L case* free* name)
        (cons* (length free*) 
               `(name ,name)
@@ -2794,7 +2794,7 @@
   (define exceptions-conc (make-parameter #f))
   ;;;
   (define (Program x)
-    (record-case x 
+    (struct-case x 
       [(codes code* body)
        (cons (cons* 0 
                     (label (gensym))

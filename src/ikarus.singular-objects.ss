@@ -3,7 +3,7 @@
   (export base-rtd eof-object void fixnum-width least-fixnum
           greatest-fixnum)
   (import 
-    (rename (ikarus system $records) (base-rtd sys:base-rtd))
+    (rename (ikarus system $structs) (base-rtd sys:base-rtd))
     (rename (ikarus)
             (void sys:void)
             (fixnum-width sys:fixnum-width)

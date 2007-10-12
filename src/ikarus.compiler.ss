@@ -8,7 +8,7 @@
     (ikarus system $fx)
     (ikarus system $pairs)
     (only (ikarus system $codes) $code->closure)
-    (only (ikarus system $records) $record-ref $record/rtd?)
+    (only (ikarus system $structs) $struct-ref $struct/rtd?)
     (except (ikarus)
         compile-core-expr-to-port assembler-output
         current-primitive-locations eval-core)
@@ -17,7 +17,7 @@
     )
 
 
-(define-syntax record-case
+(define-syntax struct-case
   (lambda (x)
     (define (enumerate fld* i)
       (syntax-case fld* ()
@@ -33,8 +33,8 @@
          (with-syntax ([altern (generate-body ctxt #'rest)]
                        [(id* ...) (enumerate #'(rec-field* ...) 0)]
                        [rtd #'(type-descriptor rec-name)])
-          #'(if ($record/rtd? v rtd)
-                (let ([rec-field* ($record-ref v id*)] ...)
+          #'(if ($struct/rtd? v rtd)
+                (let ([rec-field* ($struct-ref v id*)] ...)
                   b b* ...)
                 altern))]))
     (syntax-case x ()
@@ -45,55 +45,55 @@
 (include "set-operations.ss")
 
   
-(define-record constant (value))
-(define-record code-loc (label))
-(define-record foreign-label (label))
-(define-record var 
+(define-struct constant (value))
+(define-struct code-loc (label))
+(define-struct foreign-label (label))
+(define-struct var 
    (name assigned referenced 
          reg-conf frm-conf var-conf reg-move frm-move var-move
          loc index))
-(define-record cp-var (idx))
-(define-record frame-var (idx))
-(define-record new-frame (base-idx size body))
-(define-record save-cp (loc))
-(define-record eval-cp (check body))
-(define-record return (value))
-(define-record call-cp
+(define-struct cp-var (idx))
+(define-struct frame-var (idx))
+(define-struct new-frame (base-idx size body))
+(define-struct save-cp (loc))
+(define-struct eval-cp (check body))
+(define-struct return (value))
+(define-struct call-cp
   (call-convention label save-cp? rp-convention base-idx arg-count live-mask))
-(define-record tailcall-cp (convention label arg-count))
-(define-record primcall (op arg*))
-(define-record primref (name))
-(define-record conditional (test conseq altern))
-(define-record interrupt-call (test handler))
-(define-record bind (lhs* rhs* body))
-(define-record recbind (lhs* rhs* body))
-(define-record rec*bind (lhs* rhs* body))
-(define-record fix (lhs* rhs* body))
+(define-struct tailcall-cp (convention label arg-count))
+(define-struct primcall (op arg*))
+(define-struct primref (name))
+(define-struct conditional (test conseq altern))
+(define-struct interrupt-call (test handler))
+(define-struct bind (lhs* rhs* body))
+(define-struct recbind (lhs* rhs* body))
+(define-struct rec*bind (lhs* rhs* body))
+(define-struct fix (lhs* rhs* body))
 
-(define-record seq (e0 e1))
-(define-record case-info (label args proper))
-(define-record clambda-case (info body))
-(define-record clambda (label cases free name))
-(define-record closure (code free*))
-(define-record funcall (op rand*))
-(define-record jmpcall (label op rand*))
-(define-record forcall (op rand*))
-(define-record codes (list body))
-(define-record assign (lhs rhs))
-(define-record mvcall (producer consumer))
+(define-struct seq (e0 e1))
+(define-struct case-info (label args proper))
+(define-struct clambda-case (info body))
+(define-struct clambda (label cases free name))
+(define-struct closure (code free*))
+(define-struct funcall (op rand*))
+(define-struct jmpcall (label op rand*))
+(define-struct forcall (op rand*))
+(define-struct codes (list body))
+(define-struct assign (lhs rhs))
+(define-struct mvcall (producer consumer))
 
 
 
-(define-record shortcut (body handler))
+(define-struct shortcut (body handler))
 
-(define-record fvar (idx))
-(define-record object (val))
-(define-record locals (vars body))
-(define-record nframe (vars live body))
-(define-record nfv (conf loc var-conf frm-conf nfv-conf))
-(define-record ntcall (target value args mask size))
-(define-record asm-instr (op dst src))
-(define-record disp (s0 s1))
+(define-struct fvar (idx))
+(define-struct object (val))
+(define-struct locals (vars body))
+(define-struct nframe (vars live body))
+(define-struct nfv (conf loc var-conf frm-conf nfv-conf))
+(define-struct ntcall (target value args mask size))
+(define-struct asm-instr (op dst src))
+(define-struct disp (s0 s1))
 
 (define mkfvar
   (let ([cache '()])
@@ -266,7 +266,7 @@
             [(null? d) (E a)]
             [else (cons (E a) (f (car d) (cdr d)))]))))
   (define (E x)
-    (record-case x
+    (struct-case x
       [(constant c) `(quote ,c)]
       [(code-loc x) `(code-loc ,x)]
       [(var x) (string->symbol (format "v:~a" x))]
@@ -291,7 +291,7 @@
       [(seq e0 e1) 
        (let ()
          (define (f x ac)
-           (record-case x
+           (struct-case x
              [(seq e0 e1) (f e0 (f e1 ac))]
              [else (cons (E x) ac)]))
          (cons 'begin (f e0 (f e1 '()))))]
@@ -376,9 +376,9 @@
        (list (make-conses rhs*))]
       [else (cons (car rhs*) (properize (cdr lhs*) (cdr rhs*)))]))
   (define (inline-case cls rand*)
-    (record-case cls
+    (struct-case cls
       [(clambda-case info body)
-       (record-case info
+       (struct-case info
          [(case-info label fml* proper)
           (if proper
               (and (fx= (length fml*) (length rand*))
@@ -392,26 +392,26 @@
       [else (try-inline (cdr cls*) rand* default)]))
   (define (inline rator rand*)
     (define (valid-mv-consumer? x)
-      (record-case x
+      (struct-case x
         [(clambda L cases F)
          (and (fx= (length cases) 1)
-              (record-case (car cases)
+              (struct-case (car cases)
                 [(clambda-case info body)
-                 (record-case info
+                 (struct-case info
                    [(case-info L args proper) proper])]))]
         [else #f]))
     (define (single-value-consumer? x)
-      (record-case x
+      (struct-case x
         [(clambda L cases F)
          (and (fx= (length cases) 1)
-              (record-case (car cases)
+              (struct-case (car cases)
                 [(clambda-case info body)
-                 (record-case info
+                 (struct-case info
                    [(case-info L args proper)
                     (and proper (fx= (length args) 1))])]))]
         [else #f])) 
     (define (valid-mv-producer? x)
-      (record-case x
+      (struct-case x
         [(funcall) #t]
         [(conditional) #f]
         [(bind lhs* rhs* body) (valid-mv-producer? body)]
@@ -419,7 +419,7 @@
        ; [else (error 'valid-mv-producer? "unhandles ~s"
        ;              (unparse x))]
         ))
-    (record-case rator
+    (struct-case rator
       [(clambda g cls*)
        (try-inline cls* rand*
           (make-funcall rator rand*))]
@@ -445,7 +445,7 @@
           (make-funcall rator rand*)])]
       [else (make-funcall rator rand*)]))
   (define (Expr x)
-    (record-case x
+    (struct-case x
       [(constant) x]
       [(var) x]
       [(primref) x]
@@ -465,7 +465,7 @@
       [(clambda g cls* free name)
        (make-clambda g
          (map (lambda (x)
-                (record-case x
+                (struct-case x
                   [(clambda-case info body)
                    (make-clambda-case info (Expr body))]))
               cls*)
@@ -586,7 +586,7 @@
          (make-assign (car lhs*) (car rhs*))
          (build-assign* (cdr lhs*) (cdr rhs*) body))]))
   (define (E x ref comp)
-    (record-case x
+    (struct-case x
       [(constant) x]
       [(var) (ref x) x]
       [(assign lhs rhs)
@@ -613,7 +613,7 @@
       [(clambda g cls* free name)
        (make-clambda g
          (map (lambda (x)
-                (record-case x
+                (struct-case x
                   [(clambda-case info body)
                    (let ([h (make-eq-hashtable)])
                      (let ([body (E body (extend-hash (case-info-args info) h ref) void)])
@@ -622,7 +622,7 @@
          free name)]
       [(funcall rator rand*)
        (let ([rator (E rator ref comp)] [rand* (E* rand* ref comp)])
-         (record-case rator
+         (struct-case rator
            [(primref op)
             (unless (memq op simple-primitives)
               (comp))]
@@ -648,7 +648,7 @@
     (set-var-assigned! x #f)
     (set-var-referenced! x #f))
   (define (Expr x)
-    (record-case x
+    (struct-case x
       [(constant) (void)]
       [(var) (set-var-referenced! x #t)]
       [(primref) (void)]
@@ -667,7 +667,7 @@
       [(clambda g cls*)
        (for-each
          (lambda (cls)
-           (record-case cls
+           (struct-case cls
              [(clambda-case info body)
               (for-each init-var (case-info-args info))
               (Expr body)]))
@@ -727,7 +727,7 @@
       [else
        (make-funcall (make-primref op) rand*)]))
   (define (constant-value x k) 
-    (record-case x 
+    (struct-case x 
       [(constant t) (k t)] ; known
       [(bind lhs* rhs* body) (constant-value body k)]
       [(fix lhs* rhs* body) (constant-value body k)]
@@ -887,7 +887,7 @@
                   [(p) (mk-seq (mk-seq a0 a1) (make-constant #t))]
                   [else (giveup)])))
          (giveup))]
-    [($record-ref $record/rtd?)
+    [($record-ref $record/rtd? $struct-ref $struct/rtd?)
      (or (and (fx= (length rand*) 2)
               (let ([a0 (car rand*)] [a1 (cadr rand*)])
                 (case ctxt
@@ -1044,7 +1044,7 @@
 
 
 (define (mk-mvcall p c)
-  (record-case p
+  (struct-case p
     [(funcall) (make-mvcall p c)]
     [(seq e0 e1)
      (make-seq e0 (mk-mvcall e1 c))]
@@ -1057,7 +1057,7 @@
   (define who 'copy-propagate)
   (define the-void (make-constant (void)))
   (define (known-value x) 
-    (record-case x 
+    (struct-case x 
       [(constant) x] ; known
       [(primref)  x] ; known
       [(bind lhs* rhs* body) (known-value body)]
@@ -1076,7 +1076,7 @@
                  (primref-name y)))]
       [else #f]))
   (define (predicate-value x)
-    (record-case x
+    (struct-case x
       [(constant t) (if t 't 'f)]
       [(bind lhs rhs body) (predicate-value body)]
       [(fix lhs rhs body) (predicate-value body)]
@@ -1148,13 +1148,13 @@
   (define (do-clambda g cls* free name)
     (make-clambda g
       (map (lambda (cls)
-             (record-case cls
+             (struct-case cls
                [(clambda-case info body)
                 (make-clambda-case info (Value body))]))
            cls*)
       free name))
   (define (Effect x)
-    (record-case x
+    (struct-case x
       [(constant) the-void]
       [(var)      the-void]
       [(primref)  the-void]
@@ -1179,7 +1179,7 @@
          (cond
            [(known-value rator) =>
             (lambda (v)
-              (record-case v
+              (struct-case v
                 [(primref op)
                  (mk-seq rator
                     (optimize-primcall 'e op (map Value rand*)))]
@@ -1198,7 +1198,7 @@
            (Effect rhs))]
       [else (error who "invalid effect expression ~s" (unparse x))]))
   (define (Pred x)
-    (record-case x
+    (struct-case x
       [(constant) x]
       [(var) 
        (let ([r (var-referenced x)])
@@ -1237,7 +1237,7 @@
          (cond
            [(known-value rator) =>
             (lambda (v)
-              (record-case v
+              (struct-case v
                 [(primref op)
                  (mk-seq rator
                     (optimize-primcall 'p op (map Value rand*)))]
@@ -1252,7 +1252,7 @@
        (mk-mvcall (Value p) (Value c))]
       [else (error who "invalid pred expression ~s" (unparse x))]))
   (define (Value x)
-    (record-case x
+    (struct-case x
       [(constant) x]
       [(var) 
        (let ([r (var-referenced x)])
@@ -1289,7 +1289,7 @@
          (cond
            [(known-value rator) =>
             (lambda (v)
-              (record-case v
+              (struct-case v
                 [(primref op)
                  (mk-seq rator
                     (optimize-primcall 'v op (map Value rand*)))]
@@ -1331,7 +1331,7 @@
          (map (lambda (rhs) (make-funcall (make-primref 'vector) (list rhs))) rhs*)
          body)]))
   (define (Expr x)
-    (record-case x
+    (struct-case x
       [(constant) x]
       [(var) 
        (cond
@@ -1351,9 +1351,9 @@
       [(clambda g cls* free name) 
        (make-clambda g
          (map (lambda (cls)
-                (record-case cls
+                (struct-case cls
                   [(clambda-case info body)
-                   (record-case info
+                   (struct-case info
                      [(case-info label fml* proper)
                       (let-values ([(fml* a-lhs* a-rhs*) (fix-lhs* fml*)])
                         (make-clambda-case 
@@ -1383,7 +1383,7 @@
   (define (init-var x)
     (set-var-referenced! x #f))
   (define (set-var x v)
-    (record-case v
+    (struct-case v
       [(clambda) (set-var-referenced! x v)]
       [(var) 
        (cond
@@ -1394,7 +1394,7 @@
     (var-referenced x))
   (define (optimize c rator rand*)
     (let ([n (length rand*)])
-      (record-case c
+      (struct-case c
         [(clambda main-label cls*)
          (let f ([cls* cls*])
            (cond
@@ -1402,7 +1402,7 @@
               ;;; none matching?
               (make-funcall rator rand*)]
              [else
-              (record-case (clambda-case-info (car cls*))
+              (struct-case (clambda-case-info (car cls*))
                 [(case-info label fml* proper)
                  (cond
                    [proper
@@ -1421,7 +1421,7 @@
                                       (f (cdr fml*) (cdr rand*)))])))
                         (f (cdr cls*)))])])]))])))
   (define (Expr x)
-    (record-case x
+    (struct-case x
       [(constant) x]
       [(var)      x]
       [(primref)  x]
@@ -1439,7 +1439,7 @@
       [(clambda g cls* free name) 
        (make-clambda g
          (map (lambda (cls)
-                (record-case cls
+                (struct-case cls
                   [(clambda-case info body)
                    (for-each init-var (case-info-args info))
                    (make-clambda-case info (Expr body))]))
@@ -1484,14 +1484,14 @@
                     [(d d-free) (do-clambda* (cdr x*))])
          (values (cons a d) (union a-free d-free)))]))
   (define (do-clambda x)
-    (record-case x 
+    (struct-case x 
       [(clambda g cls* _free name)
        (let-values ([(cls* free) 
                      (let f ([cls* cls*])
                        (cond
                          [(null? cls*) (values '() '())]
                          [else
-                          (record-case (car cls*)
+                          (struct-case (car cls*)
                             [(clambda-case info body)
                              (let-values ([(body body-free) (Expr body)]
                                           [(cls* cls*-free) (f (cdr cls*))])
@@ -1502,7 +1502,7 @@
           (values (make-closure (make-clambda g cls* free name) free)
                   free))]))
   (define (Expr ex)
-    (record-case ex
+    (struct-case ex
       [(constant) (values ex '())]
       [(var) (values ex (singleton ex))]
       [(primref) (values ex '())]
@@ -1544,7 +1544,7 @@
       [(mvcall p c)
        (let-values ([(p p-free) (Expr p)]
                     [(c c-free) (Expr c)])
-         (record-case c
+         (struct-case c
            [(closure code free^) 
             (values (make-mvcall p code)
                     (union p-free c-free))]
@@ -1574,16 +1574,16 @@
   (define (make-thunk-var var thunk)
     (set-var-referenced! var thunk))
   (define (thunk? x)
-    (record-case x
+    (struct-case x
       [(closure code free*)
        (null? free*)]
       [else #f]))
   (define (trim/lift-code code free*)
-    (record-case code
+    (struct-case code
       [(clambda label cls* free*/dropped name)
        (let ([cls* (map
                      (lambda (x)
-                       (record-case x 
+                       (struct-case x 
                          [(clambda-case info body)
                           (for-each init-non-thunk
                               (case-info-args info))
@@ -1617,7 +1617,7 @@
     (for-each init-non-thunk lhs*)
     (let ([free** ;;; trim the free lists first; after init.
            (map (lambda (x) (trim-vars (closure-free* x))) rhs*)])
-      (define-record node (name code deps whacked free))
+      (define-struct node (name code deps whacked free))
       (let ([node* (map (lambda (lhs rhs) 
                           (let ([n (make-node lhs (closure-code rhs) '() #f '())])
                             (make-thunk-var lhs n)
@@ -1679,7 +1679,7 @@
                     (trim-thunks rhs*)
                     (E body))))))
   (define (E x)
-    (record-case x
+    (struct-case x
       [(constant) x]
       [(var)      (or (var-thunk x) x)]
       [(primref)  x]
@@ -1693,12 +1693,12 @@
       [(funcall rator rand*) (make-funcall (E rator) (map E rand*))]
       [(jmpcall label rator rand*) (make-jmpcall label (E rator) (map E rand*))]
       [(mvcall p c)
-       (record-case c 
+       (struct-case c 
          [(clambda label cases free name)
           (make-mvcall (E p) 
             (make-clambda label
               (map (lambda (x)
-                     (record-case x
+                     (struct-case x
                        [(clambda-case info body)
                         (make-clambda-case info (E body))]))
                    cases)
@@ -1718,15 +1718,15 @@
         (make-funcall (make-primref '$do-event) '()))
       x))
   (define (CaseExpr x)
-    (record-case x 
+    (struct-case x 
       [(clambda-case info body)
        (make-clambda-case info (Tail body))]))
   (define (CodeExpr x)
-    (record-case x
+    (struct-case x
       [(clambda L cases free name)
        (make-clambda L (map CaseExpr cases) free name)]))
   (define (CodesExpr x)
-    (record-case x 
+    (struct-case x 
       [(codes list body)
        (make-codes (map CodeExpr list) (Tail body))]))
   (CodesExpr x))
@@ -1886,8 +1886,8 @@
   (define tcbucket-size      16)
   (define record-ptag  5)
   (define record-pmask 7)
-  (define disp-record-rtd     0)
-  (define disp-record-data    4)
+  (define disp-struct-rtd     0)
+  (define disp-struct-data    4)
   (define disp-frame-size -17)
   (define disp-frame-offset -13)
   (define disp-multivalue-rp -9)

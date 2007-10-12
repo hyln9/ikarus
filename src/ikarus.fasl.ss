@@ -43,7 +43,7 @@
   (import (ikarus)
           (except (ikarus code-objects) procedure-annotation)
           (ikarus system $codes)
-          (ikarus system $records))
+          (ikarus system $structs))
 
   (define who 'fasl-read)
   (define (assert-eq? x y)
@@ -218,18 +218,18 @@
                         [else 
                          (let ([a (read)])
                            (cons a (f (fxadd1 i))))]))])
-               (let ([rtd (make-record-type 
+               (let ([rtd (make-struct-type 
                             rtd-name fields rtd-symbol)])
                  (when m (put-mark m rtd))
                  rtd)))]
           [(#\{)
            (let ([n (read-int p)])
              (let ([rtd (read)])
-               (let ([x ($make-record rtd n)])
+               (let ([x ($make-struct rtd n)])
                  (when m (put-mark m x))
                  (let f ([i 0])
                    (unless (fx= i n)
-                     (record-set! x i (read))
+                     ($struct-set! x i (read))
                      (f (fxadd1 i))))
                  x)))]
           [(#\C)

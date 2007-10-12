@@ -38,7 +38,7 @@
      (K dirty-word)))
 
 (define (smart-dirty-vector-set addr what)
-  (record-case what
+  (struct-case what
     [(constant t) 
      (if (or (fixnum? t) (immediate? t))
          (prm 'nop)
@@ -52,7 +52,7 @@
       (dirty-vector-set t))))
 
 (define (smart-mem-assign what v x i)
-  (record-case what
+  (struct-case what
     [(constant t) 
      (if (or (fixnum? t) (immediate? t))
          (prm 'mset x (K i) v)
@@ -150,7 +150,7 @@
 
 (define-primop $memq safe
   [(P x ls)
-   (record-case ls
+   (struct-case ls
      [(constant ls)
       (cond
         [(not (list? ls)) (interrupt)]
@@ -167,7 +167,7 @@
                   (f (cdr ls)))])))])]
      [else (interrupt)])]
   [(V x ls)
-   (record-case ls
+   (struct-case ls
      [(constant ls)
       (cond
         [(not (list? ls)) (interrupt)]
@@ -311,7 +311,7 @@
             (interrupt-unless (prm 'u< (T idx) len))
             (with-tmp ([t (prm 'logor len (T idx))])
               (interrupt-unless-fixnum t)))))
-      (record-case idx
+      (struct-case idx
         [(constant i)
          (if (and (fixnum? i) (fx>= i 0)) 
              (check-fx i)
@@ -325,7 +325,7 @@
 
 (define-primop $make-vector unsafe
   [(V len)
-   (record-case len
+   (struct-case len
      [(constant i)
       (unless (fixnum? i) (interrupt))
       (with-tmp ([v (prm 'alloc
@@ -346,7 +346,7 @@
 (define-primop $vector-ref unsafe
   [(V x i)
    (or 
-     (record-case i
+     (struct-case i
        [(constant i) 
         (and (fixnum? i) 
              (fx>= i 0)
@@ -387,7 +387,7 @@
 
 (define-primop $vector-set! unsafe
   [(E x i v)
-   (record-case i
+   (struct-case i
      [(constant i) 
       (unless (fixnum? i) (interrupt)) 
       (mem-assign v (T x) 
@@ -433,7 +433,7 @@
 
 (define-primop $cpref unsafe
   [(V x i) 
-   (record-case i
+   (struct-case i
      [(constant i) 
       (unless (fixnum? i) (interrupt))
       (prm 'mref (T x)
@@ -502,7 +502,7 @@
 
 (define-primop top-level-value safe
   [(V x)
-   (record-case x
+   (struct-case x
      [(constant s)
       (if (symbol? s)
           (with-tmp ([v (cogen-value-$symbol-value x)])
@@ -516,7 +516,7 @@
           (interrupt-when (cogen-pred-$unbound-object? v))
           v))])]
   [(E x)
-   (record-case x
+   (struct-case x
      [(constant s)
       (if (symbol? s)
           (with-tmp ([v (cogen-value-$symbol-value x)])
@@ -607,12 +607,12 @@
 
 (define-primop $fx* unsafe
   [(V a b) 
-   (record-case a
+   (struct-case a
     [(constant a)
      (unless (fixnum? a) (interrupt))
      (prm 'int* (T b) (K a))]
     [else
-     (record-case b
+     (struct-case b
        [(constant b)
         (unless (fixnum? b) (interrupt))
         (prm 'int* (T a) (K b))]
@@ -648,7 +648,7 @@
 
 (define-primop $fxsll unsafe
   [(V x i)
-   (record-case i
+   (struct-case i
      [(constant i) 
       (unless (fixnum? i) (interrupt))
       (prm 'sll (T x) (K i))]
@@ -659,7 +659,7 @@
 
 (define-primop $fxsra unsafe
   [(V x i)
-   (record-case i
+   (struct-case i
      [(constant i) 
       (unless (fixnum? i) (interrupt))
       (prm 'logand 
@@ -744,7 +744,7 @@
 
 (define-primop $bignum-byte-ref unsafe
   [(V s i)
-   (record-case i
+   (struct-case i
      [(constant i)
       (unless (fixnum? i) (interrupt))
       (prm 'sll
@@ -799,7 +799,7 @@
 
 (define-primop $flonum-u8-ref unsafe
   [(V s i)
-   (record-case i
+   (struct-case i
      [(constant i)
       (unless (and (fixnum? i) (fx<= 0 i) (fx<= i 7))
         (interrupt))
@@ -823,7 +823,7 @@
 
 (define-primop $flonum-set! unsafe
   [(E x i v)
-   (record-case i
+   (struct-case i
      [(constant i)
       (unless (and (fixnum? i) (fx<= 0 i) (fx<= i 7))
         (interrupt))
@@ -892,7 +892,7 @@
 (section ;;; generic arithmetic
 
 (define (non-fixnum? x)
-  (record-case x
+  (struct-case x
     [(constant i) (not (fixnum? i))]
     [else #f]))
 
@@ -1019,7 +1019,7 @@
 
 (define-primop quotient safe
   [(V x n) 
-   (record-case n
+   (struct-case n
     [(constant i) 
      (if (eqv? i 2) 
          (seq* 
@@ -1039,13 +1039,13 @@
 
 /section)
 
-(section ;;; records
+(section ;;; structs
 
-(define-primop $record? unsafe
+(define-primop $struct? unsafe
   [(P x) (sec-tag-test (T x) vector-mask vector-tag vector-mask vector-tag)]
   [(E x) (nop)])
 
-(define-primop $record/rtd? unsafe
+(define-primop $struct/rtd? unsafe
   [(P x rtd)
    (make-conditional
      (tag-test (T x) vector-mask vector-tag)
@@ -1053,36 +1053,36 @@
      (make-constant #f))]
   [(E x rtd) (nop)])
 
-(define-primop $make-record unsafe
+(define-primop $make-struct unsafe
   [(V rtd len)
-   (record-case len
+   (struct-case len
      [(constant i) 
       (unless (fixnum? i) (interrupt))
       (with-tmp ([t (prm 'alloc
-                         (K (align (+ (* i wordsize) disp-record-data)))
+                         (K (align (+ (* i wordsize) disp-struct-data)))
                          (K vector-tag))])
-        (prm 'mset t (K (- disp-record-rtd vector-tag)) (T rtd))
+        (prm 'mset t (K (- disp-struct-rtd vector-tag)) (T rtd))
         t)]
      [else
-      (with-tmp ([ln (align-code len disp-record-data)])
+      (with-tmp ([ln (align-code len disp-struct-data)])
         (with-tmp ([t (prm 'alloc ln (K vector-tag))])
-          (prm 'mset t (K (- disp-record-rtd vector-tag)) (T rtd))
+          (prm 'mset t (K (- disp-struct-rtd vector-tag)) (T rtd))
            t))])]
   [(P rtd len) (K #t)]
   [(E rtd len) (nop)])
 
-(define-primop $record-rtd unsafe
+(define-primop $struct-rtd unsafe
   [(V x) 
-   (prm 'mref (T x) (K (- disp-record-rtd vector-tag)))]
+   (prm 'mref (T x) (K (- disp-struct-rtd vector-tag)))]
   [(E x) (nop)]
   [(P x) #t])
 
-(define-primop $record-ref unsafe
+(define-primop $struct-ref unsafe
   [(V x i) (cogen-value-$vector-ref x i)]
   [(E x i) (cogen-effect-$vector-ref x i)]
   [(P x i) (cogen-pred-$vector-ref x i)])
 
-(define-primop $record-set! unsafe
+(define-primop $struct-set! unsafe
   [(V x i v) 
    (seq* (cogen-effect-$vector-set! x i v) 
          (K void-object))]
@@ -1091,16 +1091,16 @@
    (seq* (cogen-effect-$vector-set! x i v)
          (K #t))])
 
-(define-primop $record unsafe
+(define-primop $struct unsafe
   [(V rtd . v*)
    (with-tmp ([t (prm 'alloc 
                      (K (align
-                          (+ disp-record-data
+                          (+ disp-struct-data
                             (* (length v*) wordsize))))
                      (K vector-tag))])
-     (prm 'mset t (K (- disp-record-rtd vector-tag)) (T rtd))
+     (prm 'mset t (K (- disp-struct-rtd vector-tag)) (T rtd))
      (let f ([v* v*] 
-             [i (- disp-record-data vector-tag)])
+             [i (- disp-struct-data vector-tag)])
        (cond
          [(null? v*) t]
          [else
@@ -1111,6 +1111,8 @@
   [(E rtd . v*) (nop)])
 
 /section)
+
+
 
 (section ;;; characters
 
@@ -1152,7 +1154,7 @@
   [(E x) (nop)])
 
 (define (non-char? x)
-  (record-case x
+  (struct-case x
     [(constant i) (not (char? i))]
     [else #f]))
 
@@ -1227,7 +1229,7 @@
 
 (define-primop $make-bytevector unsafe
   [(V n)
-   (record-case n
+   (struct-case n
      [(constant n)
       (unless (fixnum? n) (interrupt))
       (with-tmp ([s (prm 'alloc 
@@ -1265,7 +1267,7 @@
 
 (define-primop $bytevector-u8-ref unsafe
   [(V s i)
-   (record-case i
+   (struct-case i
      [(constant i)
       (unless (fixnum? i) (interrupt))
       (prm 'sll
@@ -1288,7 +1290,7 @@
 
 (define-primop $bytevector-s8-ref unsafe
   [(V s i)
-   (record-case i
+   (struct-case i
      [(constant i)
       (unless (fixnum? i) (interrupt))
       (prm 'sra
@@ -1314,10 +1316,10 @@
 
 (define-primop $bytevector-set! unsafe
   [(E x i c)
-   (record-case i
+   (struct-case i
      [(constant i) 
       (unless (fixnum? i) (interrupt))
-      (record-case c
+      (struct-case c
         [(constant c)
          (unless (fixnum? c) (interrupt))
          (prm 'bset/c (T x)
@@ -1331,7 +1333,7 @@
                (K (+ i (- disp-bytevector-data bytevector-tag)))
                (prm 'sll (T c) (K (- 8 fx-shift))))])]
      [else
-      (record-case c
+      (struct-case c
         [(constant c)
          (unless (fixnum? c) (interrupt))
          (prm 'bset/c (T x) 
@@ -1359,7 +1361,7 @@
 
 (define-primop $make-string unsafe
   [(V n)
-   (record-case n
+   (struct-case n
      [(constant n)
       (unless (fixnum? n) (interrupt))
       (with-tmp ([s (prm 'alloc 
@@ -1388,7 +1390,7 @@
 
 (define-primop $string-ref unsafe
   [(V s i)
-   (record-case i
+   (struct-case i
      [(constant i)
       (unless (fixnum? i) (interrupt))
       (prm 'mref (T s)
@@ -1402,13 +1404,13 @@
   [(E s i) (nop)])
 
 (define (assert-fixnum x)
-  (record-case x
+  (struct-case x
     [(constant i) 
      (if (fixnum? i) (nop) (interrupt))]
     [else (interrupt-unless (cogen-pred-fixnum? x))]))
 
 (define (assert-string x)
-  (record-case x
+  (struct-case x
     [(constant s) (if (string? s) (nop) (interrupt))]
     [else (interrupt-unless (cogen-pred-string? x))]))
 
@@ -1434,7 +1436,7 @@
 
 (define-primop $string-set! unsafe
   [(E x i c)
-   (record-case i
+   (struct-case i
      [(constant i) 
       (unless (fixnum? i) (interrupt))
       (prm 'mset (T x) 

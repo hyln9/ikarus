@@ -1,20 +1,20 @@
 
 (library (psyntax compat)
   (export define-record make-parameter parameterize format gensym
-          eval-core make-record-type symbol-value set-symbol-value!
-          file-options-spec)
+          eval-core symbol-value set-symbol-value!
+          file-options-spec make-struct-type)
   (import 
     (only (ikarus compiler) eval-core)
-    (rename (ikarus) (define-record sys.define-record)))
+    (ikarus))
 
   (define-syntax define-record
     (syntax-rules ()
       [(_ name (field* ...) printer)
        (begin
-         (sys.define-record name (field* ...))
+         (define-struct name (field* ...))
          (module ()
             (set-rtd-printer! (type-descriptor name)
               printer)))]
       [(_ name (field* ...))
-       (sys.define-record name (field* ...))])))
+       (define-struct name (field* ...))])))
 

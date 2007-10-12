@@ -14,7 +14,7 @@
              hashtable-update! hashtable-keys hashtable-mutable?
              hashtable-clear!))
 
-   (define-record hasht (vec count tc mutable?))
+   (define-struct hasht (vec count tc mutable?))
 
   ;;; directly from Dybvig's paper
   (define tc-pop

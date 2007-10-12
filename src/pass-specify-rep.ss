@@ -31,7 +31,7 @@
 (module (specify-representation)
   (import object-representation)
   (import primops)
-  (define-record PH
+  (define-struct PH
     (interruptable? p-handler p-handled? v-handler v-handled? e-handler e-handled?))
   (define interrupt-handler
     (make-parameter (lambda () (error 'interrupt-handler "uninitialized"))))
@@ -66,21 +66,21 @@
              [(not interrupted?) body]
              [(eq? ctxt 'V)
               (let ([h (make-interrupt-call x args)])
-                (if (record-case body
+                (if (struct-case body
                       [(primcall op) (eq? op 'interrupt)]
                       [else #f])
                      (make-no-interrupt-call x args)
                      (make-shortcut body h)))]
              [(eq? ctxt 'E)
               (let ([h (make-interrupt-call x args)])
-                (if (record-case body
+                (if (struct-case body
                       [(primcall op) (eq? op 'interrupt)]
                       [else #f])
                      (make-no-interrupt-call x args)
                      (make-shortcut body h)))]
              [(eq? ctxt 'P)
               (let ([h (prm '!= (make-interrupt-call x args) (K bool-f))])
-                (if (record-case body
+                (if (struct-case body
                       [(primcall op) (eq? op 'interrupt)]
                       [else #f])
                      (prm '!= (make-no-interrupt-call x args) (K bool-f))
@@ -132,7 +132,7 @@
          (make-bind lhs* rhs* (k args))])))
   (define (cogen-primop x ctxt args)
     (define (interrupt? x)
-      (record-case x
+      (struct-case x
         [(primcall x) (eq? x 'interrupt)]
         [else #f]))
     (let ([p (get-primop x)])
@@ -235,7 +235,7 @@
 
   (define (handle-fix lhs* rhs* body)
     (define (closure-size x)
-      (record-case x
+      (struct-case x
         [(closure code free*) 
          (if (null? free*) 
              0
@@ -254,7 +254,7 @@
              [else 
               (values a* b* (cons x c*) (cons y d*))]))]))
     (define (combinator? lhs rhs)
-      (record-case rhs
+      (struct-case rhs
         [(closure code free*) (null? free*)]))
     (define (sum n* n)
       (cond
@@ -279,7 +279,7 @@
               body)))))
     (define (build-setters lhs* rhs* body)
       (define (build-setter lhs rhs body)
-        (record-case rhs
+        (struct-case rhs
           [(closure code free*) 
            (make-seq
              (prm 'mset lhs 
@@ -325,7 +325,7 @@
         [else (make-constant (make-object c))])))
 
   (define (V x)
-    (record-case x
+    (struct-case x
       [(constant) (constant-rep x)]
       [(var)      x]
       [(primref name)  
@@ -353,7 +353,7 @@
       [else (error 'cogen-V "invalid value expr ~s" x)])) 
 
   (define (P x)
-    (record-case x
+    (struct-case x
       [(constant c) (if c (K #t) (K #f))]
       [(primref)  (K #t)]
       [(code-loc) (K #t)]
@@ -375,7 +375,7 @@
       [else (error 'cogen-P "invalid pred expr ~s" x)])) 
   
   (define (E x)
-    (record-case x
+    (struct-case x
       [(constant) (nop)]
       [(var)      (nop)]
       [(primref)  (nop)]
@@ -411,12 +411,12 @@
             x)
           (V (make-funcall (make-primref 'error)
                (list (K 'apply) (K "~s is not a procedure") x))))))
-    (record-case x
+    (struct-case x
        [(primcall op args)
         (cond
           [(and (eq? op 'top-level-value)
                 (= (length args) 1)
-                (record-case (car args)
+                (struct-case (car args)
                   [(constant t) 
                    (and (symbol? t) t)]
                   [else #f])) =>
@@ -449,19 +449,19 @@
 
 
   (define (T x)
-    (record-case x
+    (struct-case x
       [(var) x]
       [(constant i) (constant-rep x)]
       [else (error 'cogen-T "invalid ~s" (unparse x))]))
 
   (define (ClambdaCase x)
-    (record-case x
+    (struct-case x
       [(clambda-case info body)
        (make-clambda-case info (V body))]
       [else (error 'specify-rep "invalid clambda-case ~s" x)]))
   ;;;
   (define (Clambda x)
-    (record-case x
+    (struct-case x
       [(clambda label case* free* name)
        (make-clambda label 
           (map ClambdaCase case*)
@@ -469,7 +469,7 @@
       [else (error 'specify-rep "invalid clambda ~s" x)]))
   ;;;
   (define (Program x)
-    (record-case x 
+    (struct-case x 
       [(codes code* body)
        (let ([code* (map Clambda code*)]
              [body (V body)])

@@ -1325,8 +1325,9 @@
                 `(syntax-case (list ,@rhs*) ()
                    (,lhs* (syntax ,v))))))))))
 
-  (define define-record-macro
-    (if-wants-define-record
+
+  (define define-struct-macro
+    (if-wants-define-struct
       (lambda (e)
         (define enumerate
           (lambda (ls)
@@ -1342,7 +1343,7 @@
            (let* ((namestr (symbol->string (id->sym name)))
                   (fields (map id->sym field*))
                   (fieldstr* (map symbol->string fields))
-                  (rtd (datum->stx name (make-record-type namestr fields)))
+                  (rtd (datum->stx name (make-struct-type namestr fields)))
                   (constr (mkid name (string-append "make-" namestr)))
                   (pred (mkid name (string-append namestr "?")))
                   (i* (enumerate field*))
@@ -1359,29 +1360,30 @@
                   (define-syntax ,name (cons '$rtd ',rtd))
                   (define ,constr
                     (lambda ,field*
-                      ($record ',rtd ,@field*)))
+                      ($struct ',rtd ,@field*)))
                   (define ,pred
-                    (lambda (x) ($record/rtd? x ',rtd)))
+                    (lambda (x) ($struct/rtd? x ',rtd)))
                   ,@(map (lambda (getter i)
                             `(define ,getter
                                (lambda (x)
-                                 (if ($record/rtd? x ',rtd)
-                                     ($record-ref x ,i)
+                                 (if ($struct/rtd? x ',rtd)
+                                     ($struct-ref x ,i)
                                      (error ',getter
-                                            "~s is not a record of type ~s"
+                                            "~s is not a struct of type ~s"
                                             x ',rtd)))))
                          getters i*)
                   ,@(map (lambda (setter i)
                             `(define ,setter
                                (lambda (x v)
-                                 (if ($record/rtd? x ',rtd)
-                                     ($record-set! x ,i v)
+                                 (if ($struct/rtd? x ',rtd)
+                                     ($struct-set! x ,i v)
                                      (error ',setter
-                                            "~s is not a record of type ~s"
+                                            "~s is not a struct of type ~s"
                                             x ',rtd)))))
                          setters i*)))))))
       (lambda (stx)
-        (stx-error stx "define-record not supported"))))
+        (stx-error stx "define-struct not supported"))))
+
   
   (define incorrect-usage-macro
     (lambda (e) (stx-error e "incorrect usage of auxilary keyword")))
@@ -1899,7 +1901,7 @@
         ((procedure? x) x)
         ((symbol? x)
          (case x
-           ((define-record)     define-record-macro)
+           ((define-struct)     define-struct-macro)
            ((include)           include-macro)
            ((cond)              cond-macro)
            ((let)               let-macro)

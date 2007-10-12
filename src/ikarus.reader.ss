@@ -962,7 +962,7 @@
           [else
            (let-values ([(a locs k) (parse-token p locs k t)])
               (read-bytevector p locs k (fxadd1 count) (cons a ls)))]))))
-  (define-record loc (value set?))
+  (define-struct loc (value set?))
   (define parse-token
     (lambda (p locs k t)
       (cond

@@ -13,11 +13,11 @@
          (cons a (map1ltr f (cdr ls))))]))
   (define (pretty-width) 80)
   (define (pretty-indent) 1)
-  (define-record cbox (length boxes))
-  (define-record pbox (length ls last))
-  (define-record mbox (length str val))
-  (define-record vbox (length ls))
-  (define-record fbox (length box* sep*))
+  (define-struct cbox (length boxes))
+  (define-struct pbox (length ls last))
+  (define-struct mbox (length str val))
+  (define-struct vbox (length ls))
+  (define-struct fbox (length box* sep*))
   (define (box-length x)
     (cond
       [(string? x) (string-length x)]
@@ -511,8 +511,8 @@
         (dynamic x))
     rv)
 
-  (define-record setbox (idx data))
-  (define-record refbox (idx))
+  (define-struct setbox (idx data))
+  (define-struct refbox (idx))
 
   (define (rewrite-shared x h)
     (define counter 0)
@@ -608,7 +608,7 @@
   (set-fmt! 'define '(_ name tab e tab e ...))
   (set-fmt! 'case-lambda 
      '(_ tab [0 e ...] ...))
-  (set-fmt! 'record-case 
+  (set-fmt! 'struct-case 
      '(_ e tab [e 0 e ...] ...))
   (set-fmt! 'if '(_ test 3 e ...))
   (set-fmt! 'and '(and test 4 e ...))
