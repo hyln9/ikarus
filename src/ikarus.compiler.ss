@@ -1829,10 +1829,45 @@
   (define disp-code-annotation    16)
   (define disp-code-data          24)
   
-  (define port-tag              #x3F)
-  (define output-port-tag       #x7F)
-  (define input-port-tag        #xBF)
-  (define port-mask             #x3F)
+  (define transcoder-tag               #x3F) ;;; 0011
+  (define transcoder-input-tag         #x7F) ;;; 0111
+  (define transcoder-output-tag        #xBF) ;;; 1011
+  (define transcoder-input/output-tag  #xFF) ;;; 1111
+  (define transcoder-write-utf8-mask  #x100) 
+  (define transcoder-write-byte-mask  #x200) 
+  (define transcoder-read-utf8-mask   #x400) 
+  (define transcoder-read-byte-mask   #x800) 
+  (define transcoder-handling-mode-shift  8)
+  (define transcoder-handling-mode-bits   2)
+  (define transcoder-eol-style-shift     10)
+  (define transcoder-eol-style-bits       3)
+  (define transcoder-codec-shift         13)
+  (define transcoder-codec-bits           3)
+  
+  (define transcoder-handling-mode:none    #b00)
+  (define transcoder-handling-mode:ignore  #b01)
+  (define transcoder-handling-mode:raise   #b10)
+  (define transcoder-handling-mode:replace #b11)
+
+  (define transcoder-eol-style:none       #b000)
+  (define transcoder-eol-style:lf         #b001)
+  (define transcoder-eol-style:cr         #b010)
+  (define transcoder-eol-style:crlf       #b011)
+  (define transcoder-eol-style:nel        #b100)
+  (define transcoder-eol-style:crnel      #b101)
+  (define transcoder-eol-style:ls         #b110)
+  
+  (define transcoder-codec:none           #b000)
+  (define transcoder-codec:latin-1        #b001)
+  (define transcoder-codec:utf-8          #b010)
+  (define transcoder-codec:utf-16         #b011)
+
+  (define port-tag              #x3F) ;;; 0011_F
+  (define output-port-tag       #x7F) ;;; 0011_F
+  (define input-port-tag        #xBF) ;;; 1011_F
+  (define port-mask             #x3F) ;;; 0011_F
+  (define port-type-mask        #xFF) ;;; 1111_F
+
   (define disp-port-buffer         4)
   (define disp-port-index          8)
   (define disp-port-size          12)
@@ -1967,7 +2002,7 @@
             "~s is not a valid location for ~s" x op))
        x)]
     [else
-     (error 'compile "cannot find location of primitive ~s" op)]))
+     (error #f "~s is not supported yet" op)]))
 
 (define (primref-loc op)
   (mem (fx- disp-symbol-record-proc record-tag) 

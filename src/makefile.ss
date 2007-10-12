@@ -46,6 +46,7 @@
     "ikarus.numerics.ss"
     "ikarus.guardians.ss"
     "ikarus.command-line.ss"
+    "ikarus.codecs.ss"
     "ikarus.io-ports.ss"
     "ikarus.io-primitives.unsafe.ss"
     "ikarus.io-primitives.ss"
@@ -1025,7 +1026,7 @@
     [make-i/o-port-error                         r ip is fi]
     [make-i/o-read-error                         r ip is fi]
     [make-i/o-write-error                        r ip is fi]
-    [latin-1-codec                               r ip]
+    [latin-1-codec                               i r ip]
     [make-transcoder                             r ip]
     [native-eol-style                            r ip]
     [native-transcoder                           r ip]
@@ -1058,8 +1059,8 @@
     [transcoder-codec                            r ip]
     [transcoder-eol-style                        r ip]
     [transcoder-error-handling-mode              r ip]
-    [utf-16-codec                                r ip]
-    [utf-8-codec                                 r ip]
+    [utf-16-codec                                i r ip]
+    [utf-8-codec                                 i r ip]
     [input-port?                                 i r is ip se]
     [output-port?                                i r is ip se]
     [current-input-port                          i r ip is se]
