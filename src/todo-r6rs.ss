@@ -703,8 +703,8 @@
     [parent                                     C rs]
     [parent-rtd                                 C rs]
     [protocol                                   C rs]
-    [record-constructor-descriptor              S rs]
-    [record-type-descriptor                     S rs]
+    [record-constructor-descriptor              C rs]
+    [record-type-descriptor                     C rs]
     [sealed                                     C rs]
     [nongenerative                              C rs]
     ;;;

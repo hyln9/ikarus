@@ -825,9 +825,34 @@
                 (b (label->binding lab r))
                 (type (binding-type b)))
            (unless lab (stx-error e "unbound identifier"))
-           (case type
-             (($rtd) (build-data no-source (binding-value b)))
-             (else (stx-error e "invalid type"))))))))
+           (unless (and (eq? type '$rtd) (not (list? (binding-value b))))
+             (stx-error e "invalid type"))
+           (build-data no-source (binding-value b)))))))
+
+
+  (define record-type-descriptor-transformer
+    (lambda (e r mr)
+      (syntax-match e ()
+        ((_ id) (id? id)
+         (let* ((lab (id->label id))
+                (b (label->binding lab r))
+                (type (binding-type b)))
+           (unless lab (stx-error e "unbound identifier"))
+           (unless (and (eq? type '$rtd) (list? (binding-value b)))
+             (stx-error e "invalid type"))
+           (chi-expr (car (binding-value b)) r mr))))))
+
+  (define record-constructor-descriptor-transformer
+    (lambda (e r mr)
+      (syntax-match e ()
+        ((_ id) (id? id)
+         (let* ((lab (id->label id))
+                (b (label->binding lab r))
+                (type (binding-type b)))
+           (unless lab (stx-error e "unbound identifier"))
+           (unless (and (eq? type '$rtd) (list? (binding-value b)))
+             (stx-error e "invalid type"))
+           (chi-expr (cadr (binding-value b)) r mr))))))
 
   (define when-transformer ;;; go away
     (lambda (e r mr)
@@ -1384,6 +1409,117 @@
       (lambda (stx)
         (stx-error stx "define-struct not supported"))))
 
+
+  (define define-record-type-macro
+    (lambda (x)
+      (define (id ctxt . str*)
+        (datum->syntax ctxt 
+          (string->symbol 
+            (apply string-append 
+              (map (lambda (x) 
+                     (cond
+                       [(symbol? x) (symbol->string x)]
+                       [(string? x) x]
+                       [else (error 'define-record-type "BUG")]))
+                   str*)))))
+      (define (get-record-name spec)
+        (syntax-match spec ()
+          [(foo make-foo foo?) foo]
+          [foo foo]))
+      (define (get-record-constructor-name spec ctxt)
+        (syntax-match spec ()
+          [(foo make-foo foo?) make-foo]
+          [foo (id ctxt "make-" (stx->datum foo))]))
+      (define (get-record-predicate-name spec ctxt)
+        (syntax-match spec ()
+          [(foo make-foo foo?) foo?]
+          [foo (id ctxt (stx->datum foo) "?")]))
+      (define (get-clause id ls)
+        (syntax-match ls ()
+          [() #f]
+          [((x . rest) . ls)
+           (if (free-id=? (bless id) x)
+               `(,x . ,rest)
+               (get-clause id ls))]))
+      (define (foo-rtd-code ctxt name clause*) 
+        (define (convert-field-spec* ls)
+          (list->vector
+            (map (lambda (x) 
+                   (syntax-match x (mutable immutable)
+                     [(mutable name . rest) `(mutable ,name)]
+                     [(immutable name . rest) `(immutable ,name)]
+                     [name `(immutable ,name)]))
+               ls)))
+        (let ([parent-rtd-code 
+               (syntax-match (get-clause 'parent clause*) ()
+                 [(_ name) `(record-type-descriptor ,name)]
+                 [_ '#f])]
+              [uid-code
+               (syntax-match (get-clause 'nongenerative clause*) ()
+                 [(_)     `',(gensym)]
+                 [(_ uid) `',uid]
+                 [_       #f])]
+              [sealed?
+               (syntax-match (get-clause 'sealed? clause*) ()
+                 [(_ #t) #t]
+                 [_      #f])]
+              [opaque?
+               (syntax-match (get-clause 'opaque? clause*) ()
+                 [(_ #t) #t]
+                 [_      #f])]
+              [fields 
+               (syntax-match (get-clause 'fields clause*) ()
+                 [(_ field-spec* ...)
+                  `(quote ,(convert-field-spec* field-spec*))]
+                 [_ ''#()])])
+          (bless
+            `(make-record-type-descriptor ',name
+               ,parent-rtd-code 
+               ,uid-code ,sealed? ,opaque? ,fields))))
+      (define (foo-rcd-code clause* foo-rtd protocol) 
+        (let ([parent-rcd-code 
+               (syntax-match (get-clause 'parent clause*) ()
+                 [(_ name) `(record-constructor-descriptor ,name)]
+                 [_ #f])])
+          `(make-record-constructor-descriptor ,foo-rtd
+               ,parent-rcd-code ,protocol)))
+      (define (get-protocol-code clause*)
+        (syntax-match (get-clause 'protocol clause*) ()
+          [(_ expr) expr]
+          [_        #f]))
+      (define (do-define-record ctxt namespec clause*)
+        (let* ([foo (get-record-name namespec)]
+               [foo-rtd (gensym)]
+               [foo-rcd (gensym)]
+               [protocol (gensym)]
+               [make-foo (get-record-constructor-name foo ctxt)]
+               ;;; FIXME: getters and setters are not initialized
+               [foo-x* '()]
+               [set-foo-x!* '()]
+               [idx* '()]
+               [foo? (get-record-predicate-name namespec ctxt)]
+               [foo-rtd-code (foo-rtd-code ctxt foo clause*)]
+               [foo-rcd-code (foo-rcd-code clause* foo-rtd protocol)]
+               [protocol-code (get-protocol-code clause*)])
+          (bless
+            `(begin
+               (define ,foo-rtd ,foo-rtd-code)
+               (define ,protocol ,protocol-code)
+               (define ,foo-rcd ,foo-rcd-code)
+               (define-syntax ,foo (list '$rtd #',foo-rtd #',foo-rcd))
+               (define ,foo? (record-predicate ,foo-rtd))
+               (define ,make-foo (record-constructor ,foo-rcd))
+               ,@(map 
+                   (lambda (foo-x idx)
+                     `(define ,foo-x (record-accessor ,foo-rtd ,idx)))
+                   foo-x* idx*)
+               ,@(map 
+                   (lambda (set-foo-x! idx)
+                     `(define ,set-foo-x! (record-mutator ,foo-rtd ,idx)))
+                   set-foo-x!* idx*)))))
+      (syntax-match x ()
+        [(ctxt namespec clause* ...)
+         (do-define-record ctxt namespec clause*)])))
   
   (define incorrect-usage-macro
     (lambda (e) (stx-error e "incorrect usage of auxilary keyword")))
@@ -1864,21 +2000,23 @@
   (define core-macro-transformer
     (lambda (name)
       (case name
-        ((quote)         quote-transformer)
-        ((lambda)        lambda-transformer)
-        ((case-lambda)   case-lambda-transformer)
-        ((let-values)    let-values-transformer)
-        ((letrec)        letrec-transformer)
-        ((letrec*)       letrec*-transformer)
-        ((case)          case-transformer)
-        ((if)            if-transformer)
-        ((when)          when-transformer)
-        ((unless)        unless-transformer)
-        ((parameterize)  parameterize-transformer)
-        ((foreign-call)  foreign-call-transformer)
-        ((syntax-case)   syntax-case-transformer)
-        ((syntax)        syntax-transformer)
-        ((type-descriptor) type-descriptor-transformer)
+        ((quote)                  quote-transformer)
+        ((lambda)                 lambda-transformer)
+        ((case-lambda)            case-lambda-transformer)
+        ((let-values)             let-values-transformer)
+        ((letrec)                 letrec-transformer)
+        ((letrec*)                letrec*-transformer)
+        ((case)                   case-transformer)
+        ((if)                     if-transformer)
+        ((when)                   when-transformer)
+        ((unless)                 unless-transformer)
+        ((parameterize)           parameterize-transformer)
+        ((foreign-call)           foreign-call-transformer)
+        ((syntax-case)            syntax-case-transformer)
+        ((syntax)                 syntax-transformer)
+        ((type-descriptor)        type-descriptor-transformer)
+        ((record-type-descriptor) record-type-descriptor-transformer)
+        ((record-constructor-descriptor) record-constructor-descriptor-transformer)
         (else (error 'macro-transformer "cannot find ~s" name)))))
   
   (define file-options-macro
@@ -1901,6 +2039,7 @@
         ((procedure? x) x)
         ((symbol? x)
          (case x
+           ((define-record-type) define-record-type-macro)
            ((define-struct)     define-struct-macro)
            ((include)           include-macro)
            ((cond)              cond-macro)

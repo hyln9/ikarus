@@ -105,26 +105,26 @@
           [_        #'#f]))
       (define (do-define-record ctxt namespec clause*)
         (let ([foo (get-record-name namespec)])
-        (with-syntax ([foo foo]
-                      [make-foo (get-record-constructor-name namespec ctxt)] 
-                      [foo? (get-record-predicate-name namespec ctxt)]
-                      [foo-rtd-code (foo-rtd-code ctxt name clause*)]
-                      [protocol-code (get-protocol-code clause*)])
-          #'(begin
-              (define foo-rtd foo-rtd-code)
-              (define protocol protocol-code)
-              (define foo-rcd foo-rcd-code)
-              (define-syntax foo (list '$rtd #'foo-rtd #'foo-rcd))
-              (define foo? (record-predicate foo-rtd))
-              (define make-foo (record-constructor foo-rcd))
-              (define foo-x* (record-accessor foo-rtd idx*))
-              ...
-              (define set-foo-x!* (record-mutator foo-rtd mutable-idx*))
-              ...)
+          (with-syntax ([foo foo]
+                        [make-foo (get-record-constructor-name namespec ctxt)] 
+                        [foo? (get-record-predicate-name namespec ctxt)]
+                        [foo-rtd-code (foo-rtd-code ctxt name clause*)]
+                        [protocol-code (get-protocol-code clause*)])
+            #'(begin
+                (define foo-rtd foo-rtd-code)
+                (define protocol protocol-code)
+                (define foo-rcd foo-rcd-code)
+                (define-syntax foo (list '$rtd #'foo-rtd #'foo-rcd))
+                (define foo? (record-predicate foo-rtd))
+                (define make-foo (record-constructor foo-rcd))
+                (define foo-x* (record-accessor foo-rtd idx*))
+                ...
+                (define set-foo-x!* (record-mutator foo-rtd mutable-idx*))
+                ...))))
       (syntax-case x ()
         [(ctxt namespec clause* ...)
          (do-define-record #'ctxt #'namespec #'(clause* ...))])))
-           
+        
 
 )
 

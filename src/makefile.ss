@@ -105,6 +105,8 @@
     [parameterize        (core-macro . parameterize)]
     [case                (core-macro . case)]
     [let-values          (core-macro . let-values)]
+    [record-type-descriptor (core-macro . record-type-descriptor)]
+    [record-constructor-descriptor (core-macro . record-constructor-descriptor)]
     [define-struct       (macro . define-struct)]
     [include             (macro . include)]
     [syntax-rules        (macro . syntax-rules)]
@@ -145,6 +147,7 @@
     [opaque              (macro . opaque )]
     [nongenerative       (macro . nongenerative)]
     [parent-rtd          (macro . parent-rtd)]
+    [define-record-type  (macro . define-record-type)]
     ))
 
 (define library-legend
