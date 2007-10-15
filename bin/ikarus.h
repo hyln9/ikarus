@@ -37,7 +37,8 @@ extern int hash_table_count;
 #define scannable_tag   0x00001000
 #define unscannable_tag 0x00000000
 
-#define dealloc_tag     0x00010000
+#define dealloc_tag_un  0x00010000
+#define dealloc_tag_at  0x00020000
 #define retain_tag      0x00000000
 
 #define large_object_tag   0x00100000
@@ -45,11 +46,11 @@ extern int hash_table_count;
 #define hole_mt         (hole_type       | unscannable_tag | retain_tag)
 #define mainheap_mt     (mainheap_type   | unscannable_tag | retain_tag)
 #define mainstack_mt    (mainstack_type  | unscannable_tag | retain_tag)
-#define pointers_mt     (pointers_type   | scannable_tag   | dealloc_tag)
-#define symbols_mt      (symbols_type    | scannable_tag   | dealloc_tag)
-#define data_mt         (dat_type        | unscannable_tag | dealloc_tag)
-#define code_mt         (code_type       | scannable_tag   | dealloc_tag)
-#define weak_pairs_mt   (weak_pairs_type | scannable_tag   | dealloc_tag)
+#define pointers_mt     (pointers_type   | scannable_tag   | dealloc_tag_un)
+#define symbols_mt      (symbols_type    | scannable_tag   | dealloc_tag_un)
+#define data_mt         (dat_type        | unscannable_tag | dealloc_tag_un)
+#define code_mt         (code_type       | scannable_tag   | dealloc_tag_un)
+#define weak_pairs_mt   (weak_pairs_type | scannable_tag   | dealloc_tag_un)
 
 
 static int 

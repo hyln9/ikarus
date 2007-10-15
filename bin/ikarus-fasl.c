@@ -36,6 +36,7 @@ static ikp ik_fasl_read(ikpcb* pcb, fasl_port* p);
 
 #if USE_ZLIB
 void ik_fasl_load(ikpcb* pcb, char* fasl_file){
+  dead!!!
   gzFile fh = gzopen(fasl_file, "rb");
   if(fh == NULL){
     fprintf(stderr, "cannot open %s\n", fasl_file);
@@ -94,12 +95,14 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
   p.membase = mem;
   p.memp = mem;
   p.memq = mem + filesize;
-  p.marks = NULL;
+  p.marks = 0;
   p.marks_size = 0;
   while(p.memp < p.memq){
     ikp v = ik_fasl_read(pcb, &p);
-    if(p.marks){
-      bzero(p.marks, p.marks_size * sizeof(ikp*));
+    if(p.marks_size){
+      ik_munmap((unsigned char*) p.marks, p.marks_size*sizeof(ikp*));
+      p.marks = 0;
+      p.marks_size = 0;
     }
     ikp val = ik_exec_code(pcb, v);
     val = void_object;
@@ -110,9 +113,6 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
   if(p.memp != p.memq){
     fprintf(stderr, "fasl-read did not reach eof!\n");
     exit(-10);
-  }
-  if(p.marks){
-    ik_munmap(p.marks, p.marks_size*sizeof(ikp*));
   }
   {
     int err = munmap(mem, mapsize);
@@ -266,7 +266,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     }
     else {
       /* allocate marks */
-      p->marks = ik_mmap(pagesize*sizeof(ikp*));
+      p->marks = (ikp*)ik_mmap(pagesize*sizeof(ikp*));
       bzero(p->marks, pagesize*sizeof(ikp*));
       p->marks_size = pagesize;
     }

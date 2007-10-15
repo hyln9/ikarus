@@ -1,4 +1,6 @@
 
+junk junk junk
+
 #include "ikarus.at.h"
 #include <stdio.h>
 #include <strings.h>
@@ -20,11 +22,12 @@ static int malloc_count = 0;
 static unsigned int mmap_count = 0;
 static void ikat_malloc_count(size_t n){
   malloc_count += n;
+  fprintf(stderr, "ikat_malloc_count=0x%08x (%ld)\n", malloc_count, n);
   assert(malloc_count >= 0);
 }
 static void ikat_mmap_count(size_t n){
   mmap_count += n;
-  fprintf(stderr, "mmap_count=0x%08x\n", mmap_count);
+  fprintf(stderr, "ikat_mmap_count=0x%08x (%ld)\n", mmap_count, n);
   assert(mmap_count >= 0);
 }
 
@@ -49,6 +52,7 @@ ikat_malloc(size_t n){
   exit(-1);
 }
 
+
 static inline void
 ikat_free(void* addr, size_t n){
   ikat_malloc_count(-n);
@@ -68,40 +72,76 @@ ikat_mmap(size_t n){
   exit(-1);
 }
 
+
 static inline void
 ikat_munmap(void* addr, size_t n){
+  fprintf(stderr, "unmap: ");
   ikat_mmap_count(-n);
   munmap(addr, n);
 }
 
 
 ikat*
-ikat_make_allocation_table(int types){
+ikat_make_allocation_table(unsigned int types){
   unsigned int* tbl = ikat_mmap(segment_size);
   bzero(tbl, segment_size);
   ikat* x = ikat_malloc(sizeof(ikat));
   bzero(x, sizeof(ikat));
   x->alloc_table = tbl;
-  ikat_meta** meta = ikat_malloc(types * sizeof(ikat_meta));
-  bzero(meta, types * sizeof(ikat_meta));
-  x->meta_count = types;
-  x->meta = meta;
+  ikat_ll** lls = ikat_malloc(types * sizeof(ikat_ll*));
+  bzero(lls, types * sizeof(ikat_ll*));
+  x->lls_count = types;
+  x->lls = lls;
   return x;
 }
 
+static void
+ikat_free_ll(ikat* x, ikat_ll* p){
+  while(p){
+    ikat_ll* next = p->next;
+    ikat_unmap(x, p->base, p->size);
+    ikat_free(p, sizeof(ikat_ll));
+    p = next;
+  }
+}
+
+
 void 
 ikat_free_allocation_table(ikat* x){
+  int i;
+  for(i=0; i<x->lls_count; i++){
+    ikat_free_ll(x, x->lls[i]);
+  }
+  ikat_free_ll(x, x->llcache);
+  ikat_free(x->lls, x->lls_count * sizeof(ikat_ll*));
   ikat_munmap(x->alloc_table, segment_size);
   ikat_free(x, sizeof(ikat));
   ikat_done();
 }
 
 
-
 unsigned char*
 ikat_map_bigpage(ikat* x, size_t size){
   assert(size == align_to_next_segment(size));
   unsigned char* p = ikat_mmap(size);
+  
+  if((unsigned int)p != align_to_next_segment((unsigned int)p)){
+    ikat_munmap(p, size);
+    p = ikat_mmap(size+segment_size);
+    unsigned char* q = (unsigned char*)align_to_next_segment((unsigned int)p);
+    if(p == q){
+      fprintf(stderr, "retry1\n");
+      ikat_munmap(p+size, segment_size);
+    } else {
+      fprintf(stderr, "retry2\n");
+      size_t fst = q - p;
+      ikat_munmap(p, fst);
+      ikat_munmap(q+size, segment_size-fst);
+      p = q;
+    }
+  } else {
+    fprintf(stderr, "noretry\n");
+  }
   unsigned int idx = segment_index(p);
   unsigned int idx_hi = idx + size/segment_size;
   while(idx < idx_hi){
@@ -111,64 +151,87 @@ ikat_map_bigpage(ikat* x, size_t size){
   return p;
 }
 
-void
-ikat_unmap(ikat* x, unsigned char* addr, size_t size, unsigned int type){
-  fprintf(stderr, "ikat_unmap\n");
-}
 
-unsigned char*
-ikat_map(ikat* x, size_t size, unsigned int type){
-  ikat_meta* llp = x->meta[type];
+void
+ikat_unmap(ikat* x, unsigned char* addr, size_t size){
   assert(size == align_to_next_page(size));
   size_t pages = page_index(size);
   if(pages < segment_pages){
-    ikat_ll* ll = llp->segments[pages];
-    unsigned int pages_mask = (1 << pages) - 1;
+    size_t segment = segment_index(addr);
+    size_t page_offset = page_index(addr) & (segment_pages-1);
+    unsigned int alloc_bits = x->alloc_table[segment];
+    unsigned int this_bits = ((1 << pages) - 1) << page_offset;
+    unsigned int new_bits = alloc_bits & ~ this_bits;
+    fprintf(stderr, "0x%08x bits=0x%08x ^~ 0x%08x = 0x%08x    pages=%d/%d, m=0x%08x\n", 
+        addr, alloc_bits, this_bits, new_bits, pages, size, ((1<<pages)-1));
+    assert((alloc_bits & this_bits) == this_bits);
+    x->alloc_table[segment] = new_bits;
+    if(new_bits == 0){
+      ikat_munmap((unsigned char*)(segment * segment_size), segment_size);
+    }
+  } else {
+    fprintf(stderr, "ikat_unmap large\n");
+    exit(-1);
+  }
+}
+
+
+unsigned char*
+ikat_map(ikat* x, size_t size, unsigned int type){
+  assert(size == align_to_next_page(size));
+  assert(type < x->lls_count);
+  ikat_ll* llp = x->lls[type];
+  size_t pages = page_index(size);
+  if(pages < segment_pages){
+    ikat_ll* ll = llp;
+    ikat_ll** prev = &(x->lls[type]);
     while(ll){
-      unsigned char* base = ll->base;
-      llp->segments[pages] = ll->next;
-      ll->next = x->llcache;
-      x->llcache = ll;
-      size_t seg_idx = segment_index(base);
-      unsigned int alloc_bits = x->alloc_table[seg_idx];
-      if(alloc_bits != 0){
-        unsigned int page_idx = (page_index(base) & (segment_size-1));
-        unsigned int new_bits = pages_mask << page_idx;
-        assert((new_bits & alloc_bits) == 0);
-        x->alloc_table[seg_idx] = alloc_bits | new_bits;
-        return base;
+      size_t lsize = ll->size;
+      if(lsize == size){
+        /* unwire */
+        *prev = ll->next;
+        ll->next = x->llcache;
+        x->llcache = ll;
+        return ll->base;
+      } else if (lsize > size){
+        unsigned char* addr = ll->base;
+        ll->size -= size;
+        ll->base += size;
+        return addr;
+      } else {
+        prev = &(ll->next);
+        ll = ll->next;
       }
     }
     unsigned char* base = ikat_map_bigpage(x, segment_size);
-    size_t seg_idx = segment_index(base);
-    x->alloc_table[seg_idx] = pages_mask;
     ikat_ll* cache = x->llcache;
     if(cache){
       x->llcache = cache->next;
     } else {
       cache = ikat_malloc(sizeof(ikat_ll));
     }
-    cache->base = base + pages * page_size;
-    cache->next = llp->segments[segment_pages - pages];
-    llp->segments[segment_pages - pages] = cache;
+    cache->base = base + size;
+    cache->size = segment_size - size;
+    cache->next = x->lls[type];
+    x->lls[type] = cache;
     return base;
   } else {
     size_t aligned_size = align_to_next_segment(size);
-    unsigned char* mem = ikat_mmap(aligned_size);
-    unsigned int idx = segment_index(mem);
-    unsigned int sz = segment_index(size);
-    while(idx < sz){
-      x->alloc_table[idx] = -1;
-      idx++;
-    }
+    unsigned char* base = ikat_map_bigpage(x, aligned_size);
     if(aligned_size != size){
-      ikat_unmap(x, mem+size, aligned_size-size, type);
+      ikat_ll* cache = x->llcache;
+      if(cache){
+        x->llcache = cache->next;
+      } else {
+        cache = ikat_malloc(sizeof(ikat_ll));
+      }
+      cache->base = base + size;
+      cache->size = aligned_size - size;
+      cache->next = x->lls[type];
+      x->lls[type] = cache;
     }
-    return mem;
+    return base;
   }
 }
-
-
-
 
 

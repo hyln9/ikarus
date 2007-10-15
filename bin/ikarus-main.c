@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <gmp.h>
 #include <signal.h>
+#include <sys/mman.h>
 
 void register_handlers();
 void register_alt_stack();
@@ -227,8 +228,10 @@ SYNOPSIS
 
 void
 register_alt_stack(){
-  char* stk = ik_mmap(SIGSTKSZ);
-  if(stk == 0){
+#ifdef HAS_ALT_STACK
+  char* stk = mmap(0, SIGSTKSZ, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_ANON, -1, 0);
+//  char* stk = ik_mmap(SIGSTKSZ);
+  if(stk == (char*)-1){
     fprintf(stderr, "Cannot maloc an alt stack\n");
     exit(-1);
   }
@@ -242,4 +245,5 @@ register_alt_stack(){
     fprintf(stderr, "Cannot set alt stack: %s\n", strerror(errno));
     exit(-1);
   }
+#endif
 }

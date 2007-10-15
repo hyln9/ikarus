@@ -813,8 +813,7 @@ forward_guardians(gc_t* gc){
       int i;
       int n = src->count;
       for(i=0; i<n; i++){
-        dst = move_guardian(add_object(gc, src->ptr[i], "g4"), dst,
-            &cache);
+        dst = move_guardian(add_object(gc, src->ptr[i], "g4"), dst, &cache);
       }
       ik_ptr_page* next = src->next;
       src->next = cache;
@@ -826,7 +825,7 @@ forward_guardians(gc_t* gc){
   collect_loop(gc);
   while(cache){
     ik_ptr_page* next = cache->next;
-    ik_munmap(cache, sizeof(ik_ptr_page));
+    ik_munmap((unsigned char*)cache, sizeof(ik_ptr_page));
     cache = next;
   }
 }
@@ -864,7 +863,7 @@ empty_dropped_guardians(gc_t* gc){
         }
       }
       ik_ptr_page* next = src->next;
-      ik_munmap(src, sizeof(ik_ptr_page));
+      ik_munmap((unsigned char*) src, sizeof(ik_ptr_page));
       src = next;
     }
     pcb->guardians_dropped[gen] = 0;
@@ -1898,11 +1897,13 @@ fix_new_pages(gc_t* gc){
         ikp page_base = (ikp)(i << pageshift);
         ikp p = page_base;
         ikp q = p + pagesize;
-        int err = mprotect(page_base, pagesize, PROT_READ|PROT_WRITE|PROT_EXEC);
+#if 0
+        junk int err = mprotect(page_base, pagesize, PROT_READ|PROT_WRITE|PROT_EXEC);
         if(err){
           fprintf(stderr, "cannot protect code page: %s\n", strerror(errno));
           exit(-1);
         }
+#endif
         unsigned int d = 0;
         while(p < q){
           if(ref(p, 0) != code_tag){

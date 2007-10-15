@@ -15,6 +15,7 @@
 #include <sys/resource.h>
 #include <sys/wait.h>
 
+
 int total_allocated_pages = 0;
          
 extern char **environ;
@@ -23,6 +24,9 @@ extern char **environ;
 #define segment_size  (pagesize*pagesize/wordsize)
 #define segment_shift (pageshift+pageshift-wordshift)
 #define segment_index(x) (((unsigned int)(x)) >> segment_shift)
+
+void* ik_mmap(int size);
+void ik_munmap(void* mem, int size);
 
 static void
 extend_table_maybe(unsigned char*p,  int size, ikpcb* pcb){
@@ -159,11 +163,13 @@ ik_mmap_code(int size, int gen, ikpcb* pcb){
   if(size > pagesize){
     set_segment_type(p+pagesize, size-pagesize, data_mt|gen, pcb);
   }
-  int err = mprotect(p, size, PROT_READ | PROT_WRITE | PROT_EXEC);
+#if 0
+  junk int err = mprotect(p, size, PROT_READ | PROT_WRITE | PROT_EXEC);
   if(err){
     fprintf(stderr, "cannot mprotect code: %s\n", strerror(errno));
     exit(-1);
   }
+#endif
   return p;
 }
 
@@ -185,7 +191,7 @@ ik_mmap(int size){
   char* mem = mmap(
       0,
       mapsize,
-      PROT_READ | PROT_WRITE,
+      PROT_READ | PROT_WRITE | PROT_EXEC,
       MAP_PRIVATE | MAP_ANON,
       -1,
       0);
@@ -237,25 +243,6 @@ void ik_free(void* x, int size){
   free(x);
 }
 
-ikp ik_mmap_protected(int size){
-  ikp x = ik_mmap(size + 2*pagesize);
-  {
-    int err = mprotect(x, pagesize, PROT_NONE);
-    if(err){
-      fprintf(stderr, "mprotect failed: %s\n", strerror(errno));
-      exit(-1);
-    }
-  }
-  {
-    int err = mprotect(x+pagesize+size, pagesize, PROT_NONE);
-    if(err){
-      fprintf(stderr, "mprotect failed: %s\n", strerror(errno));
-      exit(-1);
-    }
-  }
-  return x+pagesize;
-}
-
 
 #define CACHE_SIZE (pagesize * 8) /* must be multiple of pagesize*/
 
@@ -266,7 +253,7 @@ ikpcb* ik_make_pcb(){
   #define HEAPSIZE (1024 * 4096)
   #define STAKSIZE (1024 * 4096)
   //#define STAKSIZE (256 * 4096)
-  pcb->heap_base = ik_mmap_protected(HEAPSIZE);
+  pcb->heap_base = ik_mmap(HEAPSIZE);
   pcb->heap_size = HEAPSIZE;
   pcb->allocation_pointer = pcb->heap_base;
   pcb->allocation_redline = pcb->heap_base + HEAPSIZE - 2 * 4096;
@@ -317,8 +304,8 @@ ikpcb* ik_make_pcb(){
     pcb->segment_vector = (unsigned int*) (svec - lo_seg * pagesize);
     pcb->memory_base = (unsigned char*)(lo_seg * segment_size);
     pcb->memory_end = (unsigned char*)(hi_seg * segment_size);
-    set_segment_type(pcb->heap_base-pagesize, 
-        pcb->heap_size+2*pagesize, 
+    set_segment_type(pcb->heap_base, 
+        pcb->heap_size,
         mainheap_mt,
         pcb);
     set_segment_type(pcb->stack_base, 
@@ -375,7 +362,6 @@ void ik_delete_pcb(ikpcb* pcb){
   int vecsize = (segment_index(end) - segment_index(base)) * pagesize;
   ik_munmap(pcb->dirty_vector_base, vecsize);
   ik_munmap(pcb->segment_vector_base, vecsize);
-   
   ik_free(pcb, sizeof(ikpcb));
 }
 
