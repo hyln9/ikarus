@@ -82,6 +82,16 @@ int global_exe(char* x){
   }
 }
 
+static char* mystpcpy(char* x, char* y){
+  while(*y){
+    *x = *y;
+    x++; y++;
+  }
+  *x = 0;
+  return x;
+}
+
+
 int main(int argc, char** argv){
   char buff[FILENAME_MAX];
   char* boot_file = get_option("-b", argc, argv);
@@ -98,10 +108,10 @@ int main(int argc, char** argv){
     while(*path){
       int len = copy_fst_path(buff, path);
       char* x = buff + len;
-      x = stpcpy(x, "/");
-      x = stpcpy(x, argv[0]);
+      x = mystpcpy(x, "/");
+      x = mystpcpy(x, argv[0]);
       if(file_exists(buff)){
-        x = stpcpy(x, ".boot");
+        x = mystpcpy(x, ".boot");
         boot_file = buff;
         path = "";
       }
@@ -117,8 +127,8 @@ int main(int argc, char** argv){
   }
   else {
     char* x = buff;
-    x = stpcpy(x, argv[0]);
-    x = stpcpy(x, ".boot");
+    x = mystpcpy(x, argv[0]);
+    x = mystpcpy(x, ".boot");
     boot_file = buff;
   }
 
