@@ -127,6 +127,8 @@ typedef struct ikpcb{
   ikpages* heap_pages;
   ikpage* cached_pages; /* pages cached so that we don't map/unmap */
   ikpage* uncached_pages; /* ikpages cached so that we don't malloc/free */
+  ikp cached_pages_base;
+  int cached_pages_size;
   ikp   stack_base;
   int   stack_size;
   ikp   symbol_table;

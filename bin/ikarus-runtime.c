@@ -176,7 +176,6 @@ ik_mmap_mixed(int size, ikpcb* pcb){
 
 
 
-
 void* 
 ik_mmap(int size){
   int pages = (size + pagesize - 1) / pagesize;
@@ -281,6 +280,8 @@ ikpcb* ik_make_pcb(){
 
   { /* make cache ikpage */
     ikpage* p = ik_mmap(CACHE_SIZE * sizeof(ikpage));
+    pcb->cached_pages_base = (ikp)p;
+    pcb->cached_pages_size = CACHE_SIZE * sizeof(ikpage);
     ikpage* q = 0;
     ikpage* e = p + CACHE_SIZE;
     while(p < e){
@@ -340,6 +341,25 @@ ikpcb* ik_make_pcb(){
 }
 
 void ik_delete_pcb(ikpcb* pcb){
+  ikpage* p = pcb->cached_pages;
+  pcb->cached_pages = 0;
+  pcb->uncached_pages = 0;
+  while(p){
+    ik_munmap(p->base, pagesize);
+    p = p->next;
+  }
+  ik_munmap(pcb->cached_pages_base, pcb->cached_pages_size);
+  {
+    int i;
+    for(i=0; i<generation_count; i++){
+      ik_ptr_page* p = pcb->guardians[i];
+      while(p){
+        ik_ptr_page* next = p->next;
+        ik_munmap(p, pagesize);
+        p = next;
+      }
+    }
+  }
   unsigned char* base = pcb->memory_base;
   unsigned char* end = pcb->memory_end;
   unsigned int* segment_vec = pcb->segment_vector;
@@ -1024,4 +1044,11 @@ ikrt_environ(ikpcb* pcb){
     ac = p;
   }
   return ac;
+}
+
+ikp
+ikrt_exit(ikp status, ikpcb* pcb){
+  ik_delete_pcb(pcb);
+  assert(total_allocated_pages == 0);
+  exit((int)status);
 }

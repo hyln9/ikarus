@@ -118,5 +118,5 @@
   (define exit
     (case-lambda
       [() (exit 0)]
-      [(status) (foreign-call "exit" status)]))
+      [(status) (foreign-call "ikrt_exit" status)]))
   )
