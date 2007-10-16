@@ -14,6 +14,9 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/wait.h>
+#ifdef __CYGWIN__
+#include "winmmap.h"
+#endif
 
 
 int total_allocated_pages = 0;
@@ -188,6 +191,7 @@ ik_mmap(int size){
   total_allocated_pages += pages;
   int mapsize = pages * pagesize;
   assert(size == mapsize);
+#ifndef __CYGWIN__
   char* mem = mmap(
       0,
       mapsize,
@@ -199,6 +203,9 @@ ik_mmap(int size){
     fprintf(stderr, "Mapping failed: %s\n", strerror(errno));
     exit(-1);
   }
+#else
+  char* mem = win_mmap(mapsize);
+#endif
   memset(mem, -1, mapsize);
 #ifndef NDEBUG
   fprintf(stderr, "MMAP 0x%08x .. 0x%08x\n", (int)mem,
@@ -214,11 +221,15 @@ ik_munmap(void* mem, int size){
   assert(size == mapsize);
   assert(((-pagesize) & (int)mem) == (int)mem);
   total_allocated_pages -= pages;
+#ifndef __CYGWIN__
   int err = munmap(mem, mapsize);
   if(err != 0){
     fprintf(stderr, "ik_munmap failed: %s\n", strerror(errno));
     exit(-1);
   }
+#else 
+  win_munmap(mem, mapsize);
+#endif
 #ifndef NDEBUG
   fprintf(stderr, "UNMAP 0x%08x .. 0x%08x\n", (int)mem,
       ((int)(mem))+mapsize-1);

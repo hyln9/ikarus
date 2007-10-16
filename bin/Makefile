@@ -1,5 +1,5 @@
 
-CFLAGS = -I/opt/local/include -Wall -DNDEBUG -DHAS_ALT_STACK -O3 
+CFLAGS = -I/opt/local/include -Wall -DNDEBUG -O3 
 #CFLAGS = -I/opt/local/include -Wall -g
 LDFLAGS = -L/opt/local/lib -g -ldl -lgmp -lm
 CC = gcc
@@ -11,7 +11,7 @@ endif
 objects = ikarus-collect.o ikarus-runtime.o ikarus-main.o ikarus-fasl.o \
   ikarus-exec.o ikarus-print.o ikarus-enter.o ikarus-symbol-table.o  \
   ikarus-weak-pairs.o ikarus-numerics.o ikarus-flonums.o \
-  verify-integrity.o 
+  verify-integrity.o winmmap.o
 
 all: ikarus
 
@@ -53,6 +53,9 @@ ikarus-numerics.o: ikarus-numerics.c ikarus.h
 
 ikarus-flonums.o: ikarus-flonums.c ikarus.h
 	$(CC) $(CFLAGS) -c ikarus-flonums.c
+
+winmmap.o: winmmap.c winmmap.h
+	$(CC) $(CFLAGS) -c winmmap.c
 
 ikarus.h: ikarus-data.h
 	touch ikarus.h

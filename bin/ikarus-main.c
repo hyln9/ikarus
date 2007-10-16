@@ -211,7 +211,11 @@ void
 register_handlers(){
   struct sigaction sa;
   sa.sa_sigaction = handler;
+#ifdef __CYGWIN__
+  sa.sa_flags = SA_SIGINFO;
+#else
   sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
+#endif
   sigemptyset(&sa.sa_mask);
   int err = sigaction(SIGINT, &sa, 0);
   if(err){
@@ -238,7 +242,7 @@ SYNOPSIS
 
 void
 register_alt_stack(){
-#ifdef HAS_ALT_STACK
+#ifndef __CYGWIN__
   char* stk = mmap(0, SIGSTKSZ, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_ANON, -1, 0);
 //  char* stk = ik_mmap(SIGSTKSZ);
   if(stk == (char*)-1){
