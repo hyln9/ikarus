@@ -1,4 +1,4 @@
-#include "ikarus.h"
+#include "ikarus-data.h"
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -255,7 +255,7 @@ void ik_free(void* x, int size){
 }
 
 
-#define CACHE_SIZE (pagesize * 8) /* must be multiple of pagesize*/
+#define CACHE_SIZE (pagesize * 1) /* must be multiple of pagesize*/
 
 ikpcb* ik_make_pcb(){
   ikpcb* pcb = ik_malloc(sizeof(ikpcb));

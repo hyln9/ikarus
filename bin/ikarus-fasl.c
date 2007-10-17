@@ -1,6 +1,6 @@
 
 
-#include "ikarus.h"
+#include "ikarus-data.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -66,7 +66,11 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
 void ik_fasl_load(ikpcb* pcb, char* fasl_file){ 
   int fd = open(fasl_file, O_RDONLY);
   if(fd == -1){
-    fprintf(stderr, "failed to open %s: %s\n", fasl_file, strerror(errno));
+    fprintf(stderr, 
+            "ikarus: failed to open boot file \"%s\": %s\n",
+            fasl_file,
+            strerror(errno));
+    ikarus_usage_short();
     exit(-1);
   }
   int filesize;
@@ -74,7 +78,10 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
     struct stat buf;
     int err = fstat(fd, &buf);
     if(err != 0){
-      fprintf(stderr, "failed to stat %s: %s\n", fasl_file, strerror(errno));
+      fprintf(stderr,  
+              "ikarus: failed to stat \"%s\": %s\n",
+              fasl_file, 
+              strerror(errno));
       exit(-1);
     }
     filesize = buf.st_size;
@@ -88,7 +95,10 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
       fd,
       0);
   if(mem == MAP_FAILED){
-    fprintf(stderr, "Mapping failed for %s: %s\n", fasl_file, strerror(errno));
+    fprintf(stderr, 
+            "ikarus: mapping failed for %s: %s\n",
+            fasl_file,
+            strerror(errno));
     exit(-1);
   }
   fasl_port p;

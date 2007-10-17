@@ -1,6 +1,6 @@
 
 
-#include "ikarus.h"
+#include "ikarus-data.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -14,6 +14,39 @@
 
 void register_handlers();
 void register_alt_stack();
+
+void ikarus_usage_short(){
+  fprintf(stderr, "ikarus -h for more help\n");
+}
+
+void ikarus_usage(){
+  static char* helpstring = 
+"\n\
+Options for running ikarus scheme:\n\
+\n  ikarus -h\n\
+    Prints this help message then exits.\n\
+\n  ikarus [-b <bootfile>] --r6r-script <scriptfile> opts ...\n\
+    Starts ikarus in r6rs-script mode.  The script file is treated\n\
+    as an R6RS-script.  The options opts ... can be obtained using\n\
+    the \"command-line\" procedure in the (rnrs programs) library.\n\
+\n  ikarus [-b <bootfile>] <file> ... [-- opts ...]\n\
+    Starts ikarus in interactive mode.  Each of the files is first\n\
+    loaded into the interaction environment before the interactive\n\
+    repl is started.  The options opts can be obtained using the\n\
+    \"command-line\" procedure.\n\
+  \n\
+  If the option [-b <bootfile>] is provided, the bootfile is used\n\
+  as the system's initial boot file from which the environment is\n\
+  initialized.  If the -b option is not supplied, the default boot\n\
+  file (ikarus.boot if the executable name is ikarus) is used based\n\
+  on where the executable file is located in the PATH.  If ikarus\n\
+  was invoked using a path (e.g. ./ikarus or /bin/ikarus), then the\n\
+  PATH is not searched, instead, the path to the executable is used\n\
+  to locate the boot file (e.g. ./ikarus.boot or /bin/ikarus.boot).\n\
+  Consult the ikarus manual for more details.\n\n";
+  fprintf(stderr, helpstring);
+}
+
 
 ikpcb* the_pcb;
 
@@ -38,7 +71,10 @@ get_option(char* opt, int argc, char** argv){
         return rv;
       } 
       else {
-        fprintf(stderr, "Error: option %s not provided\n", opt);
+        fprintf(stderr, 
+                "ikarus error: option %s requires a value, none provided\n",
+                opt);
+        ikarus_usage_short();
         exit(-1);
       }
     }
@@ -48,6 +84,25 @@ get_option(char* opt, int argc, char** argv){
   }
   return 0;
 }
+
+int
+get_option0(char* opt, int argc, char** argv){
+  int i;
+  for(i=1; i<argc; i++){
+    if(strcmp(opt, argv[i]) == 0){
+      int j;
+      for(j=i+1; j<argc; j++, i++){
+          argv[i] = argv[j];
+        }
+      return 1;
+    } 
+    else if(strcmp("--", argv[i]) == 0){
+      return 0;
+    }
+  }
+  return 0;
+}
+
 
 int
 file_exists(char* filename){
@@ -93,6 +148,10 @@ static char* mystpcpy(char* x, char* y){
 
 
 int main(int argc, char** argv){
+  if(get_option0("-h", argc, argv)){
+    ikarus_usage();
+    exit(0);
+  }
   char buff[FILENAME_MAX];
   char* boot_file = get_option("-b", argc, argv);
   if(boot_file){
@@ -102,7 +161,10 @@ int main(int argc, char** argv){
     /* search path name */
     char* path = getenv("PATH");
     if(path == NULL){
-      fprintf(stderr, "unable to locate boot file\n");
+      fprintf(stderr,
+              "ikarus: unable to locate boot file in PATH=%s\n",
+              path);
+      ikarus_usage_short();
       exit(-1);
     }
     while(*path){
@@ -119,7 +181,11 @@ int main(int argc, char** argv){
         if(path[len]){
           path += (len+1);
         } else {
-          fprintf(stderr, "unable to locate %s\n", argv[0]);
+          fprintf(stderr,
+                  "ikarus: unable to locate executable \"%s\" in PATH=%s\n",
+                  argv[0],
+                  getenv("PATH"));
+          ikarus_usage_short();
           exit(-1);
         }
       }
@@ -131,8 +197,6 @@ int main(int argc, char** argv){
     x = mystpcpy(x, ".boot");
     boot_file = buff;
   }
-
-
 
   if(sizeof(mp_limb_t) != sizeof(int)){
     fprintf(stderr, "ERROR: limb size\n");
