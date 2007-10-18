@@ -3737,8 +3737,18 @@ _ACEOF
   LIBS="-lgmp $LIBS"
 
 else
-  { { echo "$as_me:$LINENO: error: Cannot find libgmp" >&5
-echo "$as_me: error: Cannot find libgmp" >&2;}
+  { { echo "$as_me:$LINENO: error:
+ERROR: Cannot find libgmp.
+ERROR: You might want to supply CFLAGS=-I</path/to/include> (containing
+ERROR: the gmp.h header file), and LDFLAGS=-L</path/to/lib> (containing
+ERROR: libgmp.so) if libgmp is installed in a non-standard location.
+ERROR: libgmp can be obtained from <http://gmplib.org>. " >&5
+echo "$as_me: error:
+ERROR: Cannot find libgmp.
+ERROR: You might want to supply CFLAGS=-I</path/to/include> (containing
+ERROR: the gmp.h header file), and LDFLAGS=-L</path/to/lib> (containing
+ERROR: libgmp.so) if libgmp is installed in a non-standard location.
+ERROR: libgmp can be obtained from <http://gmplib.org>. " >&2;}
    { (exit 1); exit 1; }; }
 fi
 ac_cv_lib_gmp=ac_cv_lib_gmp_main

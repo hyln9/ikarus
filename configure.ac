@@ -20,7 +20,12 @@ case "$target_os" in
   esac
 
 # Checks for libraries.
-AC_HAVE_LIBRARY([gmp],,[AC_MSG_ERROR([Cannot find libgmp])])
+AC_HAVE_LIBRARY([gmp],,[AC_MSG_ERROR([
+ERROR: Cannot find libgmp. 
+ERROR: You might want to supply CFLAGS=-I</path/to/include> (containing
+ERROR: the gmp.h header file), and LDFLAGS=-L</path/to/lib> (containing
+ERROR: libgmp.so) if libgmp is installed in a non-standard location.
+ERROR: libgmp can be obtained from <http://gmplib.org>. ])])
 AC_SEARCH_LIBS(dlsym, dl,, [AC_MSG_ERROR([Cannot find libdl])])
 AC_SEARCH_LIBS(cos, m,, [AC_MSG_ERROR([Cannot find libm])])
 
