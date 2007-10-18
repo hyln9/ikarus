@@ -681,35 +681,3 @@
                   (f (fxadd1 i))
                   (error 'test-file "mismatch\n\n~s\n\n~s" x y)))))))))
 
-;#!eof
-(for-each test-file 
-  '("fact.ss"
-    "libhash.ss"
-    "foo.ss"
-    "libintelasm.ss"
-    "libassembler.ss"
-    "libnumerics.ss"
-    "libcafe.ss"
-    "libposix.ss"
-    "libchezio.ss"
-    "librecord.ss"
-    "libcollect.ss"
-    "libtimers.ss"
-    "libcompile.ss"
-    "libtokenizer.ss"
-    "libcontrol.ss"
-    "libtoplevel.ss"
-    "libcore.ss"
-    "libtrace.ss"
-    "libcxr.ss"
-    "libwriter.ss"
-    "libengines.ss" 
-    "libfasl.ss" 
-    "libguardians.ss"
-    "libpp.ss"
-    "self-exporting-module.ss"
-    "libhandlers.ss"
-    "set-operations.ss"
-    "psyntax-7.1.ss"
-    ))
-
