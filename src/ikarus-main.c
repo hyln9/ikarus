@@ -307,7 +307,8 @@ SYNOPSIS
 void
 register_alt_stack(){
 #ifndef __CYGWIN__
-  char* stk = mmap(0, SIGSTKSZ, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_ANON, -1, 0);
+  char* stk = mmap(0, SIGSTKSZ, PROT_READ|PROT_WRITE|PROT_EXEC, 
+                   MAP_PRIVATE|MAP_ANON, -1, 0);
 //  char* stk = ik_mmap(SIGSTKSZ);
   if(stk == (char*)-1){
     fprintf(stderr, "Cannot maloc an alt stack\n");
