@@ -11,7 +11,7 @@
 #define pageshift 12
 #define segment_size (16*pagesize)
 #define segment_shift (4+pageshift)
-#include "winmmap.h"
+#include "ikarus-winmmap.h"
 
 /* vim:syntax=c */
 

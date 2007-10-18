@@ -15,7 +15,7 @@
 #include <sys/resource.h>
 #include <sys/wait.h>
 #ifdef __CYGWIN__
-#include "winmmap.h"
+#include "ikarus-winmmap.h"
 #endif
 
 
