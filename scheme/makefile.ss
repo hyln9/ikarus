@@ -1,6 +1,5 @@
 #!/usr/bin/env ikarus -b ikarus.boot --r6rs-script
 
-
 (import (except (ikarus) assembler-output)
         (ikarus compiler)
         (except (psyntax system $bootstrap)
