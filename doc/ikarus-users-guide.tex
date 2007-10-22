@@ -3,13 +3,16 @@
 \usepackage{fontspec}
 
 \defaultfontfeatures{Scale=MatchLowercase} 
-\setmainfont[Mapping=tex-text]{Cochin} 
+%\setmainfont[Mapping=tex-text]{Cochin} 
 %\setmainfont[Mapping=tex-text]{Palatino}
+%\setmainfont[Mapping=tex-text]{Baskerville}
+\setmainfont[Mapping=tex-text]{Perpetua}
 \setsansfont[Mapping=tex-text]{Geneva} 
 \setmonofont{Monaco} 
 
 \usepackage{fancyhdr}
 \usepackage{makeidx}
+\usepackage{fancyvrb}
 \makeindex
 
 \usepackage[dvipdfm,CJKbookmarks,bookmarks=true,bookmarksopen=true]{hyperref}
@@ -30,7 +33,6 @@
 \usepackage{rotating}
 \usepackage{multicol,ragged2e}
 
-%\pagestyle{fancy}
 
 \renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
 \fancyhf{} 
@@ -60,6 +62,8 @@
 
 \newcommand{\testfile}[2]{\texttt{tests-{\ref{#1}}-{#2}.ss}}
 
+\newcommand{\idxtt}[1]{\index{#1 @ \texttt{#1}}\texttt{#1}}
+
 \newenvironment{Language}
 {
   \begin{center}
@@ -72,6 +76,19 @@
     \end{tabular}
   \end{center}
 }
+
+
+\DefineVerbatimEnvironment{CodeInline}{Verbatim}
+  {gobble=0,  xleftmargin=2em, xrightmargin=0em,
+   %numbers=left, numbersep=2mm,
+   frame=lines ,framerule=1pt} 
+
+
+    
+\DefineVerbatimEnvironment{CodeInlineIdx}{Verbatim}
+  {gobble=0,  xleftmargin=3em, xrightmargin=0em,
+   numbers=left, numbersep=1ex,
+   frame=lines ,framerule=1pt} 
 
 \begin{document}
 
@@ -97,7 +114,10 @@ Ikarus Scheme User's Guide
 {\fontsize{18}{18}
 \fontspec{Hoefler Text Italic}
 \hfill{}
-Volume 1: Quick Start (Preliminary Document)
+% Quick Start\\
+% \rnrs{6} Crash Course\\
+% Ikarus
+(Preliminary Document)
 }
 \vfill
 {
@@ -117,7 +137,7 @@ Volume 1: Quick Start (Preliminary Document)
 \vfill{}
 \noindent
 Ikarus Scheme User's Guide\\
-Volume 1: Quick Start (Preliminary Document)\\
+%Volume 1: Quick Start (Preliminary Document)\\
 Copyright \copyright{} 2007,  Abdulaziz Ghuloum\\
 
 \noindent
@@ -179,6 +199,8 @@ interpreters and compilers, and many mathematical and scientific
 packages.  It is our hope that this release will encourage the
 Scheme community to write and to share their most useful \rnrs{6}
 libraries.
+
+
 \newpage
 
 \section{Technology Overview}
@@ -411,7 +433,9 @@ of the boot file using the following strategy:
 \begin{enumerate}
 
 \item If \texttt{ikarus} was started by supplying an explicit
-location (e.g. \texttt{/usr/local/bin/ikarus} or \texttt{./ikarus}),
+location such as
+\texttt{/usr/local/bin/ikarus} or
+\texttt{./ikarus},
 then the name of the boot file is the concatenation of a
 \texttt{.boot} prefix to the executable file name (e.g.
 \texttt{/usr/local/bin/ikarus.boot} or \texttt{./ikarus.boot}).
@@ -420,8 +444,8 @@ then the name of the boot file is the concatenation of a
 location in the \texttt{PATH} environment variable.  In that case,
 it searches for the location of \texttt{ikarus} in the
 \texttt{PATH}.  If \texttt{ikarus} is found in
-\texttt{/some/location/ikarus}, then the name of the boot file
-becomes \texttt{/some/location/ikarus.boot}.
+\texttt{/path/to/ikarus}, then the name of the boot file
+becomes \texttt{/path/to/ikarus.boot}.
 
 \item Failing both guesses, \texttt{ikarus} prints an error message
 and exits.
@@ -442,13 +466,13 @@ boot file is loaded.
 
 \item \texttt{ikarus --r6rs-script script-file-name [arguments ...]}
 
-\index{\rnrs{6} Script} The \texttt{--r6rs-script} argument
+\index{R6RS Script@\rnrs{6} Script} The \texttt{--r6rs-script} argument
 instructs Ikarus that the supplied file is an \rnrs{6} script.  See
 Section~\ref{sec:scripts} for a short introduction to writing \rnrs{6}
 scripts.  The script file name and any additional optional
 \texttt{arguments}
 can be obtained by calling the
-\index{\texttt{command-line}}\texttt{command-line} procedure.
+\idxtt{command-line} procedure.
 
 \begin{verbatim}
   $ cat test.ss 
@@ -482,106 +506,279 @@ subsystems in the future.}
 
 \end{itemize}
 
-
-
-\newpage
+\section{Executable Scripts}
+FIXME
+\subsection{Mac OS X}
+FIXME
+\subsection{GNU/Linux}
+FIXME
+\subsection{Windows/Cygwin}
+FIXME
 
 
 \chapter{\rnrs{6} Crash Course}
 
-* Describe major differences between r6 and r5
+The major difference between \rnrs{5} and \rnrs{6} is the way
+in which programs are loaded and evaluated.  
 
-* Explain what a top-level program is
+In \rnrs{5}, Scheme implementations typically start as an
+interactive session (often referred to as the REPL, or
+read-eval-print-loop).  Inside the interactive session, the user
+enters definitions and expressions one at a time using the keyboard.
+Files, which also contain definitions and expressions, can be loaded
+and reloaded by calling the \texttt{load} procedure.  The
+environment in which the interactive session starts often contains
+implementation-specific bindings that are not found \rnrs{5} and
+users may redefine any of the initial bindings.  The semantics of a
+loading a file depends on the state of the environment at the time
+the file contents are evaluated.
 
-* Explain what a library is
-
-* Explain what the standard R6RS libraries are
+\index{R6RS Script@\rnrs{6} Script!Import}
+\rnrs{6} differs from \rnrs{5} in that it specifies how \emph{whole
+programs}, or scripts, are compiled and evaluated.  An \rnrs{6}
+script is closed in the sense that all the identifiers found in the
+body of the script must either be defined in the script or imported
+from a library.  \rnrs{6} also specifies how \emph{libraries} can be
+defined and used.  While files in \rnrs{5} are \emph{loaded}
+imperatively into the top-level environments, \rnrs{6} libraries can
+be \emph{imported} declaratively in scripts and in other \rnrs{6}
+libraries. 
 
 \section{\label{sec:scripts}Writing a simple script}
 
-* Hello World example
+An \rnrs{6} script is a set of definitions and expressions preceeded
+by an \texttt{import} form.  The \texttt{import} form specifies
+the language (i.e. the variable and keyword bindings) in which the
+library body is written.  A very simple example of an \rnrs{6}
+script is listed below.
 
-* Definitions (procedures)
+\index{Examples!Hello World@\textit{Hello World}}
+\begin{CodeInline}
+(import (rnrs))
 
-* Simple macros.
+(display "Hello World!\n")
+\end{CodeInline}
+
+The first line imports the \texttt{(rnrs)} library.  All the
+bindings exported from the \texttt{(rnrs)} library are made
+available to be used within the body of the library.  
+The exports of the \texttt{(rnrs)} library include variables
+(e.g. \texttt{cons}, \texttt{car}, \texttt{display}, etc.) and
+keywords (e.g.  \texttt{define}, \texttt{lambda}, \texttt{quote},
+etc.).  The second line displays the string \texttt{Hello World!}
+followed by a new line character.
+
+In addition to expressions, such as the call to \texttt{display} in
+the previous example, a script may define some variables.  The
+script below defines the variable \texttt{greeting} and calls the
+procedure bound to it.
+
+\begin{CodeInline}
+(import (rnrs))
+
+(define greeting
+  (lambda ()
+    (display "Hello World!\n")))
+(greeting)
+\end{CodeInline}
+
+Additional keywords may be defined within a script.  In the example
+below, we define the \texttt{(do-times n exprs ...)} macro that
+evaluates the expressions \texttt{exprs} \texttt{n} times.  Running
+the script displays \texttt{Hello World} 3 times.
+\newpage
+
+\begin{CodeInline}
+(import (rnrs))
+(define greeting
+  (lambda ()
+    (display "Hello World!\n")))
+(define-syntax do-times
+  (syntax-rules ()
+    [(_ n exprs ...)
+     (let f ([i n])
+       (unless (zero? i)
+         exprs ...
+         (f (- i 1))))]))
+(do-times 3 (greeting))
+\end{CodeInline}
+
 
 \section{Writing simple libraries}
 
-\section{\rnrs{6} Standard Libraries}
+A script is intended to be a small piece of the program---useful
+abstractions belong to libraries.  The \texttt{do-times} macro that
+was defined in the previous section may be useful in places other
+than printing greeting messages.  So, we can create a small library,
+\texttt{(iterations)} that contains common iteration forms.  
 
-\subsection{\texttt{(rnrs (6))}}
-a
-\subsection{\texttt{(rnrs arithmetic bitwise (6))}}
-a
-\subsection{\texttt{(rnrs arithmetic fixnums (6))}}
-a
-\subsection{\texttt{(rnrs arithmetic flonums (6))}}
-a
-\subsection{\texttt{(rnrs bytevectors (6))}}
-a
-\subsection{\texttt{(rnrs conditions (6))}}
-a
-\subsection{\texttt{(rnrs control (6))}}
-a
-\subsection{\texttt{(rnrs enums (6))}}
-a
-\subsection{\texttt{(rnrs exceptions (6))}}
-a
-\subsection{\texttt{(rnrs files (6))}}
-a
-\subsection{\texttt{(rnrs hashtables (6))}}
+An \rnrs{6} library form is made of four essential parts: (1) the
+library name, (2) the set of identifiers that the library exports,
+(3) the set of libraries that the library imports, and (4) the body
+of the library.  
+
+
+The library name can be any non-empty list of identifiers.
+\rnrs{6}-defined libraries includes \texttt{(rnrs)},
+\texttt{(rnrs~unicode)}, \texttt{(rnrs~bytevectors)}, and so on.
+
+The library exports are a set of identifiers that are made available
+to importing libraries.  Every exported identifier must be bound: it
+may either be defined in the libraries or imported from another
+library.
+%\emph{re-exported} identifiers}. 
+Library exports include variables, keywords, record names, condition
+names.
+
+Library imports are similar to script imports: they specify the set
+of libraries whose exports are made visible within the body of the
+library.  
+
+\index{Invoke}
+The body of a library contains definitions (variable, keyword,
+record, condition, etc.) followed by an optional set of expressions.
+The expressions are evaluated for side effect when needed.
+
+
+The \texttt{(iteration)} library may be written as follows:
+
+\begin{CodeInline}
+(library (iteration)
+  (export do-times)
+  (import (rnrs))
+  (define-syntax do-times
+    (syntax-rules ()
+      [(_ n exprs ...)
+       (let f ([i n])
+         (unless (zero? i)
+           exprs ...
+           (f (- i 1))))])))
+\end{CodeInline}
+
+To use the \texttt{(iteration)} library in our script, we add the
+name of the library to the script's \texttt{import} form.  This
+makes all of \texttt{(iteration)}'s exported identifiers, e.g.
+\texttt{do-times},  visible in the body of the script.
+
+\begin{CodeInline}
+(import (rnrs) (iteration))
+(define greeting
+  (lambda ()
+    (display "Hello World!\n")))
+(do-times 3 (greeting))
+\end{CodeInline}
+
+
+% \begin{CodeInline}
+% (library (iteration)
+%   (export do-times)
+%   (import (rnrs))
+%   (define-syntax do-times
+%     (syntax-rules ()
+%       [(_ n exprs ...)
+%        (do-times-proc n (lambda () exprs ...))]))
+%   (define do-times-proc
+%     (lambda (n proc)
+%       (unless (zero? n)
+%         (proc)
+%         (do-times-proc (- n 1) proc)))))
+% \end{CodeInline}
+
+
+
+\chapter{\rnrs{6} Standard Libraries}
+\newpage
+
+\section{\texttt{(rnrs)}}
+\newpage
+\section{\texttt{(rnrs base)}}
+\newpage
+\section{\texttt{(rnrs arithmetic bitwise)}}
+\newpage
+\section{\texttt{(rnrs arithmetic fixnums)}}
+\newpage
+\section{\texttt{(rnrs arithmetic flonums)}}
+\newpage
+\section{\texttt{(rnrs bytevectors)}}
+\newpage
+\section{\texttt{(rnrs conditions)}}
+\newpage
+\section{\texttt{(rnrs control)}}
+\newpage
+\section{\texttt{(rnrs enums)}}
+\newpage
+\section{\texttt{(rnrs exceptions)}}
+\newpage
+\section{\texttt{(rnrs files)}}
+\newpage
+\section{\texttt{(rnrs hashtables)}}
 \cite{ghuloum07hashtables}
+\newpage
 
-\subsection{\texttt{(rnrs io ports (6))}}
-a
-\subsection{\texttt{(rnrs io simple (6))}}
-a
-\subsection{\texttt{(rnrs lists (6))}}
-a
-\subsection{\texttt{(rnrs mutable-pairs (6))}}
-a
-\subsection{\texttt{(rnrs mutable-strings (6))}}
-a
-\subsection{\texttt{(rnrs programs (6))}}
-a
-\subsection{\texttt{(rnrs r5rs (6))}}
-a
-\subsection{\texttt{(rnrs records inspection (6))}}
-a
-\subsection{\texttt{(rnrs records procedural (6))}}
-a
-\subsection{\texttt{(rnrs records syntactic (6))}}
-a
-\subsection{\texttt{(rnrs sorting (6))}}
-a
-\subsection{\texttt{(rnrs syntax-case (6))}}
-a
-\subsection{\texttt{(rnrs unicode (6))}}
-a
+\section{\texttt{(rnrs io ports)}}
+\newpage
+\section{\texttt{(rnrs io simple)}}
+\newpage
+\section{\texttt{(rnrs lists)}}
+\newpage
+\section{\texttt{(rnrs mutable-pairs)}}
+\newpage
+\section{\texttt{(rnrs mutable-strings)}}
+\newpage
+\section{\texttt{(rnrs programs)}}
+\newpage
+\section{\texttt{(rnrs r5rs)}}
+\newpage
+\section{\texttt{(rnrs records inspection)}}
+\newpage
+\section{\texttt{(rnrs records procedural)}}
+\newpage
+\section{\texttt{(rnrs records syntactic)}}
+\newpage
+\section{\texttt{(rnrs sorting)}}
+\newpage
+\section{\texttt{(rnrs syntax-case)}}
+\newpage
+\section{\texttt{(rnrs unicode)}}
+\newpage
 
 
 
 
-\chapter{Ikarus's Built-in Libraries} 
+\chapter{Ikarus Library Collection} 
 
 * list all ikarus libraries.
 
 * explain each of the exports.
 
+\newpage
 \section{\label{lib:ikarus}\texttt{(ikarus)}}
+\newpage
 \section{\texttt{(ikarus files)}}
+\newpage
 \section{\texttt{(ikarus parameters)}}
+\newpage
 \section{\texttt{(ikarus posix)}}
+\newpage
 \section{\texttt{(ikarus printing)}}
+\newpage
 \section{\texttt{(ikarus symbols)}}
+\newpage
 \section{\texttt{(ikarus timers)}}
+\newpage
 \section{\texttt{(ikarus tracing)}}
+\newpage
 \section{\texttt{(ikarus unicode)}}
+\newpage
 \section{\texttt{(ikarus guardians)}}
 \cite{dybvig93guardians}
+\newpage
 \section{\texttt{(ikarus weak-pairs)}}
+\newpage
 \section{\texttt{(ikarus modules)}}
+\newpage
 \section{\texttt{(ikarus library-manager)}}
+\newpage
 
 % \chapter{Additional Libraries}
 % 
