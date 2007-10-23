@@ -43,7 +43,9 @@
     "ikarus.date-string.ss"
     "ikarus.symbols.ss"
     "ikarus.vectors.ss"
+    "ikarus.unicode-data.ss"
     "ikarus.numerics.ss"
+    "ikarus.conditions.ss"
     "ikarus.guardians.ss"
     "ikarus.command-line.ss"
     "ikarus.codecs.ss"
@@ -55,7 +57,6 @@
     "ikarus.io.input-strings.ss"
     "ikarus.io.output-strings.ss"
     "ikarus.hash-tables.ss"
-    "ikarus.unicode-data.ss"
     "ikarus.writer.ss"
     "ikarus.reader.ss"
     "ikarus.code-objects.ss"
@@ -1128,7 +1129,7 @@
     [vector-sort!                                i r sr]
     [file-exists?                                i r fi]
     [delete-file                                 i r fi]
-    [define-record-type                          r rs]
+    [define-record-type                          i r rs]
     [fields                                      i r rs]
     [immutable                                   i r rs]
     [mutable                                     i r rs]
@@ -1137,7 +1138,7 @@
     [parent-rtd                                  i r rs]
     [protocol                                    i r rs]
     [record-constructor-descriptor               r rs]
-    [record-type-descriptor                      r rs]
+    [record-type-descriptor                      i r rs]
     [sealed                                      i r rs]
     [nongenerative                               i r rs]
     [record-field-mutable?                       r ri]

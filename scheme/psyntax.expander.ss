@@ -1487,16 +1487,70 @@
         (syntax-match (get-clause 'protocol clause*) ()
           [(_ expr) expr]
           [_        #f]))
+      (define (get-fields clause*)
+        (syntax-match clause* (fields)
+          [() '()]
+          [((fields f* ...) . _) f*]
+          [(_ . rest) (get-fields rest)]))
+      (define (get-mutator-indices fields)
+        (let f ([fields fields] [i 0])
+          (syntax-match fields (mutable)
+            [() '()]
+            [((mutable . _) . rest)
+             (cons i (f rest (+ i 1)))]
+            [(_ . rest)
+             (f rest (+ i 1))])))
+      (define (get-mutators foo fields ctxt)
+        (define (gen-name x) 
+          (datum->syntax ctxt
+            (string->symbol 
+              (string-append "set-" 
+                (symbol->string (syntax->datum foo))
+                "-"
+                (symbol->string (syntax->datum x))
+                "!"))))
+        (let f ([fields fields])
+          (syntax-match fields (mutable)
+            [() '()]
+            [((mutable name accessor mutator) . rest) 
+             (cons mutator (f rest))]
+            [((mutable name) . rest)
+             (cons (gen-name name) (f rest))]
+            [(_ . rest) (f rest)])))
+      (define (get-accessors foo fields ctxt)
+        (define (gen-name x) 
+          (datum->syntax ctxt
+            (string->symbol 
+              (string-append
+                (symbol->string (syntax->datum foo))
+                "-"
+                (symbol->string (syntax->datum x))))))
+        (map 
+          (lambda (field)
+            (syntax-match field (mutable immutable)
+              [(mutable name accessor mutator) (id? accessor) accessor]
+              [(immutable name accessor)       (id? accessor) accessor]
+              [(mutable name)                  (id? name) (gen-name name)]
+              [(immutable name)                (id? name) (gen-name name)]
+              [name                            (id? name) (gen-name name)]
+              [others (stx-error field "invalid field spec")]))
+          fields))
+      (define (enumerate ls)
+        (let f ([ls ls] [i 0])
+          (cond
+            [(null? ls) '()]
+            [else (cons i (f (cdr ls) (+ i 1)))])))
       (define (do-define-record ctxt namespec clause*)
         (let* ([foo (get-record-name namespec)]
                [foo-rtd (gensym)]
                [foo-rcd (gensym)]
                [protocol (gensym)]
-               [make-foo (get-record-constructor-name foo ctxt)]
-               ;;; FIXME: getters and setters are not initialized
-               [foo-x* '()]
-               [set-foo-x!* '()]
-               [idx* '()]
+               [make-foo (get-record-constructor-name namespec ctxt)]
+               [fields (get-fields clause*)]
+               [idx* (enumerate fields)]
+               [foo-x* (get-accessors foo fields ctxt)]
+               [set-foo-x!* (get-mutators foo fields ctxt)]
+               [set-foo-idx* (get-mutator-indices fields)]
                [foo? (get-record-predicate-name namespec ctxt)]
                [foo-rtd-code (foo-rtd-code ctxt foo clause*)]
                [foo-rcd-code (foo-rcd-code clause* foo-rtd protocol)]
@@ -1516,7 +1570,7 @@
                ,@(map 
                    (lambda (set-foo-x! idx)
                      `(define ,set-foo-x! (record-mutator ,foo-rtd ,idx)))
-                   set-foo-x!* idx*)))))
+                   set-foo-x!* set-foo-idx*)))))
       (syntax-match x ()
         [(ctxt namespec clause* ...)
          (do-define-record ctxt namespec clause*)])))

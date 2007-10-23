@@ -6,12 +6,13 @@
     record-mutator record-constructor record-predicate record?
     record-rtd record-type-name record-type-parent record-type-uid
     record-type-generative?  record-type-sealed? record-type-opaque?
-    record-type-field-names record-field-mutable?)
+    record-type-field-names record-field-mutable? rtd-subtype? rtd?)
   (import 
     (except (ikarus)
       record-constructor record-predicate record?  record-type-name
       record-type-parent record-type-descriptor?
-      record-type-field-names record-field-mutable?)
+      record-type-field-names record-field-mutable?
+      rtd? rtd-subtype?)
     (ikarus system $structs))
 
   (define-struct rtd 
@@ -186,12 +187,21 @@
           [else (error who "~s is not a valid uid" uid)]))))
 
   (define-struct rcd (rtd prcd proc))
+
   (define (is-parent-of? prtd rtd)
     (let ([p (rtd-parent rtd)])
       (cond
         [(eq? p prtd) #t]
         [(not p) #f]
         [else (is-parent-of? prtd p)])))
+
+  (define (rtd-subtype? rtd parent-rtd) 
+    (unless (rtd? rtd) 
+      (error 'rtd-subtype? "~s is not an rtd" rtd))
+    (unless (rtd? parent-rtd) 
+      (error 'rtd-substype? "~s is not an rtd" parent-rtd))
+    (or (eq? rtd parent-rtd)
+        (is-parent-of? parent-rtd rtd)))
         
   (define make-record-constructor-descriptor
     (lambda (rtd prcd protocol)
@@ -238,13 +248,19 @@
             (let ([p (constructor main-rtd sz pprcd (rcd-proc prcd))]
                   [n (- size sz)])
               (lambda (f*)
-                (let ([v (lambda fmls
-                           (lambda flds
-                             (unless (= (length flds) n) 
-                               (error 'record-constructor 
-                                  "expecting ~s args, got ~s" n flds))
-                             (apply (p (cons flds f*)) fmls)))])
-                  (if proto (proto v) v)))))))
+                (if proto
+                    (proto 
+                      (lambda fmls
+                        (lambda flds
+                          (unless (= (length flds) n) 
+                            (error 'record-constructor 
+                               "expecting ~s args, got ~s" n flds))
+                          (apply (p (cons flds f*)) fmls))))
+                    (lambda flds
+                      (unless (= (length flds) n) 
+                         (error 'record-constructor 
+                           "expecting ~s args, got ~s" n flds))
+                      ((p (cons flds f*))))))))))
     (unless (rcd? rcd)
       (error who "~s is not a record constructor descriptor" rcd))
     (let ([rtd (rcd-rtd rcd)]
