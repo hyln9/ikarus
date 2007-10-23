@@ -174,6 +174,8 @@
     [&i/o-port                 ($core-rtd . (&i/o-port-rtd &i/o-port-rcd))]
     [&i/o-decoding             ($core-rtd . (&i/o-decoding-rtd &i/o-decoding-rcd))]
     [&i/o-encoding             ($core-rtd . (&i/o-encoding-rtd &i/o-encoding-rcd))]
+    [&no-infinities            ($core-rtd . (&no-infinities-rtd &no-infinities-rcd ))]
+    [&no-nans                  ($core-rtd . (&no-nans-rtd &no-nans-rcd ))]
     ))
 
 (define library-legend
@@ -1295,6 +1297,10 @@
     [&i/o-decoding-rcd]
     [&i/o-encoding-rtd]
     [&i/o-encoding-rcd]
+    [&no-infinities-rtd]
+    [&no-infinities-rcd]
+    [&no-nans-rtd]
+    [&no-nans-rcd]
   ))
 
 (define (macro-identifier? x) 

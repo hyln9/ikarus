@@ -33,6 +33,8 @@
           i/o-port-error? i/o-error-port make-i/o-decoding-error
           i/o-decoding-error? make-i/o-encoding-error
           i/o-encoding-error? i/o-encoding-error-char
+          no-infinities-violation? make-no-infinities-violation
+          no-nans-violation? make-no-nans-violation
           
           &condition-rtd &condition-rcd &message-rtd &message-rcd
           &warning-rtd &warning-rcd &serious-rtd &serious-rcd
@@ -51,7 +53,8 @@
           &i/o-file-already-exists-rcd &i/o-file-does-not-exist-rtd
           &i/o-file-does-not-exist-rcd &i/o-port-rtd &i/o-port-rcd
           &i/o-decoding-rtd &i/o-decoding-rcd &i/o-encoding-rtd
-          &i/o-encoding-rcd
+          &i/o-encoding-rcd &no-infinities-rtd &no-infinities-rcd
+          &no-nans-rtd &no-nans-rcd
 
           )
   (import
@@ -90,6 +93,8 @@
           i/o-port-error? i/o-error-port make-i/o-decoding-error
           i/o-decoding-error? make-i/o-encoding-error
           i/o-encoding-error? i/o-encoding-error-char
+          no-infinities-violation? make-no-infinities-violation
+          no-nans-violation? make-no-nans-violation
           
           ))
   
@@ -288,6 +293,12 @@
   (define-condition-type &i/o-encoding &i/o-port
     make-i/o-encoding-error i/o-encoding-error?
     (char i/o-encoding-error-char))
+
+  (define-condition-type &no-infinities &implementation-restriction
+    make-no-infinities-violation no-infinities-violation?)
+  
+  (define-condition-type &no-nans &implementation-restriction
+    make-no-nans-violation no-nans-violation?)
 
   )
 
