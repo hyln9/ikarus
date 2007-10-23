@@ -148,6 +148,7 @@
     [nongenerative       (macro . nongenerative)]
     [parent-rtd          (macro . parent-rtd)]
     [define-record-type  (macro . define-record-type)]
+    [define-condition-type  (macro . define-condition-type)]
     [&condition                ($core-rtd . (&condition-rtd &condition-rcd))]
     [&message                  ($core-rtd . (&message-rtd &message-rcd))]
     [&warning                  ($core-rtd . (&warning-rtd &warning-rcd ))]

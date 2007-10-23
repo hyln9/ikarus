@@ -1579,6 +1579,41 @@
         [(ctxt namespec clause* ...)
          (do-define-record ctxt namespec clause*)])))
   
+  (define define-condition-type-macro
+    (lambda (x)
+      (define (mkname name suffix)
+        (datum->syntax name 
+           (string->symbol 
+             (string-append 
+               (symbol->string (syntax->datum name))
+               suffix))))
+      (syntax-match x ()
+        [(ctxt name super constructor predicate (field* accessor*) ...)
+         (and (id? name) 
+              (id? super)
+              (id? constructor)
+              (id? predicate)
+              (for-all id? field*)
+              (for-all id? accessor*))
+         (let ([aux-accessor* (map (lambda (x) (gensym)) accessor*)])
+           (bless
+              `(begin
+                 (define-record-type (,name ,constructor ,(gensym))
+                    (parent ,super)
+                    (fields ,@(map (lambda (field aux) 
+                                     `(immutable ,field ,aux))
+                                   field* aux-accessor*))
+                    (nongenerative)
+                    (sealed #f) (opaque #f))
+                 (define ,predicate (condition-predicate
+                                      (record-type-descriptor ,name)))
+                 ,@(map 
+                     (lambda (accessor aux)
+                        `(define ,accessor 
+                           (condition-accessor
+                             (record-type-descriptor ,name) ,aux)))
+                     accessor* aux-accessor*))))])))
+  
   (define incorrect-usage-macro
     (lambda (e) (stx-error e "incorrect usage of auxilary keyword")))
   
@@ -2117,7 +2152,8 @@
            ((endianness)        endianness-macro)
            ((trace-lambda)      trace-lambda-macro)
            ((trace-define)      trace-define-macro)
-           ((eol-style)         
+           ((define-condition-type)      define-condition-type-macro)
+           ((eol-style)
             (lambda (x) 
               (symbol-macro x '(none lf cr crlf nel crnel ls))))
            ((error-handling-mode)         

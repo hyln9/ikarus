@@ -423,7 +423,7 @@
     [condition-message                          C co]
     [condition-predicate                        C co]
     [condition-who                              C co]
-    [define-condition-type                      S co]
+    [define-condition-type                      C co]
     [&error                                     C co]
     [error?                                     C co]
     [&implementation-restriction                C co]
