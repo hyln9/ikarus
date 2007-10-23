@@ -59,4 +59,4 @@ AC_FUNC_STAT
 AC_FUNC_STRFTIME
 AC_FUNC_STRTOD
 AC_CHECK_FUNCS([bzero gettimeofday memmove memset munmap setenv sqrt strerror])
-AC_OUTPUT(Makefile src/Makefile scheme/Makefile)
+AC_OUTPUT(Makefile src/Makefile scheme/Makefile doc/Makefile)

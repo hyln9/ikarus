@@ -212,109 +212,46 @@
           [else
            (error who "~s is not a valid record constructor descriptor" prcd)]))))
 
-  (define (iota i n)
-    (if (= i n)
-        '()
-        (cons i (iota (+ i 1) n))))
-
-  (define (sym n)
-    (string->symbol (format "v~s" n)))
-
-  (define general-base-constructor 
-    (lambda (n)
-      (lambda (rtd)
-        (lambda args
-          (unless (= (length args) n) 
-            (error 'record-constructor 
-              "incorrect number of arguments to constructor"))
-          (let f ([r ($make-struct rtd n)] [i 0] [args args])
-            (cond
-              [(null? args) r]
-              [else
-               ($struct-set! r i (car args))
-               (f r (add1 i) (cdr args))]))))))
-
-  (define base-constructors 
-    '#(#f #f #f #f #f #f #f #f #f #f #f #f))
-
-  (define (base-constructor-maker n) 
-    (cond
-      [(< n (vector-length base-constructors)) 
-       (or (vector-ref base-constructors n)
-           (let ([vars (map sym (iota 0 n))])
-             (let ([proc 
-                    (eval `(lambda (rtd) 
-                             (lambda ,vars 
-                               ($struct rtd . ,vars)))
-                          (environment
-                            '(ikarus) 
-                            '(ikarus system $structs)))])
-               (vector-set! base-constructors n proc)
-               proc)))]
-      [else (general-base-constructor n)]))
-
-  (define extended-constructors 
-    '#(#f #f #f #f #f #f #f #f #f #f #f #f))
-
-  (define general-extended-constructor
-    (lambda (n m)
-      (lambda (record-constructor) 
-        (lambda args-n
-          (unless (= (length args-n) n)
-            (error 'record-constructor "incorrect arguments"))
-          (lambda args-m
-            (unless (= (length args-m) m)
-              (error 'record-constructor "incorrect arguments"))
-            (apply record-constructor (append args-n args-m)))))))
-
-  (define (extended-constructor-maker n m)
-    (cond
-      [(< n (vector-length extended-constructors))
-       (let ([v (let ([v (vector-ref extended-constructors n)])
-                  (or v 
-                      (let ([v (make-vector (+ n 1) #f)])
-                        (vector-set! extended-constructors n v)
-                        v)))])
-         (or (vector-ref v m)
-             (let* ([vars-0m (map sym (iota 0 m))]
-                    [vars-mn (map sym (iota m n))]
-                    [proc 
-                     (eval
-                       `(lambda (record-constructor) 
-                          (lambda ,vars-0m
-                            (lambda ,vars-mn
-                              (record-constructor ,@vars-0m ,@vars-mn))))
-                       (environment '(ikarus)))])
-               (vector-set! v m proc)
-               proc)))]
-      [else (general-extended-constructor n m)]))
-
   (define (record-constructor rcd)
     (define who 'record-constructor)
+    (define (constructor main-rtd size prcd proto)
+      (if (not prcd) ;;; base
+          (lambda (f*)
+            (let ([v (lambda flds
+                       (let ([n (rtd-size main-rtd)])
+                         (unless (= (length flds) size)
+                           (error 'record-constructor 
+                              "expecting ~s args, got ~s" n flds))
+                         (let ([r ($make-struct main-rtd n)])
+                           (let f ([i 0] [r r] [flds flds] [f* f*])
+                             (cond
+                               [(null? flds)
+                                (if (null? f*)
+                                    r
+                                    (f i r (car f*) (cdr f*)))]
+                               [else
+                                ($struct-set! r i (car flds))
+                                (f (add1 i) r (cdr flds) f*)])))))])
+              (if proto (proto v) v)))
+          (let ([pprcd (rcd-prcd prcd)]
+                [sz (rtd-size (rcd-rtd prcd))])
+            (let ([p (constructor main-rtd sz pprcd (rcd-proc prcd))]
+                  [n (- size sz)])
+              (lambda (f*)
+                (let ([v (lambda fmls
+                           (lambda flds
+                             (unless (= (length flds) n) 
+                               (error 'record-constructor 
+                                  "expecting ~s args, got ~s" n flds))
+                             (apply (p (cons flds f*)) fmls)))])
+                  (if proto (proto v) v)))))))
     (unless (rcd? rcd)
       (error who "~s is not a record constructor descriptor" rcd))
     (let ([rtd (rcd-rtd rcd)]
-          [prcd (rcd-prcd rcd)])
-      (let ([c*
-             (let ([n (rtd-size rtd)])
-               (let f ([c0 ((base-constructor-maker n) rtd)]
-                       [prcd prcd]
-                       [n n])
-                 (cond
-                   [(not prcd) c0]
-                   [else
-                    (let ([r (rcd-rtd prcd)])
-                      (let ([m (rtd-size r)])
-                        (f ((extended-constructor-maker n m) c0)
-                           (rcd-prcd prcd)
-                           m)))])))])
-        (let f ([rcd rcd])
-          (cond
-            [(not rcd) c*]
-            [else
-             (let ([c* (f (rcd-prcd rcd))])
-               (let ([proc (rcd-proc rcd)])
-                 (if proc (proc c*) c*)))])))))
+          [prcd (rcd-prcd rcd)]
+          [proto (rcd-proc rcd)])
+      ((constructor rtd (rtd-size rtd) prcd proto) '())))
+  
 
   (define (record-accessor rtd k) 
     (define who 'record-accessor)
@@ -413,3 +350,65 @@
                        (rtd-name (rcd-rtd x))) p)))
                   
 )
+
+
+#!eof
+
+rtd0  fields=4
+proto0 = 
+  (lambda (n) 
+    (lambda (p0-fmls ...) 
+      (n f0 f1 f2 f3)))
+
+rtd1  fields=2
+proto1 = 
+  (lambda (n)
+    (lambda (p1-fmls ...)
+      ((n p0-acts ...) f4 f5)))
+
+rtd2  fields=1
+proto2 =
+  (lambda (n)
+    (lambda (p2-fmls ...)
+      ((n p1-acts ...) f6)))
+
+
+(record-constructor rcd2) 
+==
+(proto2 (lambda p1-fml*
+          (lambda (f6) 
+            (apply (proto1 (lambda p0-fml*
+                             (lambda (f4 f5) 
+                               (apply (proto0 (lambda (f0 f1 f2 f3) 
+                                                ($record rtd2 f0 f1 f2 f3 f4 f5 f6)))
+                                      p0-fml*))))
+                   p1-fml*))))
+
+new0 = (lambda (f0 f1 f2 f3 f4 f5 f6)
+         ($record rtd2 f0 f1 f2 f3 f4 f5 f6))
+
+(record-constructor rcd2) 
+==
+(proto2 (lambda p1-fml*
+          (lambda (f6) 
+            (apply (proto1 (lambda p0-fml*
+                             (lambda (f4 f5) 
+                               (apply (proto0 (lambda (f0 f1 f2 f3) 
+                                                (new0 f0 f1 f2 f3 f4 f5 f6)))
+                                      p0-fml*))))
+                   p1-fml*))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

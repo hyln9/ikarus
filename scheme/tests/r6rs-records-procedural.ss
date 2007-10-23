@@ -1,4 +1,4 @@
-#!/usr/bin/env ikarus --r6rs-script
+#!/usr/bin/env ikarus -b ikarus.boot --r6rs-script
 
 (import 
   (ikarus)
@@ -202,11 +202,17 @@
 
 
 (test0)
+(printf "test0 ok\n")
 (test1)
+(printf "test1 ok\n")
 (test2)
+(printf "test2 ok\n")
 (test3)
+(printf "test3 ok\n")
 (test4)
+(printf "test4 ok\n")
 (test5)
+(printf "test5 ok\n")
 (printf "rtd0=~s\n" rtd0)
 (printf "rcd0=~s\n" rcd0-default)
 (printf "fields of ~s are ~s\n" rtd1 (record-type-field-names rtd1))
