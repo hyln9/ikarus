@@ -24,8 +24,8 @@
           i/o-invalid-position-error? i/o-error-position
           make-i/o-filename-error i/o-filename-error?
           i/o-error-filename make-i/o-file-protection-error
-          i/o-file-protection-error? make-i/o-fie-is-read-only-error
-          i/o-fie-is-read-only-error?
+          i/o-file-protection-error? make-i/o-file-is-read-only-error
+          i/o-file-is-read-only-error?
           make-i/o-file-already-exists-error
           i/o-file-already-exists-error?
           make-i/o-file-does-not-exist-error
@@ -46,8 +46,8 @@
           &i/o-write-rtd &i/o-write-rcd &i/o-invalid-position-rtd
           &i/o-invalid-position-rcd &i/o-filename-rtd
           &i/o-filename-rcd &i/o-file-protection-rtd
-          &i/o-file-protection-rcd &i/o-fie-is-read-only-rtd
-          &i/o-fie-is-read-only-rcd &i/o-file-already-exists-rtd
+          &i/o-file-protection-rcd &i/o-file-is-read-only-rtd
+          &i/o-file-is-read-only-rcd &i/o-file-already-exists-rtd
           &i/o-file-already-exists-rcd &i/o-file-does-not-exist-rtd
           &i/o-file-does-not-exist-rcd &i/o-port-rtd &i/o-port-rcd
           &i/o-decoding-rtd &i/o-decoding-rcd &i/o-encoding-rtd
@@ -81,8 +81,8 @@
           i/o-invalid-position-error? i/o-error-position
           make-i/o-filename-error i/o-filename-error?
           i/o-error-filename make-i/o-file-protection-error
-          i/o-file-protection-error? make-i/o-fie-is-read-only-error
-          i/o-fie-is-read-only-error?
+          i/o-file-protection-error? make-i/o-file-is-read-only-error
+          i/o-file-is-read-only-error?
           make-i/o-file-already-exists-error
           i/o-file-already-exists-error?
           make-i/o-file-does-not-exist-error
@@ -269,8 +269,8 @@
   (define-condition-type &i/o-file-protection &i/o
     make-i/o-file-protection-error i/o-file-protection-error?)
 
-  (define-condition-type &i/o-fie-is-read-only &i/o-file-protection
-    make-i/o-fie-is-read-only-error i/o-fie-is-read-only-error?)
+  (define-condition-type &i/o-file-is-read-only &i/o-file-protection
+    make-i/o-file-is-read-only-error i/o-file-is-read-only-error?)
 
   (define-condition-type &i/o-file-already-exists &i/o-filename
     make-i/o-file-already-exists-error i/o-file-already-exists-error?)

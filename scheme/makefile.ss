@@ -148,6 +148,32 @@
     [nongenerative       (macro . nongenerative)]
     [parent-rtd          (macro . parent-rtd)]
     [define-record-type  (macro . define-record-type)]
+    [&condition                ($core-rtd . (&condition-rtd &condition-rcd))]
+    [&message                  ($core-rtd . (&message-rtd &message-rcd))]
+    [&warning                  ($core-rtd . (&warning-rtd &warning-rcd ))]
+    [&serious                  ($core-rtd . (&serious-rtd &serious-rcd))]
+    [&error                    ($core-rtd . (&error-rtd &error-rcd))]
+    [&violation                ($core-rtd . (&violation-rtd &violation-rcd ))]
+    [&assertion                ($core-rtd . (&assertion-rtd &assertion-rcd ))]
+    [&irritants                ($core-rtd . (&irritants-rtd &irritants-rcd))]
+    [&who                      ($core-rtd . (&who-rtd &who-rcd ))]
+    [&non                      ($core-rtd . (&non-continuable-rtd &non-continuable-rcd))]
+    [&implementation           ($core-rtd . (&implementation-restriction-rtd &implementation-restriction-rcd))]
+    [&lexical                  ($core-rtd . (&lexical-rtd &lexical-rcd ))]
+    [&syntax                   ($core-rtd . (&syntax-rtd &syntax-rcd ))]
+    [&undefined                ($core-rtd . (&undefined-rtd &undefined-rcd))]
+    [&i/o                      ($core-rtd . (&i/o-rtd &i/o-rcd ))]
+    [&i/o-read                 ($core-rtd . (&i/o-read-rtd &i/o-read-rcd ))]
+    [&i/o-write                ($core-rtd . (&i/o-write-rtd &i/o-write-rcd))]
+    [&i/o-invalid-position     ($core-rtd . (&i/o-invalid-position-rtd &i/o-invalid-position-rcd ))]
+    [&i/o-filename             ($core-rtd . (&i/o-filename-rtd &i/o-filename-rcd))]
+    [&i/o-file-protection      ($core-rtd . (&i/o-file-protection-rtd &i/o-file-protection-rcd))]
+    [&i/o-file-is-read-only    ($core-rtd . (&i/o-file-is-read-only-rtd &i/o-fie-is-read-only-rcd ))]
+    [&i/o-file-already-exists  ($core-rtd . (&i/o-file-already-exists-rtd &i/o-file-already-exists-rcd))]
+    [&i/o-file-does-not-exist  ($core-rtd . (&i/o-file-does-not-exist-rtd &i/o-file-does-not-exist-rcd))]
+    [&i/o-port                 ($core-rtd . (&i/o-port-rtd &i/o-port-rcd))]
+    [&i/o-decoding             ($core-rtd . (&i/o-decoding-rtd &i/o-decoding-rcd))]
+    [&i/o-encoding             ($core-rtd . (&i/o-encoding-rtd &i/o-encoding-rcd))]
     ))
 
 (define library-legend
@@ -420,7 +446,7 @@
     [$set-symbol-plist!                          $symbols]
     [$init-symbol-value!                         ]
     [$unbound-object?                            $symbols]
-    
+    ;;;
     [base-rtd                                    $structs]
     [$struct-set!                                $structs]
     [$struct-ref                                 $structs]
@@ -429,7 +455,7 @@
     [$make-struct                                $structs]
     [$struct?                                    $structs]
     [$struct/rtd?                                $structs]
-
+    ;;;
     [$make-port/input                            $ports]
     [$make-port/output                           $ports]
     [$port-handler                               $ports]
@@ -1216,6 +1242,59 @@
     [$transcoder->data                           $transc]
     [$data->transcoder                           $transc]
     [file-options-spec                           i]
+    ;;;
+    [&condition-rtd]
+    [&condition-rcd]
+    [&message-rtd]
+    [&message-rcd]
+    [&warning-rtd]
+    [&warning-rcd]
+    [&serious-rtd]
+    [&serious-rcd]
+    [&error-rtd]
+    [&error-rcd]
+    [&violation-rtd]
+    [&violation-rcd]
+    [&assertion-rtd]
+    [&assertion-rcd]
+    [&irritants-rtd]
+    [&irritants-rcd]
+    [&who-rtd]
+    [&who-rcd]
+    [&non-continuable-rtd]
+    [&non-continuable-rcd]
+    [&implementation-restriction-rtd]
+    [&implementation-restriction-rcd]
+    [&lexical-rtd]
+    [&lexical-rcd]
+    [&syntax-rtd]
+    [&syntax-rcd]
+    [&undefined-rtd]
+    [&undefined-rcd]
+    [&i/o-rtd]
+    [&i/o-rcd]
+    [&i/o-read-rtd]
+    [&i/o-read-rcd]
+    [&i/o-write-rtd]
+    [&i/o-write-rcd]
+    [&i/o-invalid-position-rtd]
+    [&i/o-invalid-position-rcd]
+    [&i/o-filename-rtd]
+    [&i/o-filename-rcd]
+    [&i/o-file-protection-rtd]
+    [&i/o-file-protection-rcd]
+    [&i/o-fie-is-read-only-rtd]
+    [&i/o-fie-is-read-only-rcd]
+    [&i/o-file-already-exists-rtd]
+    [&i/o-file-already-exists-rcd]
+    [&i/o-file-does-not-exist-rtd]
+    [&i/o-file-does-not-exist-rcd]
+    [&i/o-port-rtd]
+    [&i/o-port-rcd]
+    [&i/o-decoding-rtd]
+    [&i/o-decoding-rcd]
+    [&i/o-encoding-rtd]
+    [&i/o-encoding-rcd]
   ))
 
 (define (macro-identifier? x) 
@@ -1458,3 +1537,8 @@
 
 
 ;;; vim:syntax=scheme
+
+
+#!eof
+
+

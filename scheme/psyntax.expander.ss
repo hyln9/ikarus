@@ -510,7 +510,11 @@
   (define label->binding
     (lambda (x r)
       (cond
-        ((imported-label->binding x))
+        ((imported-label->binding x) =>
+         (lambda (b) 
+           (if (and (pair? b) (eq? (car b) '$core-rtd)) 
+               (cons '$rtd (map bless (cdr b)))
+               b)))
         ((assq x r) => cdr)
         (else '(displaced-lexical . #f)))))
 
@@ -535,7 +539,7 @@
              (case type
                ((lexical core-prim macro macro! global local-macro
                  local-macro! global-macro global-macro!
-                 displaced-lexical syntax import $module)
+                 displaced-lexical syntax import $module $core-rtd)
                 (values type (binding-value b) id))
                (else (values 'other #f #f))))))
         ((syntax-pair? e)
@@ -550,7 +554,7 @@
                    ((define define-syntax core-macro begin macro
                       macro! local-macro local-macro! global-macro
                       global-macro! module set! let-syntax 
-                      letrec-syntax import)
+                      letrec-syntax import $core-rtd)
                     (values type (binding-value b) id))
                    (else
                     (values 'call #f #f))))
