@@ -1,7 +1,7 @@
 
 (library (ikarus conditions)
   (export condition? simple-conditions condition-predicate
-          condition condition-accessor
+          condition condition-accessor print-condition
 
           ;;; too much junk
           make-message-condition message-condition?
@@ -62,6 +62,7 @@
     (only (ikarus records procedural) rtd? rtd-subtype?)
     (except (ikarus) define-condition-type condition? simple-conditions
           condition condition-predicate condition-accessor
+          print-condition
           
           ;;; more junk
           make-message-condition message-condition?
@@ -299,6 +300,20 @@
   
   (define-condition-type &no-nans &implementation-restriction
     make-no-nans-violation no-nans-violation?)
+
+  (define print-condition 
+    (let ()
+      (define (print-condition x p)
+        (display "CONDITION: " p)
+        (write x p)
+        (newline p))
+      (case-lambda
+        [(x) 
+         (print-condition x (console-output-port))]
+        [(x port)
+         (if (output-port? port) 
+             (print-condition x port)
+             (error 'print-condition "~s is not an output port" port))])))
 
   )
 

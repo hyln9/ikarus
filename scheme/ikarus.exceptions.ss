@@ -1,7 +1,6 @@
 
 (library (ikarus exceptions)
-  (export with-exception-handler raise raise-continuable error
-          print-condition)
+  (export with-exception-handler raise raise-continuable error)
   (import 
     (only (rnrs) condition make-non-continuable-violation
           make-message-condition make-error make-who-condition
@@ -9,8 +8,6 @@
     (except (ikarus)
       with-exception-handler raise raise-continuable error))
 
-  (define (print-condition x)
-    (printf "CONDITION: ~s\n" x))
 
   (define handlers
     (make-parameter
@@ -50,16 +47,13 @@
     (unless (string? msg) 
       (error 'error "message ~s is not a string" msg))
     (raise
-      (if who
-          (condition
-            (make-error)
-            (make-who-condition who) 
-            (make-message-condition msg) 
-            (make-irritants-condition irritants))
-          (condition
-            (make-error)
-            (make-message-condition msg) 
-            (make-irritants-condition irritants)))))
+       (condition
+         (make-error)
+         (if who (make-who-condition who) (condition))
+         (make-message-condition msg)
+         (if (null? irritants) 
+             (condition)
+             (make-irritants-condition irritants)))))
 
 
 )

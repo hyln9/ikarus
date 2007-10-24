@@ -26,7 +26,6 @@ description:
   (export new-cafe)
   (import 
     (only (rnrs) with-exception-handler)
-    (only (ikarus exceptions) print-condition)
     (only (psyntax expander) eval-top-level)
     (except (ikarus) new-cafe))
 

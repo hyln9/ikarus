@@ -893,6 +893,7 @@
     [utf8->string                                i r bv]
     [utf16->string                               r bv]
     [utf32->string                               r bv]
+    [print-condition                             i]
     [condition?                                  r co]
     [&assertion                                  r co]
     [assertion-violation?                        r co]
