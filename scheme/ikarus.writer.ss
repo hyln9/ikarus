@@ -1,7 +1,6 @@
 
 (library (ikarus writer)
-  (export write display format printf print-error error-handler
-          error print-unicode print-graph)
+  (export write display format printf print-error print-unicode print-graph)
   (import 
     (rnrs hashtables)
     (ikarus system $chars)
@@ -13,8 +12,7 @@
     (ikarus system $bytevectors)
     (ikarus system $transcoders)
     (only (ikarus unicode-data) unicode-printable-char?) 
-    (except (ikarus) write display format printf print-error
-            error-handler error print-unicode print-graph))
+    (except (ikarus) write display format printf print-error print-unicode print-graph))
 
   (define print-unicode
     (make-parameter #t))
@@ -740,18 +738,5 @@
     (lambda (who fmt . args)
       (display-error "Warning" who fmt args)))
 
-  (define error-handler
-    (make-parameter
-      (lambda args
-        (apply print-error args)
-        (flush-output-port (console-output-port))
-        (exit -1))
-      (lambda (x)
-        (if (procedure? x)
-            x
-            (error 'error-handler "~s is not a procedure" x)))))
-
-  (define error
-    (lambda args
-      (apply (error-handler) args))))
+  )
 

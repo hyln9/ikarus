@@ -25,22 +25,10 @@ description:
 (library (ikarus cafe)
   (export new-cafe)
   (import 
+    (only (rnrs) with-exception-handler)
+    (only (ikarus exceptions) print-condition)
     (only (psyntax expander) eval-top-level)
     (except (ikarus) new-cafe))
-
-  (define with-error-handler
-    (lambda (p thunk)
-      (let ([old-error-handler (error-handler)])
-        (dynamic-wind
-          (lambda () 
-            (error-handler
-              (lambda args
-                (error-handler old-error-handler)
-                (apply p args)
-                (apply error args))))
-          thunk
-          (lambda ()
-            (error-handler old-error-handler))))))
 
   (define eval-depth 0)
 
@@ -66,10 +54,11 @@ description:
     (lambda (eval-proc escape-k)
       (call/cc
         (lambda (k)
-          (with-error-handler
-            (lambda args
+          (with-exception-handler
+            (lambda (con)
               (reset-input-port! (console-input-port))
-              (apply print-error args)
+              (flush-output-port (console-output-port))
+              (print-condition con)
               (k (void)))
             (lambda ()
               (display-prompt 0)

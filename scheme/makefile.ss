@@ -336,7 +336,6 @@
     [make-parameter                              i parameters]
     [call/cf                                     i]
     [print-error                                 i]
-    [error-handler                               i]
     [interrupt-handler                           i]
     [assembler-output                            i]
     [new-cafe                                    i]
