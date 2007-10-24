@@ -18,8 +18,12 @@
     [ne (null-environment)]
     [sr (rnrs sorting (6))]
     [ls (rnrs lists (6))]
-    [ba (rnrs base (6))]
+    [ri (rnrs records inspection (6))]
+    [rp (rnrs records procedural (6))]
+    [rs (rnrs records syntactic (6))]
+    [co (rnrs conditions (6))]
     [is (rnrs io simple (6))]
+    [ba (rnrs base (6))]
     [bv (rnrs bytevectors (6))]
     [uc (rnrs unicode (6))]
     [ex (rnrs exceptions (6))]
@@ -29,10 +33,6 @@
     [ht (rnrs hashtables (6))]
     [ip (rnrs io ports (6))]
     [en (rnrs enums (6))]
-    [co (rnrs conditions (6))]
-    [ri (rnrs records inspection (6))]
-    [rp (rnrs records procedural (6))]
-    [rs (rnrs records syntactic (6))]
     ))
 
 (define status-names
@@ -489,9 +489,9 @@
     [environment                                C ev]
     [eval                                       C ev se]
     ;;;
-    [raise                                      S ex]
-    [raise-continuable                          S ex]
-    [with-exception-handler                     S ex]
+    [raise                                      C ex]
+    [raise-continuable                          C ex]
+    [with-exception-handler                     C ex]
     [guard                                      S ex]
     ;;;
     [binary-port?                               S ip]

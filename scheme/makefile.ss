@@ -29,6 +29,7 @@
     "ikarus.handlers.ss"
     "ikarus.multiple-values.ss"
     "ikarus.control.ss"
+    "ikarus.exceptions.ss"
     "ikarus.collect.ss"
     "ikarus.apply.ss"
     "ikarus.predicates.ss"
