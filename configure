@@ -1653,7 +1653,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=ikarus
- VERSION=prerelease-0
+ VERSION=prerelease-0.01
 
 
 cat >>confdefs.h <<_ACEOF

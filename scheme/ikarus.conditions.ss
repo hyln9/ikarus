@@ -58,6 +58,8 @@
 
           )
   (import
+    (rnrs records inspection)
+    (rnrs records procedural)
     (only (rnrs) record-type-descriptor record-constructor-descriptor record-predicate)
     (only (ikarus records procedural) rtd? rtd-subtype?)
     (except (ikarus) define-condition-type condition? simple-conditions
@@ -65,6 +67,16 @@
           print-condition
           
           ;;; more junk
+
+          &condition &message &warning &serious &error &violation
+          &assertion &irritants &who &non-continuable
+          &implementation-restriction &lexical &syntax &undefined
+          &i/o &i/o-read &i/o-write &i/o-invalid-position
+          &i/o-filename &i/o-file-protection &i/o-file-is-read-only
+          &i/o-file-already-exists &i/o-file-does-not-exist
+          &i/o-port &i/o-decoding &i/o-encoding &no-infinities
+          &no-nans
+
           make-message-condition message-condition?
           condition-message make-warning warning?
           make-serious-condition serious-condition? make-error
@@ -110,8 +122,8 @@
     (sealed #t)
     (opaque #t))
 
-  (define (condition? x) 
-    (or (&condition? x) 
+  (define (condition? x)
+    (or (&condition? x)
         (compound-condition? x)))
 
   (define condition
@@ -303,10 +315,43 @@
 
   (define print-condition 
     (let ()
+      (define (print-simple-condition x p)
+        (let ([rtd (record-rtd x)])
+          (let ([name (record-type-name rtd)])
+            (display name p))
+          (let ([v (record-type-field-names rtd)])
+            (case (vector-length v)
+              [(1) 
+               (display ": " p)
+               (write ((record-accessor rtd 0) x) p)]
+              [else
+               (let f ([i 0])
+                 (unless (= i (vector-length v))
+                   (display "  " p)
+                   (display (vector-ref v i) p)
+                   (display "=" p)
+                   (write ((record-accessor rtd i) x) p)
+                   (f (+ i 1))))]))
+          (newline p)))
       (define (print-condition x p)
-        (display "CONDITION: " p)
-        (write x p)
-        (newline p))
+        (cond
+          [(condition? x) 
+           (let ([ls (simple-conditions x)])
+             (if (null? ls) 
+                 (display "Condition object with no further information\n" p)
+                 (begin
+                   (display " Condition components:\n")
+                   (let f ([ls ls] [i 1])
+                     (unless (null? ls)
+                       (display "   " p)
+                       (display i p)
+                       (display ". " p)
+                       (print-simple-condition (car ls) p)
+                       (f (cdr ls) (+ i 1)))))))]
+          [else 
+           (display "Non-condition object: " p)
+           (write x p)
+           (newline p)]))
       (case-lambda
         [(x) 
          (print-condition x (console-output-port))]

@@ -10,7 +10,11 @@
   (import 
     (except (ikarus)
       record-constructor record-predicate record?  record-type-name
-      record-type-parent record-type-descriptor?
+      record-type-parent record-type-descriptor? record-rtd
+      record-type-uid record-type-sealed? record-type-opaque?
+      record-type-generative? make-record-type-descriptor
+      make-record-constructor-descriptor record-accessor
+      record-mutator
       record-type-field-names record-field-mutable?
       rtd? rtd-subtype?)
     (ikarus system $structs))
@@ -332,7 +336,7 @@
        (lambda (x) 
          (cond
            [($struct/rtd? x rtd) #t]
-           [($struct x)
+           [($struct? x)
             (let ([xrtd ($struct-rtd x)])
               (and (rtd? xrtd) 
                    (let f ([prtd (rtd-parent xrtd)] [rtd rtd])

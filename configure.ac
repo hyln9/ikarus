@@ -4,7 +4,7 @@
 AC_PREREQ(2.59)
 AC_INIT(ikarus, prerelease-0, aghuloum@cs.indiana.edu)
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(ikarus, prerelease-0)
+AM_INIT_AUTOMAKE(ikarus, prerelease-0.01)
 AC_CONFIG_SRCDIR([src/])
 
 AM_PROG_AS

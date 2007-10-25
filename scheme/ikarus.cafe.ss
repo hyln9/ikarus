@@ -57,6 +57,7 @@ description:
             (lambda (con)
               (reset-input-port! (console-input-port))
               (flush-output-port (console-output-port))
+              (display "Unhandled exception\n")
               (print-condition con)
               (k (void)))
             (lambda ()

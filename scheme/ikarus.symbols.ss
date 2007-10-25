@@ -39,7 +39,9 @@
         (error 'top-level-value "~s is not a symbol" x))
       (let ([v ($symbol-value x)])
         (when ($unbound-object? v)
-          (error 'eval "~a is unbound" x))
+          (error 'eval "unbound variable" 
+            (string->symbol
+              (symbol->string x))))
         v)))
 
   (define top-level-bound?
@@ -89,7 +91,9 @@
               (lambda args
                 (let ([v ($symbol-value x)])
                   (if ($unbound-object? v)
-                      (error 'eval "~a is unbound" x)
+                      (error 'eval "unbound variable" 
+                        (string->symbol
+                          (symbol->string x)))
                       (error 'apply "~s is not a procedure" v)))))))))
 
   (define string->symbol

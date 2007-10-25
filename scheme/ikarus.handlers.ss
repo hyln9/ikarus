@@ -65,7 +65,7 @@
         [(symbol? x)
          (if (symbol-bound? x)
              (error 'top-level-value-error "BUG in ~s" x)
-             (error #f "~a is unbound" x))]
+             (error #f "unbound" (string->symbol (symbol->string x))))]
         [else
          (error 'top-level-value "~s is not a symbol" x)])))
   
