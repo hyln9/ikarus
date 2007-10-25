@@ -10,8 +10,8 @@
     (let ()
       (define (err f ls)
         (if (procedure? f)
-            (error 'apply "not a list")
-            (error 'apply "~s is not a procedure" f)))
+            (error 'apply "not a list" ls)
+            (error 'apply "not a procedure" f)))
       (define (fixandgo f a0 a1 ls p d)
         (cond
           [(null? ($cdr d))

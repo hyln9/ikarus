@@ -61,23 +61,23 @@
 
   (define (list-sort <? ls) 
     (unless (procedure? <?)
-      (error 'list-sort "~s is not a procedure" <?))
+      (error 'list-sort "not a procedure" <?))
     (sort-tail <? ls (length ls)))
 
   (define (vector-sort <? v)
     ;;; FIXME: improve
     (unless (procedure? <?)
-      (error 'vector-sort "~s is not a procedure" <?))
+      (error 'vector-sort "not a procedure" <?))
     (unless (vector? v)
-      (error 'vector-sort "~s is not a vector" v))
+      (error 'vector-sort "not a vector" v))
     (list->vector 
       (sort-tail <? (vector->list v) (vector-length v))))
 
   (define (vector-sort! <? v) 
     (unless (procedure? <?)
-      (error 'vector-sort! "~s is not a procedure" <?))
+      (error 'vector-sort! "not a procedure" <?))
     (unless (vector? v)
-      (error 'vector-sort! "~s is not a vector" v))
+      (error 'vector-sort! "not a vector" v))
     (let f ([i 0] [v v] 
             [ls (sort-tail <? (vector->list v) (vector-length v))])
       (unless (null? ls) 

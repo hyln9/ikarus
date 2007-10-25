@@ -26,12 +26,12 @@
              [(__ y () body)
               (if (null? y) 
                   body
-                  (error 'message-case "unmatched ~s" (cons tmsg targs)))]
+                  (error 'message-case "unmatched" (cons tmsg targs)))]
              [(__ y (a a* (... ...)) body)
               (if (pair? y)
                   (let ([a (car y)] [d (cdr y)])
                     (match-and-bind d (a* (... ...)) body))
-                  (error 'message-case "unmatched ~s" (cons tmsg targs)))]))
+                  (error 'message-case "unmatched" (cons tmsg targs)))]))
          (case tmsg
            [(msg-name) 
             (match-and-bind targs (msg-arg* ...) (begin b b* ...))] ...
@@ -64,14 +64,14 @@
                        ($port-buffer p)
                        ($fxadd1 idx))])
              (unless ($fx= ($fxlogand b1 #b11000000) #b10000000)
-               (error 'read-char "invalid utf8 sequence ~a ~a" b0 b1))
+               (error 'read-char "invalid utf8 sequence" b0 b1))
              ($set-port-index! p ($fx+ idx 2))
              ($fixnum->char 
                ($fx+ ($fxsll ($fxlogand b0 #b11111) 6)
                      ($fxlogand b1 #b111111))))]
           [else 
            (error 'read-multibyte
-             "bytesequence ~a is not supported yet" b0)]))))
+             "BUG: bytesequence is not supported yet" b0)]))))
 
   (define peek-multibyte-char 
     (lambda (p)
@@ -87,7 +87,7 @@
           (message-case msg args
             [(read-char p)
              (unless (input-port? p)
-               (error 'read-char "~s is not an input port" p))
+               (error 'read-char "not an input port" p))
              (let ([idx ($port-index p)])
                (if ($fx< idx ($port-size p))
                    (let ([b ($bytevector-u8-ref ($port-buffer p) idx)])
@@ -107,12 +107,12 @@
                            [($fx= bytes 0)
                             (eof-object)]
                            [else
-                            (error 'read-char "Cannot read from ~a"
+                            (error 'read-char "Cannot read from file"
                                    port-name)]))
-                       (error 'read-char "port ~s is closed" p))))]
+                       (error 'read-char "port is closed" p))))]
             [(peek-char p)
              (unless (input-port? p)
-               (error 'peek-char "~s is not an input port" p))
+               (error 'peek-char "not an input port" p))
              (let ([idx ($port-index p)])
                (if ($fx< idx ($port-size p))
                    (let ([b ($bytevector-u8-ref ($port-buffer p) idx)])
@@ -126,20 +126,20 @@
                          (cond
                            [(not bytes)
                             (error 'peek-char
-                                   "Cannot read from ~s" port-name)]
+                                   "Cannot read from file" port-name)]
                            [($fx= bytes 0)
                             (eof-object)]
                            [else
                             ($set-port-size! p bytes)
                             ($peek-char p)]))
-                       (error 'peek-char "port ~s is closed" p))))]
+                       (error 'peek-char "port is closed" p))))]
             [(unread-char c p)
              (unless (input-port? p)
-               (error 'unread-char "~s is not an input port" p))
+               (error 'unread-char "not an input port" p))
              (let ([idx ($fxsub1 ($port-index p))]
                    [b (if (char? c) 
                           ($char->fixnum c)
-                          (error 'unread-char "~s is not a char" c))])
+                          (error 'unread-char "not a char" c))])
                (if (and ($fx>= idx 0)
                         ($fx< idx ($port-size p)))
                    (cond
@@ -147,20 +147,20 @@
                       ($set-port-index! p idx)]
                      [else (unread-multibyte-char c p)])
                    (if open?
-                       (error 'unread-char "port ~s is closed" p)
+                       (error 'unread-char "port is closed" p)
                        (error 'unread-char "too many unread-chars"))))]
             [(port-name p) port-name]
             [(close-port p)
              (unless (input-port? p)
-               (error 'close-input-port "~s is not an input port" p))
+               (error 'close-input-port "not an input port" p))
              (when open?
                ($set-port-size! p 0)
                (set! open? #f)
                (unless (foreign-call "ikrt_close_file" fd)
-                  (error 'close-input-port "cannot close ~s" port-name)))]
+                  (error 'close-input-port "cannot close port" port-name)))]
             [else 
              (error 'input-file-handler
-                    "message not handled ~s" (cons msg args))])))))
+                    "message not handled" (cons msg args))])))))
 
   (define $open-input-file
     (lambda (filename)
@@ -174,20 +174,21 @@
               (set-port-input-size! port 0)
               (guardian port)
               port)
-            (error 'open-input-file "cannot open ~s: ~a" filename fd/error)))))
+            (error 'open-input-file "cannot open file" 
+                   filename fd/error)))))
 
   (define open-input-file
     (lambda (filename)
        (if (string? filename)
            ($open-input-file filename)
-           (error 'open-input-file "~s is not a string" filename))))
+           (error 'open-input-file "not a string" filename))))
 
   (define with-input-from-file
      (lambda (name proc)
        (unless (string? name) 
-         (error 'with-input-from-file "~s is not a string" name))
+         (error 'with-input-from-file "not a string" name))
        (unless (procedure? proc)
-         (error 'with-input-from-file "~s is not a procedure" proc))
+         (error 'with-input-from-file "not a procedure" proc))
        (let ([p ($open-input-file name)])
          (call-with-values 
            (lambda () 
@@ -202,9 +203,9 @@
   (define call-with-input-file
      (lambda (name proc)
        (unless (string? name) 
-         (error 'call-with-input-file "~s is not a string" name))
+         (error 'call-with-input-file "not a string" name))
        (unless (procedure? proc)
-         (error 'call-with-input-file "~s is not a procedure" proc))
+         (error 'call-with-input-file "not a procedure" proc))
        (let ([p ($open-input-file name)])
          (call-with-values (lambda () (proc p))
             (case-lambda
@@ -225,7 +226,7 @@
       [(p) 
        (if (input-port? p)
            (set! *current-input-port* p)
-           (error 'current-input-port "~s is not an input-port" p))]))
+           (error 'current-input-port "not an input-port" p))]))
 
   (set! *standard-input-port* 
     (let ([p (make-input-port 

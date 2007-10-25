@@ -6,12 +6,12 @@
 
   (define (force x)
     (unless (procedure? x) 
-      (error 'force "~s is not a procedure" x))
+      (error 'force "not a procedure" x))
     (x))
 
   (define (make-promise proc)
     (unless (procedure? proc)
-      (error 'make-promise "~s is not a procedure" proc))
+      (error 'make-promise "not a procedure" proc))
     (let ([results #f])
       (lambda () 
         (if results

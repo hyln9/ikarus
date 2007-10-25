@@ -24,12 +24,12 @@
              [(__ y () body)
               (if (null? y) 
                   body
-                  (error 'message-case "unmatched ~s" (cons tmsg targs)))]
+                  (error 'message-case "unmatched" (cons tmsg targs)))]
              [(__ y (a a* (... ...)) body)
               (if (pair? y)
                   (let ([a (car y)] [d (cdr y)])
                     (match-and-bind d (a* (... ...)) body))
-                  (error 'message-case "unmatched ~s" (cons tmsg targs)))]))
+                  (error 'message-case "unmatched" (cons tmsg targs)))]))
          (case tmsg
            [(msg-name) 
             (match-and-bind targs (msg-arg* ...) (begin b b* ...))] ...
@@ -120,18 +120,19 @@
                                (set! buffer-list (cons (bv-copy buff) buffer-list))
                                ($bytevector-set! buff 0 b)
                                ($set-port-index! p 1))
-                             (error 'write-byte "port ~s is closed" p))))
-                     (error 'write-byte "~s is not an output-port" p))
-                 (error 'write-byte "~s is not a byte" b))]
+                             (error 'write-byte "port is closed" p))))
+                     (error 'write-byte "not an output-port" p))
+                 (error 'write-byte "not a byte" b))]
             [(write-char c p)
              (if (char? c)
                  (if (output-port? p)
                      (let ([b ($char->fixnum c)])
                        (if ($fx<= b 127)
                            ($write-byte b p)
-                           (error 'write-char "multibyte write of ~s is not implemented" c)))
-                     (error 'write-char "~s is not an output-port" p))
-                 (error 'write-char "~s is not a character" c))]
+                           (error 'write-char 
+                             "BUG: multibyte write of is not implemented" c)))
+                     (error 'write-char "not an output-port" p))
+                 (error 'write-char "not a character" c))]
             [(flush-output-port p)
              (void)]
             [(close-port p)
@@ -143,8 +144,8 @@
                  ($port-buffer p) 
                  ($port-index p)
                  buffer-list))]
-            [else (error 'output-handler 
-                         "unhandled message ~s" (cons msg args))])))
+            [else 
+             (error 'output-handler "unhandled message" (cons msg args))])))
       output-handler))
 
   (define open-output-string 
@@ -157,12 +158,12 @@
     (lambda (p)
       (if (output-port? p)
           (($port-handler p) 'get-output-string p)
-          (error 'get-output-string "~s is not an output port" p))))
+          (error 'get-output-string "not an output port" p))))
   
   (define with-output-to-string
     (lambda (f)
       (unless (procedure? f)
-        (error 'with-output-to-string "~s is not a procedure" f))
+        (error 'with-output-to-string "not a procedure" f))
       (let ([p (open-output-string)])
         (parameterize ([current-output-port p]) (f))
         (get-output-string p))))

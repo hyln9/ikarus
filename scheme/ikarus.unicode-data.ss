@@ -63,12 +63,12 @@
     (if (char? c) 
         (vector-ref unicode-categories-name-vector
           (fxlogand 63 (lookup-char-info c)))
-        (error 'char-general-category "~s is not a char" c)))
+        (error 'char-general-category "not a char" c)))
 
   (define (char-has-property? c prop-val who)
     (if (char? c) 
         (not (fxzero? (fxlogand (lookup-char-info c) prop-val)))
-        (error who "~s is not a char" c)))
+        (error who "not a char" c)))
 
   (define (unicode-printable-char? c) 
     (char-has-property? c constituent-property 'unicode-printable-char?))
@@ -98,27 +98,41 @@
     (if (char? x) 
         ($fixnum->char
           (convert-char x char-downcase-adjustment-vector))
-        (error 'char-downcase "~s is not a character" x)))
+        (error 'char-downcase "not a character" x)))
 
   (define (char-upcase x)
     (if (char? x) 
         ($fixnum->char
           (convert-char x char-upcase-adjustment-vector))
-        (error 'char-downcase "~s is not a character" x)))
+        (error 'char-downcase "not a character" x)))
   
   (define (char-titlecase x)
     (if (char? x) 
         ($fixnum->char
           (convert-char x char-titlecase-adjustment-vector))
-        (error 'char-downcase "~s is not a character" x)))
+        (error 'char-downcase "not a character" x)))
 
   (define (char-foldcase x)
     (if (char? x)
         ($fixnum->char ($fold x))
-        (error 'char-downcase "~s is not a character" x)))
+        (error 'char-downcase "not a character" x)))
 
   (define ($fold x) 
     (convert-char x char-foldcase-adjustment-vector))
+
+  (define (char-ci-loop c0 ls p? who) 
+    (or (null? ls)
+        (let ([c1 (car ls)])
+          (unless (char? c1) (error who "not a char" c1))
+          (let ([c1 ($fold c1)])
+            (if (p? c0 c1) 
+                (char-ci-loop c1 (cdr ls) p? who)
+                (let f ([ls (cdr ls)] [who who])
+                  (cond
+                    [(null? ls) #f]
+                    [(char? (car ls)) 
+                     (f (cdr ls) who)]
+                    [else (error who "not a char" (car ls))])))))))
 
   (define char-ci=? 
     (case-lambda 
@@ -127,11 +141,14 @@
            (or (eq? x y)
                (if (char? y)
                    ($fx= ($fold x) ($fold y))
-                   (error 'char-ci=? "~s is not a char" y)))
-           (error 'char-ci=? "~s is not a char" x))]
+                   (error 'char-ci=? "not a char" y)))
+           (error 'char-ci=? "not a char" x))]
       [(x)
-       (or (char? x) (error 'char-ci=? "~s is not a char" x))]
-      [ls (error 'char-ci=? "not supported ~s" ls)]))
+       (or (char? x) (error 'char-ci=? "not a char" x))]
+      [(x . x*) 
+       (if (char? x) 
+           (char-ci-loop x x* char=? 'char-ci=?)
+           (error 'char-ci=? "not a char" x))]))
 
   (define char-ci<? 
     (case-lambda 
@@ -140,11 +157,14 @@
            (or (eq? x y)
                (if (char? y)
                    ($fx< ($fold x) ($fold y))
-                   (error 'char-ci<? "~s is not a char" y)))
-           (error 'char-ci<? "~s is not a char" x))]
+                   (error 'char-ci<? "not a char" y)))
+           (error 'char-ci<? "not a char" x))]
       [(x)
-       (or (char? x) (error 'char-ci<? "~s is not a char" x))]
-      [ls (error 'char-ci<? "not supported ~s" ls)]))
+       (or (char? x) (error 'char-ci<? "not a char" x))]
+      [(x . x*) 
+       (if (char? x) 
+           (char-ci-loop x x* char<? 'char-ci<?)
+           (error 'char-ci<? "not a char" x))]))
 
   (define char-ci<=? 
     (case-lambda 
@@ -153,11 +173,14 @@
            (or (eq? x y)
                (if (char? y)
                    ($fx<= ($fold x) ($fold y))
-                   (error 'char-ci<=? "~s is not a char" y)))
-           (error 'char-ci<=? "~s is not a char" x))]
+                   (error 'char-ci<=? "not a char" y)))
+           (error 'char-ci<=? "not a char" x))]
       [(x)
-       (or (char? x) (error 'char-ci<=? "~s is not a char" x))]
-      [ls (error 'char-ci<=? "not supported ~s" ls)]))
+       (or (char? x) (error 'char-ci<=? "not a char" x))]
+      [(x . x*) 
+       (if (char? x) 
+           (char-ci-loop x x* char<=? 'char-ci<=?)
+           (error 'char-ci<=? "not a char" x))]))
 
   (define char-ci>? 
     (case-lambda 
@@ -166,11 +189,14 @@
            (or (eq? x y)
                (if (char? y)
                    ($fx> ($fold x) ($fold y))
-                   (error 'char-ci>? "~s is not a char" y)))
-           (error 'char-ci>? "~s is not a char" x))]
+                   (error 'char-ci>? "not a char" y)))
+           (error 'char-ci>? "not a char" x))]
       [(x)
-       (or (char? x) (error 'char-ci>? "~s is not a char" x))]
-      [ls (error 'char-ci>? "not supported ~s" ls)]))
+       (or (char? x) (error 'char-ci>? "not a char" x))]
+      [(x . x*) 
+       (if (char? x) 
+           (char-ci-loop x x* char>? 'char-ci>?)
+           (error 'char-ci>? "not a char" x))]))
   
   (define char-ci>=? 
     (case-lambda 
@@ -179,11 +205,14 @@
            (or (eq? x y)
                (if (char? y)
                    ($fx>= ($fold x) ($fold y))
-                   (error 'char-ci>=? "~s is not a char" y)))
-           (error 'char-ci>=? "~s is not a char" x))]
+                   (error 'char-ci>=? "not a char" y)))
+           (error 'char-ci>=? "not a char" x))]
       [(x)
-       (or (char? x) (error 'char-ci>=? "~s is not a char" x))]
-      [ls (error 'char-ci>=? "not supported ~s" ls)]))
+       (or (char? x) (error 'char-ci>=? "not a char" x))]
+      [(x . x*) 
+       (if (char? x) 
+           (char-ci-loop x x* char>=? 'char-ci>=?)
+           (error 'char-ci>=? "not a char" x))]))
                
   (define ($string-foldcase str)
     (let f ([str str] [i 0] [n (string-length str)] [p (open-output-string)])
@@ -207,7 +236,7 @@
   (define (string-foldcase str)
     (if (string? str)
         ($string-foldcase str)
-        (error 'string-foldcase "~s is not a string" str)))
+        (error 'string-foldcase "not a string" str)))
 
   ;;; FIXME: case-insensitive comparison procedures are slow.
 
@@ -218,8 +247,8 @@
          (if (string? s1)
              (if (string? s2) 
                  (cmp ($string-foldcase s1) ($string-foldcase s2))
-                 (error who "~s is not a string" s2))
-             (error who "~s is not a string" s1))]
+                 (error who "not a string" s2))
+             (error who "not a string" s1))]
         [(s1 . s*) 
          (if (string? s1) 
              (let ([s1 ($string-foldcase s1)])
@@ -238,10 +267,10 @@
                                     [(string? (car s*)) 
                                      (f (cdr s*))]
                                     [else 
-                                     (error who "~s is not a string" 
+                                     (error who "not a string" 
                                        (car s*))]))))
-                          (error who "~s is not a string" s2)))])))
-             (error who "~s is not a string" s1))])))
+                          (error who "not a string" s2)))])))
+             (error who "not a string" s1))])))
 
 
   (define string-ci=?  (string-ci-cmp 'string-ci=? string=?))

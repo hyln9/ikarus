@@ -30,12 +30,12 @@
              [(__ y () body)
               (if (null? y) 
                   body
-                  (error 'message-case "unmatched ~s" (cons tmsg targs)))]
+                  (error 'message-case "unmatched" (cons tmsg targs)))]
              [(__ y (a a* (... ...)) body)
               (if (pair? y)
                   (let ([a (car y)] [d (cdr y)])
                     (match-and-bind d (a* (... ...)) body))
-                  (error 'message-case "unmatched ~s" (cons tmsg targs)))]))
+                  (error 'message-case "unmatched" (cons tmsg targs)))]))
          (case tmsg
            [(msg-name) 
             (match-and-bind targs (msg-arg* ...) (begin b b* ...))] ...
@@ -51,22 +51,12 @@
            (close-output-port p)
            (close-ports))])))
 
-  (define do-write-buffer-old
-    (lambda (fd port-name p caller)
-      (let ([bytes (foreign-call "ikrt_write_file" 
-                                 fd
-                                 (port-output-buffer p)
-                                 (port-output-index p))])
-        (if (fixnum? bytes)
-            (set-port-output-index! p 0)
-            (error caller "cannot write to file ~s: ~a" port-name bytes)))))
-  
   (define do-write-buffer
     (lambda (fd port-name buff idx caller)
       (let ([bytes (foreign-call "ikrt_write_file" fd buff idx)])
         (if (fixnum? bytes)
             bytes
-            (error caller "cannot write to file ~s: ~a" port-name bytes)))))
+            (error caller "cannot write to file" port-name bytes)))))
 
   (define make-output-file-handler
     (lambda (fd port-name)
@@ -87,18 +77,19 @@
                                              ($port-buffer p) idx 'write-char)])
                                ($set-port-index! p 0)
                                ($write-byte b p))
-                             (error 'write-byte "port ~s is closed" p))))
-                     (error 'write-byte "~s is not an output-port" p))
-                 (error 'write-byte "~s is not a byte" b))]
+                             (error 'write-byte "port is closed" p))))
+                     (error 'write-byte "not an output-port" p))
+                 (error 'write-byte "not a byte" b))]
             [(write-char c p)
              (if (char? c)
                  (if (output-port? p)
                      (let ([b ($char->fixnum c)])
                        (if ($fx<= b 255)
                            ($write-byte b p)
-                           (error 'write-char "multibyte write of ~s not implemented" c)))
-                     (error 'write-char "~s is not an output-port" p))
-                 (error 'write-char "~s is not a character" c))]
+                           (error 'write-char 
+                              "BUG: multibyte write of not implemented" c)))
+                     (error 'write-char "not an output-port" p))
+                 (error 'write-char "not a character" c))]
             [(flush-output-port p)
              (if (output-port? p)
                  (if open?
@@ -107,18 +98,18 @@
                                      ($port-index p) 
                                      'flush-output-port)])
                        ($set-port-index! p 0))
-                     (error 'flush-output-port "port ~s is closed" p))
-                 (error 'flush-output-port "~s is not an output-port" p))]
+                     (error 'flush-output-port "port is closed" p))
+                 (error 'flush-output-port "not an output-port" p))]
             [(close-port p)
              (when open?
                (flush-output-port p)
                ($set-port-size! p 0)
                (set! open? #f)
                (unless (foreign-call "ikrt_close_file" fd)
-                 (error 'close-output-port "cannot close ~s" port-name)))]
+                 (error 'close-output-port "cannot close" port-name)))]
             [(port-name p) port-name]
             [else (error 'output-file-handler 
-                         "unhandled message ~s" (cons msg args))])))
+                         "unhandled message" (cons msg args))])))
       output-file-handler))
   (define (option-id x)
     (case x
@@ -126,7 +117,7 @@
       [(replace)  1]
       [(truncate) 2]
       [(append)   3]
-      [else (error 'open-output-file "~s is not a valid mode" x)]))
+      [else (error 'open-output-file "not a valid mode" x)]))
 
   (define $open-output-file
     (lambda (filename options)
@@ -142,7 +133,7 @@
                      ($make-bytevector 4096))])
               (guardian port)
               port)
-            (error 'open-output-file "cannot open ~s: ~a" filename fd/error)))))
+            (error 'open-output-file "cannot open file" filename fd/error)))))
 
   (define *standard-output-port* #f)
   
@@ -165,25 +156,25 @@
        [(p)
         (if (output-port? p)
             (set! *current-output-port* p)
-            (error 'current-output-port "~s is not an output port" p))]))
+            (error 'current-output-port "not an output port" p))]))
 
   (define open-output-file 
     (case-lambda
       [(filename)
        (if (string? filename)
            ($open-output-file filename 'error)
-           (error 'open-output-file "~s is not a string" filename))]
+           (error 'open-output-file "not a string" filename))]
       [(filename options)
        (if (string? filename)
            ($open-output-file filename options)
-           (error 'open-output-file "~s is not a string" filename))]))
+           (error 'open-output-file "not a string" filename))]))
 
   (define with-output-to-file
      (lambda (name proc . args)
        (unless (string? name) 
-         (error 'with-output-to-file "~s is not a string" name))
+         (error 'with-output-to-file "not a string" name))
        (unless (procedure? proc)
-         (error 'with-output-to-file "~s is not a procedure" proc))
+         (error 'with-output-to-file "not a procedure" proc))
        (let ([p (apply open-output-file name args)]
              [shot #f])
          (call-with-values 
@@ -199,9 +190,9 @@
   (define call-with-output-file
      (lambda (name proc . args)
        (unless (string? name) 
-         (error 'call-with-output-file "~s is not a string" name))
+         (error 'call-with-output-file "not a string" name))
        (unless (procedure? proc)
-         (error 'call-with-output-file "~s is not a procedure" proc))
+         (error 'call-with-output-file "not a procedure" proc))
        (let ([p (apply open-output-file name args)])
          (call-with-values (lambda () (proc p))
             (case-lambda

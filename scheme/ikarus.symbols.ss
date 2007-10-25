@@ -25,7 +25,7 @@
            ($make-symbol s)
            (if (symbol? s)
                ($make-symbol ($symbol-string s))
-               (error 'gensym "~s is neither a string nor a symbol" s)))]))
+               (error 'gensym "neither a string nor a symbol" s)))]))
 
   (define gensym?
     (lambda (x)
@@ -36,7 +36,7 @@
   (define top-level-value
     (lambda (x)
       (unless (symbol? x)
-        (error 'top-level-value "~s is not a symbol" x))
+        (error 'top-level-value "not a symbol" x))
       (let ([v ($symbol-value x)])
         (when ($unbound-object? v)
           (error 'eval "unbound variable" 
@@ -47,39 +47,39 @@
   (define top-level-bound?
     (lambda (x)
       (unless (symbol? x)
-        (error 'top-level-bound? "~s is not a symbol" x))
+        (error 'top-level-bound? "not a symbol" x))
       (not ($unbound-object? ($symbol-value x)))))
 
   (define set-top-level-value!
     (lambda (x v)
       (unless (symbol? x)
-        (error 'set-top-level-value! "~s is not a symbol" x))
+        (error 'set-top-level-value! "not a symbol" x))
       ($set-symbol-value! x v)))
 
   (define symbol-value
     (lambda (x)
       (unless (symbol? x)
-        (error 'symbol-value "~s is not a symbol" x))
+        (error 'symbol-value "not a symbol" x))
       (let ([v ($symbol-value x)])
         (when ($unbound-object? v)
-          (error 'symbol-value "unbound ~s" x))
+          (error 'symbol-value "unbound" x))
         v)))
 
   (define symbol-bound?
     (lambda (x)
       (unless (symbol? x)
-        (error 'symbol-bound? "~s is not a symbol" x))
+        (error 'symbol-bound? "not a symbol" x))
       (not ($unbound-object? ($symbol-value x)))))
 
   (define set-symbol-value!
     (lambda (x v)
       (unless (symbol? x)
-        (error 'set-symbol-value! "~s is not a symbol" x))
+        (error 'set-symbol-value! "not a symbol" x))
       ($set-symbol-value! x v)
       ($set-symbol-proc! x 
         (if (procedure? v) v 
             (lambda args
-              (error 'apply "~s is not a procedure" 
+              (error 'apply "not a procedure" 
                      ($symbol-value x)))))))
          
   (define reset-symbol-proc!
@@ -94,18 +94,18 @@
                       (error 'eval "unbound variable" 
                         (string->symbol
                           (symbol->string x)))
-                      (error 'apply "~s is not a procedure" v)))))))))
+                      (error 'apply "not a procedure" v)))))))))
 
   (define string->symbol
     (lambda (x)
       (unless (string? x) 
-        (error 'string->symbol "~s is not a string" x))
+        (error 'string->symbol "not a string" x))
       (foreign-call "ikrt_string_to_symbol" x)))
   
   (define symbol->string
     (lambda (x)
       (unless (symbol? x)
-        (error 'symbol->string "~s is not a symbol" x))
+        (error 'symbol->string "not a symbol" x))
       (let ([str ($symbol-string x)])
         (or str
             (let ([ct (gensym-count)])
@@ -117,8 +117,8 @@
 
   (define putprop
     (lambda (x k v)
-      (unless (symbol? x) (error 'putprop "~s is not a symbol" x))
-      (unless (symbol? k) (error 'putprop "~s is not a symbol" k))
+      (unless (symbol? x) (error 'putprop "not a symbol" x))
+      (unless (symbol? k) (error 'putprop "not a symbol" k))
       (let ([p ($symbol-plist x)])
         (cond
           [(assq k p) => (lambda (x) (set-cdr! x v))]
@@ -127,8 +127,8 @@
 
   (define getprop
     (lambda (x k)
-      (unless (symbol? x) (error 'getprop "~s is not a symbol" x))
-      (unless (symbol? k) (error 'getprop "~s is not a symbol" k))
+      (unless (symbol? x) (error 'getprop "not a symbol" x))
+      (unless (symbol? k) (error 'getprop "not a symbol" k))
       (let ([p ($symbol-plist x)])
         (cond
           [(assq k p) => cdr]
@@ -136,8 +136,8 @@
 
   (define remprop
     (lambda (x k)
-      (unless (symbol? x) (error 'remprop "~s is not a symbol" x))
-      (unless (symbol? k) (error 'remprop "~s is not a symbol" k))
+      (unless (symbol? x) (error 'remprop "not a symbol" x))
+      (unless (symbol? k) (error 'remprop "not a symbol" k))
       (let ([p ($symbol-plist x)])
         (unless (null? p)
           (let ([a ($car p)])
@@ -156,7 +156,7 @@
   (define property-list
     (lambda (x)
       (unless (symbol? x)
-        (error 'property-list "~s is not a symbol" x))
+        (error 'property-list "not a symbol" x))
       (letrec ([f 
                 (lambda (ls ac)
                   (cond
@@ -170,12 +170,12 @@
   (define gensym->unique-string
     (lambda (x)
       (unless (symbol? x)
-        (error 'gensym->unique-string "~s is not a gensym" x))
+        (error 'gensym->unique-string "not a gensym" x))
       (let ([us ($symbol-unique-string x)])
         (cond
           [(string? us) us]
           [(not us)
-           (error 'gensym->unique-string "~s is not a gensym" x)]
+           (error 'gensym->unique-string "not a gensym" x)]
           [else
            (let f ([x x])
              (let ([id (uuid)])
@@ -189,7 +189,7 @@
       "g"
       (lambda (x)
         (unless (string? x)
-          (error 'gensym-prefix "~s is not a string" x))
+          (error 'gensym-prefix "not a string" x))
         x)))
   
   (define gensym-count
@@ -197,7 +197,7 @@
       0
       (lambda (x)
         (unless (and (fixnum? x) ($fx>= x 0))
-          (error 'gensym-count "~s is not a valid count" x))
+          (error 'gensym-count "not a valid count" x))
         x)))
   
   (define print-gensym
@@ -205,7 +205,7 @@
       #t
       (lambda (x)
         (unless (or (boolean? x) (eq? x 'pretty))
-          (error 'print-gensym "~s is not in #t|#f|pretty" x))
+          (error 'print-gensym "not in #t|#f|pretty" x))
         x)))
 
   )

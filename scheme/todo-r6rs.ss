@@ -781,7 +781,7 @@
 (define (no-dups ls)
   (unless (null? ls)
     (when (memq (car ls) (cdr ls))
-      (error #f "duplicate ~s" (car ls)))
+      (error #f "duplicate identifier" (car ls)))
     (no-dups (cdr ls))))
 
 (define (assert-id x)
@@ -794,7 +794,7 @@
                       (andmap (lambda (x) 
                                 (assq x library-names))
                         libs))))
-    (error #f "invalid id ~s" x)))
+    (error #f "invalid identifier" x)))
 
 
 (define (filter* ls) 
@@ -823,7 +823,7 @@
      (lambda (x) 
        (let ([st (cadr x)] [libs (cddr x)])
          (format "(~a ~a)" st (join "," libs))))]
-    [else (error)]))
+    [else (error #f "invalid identifier" x)]))
 
 (define (print-ids ls) 
   (define (split ls n) 
@@ -914,7 +914,7 @@
                        (cond
                          [(assq x status-names)  #t]
                          [(assq x library-names) #f]
-                         [else (error #f "invalid argument ~a" x)]))
+                         [else (error #f "invalid argument" x)]))
                      (map string->symbol args))])
        (let ([ls (filter
                    (lambda (x) 

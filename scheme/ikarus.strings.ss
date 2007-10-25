@@ -20,18 +20,18 @@
   (define string-length
     (lambda (x)
       (unless (string? x)
-        (error 'string-length "~s is not a string" x))
+        (error 'string-length "not a string" x))
       ($string-length x)))
 
 
   (define (string-ref s i)
     (unless (string? s) 
-      (error 'string-ref "~s is not a string" s))
+      (error 'string-ref "not a string" s))
     (unless (fixnum? i)
-      (error 'string-ref "~s is not a valid index" i))
+      (error 'string-ref "not a valid index" i))
     (unless (and ($fx< i ($string-length s))
                  ($fx<= 0 i))
-      (error 'string-ref "index ~s is out of range for ~s" i s))
+      (error 'string-ref "index is out of range" i s))
     (let ([c ($string-ref s i)])
       (unless (char? c)
         (error 'string-ref "BUG: got a non-char"))
@@ -41,14 +41,14 @@
   (define string-set! 
     (lambda (s i c) 
       (unless (string? s) 
-        (error 'string-set! "~s is not a string" s))
+        (error 'string-set! "not a string" s))
       (unless (fixnum? i)
-        (error 'string-set! "~s is not a valid index" i))
+        (error 'string-set! "not a valid index" i))
       (unless (and ($fx< i ($string-length s))
                    ($fx>= i 0))
-        (error 'string-set! "index ~s is out of range for ~s" i s))
+        (error 'string-set! "index is out of range" i s))
       (unless (char? c)
-        (error 'string-set! "~s is not a character" c))
+        (error 'string-set! "not a character" c))
       ($string-set! s i c)))
   
   (define make-string
@@ -64,13 +64,13 @@
         (case-lambda
           [(n) 
            (unless (and (fixnum? n) (fx>= n 0))
-             (error 'make-string "~s is not a valid length" n))
+             (error 'make-string "not a valid length" n))
            (fill! ($make-string n) 0 n (integer->char 0))]
           [(n c)
            (unless (and (fixnum? n) (fx>= n 0))
-             (error 'make-string "~s is not a valid length" n))
+             (error 'make-string "not a valid length" n))
            (unless (char? c)
-             (error 'make-string "~s is not a character" c))
+             (error 'make-string "not a character" c))
            (fill! ($make-string n) 0 n c)]))
         make-string))
 
@@ -82,7 +82,7 @@
                 (cond
                  [(null? ls) n]
                  [(char? ($car ls)) (length ($cdr ls) ($fx+ n 1))]
-                 [else (error 'string "~s is not a character" ($car ls))]))]
+                 [else (error 'string "not a character" ($car ls))]))]
              [loop 
               (lambda (s ls i n)
                 (cond
@@ -106,16 +106,16 @@
     (define substring
        (lambda (s n m)
          (unless (string? s)
-           (error 'substring "~s is not a string" s))
+           (error 'substring "not a string" s))
          (let ([len ($string-length s)])
            (unless (and (fixnum? n)
                         ($fx>= n 0)
                         ($fx< n len))
-             (error 'substring "~s is not a valid start index for ~s" n s))
+             (error 'substring "not a valid start index" n s))
            (unless (and (fixnum? m)
                         ($fx>= m 0)
                         ($fx<= m len))
-             (error 'substring "~s is not a valid end index for ~s" m s))
+             (error 'substring "not a valid end index" m s))
            (let ([len ($fx- m n)])
              (if ($fx<= len 0)
                  ""
@@ -125,7 +125,7 @@
     (lambda (s)
       (if (string? s)
           (substring s 0 (string-length s))
-          (error 'string-copy "~s is not a string" s))))
+          (error 'string-copy "not a string" s))))
   
   (module (string=?)
     (define bstring=?
@@ -145,13 +145,13 @@
         (or (null? s*)
             (let ([a ($car s*)])
               (unless (string? a)
-                (error 'string=? "~s is not a string" a))
+                (error 'string=? "not a string" a))
               (if ($fx= n ($string-length a))
                   (and (strings=? s ($cdr s*) n)
                        (bstring=? s a 0 n))
                   (check-strings-and-return-false ($cdr s*)))))))
     (define (err x)
-      (error 'string=? "~s is not a string" x))
+      (error 'string=? "not a string" x))
     (define string=?
       (case-lambda
         [(s s1) 
@@ -185,10 +185,10 @@
                              [(string? (car s*)) 
                               (f (cdr s*))]
                              [else 
-                              (error who "~s is not a string" 
+                              (error who "not a string" 
                                 (car s*))]))))
-                     (error who "~s is not a string" s2))])))
-          (error who "~s is not a string" s1)))
+                     (error who "not a string" s2))])))
+          (error who "not a string" s1)))
   
   (define ($string<? s1 s2)
     (let ([n1 ($string-length s1)]
@@ -252,8 +252,8 @@
        (if (string? s1)
            (if (string? s2) 
                ($string<? s1 s2)
-               (error 'string<? "~s is not a string" s2))
-           (error 'string<? "~s is not a string" s2))]
+               (error 'string<? "not a string" s2))
+           (error 'string<? "not a string" s2))]
       [(s . s*) 
        (string-cmp 'string<? $string<? s s*)]))
 
@@ -263,8 +263,8 @@
        (if (string? s1)
            (if (string? s2) 
                ($string<=? s1 s2)
-               (error 'string<=? "~s is not a string" s2))
-           (error 'string<=? "~s is not a string" s2))]
+               (error 'string<=? "not a string" s2))
+           (error 'string<=? "not a string" s2))]
       [(s . s*) 
        (string-cmp 'string<=? $string<=? s s*)]))
 
@@ -274,8 +274,8 @@
        (if (string? s1)
            (if (string? s2) 
                ($string>? s1 s2)
-               (error 'string>? "~s is not a string" s2))
-           (error 'string>? "~s is not a string" s2))]
+               (error 'string>? "not a string" s2))
+           (error 'string>? "not a string" s2))]
       [(s . s*) 
        (string-cmp 'string>? $string>? s s*)]))
 
@@ -285,15 +285,15 @@
        (if (string? s1)
            (if (string? s2) 
                ($string>=? s1 s2)
-               (error 'string>=? "~s is not a string" s2))
-           (error 'string>=? "~s is not a string" s2))]
+               (error 'string>=? "not a string" s2))
+           (error 'string>=? "not a string" s2))]
       [(s . s*) 
        (string-cmp 'string>=? $string>=? s s*)]))
 
   (define string->list
     (lambda (x)
       (unless (string? x)
-        (error 'string->list "~s is not a string" x))
+        (error 'string->list "not a string" x))
       (let f ([x x] [i ($string-length x)] [ac '()])
         (cond
           [($fxzero? i) ac]
@@ -310,13 +310,13 @@
                       (if (pair? h)
                           (if (not (eq? h t))
                               (race ($cdr h) ($cdr t) ls ($fx+ n 2))
-                              (error 'reverse "circular list ~s" ls))
+                              (error 'reverse "circular list" ls))
                           (if (null? h)
                               ($fx+ n 1)
-                              (error 'reverse "~s is not a proper list" ls))))
+                              (error 'reverse "not a proper list" ls))))
                    (if (null? h)
                        n
-                       (error 'reverse "~s is not a proper list" ls))))]
+                       (error 'reverse "not a proper list" ls))))]
               [fill
                (lambda (s i ls)
                  (cond
@@ -324,7 +324,7 @@
                    [else
                     (let ([c ($car ls)])
                       (unless (char? c)
-                        (error 'list->string "~s is not a character" c))
+                        (error 'list->string "not a character" c))
                       ($string-set! s i c)
                       (fill s ($fxadd1 i) (cdr ls)))]))])
        (lambda (ls)
@@ -341,7 +341,7 @@
           [else
            (let ([a ($car s*)])
              (unless (string? a) 
-               (error 'string-append "~s is not a string" a))
+               (error 'string-append "not a string" a))
              (length* ($cdr s*) ($fx+ n ($string-length a))))])))
     (define fill-string
       (lambda (s a si sj ai)
@@ -371,9 +371,9 @@
       (case-lambda
         [(p v) 
          (unless (procedure? p) 
-           (error who "~s is not a procedure" p))
+           (error who "not a procedure" p))
          (unless (string? v) 
-           (error who "~s is not a string" v))
+           (error who "not a string" v))
          (let f ([p p] [v v] [i 0] [n (string-length v)])
            (cond
              [($fx= i n) (void)]
@@ -382,14 +382,14 @@
               (f p v ($fxadd1 i) n)]))]
         [(p v0 v1) 
          (unless (procedure? p) 
-           (error who "~s is not a procedure" p))
+           (error who "not a procedure" p))
          (unless (string? v0) 
-           (error who "~s is not a string" v0))
+           (error who "not a string" v0))
          (unless (string? v1) 
-           (error who "~s is not a string" v1))
+           (error who "not a string" v1))
          (let ([n (string-length v0)])
            (unless ($fx= n ($string-length v1))
-             (error who "length mismatch between ~s and ~s" v0 v1))
+             (error who "length mismatch" v0 v1))
            (let f ([p p] [v0 v0] [v1 v1] [i 0] [n n])
              (cond
                [($fx= i n) (void)]
@@ -398,19 +398,19 @@
                 (f p v0 v1 ($fxadd1 i) n)])))]
         [(p v0 v1 . v*) 
          (unless (procedure? p) 
-           (error who "~s is not a procedure" p))
+           (error who "not a procedure" p))
          (unless (string? v0) 
-           (error who "~s is not a string" v0))
+           (error who "not a string" v0))
          (unless (string? v1) 
-           (error who "~s is not a string" v1))
+           (error who "not a string" v1))
          (let ([n (string-length v0)])
            (unless ($fx= n ($string-length v1))
-             (error who "length mismatch between ~s and ~s" v0 v1))
+             (error who "length mismatch" v0 v1))
            (let f ([v* v*] [n n])
              (unless (null? v*) 
                (let ([a ($car v*)])
                  (unless (string? a) 
-                   (error who "~s is not a string" a))
+                   (error who "not a string" a))
                  (unless ($fx= ($string-length a) n) 
                    (error who "length mismatch")))
                (f ($cdr v*) n)))
@@ -428,9 +428,9 @@
 
   (define (string-fill! v fill)
     (unless (string? v) 
-      (error 'string-fill! "~s is not a vector" v))
+      (error 'string-fill! "not a vector" v))
     (unless (char? fill)
-      (error 'string-fill! "~s is not a character" fill))
+      (error 'string-fill! "not a character" fill))
     (let f ([v v] [i 0] [n ($string-length v)] [fill fill])
       (unless ($fx= i n) 
         ($string-set! v i fill)

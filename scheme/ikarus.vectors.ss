@@ -16,7 +16,7 @@
   (define vector-length
     (lambda (x)
       (unless (vector? x) 
-        (error 'vector-length "~s is not a vector" x))
+        (error 'vector-length "not a vector" x))
       ($vector-length x)))
 
   (module (make-vector)
@@ -32,7 +32,7 @@
         [(n) (make-vector n (void))]
         [(n fill)
          (unless (and (fixnum? n) ($fx>= n 0))
-           (error 'make-vector "~s is not a valid length" n))
+           (error 'make-vector "not a valid length" n))
          (fill! ($make-vector n) 0 n fill)])))
 
 
@@ -59,23 +59,23 @@
   (define vector-ref 
     (lambda (v i)
       (unless (vector? v)
-        (error 'vector-ref "~s is not a vector" v))
+        (error 'vector-ref "not a vector" v))
       (unless (fixnum? i)
-        (error 'vector-ref "~s is not a valid index" i))
+        (error 'vector-ref "not a valid index" i))
       (unless (and ($fx< i ($vector-length v))
                    ($fx<= 0 i))
-        (error 'vector-ref "index ~s is out of range for ~s" i v))
+        (error 'vector-ref "index is out of range" i v))
       ($vector-ref v i)))
   
   (define vector-set! 
     (lambda (v i c) 
       (unless (vector? v) 
-        (error 'vector-set! "~s is not a vector" v))
+        (error 'vector-set! "not a vector" v))
       (unless (fixnum? i)
-        (error 'vector-set! "~s is not a valid index" i))
+        (error 'vector-set! "not a valid index" i))
       (unless (and ($fx< i ($vector-length v))
                    ($fx<= 0 i))
-        (error 'vector-set! "index ~s is out of range for ~s" i v))
+        (error 'vector-set! "index is out of range" i v))
       ($vector-set! v i c)))
 
   (define vector->list
@@ -91,7 +91,7 @@
             (if ($fxzero? n)
                 '()
                 (f v ($fxsub1 n) '())))
-          (error 'vector->list "~s is not a vector" v))))
+          (error 'vector->list "not a vector" v))))
 
   (define list->vector
     (letrec ([race
@@ -101,13 +101,13 @@
                       (if (pair? h)
                           (if (not (eq? h t))
                               (race ($cdr h) ($cdr t) ls ($fx+ n 2))
-                              (error 'list->vector "circular list ~s" ls))
+                              (error 'list->vector "circular list" ls))
                           (if (null? h)
                               ($fx+ n 1)
-                              (error 'list->vector "~s is not a proper list" ls))))
+                              (error 'list->vector "not a proper list" ls))))
                    (if (null? h)
                        n
-                       (error 'list->vector "~s is not a proper list" ls))))]
+                       (error 'list->vector "not a proper list" ls))))]
               [fill
                (lambda (v i ls)
                  (cond
@@ -137,9 +137,9 @@
       (case-lambda
         [(p v) 
          (unless (procedure? p) 
-           (error who "~s is not a procedure" p))
+           (error who "not a procedure" p))
          (unless (vector? v) 
-           (error who "~s is not a vector" v))
+           (error who "not a vector" v))
          (let f ([p p] [v v] [i 0] [n (vector-length v)] [ac '()])
            (cond
              [($fx= i n) (ls->vec ac n)]
@@ -147,14 +147,14 @@
               (f p v ($fxadd1 i) n (cons (p (vector-ref v i)) ac))]))]
         [(p v0 v1) 
          (unless (procedure? p) 
-           (error who "~s is not a procedure" p))
+           (error who "not a procedure" p))
          (unless (vector? v0) 
-           (error who "~s is not a vector" v0))
+           (error who "not a vector" v0))
          (unless (vector? v1) 
-           (error who "~s is not a vector" v1))
+           (error who "not a vector" v1))
          (let ([n (vector-length v0)])
            (unless ($fx= n ($vector-length v1))
-             (error who "length mismatch between ~s and ~s" v0 v1))
+             (error who "length mismatch" v0 v1))
            (let f ([p p] [v0 v0] [v1 v1] [i 0] [n n] [ac '()])
              (cond
                [($fx= i n) (ls->vec ac n)]
@@ -163,19 +163,19 @@
                    (cons (p ($vector-ref v0 i) ($vector-ref v1 i)) ac))])))]
         [(p v0 v1 . v*) 
          (unless (procedure? p) 
-           (error who "~s is not a procedure" p))
+           (error who "not a procedure" p))
          (unless (vector? v0) 
-           (error who "~s is not a vector" v0))
+           (error who "not a vector" v0))
          (unless (vector? v1) 
-           (error who "~s is not a vector" v1))
+           (error who "not a vector" v1))
          (let ([n (vector-length v0)])
            (unless ($fx= n ($vector-length v1))
-             (error who "length mismatch between ~s and ~s" v0 v1))
+             (error who "length mismatch" v0 v1))
            (let f ([v* v*] [n n])
              (unless (null? v*) 
                (let ([a ($car v*)])
                  (unless (vector? a) 
-                   (error who "~s is not a vector" a))
+                   (error who "not a vector" a))
                  (unless ($fx= ($vector-length a) n) 
                    (error who "length mismatch")))
                (f ($cdr v*) n)))
@@ -200,9 +200,9 @@
       (case-lambda
         [(p v) 
          (unless (procedure? p) 
-           (error who "~s is not a procedure" p))
+           (error who "not a procedure" p))
          (unless (vector? v) 
-           (error who "~s is not a vector" v))
+           (error who "not a vector" v))
          (let f ([p p] [v v] [i 0] [n (vector-length v)])
            (cond
              [($fx= i n) (void)]
@@ -211,14 +211,14 @@
               (f p v ($fxadd1 i) n)]))]
         [(p v0 v1) 
          (unless (procedure? p) 
-           (error who "~s is not a procedure" p))
+           (error who "not a procedure" p))
          (unless (vector? v0) 
-           (error who "~s is not a vector" v0))
+           (error who "not a vector" v0))
          (unless (vector? v1) 
-           (error who "~s is not a vector" v1))
+           (error who "not a vector" v1))
          (let ([n (vector-length v0)])
            (unless ($fx= n ($vector-length v1))
-             (error who "length mismatch between ~s and ~s" v0 v1))
+             (error who "length mismatch" v0 v1))
            (let f ([p p] [v0 v0] [v1 v1] [i 0] [n n])
              (cond
                [($fx= i n) (void)]
@@ -227,19 +227,19 @@
                 (f p v0 v1 ($fxadd1 i) n)])))]
         [(p v0 v1 . v*) 
          (unless (procedure? p) 
-           (error who "~s is not a procedure" p))
+           (error who "not a procedure" p))
          (unless (vector? v0) 
-           (error who "~s is not a vector" v0))
+           (error who "not a vector" v0))
          (unless (vector? v1) 
-           (error who "~s is not a vector" v1))
+           (error who "not a vector" v1))
          (let ([n (vector-length v0)])
            (unless ($fx= n ($vector-length v1))
-             (error who "length mismatch between ~s and ~s" v0 v1))
+             (error who "length mismatch" v0 v1))
            (let f ([v* v*] [n n])
              (unless (null? v*) 
                (let ([a ($car v*)])
                  (unless (vector? a) 
-                   (error who "~s is not a vector" a))
+                   (error who "not a vector" a))
                  (unless ($fx= ($vector-length a) n) 
                    (error who "length mismatch")))
                (f ($cdr v*) n)))
@@ -257,7 +257,7 @@
 
   (define (vector-fill! v fill)
     (unless (vector? v) 
-      (error 'vector-fill! "~s is not a vector" v))
+      (error 'vector-fill! "not a vector" v))
     (let f ([v v] [i 0] [n ($vector-length v)] [fill fill])
       (unless ($fx= i n) 
         ($vector-set! v i fill)

@@ -132,7 +132,7 @@
       [(x) 
        (if (condition? x)
            x 
-           (error 'condition "~s is not a condition type" x))]
+           (error 'condition "not a condition type" x))]
       [x*
        (let ([ls
               (let f ([x* x*])
@@ -142,7 +142,7 @@
                    (cons (car x*) (f (cdr x*)))]
                   [(compound-condition? (car x*)) 
                    (append (simple-conditions (car x*)) (f (cdr x*)))]
-                  [else (error 'condition "~s is not a condition" (car x*))]))])
+                  [else (error 'condition "not a condition" (car x*))]))])
          (cond
            [(null? ls) (make-compound-condition '())]
            [(null? (cdr ls)) (car ls)]
@@ -152,13 +152,13 @@
     (cond
       [(compound-condition? x) (compound-condition-components x)]
       [(&condition? x) (list x)]
-      [else (error 'simple-conditions "~s is not a condition" x)]))
+      [else (error 'simple-conditions "not a condition" x)]))
 
   (define (condition-predicate rtd) 
     (unless (rtd? rtd) 
-      (error 'condition-predicate "~s is not a record type descriptor" rtd))
+      (error 'condition-predicate "not a record type descriptor" rtd))
     (unless (rtd-subtype? rtd (record-type-descriptor &condition))
-      (error 'condition-predicate "~s is not a descendant of &condition" rtd))
+      (error 'condition-predicate "not a descendant of &condition" rtd))
     (let ([p? (record-predicate rtd)])
       (lambda (x) 
         (or (p? x) 
@@ -170,11 +170,11 @@
   
   (define (condition-accessor rtd proc) 
     (unless (rtd? rtd) 
-      (error 'condition-accessor "~s is not a record type descriptor" rtd))
+      (error 'condition-accessor "not a record type descriptor" rtd))
     (unless (procedure? proc) 
-      (error 'condition-accessor "~s is not a procedure" proc))
+      (error 'condition-accessor "not a procedure" proc))
     (unless (rtd-subtype? rtd (record-type-descriptor &condition))
-      (error 'condition-accessor "~s is not a descendant of &condition" rtd))
+      (error 'condition-accessor "not a descendant of &condition" rtd))
     (let ([p? (record-predicate rtd)])
       (lambda (x) 
         (cond
@@ -187,9 +187,9 @@
                     (proc (car ls))
                     (f (cdr ls)))]
                [else
-                (error 'condition-accessor "~s is not a condition of type ~s" x rtd)]))]
+                (error 'condition-accessor "not a condition of correct type" x rtd)]))]
           [else 
-           (error 'condition-accessor "~s is not a condition of type ~s" x rtd)]))))
+           (error 'condition-accessor "not a condition of correct type" x rtd)]))))
 
   (define-syntax define-condition-type
     (lambda (x)
@@ -358,7 +358,7 @@
         [(x port)
          (if (output-port? port) 
              (print-condition x port)
-             (error 'print-condition "~s is not an output port" port))])))
+             (error 'print-condition "not an output port" port))])))
 
   )
 

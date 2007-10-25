@@ -24,13 +24,13 @@
   (define waitpid
     (lambda (pid)
       (unless (fixnum? pid)
-        (error 'waitpid "~s is not a fixnum" pid))
+        (error 'waitpid "not a fixnum" pid))
       (foreign-call "ikrt_waitpid" pid)))
 
   (define system
     (lambda (x)
       (unless (string? x)
-        (error 'system "~s is not a string" x))
+        (error 'system "not a string" x))
       (let ([rv (foreign-call "ik_system"
                   (string->utf8 x))])
         (if (fx= rv -1)
@@ -40,7 +40,7 @@
   (define file-exists?
     (lambda (x)
       (unless (string? x)
-        (error 'file-exists? "filename ~s is not a string" x))
+        (error 'file-exists? "filename is not a string" x))
       (let ([v (foreign-call "ikrt_file_exists" 
                   (string->utf8 x))])
         (cond
@@ -48,19 +48,19 @@
           [else
            (error 'file-exists?
                   (case v
-                    [(1) "the path ~s contains a non-directory"]
-                    [(2) "the path ~s is too long"]
-                    [(3) "the path ~s is not accessible"]
-                    [(4) "the path ~s contains too many symbolic links"]
-                    [(5) "internal access error while accessing ~s"]
-                    [(6) "IO error encountered while accessing ~s"]
-                    [else "Unknown error in ~s"])
+                    [(1) "the path contains a non-directory"]
+                    [(2) "the path is too long"]
+                    [(3) "the path is not accessible"]
+                    [(4) "the path contains too many symbolic links"]
+                    [(5) "internal access error while accessing"]
+                    [(6) "IO error encountered while accessing"]
+                    [else "Unknown error"])
                   x)]))))
 
   (define delete-file
     (lambda (x)
       (unless (string? x)
-        (error 'delete-file "filename ~s is not a string" x))
+        (error 'delete-file "filename is not a string" x))
       (let ([v (foreign-call "ikrt_delete_file"
                  (string->utf8 x))])
         (case v
@@ -68,17 +68,17 @@
           [else
            (error 'delete-file
                   (case v
-                    [(1) "the path ~s contains a non-directory"]
-                    [(2) "the path ~s is too long"]
-                    [(3) "the file ~s does not exist"]
-                    [(4) "the path ~s is not accessible"]
-                    [(5) "the path ~s contains too many symbolic links"]
-                    [(6) "you do not have permissions to delete ~s"]
-                    [(7) "device ~s is busy"]
-                    [(8) "IO error encountered while deleting ~s"]
-                    [(9) "~s is in a read-only file system"]
-                    [(10) "internal access error while deleting ~s"]
-                    [else "Unknown error while deleting ~s"])
+                    [(1) "the path contains a non-directory"]
+                    [(2) "the path is too long"]
+                    [(3) "the file does not exist"]
+                    [(4) "the path is not accessible"]
+                    [(5) "the path contains too many symbolic links"]
+                    [(6) "you do not have permissions to delete file"]
+                    [(7) "device is busy"]
+                    [(8) "IO error encountered while deleting"]
+                    [(9) "is in a read-only file system"]
+                    [(10) "internal access error while deleting"]
+                    [else "Unknown error while deleting"])
                   x)]))))
 
   (define env
@@ -88,16 +88,16 @@
           [(key) 
            (if (string? key)
                (foreign-call "ikrt_getenv" key)
-               (error 'env "the key: ~s is not a string" key))]
+               (error 'env "the key is not a string" key))]
           [(key val) (env key val #t)]
           [(key val overwrite?)
            (if (string? key)
                (if (string? val)
                    (unless (foreign-call "ikrt_setenv" key val overwrite?)
-                     (error 'env "failed to set ~s to ~s" key val))
-                   (error 'env "the value: ~s is not a string" val))
-               (error 'env "the key: ~s is not a string" key))]))
-      (define busted (lambda args (error 'env "busted!")))
+                     (error 'env "failed" key val))
+                   (error 'env "the value is not a string" val))
+               (error 'env "the key is not a string" key))]))
+      (define busted (lambda args (error 'env "BUG: busted!")))
       busted))
 
 

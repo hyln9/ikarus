@@ -23,7 +23,7 @@
     (and (getprop x cookie) #t))
   (define (get-primop x)
     (or (getprop x cookie)
-        (error 'getprimop "~s is not a primitive" x)))
+        (error 'getprimop "not a primitive" x)))
   (define (set-primop! x v)
     (putprop x cookie v))
   )
@@ -53,7 +53,7 @@
       [(not (PH-interruptable? p))
        (parameterize ([interrupt-handler 
                        (lambda ()
-                         (error 'cogen "~s ~s is uninterruptable in ~s" 
+                         (error 'cogen "uninterruptable" 
                                 x args ctxt))])
           (k))]
       [else
@@ -85,7 +85,7 @@
                       [else #f])
                      (prm '!= (make-no-interrupt-call x args) (K bool-f))
                      (make-shortcut body h)))]
-             [else (error 'with-interrupt-handler "invalid context ~s" ctxt)])))]))
+             [else (error 'with-interrupt-handler "invalid context" ctxt)])))]))
   (define-syntax with-tmp
     (lambda (x)
       (syntax-case x ()
@@ -151,7 +151,7 @@
                     [(PH-e-handled? p)
                      (let ([e (apply (PH-e-handler p) args)])
                        (if (interrupt? e) e (make-seq e (K #t))))]
-                    [else (error 'cogen-primop "~s is not handled" x)])]
+                    [else (error 'cogen-primop "not handled" x)])]
                  [(V) 
                   (cond
                     [(PH-v-handled? p) 
@@ -164,7 +164,7 @@
                     [(PH-e-handled? p)
                      (let ([e (apply (PH-e-handler p) args)])
                        (if (interrupt? e) e (make-seq e (K void-object))))]
-                    [else (error 'cogen-primop "~s is not handled" x)])]
+                    [else (error 'cogen-primop "not handled" x)])]
                  [(E) 
                   (cond
                     [(PH-e-handled? p) 
@@ -179,9 +179,9 @@
                        (if (interrupt? e)
                            e
                            (with-tmp ([t e]) (prm 'nop))))]
-                    [else (error 'cogen-primop "~s is not handled" x)])]
+                    [else (error 'cogen-primop "not handled" x)])]
                  [else 
-                  (error 'cogen-primop "invalid context ~s" ctxt)])))))))
+                  (error 'cogen-primop "invalid context" ctxt)])))))))
   
   (define-syntax define-primop
     (lambda (x)
@@ -350,7 +350,7 @@
        (make-funcall (Function rator) (map V arg*))]
       [(jmpcall label rator arg*)
        (make-jmpcall label (V rator) (map V arg*))]
-      [else (error 'cogen-V "invalid value expr ~s" x)])) 
+      [else (error 'cogen-V "invalid value expr" x)])) 
 
   (define (P x)
     (struct-case x
@@ -372,7 +372,7 @@
       [(funcall) (prm '!= (V x) (V (K #f)))]
       [(jmpcall) (prm '!= (V x) (V (K #f)))]
       [(forcall) (prm '!= (V x) (V (K #f)))]
-      [else (error 'cogen-P "invalid pred expr ~s" x)])) 
+      [else (error 'cogen-P "invalid pred expr" x)])) 
   
   (define (E x)
     (struct-case x
@@ -397,7 +397,7 @@
        (make-funcall (Function rator) (map V arg*))]
       [(jmpcall label rator arg*)
        (make-jmpcall label (V rator) (map V arg*))]
-      [else (error 'cogen-E "invalid effect expr ~s" x)]))
+      [else (error 'cogen-E "invalid effect expr" x)]))
 
   (define (Function x)
     (define (nonproc x)
@@ -410,7 +410,7 @@
               (prm 'interrupt))
             x)
           (V (make-funcall (make-primref 'error)
-               (list (K 'apply) (K "~s is not a procedure") x))))))
+               (list (K 'apply) (K "not a procedure") x))))))
     (struct-case x
        [(primcall op args)
         (cond
@@ -452,13 +452,13 @@
     (struct-case x
       [(var) x]
       [(constant i) (constant-rep x)]
-      [else (error 'cogen-T "invalid ~s" (unparse x))]))
+      [else (error 'cogen-T "invalid" (unparse x))]))
 
   (define (ClambdaCase x)
     (struct-case x
       [(clambda-case info body)
        (make-clambda-case info (V body))]
-      [else (error 'specify-rep "invalid clambda-case ~s" x)]))
+      [else (error 'specify-rep "invalid clambda-case" x)]))
   ;;;
   (define (Clambda x)
     (struct-case x
@@ -466,7 +466,7 @@
        (make-clambda label 
           (map ClambdaCase case*)
           free* name)]
-      [else (error 'specify-rep "invalid clambda ~s" x)]))
+      [else (error 'specify-rep "invalid clambda" x)]))
   ;;;
   (define (Program x)
     (struct-case x 
@@ -474,7 +474,7 @@
        (let ([code* (map Clambda code*)]
              [body (V body)])
          (make-codes code* body))]
-      [else (error 'specify-rep "invalid program ~s" x)]))
+      [else (error 'specify-rep "invalid program" x)]))
 
   (define (specify-representation x)
     (let ([x (Program x)])

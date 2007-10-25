@@ -48,7 +48,8 @@
   (define who 'fasl-read)
   (define (assert-eq? x y)
     (unless (eq? x y)
-      (error who "Expected ~s, got ~s\n" y x)))
+      (error who 
+        (format "Expected ~s, got ~s\n" y x))))
   (define (char->int x)
     (if (char? x)
         (char->integer x)
@@ -99,7 +100,7 @@
       (cond
         [(fx< m (vector-length marks))
          (when (vector-ref marks m)
-           (error 'fasl-read "mark ~s set twice" m))
+           (error 'fasl-read "mark set twice" m))
          (vector-set! marks m obj)]
         [else
          (let ([n (vector-length marks)])
@@ -142,7 +143,7 @@
           [(#\<) 
            (let ([cm (read-int p)])
              (unless (fx< cm (vector-length marks))
-               (error who "invalid mark ~s\n" m))
+               (error who "invalid mark" m))
              (let ([code (vector-ref marks cm)])
                (let ([proc ($code->closure code)])
                  (when m (put-mark m proc))
@@ -152,7 +153,7 @@
              (assert-eq? (read-char p) #\x)
              (let ([code (read-code cm m)])
                (if m (vector-ref marks m) ($code->closure code))))]
-          [else (error who "invalid code header ~s" c)])))
+          [else (error who "invalid code header" c)])))
     (define (read/mark m)
       (define (nom)
         (when m (error who "unhandled mark")))
@@ -244,10 +245,10 @@
           [(#\<)
            (let ([m (read-int p)])
              (unless (fx< m (vector-length marks))
-               (error who "invalid mark ~s\n" m))
+               (error who "invalid mark" m))
              (vector-ref marks m))]
           [else
-           (error who "Unexpected ~s as a fasl object header" h)])))
+           (error who "Unexpected char as a fasl object header" h)])))
     (read))
   (define $fasl-read
     (lambda (p)
@@ -263,7 +264,7 @@
       [(p) 
        (if (input-port? p) 
            ($fasl-read p)
-           (error 'fasl-read "~s is not an input port" p))]))
+           (error 'fasl-read "not an input port" p))]))
 
   )
 

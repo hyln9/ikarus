@@ -55,11 +55,11 @@
         [(n)
          (if (and (fixnum? n) ($fx>= n 0))
              (f n (void) '())
-             (error 'make-list "~s is not a valid length" n))]
+             (error 'make-list "not a valid length" n))]
         [(n fill)
          (if (and (fixnum? n) ($fx>= n 0))
              (f n fill '())
-             (error 'make-list "~s is not a valid length" n))])))
+             (error 'make-list "not a valid length" n))])))
 
 
   (define length
@@ -70,13 +70,13 @@
                       (if (pair? h)
                           (if (not (eq? h t))
                               (race ($cdr h) ($cdr t) ls ($fx+ n 2))
-                              (error 'length "circular list ~s" ls))
+                              (error 'length "circular list" ls))
                           (if (null? h)
                               ($fx+ n 1)
-                              (error 'length "~s is not a proper list" ls))))
+                              (error 'length "not a proper list" ls))))
                    (if (null? h)
                        n
-                       (error 'length "~s is not a proper list" ls))))])
+                       (error 'length "not a proper list" ls))))])
        (lambda (ls)
          (race ls ls ls 0))))
 
@@ -88,14 +88,14 @@
             [($fxzero? i) 
              (if (pair? ls)
                  ($car ls)
-                 (error 'list-ref "index ~s is out of range for ~s" index list))]
+                 (error 'list-ref "index is out of range" index list))]
             [(pair? ls)
              (f ($cdr ls) ($fxsub1 i))]
             [(null? ls) 
-             (error 'list-rec "index ~s is out of range for ~s" index list)]
-            [else (error 'list-ref "~s is not a list" list)])))
+             (error 'list-rec "index is out of range" index list)]
+            [else (error 'list-ref "not a list" list)])))
       (unless (and (fixnum? index) ($fx>= index 0))
-        (error 'list-ref "~s is not a valid index" index))
+        (error 'list-ref "not a valid index" index))
       (f list index)))
 
 
@@ -108,10 +108,10 @@
             [(pair? ls)
              (f ($cdr ls) ($fxsub1 i))]
             [(null? ls) 
-             (error 'list-tail "index ~s is out of range for ~s" index list)]
-            [else (error 'list-tail "~s is not a list" list)])))
+             (error 'list-tail "index is out of range" index list)]
+            [else (error 'list-tail "not a list" list)])))
       (unless (and (fixnum? index) ($fx>= index 0))
-        (error 'list-tail "~s is not a valid index" index))
+        (error 'list-tail "not a valid index" index))
       (f list index)))
 
   (module (append)
@@ -123,13 +123,13 @@
                    (if (not (eq? h t))
                        (let ([a2 ($car h)])
                          (reverse ($cdr h) ($cdr t) ls (cons a2 (cons a1 ac))))
-                       (error 'append "circular list ~s" ls))
+                       (error 'append "circular list" ls))
                    (if (null? h)
                        (cons a1 ac)
-                       (error 'append "~s is not a proper list" ls))))
+                       (error 'append "not a proper list" ls))))
             (if (null? h)
                 ac 
-                (error 'append "~s is not a proper list" ls)))))
+                (error 'append "not a proper list" ls)))))
     (define revcons
       (lambda (ls ac)
         (cond
@@ -158,13 +158,13 @@
                       (if (pair? h)
                           (if (not (eq? h t))
                               (race ($cdr h) ($cdr t) ls (cons ($car h) ac))
-                              (error 'reverse "~s is a circular list" ls))
+                              (error 'reverse "circular list" ls))
                           (if (null? h)
                               ac
-                              (error 'reverse "~s is not a proper list" ls))))
+                              (error 'reverse "not a proper list" ls))))
                    (if (null? h)
                        ac
-                       (error 'reverse "~s is not a proper list" ls))))])
+                       (error 'reverse "not a proper list" ls))))])
        (lambda (x)
          (race x x x '()))))
   
@@ -176,14 +176,14 @@
                        (if (pair? h)
                            (if (not (eq? h t))
                                (race ($cdr h) ($cdr t) ls h)
-                               (error 'last-pair "~s is a circular list" ls))
+                               (error 'last-pair "circular list" ls))
                            last))
                     last))])
        (lambda (x)
          (if (pair? x)
              (let ([d (cdr x)])
                (race d d x x))
-             (error 'last-pair "~s is not a pair" x)))))
+             (error 'last-pair "not a pair" x)))))
 
   (define memq
     (letrec ([race
@@ -197,13 +197,13 @@
                                    h
                                    (if (not (eq? h t))
                                        (race ($cdr h) ($cdr t) ls x)
-                                       (error 'memq "circular list ~s" ls)))
+                                       (error 'memq "circular list" ls)))
                                (if (null? h)
                                    '#f
-                                   (error 'memq "~s is not a proper list" ls)))))
+                                   (error 'memq "not a proper list" ls)))))
                      (if (null? h)
                          '#f
-                         (error 'memq "~s is not a proper list" ls))))])
+                         (error 'memq "not a proper list" ls))))])
        (lambda (x ls)
          (race ls ls ls x))))
 
@@ -219,13 +219,13 @@
                                    h
                                    (if (not (eq? h t))
                                        (race ($cdr h) ($cdr t) ls x)
-                                       (error 'memv "circular list ~s" ls)))
+                                       (error 'memv "circular list" ls)))
                                (if (null? h)
                                    '#f
-                                   (error 'memv "~s is not a proper list" ls)))))
+                                   (error 'memv "not a proper list" ls)))))
                      (if (null? h)
                          '#f
-                         (error 'memv "~s is not a proper list" ls))))])
+                         (error 'memv "not a proper list" ls))))])
        (lambda (x ls)
          (race ls ls ls x))))
   
@@ -241,13 +241,13 @@
                                    h
                                    (if (not (eq? h t))
                                        (race ($cdr h) ($cdr t) ls x)
-                                       (error 'member "circular list ~s" ls)))
+                                       (error 'member "circular list" ls)))
                                (if (null? h)
                                    '#f
-                                   (error 'member "~s is not a proper list" ls)))))
+                                   (error 'member "not a proper list" ls)))))
                      (if (null? h)
                          '#f
-                         (error 'member "~s is not a proper list" ls))))])
+                         (error 'member "not a proper list" ls))))])
        (lambda (x ls)
          (race ls ls ls x))))
 
@@ -264,16 +264,16 @@
                                    h
                                    (if (not (eq? h t))
                                        (race ($cdr h) ($cdr t) ls p)
-                                       (error 'memp "circular list ~s" ls)))
+                                       (error 'memp "circular list" ls)))
                                (if (null? h)
                                    '#f
-                                   (error 'memp "~s is not a proper list" ls)))))
+                                   (error 'memp "not a proper list" ls)))))
                      (if (null? h)
                          '#f
-                         (error 'memp "~s is not a proper list" ls))))])
+                         (error 'memp "not a proper list" ls))))])
        (lambda (p ls)
          (unless (procedure? p)
-           (error 'memp "~s is not a procedure" p))
+           (error 'memp "not a procedure" p))
          (race ls ls ls p))))
 
   (define find
@@ -290,16 +290,16 @@
                                        a
                                        (if (not (eq? h t))
                                            (race ($cdr h) ($cdr t) ls p)
-                                           (error 'find "circular list ~s" ls))))
+                                           (error 'find "circular list" ls))))
                                  (if (null? h)
                                      '#f
-                                     (error 'find "~s is not a proper list" ls))))))
+                                     (error 'find "not a proper list" ls))))))
                      (if (null? h)
                          '#f
-                         (error 'find "~s is not a proper list" ls))))])
+                         (error 'find "not a proper list" ls))))])
        (lambda (p ls)
          (unless (procedure? p)
-           (error 'find "~s is not a procedure" p))
+           (error 'find "not a procedure" p))
          (race ls ls ls p))))
 
   (define assq
@@ -317,16 +317,16 @@
                                               (if (eq? ($car a) x)
                                                   a
                                                   (race x ($cdr h) ($cdr t) ls))
-                                              (error 'assq "malformed alist ~s"
+                                              (error 'assq "malformed alist"
                                                      ls)))
-                                       (error 'assq "circular list ~s" ls))
+                                       (error 'assq "circular list" ls))
                                    (if (null? h)
                                        #f
-                                       (error 'assq "~s is not a proper list" ls))))
-                           (error 'assq "malformed alist ~s" ls)))
+                                       (error 'assq "not a proper list" ls))))
+                           (error 'assq "malformed alist" ls)))
                     (if (null? h)
                         #f
-                        (error 'assq "~s is not a proper list" ls))))])
+                        (error 'assq "not a proper list" ls))))])
        (lambda (x ls) 
          (race x ls ls ls))))
 
@@ -346,19 +346,19 @@
                                               (if (p ($car a))
                                                   a
                                                   (race p ($cdr h) ($cdr t) ls))
-                                              (error 'assp "malformed alist ~s"
+                                              (error 'assp "malformed alist"
                                                      ls)))
-                                       (error 'assp "circular list ~s" ls))
+                                       (error 'assp "circular list" ls))
                                    (if (null? h)
                                        #f
-                                       (error 'assp "~s is not a proper list" ls))))
-                           (error 'assp "malformed alist ~s" ls)))
+                                       (error 'assp "not a proper list" ls))))
+                           (error 'assp "malformed alist" ls)))
                     (if (null? h)
                         #f
-                        (error 'assp "~s is not a proper list" ls))))])
+                        (error 'assp "not a proper list" ls))))])
        (lambda (p ls)
          (unless (procedure? p) 
-           (error 'assp "~s is not a procedure" p))
+           (error 'assp "not a procedure" p))
          (race p ls ls ls))))
 
   (define assv
@@ -376,16 +376,16 @@
                                               (if (eqv? ($car a) x)
                                                   a
                                                   (race x ($cdr h) ($cdr t) ls))
-                                              (error 'assv "malformed alist ~s"
+                                              (error 'assv "malformed alist"
                                                      ls)))
-                                       (error 'assv "circular list ~s" ls))
+                                       (error 'assv "circular list" ls))
                                    (if (null? h)
                                        #f
-                                       (error 'assv "~s is not a proper list" ls))))
-                           (error 'assv "malformed alist ~s" ls)))
+                                       (error 'assv "not a proper list" ls))))
+                           (error 'assv "malformed alist" ls)))
                     (if (null? h)
                         #f
-                        (error 'assv "~s is not a proper list" ls))))])
+                        (error 'assv "not a proper list" ls))))])
        (lambda (x ls) 
          (race x ls ls ls))))
 
@@ -404,16 +404,16 @@
                                               (if (equal? ($car a) x)
                                                   a
                                                   (race x ($cdr h) ($cdr t) ls))
-                                              (error 'assoc "malformed alist ~s"
+                                              (error 'assoc "malformed alist"
                                                      ls)))
-                                       (error 'assoc "circular list ~s" ls))
+                                       (error 'assoc "circular list" ls))
                                    (if (null? h)
                                        #f
-                                       (error 'assoc "~s is not a proper list" ls))))
-                           (error 'assoc "malformed alist ~s" ls)))
+                                       (error 'assoc "not a proper list" ls))))
+                           (error 'assoc "malformed alist" ls)))
                     (if (null? h)
                         #f
-                        (error 'assoc "~s is not a proper list" ls))))])
+                        (error 'assoc "not a proper list" ls))))])
        (lambda (x ls) 
          (race x ls ls ls))))
 
@@ -433,23 +433,23 @@
                                           (if (cmp ($car h) x)
                                               (race ($cdr h) ($cdr t) ls x)
                                               (cons ($car h) (race ($cdr h) ($cdr t) ls x)))
-                                          (error 'name "circular list ~s" ls))
+                                          (error 'name "circular list" ls))
                                       (if (null? h)
                                           '()
-                                          (error 'name "~s is not a proper list" ls))))
+                                          (error 'name "not a proper list" ls))))
                                 (let ([a0 ($car h)] [h ($cdr h)])
                                   (if (pair? h)
                                       (if (not (eq? h t))
                                           (if (cmp ($car h) x)
                                               (cons a0 (race ($cdr h) ($cdr t) ls x))
                                               (cons* a0 ($car h) (race ($cdr h) ($cdr t) ls x)))
-                                          (error 'name "circular list ~s" ls))
+                                          (error 'name "circular list" ls))
                                       (if (null? h)
                                           (list a0)
-                                          (error 'name "~s is not a proper list" ls)))))
+                                          (error 'name "not a proper list" ls)))))
                             (if (null? h)
                                 '()
-                                (error 'name "~s is not a proper list" ls))))])
+                                (error 'name "not a proper list" ls))))])
               (lambda (x ls)
                 (check x ls)
                 (race ls ls ls x))))]))
@@ -459,11 +459,11 @@
     (define-remover remp (lambda (elt p) (p elt))
       (lambda (x ls) 
         (unless (procedure? x)
-          (error 'remp "~s is not a procedure" x)))) 
+          (error 'remp "not a procedure" x)))) 
     (define-remover filter (lambda (elt p) (not (p elt)))
       (lambda (x ls) 
         (unless (procedure? x)
-          (error 'filter "~s is not a procedure" x)))))
+          (error 'filter "not a procedure" x)))))
 
 
   (module (map)
@@ -558,7 +558,7 @@
        (case-lambda
          [(f ls) 
           (unless (procedure? f)
-            (error who "~s is not a procedure" f))
+            (error who "not a procedure" f))
           (cond
             [(pair? ls)
              (let ([d ($cdr ls)])
@@ -567,7 +567,7 @@
             [else (error who "improper list")])]
          [(f ls ls2)
           (unless (procedure? f)
-            (error who "~s is not a procedure" f))
+            (error who "not a procedure" f))
           (cond
             [(pair? ls)
              (if (pair? ls2)
@@ -581,7 +581,7 @@
             [else (error who "not a list")])]
          [(f ls . ls*)
           (unless (procedure? f)
-            (error who "~s is not a procedure" f))
+            (error who "not a procedure" f))
           (cond
             [(pair? ls)
              (let ([n (len ls ls 0)])
@@ -648,7 +648,7 @@
        (case-lambda
          [(f ls)
           (unless (procedure? f)
-            (error who "~s is not a procedure" f))
+            (error who "not a procedure" f))
           (cond
             [(pair? ls)
              (let ([d ($cdr ls)])
@@ -657,7 +657,7 @@
             [else (error who "improper list")])]
          [(f ls ls2)
           (unless (procedure? f)
-            (error who "~s is not a procedure" f))
+            (error who "not a procedure" f))
           (cond
             [(pair? ls)
              (if (pair? ls2)
@@ -672,23 +672,23 @@
             [else (error who "not a list")])]
          [(f ls . ls*)
           (unless (procedure? f) 
-            (error 'for-each "~s is not a procedure" f))
+            (error 'for-each "not a procedure" f))
           (unless (list? ls) 
-            (error 'for-each "~s is not a list" ls))
+            (error 'for-each "not a list" ls))
           (let ([n (length ls)])
             (for-each 
               (lambda (x) 
                 (unless (and (list? x) (= (length x) n))
-                  (error 'for-each "~s is not a list" x)))
+                  (error 'for-each "not a list" x)))
               ls*)
             (let loop ([n (length ls)] [ls ls] [ls* ls*])
               (cond
                 [($fx= n 0) 
                  (unless (and (null? ls) (andmap null? ls*))
-                   (error 'for-each "list modified by ~s" f))]
+                   (error 'for-each "list modified" f))]
                 [else
                  (unless (and (pair? ls) (andmap pair? ls*))
-                   (error 'for-each "list modified by ~s" f))
+                   (error 'for-each "list modified" f))
                  (apply f (car ls) (map car ls*))
                  (loop (fx- n 1) (cdr ls) (map cdr ls*))])))])))
 
@@ -748,7 +748,7 @@
        (case-lambda
          [(f ls)
           (unless (procedure? f)
-            (error who "~s is not a procedure" f))
+            (error who "not a procedure" f))
           (cond
             [(pair? ls)
              (let ([d ($cdr ls)])
@@ -757,7 +757,7 @@
             [else (error who "improper list")])]
          [(f ls ls2)
           (unless (procedure? f)
-            (error who "~s is not a procedure" f))
+            (error who "not a procedure" f))
           (cond
             [(pair? ls)
              (if (pair? ls2)
@@ -772,7 +772,7 @@
             [else (error who "not a list")])]
          [(f ls . ls*)
           (unless (procedure? f) 
-            (error who "~s is not a procedure" f))
+            (error who "not a procedure" f))
           (error who "vararg not yet supported")])))
 
 
@@ -811,7 +811,7 @@
        (case-lambda
          [(f ls)
           (unless (procedure? f)
-            (error who "~s is not a procedure" f))
+            (error who "not a procedure" f))
           (cond
             [(pair? ls)
              (let ([d ($cdr ls)])
@@ -829,7 +829,7 @@
                      (let ([a0 ($car h)] [h ($cdr h)])
                         (if (pair? h)
                             (if (eq? h t)
-                                (error 'partition "circular list ~s" ls)
+                                (error 'partition "circular list" ls)
                                 (let ([a1 ($car h)])
                                   (let-values ([(a* b*) (race ($cdr h) ($cdr t) ls p)])
                                     (if (p a0) 
@@ -843,13 +843,13 @@
                                 (if (p a0)
                                     (values (list a0) '())
                                     (values '() (list a0)))
-                                (error 'parititon "~s is not a proper list" ls))))
+                                (error 'parititon "not a proper list" ls))))
                      (if (null? h)
                          (values '() '())
-                         (error 'parition "~s is not a proper list" ls))))])
+                         (error 'parition "not a proper list" ls))))])
        (lambda (p ls)
          (unless (procedure? p) 
-           (error 'partition "~s is not a procedure" p))
+           (error 'partition "not a procedure" p))
          (race ls ls ls p))))
 
 
@@ -866,7 +866,7 @@
                (error who "length mismatch")
                (if (list? (car ls*))
                    (err* (cdr ls*))
-                   (error who "~s is not a proper list" (car ls*)))))
+                   (error who "not a proper list" (car ls*)))))
          (define (cars+cdrs ls ls*)
            (cond
              [(null? ls) (values '() '())]
@@ -877,22 +877,22 @@
                       (values (cons (car a) cars) (cons (cdr a) cdrs)))
                     (if (list? (car ls*)) 
                         (error who "length mismatch")
-                        (error who "~s is not a proper list" (car ls*)))))]))
+                        (error who "not a proper list" (car ls*)))))]))
          (define (loop1 f a h t ls)
            (if (pair? h)
                (let ([b (car h)] [h (cdr h)])
                  (combine (f a)
                    (if (pair? h)
                        (if (eq? h t)
-                           (error who "~s is circular" ls)
+                           (error who "circular" ls)
                            (let ([c (car h)] [h (cdr h)])
                              (combine (f b) (loop1 f c h (cdr t) ls))))
                        (if (null? h) 
                            (f b)
-                           (combine (f b) (error who "~s is not a proper list" ls))))))
+                           (combine (f b) (error who "not a proper list" ls))))))
                (if (null? h)
                    (f a)
-                   (combine (f a) (error who "~s is not a proper list" ls)))))
+                   (combine (f a) (error who "not a proper list" ls)))))
          (define (loopn f a a* h h* t ls ls*)
            (if (pair? h)
                (let-values ([(b* h*) (cars+cdrs h* ls*)])
@@ -900,7 +900,7 @@
                    (combine (apply f a a*)
                      (if (pair? h)
                          (if (eq? h t)
-                             (error who "~s is circular" ls)
+                             (error who "circular" ls)
                              (let-values ([(c* h*) (cars+cdrs h* ls*)])
                                (let ([c (car h)] [h (cdr h)])
                                  (combine (apply f b b*) 
@@ -915,15 +915,15 @@
            (case-lambda
              [(f ls)
               (unless (procedure? f) 
-                (error who "~s is not a procedure" f))
+                (error who "not a procedure" f))
               (if (pair? ls)
                   (loop1 f (car ls) (cdr ls) (cdr ls) ls)
                   (if (null? ls)
                       (combine)
-                      (error who "~s is not a list" ls)))]
+                      (error who "not a list" ls)))]
              [(f ls . ls*)
               (unless (procedure? f) 
-                (error who "~s is not a procedure" f))
+                (error who "not a procedure" f))
               (if (pair? ls)
                   (let-values ([(cars cdrs) (cars+cdrs ls* ls*)])
                     (loopn f (car ls) cars (cdr ls) cdrs (cdr ls) ls ls*))
@@ -943,7 +943,7 @@
           (error who "length mismatch")
           (if (list? (car ls*))
               (err* (cdr ls*))
-              (error who "~s is not a proper list" (car ls*)))))
+              (error who "not a proper list" (car ls*)))))
     (define (cars+cdrs ls ls*)
       (cond
         [(null? ls) (values '() '())]
@@ -954,28 +954,28 @@
                  (values (cons (car a) cars) (cons (cdr a) cdrs)))
                (if (list? (car ls*)) 
                    (error who "length mismatch")
-                   (error who "~s is not a proper list" (car ls*)))))]))
+                   (error who "not a proper list" (car ls*)))))]))
      (define (loop1 f nil h t ls)
        (if (pair? h)
            (let ([a (car h)] [h (cdr h)])
              (if (pair? h) 
                  (if (eq? h t)
-                     (error who "~s is circular" ls)
+                     (error who "circular" ls)
                      (let ([b (car h)] [h (cdr h)] [t (cdr t)])
                        (loop1 f (f (f nil a) b) h t ls)))
                  (if (null? h)
                      (f nil a)
-                     (error who "~s is not a proper list" ls))))
+                     (error who "not a proper list" ls))))
            (if (null? h)
                nil
-               (error who "~s is not a proper list" ls))))
+               (error who "not a proper list" ls))))
     (define (loopn f nil h h* t ls ls*)
       (if (pair? h)
           (let-values ([(a* h*) (cars+cdrs h* ls*)])
             (let ([a (car h)] [h (cdr h)])
               (if (pair? h) 
                   (if (eq? h t)
-                      (error who "~s is circular" ls)
+                      (error who "circular" ls)
                       (let-values ([(b* h*) (cars+cdrs h* ls*)])
                         (let ([b (car h)] [h (cdr h)] [t (cdr t)])
                           (loopn f 
@@ -991,11 +991,11 @@
       (case-lambda
         [(f nil ls) 
          (unless (procedure? f)
-           (error who "~s is not a procedure" f))
+           (error who "not a procedure" f))
          (loop1 f nil ls ls ls)]
         [(f nil ls . ls*) 
          (unless (procedure? f)
-           (error who "~s is not a procedure" f))
+           (error who "not a procedure" f))
          (loopn f nil ls ls* ls ls ls*)])))
   
   (module (fold-right)
@@ -1007,7 +1007,7 @@
           (error who "length mismatch")
           (if (list? (car ls*))
               (err* (cdr ls*))
-              (error who "~s is not a proper list" (car ls*)))))
+              (error who "not a proper list" (car ls*)))))
     (define (cars+cdrs ls ls*)
       (cond
         [(null? ls) (values '() '())]
@@ -1018,28 +1018,28 @@
                  (values (cons (car a) cars) (cons (cdr a) cdrs)))
                (if (list? (car ls*)) 
                    (error who "length mismatch")
-                   (error who "~s is not a proper list" (car ls*)))))]))
+                   (error who "not a proper list" (car ls*)))))]))
      (define (loop1 f nil h t ls)
        (if (pair? h)
            (let ([a (car h)] [h (cdr h)])
              (if (pair? h) 
                  (if (eq? h t)
-                     (error who "~s is circular" ls)
+                     (error who "circular" ls)
                      (let ([b (car h)] [h (cdr h)] [t (cdr t)])
                        (f a (f b (loop1 f nil h t ls)))))
                  (if (null? h)
                      (f a nil)
-                     (error who "~s is not a proper list" ls))))
+                     (error who "not a proper list" ls))))
            (if (null? h)
                nil
-               (error who "~s is not a proper list" ls))))
+               (error who "not a proper list" ls))))
     (define (loopn f nil h h* t ls ls*)
       (if (pair? h)
           (let-values ([(a* h*) (cars+cdrs h* ls*)])
             (let ([a (car h)] [h (cdr h)])
               (if (pair? h) 
                   (if (eq? h t)
-                      (error who "~s is circular" ls)
+                      (error who "circular" ls)
                       (let-values ([(b* h*) (cars+cdrs h* ls*)])
                         (let ([b (car h)] [h (cdr h)] [t (cdr t)])
                           (apply f a
@@ -1058,11 +1058,11 @@
       (case-lambda
         [(f nil ls) 
          (unless (procedure? f)
-           (error who "~s is not a procedure" f))
+           (error who "not a procedure" f))
          (loop1 f nil ls ls ls)]
         [(f nil ls . ls*) 
          (unless (procedure? f)
-           (error who "~s is not a procedure" f))
+           (error who "not a procedure" f))
          (loopn f nil ls ls* ls ls ls*)]
         )))
 

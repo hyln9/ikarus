@@ -26,7 +26,7 @@
       [(mbox? x)   (mbox-length x)]
       [(vbox? x)   (vbox-length x)]
       [(fbox? x)   (fbox-length x)]
-      [else (error 'boxify "invalid box ~s" x)]))
+      [else (error 'boxify "invalid box" x)]))
   (define (boxify x)
     (define (conc . a*)
       (let ([n 
@@ -437,7 +437,7 @@
         [(mbox? x)   (output-mbox x p col)]
         [(vbox? x)   (output-vbox x p col)]
         [(fbox? x)   (output-fbox x p col)]
-        [else (error 'pretty-print-output "invalid ~s" x)]))
+        [else (error 'pretty-print-output "invalid" x)]))
     (f x p 0)
     (newline p))
   ;;;
@@ -586,7 +586,7 @@
       [(x p)
        (if (output-port? p)
            (pretty x p)
-           (error 'pretty-print "~s is not an output port" p))]))
+           (error 'pretty-print "not an output port" p))]))
   (set-fmt! 'quote '(read-macro . "'"))
   (set-fmt! 'unquote '(read-macro . ","))
   (set-fmt! 'unquote-splicing '(read-macro . ",@"))
@@ -648,7 +648,7 @@
       [(x p)
        (if (output-port? p)
            (pretty x p)
-           (error 'pretty-print "~s is not an output port" p))])))
+           (error 'pretty-print "not an output port" p))])))
 
 (test '(384 7384 83947 893478 9137489 3894789 134789314 79817238
         97314897 318947138974 981374 89137489 1374897 13498713
@@ -679,5 +679,5 @@
                      (with-input-from-file fname read))])
               (if (equal? x y)
                   (f (fxadd1 i))
-                  (error 'test-file "mismatch\n\n~s\n\n~s" x y)))))))))
+                  (error 'test-file "mismatch" x y)))))))))
 

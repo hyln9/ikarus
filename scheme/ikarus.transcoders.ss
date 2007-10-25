@@ -73,7 +73,7 @@
                      ($fxlogor #b10000000 ($fxlogand b #b111111)))
                    (f bv str ($fxadd1 i) ($fx+ j 4) n)])))])))
       (unless (string? str) 
-        (error 'string->utf8 "~s is not a string" str))
+        (error 'string->utf8 "not a string" str))
       (fill-utf8-bytevector
         ($make-bytevector (utf8-string-size str))
         str)))
@@ -105,12 +105,12 @@
                            [(eq? mode 'replace) 
                             (f x i j ($fxadd1 n) mode)]
                            [else
-                            (error who "invalid byte sequence ~s ~s
-                                   in idx ~s of ~s" b0 b1 i bv)]))]
+                            (error who "invalid byte sequence at idx of bytevector"
+                                   b0 b1 i bv)]))]
                       [(eq? mode 'ignore) n]
                       [(eq? mode 'replace) ($fxadd1 n)]
                       [else
-                       (error who "invalid byte ~s near end of bytevector" b0)]))]
+                       (error who "invalid byte near end of bytevector" b0)]))]
                  [($fx= ($fxsra b0 4) #b1110)
                   (cond
                     [($fx< ($fx+ i 2) j) 
@@ -123,7 +123,7 @@
                           (f x ($fxadd1 i) j n mode)]
                          [(eq? mode 'replace)
                           (f x ($fxadd1 i) j ($fxadd1 n) mode)]
-                         [else (error who "invalid sequence ~s ~s ~s" b0 b1 b2)]))]
+                         [else (error who "invalid sequence" b0 b1 b2)]))]
                     [(eq? mode 'ignore) (f x ($fxadd1 i) j n mode)]
                     [(eq? mode 'replace) (f x ($fxadd1 i) j ($fxadd1 n) mode)]
                     [else (error who "incomplete char sequence")])]
@@ -140,14 +140,13 @@
                           (f x ($fxadd1 i) j n mode)]
                          [(eq? mode 'replace)
                           (f x ($fxadd1 i) j ($fxadd1 n) mode)]
-                         [else (error who "invalid sequence ~s ~s ~s ~s" b0 b1 b2 b3)]))]
+                         [else (error who "invalid sequence" b0 b1 b2 b3)]))]
                     [(eq? mode 'ignore) (f x ($fxadd1 i) j n mode)]
                     [(eq? mode 'replace) (f x ($fxadd1 i) j ($fxadd1 n) mode)]
                     [else (error who "incomplete char sequence")])]
                  [(eq? mode 'ignore) (f x ($fxadd1 i) j n mode)]
                  [(eq? mode 'replace) (f x ($fxadd1 i) j ($fxadd1 n) mode)]
-                 [else (error who "invalid byte ~s at index ~s of ~s" 
-                              b0 i x)]))])))
+                 [else (error who "invalid byte at index of bytevector" b0 i x)]))])))
       (define (fill str bv mode)
         (let f ([str str] [x bv] [i 0] [j ($bytevector-length bv)] [n 0] [mode mode])
           (cond
@@ -243,7 +242,7 @@
         [(bv handling-mode)
          (unless (memq handling-mode '(ignore replace raise)) 
            (error 'decode-utf8-bytevector
-                  "~s is not a valid handling mode"
+                  "not a valid handling mode"
                   handling-mode))
          (convert bv handling-mode)])))
 

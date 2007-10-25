@@ -97,7 +97,7 @@ description:
       [() (do-new-cafe default-cafe-eval)]
       [(p)
        (unless (procedure? p)
-         (error 'new-cafe "~s is not a procedure" p))
+         (error 'new-cafe "not a procedure" p))
        (do-new-cafe p)]))
   )
 

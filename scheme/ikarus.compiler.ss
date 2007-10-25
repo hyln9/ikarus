@@ -27,7 +27,7 @@
            #'(i . i*))]))
     (define (generate-body ctxt cls*)
       (syntax-case cls* (else)
-        [() (with-syntax ([x x]) #'(error #f "unmatched ~s in ~s" v 'x))]
+        [() (with-syntax ([x x]) #'(error #f "unmatched " v 'x))]
         [([else b b* ...])  #'(begin b b* ...)]
         [([(rec-name rec-field* ...) b b* ...] . rest) (identifier? #'rec-name)
          (with-syntax ([altern (generate-body ctxt #'rest)]
@@ -144,7 +144,7 @@
             (let ([fv (make-fvar i)])
               (set! cache (cons (cons i fv) cache))
               fv)])]
-        [else (error 'mkfvar "~s is not a fixnum" i)]))))
+        [else (error 'mkfvar "not a fixnum" i)]))))
 
 (define (unique-var x)
   (make-var (gensym x) #f #f #f #f #f #f #f #f #f #f))
@@ -181,17 +181,17 @@
              (eq? 'quote (car x))
              (symbol? (cadr x)))
         (cadr x)
-        (error 'quoted-sym "not a quoted symbol ~s" x)))
+        (error 'quoted-sym "not a quoted symbol" x)))
   (define (quoted-string x)
     (if (and (list? x)
              (fx= (length x) 2)
              (eq? 'quote (car x))
              (string? (cadr x)))
         (cadr x)
-        (error 'quoted-string "not a quoted string ~s" x)))
+        (error 'quoted-string "not a quoted string" x)))
   (define (Var x)
     (or (getprop x *cookie*) 
-        (error 'recordize "unbound ~s" x)))
+        (error 'recordize "unbound" x)))
   (define (lexical x) 
     (getprop x *cookie*))
   (define (get-fmls x args) 
@@ -292,7 +292,7 @@
            (make-funcall 
              (make-primref 'top-level-value) 
              (list (make-constant x))))]
-      [else (error 'recordize "invalid expression ~s" x)]))
+      [else (error 'recordize "invalid expression" x)]))
   (E x #f))
 
 (define (unparse x)
@@ -454,8 +454,6 @@
         [(conditional) #f]
         [(bind lhs* rhs* body) (valid-mv-producer? body)]
         [else #f] ;; FIXME BUG
-       ; [else (error 'valid-mv-producer? "unhandles ~s"
-       ;              (unparse x))]
         ))
     (struct-case rator
       [(clambda g cls*)
@@ -514,7 +512,7 @@
        (make-forcall rator (map Expr rand*))]
       [(assign lhs rhs)
        (make-assign lhs (Expr rhs))]
-      [else (error who "invalid expression ~s" (unparse x))]))
+      [else (error who "invalid expression" (unparse x))]))
   (Expr x))
 
 
@@ -673,8 +671,8 @@
          (make-mvcall p c))]
       [(forcall rator rand*) 
        (make-forcall rator (E* rand* ref comp))]
-      [else (error who "invalid expression ~s" (unparse x))]))
-  (E x (lambda (x) (error who "free var ~s found" x))
+      [else (error who "invalid expression" (unparse x))]))
+  (E x (lambda (x) (error who "free var found" x))
        void))
 
 
@@ -718,7 +716,7 @@
       [(assign lhs rhs)
        (set-var-assigned! lhs #t)
        (Expr rhs)]
-      [else (error who "invalid expression ~s" (unparse x))]))
+      [else (error who "invalid expression" (unparse x))]))
   (Expr x)
   x)
 
@@ -937,7 +935,8 @@
                              (make-funcall (make-primref op)
                                 (list a0 (make-constant n1))))))
                        (make-funcall (make-primref op) rand*))])))
-         (error 'optimize "~s rands to ~s" (map unparse rand*) op))]
+         (error 'optimize "invalid operands to primitive"
+            (map unparse rand*) op))]
     [(void)
      (or (and (null? rand*)
               (case ctxt
@@ -1009,7 +1008,7 @@
                                    "incorrect arg ~s to ~s"
                                    v op))))
                     (giveup))))
-         (error 'optimize "incorrect args ~s to ~s"
+         (error 'optimize "incorrect args to primitive"
                 (map unparse rand*) op))]
     [(fxadd1 fxsub1)
      (or (and (fx= (length rand*) 1)
@@ -1088,7 +1087,7 @@
      (make-seq e0 (mk-mvcall e1 c))]
     [(bind lhs* rhs* body)
      (make-bind lhs* rhs* (mk-mvcall body c))]
-    [else (error 'mk-mvcall "invalid producer ~s" (unparse p))]))
+    [else (error 'mk-mvcall "invalid producer" (unparse p))]))
 
 
 (define (copy-propagate x)
@@ -1230,11 +1229,11 @@
        (mk-mvcall (Value p) (Value c))]
       [(assign lhs rhs)
        (unless (var-assigned lhs)
-         (error who "var ~s is not assigned" lhs))
+         (error who "var is not assigned" lhs))
        (if (var-referenced lhs)
            (make-assign lhs (Value rhs))
            (Effect rhs))]
-      [else (error who "invalid effect expression ~s" (unparse x))]))
+      [else (error who "invalid effect expression" (unparse x))]))
   (define (Pred x)
     (struct-case x
       [(constant) x]
@@ -1288,7 +1287,7 @@
        (mk-seq (Effect x) (make-constant #t))]
       [(mvcall p c)
        (mk-mvcall (Value p) (Value c))]
-      [else (error who "invalid pred expression ~s" (unparse x))]))
+      [else (error who "invalid pred expression" (unparse x))]))
   (define (Value x)
     (struct-case x
       [(constant) x]
@@ -1296,7 +1295,7 @@
        (let ([r (var-referenced x)])
          (case r
            [(#t) x]
-           [(#f) (error who "Reference to a var ~s that should not be" x)]
+           [(#f) (error who "Reference to a var that should not be" x)]
            [else r]))]
       [(primref) x]
       [(bind lhs* rhs* body)
@@ -1340,7 +1339,7 @@
        (mk-seq (Effect x) the-void)]
       [(mvcall p c)
        (mk-mvcall (Value p) (Value c))]
-      [else (error who "invalid value expression ~s" (unparse x))]))
+      [else (error who "invalid value expression" (unparse x))]))
   (let ([x (Value x)])
     ;;; since we messed up the references and assignments here, we
     ;;; redo them
@@ -1405,11 +1404,11 @@
        (make-funcall (Expr rator) (map Expr rand*))]
       [(assign lhs rhs)
        (unless (var-assigned lhs)
-         (error 'rewrite-assignments "not assigned ~s in ~s" lhs x))
+         (error 'rewrite-assignments "not assigned" lhs x))
        (make-funcall (make-primref '$vector-set!)
          (list lhs (make-constant 0) (Expr rhs)))]
       [(mvcall p c) (make-mvcall (Expr p) (Expr c))]
-      [else (error who "invalid expression ~s" (unparse x))]))
+      [else (error who "invalid expression" (unparse x))]))
   (Expr x))
 
 
@@ -1499,7 +1498,7 @@
            [else
             (make-funcall rator (map Expr rand*))]))]
       [(mvcall p c) (make-mvcall (Expr p) (Expr c))]
-      [else (error who "invalid expression ~s" (unparse x))]))
+      [else (error who "invalid expression" (unparse x))]))
   (Expr x))
 
 
@@ -1586,12 +1585,12 @@
            [(closure code free^) 
             (values (make-mvcall p code)
                     (union p-free c-free))]
-           [else (error who "invalid mvcall consumer ~s" 
+           [else (error who "invalid mvcall consumer" 
                         (unparse c))]))]
-      [else (error who "invalid expression ~s" (unparse ex))]))
+      [else (error who "invalid expression" (unparse ex))]))
   (let-values ([(prog free) (Expr prog)])
     (unless (null? free) 
-      (error 'convert-closures "free vars ~s encountered in ~a"
+      (error 'convert-closures "free vars encountered in program"
           free (unparse prog)))
    prog))
 
@@ -1741,7 +1740,7 @@
                         (make-clambda-case info (E body))]))
                    cases)
               free name))])]
-      [else (error who "invalid expression ~s" (unparse x))]))
+      [else (error who "invalid expression" (unparse x))]))
   (let ([x (E x)])
     (make-codes all-codes x)))
 
@@ -1944,7 +1943,7 @@
     (cond
       [(fixnum? off) (list 'disp (int off) val)]
       [(register? off) (list 'disp off val)]
-      [else (error 'mem "invalid disp ~s" off)]))
+      [else (error 'mem "invalid disp" off)]))
   (define-syntax int
     (syntax-rules ()
       [(_ x) x]))
@@ -2027,20 +2026,20 @@
       [(engine-counter)     (mem 36 pcr)]
       [(interrupted)        (mem 40 pcr)]
       [(base-rtd)           (mem 44 pcr)]
-      [else (error 'pcb-ref "invalid arg ~s" x)])))
+      [else (error 'pcb-ref "invalid arg" x)])))
 
 
 (define (primref->symbol op)
-  (unless (symbol? op) (error 'primref->symbol "not a symbol ~s" op))
+  (unless (symbol? op) (error 'primref->symbol "not a symbol" op))
   (cond
     [((current-primitive-locations) op) =>
      (lambda (x)
        (unless (symbol? x) 
          (error 'primitive-location 
-            "~s is not a valid location for ~s" x op))
+            "not a valid location for ~s" x op))
        x)]
     [else
-     (error #f "~s is not supported yet" op)]))
+     (error #f "not supported yet" op)]))
 
 (define (primref-loc op)
   (mem (fx- disp-symbol-record-proc record-tag) 
@@ -2395,7 +2394,7 @@
                  (if (closure? x)
                      (if (null? (closure-free* x))
                          (code-loc-label (closure-code x))
-                         (error 'compile "BUG: non-thunk escaped: ~s" x))
+                         (error 'compile "BUG: non-thunk escaped" x))
                      #f))
                ls*)])
         (car code*)))))
@@ -2426,7 +2425,7 @@
            (begin 
              (set! plocs p) 
              (refresh-cached-labels!))
-           (error 'current-primitive-locations "~s is not a procedure" p))])))
+           (error 'current-primitive-locations "not a procedure" p))])))
 
 )
 

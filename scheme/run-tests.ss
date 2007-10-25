@@ -18,7 +18,7 @@
       (let-values ([(s r) (exact-integer-sqrt i)])
         (unless (and (= (+ (* s s) r) i)
                      (< i (* (+ s 1) (+ s 1))))
-          (error 'exact-integer-sqrt "wrong result for ~s" i))
+          (error 'exact-integer-sqrt "wrong result" i))
         (f (+ i inc) j inc))))
   (f 0 10000 1)
   (f 0 536870911 10000)

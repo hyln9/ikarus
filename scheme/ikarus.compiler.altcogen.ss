@@ -29,25 +29,25 @@
   ;;;
   (define (check-gensym x)
     (unless (gensym? x)
-      (error who "invalid gensym ~s" x)))
+      (error who "invalid gensym" x)))
   ;;;
   (define (check-label x)
     (struct-case x
       [(code-loc label)
        (check-gensym label)]
-      [else (error who "invalid label ~s" x)]))
+      [else (error who "invalid label" x)]))
   ;;;
   (define (check-var x)
     (struct-case x 
       [(var) (void)]
-      [else (error who "invalid var ~s" x)]))
+      [else (error who "invalid var" x)]))
   ;;;
   (define (check-closure x)
     (struct-case x
       [(closure label free*)
        (check-label label)
        (for-each check-var free*)]
-      [else (error who "invalid closure ~s" x)]))
+      [else (error who "invalid closure" x)]))
   ;;;
   (define (mkfuncall op arg*)
     (import primops)
@@ -81,25 +81,25 @@
        (make-jmpcall label (Expr rator) (map Expr arg*))]
       [(mvcall rator k)
        (make-mvcall (Expr rator) (Clambda k))]
-      [else (error who "invalid expr ~s" x)]))
+      [else (error who "invalid expr" x)]))
   ;;;
   (define (ClambdaCase x)
     (struct-case x
       [(clambda-case info body)
        (make-clambda-case info (Expr body))]
-      [else (error who "invalid clambda-case ~s" x)]))
+      [else (error who "invalid clambda-case" x)]))
   ;;;
   (define (Clambda x)
     (struct-case x
       [(clambda label case* free* name)
        (make-clambda label (map ClambdaCase case*) free* name)]
-      [else (error who "invalid clambda ~s" x)]))
+      [else (error who "invalid clambda" x)]))
   ;;;
   (define (Program x)
     (struct-case x 
       [(codes code* body)
        (make-codes (map Clambda code*) (Expr body))]
-      [else (error who "invalid program ~s" x)]))
+      [else (error who "invalid program" x)]))
   ;;;
   (Program x))
 
@@ -150,7 +150,7 @@
          (make-jmpcall label (Expr rator) (map Expr arg*))]
         [(mvcall rator k)
          (make-mvcall (Expr rator) (Clambda k))]
-        [else (error who "invalid expr ~s" x)]))
+        [else (error who "invalid expr" x)]))
     Expr)
   ;;;
   (define (ClambdaCase free*)
@@ -163,20 +163,20 @@
               (make-clambda-case 
                 (make-case-info label (cons cp args) proper)
                 ((Expr cp free*) body)))])]
-        [else (error who "invalid clambda-case ~s" x)])))
+        [else (error who "invalid clambda-case" x)])))
   ;;;
   (define (Clambda x)
     (struct-case x
       [(clambda label case* free* name)
        (make-clambda label (map (ClambdaCase free*) case*) 
                      free* name)]
-      [else (error who "invalid clambda ~s" x)]))
+      [else (error who "invalid clambda" x)]))
   ;;;
   (define (Program x)
     (struct-case x 
       [(codes code* body)
        (make-codes (map Clambda code*) ((Expr #f '()) body))]
-      [else (error who "invalid program ~s" x)]))
+      [else (error who "invalid program" x)]))
   ;;;
   (Program x))
 
@@ -268,7 +268,7 @@
     [(assq x '([%eax 0] [%edi 1] [%ebx 2] [%edx 3] 
                [%ecx 4] [%esi 5] [%esp 6] [%ebp 7])) 
      => cadr]
-    [else (error 'register-index "~s is not a register" x)]))
+    [else (error 'register-index "not a register" x)]))
 
 
 (define non-8bit-registers '(%edi))
@@ -306,7 +306,7 @@
           (let ([t (unique-var 'tmp)])
             (do-bind (list t) (list x)
               (k t)))]
-         [else (error who "invalid S ~s" x)])]))
+         [else (error who "invalid S" x)])]))
   ;;;
   (define (do-bind lhs* rhs* body)
     (cond
@@ -452,7 +452,7 @@
                       (V d a)
                       (make-set ecx b)
                       (make-asm-instr op d ecx))))]))]
-         [else (error who "invalid value op ~s" op)])]
+         [else (error who "invalid value op" op)])]
       [(funcall rator rands) 
        (handle-nontail-call rator rands d #f)]
       [(jmpcall label rator rands) 
@@ -468,7 +468,7 @@
       [else 
        (if (symbol? x) 
            (make-set d x)
-           (error who "invalid value ~s" (unparse x)))]))
+           (error who "invalid value" (unparse x)))]))
   ;;;
   (define (assign* lhs* rhs* ac)
     (cond
@@ -506,7 +506,7 @@
               (lambda (s*)
                 (make-asm-instr op (car s*) (cadr s*))))]
          [(nop interrupt incr/zero?) x]
-         [else (error 'impose-effect "invalid instr ~s" x)])]
+         [else (error 'impose-effect "invalid instr" x)])]
       [(funcall rator rands)
        (handle-nontail-call rator rands #f #f)]
       [(jmpcall label rator rands) 
@@ -517,7 +517,7 @@
          rands #f op)]
       [(shortcut body handler)
        (make-shortcut (E body) (E handler))]
-      [else (error who "invalid effect ~s" x)]))
+      [else (error who "invalid effect" x)]))
   ;;; impose pred
   (define (P x)
     (struct-case x
@@ -541,7 +541,7 @@
                     (make-asm-instr op a b))))]))]
         [(shortcut body handler)
          (make-shortcut (P body) (P handler))]
-      [else (error who "invalid pred ~s" x)]))
+      [else (error who "invalid pred" x)]))
   ;;;
   (define (handle-tail-call target rator rands)
     (let* ([args (cons rator rands)]
@@ -624,7 +624,7 @@
       [(forcall) (VT x)]
       [(shortcut body handler)
        (make-shortcut (Tail body) (Tail handler))]
-      [else (error who "invalid tail ~s" x)]))
+      [else (error who "invalid tail" x)]))
   ;;;
   (define (formals-locations args)
     (let f ([regs parameter-registers] [args args])
@@ -707,21 +707,21 @@
 
   (define (make-empty-set) (make-set '()))
   (define (set-member? x s) 
-    ;(unless (fixnum? x) (error 'set-member? "~s is not a fixnum" x))
-    (unless (set? s) (error 'set-member? "~s is not a set" s))
+    ;(unless (fixnum? x) (error 'set-member? "not a fixnum" x))
+    (unless (set? s) (error 'set-member? "not a set" s))
     (memq x (set-v s)))
 
   (define (empty-set? s)
-    (unless (set? s) (error 'empty-set? "~s is not a set" s))
+    (unless (set? s) (error 'empty-set? "not a set" s))
     (null? (set-v s)))
     
   (define (set->list s)
-    (unless (set? s) (error 'set->list "~s is not a set" s))
+    (unless (set? s) (error 'set->list "not a set" s))
     (set-v s))
     
   (define (set-add x s)
-    ;(unless (fixnum? x) (error 'set-add "~s is not a fixnum" x))
-    (unless (set? s) (error 'set-add "~s is not a set" s))
+    ;(unless (fixnum? x) (error 'set-add "not a fixnum" x))
+    (unless (set? s) (error 'set-add "not a set" s))
     (cond
       [(memq x (set-v s)) s]
       [else (make-set (cons x (set-v s)))]))
@@ -733,8 +733,8 @@
       [else (cons (car s) (rem x (cdr s)))])) 
 
   (define (set-rem x s)
-    ;(unless (fixnum? x) (error 'set-rem "~s is not a fixnum" x))
-    (unless (set? s) (error 'set-rem "~s is not a set" s))
+    ;(unless (fixnum? x) (error 'set-rem "not a fixnum" x))
+    (unless (set? s) (error 'set-rem "not a set" s))
     (make-set (rem x (set-v s))))
   
   (define (difference s1 s2)
@@ -743,17 +743,17 @@
       [else (difference (rem (car s2) s1) (cdr s2))]))
 
   (define (set-difference s1 s2)
-    (unless (set? s1) (error 'set-difference "~s is not a set" s1))
-    (unless (set? s2) (error 'set-difference "~s is not a set" s2))
+    (unless (set? s1) (error 'set-difference "not a set" s1))
+    (unless (set? s2) (error 'set-difference "not a set" s2))
     (make-set (difference (set-v s1) (set-v s2))))
     
   (define (set-union s1 s2)
-    (unless (set? s1) (error 'set-union "~s is not a set" s1))
-    (unless (set? s2) (error 'set-union "~s is not a set" s2))
+    (unless (set? s1) (error 'set-union "not a set" s1))
+    (unless (set? s2) (error 'set-union "not a set" s2))
     (make-set (union (set-v s1) (set-v s2))))
 
   (define (list->set ls)
-    ;(unless (andmap fixnum? ls) (error 'set-rem "~s is not a list of fixnum" ls))
+    ;(unless (andmap fixnum? ls) (error 'set-rem "not a list of fixnum" ls))
     (make-set ls))
 
   (define (union s1 s2)
@@ -790,7 +790,7 @@
   (define (empty-set? s) (eqv? s 0))
   
   (define (set-member? n s) 
-    (unless (fixnum? n) (error 'set-member? "~s is not a fixnum" n))
+    (unless (fixnum? n) (error 'set-member? "not a fixnum" n))
     (let f ([s s] [i (index-of n)] [j (mask-of n)])
       (cond
         [(pair? s)
@@ -801,7 +801,7 @@
         [else #f])))
 
   (define (set-add n s)
-    (unless (fixnum? n) (error 'set-add "~s is not a fixnum" n))
+    (unless (fixnum? n) (error 'set-add "not a fixnum" n))
     (let f ([s s] [i (index-of n)] [j (mask-of n)])
       (cond
         [(pair? s)
@@ -824,7 +824,7 @@
         (cons a d)))
 
   (define (set-rem n s)
-    (unless (fixnum? n) (error 'set-rem "~s is not a fixnum" n))
+    (unless (fixnum? n) (error 'set-rem "not a fixnum" n))
     (let f ([s s] [i (index-of n)] [j (mask-of n)])
       (cond
         [(pair? s)
@@ -888,7 +888,7 @@
             (fxlogand s1 (fxlognot s2)))))
 
   (define (list->set ls)
-    (unless (andmap fixnum? ls) (error 'list->set "~s is not a list of fixnum" ls))
+    (unless (andmap fixnum? ls) (error 'list->set "not a list of fixnum" ls))
     (let f ([ls ls] [s 0])
       (cond
         [(null? ls) s]
@@ -1254,7 +1254,7 @@
       [(disp? x)
        (let-values ([(vs rs fs ns) (R (disp-s0 x) vs rs fs ns)])
           (R (disp-s1 x) vs rs fs ns))]
-      [else (error who "invalid R ~s" x)]))
+      [else (error who "invalid R" x)]))
   (define (R* ls vs rs fs ns)
     (cond
       [(null? ls) (values vs rs fs ns)]
@@ -1299,7 +1299,7 @@
                 (let ([rs (rem-reg d rs)])
                   (mark-reg/vars-conf! d vs)
                   (values vs rs (add-frm s fs) ns))]
-               [else (error who "invalid rs ~s" (unparse x))])]
+               [else (error who "invalid rs" (unparse x))])]
             [(fvar? d) 
              (cond
                [(not (mem-frm? d fs)) 
@@ -1317,7 +1317,7 @@
                   (mark-frm/vars-conf! d vs)
                   (mark-frm/nfvs-conf! d ns)
                   (values (add-var s vs) rs fs ns))]
-               [else (error who "invalid fs ~s" s)])]
+               [else (error who "invalid fs" s)])]
             [(var? d)
              (cond
                [(not (mem-var? d vs)) 
@@ -1356,7 +1356,7 @@
                   (mark-var/regs-conf! d rs)
                   (mark-var/nfvs-conf! d ns)
                   (values vs rs (add-frm s fs) ns))]
-               [else (error who "invalid vs ~s" s)])]
+               [else (error who "invalid vs" s)])]
             [(nfv? d)
              (cond
                [(not (mem-nfv? d ns)) (error who "dead nfv")]
@@ -1377,12 +1377,12 @@
                   (mark-nfv/vars-conf! d vs)
                   (mark-nfv/frms-conf! d fs)
                   (values vs rs (add-frm s fs) ns))]
-               [else (error who "invalid ns ~s" s)])]
-            [else (error who "invalid d ~s" d)])]
+               [else (error who "invalid ns" s)])]
+            [else (error who "invalid d" d)])]
          [(int-/overflow int+/overflow int*/overflow)
           (let ([v (exception-live-set)])
             (unless (vector? v)
-              (error who "unbound exception for ~s ~s" x v))
+              (error who "unbound exception" x v))
             (let ([vs (union-vars vs (vector-ref v 0))]
                   [rs (union-regs rs (vector-ref v 1))]
                   [fs (union-frms fs (vector-ref v 2))]
@@ -1416,7 +1416,7 @@
                       (mark-nfv/vars-conf! d vs)
                       (mark-nfv/frms-conf! d fs)
                       (R s vs rs fs (add-nfv d ns)))])]
-                [else (error who "invalid op d ~s" (unparse x))])))] 
+                [else (error who "invalid op d" (unparse x))])))] 
          [(logand logor logxor sll sra srl int+ int- int*) 
           (cond
             [(var? d) 
@@ -1447,7 +1447,7 @@
                   (mark-nfv/vars-conf! d vs)
                   (mark-nfv/frms-conf! d fs)
                   (R s vs rs fs (add-nfv d ns)))])]
-            [else (error who "invalid op d ~s" (unparse x))])]
+            [else (error who "invalid op d" (unparse x))])]
          [(idiv) 
           (mark-reg/vars-conf! eax vs)
           (mark-reg/vars-conf! edx vs)
@@ -1458,7 +1458,7 @@
          [(mset bset/c bset/h fl:load fl:store fl:add! fl:sub!
                 fl:mul! fl:div! fl:from-int) 
           (R* (list s d) vs rs fs ns)]
-         [else (error who "invalid effect op ~s" (unparse x))])]
+         [else (error who "invalid effect op" (unparse x))])]
       [(ntcall target value args mask size)
        (set! spill-set (union-vars vs spill-set))
        (for-each-var vs varvec (lambda (x) (set-var-loc! x #t)))
@@ -1478,13 +1478,13 @@
                     (vector-ref v 1)
                     (vector-ref v 2)
                     (vector-ref v 3)))]
-         [else (error who "invalid effect op ~s" op)])]
+         [else (error who "invalid effect op" op)])]
       [(shortcut body handler)
        (let-values ([(vsh rsh fsh nsh) (E handler vs rs fs ns)])
           (parameterize ([exception-live-set
                           (vector vsh rsh fsh nsh)])
             (E body vs rs fs ns)))]
-      [else (error who "invalid effect ~s" (unparse x))]))
+      [else (error who "invalid effect" (unparse x))]))
   (define (P x vst rst fst nst 
                vsf rsf fsf nsf
                vsu rsu fsu nsu)
@@ -1527,7 +1527,7 @@
             (P body vst rst fst nst 
                     vsf rsf fsf nsf
                     vsu rsu fsu nsu)))]
-      [else (error who "invalid pred ~s" (unparse x))]))
+      [else (error who "invalid pred" (unparse x))]))
   (define (T x)
     (struct-case x
       [(seq e0 e1) 
@@ -1550,13 +1550,13 @@
               (empty-reg-set) 
               (empty-frm-set)
               (empty-nfv-set))]
-         [else (error who "invalid tail op ~s" x)])]
+         [else (error who "invalid tail op" x)])]
       [(shortcut body handler)
        (let-values ([(vsh rsh fsh nsh) (T handler)])
           (parameterize ([exception-live-set
                           (vector vsh rsh fsh nsh)])
              (T body)))]
-      [else (error who "invalid tail ~s" x)]))
+      [else (error who "invalid tail" x)]))
   (define exception-live-set 
     (make-parameter #f))
   (T x)
@@ -1622,7 +1622,7 @@
                      [else (error who "invalid arg")]))
                  args)
             mask idx)]
-        [else (error who "invalid NF effect ~s" x)]))
+        [else (error who "invalid NF effect" x)]))
     (define (Var x)
       (cond
         [(var-loc x) =>
@@ -1640,7 +1640,7 @@
         [(var? x) (Var x)]
         [(disp? x)
          (make-disp (R (disp-s0 x)) (R (disp-s1 x)))]
-        [else (error who "invalid R ~s" (unparse x))]))
+        [else (error who "invalid R" (unparse x))]))
     (define (E x)
       (struct-case x
         [(seq e0 e1)
@@ -1664,7 +1664,7 @@
               fl:from-int)
             (make-asm-instr op (R d) (R s))]
            [(nop) (make-primcall 'nop '())]
-           [else (error who "invalid op ~s" op)])]
+           [else (error who "invalid op" op)])]
         [(nframe vars live body)
          (let ([live-frms1
                 (map (lambda (i) (Var (vector-ref varvec i)))
@@ -1762,10 +1762,10 @@
         [(primcall op args)
          (case op
            [(nop interrupt incr/zero?) x]
-           [else (error who "invalid effect prim ~s" op)])]
+           [else (error who "invalid effect prim" op)])]
         [(shortcut body handler)
          (make-shortcut (E body) (E handler))]
-        [else (error who "invalid effect ~s" (unparse x))]))
+        [else (error who "invalid effect" (unparse x))]))
     (define (P x)
       (struct-case x
         [(seq e0 e1)
@@ -1777,7 +1777,7 @@
         [(constant) x]
         [(shortcut body handler)
          (make-shortcut (P body) (P handler))]
-        [else (error who "invalid pred ~s" (unparse x))]))
+        [else (error who "invalid pred" (unparse x))]))
     (define (T x)
       (struct-case x
         [(seq e0 e1)
@@ -1788,7 +1788,7 @@
         [(primcall op args) x]
         [(shortcut body handler)
          (make-shortcut (T body) (T handler))]
-        [else (error who "invalid tail ~s" (unparse x))]))
+        [else (error who "invalid tail" (unparse x))]))
     (T x))
   ;;;
   (define (Main x)
@@ -1806,7 +1806,7 @@
                      [(var-loc (car vars)) (f (cdr vars))]
                      [else (cons (car vars) (f (cdr vars)))])))
                body))))]
-      [else (error 'assign-frame-sizes "invalid main ~s" x)]))
+      [else (error 'assign-frame-sizes "invalid main" x)]))
   ;;;
   (define (ClambdaCase x) 
     (struct-case x
@@ -1859,7 +1859,7 @@
             (if (memq x all-registers) 
                 (set-add x (make-empty-set))
                 (make-empty-set))]
-           [else (error who "invalid R ~s" x)])]))
+           [else (error who "invalid R" x)])]))
     ;;; build effect
     (define (E x s)
       (struct-case x
@@ -1910,7 +1910,7 @@
            [(mset fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
                   fl:from-int)
             (set-union (R v) (set-union (R d) s))]
-           [else (error who "invalid effect ~s" x)])]
+           [else (error who "invalid effect" x)])]
         [(seq e0 e1) (E e0 (E e1 s))]
         [(conditional e0 e1 e2)
          (let ([s1 (E e1 s)] [s2 (E e2 s)])
@@ -1922,12 +1922,12 @@
            [(nop) s]
            [(interrupt incr/zero?) 
             (or (exception-live-set) (error who "uninitialized exception"))]
-           [else (error who "invalid effect primcall ~s" op)])]
+           [else (error who "invalid effect primcall" op)])]
         [(shortcut body handler)
          (let ([s2 (E handler s)])
            (parameterize ([exception-live-set s2])
              (E body s)))]
-        [else (error who "invalid effect ~s" (unparse x))]))
+        [else (error who "invalid effect" (unparse x))]))
     (define (P x st sf su)
       (struct-case x
         [(constant c) (if c st sf)]
@@ -1942,7 +1942,7 @@
          (let ([s2 (P handler st sf su)])
            (parameterize ([exception-live-set s2])
              (P body st sf su)))]
-        [else (error who "invalid pred ~s" (unparse x))]))
+        [else (error who "invalid pred" (unparse x))]))
     (define (T x)
       (struct-case x
         [(conditional e0 e1 e2)
@@ -1955,7 +1955,7 @@
          (let ([s2 (T handler)])
            (parameterize ([exception-live-set s2])
               (T body)))]
-        [else (error who "invalid tail ~s" (unparse x))]))
+        [else (error who "invalid tail" (unparse x))]))
     (define exception-live-set (make-parameter #f))
     (let ([s (T x)])
       ;(pretty-print (unparse x))
@@ -1986,7 +1986,7 @@
               (car r*)))))
     (define (find-color x confs env)
       (or (find-color/maybe x confs env)
-          (error 'find-color "cannot find color for ~s" x)))
+          (error 'find-color "cannot find color for" x)))
     (cond
       [(and (empty-set? sp*) (empty-set? un*)) 
        (values '() (make-empty-set) '())]
@@ -2041,7 +2041,7 @@
       (struct-case x
         [(var) (Var x)]
         [(nfv confs loc) 
-         (or loc (error who "LHS not set ~s" x))]
+         (or loc (error who "LHS not set" x))]
         [else x]))
     (define (D x)
       (struct-case x
@@ -2049,17 +2049,17 @@
         [(var) (Var x)]
         [(fvar) x]
         [else
-         (if (symbol? x) x (error who "invalid D ~s" x))]))
+         (if (symbol? x) x (error who "invalid D" x))]))
     (define (R x)
       (struct-case x
         [(constant) x]
         [(var) (Var x)]
         [(fvar)     x]
         [(nfv c loc)
-         (or loc (error who "unset nfv ~s in R" x))]
+         (or loc (error who "unset nfv in R" x))]
         [(disp s0 s1) (make-disp (D s0) (D s1))]
         [else
-         (if (symbol? x) x (error who "invalid R ~s" x))]))
+         (if (symbol? x) x (error who "invalid R" x))]))
     ;;; substitute effect
     (define (E x)
       (struct-case x
@@ -2073,7 +2073,7 @@
         [(ntcall) x]
         [(shortcut body handler)
          (make-shortcut (E body) (E handler))]
-        [else (error who "invalid effect ~s" (unparse x))]))
+        [else (error who "invalid effect" (unparse x))]))
     (define (P x)
       (struct-case x
         [(constant) x]
@@ -2084,7 +2084,7 @@
         [(seq e0 e1) (make-seq (E e0) (P e1))]
         [(shortcut body handler)
          (make-shortcut (P body) (P handler))]
-        [else (error who "invalid pred ~s" (unparse x))])) 
+        [else (error who "invalid pred" (unparse x))])) 
     (define (T x)
       (struct-case x
         [(primcall op rands) x]
@@ -2093,7 +2093,7 @@
         [(seq e0 e1) (make-seq (E e0) (T e1))]
         [(shortcut body handler)
          (make-shortcut (T body) (T handler))]
-        [else (error who "invalid tail ~s" (unparse x))]))
+        [else (error who "invalid tail" (unparse x))]))
     ;(print-code x)
     (T x))
   ;;;
@@ -2195,12 +2195,12 @@
               (error who "invalid arg to idiv"))
             (cond
               [(disp? b)
-               (error who "invalid arg to idiv ~s" b)]
+               (error who "invalid arg to idiv" b)]
               [else x])]
            [(sll sra srl)
             (unless (or (constant? b)
                         (eq? b ecx))
-              (error who "invalid shift ~s" b))
+              (error who "invalid shift" b))
             x]
            [(mset bset/c bset/h) 
             (cond
@@ -2241,16 +2241,16 @@
                    (E (make-asm-instr op u b))))]
               [else x])]
            [(fl:from-int) x]
-           [else (error who "invalid effect ~s" op)])]
+           [else (error who "invalid effect" op)])]
         [(primcall op rands) 
          (case op
            [(nop interrupt incr/zero?) x]
-           [else (error who "invalid op in ~s" (unparse x))])]
+           [else (error who "invalid op in" (unparse x))])]
         [(ntcall) x]
         [(shortcut body handler)
          (let ([body (E body)])
            (make-shortcut body (E handler)))]
-        [else (error who "invalid effect ~s" (unparse x))]))
+        [else (error who "invalid effect" (unparse x))]))
     (define (P x)
       (struct-case x
         [(constant) x]
@@ -2284,7 +2284,7 @@
         [(shortcut body handler)
          (let ([body (P body)])
            (make-shortcut body (P handler)))]
-        [else (error who "invalid pred ~s" (unparse x))]))
+        [else (error who "invalid pred" (unparse x))]))
     (define (T x)
       (struct-case x
         [(primcall op rands) x]
@@ -2293,7 +2293,7 @@
         [(seq e0 e1) (make-seq (E e0) (T e1))]
         [(shortcut body handler)
          (make-shortcut (T body) (T handler))]
-        [else (error who "invalid tail ~s" (unparse x))]))
+        [else (error who "invalid tail" (unparse x))]))
     (let ([x (T x)])
       (values un* x)))
   ;;;
@@ -2355,19 +2355,19 @@
       [else 
        (if (integer? x)
            x
-           (error who "invalid constant C ~s" x))]))
+           (error who "invalid constant C" x))]))
   (define (BYTE x)
     (struct-case x
       [(constant x)
        (unless (and (integer? x) (fx<= x 255) (fx<= -128 x))
-         (error who "invalid byte ~s" x))
+         (error who "invalid byte" x))
        x]
-      [else (error who "invalid byte ~s" x)]))
+      [else (error who "invalid byte" x)]))
   (define (D x)
     (struct-case x
       [(constant c) (C c)]
       [else
-       (if (symbol? x) x (error who "invalid D ~s" x))]))
+       (if (symbol? x) x (error who "invalid D" x))]))
   (define (R x)
     (struct-case x
       [(constant c) (C c)]
@@ -2376,7 +2376,7 @@
        (let ([s0 (D s0)] [s1 (D s1)])
          `(disp ,s0 ,s1))]
       [else
-       (if (symbol? x) x (error who "invalid R ~s" x))]))
+       (if (symbol? x) x (error who "invalid R" x))]))
   (define (R/l x)
     (struct-case x
       [(constant c) (C c)]
@@ -2385,27 +2385,27 @@
        (let ([s0 (D s0)] [s1 (D s1)])
          `(disp ,s0 ,s1))]
       [else
-       (if (symbol? x) (reg/l x) (error who "invalid R/l ~s" x))])) 
+       (if (symbol? x) (reg/l x) (error who "invalid R/l" x))])) 
   (define (reg/h x)
     (cond
       [(assq x '([%eax %ah] [%ebx %bh] [%ecx %ch] [%edx %dh]))
        => cadr]
-      [else (error who "invalid reg/h ~s" x)]))
+      [else (error who "invalid reg/h" x)]))
   (define (reg/l x)
     (cond
       [(assq x '([%eax %al] [%ebx %bl] [%ecx %cl] [%edx %dl]))
        => cadr]
-      [else (error who "invalid reg/l ~s" x)])) 
+      [else (error who "invalid reg/l" x)])) 
   (define (R/cl x)
     (struct-case x
       [(constant i) 
        (unless (fixnum? i)
-         (error who "invalid R/cl ~s" x))
+         (error who "invalid R/cl" x))
        (fxlogand i 31)]
       [else
        (if (eq? x ecx)
            '%cl
-           (error who "invalid R/cl ~s" x))]))
+           (error who "invalid R/cl" x))]))
   (define (interrupt? x)
     (struct-case x
       [(primcall op args) (eq? op 'interrupt)]
@@ -2532,7 +2532,7 @@
           (cons `(mulsd ,(R (make-disp s d)) xmm0) ac)]
          [(fl:div!) 
           (cons `(divsd ,(R (make-disp s d)) xmm0) ac)]
-         [else (error who "invalid instr ~s" x)])]
+         [else (error who "invalid instr" x)])]
       [(primcall op rands)
        (case op
          [(nop) ac]
@@ -2547,7 +2547,7 @@
               `(addl 1 ,(R (make-disp (car rands) (cadr rands))))
               `(je ,l)
               ac))]
-         [else (error who "invalid effect ~s" (unparse x))])]
+         [else (error who "invalid effect" (unparse x))])]
       [(shortcut body handler)
        (let ([L (unique-interrupt-label)] [L2 (unique-label)])
          (let ([hand (cons L (E handler `((jmp ,L2))))])
@@ -2560,7 +2560,7 @@
       ;   (let ([ac (cons L (E handler (cons L2 ac)))])
       ;     (parameterize ([exception-label L])
       ;        (E body (cons `(jmp ,L2) ac)))))]
-      [else (error who "invalid effect ~s" (unparse x))]))
+      [else (error who "invalid effect" (unparse x))]))
   ;;;
   (define (unique-interrupt-label)
     (label (gensym "ERROR")))
@@ -2609,7 +2609,7 @@
                         [fl:> fl:o<=] [fl:>= fl:o<]
                         ))
               => cadr]
-             [else (error who "invalid notop ~s" x)]))
+             [else (error who "invalid notop" x)]))
          (define (jmpname x)
            (cond
              [(assq x '([= je] [!= jne] [< jl] [<= jle] [> jg] [>= jge]
@@ -2620,13 +2620,13 @@
                         [fl:o< jb] [fl:o> ja] [fl:o<= jbe] [fl:o>= jae]
                         ))
               => cadr]
-             [else (error who "invalid jmpname ~s" x)]))
+             [else (error who "invalid jmpname" x)]))
          (define (revjmpname x)
            (cond
              [(assq x '([= je] [!= jne] [< jg] [<= jge] [> jl] [>= jle]
                         [u< ja] [u<= jae] [u> jb] [u>= jbe]))
               => cadr]
-             [else (error who "invalid jmpname ~s" x)]))
+             [else (error who "invalid jmpname" x)]))
          (define (cmp op a0 a1 lab ac)
            (cond
              [(memq op '(fl:= fl:!= fl:< fl:<= fl:> fl:>=))
@@ -2647,7 +2647,7 @@
               (cons* `(cmpl ,(R a0) ,(R a1))
                      `(,(revjmpname op) ,lab)
                      ac)]
-             [else (error who "invalid cmpops ~s ~s" a0 a1)]))
+             [else (error who "invalid cmpops" a0 a1)]))
          (cond
            [(and lt lf)
             (cmp op a0 a1 lt
@@ -2665,7 +2665,7 @@
                (set-cdr! tc (append hand (cdr tc)))))
            (parameterize ([exception-label L])
              (P body lt lf ac))))]
-      [else (error who "invalid pred ~s" x)]))
+      [else (error who "invalid pred" x)]))
   ;;;
   (define (T x ac)
     (struct-case x
@@ -2681,7 +2681,7 @@
                ac)]
         [(direct-jump)
          (cons `(jmp (label ,(code-loc-label (car rands)))) ac)]
-        [else (error who "invalid tail ~s" x)])]
+        [else (error who "invalid tail" x)])]
       [(shortcut body handler) 
        (let ([L (unique-interrupt-label)])
          (let ([hand (cons L (T handler '()))])
@@ -2689,7 +2689,7 @@
              (set-cdr! tc (append hand (cdr tc)))))
          (parameterize ([exception-label L])
            (T body ac)))]
-      [else (error who "invalid tail ~s" x)]))
+      [else (error who "invalid tail" x)]))
   (define exception-label (make-parameter #f))
   ;;;
   (define (handle-vararg fml-count ac)

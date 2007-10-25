@@ -46,17 +46,17 @@
   (define (codec->fixnum x who)
     (cond
       [(assq x codec-alist) => cdr]
-      [else (error who "~s is not a valid coded" x)]))
+      [else (error who "not a valid coded" x)]))
 
   (define (eol-style->fixnum x who)
     (cond
       [(assq x eol-style-alist) => cdr]
-      [else (error who "~s is not a valid eol-style" x)]))
+      [else (error who "not a valid eol-style" x)]))
 
   (define (error-handling-mode->fixnum x who)
     (cond
       [(assq x error-handling-mode-alist) => cdr]
-      [else (error who "~s is not a valid error-handling mode" x)]))
+      [else (error who "not a valid error-handling mode" x)]))
 
   (define make-transcoder
     (case-lambda
@@ -79,24 +79,24 @@
     (if ($transcoder? x) 
         (let ([tag (fxlogand ($transcoder->data x) codec-mask)])
           (or (rev-lookup tag codec-alist)
-              (error who "~s has no codec" x)))
-        (error who "~s is not a transcoder" x)))
+              (error who "transcoder has no codec" x)))
+        (error who "not a transcoder" x)))
 
   (define (transcoder-eol-style x) 
     (define who 'transcoder-eol-style)
     (if ($transcoder? x) 
         (let ([tag (fxlogand ($transcoder->data x) eol-style-mask)])
           (or (rev-lookup tag eol-style-alist)
-              (error who "~s has no eol-style" x)))
-        (error who "~s is not a transcoder" x)))
+              (error who "transcoder has no eol-style" x)))
+        (error who "not a transcoder" x)))
 
   (define (transcoder-error-handling-mode x) 
     (define who 'transcoder-error-handling-mode)
     (if ($transcoder? x) 
         (let ([tag (fxlogand ($transcoder->data x) error-handling-mode-mask)])
           (or (rev-lookup tag error-handling-mode-alist)
-              (error who "~s has no error-handling mode" x)))
-        (error who "~s is not a transcoder" x)))
+              (error who "transcoder has no error-handling mode" x)))
+        (error who "not a transcoder" x)))
 
   (define (buffer-mode? x)
     (and (memq x '(none line block)) #t))
@@ -118,7 +118,7 @@
       
   (define (file-options-spec ls)
     (unless (list? ls) 
-      (error 'file-options-spec "~s is not a list" ls))
+      (error 'file-options-spec "not a list" ls))
     (let f ([ls ls] [n 0])
       (cond
         [(null? ls) (vector-ref file-options-vec n)]

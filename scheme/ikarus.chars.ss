@@ -11,26 +11,26 @@
   (define integer->char
     (lambda (n)
       (cond
-        [(not (fixnum? n)) (error 'integer->char "invalid argument ~s" n)]
-        [($fx< n 0) (error 'integer->char "~s is negative" n)]
+        [(not (fixnum? n)) (error 'integer->char "invalid argument" n)]
+        [($fx< n 0) (error 'integer->char "negative" n)]
         [($fx<= n #xD7FF) ($fixnum->char n)]
         [($fx< n #xE000)
-         (error 'integer->char "~s does not have a unicode representation" n)]
+         (error 'integer->char "integer does not have a unicode representation" n)]
         [($fx<= n #x10FFFF) ($fixnum->char n)]
         [else (error 'integer->char 
-                "~s does not have a unicode representation" n)])))
+                "integer does not have a unicode representation" n)])))
   
   (define char->integer 
     (lambda (x) 
       (unless (char? x)
-        (error 'char->integer "~s is not a character" x))
+        (error 'char->integer "not a character" x))
       ($char->fixnum x)))
 
   ;;; FIXME: this file is embarrasing
   (define char=?
     (let ()
       (define (err x)
-        (error 'char=? "~s is not a character" x))
+        (error 'char=? "not a character" x))
       (case-lambda
         [(c1 c2)
          (if (char? c1)
@@ -67,7 +67,7 @@
   (define char<?
     (let ()
       (define (err x)
-        (error 'char<? "~s is not a character" x))
+        (error 'char<? "not a character" x))
       (case-lambda
         [(c1 c2)
          (if (char? c1)
@@ -104,7 +104,7 @@
   (define char<=?
     (let ()
       (define (err x)
-        (error 'char<=? "~s is not a character" x))
+        (error 'char<=? "not a character" x))
       (case-lambda
         [(c1 c2)
          (if (char? c1)
@@ -141,7 +141,7 @@
   (define char>?
     (let ()
       (define (err x)
-        (error 'char>? "~s is not a character" x))
+        (error 'char>? "not a character" x))
       (case-lambda
         [(c1 c2)
          (if (char? c1)
@@ -178,7 +178,7 @@
   (define char>=?
     (let ()
       (define (err x)
-        (error 'char>=? "~s is not a character" x))
+        (error 'char>=? "not a character" x))
       (case-lambda
         [(c1 c2)
          (if (char? c1)

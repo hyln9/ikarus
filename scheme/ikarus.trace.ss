@@ -81,7 +81,7 @@
              (unless (eq? (cdr a) v)
                (unless (procedure? v)
                  (error 'trace
-                        "the top-level value of ~s is ~s (not a procedure)"
+                        "the top-level value is not a procedure"
                      s v))
                (let ([p (make-traced-procedure s v)])
                  (set-car! a v)
@@ -89,11 +89,10 @@
                  (set-symbol-value! s p)))))]
         [else
          (unless (symbol-bound? s)
-           (error 'trace "~s is unbound" s))
+           (error 'trace "unbound" s))
          (let ([v (symbol-value s)])
            (unless (procedure? v)
-             (error 'trace "the top-level value of ~s is ~s (not a procedure)"
-                    s v))
+             (error 'trace "the top-level value is not a procedure" s v))
            (let ([p (make-traced-procedure s v)])
              (set! traced-symbols 
                (cons (cons s (cons v p)) traced-symbols))

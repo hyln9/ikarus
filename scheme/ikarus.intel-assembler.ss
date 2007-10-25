@@ -58,7 +58,7 @@
   (lambda (x)
     (cond
       [(assq x register-mapping) => caddr]
-      [else (error 'register-index "not a register ~s" x)])))
+      [else (error 'register-index "not a register" x)])))
 
 (define reg32?
   (lambda (x)
@@ -194,7 +194,7 @@
        (cons (cons 'label-addr (label-name n)) ac)]
       [(foreign? n)
        (cons (cons 'foreign-label (label-name n)) ac)]
-      [else (error 'IMM32 "invalid ~s" n)])))
+      [else (error 'IMM32 "invalid" n)])))
 
 
 (define IMM8
@@ -202,7 +202,7 @@
     (cond
       [(int? n) 
        (cons* (byte n) ac)]
-      [else (error 'IMM8 "invalid ~s" n)])))
+      [else (error 'IMM8 "invalid" n)])))
 
 
 (define imm?
@@ -229,7 +229,7 @@
        (let ([d (cdr x)])
          (unless (and (null? (cdr d))
                       (symbol? (car d)))
-           (error 'assemble "invalid label ~s" x)))
+           (error 'assemble "invalid label" x)))
        #t]
       [else #f])))
 
@@ -241,7 +241,7 @@
          (unless (and (null? (cdr d))
                       (or (symbol? (car d))
                           (string? (car d))))
-           (error 'assemble "invalid label-address ~s" x)))
+           (error 'assemble "invalid label-address" x)))
        #t]
       [else #f])))
 
@@ -265,7 +265,7 @@
        (CODE c (ModRM 1 d s (IMM8 i ac)))]
       [(imm? i)
        (CODE c (ModRM 2 d s (IMM32 i ac)))]
-      [else (error 'CODErri "invalid i=~s" i)])))
+      [else (error 'CODErri "invalid i" i)])))
 
 (define CODErr
   (lambda (c d s ac)
@@ -297,8 +297,9 @@
          (cons (reloc-word+ v d) ac))]
       [(and (int? i2) (obj? i1)) (IMM32*2 i2 i1 ac)]
       [(and (int? i1) (int? i2)) 
+       ;FIXME
        (IMM32 i1 (IMM32 i2 ac))]
-      [else (error 'assemble "IMM32*2 ~s ~s" i1 i2)])))
+      [else (error 'assemble "invalid IMM32*2" i1 i2)])))
 
 (define CODErd
   (lambda (c r1 disp ac)
@@ -315,7 +316,7 @@
            (CODE c 
              (ModRM 0 r1 '/5 
                (IMM32*2 a1 a2 ac)))]
-          [else (error 'CODErd "unhandled ~s" disp)])))))
+          [else (error 'CODErd "unhandled" disp)])))))
 
 (define CODEdi
   (lambda (c /? disp n ac)
@@ -323,14 +324,14 @@
       (lambda (a1 a2)
         (cond
           [(and (reg? a1) (reg? a2)) 
-           (error 'CODEdi "unsupported1 ~s" disp)]
+           (error 'CODEdi "unsupported1" disp)]
           [(and (imm? a1) (reg? a2))
            (CODErri c /? a2 a1 (IMM32 n ac))]
           [(and (imm? a2) (reg? a1))
            (CODErri c /? a1 a2 (IMM32 n ac))]
           [(and (imm? a1) (imm? a2))
-           (error 'CODEdi "unsupported2 ~s" disp)]
-          [else (error 'CODEdi "unhandled ~s" disp)])))))
+           (error 'CODEdi "unsupported2" disp)]
+          [else (error 'CODEdi "unhandled" disp)])))))
 
 (define (SIB s i b ac)
   (cons (byte
@@ -360,8 +361,8 @@
                (CODE c (ModRM 1 /d '/4 (SIB 0 a0 a1 (IMM8 0 ac))))]
               [(and (imm? a0) (imm? a1))
                (CODE c (ModRM 0 /d '/5 (IMM32*2 a0 a1 ac)))]
-              [else (error 'CODE/digit "unhandled ~s ~s" a0 a1)])))]
-      [else (error 'CODE/digit "unhandled ~s" dst)])))
+              [else (error 'CODE/digit "unhandled" a0 a1)])))]
+      [else (error 'CODE/digit "unhandled" dst)])))
 
 (define CODEid
   (lambda (c /? n disp ac)
@@ -369,7 +370,7 @@
       (lambda (a1 a2)
         (cond
           [(and (reg? a1) (reg? a2)) 
-           (error 'CODEid "unsupported1 ~s" disp)]
+           (error 'CODEid "unsupported1" disp)]
           [(and (imm? a1) (reg? a2))
            (error 'CODEid "unsupported2")
            (CODErri c /? a2 a1 (IMM32 n ac))]
@@ -378,7 +379,7 @@
            (CODErri c /? a1 a2 (IMM32 n ac))]
           [(and (imm? a1) (imm? a2))
            (error 'CODEid "unsupported4")]
-          [else (error 'CODEid "unhandled ~s" disp)])))))
+          [else (error 'CODEid "unhandled" disp)])))))
 
 (define CODEdi8
   (lambda (c /? disp n ac)
@@ -410,20 +411,20 @@
            [(fx= n 2)
             (if (fx= (length args) 2)
                 (proc a ac (car args) (cadr args))
-                (error 'convert-instruction "incorrect args in ~s" a))]
+                (error 'convert-instruction "incorrect args" a))]
            [(fx= n 1)
             (if (fx= (length args) 1)
                 (proc a ac (car args))
-                (error 'convert-instruction "incorrect args in ~s" a))]
+                (error 'convert-instruction "incorrect args" a))]
            [(fx= n 0)
             (if (fx= (length args) 0)
                 (proc a ac)
-                (error 'convert-instruction "incorrect args in ~s" a))] 
+                (error 'convert-instruction "incorrect args" a))] 
            [else
             (if (fx= (length args) n)
                 (apply proc a ac args)
-                (error 'convert-instruction "incorrect args in ~s" a))])))]
-    [else (error 'convert-instruction "unknown instruction in ~s" a)]))
+                (error 'convert-instruction "incorrect args" a))])))]
+    [else (error 'convert-instruction "unknown instruction" a)]))
 
 
 
@@ -433,17 +434,17 @@
      (cond
        [(reg? arg2) (CODEri ircode arg2 arg1 ac)]
        [(mem? arg2) (CODEdi imcode '/0 arg2 arg1 ac)]
-       [else (error 'instr/2 "invalid args ~s ~s" arg1 arg2)])]
+       [else (error 'instr/2 "invalid args" arg1 arg2)])]
     [(reg? arg1)
      (cond
        [(reg? arg2) (CODErr rrcode arg1 arg2 ac)]
        [(mem? arg2) (CODErd rmcode arg1 arg2 ac)]
-       [else (error 'instr/2 "invalid args ~s ~s" arg1 arg2)])]
+       [else (error 'instr/2 "invalid args" arg1 arg2)])]
     [(mem? arg1)
      (cond
        [(reg? arg2) (CODErd mrcode arg2 arg1 ac)]
-       [else (error 'instr/2 "invalid args ~s ~s" arg1 arg2)])]
-    [else (error 'instr/2 "invalid args ~s ~s" arg1 arg2)]))
+       [else (error 'instr/2 "invalid args" arg1 arg2)])]
+    [else (error 'instr/2 "invalid args" arg1 arg2)]))
 
 (module ()
 (define who 'assembler)
@@ -452,7 +453,7 @@
   (cond
     [(reg8? dst)
      (CODE #x0F (CODE c (ModRM 3 '/0 dst ac)))]
-    [else (error who "invalid condition-set to ~s" dst)]))
+    [else (error who "invalid condition-set" dst)]))
 
 (define (conditional-jump c dst ac)
   (cond
@@ -460,7 +461,7 @@
      (CODE #x0F (CODE c (IMM32 dst ac)))]
     [(label? dst)
      (CODE #x0F (CODE c (cons (cons 'relative (label-name dst)) ac)))]
-    [else (error who "invalid conditional jump target ~s" dst)]))
+    [else (error who "invalid conditional jump target" dst)]))
 
 (add-instructions instr ac
    [(ret)  (CODE #xC3 ac)]
@@ -473,46 +474,46 @@
        ((CODE/digit #xC6 '/0) dst (IMM8 src ac))]
       [(and (reg8? src) (mem? dst)) (CODErd #x88 src dst ac)]
       [(and (mem? src) (reg8? dst)) (CODErd #x8A dst src ac)]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(movsd src dst)
     (cond
       [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
        (CODE #xF2 (CODE #x0F ((CODE/digit #x10 dst) src ac)))]
       [(and (xmmreg? src) (or (xmmreg? dst) (mem? dst)))
        (CODE #xF2 (CODE #x0F ((CODE/digit #x11 src) dst ac)))]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(cvtsi2sd src dst)
     (cond
       [(and (xmmreg? dst) (reg? src))
        (CODE #xF2 (CODE #x0F (CODE #x2A (ModRM 3 src dst ac))))]
       [(and (xmmreg? dst) (mem? src))
        (CODE #xF2 (CODE #x0F ((CODE/digit #x2A dst) src ac)))]
-      [else (error who "invalid ~s" instr)])] 
+      [else (error who "invalid" instr)])] 
    [(addsd src dst)
     (cond
       [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
        (CODE #xF2 (CODE #x0F ((CODE/digit #x58 dst) src ac)))]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(subsd src dst)
     (cond
       [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
        (CODE #xF2 (CODE #x0F ((CODE/digit #x5C dst) src ac)))]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(mulsd src dst)
     (cond
       [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
        (CODE #xF2 (CODE #x0F ((CODE/digit #x59 dst) src ac)))]
-      [else (error who "invalid ~s" instr)])] 
+      [else (error who "invalid" instr)])] 
    [(divsd src dst)
     (cond
       [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
        (CODE #xF2 (CODE #x0F ((CODE/digit #x5E dst) src ac)))]
-      [else (error who "invalid ~s" instr)])] 
+      [else (error who "invalid" instr)])] 
    [(ucomisd src dst)
     (cond
       [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
        (CODE #x66 (CODE #x0F ((CODE/digit #x2E dst) src ac)))]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(addl src dst)
     (cond   
       [(and (imm8? src) (reg? dst)) 
@@ -529,7 +530,7 @@
        ((CODE/digit #x81 '/0) dst (IMM32 src ac))]
       [(and (reg? src) (mem? dst))
        ((CODE/digit #x01 src) dst ac)]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(subl src dst)
     (cond   
       [(and (imm8? src) (reg? dst)) 
@@ -546,7 +547,7 @@
        ((CODE/digit #x81 '/5) dst (IMM32 src ac))]
       [(and (reg? src) (mem? dst))
        ((CODE/digit #x29 src) dst ac)]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(sall src dst)
     (cond
       [(and (equal? 1 src) (reg? dst))
@@ -559,7 +560,7 @@
        (CODE #xD3 (ModRM 3 '/4 dst ac))]
       [(and (eq? src '%cl) (mem? dst))
        ((CODE/digit #xD3 '/4) dst ac)]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(shrl src dst)
     (cond
       [(and (equal? 1 src) (reg? dst))
@@ -572,7 +573,7 @@
        ((CODE/digit #xC1 '/5) dst (IMM8 src ac))]
       [(and (eq? src '%cl) (mem? dst))
        ((CODE/digit #xD3 '/5) dst ac)]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(sarl src dst)
     (cond
       [(and (equal? 1 src) (reg? dst))
@@ -585,7 +586,7 @@
        (CODE #xD3 (ModRM 3 '/7 dst ac))]
       [(and (eq? src '%cl) (mem? dst))
        ((CODE/digit #xD3 '/7) dst ac)]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(andl src dst) 
     (cond
       [(and (imm? src) (mem? dst))
@@ -602,7 +603,7 @@
        ((CODE/digit #x21 src) dst ac)]
       [(and (mem? src) (reg? dst))
        (CODErd #x23 dst src ac)]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(orl src dst) 
     (cond
       [(and (imm? src) (mem? dst))
@@ -619,7 +620,7 @@
        (CODE #x09 (ModRM 3 src dst ac))]
       [(and (mem? src) (reg? dst))
        (CODErd #x0B dst src ac)]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(xorl src dst) 
     (cond
       [(and (imm8? src) (reg? dst)) 
@@ -630,12 +631,12 @@
        (CODE #x31 (ModRM 3 src dst ac))]
       [(and (mem? src) (reg? dst))
        (CODErd #x33 dst src ac)]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(leal src dst) 
     (cond
       [(and (mem? src) (reg? dst))
        (CODErd #x8D dst src ac)]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(cmpl src dst)
     (cond
       [(and (imm8? src) (reg? dst)) 
@@ -654,7 +655,7 @@
       [(and (imm? src) (mem? dst))
        ;;; maybe error 
        (CODErd #x81 '/7 dst (IMM32 src ac))]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(imull src dst)
     (cond
       [(and (imm8? src) (reg? dst)) 
@@ -665,7 +666,7 @@
        (CODE #x0F (CODE #xAF (ModRM 3 dst src ac)))]
       [(and (mem? src) (reg? dst))
        (CODE #x0F (CODErd #xAF dst src ac))]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(idivl dst)
     (cond
       [(reg? dst)
@@ -673,7 +674,7 @@
       [(mem? dst)
        ;;; maybe error 
        (CODErd #xF7 '/7 dst ac)]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(pushl dst)
     (cond
       [(imm8? dst) 
@@ -685,7 +686,7 @@
       [(mem? dst)
        ;;; maybe error 
        (CODErd #xFF '/6 dst ac)]
-      [else (error who "invalid ~s" instr)])] 
+      [else (error who "invalid" instr)])] 
    [(popl dst)
     (cond
       [(reg? dst)
@@ -693,7 +694,7 @@
       [(mem? dst)
        ;;; maybe error 
        (CODErd #x8F '/0 dst ac)]
-      [else (error who "invalid ~s" instr)])] 
+      [else (error who "invalid" instr)])] 
    [(notl dst)
     (cond
       [(reg? dst)
@@ -701,12 +702,12 @@
       [(mem? dst)
        ;;; maybe error 
        (CODErd #xF7 '/7 dst ac)]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(negl dst)
     (cond
       [(reg? dst)
        (CODE #xF7 (ModRM 3 '/3 dst ac))]
-      [else (error who "invalid ~s" instr)])]
+      [else (error who "invalid" instr)])]
    [(jmp dst)
     (cond
       [(label? dst)
@@ -716,7 +717,7 @@
       [(mem? dst)
        ;;; maybe error 
        (CODErd #xFF '/4 dst ac)]
-      [else (error who "invalid jmp target ~s" dst)])]
+      [else (error who "invalid jmp target" dst)])]
    [(call dst)
     (cond
       [(imm? dst) 
@@ -728,7 +729,7 @@
        (CODErd #xFF '/2 dst ac)]
       [(reg? dst)
        (CODE #xFF (ModRM 3 '/2 dst ac))]
-      [else (error who "invalid jmp target ~s" dst)])]
+      [else (error who "invalid jmp target" dst)])]
    [(seta dst)   (conditional-set  #x97 dst ac)]
    [(setae dst)  (conditional-set  #x93 dst ac)]
    [(setb dst)   (conditional-set  #x92 dst ac)]
@@ -769,15 +770,15 @@
    [(jp dst)     (conditional-jump #x8A dst ac)]
    [(jnp dst)    (conditional-jump #x8B dst ac)]
    [(byte x)
-    (unless (byte? x) (error who "~s is not a byte" x))
+    (unless (byte? x) (error who "not a byte" x))
     (cons (byte x) ac)]
    [(byte-vector x) (append (map (lambda (x) (byte x)) (vector->list x)) ac)]
    [(int a) (IMM32 a ac)]
    [(label L)
-    (unless (symbol? L) (error who "label ~s is not a symbol" L))
+    (unless (symbol? L) (error who "label is not a symbol" L))
     (cons (cons 'label L) ac)]
    [(label-address L)
-    (unless (symbol? L) (error who "label-address ~s is not a symbol" L))
+    (unless (symbol? L) (error who "label-address is not a symbol" L))
     (cons (cons 'label-addr L) ac)]
    [(current-frame-offset)
     (cons '(current-frame-offset) ac)]
@@ -797,7 +798,7 @@
                     relative local-relative current-frame-offset)
                    (fx+ ac 4)]
                   [(label) ac]
-                  [else (error 'compute-code-size "unknown instr ~s" x)])))
+                  [else (error 'compute-code-size "unknown instr" x)])))
           0 
           ls)))
 
@@ -805,13 +806,13 @@
 (define set-label-loc!
   (lambda (x loc)
     (when (getprop x '*label-loc*)
-      (error 'compile "label ~s is already defined" x))
+      (error 'compile "label is already defined" x))
     (putprop x '*label-loc* loc)))
 
 (define label-loc
   (lambda (x)
     (or (getprop x '*label-loc*)
-        (error 'compile "undefined label ~s" x))))
+        (error 'compile "undefined label" x))))
 
 
 (define unset-label-loc!
@@ -827,7 +828,7 @@
        (code-set! code (fx+ idx 1) (fxlogand (fxsra x 6) #xFF))
        (code-set! code (fx+ idx 2) (fxlogand (fxsra x 14) #xFF))
        (code-set! code (fx+ idx 3) (fxlogand (fxsra x 22) #xFF))]
-      [else (error 'set-code-word! "unhandled ~s" x)])))
+      [else (error 'set-code-word! "unhandled" x)])))
  
 (define (optimize-local-jumps ls)
   (define locals '())
@@ -881,7 +882,7 @@
                    (set-label-loc! (cdr a) (list x idx))
                    (f (cdr ls) idx reloc)]
                   [else
-                   (error 'whack-instructions "unknown instr ~s" a)])))])))
+                   (error 'whack-instructions "unknown instr" a)])))])))
     (f ls 0 '())))
 
 (define wordsize 4)
@@ -896,7 +897,7 @@
                   [(reloc-word foreign-label)        (fx+ ac 2)]
                   [(relative reloc-word+ label-addr) (fx+ ac 3)]
                   [(word byte label current-frame-offset local-relative) ac]
-                  [else (error 'compute-reloc-size "unknown instr ~s" x)])))
+                  [else (error 'compute-reloc-size "unknown instr" x)])))
           0 
           ls)))
 
@@ -923,7 +924,6 @@
   (lambda (thunk?-label code vec)
     (define reloc-idx 0)
     (lambda (r)
-      ;(printf "r=~s\n" r)
       (let ([idx (car r)] [type (cadr r)]
             [v 
              (let ([v (cddr r)])
@@ -936,7 +936,7 @@
                          (let ([code (car p)] [idx (cadr p)])
                            (unless (fx= idx 0)
                              (error 'whack-reloc 
-                               "cannot create a thunk pointing at ~s"
+                               "cannot create a thunk pointing"
                                idx))
                            (let ([thunk (code->thunk code)])
                              (set-cdr! (cdr p) (list thunk))
@@ -954,7 +954,7 @@
            (let ([name 
                   (if (string? v)
                       (foreign-string->bytevector v)
-                      (error 'whack-reloc "not a string ~s" v))])
+                      (error 'whack-reloc "not a string" v))])
              (vector-set! vec reloc-idx (fxlogor 1 (fxsll idx 2)))
              (vector-set! vec (fx+ reloc-idx 1) name)
              (set! reloc-idx (fx+ reloc-idx 2)))]
@@ -986,14 +986,13 @@
            (let ([loc (label-loc v)])
              (let ([obj (car loc)] [disp (cadr loc)])
                (unless (and (code? obj) (fixnum? disp))
-                 (error 'whack-reloc "invalid relative jump obj=~s  disp=~s\n" 
-                        obj disp))
+                 (error 'whack-reloc "invalid relative jump obj/disp" obj disp))
                (vector-set! vec reloc-idx (fxlogor 3 (fxsll idx 2)))
                (vector-set! vec (fx+ reloc-idx 1) 
                  (fx+ disp (code-entry-adjustment)))
                (vector-set! vec (fx+ reloc-idx 2) obj)))
            (set! reloc-idx (fx+ reloc-idx 3))]
-          [else (error 'whack-reloc "invalid reloc type ~s" type)]))
+          [else (error 'whack-reloc "invalid reloc type" type)]))
       )))
 
 
@@ -1034,9 +1033,6 @@
                   (lambda (foo reloc*)
                     (for-each (whack-reloc thunk?-label (car foo) (cdr foo)) reloc*))
                   (map cons code* relv*) reloc**)
-                ;(for-each (lambda (x)
-                ;            (printf "RV=~s\n" x))
-                ;          relv*)
                 (for-each set-code-reloc-vector! code* relv*)
                 (for-each (lambda (code name)
                             (when name

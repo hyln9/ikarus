@@ -20,10 +20,9 @@
   (define (with-exception-handler handler proc2)
     (unless (procedure? handler)
       (error 'with-exception-handler
-        "handler ~s is not a procedure" handler))
+        "handler is not a procedure" handler))
     (unless (procedure? proc2)
-      (error 'with-exception-handler
-        "~s is not a procedure" proc2))
+      (error 'with-exception-handler "not a procedure" proc2))
     (parameterize ([handlers (cons handler (handlers))])
       (proc2)))
   
@@ -45,7 +44,7 @@
 
   (define (error who msg . irritants) 
     (unless (string? msg) 
-      (error 'error "message ~s is not a string" msg))
+      (error 'error "message is not a string" msg))
     (raise
        (condition
          (make-error)

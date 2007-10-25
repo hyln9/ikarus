@@ -100,7 +100,7 @@
        (time-it #f proc)]
       [(message proc)
        (unless (procedure? proc)
-         (error 'time-it "~s is not a procedure" proc))
+         (error 'time-it "not a procedure" proc))
        (let* ([t0 (mk-stats)]
               [t1 (mk-stats)]
               [bytes-min (bytes-minor)]

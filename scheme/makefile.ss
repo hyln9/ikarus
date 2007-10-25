@@ -1332,7 +1332,7 @@
     (for-each 
       (lambda (x) 
         (unless (assq x library-legend)
-          (error 'verify "~s is not in the libraries list" x)))
+          (error 'verify "not in the libraries list" x)))
       (cdr x)))
   (for-each f identifier->library-map))
 
@@ -1373,12 +1373,12 @@
         (when (procedure-identifier? x)
           (cond
             [(assq x (export-subst))
-             (error who "ambiguous export of ~s" x)]
+             (error who "ambiguous export" x)]
             [(assq1 x subst) =>
              ;;; primitive defined (exported) within the compiled libraries
              (lambda (p)
                (unless (pair? p) 
-                 (error who "~s exports of ~s" p x))
+                 (error who "invalid exports" p x))
                (let ([label (cdr p)])
                  (cond
                    [(assq label env) =>
@@ -1390,9 +1390,8 @@
                            (export-env   (cons label (cons 'core-prim x)))
                            (export-primlocs (cons x (cdr binding)))]
                           [else 
-                           (error #f "invalid binding ~s for ~s" p x)])))]
-                   [else (error #f "cannot find binding for ~s ~s" x
-                                label)])))]
+                           (error #f "invalid binding for identifier" p x)])))]
+                   [else (error #f "cannot find binding" x label)])))]
             [else 
              ;;; core primitive with no backing definition, assumed to
              ;;; be defined in other strata of the system
@@ -1486,7 +1485,7 @@
                       [,args
                        ((primitive error)
                          'apply 
-                         '"~s is not a procedure"
+                         '"not a procedure"
                          ((primitive $symbol-value) ,sym))]))))])))
     `([$init-symbol-value! . ,label])
     `([,label . (global . ,loc)])))
@@ -1533,7 +1532,7 @@
             (cond
               [(assq x locs) => cdr]
               [else 
-               (error 'bootstrap "no location for ~s" x)])))
+               (error 'bootstrap "no location for primitive" x)])))
         (let ([p (open-output-file "ikarus.boot" 'replace)])
           (for-each 
             (lambda (x) 

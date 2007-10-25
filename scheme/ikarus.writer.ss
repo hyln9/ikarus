@@ -1,6 +1,6 @@
 
 (library (ikarus writer)
-  (export write display format printf print-error print-unicode print-graph)
+  (export write display format printf fprintf print-error print-unicode print-graph)
   (import 
     (rnrs hashtables)
     (ikarus system $chars)
@@ -12,7 +12,8 @@
     (ikarus system $bytevectors)
     (ikarus system $transcoders)
     (only (ikarus unicode-data) unicode-printable-char?) 
-    (except (ikarus) write display format printf print-error print-unicode print-graph))
+    (except (ikarus) 
+      write display format printf fprintf print-error print-unicode print-graph))
 
   (define print-unicode
     (make-parameter #t))
@@ -654,7 +655,7 @@
               [($char= c #\~)
                (let ([i (fxadd1 i)])
                  (when (fx= i (string-length fmt))
-                   (error who "invalid ~~ at end of format string ~s" fmt))
+                   (error who "invalid ~ at end of format string" fmt))
                  (let ([c (string-ref fmt i)])
                   (cond
                     [($char= c #\~) 
@@ -674,7 +675,7 @@
                      (write-to-port (car args) p)
                      (f (fxadd1 i) (cdr args))]
                     [else
-                     (error who "invalid sequence ~~~a" c)])))]
+                     (error who "invalid sequence character after ~" c)])))]
               [else 
                (write-char c p)
                (f (fxadd1 i) args)]))))
@@ -683,15 +684,15 @@
   (define fprintf
     (lambda (port fmt . args)
       (unless (output-port? port) 
-        (error 'fprintf "~s is not an output port" port))
+        (error 'fprintf "not an output port" port))
       (unless (string? fmt)
-        (error 'fprintf "~s is not a string" fmt))
+        (error 'fprintf "not a string" fmt))
       (formatter 'fprintf port fmt args)))
 
   (define display-error
     (lambda (errname who fmt args)
       (unless (string? fmt)
-        (error 'print-error "~s is not a string" fmt))
+        (error 'print-error "not a string" fmt))
       (let ([p (standard-error-port)])
         (if who
             (fprintf p "~a in ~a: " errname who)
@@ -703,7 +704,7 @@
   (define format
     (lambda (fmt . args)
       (unless (string? fmt)
-        (error 'format "~s is not a string" fmt))
+        (error 'format "not a string" fmt))
       (let ([p (open-output-string)])
         (formatter 'format p fmt args)
         (get-output-string p))))
@@ -711,7 +712,7 @@
   (define printf 
     (lambda (fmt . args)
       (unless (string? fmt)
-        (error 'printf "~s is not a string" fmt))
+        (error 'printf "not a string" fmt))
       (formatter 'printf (current-output-port) fmt args)))
   
   (define write 
@@ -719,7 +720,7 @@
       [(x) (write-to-port x (current-output-port))]
       [(x p)
        (unless (output-port? p) 
-         (error 'write "~s is not an output port" p))
+         (error 'write "not an output port" p))
        (write-to-port x p)]))
 
   (define display 
@@ -727,7 +728,7 @@
       [(x) (display-to-port x (current-output-port))]
       [(x p)
        (unless (output-port? p) 
-         (error 'display "~s is not an output port" p))
+         (error 'display "not an output port" p))
        (display-to-port x p)]))
 
   (define print-error 

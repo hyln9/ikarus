@@ -259,28 +259,28 @@
                 (>= k 0))
            (make-eq-hashtable)
            (error 'make-eq-hashtable
-             "invalid initial capacity ~s" k))]))
+             "invalid initial capacity" k))]))
 
   (define hashtable-ref
     (lambda (h x v)
       (if (hasht? h)
           (get-hash h x v)
-          (error 'hashtable-ref "~s is not a hash table" h))))
+          (error 'hashtable-ref "not a hash table" h))))
 
 
   (define hashtable-contains?
     (lambda (h x)
       (if (hasht? h)
           (in-hash? h x)
-          (error 'hashtable-contains? "~s is not a hash table" h))))
+          (error 'hashtable-contains? "not a hash table" h))))
 
   (define hashtable-set!
     (lambda (h x v)
       (if (hasht? h)
           (if (hasht-mutable? h) 
               (put-hash! h x v)
-              (error 'hashtable-set! "~s is immutable" h))
-          (error 'hashtable-set! "~s is not a hash table" h))))
+              (error 'hashtable-set! "hashtable is immutable" h))
+          (error 'hashtable-set! "not a hash table" h))))
 
 
   (define hashtable-update!
@@ -289,16 +289,16 @@
           (if (hasht-mutable? h)
               (if (procedure? proc)
                   (update-hash! h x proc default)
-                  (error 'hashtable-update! "~s is not a procedure" proc))
-              (error 'hashtable-update! "~s is immutable" h))
-          (error 'hashtable-update! "~s is not a hash table" h))))
+                  (error 'hashtable-update! "not a procedure" proc))
+              (error 'hashtable-update! "hashtable is immutable" h))
+          (error 'hashtable-update! "not a hash table" h))))
 
 
   (define hashtable-size
     (lambda (h)
       (if (hasht? h) 
           (hasht-count h)
-          (error 'hashtable-size "~s is not a hash table" h))))
+          (error 'hashtable-size "not a hash table" h))))
 
   (define hashtable-delete!
     (lambda (h x) 
@@ -307,23 +307,23 @@
       (if (hasht? h)
           (if (hasht-mutable? h)
               (del-hash h x)
-              (error 'hashtable-delete! "~s is immutable" h))
-          (error 'hashtable-delete! "~s is not a hash table" h))))
+              (error 'hashtable-delete! "hashtable is immutable" h))
+          (error 'hashtable-delete! "not a hash table" h))))
 
   (define (hashtable-keys h)
     (if (hasht? h) 
         (get-keys h)
-        (error 'hashtable-keys "~s is not a hash table" h)))
+        (error 'hashtable-keys "not a hash table" h)))
 
   (define (hashtable-mutable? h)
     (if (hasht? h) 
         (hasht-mutable? h)
-        (error 'hashtable-mutable? "~s is not a hash table" h)))
+        (error 'hashtable-mutable? "not a hash table" h)))
 
   (define (hashtable-clear! h)
     (if (hasht? h) 
         (if (hasht-mutable? h)
             (clear-hash! h)
-            (error 'hashtable-clear! "~s is immutable" h))
-        (error 'hashtable-clear! "~s is not a hash table" h)))
+            (error 'hashtable-clear! "hashtable is immutable" h))
+        (error 'hashtable-clear! "not a hash table" h)))
 )
