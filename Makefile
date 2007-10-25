@@ -84,6 +84,7 @@ am__quote =
 install_sh = /Users/ikarus/Work/ikarus-scheme/install-sh
 AUTOMAKE_OPTIONS = foreign
 SUBDIRS = src scheme doc
+EXTRA_DIST = README COPYING
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
@@ -94,7 +95,7 @@ RECURSIVE_TARGETS = info-recursive dvi-recursive install-info-recursive \
 	uninstall-info-recursive all-recursive install-data-recursive \
 	install-exec-recursive installdirs-recursive install-recursive \
 	uninstall-recursive check-recursive installcheck-recursive
-DIST_COMMON = README Makefile.am Makefile.in TODO aclocal.m4 \
+DIST_COMMON = README COPYING Makefile.am Makefile.in TODO aclocal.m4 \
 	config.guess config.sub configure configure.ac depcomp \
 	install-sh missing mkinstalldirs
 DIST_SUBDIRS = $(SUBDIRS)

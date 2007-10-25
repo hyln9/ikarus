@@ -1,8 +1,42 @@
 #!/usr/bin/env ikarus --r6rs-script
+;;; Ikarus Scheme -- A compiler for R6RS Scheme.
+;;; Copyright (C) 2006,2007  Abdulaziz Ghuloum
+;;; 
+;;; This program is free software: you can redistribute it and/or modify
+;;; it under the terms of the GNU General Public License version 3 as
+;;; published by the Free Software Foundation.
+;;; 
+;;; This program is distributed in the hope that it will be useful, but
+;;; WITHOUT ANY WARRANTY; without even the implied warranty of
+;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;;; General Public License for more details.
+;;; 
+;;; You should have received a copy of the GNU General Public License
+;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 (import 
   (ikarus)
   (unicode-data))
+
+(define license 
+'";;; Ikarus Scheme -- A compiler for R6RS Scheme.
+;;; Copyright (C) 2006,2007  Abdulaziz Ghuloum
+;;; 
+;;; This program is free software: you can redistribute it and/or modify
+;;; it under the terms of the GNU General Public License version 3 as
+;;; published by the Free Software Foundation.
+;;; 
+;;; This program is distributed in the hope that it will be useful, but
+;;; WITHOUT ANY WARRANTY; without even the implied warranty of
+;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;;; General Public License for more details.
+;;; 
+;;; You should have received a copy of the GNU General Public License
+;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+")
+
 
 (define (hex->num x)
   (read (open-input-string (format "#x~a" x))))
@@ -125,6 +159,7 @@
       (let ([v0 (list->vector (map car ls))])
         (with-output-to-file "unicode-char-cases.ss"
           (lambda ()
+            (display license)
             (printf ";;; DO NOT EDIT\n;;; automatically generated\n")
             (printf ";;; ~s entries in table\n" (vector-length v0))
             (pretty-print `(define charcase-search-vector ',v0))
