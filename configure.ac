@@ -4,8 +4,9 @@
 AC_PREREQ(2.59)
 AC_INIT(ikarus, prerelease-0, aghuloum@cs.indiana.edu)
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(ikarus, prerelease-0.01)
+AM_INIT_AUTOMAKE(ikarus, 0.0.1)
 AC_CONFIG_SRCDIR([src/])
+
 
 AM_PROG_AS
 # Checks for programs.
@@ -59,4 +60,9 @@ AC_FUNC_STAT
 AC_FUNC_STRFTIME
 AC_FUNC_STRTOD
 AC_CHECK_FUNCS([bzero gettimeofday memmove memset munmap setenv sqrt strerror])
-AC_OUTPUT(Makefile src/Makefile scheme/Makefile doc/Makefile)
+
+AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_FILES([Makefile src/Makefile scheme/Makefile doc/Makefile])
+
+AC_OUTPUT #(Makefile src/Makefile scheme/Makefile doc/Makefile)
+
