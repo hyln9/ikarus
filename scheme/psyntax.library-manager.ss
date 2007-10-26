@@ -52,7 +52,10 @@
       (unless (library? x)
         (error 'record-type-printer "not a library"))
       (display 
-        (format "#<library ~s>" (append (library-name x) (library-ver x)))
+        (format "#<library ~s>" 
+          (if (null? (library-ver x))
+              (library-name x)
+              (append (library-name x) (list (library-ver x)))))
         p)))
 
   (define (find-dependencies ls)

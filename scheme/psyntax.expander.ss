@@ -2791,6 +2791,7 @@
                  (cdr x)))
              subst)))
         ((library name) (eq? library 'library)
+         ;;; FIXME: versioning stuff
          (let ((lib (find-library-by-name name)))
            (unless lib
              (error 'import 

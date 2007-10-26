@@ -1443,7 +1443,7 @@
           [visible? (caddr legend-entry)]) 
       (let ([id     (gensym)]
             [name       name]
-            [version     '()]
+            [version    (if (eq? (car name) 'rnrs) '(6) '())]
             [import-libs '()]
             [visit-libs  '()]
             [invoke-libs '()])
