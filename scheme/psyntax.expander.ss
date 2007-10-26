@@ -1029,6 +1029,36 @@
                                 "not a procedure" v)))))
              (stx-error stx "invalid formals"))))))
   
+  (define guard-macro
+    (lambda (x)
+      (syntax-match x (else)
+        [(_ (con clause* ... [else e e* ...]) b b* ...)
+         (bless
+           `((call/cc
+               (lambda (outerk)
+                 (lambda ()
+                   (with-exception-handler
+                     (lambda (,con)
+                       (outerk 
+                         (lambda () 
+                           (cond ,@clause* [else ,e ,@e*]))))
+                     (lambda () #f ,b ,@b*)))))))]
+        [(_ (con clause* ...) b b* ...)
+         (bless
+           `((call/cc
+               (lambda (outerk)
+                 (lambda ()
+                   (with-exception-handler
+                     (lambda (,con) 
+                       ((call/cc
+                          (lambda (raisek)
+                            (outerk 
+                              (lambda () 
+                                (cond ,@clause* 
+                                  [else 
+                                   (raisek (lambda () (raise ,con)))])))))))
+                     (lambda () #f ,b ,@b* )))))))])))
+
   (define time-macro
     (lambda (stx)
       (syntax-match stx ()
@@ -2150,6 +2180,7 @@
            ((delay)             delay-macro)
            ((assert)            assert-macro)
            ((endianness)        endianness-macro)
+           ((guard)             guard-macro)
            ((trace-lambda)      trace-lambda-macro)
            ((trace-define)      trace-define-macro)
            ((define-condition-type)      define-condition-type-macro)
@@ -2640,18 +2671,19 @@
   ;;; given a library name, like (foo bar (1 2 3)), 
   ;;; returns the identifiers and the version of the library
   ;;; as (foo bar) (1 2 3).  
-  (define (parse-library-name x)
+  (define (parse-library-name spec)
     (define (parse x)
       (syntax-match x ()
-        ((x* ... (v* ...)) 
-         (and (for-all symbol? x*)
-              (for-all (lambda (x) (and (integer? x) (exact? x))) v*))
-         (values x* v*))
-        ((x* ...) (for-all symbol? x*)
-         (values x* '()))
-        (_ (stx-error x "invalid library name"))))
-    (let-values (((name* ver*) (parse x)))
-      (when (null? name*) (stx-error x "empty library name"))
+        [((v* ...)) 
+         (for-all (lambda (x) (and (integer? x) (exact? x))) v*)
+         (values '() v*)]
+        [(x . rest) (symbol? x)
+         (let-values ([(x* v*) (parse rest)])
+           (values (cons x x*) v*))]
+        [() (values '() '())]
+        [_ (stx-error spec "invalid library name")]))
+    (let-values (((name* ver*) (parse spec)))
+      (when (null? name*) (stx-error spec "empty library name"))
       (values name* ver*)))
 
   ;;; given a library form, returns the name part, the export 
@@ -2862,7 +2894,7 @@
           (let-values (((imp* invoke-req* visit-req* invoke-code
                               visit-code export-subst export-env)
                         (library-body-expander exp* imp* b*)))
-             (values name imp* invoke-req* visit-req* 
+             (values name ver imp* invoke-req* visit-req* 
                      invoke-code visit-code export-subst
                      export-env))))))
   
@@ -2958,11 +2990,11 @@
                   (let ((loc (car x)) (proc (cadr x)))
                     (set-symbol-value! loc proc)))
                 macro*))
-    (let-values (((name imp* inv* vis* invoke-code macro* export-subst export-env)
+    (let-values (((name ver imp* inv* vis* invoke-code macro* export-subst export-env)
                   (core-library-expander x)))
       (let ((id (gensym))
             (name name)
-            (ver '())  ;;; FIXME
+            (ver ver)  ;;; FIXME
             (imp* (map library-spec imp*))
             (vis* (map library-spec vis*))
             (inv* (map library-spec inv*)))
