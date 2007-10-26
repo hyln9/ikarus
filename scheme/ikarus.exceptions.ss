@@ -15,13 +15,15 @@
 
 
 (library (ikarus exceptions)
-  (export with-exception-handler raise raise-continuable error)
+  (export with-exception-handler raise raise-continuable 
+    error assertion-violation)
   (import 
     (only (rnrs) condition make-non-continuable-violation
           make-message-condition make-error make-who-condition
-          make-irritants-condition)
+          make-irritants-condition make-assertion-violation)
     (except (ikarus)
-      with-exception-handler raise raise-continuable error))
+      with-exception-handler raise raise-continuable 
+      error assertion-violation))
 
 
   (define handlers
@@ -69,6 +71,17 @@
              (condition)
              (make-irritants-condition irritants)))))
 
+  (define (assertion-violation who msg . irritants) 
+    (unless (string? msg) 
+      (assertion-violation 'assertion-violation "message is not a string" msg))
+    (raise
+       (condition
+         (make-assertion-violation)
+         (if who (make-who-condition who) (condition))
+         (make-message-condition msg)
+         (if (null? irritants) 
+             (condition)
+             (make-irritants-condition irritants)))))
 
 )
 
