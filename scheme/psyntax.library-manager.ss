@@ -20,9 +20,10 @@
 
 (library (psyntax library-manager)
   (export imported-label->binding library-subst installed-libraries
-    visit-library library-name library-exists? find-library-by-name
-    install-library library-spec invoke-library extend-library-subst!
-    extend-library-env! current-library-expander current-library-collection)
+    visit-library library-name library-version library-exists?
+    find-library-by-name install-library library-spec invoke-library 
+    extend-library-subst! extend-library-env! current-library-expander
+    current-library-collection)
   (import (rnrs) (psyntax compat) (rnrs r5rs))
 
   (define (make-collection)
@@ -47,15 +48,15 @@
         x)))
 
   (define-record library 
-    (id name ver imp* vis* inv* subst env visit-state invoke-state visible?)
+    (id name version imp* vis* inv* subst env visit-state invoke-state visible?)
     (lambda (x p)
       (unless (library? x)
         (error 'record-type-printer "not a library"))
       (display 
         (format "#<library ~s>" 
-          (if (null? (library-ver x))
+          (if (null? (library-version x))
               (library-name x)
-              (append (library-name x) (list (library-ver x)))))
+              (append (library-name x) (list (library-version x)))))
         p)))
 
   (define (find-dependencies ls)
@@ -274,6 +275,6 @@
     (lambda (x) 
       (unless (library? x)
         (error 'library-spec "not a library" x))
-      (list (library-id x) (library-name x) (library-ver x)))) 
+      (list (library-id x) (library-name x) (library-version x)))) 
   )
 

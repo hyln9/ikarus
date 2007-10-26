@@ -2759,6 +2759,64 @@
         ((null? ls) '())
         ((memq (car ls) (cdr ls)) (remove-dups (cdr ls)))
         (else (cons (car ls) (remove-dups (cdr ls))))))
+    (define (parse-library-name spec)
+      (define (subversion? x) 
+        (and (integer? x) (exact? x) (>= x 0)))
+      (define (subversion-pred x*) 
+        (syntax-match x* ()
+          [n (subversion? n)
+           (lambda (x) (= x n))]
+          [(p? sub* ...) (eq? p? 'and)
+           (let ([p* (map subversion-pred sub*)])
+             (lambda (x) 
+               (for-all (lambda (p) (p x)) p*)))]
+          [(p? sub* ...) (eq? p? 'or)
+           (let ([p* (map subversion-pred sub*)])
+             (lambda (x) 
+               (exists (lambda (p) (p x)) p*)))]
+          [(p? sub) (eq? p? 'not)
+           (let ([p (subversion-pred sub)])
+             (lambda (x) 
+               (not (p x))))]
+          [(p? n) (and (eq? p? '<=) (subversion? n))
+           (lambda (x) (<= x n))]
+          [(p? n) (and (eq? p? '>=) (subversion? n))
+           (lambda (x) (>= x n))]
+          [_ (error 'import "invalid sub-version spec" x* spec)]))
+      (define (version-pred x*)
+        (syntax-match x* ()
+          [() (lambda (x) #t)]
+          [(c ver* ...) (eq? c 'and)
+           (let ([p* (map version-pred ver*)])
+             (lambda (x) 
+               (for-all (lambda (p) (p x)) p*)))]
+          [(c ver* ...) (eq? c 'or)
+           (let ([p* (map version-pred ver*)])
+             (lambda (x) 
+               (exists (lambda (p) (p x)) p*)))]
+          [(c ver) (eq? c 'not)
+           (let ([p (version-pred ver)])
+             (lambda (x) (not (p x))))]
+          [(sub* ...) 
+           (let ([p* (map subversion-pred sub*)])
+             (lambda (x) 
+               (let f ([p* p*] [x x])
+                 (cond
+                   [(null? p*) #t]
+                   [(null? x) #f]
+                   [else 
+                    (and ((car p*) (car x)) 
+                         (f (cdr p*) (cdr x*)))]))))]
+          [_ (error 'import "invalid version spec" x* spec)]))
+      (let f ([x spec])
+        (syntax-match x ()
+          [((version-spec* ...)) 
+           (values '() (version-pred version-spec*))]
+          [(x . x*) (symbol? x)
+           (let-values ([(name pred) (f x*)])
+             (values (cons x name) pred))]
+          [() (values '() (lambda (x) #t))]
+          [_ (stx-error spec "invalid import spec")])))
     (define (get-import spec)
       (syntax-match spec ()
         ((rename isp (old* new*) ...) 
@@ -2790,15 +2848,23 @@
                      (symbol->string (car x))))
                  (cdr x)))
              subst)))
-        ((library name) (eq? library 'library)
+        ((library (spec* ...)) (eq? library 'library)
          ;;; FIXME: versioning stuff
-         (let ((lib (find-library-by-name name)))
-           (unless lib
-             (error 'import 
-                "cannot find library satisfying required name"
-                name))
-           (imp-collector lib)
-           (library-subst lib)))
+         (let-values ([(name pred) (parse-library-name spec*)])
+           (when (null? name) 
+             (error 'import "empty library name" spec*))
+           (let ((lib (find-library-by-name name)))
+             (unless lib
+               (error 'import 
+                  "cannot find library with required name"
+                  name))
+             (unless (pred (library-version lib))
+               (error 'import 
+                  "library does not satisfy version specification"
+                  lib
+                  spec*))
+             (imp-collector lib)
+             (library-subst lib))))
         ((x x* ...)
          (not (memq x '(rename except only prefix library)))
          (get-import `(library (,x . ,x*))))
