@@ -12,7 +12,7 @@ AM_PROG_AS
 # Checks for programs.
 AC_PROG_CC
 
-CFLAGS="-DNDEBUG $CFLAGS"
+CFLAGS="$CFLAGS -DNDEBUG -O3"
 
 case "$target_os" in
   *linux*)
@@ -38,7 +38,7 @@ AC_CHECK_HEADERS([gmp.h],,[AC_MSG_ERROR([Cannot find gmp.h])])
 
 AC_CHECK_HEADERS([assert.h dlfcn.h errno.h fcntl.h signal.h \
                   stdint.h stdlib.h string.h strings.h \
-                  sys/mman.h sys/resource/h sys/stat.h \
+                  sys/mman.h sys/resource.h sys/stat.h \
                   sys/time.h sys/types.h sys/wait.h time.h \
                   unistd.h])
 
@@ -60,9 +60,7 @@ AC_FUNC_STAT
 AC_FUNC_STRFTIME
 AC_FUNC_STRTOD
 AC_CHECK_FUNCS([bzero gettimeofday memmove memset munmap setenv sqrt strerror])
-
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile src/Makefile scheme/Makefile doc/Makefile])
-
+AC_CONFIG_FILES(Makefile src/Makefile scheme/Makefile doc/Makefile)
 AC_OUTPUT #(Makefile src/Makefile scheme/Makefile doc/Makefile)
 

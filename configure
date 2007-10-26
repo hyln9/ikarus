@@ -3798,7 +3798,7 @@ fi
 
 
 
-CFLAGS="-DNDEBUG $CFLAGS"
+CFLAGS="$CFLAGS -DNDEBUG -O3"
 
 case "$target_os" in
   *linux*)
@@ -4887,7 +4887,7 @@ done
 
 for ac_header in assert.h dlfcn.h errno.h fcntl.h signal.h \
                   stdint.h stdlib.h string.h strings.h \
-                  sys/mman.h sys/resource/h sys/stat.h \
+                  sys/mman.h sys/resource.h sys/stat.h \
                   sys/time.h sys/types.h sys/wait.h time.h \
                   unistd.h
 do
@@ -7444,11 +7444,9 @@ _ACEOF
 fi
 done
 
-
           ac_config_headers="$ac_config_headers config.h"
 
                                         ac_config_files="$ac_config_files Makefile src/Makefile scheme/Makefile doc/Makefile"
-
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
