@@ -95,6 +95,7 @@
     "ikarus.bytevectors.ss"
     "ikarus.sort.ss"
     "ikarus.promises.ss"
+    "ikarus.enumerations.ss"
     "ikarus.main.ss"))
 
 (define ikarus-system-macros
@@ -967,19 +968,19 @@
     [unless                                      i r ct]
     [when                                        i r ct]
     [define-enumeration                          r en]
-    [enum-set->list                              r en]
-    [enum-set-complement                         r en]
-    [enum-set-constructor                        r en]
-    [enum-set-difference                         r en]
-    [enum-set-indexer                            r en]
-    [enum-set-intersection                       r en]
-    [enum-set-member?                            r en]
-    [enum-set-projection                         r en]
-    [enum-set-subset?                            r en]
-    [enum-set-union                              r en]
-    [enum-set-universe                           r en]
-    [enum-set=?                                  r en]
-    [make-enumeration                            r en]
+    [enum-set->list                              i r en]
+    [enum-set-complement                         i r en]
+    [enum-set-constructor                        i r en]
+    [enum-set-difference                         i r en]
+    [enum-set-indexer                            i r en]
+    [enum-set-intersection                       i r en]
+    [enum-set-member?                            i r en]
+    [enum-set-projection                         i r en]
+    [enum-set-subset?                            i r en]
+    [enum-set-union                              i r en]
+    [enum-set-universe                           i r en]
+    [enum-set=?                                  i r en]
+    [make-enumeration                            i r en]
     [environment                                 i ev]
     [eval                                        i ev se]
     [raise                                       i r ex]
