@@ -1031,33 +1031,50 @@
   
   (define guard-macro
     (lambda (x)
-      (syntax-match x (else)
-        [(_ (con clause* ... [else e e* ...]) b b* ...)
-         (bless
-           `((call/cc
-               (lambda (outerk)
-                 (lambda ()
-                   (with-exception-handler
-                     (lambda (,con)
-                       (outerk 
-                         (lambda () 
-                           (cond ,@clause* [else ,e ,@e*]))))
-                     (lambda () #f ,b ,@b*)))))))]
+      (define (gen-clauses con outerk clause*) 
+        (define (f x k) 
+          (syntax-match x (=>) 
+            [(e => p) 
+             (let ([t (gensym)])
+               `(let ([,t ,e]) 
+                  (if ,t (,p ,t) ,k)))]
+            [(e) 
+             (let ([t (gensym)])
+               `(let ([,t ,e])
+                  (if ,t ,t ,k)))]
+            [(e v v* ...) 
+             `(if ,e (begin ,v ,@v*) ,k)]
+            [_ (stx-error x "invalid guard clause")]))
+        (define (f* x*)
+          (syntax-match x* (else)
+            [() 
+             (let ([g (gensym)])
+               (values `(,g (lambda () (raise ,con))) g))]
+            [([else e e* ...])
+             (values `(begin ,e ,@e*) #f)]
+            [(cls . cls*) 
+             (let-values ([(e g) (f* cls*)])
+               (values (f cls e) g))]
+            [others (stx-error others "invalid guard clause")]))
+        (let-values ([(code raisek) (f* clause*)])
+          (if raisek
+              `((call/cc
+                  (lambda (,raisek)
+                    (,outerk 
+                      (lambda () ,code)))))
+              `(,outerk (lambda () ,code)))))
+      (syntax-match x ()
         [(_ (con clause* ...) b b* ...)
-         (bless
-           `((call/cc
-               (lambda (outerk)
-                 (lambda ()
-                   (with-exception-handler
-                     (lambda (,con) 
-                       ((call/cc
-                          (lambda (raisek)
-                            (outerk 
-                              (lambda () 
-                                (cond ,@clause* 
-                                  [else 
-                                   (raisek (lambda () (raise ,con)))])))))))
-                     (lambda () #f ,b ,@b* )))))))])))
+         (id? con)
+         (let ([outerk (gensym)])
+           (bless
+             `((call/cc
+                 (lambda (,outerk)
+                   (lambda ()
+                     (with-exception-handler
+                       (lambda (,con)
+                         ,(gen-clauses con outerk clause*))
+                       (lambda () #f ,b ,@b*))))))))])))
 
   (define time-macro
     (lambda (stx)
