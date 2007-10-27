@@ -38,6 +38,7 @@
     [rp (rnrs records procedural (6))]
     [rs (rnrs records syntactic (6))]
     [co (rnrs conditions (6))]
+    [en (rnrs enums (6))]
     [is (rnrs io simple (6))]
     [ba (rnrs base (6))]
     [bv (rnrs bytevectors (6))]
@@ -47,7 +48,6 @@
     [fl (rnrs arithmetic flonums (6))]
     [ht (rnrs hashtables (6))]
     [ip (rnrs io ports (6))]
-    [en (rnrs enums (6))]
     ))
 
 (define status-names
@@ -486,7 +486,7 @@
     [unless                                     C ct]
     [when                                       C ct]
     ;;;
-    [define-enumeration                         D en]
+    [define-enumeration                         C en]
     [enum-set->list                             C en]
     [enum-set-complement                        C en]
     [enum-set-constructor                       C en]
