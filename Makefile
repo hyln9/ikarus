@@ -16,9 +16,9 @@
 srcdir = .
 top_srcdir = .
 
-pkgdatadir = $(datadir)/ikarus
-pkglibdir = $(libdir)/ikarus
-pkgincludedir = $(includedir)/ikarus
+pkgdatadir = $(datadir)/ikarus-scheme
+pkglibdir = $(libdir)/ikarus-scheme
+pkgincludedir = $(includedir)/ikarus-scheme
 top_builddir = .
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 INSTALL = /usr/bin/install -c
@@ -105,11 +105,11 @@ LIBS = -lgmp
 LTLIBOBJS =  lstat$U.lo
 MAKEINFO = ${SHELL} /Users/ikarus/Work/ikarus-scheme/missing --run makeinfo
 OBJEXT = o
-PACKAGE = ikarus
+PACKAGE = ikarus-scheme
 PACKAGE_BUGREPORT = aghuloum@cs.indiana.edu
-PACKAGE_NAME = ikarus
-PACKAGE_STRING = ikarus prerelease-0
-PACKAGE_TARNAME = ikarus
+PACKAGE_NAME = ikarus-scheme
+PACKAGE_STRING = ikarus-scheme prerelease-0
+PACKAGE_TARNAME = ikarus-scheme
 PACKAGE_VERSION = prerelease-0
 PATH_SEPARATOR = :
 POW_LIB = 

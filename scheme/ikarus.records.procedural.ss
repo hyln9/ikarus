@@ -243,6 +243,17 @@
 
   (define (record-constructor rcd)
     (define who 'record-constructor)
+
+    (define (split all-fields n)
+      (let f ([ls all-fields] [n n])
+        (if (zero? n)
+            (values '() ls) 
+            (if (pair? ls) 
+                (let-values ([(m p) (f (cdr ls) (- n 1))]) 
+                  (values (cons (car ls) m) p))
+                (error 'record-condtructor "insufficient arguments"
+                       all-fields)))))
+
     (define (constructor main-rtd size prcd proto)
       (if (not prcd) ;;; base
           (lambda (f*)
@@ -250,7 +261,7 @@
                        (let ([n (rtd-size main-rtd)])
                          (unless (= (length flds) size)
                            (error 'record-constructor 
-                              "expecting args, got" n flds))
+                              "main expecting args, got" n flds))
                          (let ([r ($make-struct main-rtd n)])
                            (let f ([i 0] [r r] [flds flds] [f* f*])
                              (cond
@@ -265,21 +276,24 @@
           (let ([pprcd (rcd-prcd prcd)]
                 [sz (rtd-size (rcd-rtd prcd))])
             (let ([p (constructor main-rtd sz pprcd (rcd-proc prcd))]
-                  [n (- size sz)])
+                  [n (- size sz)]
+                  [proto 
+                   (if proto
+                       proto
+                       (lambda (new)
+                         (lambda all-fields
+                           (let-values ([(parent-fields myfields) 
+                                         (split all-fields 
+                                           (- (length all-fields) (- size sz)))])
+                              (apply (apply new parent-fields) myfields)))))])
               (lambda (f*)
-                (if proto
-                    (proto 
-                      (lambda fmls
-                        (lambda flds
-                          (unless (= (length flds) n) 
-                            (error 'record-constructor 
-                               "expecting args, got" n flds))
-                          (apply (p (cons flds f*)) fmls))))
+                (proto 
+                  (lambda fmls
                     (lambda flds
                       (unless (= (length flds) n) 
-                         (error 'record-constructor 
+                        (error 'record-constructor 
                            "expecting args, got" n flds))
-                      ((p (cons flds f*))))))))))
+                      (apply (p (cons flds f*)) fmls)))))))))
     (unless (rcd? rcd)
       (error who "not a record constructor descriptor" rcd))
     (let ([rtd (rcd-rtd rcd)]
