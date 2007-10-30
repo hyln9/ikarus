@@ -375,5 +375,11 @@
              (print-condition x port)
              (error 'print-condition "not an output port" port))])))
 
+  ;(let ([p 
+  ;       (lambda (x p) 
+  ;         (display "#<condition>" p))])
+  ;  (set-rtd-printer! (record-type-descriptor compound-condition) p))
+
+
   )
 

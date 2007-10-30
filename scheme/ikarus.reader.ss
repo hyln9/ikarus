@@ -373,7 +373,9 @@
                 [c (skip-whitespace p "gensym")])
            (cond
              [($char= #\} c)
-              (cons 'datum (gensym id0))]
+              ;(cons 'datum (gensym id0))]
+              (cons 'datum 
+                (foreign-call "ikrt_strings_to_gensym" #f id0))]
              [else
               (let ([id1
                      (cond

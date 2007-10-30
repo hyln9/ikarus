@@ -633,7 +633,7 @@
     [char>=?                                     i r ba se]
     [char>?                                      i r ba se]
     [char?                                       i r ba se]
-    [complex?                                    r ba se]
+    [complex?                                    i r ba se]
     [cons                                        i r ba se]
     [cos                                         i r ba se]
     [denominator                                 i r ba se]
