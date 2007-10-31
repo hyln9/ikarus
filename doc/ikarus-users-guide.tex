@@ -45,6 +45,7 @@
 
 \newcommand{\coderefpage}[1]{figure~\ref{#1}, p.~\pageref{#1}}
 \newcommand{\figrefpage}[1]{figure~\ref{#1}, p.~\pageref{#1}}
+\newcommand{\defref}[1]{\texttt{#1}~(page~\pageref{#1})}
 
 \newcommand{\coderef}[1]{figure~\ref{#1}}
 \newcommand{\figref}[1]{figure~\ref{#1}}
@@ -90,10 +91,20 @@
    numbers=left, numbersep=1ex,
    frame=lines ,framerule=1pt} 
 
+
+\newcommand{\idxdefun}[3]{
+\vspace{1ex}
+\rule{\textwidth}{2pt}
+{\index{#1@\texttt{#2}}\label{#1}{\Large\texttt{#2}} \hfill \textbf{#3}}\\
+}
+
+\newcommand{\defun}[2]{\idxdefun{#1}{#1}{#2}}
+
 \begin{document}
-
-
 \frontmatter
+
+\VerbatimFootnotes
+
 \title{Ikarus Scheme User's Guide}
 
 \author{Abdulaziz Ghuloum}
@@ -145,7 +156,6 @@ Ikarus Scheme User's Guide
 \vfill{}
 \noindent
 Ikarus Scheme User's Guide\\
-%Volume 1: Quick Start (Preliminary Document)\\
 Copyright \copyright{} 2007,  Abdulaziz Ghuloum\\
 
 \noindent
@@ -164,24 +174,6 @@ section entitled ``GNU Free Documentation License''.
 
 \newpage
 
-% \chapter{Preface}
-% 
-% Here\index{Preface, Great One}
-% 
-% 
-% \begin{verbatim}
-% (library (foo)
-%   (export x)
-%   (import (rnrs))
-%   (define y 13)
-%   (define-syntax x 
-%     (syntax-rules ()
-%       [(_ n) (+ n y)]))
-% \end{verbatim}
-
-
-
-
 \mainmatter
 \setlength{\parindent}{0pt} 
 \setlength{\parskip}{2.0ex plus 0ex minus 0ex}
@@ -189,7 +181,7 @@ section entitled ``GNU Free Documentation License''.
 \section{Introduction}
 
 Ikarus Scheme is an implementation of the Scheme programming
-language\cite{steele:scheme}.  The preliminary release of Ikarus
+language.  The preliminary release of Ikarus
 implements the majority of the features found in the current
 standard, the Revised$^\mathrm{6}$ report on the algorithmic language
 Scheme\cite{r6rs} including full \rnrs{6} library and script syntax,
@@ -207,7 +199,7 @@ procedural and syntactic abstractions.  Many useful libraries can be
 written using the currently supported set of \rnrs{6} features
 including text processing tools, symbolic logic systems,
 interpreters and compilers, and many mathematical and scientific
-packages.  It is our hope that this release will encourage the
+packages.  It is my hope that this release will encourage the
 Scheme community to write and to share their most useful \rnrs{6}
 libraries.
 
@@ -234,9 +226,9 @@ as required to provide a safe and fast runtime environment.
 
 \textbf{Multi-generational garbage collector:} The
 BiBOP\cite{dybvig:sm} based garbage collector used in Ikarus allows
-the runtime system to expand its memory footprint as needed.  Up to
-four gigabytes of data can be used and unneeded memory is released
-back to the operating system.
+the runtime system to expand its memory footprint as needed.  The
+entire 32-bit virtual address space could be used and unneeded
+memory is released back to the operating system.
 
 \textbf{Supports many operating systems:} Ikarus runs on the most
 popular and widely used operating systems for servers and personal
@@ -274,20 +266,21 @@ Ikarus is tested under the following operating systems:
 \begin{itemize}
 \item\textbf{GMP:} Ikarus uses the GNU Multiple Precision Arithmetic
 Library (GMP) for some bignum arithmetic operations.  To build
-ikarus from scratch, GMP version 4.2 or better must be installed
-along with the required header files.  Pre-built GMP packages es are
+Ikarus from scratch, GMP version 4.2 or better must be installed
+along with the required header files.  Pre-built GMP packages  are
 available for most operating systems.  Alternatively, GMP can be
-downloaded from \url{http://gmplib.org/}.
+downloaded from \\
+\url{http://gmplib.org/}.
 
-\item\textbf{GCC:} The GNU C Compiler is required to build the ikarus
+\item\textbf{GCC:} The GNU C Compiler is required to build the Ikarus
 executable (e.g. the garbage collector, loader, and OS-related
-runtime).  GCC versions 4.1 and 4.2 were used successfully to build
-ikarus.
+runtime).  GCC versions 4.1 and 4.2 were successfully used to build
+Ikarus.
 
 \item\textbf{Autoconf and Automake:} The GNU Autoconf (version 2.59)
 and GNU Automake (version 1.9) tools are required if one
-wishes to modify the ikarus source base.  They are not
-required to build the official release of ikarus.
+wishes to modify the Ikarus source base.  They are not
+required to build the official release of Ikarus.
 
 \item\textbf{XeLaTeX:}  The XeLaTeX typesetting system is required
 for building the documentation.  XeLaTeX (and XeTeX) is an
@@ -313,7 +306,7 @@ the following commands from the shell:
 \end{verbatim}
 
 The rest of this section describes the build process in more
-details.  It is targetted to users who are unfamiliar with steps
+details.  It is targeted to users who are unfamiliar with steps
 mentioned above.
 
 \subsection{Installation Details}
@@ -362,7 +355,6 @@ follows:
 
 \begin{verbatim}
   $ ./configure --prefix=/path/to/installation/location
-  $
 \end{verbatim}
 
 The \texttt{configure} script will fail if it cannot locate the
@@ -374,13 +366,11 @@ two paths in the \texttt{CFLAGS} and \texttt{LDFLAGS} arguments:
 
 \begin{verbatim}
   $ ./configure CFLAGS=-I/path/to/include LDFLAGS=-L/path/to/lib
-  $
 \end{verbatim}
 
 \item Build the system by running:
 \begin{verbatim}
   $ make
-  $
 \end{verbatim}
 This performs two
 tasks.  First, it builds the \texttt{ikarus} executable from the C
@@ -393,7 +383,6 @@ file \texttt{ikarus.boot} from the Scheme sources located in the
 \item Install Ikarus by typing:
 \begin{verbatim}
   $ make install
-  $
 \end{verbatim}
 If you are installing Ikarus in a system-wide location, you might
 need to have administrator privileges (use the \texttt{sudo} or
@@ -440,7 +429,7 @@ switches that influence how Ikarus starts.
 \item \texttt{ikarus -h}
 
 The presence of the \texttt{-h} flag causes \texttt{ikarus} to
-display a help message then exits.  The help message summarises the
+display a help message then exits.  The help message summarizes the
 command-line switches.  No further action is performed.
 
 \item \texttt{ikarus -b path/to/boot/file.boot}
@@ -511,8 +500,8 @@ can be obtained by calling the
 The lack of an \texttt{--r6rs-script} argument causes Ikarus to
 start in interactive mode.  Each of the \texttt{files} is first
 loaded, in the interaction environment.  The interaction environment
-initially containes all the bindings exported from the
-\texttt{(ikarus)} library (see Section~\ref{lib:ikarus}).  The
+initially contains all the bindings exported from the
+\texttt{(ikarus)} library (see Chapter~\ref{chapter:ikarus}).  The
 optional \texttt{arguments} following the \texttt{--} marker can be obtained
 by calling the \texttt{command-line} procedure.
 
@@ -520,21 +509,21 @@ by calling the \texttt{command-line} procedure.
 \BoxedText{Note:}{The interactive mode is intended for quickly
 experimenting with the built-in features.  It is intended neither
 for developing applications nor for writing any substantial pieces
-of code.  The main reason for this is that the innteraction between
+of code.  The main reason for this is that the interaction between
 \rnrs{6} libraries and the interactive environment is not well
 understood.  We hope to achieve better interaction between the two
 subsystems in the future.}
 
 \end{itemize}
 
-\section{Executable Scripts}
-FIXME
-\subsection{Mac OS X}
-FIXME
-\subsection{GNU/Linux}
-FIXME
-\subsection{Windows/Cygwin}
-FIXME
+%\section{Executable Scripts}
+%FIXME
+%\subsection{Mac OS X}
+%FIXME
+%\subsection{GNU/Linux}
+%FIXME
+%\subsection{Windows/Cygwin}
+%FIXME
 
 
 \chapter{\rnrs{6} Crash Course}
@@ -567,7 +556,7 @@ libraries.
 
 \section{\label{sec:scripts}Writing a simple script}
 
-An \rnrs{6} script is a set of definitions and expressions preceeded
+An \rnrs{6} script is a set of definitions and expressions preceded
 by an \texttt{import} form.  The \texttt{import} form specifies
 the language (i.e. the variable and keyword bindings) in which the
 library body is written.  A very simple example of an \rnrs{6}
@@ -650,10 +639,8 @@ The library name can be any non-empty list of identifiers.
 The library exports are a set of identifiers that are made available
 to importing libraries.  Every exported identifier must be bound: it
 may either be defined in the libraries or imported from another
-library.
-%\emph{re-exported} identifiers}. 
-Library exports include variables, keywords, record names, condition
-names.
+library.  Library exports include variables, keywords, record names,
+condition names.
 
 Library imports are similar to script imports: they specify the set
 of libraries whose exports are made visible within the body of the
@@ -696,23 +683,7 @@ makes all of \texttt{(iteration)}'s exported identifiers, e.g.
 (do-times 3 (greeting))
 \end{CodeInline}
 
-
-% \begin{CodeInline}
-% (library (iteration)
-%   (export do-times)
-%   (import (rnrs))
-%   (define-syntax do-times
-%     (syntax-rules ()
-%       [(_ n exprs ...)
-%        (do-times-proc n (lambda () exprs ...))]))
-%   (define do-times-proc
-%     (lambda (n proc)
-%       (unless (zero? n)
-%         (proc)
-%         (do-times-proc (- n 1) proc)))))
-% \end{CodeInline}
-
-\section{Defining new record types}
+\section{\rnrs{6} record types}
 
 \rnrs{6} provides ways for users to define new types, called record
 types.  A record is a fixed-size data structure with a unique type
@@ -721,6 +692,8 @@ fields that hold arbitrary values.  This section briefly describes
 what we expect to be the most commonly used features of the record
 system.  Full details are in the \rnrs{6} Standard Libraries
 document\cite{r6rs:lib}.
+
+\subsection{Defining new record types}
 
 To define a new record type,  use the \texttt{define-record-type}
 form.  For example, suppose we want to define a new record type for
@@ -739,7 +712,7 @@ procedures automatically for you:
 \item The constructor \texttt{make-point} that takes two arguments,
 \texttt{x} and \texttt{y} and returns a new record whose type is
 point.
-\item The predicate \texttt{point?} that takes an arbitrary value
+\item The predicate \texttt{point?}\ that takes an arbitrary value
 and returns \texttt{\#t} if that value is a point, \texttt{\#f}
 otherwise. 
 \item The accessors \texttt{point-x} and \texttt{point-y} that,
@@ -774,146 +747,1142 @@ printed in the \texttt{\#[type-name field-values ...]} notation.
 For example, \texttt{(write (make-point 1 2))} produces 
 \texttt{\#[point 1 2]}.}
 
-\section{Extending existing record types}
+\subsection{Extending existing record types}
 
 A record type may be extended by defining new variants of a record
 with additional fields.  In our running example, suppose we want
 to define a \texttt{colored-point} record type that, in addition to
 being a \texttt{point}, it has an additional field: a \emph{color}.
-A simple way of achieving that is by using the following definition:
+A simple way of achieving that is by using the following record 
+definition:
+
 \begin{CodeInline}
-(define-record-type color-point
+(define-record-type cpoint
   (parent point)
   (fields color))
 \end{CodeInline}
 
+Here, the definition of \texttt{cpoint} gives us:
+\begin{itemize}
+\item A constructor \texttt{make-cpoint} that takes three arguments
+(\texttt{x}, \texttt{y}, and \texttt{color} in that order) and returns a
+\texttt{cpoint} record.
+\item A predicate \texttt{cpoint?}\ that takes a single argument and
+determines whether the argument is a \texttt{cpoint} record.
+\item An accessor \texttt{cpoint-color} that returns the value of
+the \texttt{color} field of a \texttt{cpoint} object.
+\end{itemize}
+
+All procedures that are applicable to records of type
+\texttt{point} (\texttt{point?}, \texttt{point-x},
+\texttt{point-y}) are also applicable to records of type
+\texttt{cpoint} since a \texttt{cpoint} is also a \texttt{point}.
+
+\subsection{Specifying custom constructors}
+
+The record type definitions explained so far use the default
+constructor that takes as many arguments as there are fields and
+returns a new record type with the values of the fields initialized
+to the arguments' values.  It is sometimes necessary or convenient
+to provide a constructor that performs more than the default
+constructor.  For example, we can modify the definition of our
+\texttt{point} record in such way that the constructor takes either
+no arguments, in which case it would return a point located at the
+origin, or two arguments specifying the $x$ and $y$ coordinates.  We
+use the \texttt{protocol} keyword for specifying such constructor as
+in the following example:
+
+\begin{CodeInline}
+(define-record-type point
+  (fields x y)
+  (protocol
+    (lambda (new)
+      (case-lambda
+        [(x y) (new x y)]
+        [()    (new 0 0)]))))
+\end{CodeInline}
+
+The protocol here is a procedure that takes a constructor procedure
+\texttt{new} (\texttt{new} takes as many arguments as there are
+fields.) and returns the desired custom constructor that we want
+(The actual constructor will be the value of the
+\texttt{case-lambda} expression in the example above).
+Now the constructor \texttt{make-point} would either take two
+arguments which constructs a \texttt{point} record as before, or no
+arguments, in which case \texttt{(new 0 0)} is called to construct a
+point at the origin. 
+
+Another reason why one might want to use custom constructors is to
+precompute the initial values of some fields based on the values of
+other fields.  An example of this case is adding a \texttt{distance}
+field to the record type which is computed as
+$d = \sqrt{x^2+y^2}$.  The protocol in this case may be defined as:
+
+\begin{CodeInline}
+(define-record-type point
+  (fields x y distance)
+  (protocol
+    (lambda (new)
+      (lambda (x y)
+        (new x y (sqrt (+ (expt x 2) (expt y 2))))))))
+\end{CodeInline}
+
+Note that derived record types need not be modified when additional
+fields are added to the parent record type.  For example, our
+\texttt{cpoint} record type still works unmodified even after we
+added the new \texttt{distance} field to the parent.  
+Calling \texttt{(point-distance (make-cpoint 3 4 \#xFF0000))}
+returns \texttt{5.0} as expected.
+
+\subsection{Custom constructors for derived record types}
+
+Just like how base record types (e.g. \texttt{point} in the running
+example) may have a custom constructor, derived record types can
+also have custom constructors that do other actions.  Suppose that
+you want to construct \texttt{cpoint} records using an optional
+color that, if not supplied, defaults to the value 0.  To do so, we
+supply a \texttt{protocol} argument to \texttt{define-record-type}.
+The only difference here is that the procedure \texttt{new} is a
+\emph{curried} constructor.  It first takes as many arguments as the
+constructor of the parent record type, and returns a procedure that
+takes the initial values of the new fields.  
+
+In our example, the constructor for the \texttt{point} record type
+takes two arguments.  \texttt{cpoint} extends \texttt{point} with
+one new field.  Therefore, \texttt{new} in the definition below
+first takes the arguments for \texttt{point}'s constructor, then
+takes the initial color value.  The definition below shows how the
+custom constructor may be defined.
+
+\begin{CodeInline}
+(define-record-type cpoint
+  (parent point) 
+  (fields color) 
+  (protocol
+    (lambda (new) 
+      (case-lambda 
+        [(x y c) ((new x y) c)]
+        [(x y)   ((new x y) 0)]))))
+\end{CodeInline}
 
 
-\chapter{\rnrs{6} Standard Libraries}
+\section{Exception Handling}
+
+The procedure \texttt{with-exception-handler} allows the programmer
+to specify how to handle exceptional situations.  It takes two
+procedures as arguments: 
+\begin{itemize}
+\item An exception handler which is a procedure that take a
+single argument, the object that was raised.
+\item A body thunk which is a procedure with no arguments whose body
+is evaluated with the exception handler installed.
+\end{itemize}
+
+In addition to installing exception handlers, \rnrs{6} provides two
+ways of raising exceptions: \texttt{raise} and
+\texttt{raise-continuable}.  We describe the procedure
+\texttt{raise-continuable} 
+first since it's the simpler of the two.  
+For the code below, assume that \texttt{print} is defined as:
+\begin{CodeInline}
+(define (print who obj)
+  (display who) 
+  (display ": ")
+  (display obj)
+  (newline))
+\end{CodeInline}
+
+The first example, below, shows how a simple exception handler is
+installed.  Here, the exception handler prints the object it
+receives and returns the symbol \texttt{there}.  The call to
+\texttt{raise-continuable} calls the exception handler, passing it
+the symbol \texttt{here}.  When the handler returns, the returned
+value becomes the value of the calls to \texttt{raise-continuable}.
+
+\begin{CodeInline}
+(with-exception-handler
+  (lambda (obj)                         ;;; prints
+    (print "handling" obj)              ;;;   handling: here
+    'there)                             ;;;   returned: there
+  (lambda ()
+    (print "returned" (raise-continuable 'here))))
+\end{CodeInline}
+
+Exceptional handlers may nest, and in that case, if an exception is
+raised while evaluating an inner handler, the outer handler is
+called as the following example illustrates:
+
+\begin{CodeInline}
+(with-exception-handler
+  (lambda (obj)                         ;;; prints
+    (print "outer" obj)                 ;;;   inner: here    
+    'outer)                             ;;;   outer: there   
+  (lambda ()                            ;;;   returned: outer
+    (with-exception-handler
+      (lambda (obj)
+        (print "inner" obj)
+        (raise-continuable 'there))
+      (lambda ()
+        (print "returned" (raise-continuable 'here))))))
+\end{CodeInline}
+
+In short, \texttt{with-exception-handler} binds an exception handler
+within the dynamic context of evaluating the thunk, and
+\texttt{raise-continuable} calls it.
+
+The procedure \texttt{raise} is similar to
+\texttt{raise-continuable} except that if the handler returns, a new
+exception is raised, calling the next handler in sequence until the
+list of handlers is exhausted.
+
+\begin{CodeInline}
+(call/cc                          ;;; prints
+  (lambda (escape)                ;;;   inner: here
+    (with-exception-handler       ;;;   outer: #[condition ---]
+      (lambda (obj)               ;;; returns
+        (print "outer" obj)       ;;;   12
+        (escape 12))
+      (lambda ()                            
+        (with-exception-handler            
+          (lambda (obj)
+            (print "inner" obj)
+            'there)
+          (lambda ()
+            (print "returned" (raise 'here))))))))
+\end{CodeInline}
+
+Here, the call to \texttt{raise} calls the inner exception handler,
+which returns, causing \texttt{raise} to re-raise a non-continuable 
+exception to the outer exception handler.  The outer exception
+handler then calls the escape continuation.
+
+The following procedure provides a useful example of using the
+exception handling mechanism.  Consider a simple definition of the
+procedure \texttt{configuration-option} which returns the value
+associated with a key where the key/value pairs are stored in an
+association list in a configuration file.
+
+\begin{CodeInline}
+(define (configuration-option filename key)
+  (cdr (assq key (call-with-input-file filename read))))
+\end{CodeInline}
+
+Possible things may go wrong with calling
+\texttt{configuration-option} including errors opening the file,
+errors reading from the file (file may be corrupt), error in
+\texttt{assq} since what's read may not be an association list, and
+error in \texttt{cdr} since the key may not be in the association
+list.  Handling all error possibilities is tedious and error prone.  
+Exceptions provide a clean way of solving the problem.  Instead of
+guarding against all possible errors, we install a handler that
+suppresses all errors and returns a default value if things go
+wrong.  Error handling for \texttt{configuration-option} may be
+added as follows:
+
+\begin{CodeInline}
+(define (configuration-option filename key default)
+  (define (getopt)
+    (cdr (assq key (call-with-input-file filename read))))
+  (call/cc
+    (lambda (k)
+      (with-exception-handler 
+        (lambda (_) (k default))
+        getopt))))
+\end{CodeInline}
 
 
-\section{\texttt{(rnrs)}}
+\chapter{\label{chapter:ikarus}The \texttt{(ikarus)} library}
 
-\section{\texttt{(rnrs base)}}
+In addition to the libraries listed in the \rnrs{6} standard, Ikarus
+contains the \texttt{(ikarus)} library which provides additional
+useful features.  The \texttt{(ikarus)} library is a composite
+library---it exports a superset of all the supported bindings of
+\rnrs{6}.  While not all of the exports of \texttt{(ikarus)} are
+documented at this time, this chapter attempts to describe a few of
+these useful extensions.  
 
-\section{\texttt{(rnrs arithmetic bitwise)}}
+\newpage
+\section{Parameters}
 
-\section{\texttt{(rnrs arithmetic fixnums)}}
+Parameters in Ikarus\footnote{Parameters are found in many Scheme
+implementations such as Chez Scheme and MzScheme.} are intended for
+customizing the behavior of a procedure during the dynamic execution
+of some piece of code.  Parameters are first class entities
+(represented as procedures) that hold the parameter value.  A
+parameter procedure accepts either zero or one argument.  If given
+no arguments, it returns the current value of the parameter.  If
+given a single argument, it must set the state to the value of the
+argument.  Parameters replace the older concept of using starred
+\texttt{*global*} customization variables.  For example, instead of
+writing:
+\begin{verbatim}
+   (define *screen-width* 72)
+\end{verbatim}
+and then mutate the variable \texttt{*screen-width*} with
+\texttt{set!}, we could wrap \texttt{*screen-width*} with a 
+\texttt{screen-width} parameter as follows:
+\begin{verbatim}
+   (define *screen-width* 72)
+   (define screen-width 
+     (case-lambda
+       [()  *screen-width*]
+       [(x) (set! *screen-width* x)]))
+\end{verbatim}
 
-\section{\texttt{(rnrs arithmetic flonums)}}
+The value of \texttt{screen-width} can now be passed as argument,
+returned as a value, and exported from libraries.
 
-\section{\texttt{(rnrs bytevectors)}}
+\defun{make-parameter}{procedure}
+\texttt{
+(make-parameter x)\\
+(make-parameter x f)
+}
 
-\section{\texttt{(rnrs conditions)}}
+As parameters are common in Ikarus, the procedure
+\texttt{make-parameter} is defined to model common usage pattern of
+parameter construction. 
 
-\section{\texttt{(rnrs control)}}
+\paragraph{\texttt{(make-parameter x)}} constructs a parameter
+with \texttt{x} as the initial value.  For example, the code above
+could be written succinctly as:
+\begin{verbatim}
+   (define screen-width (make-parameter 72))
+\end{verbatim}
 
-\section{\texttt{(rnrs enums)}}
-
-\section{\texttt{(rnrs exceptions)}}
-
-\section{\texttt{(rnrs files)}}
-
-\section{\texttt{(rnrs hashtables)}}
-\cite{ghuloum07hashtables}
-
-
-\section{\texttt{(rnrs io ports)}}
-
-\section{\texttt{(rnrs io simple)}}
-
-\section{\texttt{(rnrs lists)}}
-
-\section{\texttt{(rnrs mutable-pairs)}}
-
-\section{\texttt{(rnrs mutable-strings)}}
-
-\section{\texttt{(rnrs programs)}}
-
-\section{\texttt{(rnrs r5rs)}}
-
-\section{\texttt{(rnrs records inspection)}}
-
-\section{\texttt{(rnrs records procedural)}}
-
-\section{\texttt{(rnrs records syntactic)}}
-
-\section{\texttt{(rnrs sorting)}}
-
-\section{\texttt{(rnrs syntax-case)}}
-
-\section{\texttt{(rnrs unicode)}}
-
-
-
-
-
-\chapter{Ikarus Library Collection} 
-
-* list all ikarus libraries.
-
-* explain each of the exports.
-
-
-\section{\label{lib:ikarus}\texttt{(ikarus)}}
-
-\section{\texttt{(ikarus files)}}
-
-\section{\texttt{(ikarus parameters)}}
-
-\section{\texttt{(ikarus posix)}}
-
-\section{\texttt{(ikarus printing)}}
-
-\section{\texttt{(ikarus symbols)}}
-
-\section{\texttt{(ikarus timers)}}
-
-\section{\texttt{(ikarus tracing)}}
-
-\section{\texttt{(ikarus unicode)}}
-
-\section{\texttt{(ikarus guardians)}}
-\cite{dybvig93guardians}
-
-\section{\texttt{(ikarus weak-pairs)}}
-
-\section{\texttt{(ikarus modules)}}
-
-\section{\texttt{(ikarus library-manager)}}
+\paragraph{\texttt{(make-parameter x f)}} constructs a parameter
+which filters the assigned values through the procedure \texttt{f}.
+The initial value of the parameter is the result of calling
+\texttt{(f~x)}.  Typical used of the filter procedure include
+checking some constraints on the passed argument or converting it to
+a different data type.  The \texttt{screen-width} parameter may be
+constructed more robustly as:
+\begin{verbatim}
+   (define screen-width 
+     (make-parameter 72
+       (lambda (w)
+         (assert (and (integer? w) (exact? w)))
+         (max w 1))))
+\end{verbatim}
+This definition ensures, through \texttt{assert}, that the argument
+passed is an exact integer.  It also ensures, through \texttt{max}
+that the assigned value is always positive.
 
 
+\defun{parameterize}{syntax}
+\texttt{(parameterize ([lhs* rhs*] ...) body body* ...)}
 
-% \chapter{Using \rnrs{6} Libraries Effectively}
+Parameters can be assigned to by simply calling the parameter
+procedure with a single argument.  The \texttt{parameterize} syntax
+is used to set the value of a parameter within the dynamic extent of
+the \texttt{body~body*~...} expressions.  
 
-% \chapter{Additional Libraries}
-% 
-% \section{\texttt{(iu match)}}
+The \texttt{lhs* ...} are expressions, each of which must evaluate
+to a parameter.  Such parameters are not necessarily constructed by
+\texttt{make-parameter}---any procedure that follows the parameters
+protocol works.  
+
+The advantage of using \texttt{parameterize} over explicitly
+assigning to parameters (same argument applies to global variables)
+is that you're guaranteed that whenever control exits the body of a
+\texttt{parameterize} expression, the value of the parameter is
+reset back to what it was before the body expressions were entered.
+This is true even in the presence of \texttt{call/cc}, errors, and
+exceptions.
+
+The following example shows how to set the text property of a
+terminal window.  The parameter \texttt{terminal-property} sends an
+ANSI escape sequence to the terminal whenever the parameter value is
+changed.  The use of \texttt{terminal-property} within
+\texttt{parameterize} changes the property before
+\texttt{(display~"RED!")} is called and resets it back to normal
+when the body returns.
+
+\begin{CodeInline}
+(define terminal-property
+  (make-parameter "0"
+    (lambda (x)
+      (display "\x1b;[")
+      (display x)
+      (display "m")
+      x)))
+
+(display "Normal and ")
+(parameterize ([terminal-property "41;37"])
+  (display "RED!"))
+(newline)
+\end{CodeInline}
 
 
-% \chapter{The Programming Environment}
-% 
-% \section{Working with Unicode}
-% 
-% \section{Working}
-% 
-% \section{Some Section Here}
-% 
-% %\index{cheese!gouda!brie}
-% %\index{cheese!gouda!none}
-% \section{Additional Stuff}
-% \subsection{And some sub stuff}
 
+\newpage
+\section{Local Modules}
+
+This section is not documented yet.
+Please refer to Section~10.5 of Chez Scheme
+User's Guide~\cite{csug7}, Chapter~3 of Oscar Waddel's Ph.D
+Thesis~\cite{waddell-thesis}, and its POPL99
+paper~\cite{waddell-extending} for details on using the
+\texttt{module} and \texttt{import} keywords.  Ikarus's internal
+module system is similar in spirit to that of Chez Scheme.
+
+
+\defun{module}{syntax}
+\texttt{(module M definitions ... expressions ...)}\\
+\texttt{(module definitions ... expressions ...)}
+
+\defun{import}{syntax}
+\texttt{(import M)}
+
+\newpage
+\section{\label{sec:gensyms}Gensyms}
+
+Gensym stands for a \emph{generated symbol}---a fresh symbol that is
+generated at run time and is guaranteed to be \emph{not}
+\texttt{eq?} to any other symbol present in the system.  Gensyms are
+useful in many applications including expanders, compilers, and
+interpreters when generating an arbitrary number of unique names is
+needed.
+
+Ikarus is similar to Chez Scheme in that the readers (including the
+\texttt{read} procedure) and writers (including \texttt{write} and
+\texttt{pretty-print}) maintain the read/write invariance on
+gensyms.  When a gensym is written to an output port, the system
+automatically generates a random unique identifier for the gensym.
+When the gensym is read back though the \texttt{\#\{gensym\}} read
+syntax, a new gensym is \emph{not} regenerated, but instead, it is
+looked up in the global symbol table. 
+
+A gensym's name is composed of two parts: a \emph{pretty} string and
+a \emph{unique} string.  The Scheme procedure
+\texttt{symbol->string} returns the pretty string of the gensym and
+not its unique string.  Gensyms are printed by default as 
+\texttt{\#\{pretty-string~unique-string\}}.
+
+\defun{gensym}{procedure}
+\texttt{(gensym)}\\
+\texttt{(gensym string)}\\
+\texttt{(gensym symbol)}
+
+The procedure \texttt{gensym} constructs a new gensym.  If passed no
+arguments, it constructs a gensym with no pretty name.  The pretty
+name is constructed when and if the pretty name of the resulting
+gensym is needed.
+See \defref{gensym-prefix} and \defref{gensym-count} for details. 
+
+\begin{verbatim}
+   > (gensym)
+   #{g0 |y0zf>GlFvcTJE0xw|}
+   > (gensym)
+   #{g1 |U%X&sF6kX!YC8LW=|}
+   > (eq? (gensym) (gensym))
+   #f
+\end{verbatim}
+
+\texttt{(gensym string)} constructs a new gensym with
+\texttt{string} as its pretty name.   Similarly,
+\texttt{(gensym~symbol)} constructs a new gensym with the pretty
+name of \texttt{symbol}, if it has one, as its pretty name.
+
+\begin{verbatim}
+   > (gensym "foo")
+   #{foo |>VgOllCM&$dSvRN=|}
+   > (gensym 'foo)
+   #{foo |!TqQLmtw2hoEYfU>|}
+   > (gensym (gensym 'foo))
+   #{foo |N2C>5O0>C?OROUBU|}
+\end{verbatim}
+
+
+
+\defun{gensym?}{procedure}
+\texttt{(gensym? x)}
+
+The \texttt{gensym?}\ predicate returns \texttt{\#t} if its argument
+is a gensym, and returns \texttt{\#f} otherwise.
+
+\begin{verbatim}
+   > (gensym? (gensym))
+   #t
+   > (gensym? 'foo)
+   #f
+   > (gensym? 12)
+   #f
+\end{verbatim}
+
+\defun{gensym->unique-string}{procedure}
+\texttt{(gensym->unique-string gensym)}
+
+The \texttt{gensym->unique-string} procedure returns the unique name
+associated with the gensym argument.
+
+\begin{verbatim}
+   > (gensym->unique-string (gensym))
+   "YukrolLMgP?%ElcR"
+\end{verbatim}
+
+
+\idxdefun{gensym syntax}{\#\{gensym\}}{reader syntax}
+\index{\#\{pretty unique\}@\texttt{\#\{pretty unique\}} reader syntax}
+\index{\#\{unique\}@\texttt{\#\{unique\}} reader syntax}
+\index{\#:pretty@\texttt{\#:pretty} reader syntax}
+\texttt{\#\{unique-name\}}\\
+\texttt{\#\{pretty-name unique-name\}}\\
+\texttt{\#:pretty-name}
+
+Ikarus's \texttt{read} and \texttt{write} procedures extends the
+lexical syntax of Scheme by the ability to read and write gensyms
+using one of the three forms listed above.
+
+\texttt{\#\{unique-name\}} constructs, at read time, a gensym whose
+unique name is the one specified.   If a gensym with the same unique
+name already exists in the system's symbol table, that gensym is
+returned.
+\begin{verbatim}
+   > '#{some-long-name}
+   #{g0 |some-long-name|}
+   > (gensym? '#{some-long-unique-name})
+   #t
+   > (eq? '#{another-unique-name} '#{another-unique-name})
+   #t
+\end{verbatim}
+
+The two-part \texttt{\#\{pretty-name unique-name\}} gensym syntax is
+similar to the syntax shown above with the exception that if a new
+gensym is constructed (that is, if the gensym did not already exist
+in the symbol table), the pretty name of the constructed gensym is
+set to \texttt{pretty-name}.
+
+\begin{verbatim}
+   > '#{foo unique-identifier} 
+   #{foo |unique-identifier|}
+   > '#{unique-identifier}
+   #{foo |unique-identifier|}
+   > '#{bar unique-identifier} 
+   #{foo |unique-identifier|}
+\end{verbatim}
+
+The \texttt{\#:pretty-name} form constructs, at read time, a gensym
+whose pretty name is \texttt{pretty-name} and whose unique name is
+fresh.  This form guarantees that the resulting gensym is not
+\texttt{eq?}\ to any other symbol in the system.
+
+\begin{verbatim}
+   > '#:foo
+   #{foo |j=qTGlEwS/Zlp2Dj|}
+   > (eq? '#:foo '#:foo)
+   #f
+\end{verbatim}
+
+\defun{generate-temporaries}{example}
+\index{Examples!generate-temporaries@\texttt{generate-temporaries}}
+
+The \texttt{(rnrs syntax-case)} library provides a
+\texttt{generate-temporaries} procedure, which takes a syntax object
+(representing a list of things) and returns a list of fresh
+identifiers.  Using \texttt{gensym}, that procedure can be defined
+as follows:
+
+\begin{CodeInline}
+(define (generate-temporaries* stx)
+  (syntax-case stx ()
+    [(x* ...) 
+     (map (lambda (x)
+            (datum->syntax #'unimportant 
+              (gensym
+                (if (identifier? x) 
+                    (syntax->datum x)
+                    't))))
+          #'(x* ...))]))
+\end{CodeInline}
+
+The above definition works by taking the input \texttt{stx} and
+destructuring it into the list of syntax objects \texttt{x*~...}.
+The inner procedure maps each \texttt{x} into a new syntax object
+(constructed with \texttt{datum->syntax}).  The datum is a gensym,
+whose name is the same name as \texttt{x} if \texttt{x} is an
+identifier, or the symbol \texttt{t} if \texttt{x} is not an
+identifier.  The output of \texttt{generate-temporaries*} generates
+names similar to their input counterpart:
+
+\begin{verbatim}
+   > (print-gensym #f) 
+   > (generate-temporaries* #'(x y z 1 2))
+   (#<syntax x> #<syntax y> #<syntax z> #<syntax t> #<syntax t>)
+\end{verbatim}
+
+\newpage
+\section{Printing}
+
+\defun{pretty-print}{procedure}
+\texttt{(pretty-print datum)}\\
+\texttt{(pretty-print datum output-port)}
+
+The procedure \texttt{pretty-print} is intended for printing Scheme
+data, typically Scheme programs, in a format close to how a Scheme
+programmer would write it.  Unlike \texttt{write}, which writes its
+input all in one line, \texttt{pretty-print} inserts spaces and new
+lines in order to produce more pleasant output.
+
+\begin{verbatim}
+  (define fact-code
+    '(letrec ([fact (lambda (n) (if (zero? n) 1 (* n (fact (- n 1)))))])
+       (fact 5)))
+
+  > (pretty-print fact-code)
+  (letrec ((fact
+            (lambda (n) (if (zero? n) 1 (* n (fact (- n 1)))))))
+    (fact 5))
+\end{verbatim}
+
+The second argument to \texttt{pretty-print}, if supplied, must be 
+an output port.  If not supplied, the \texttt{current-output-port}
+is used.
+
+\BoxedText{Limitations:}{As shown in the output above, the current
+implementation of \texttt{pretty-print} does not handle printing of
+square brackets properly.}
+
+\defun{pretty-width}{parameter}
+\texttt{(pretty-width)}\\
+\texttt{(pretty-width n)}
+
+The parameter \texttt{pretty-width} controls the number of
+characters after which the \texttt{pretty-print} starts breaking
+long lines into multiple lines.   The initial value of
+\texttt{pretty-width} is set to 60 characters, which is suitable for most
+terminals and printed material.   
+
+\begin{verbatim}
+   > (parameterize ([pretty-width 40])
+        (pretty-print fact-code))
+   (letrec ((fact
+             (lambda (n)
+               (if (zero? n)
+                   1
+                   (* n (fact (- n 1)))))))
+     (fact 5))
+\end{verbatim}
+
+Note that \texttt{pretty-width} does not guarantee that 
+the output will not extend beyond the specified number.  Very long
+symbols, for examples, cannot be split into multiple lines and may
+force the printer to go beyond the value of \texttt{pretty-width}.
+
+\defun{format}{procedure}
+\texttt{(format fmt-string args ...)}
+
+The procedure \texttt{format} produces a string formatted according
+to the value of \texttt{fmt-string} and the supplied arguments.  The
+format string contains markers in which the string
+representation of each argument is placed.  The markers include:
+
+\begin{itemize}
+
+\item[\texttt{"\~{}s"}] instructs the formatter to place the next argument
+as if the procedure \texttt{write} has printed it.  If the argument
+contains a string, the string will be quoted and all quotes and
+backslashes in the string will be escaped.  Similarly, characters
+will be printed using the \texttt{\#\\x} notation.
+
+\item[\texttt{"\~{}a"}] instructs the formatter to place the next argument
+as if the procedure \texttt{display} has printed it.  Strings and
+characters are placed as they are in the output.
+
+\item[\texttt{"\~{}\~{}"}] instructs the formatter to place a tilde
+character, \texttt{\~{}}, in the output without consuming an
+argument.
+
+\end{itemize}
+
+\begin{verbatim}
+   > (format "message: ~s, ~s, and ~s" 'symbol "string" #\c)
+   "message: symbol, \"string\", and #\\c"
+
+   > (format "message: ~a, ~a, and ~a" 'symbol "string" #\c)
+   "message: symbol, string, and c"
+\end{verbatim}
+
+\defun{printf}{procedure}
+\texttt{(printf fmt-string args ...)}
+
+The procedure \texttt{printf} is similar to \texttt{format} except
+that the output is sent to the \texttt{current-output-port} instead
+of being collected in a string.
+
+\begin{verbatim}
+   > (printf "message: ~s, ~s, and ~s\n" 'symbol "string" #\c)
+   message: symbol, "string", and #\c
+
+   > (printf "message: ~a, ~a, and ~a\n" 'symbol "string" #\c)
+   message: symbol, string, and c
+\end{verbatim}
+
+
+\defun{fprintf}{procedure}
+\texttt{(fprintf output-port fmt-string args ...)}
+
+The procedure \texttt{fprintf} is similar to \texttt{printf} except
+that the output port to which the output is sent is specified as the
+first argument.
+
+\defun{print-graph}{parameter}
+\texttt{(print-graph)} \\
+\texttt{(print-graph \#t)}\\
+\texttt{(print-graph \#f)}
+
+The \texttt{print-graph} parameter controls how the writers (e.g.
+\texttt{pretty-print} and \texttt{write}) handle shared and cyclic
+data structures.  In Ikarus, all writers detect cyclic data
+structures and they all terminate on all input, cyclic or otherwise.
+
+If the value of \texttt{print-graph} is set to \texttt{\#f} (the
+default), then the writers does not attempt to detect shared data
+structures.  Any part of the input that is shared is printed as if
+no sharing is present.
+
+If the value of \texttt{print-graph} is set to \texttt{\#t}, all
+sharing of data structures is marked using the \texttt{\#n=} and
+\texttt{\#n\#} notation. 
+
+\begin{verbatim}
+   > (parameterize ([print-graph #f])
+       (let ([x (list 1 2 3 4)])
+         (pretty-print (list x x x))))
+   ((1 2 3 4) (1 2 3 4) (1 2 3 4))
+
+   > (parameterize ([print-graph #t])
+       (let ([x (list 1 2 3 4)])
+         (pretty-print (list x x x))))
+   (#0=(1 2 3 4) #0# #0#)
+
+   > (parameterize ([print-graph #f])
+       (let ([x (list 1 2)])
+         (let ([y (list x x x x)])
+           (set-car! (last-pair y) y)
+           (pretty-print (list y y)))))
+   (#0=((1 2) (1 2) (1 2) #0#) #0#)
+
+   > (parameterize ([print-graph #t])
+       (let ([x (list 1 2)])
+         (let ([y (list x x x x)])
+           (set-car! (last-pair y) y)
+           (pretty-print (list y y)))))
+   (#0=(#1=(1 2) #1# #1# #0#) #0#)
+\end{verbatim}
+
+
+% FIXME 
+% \defun{print-unicode}{parameter}
+% \texttt{(print-unicode)} \\
+% \texttt{(print-unicode \#t)} \\
+% \texttt{(print-unicode \#f)}
+
+
+\defun{print-gensym}{parameter}
+\texttt{(print-gensym)}\\
+\texttt{(print-gensym \#t)}\\
+\texttt{(print-gensym \#f)}\\
+\texttt{(print-gensym 'pretty)}
+
+The parameter \texttt{print-gensym} controls how gensyms are printed
+by the various writers.  
+
+If the value of \texttt{print-gensym} is \texttt{\#f}, then gensym
+syntax is suppressed by the writers and only the gensyms' pretty
+names are printed.  If the value of \texttt{print-gensym} is
+\texttt{\#t}, then the full \texttt{\#\{pretty~unique\}} syntax is
+printed.  Finally, if the value of \texttt{print-gensym} is the
+symbol \texttt{pretty}, then gensyms are printed using the
+\texttt{\#:pretty} notation.  
+
+\begin{verbatim}
+   > (parameterize ([print-gensym #f])
+       (pretty-print (list (gensym) (gensym))))
+   (g0 g1)
+
+   > (parameterize ([print-gensym #t])
+       (pretty-print (list (gensym) (gensym))))
+   (#{g2 |KR1M2&CTt1<B0n/m|} #{g3 |FBAb&7NC6&=c82!O|})
+
+   > (parameterize ([print-gensym 'pretty])
+       (pretty-print (list (gensym) (gensym))))
+   (#:g4 #:g5)
+\end{verbatim}
+
+The initial value of \texttt{print-gensym} is \texttt{\#t}.
+
+
+\defun{gensym-prefix}{parameter}
+\texttt{(gensym-prefix)}\\
+\texttt{(gensym-prefix string)}
+
+The parameter \texttt{gensym-prefix} specifies the string to be used
+as the prefix to generated pretty names.  The default value of
+\texttt{gensym-prefix} is the string \texttt{"g"}, which causes
+generated strings to have pretty names in the sequence \texttt{g0},
+\texttt{g1}, \texttt{g2}, etc. 
+
+\begin{verbatim}
+   > (parameterize ([gensym-prefix "var"] [print-gensym #f])
+        (pretty-print (list (gensym) (gensym) (gensym))))
+   (var0 var1 var2)
+\end{verbatim}
+
+Beware that the \texttt{gensym-prefix} controls how pretty names are
+generated, and has nothing to do with how \texttt{gensym} constructs
+a new gensym.  In particular, notice the difference between the
+output in the first example with the output of the examples below:
+
+\begin{verbatim}
+   > (pretty-print
+       (parameterize ([gensym-prefix "var"] [print-gensym #f])
+         (list (gensym) (gensym) (gensym))))
+   (g3 g4 g5)
+
+   > (let ([ls (list (gensym) (gensym) (gensym))])
+       (parameterize ([gensym-prefix "var"] [print-gensym #f])
+         (pretty-print ls)))
+   (var5 var6 var7)
+\end{verbatim}
+
+
+
+\defun{gensym-count}{parameter}
+\texttt{(gensym-count)}\\
+\texttt{(gensym-count n)}
+
+The parameter \texttt{gensym-count} determines the number 
+which is attached to the \texttt{gensym-prefix} when gensyms'
+pretty names are generated.  The value of \texttt{gensym-count}
+starts at 0 when the system starts and  is incremented every time a
+pretty name is generated.  It might be set to any non-negative
+integer value. 
+
+\begin{verbatim}
+   > (let ([x (gensym)])
+       (parameterize ([gensym-count 100] [print-gensym #f])
+         (pretty-print (list (gensym) x (gensym)))))
+   (g100 g101 g102)
+\end{verbatim}
+
+Notice from all the examples so far that pretty names are generated
+in the order at which the gensyms are printed, not in the order in
+which gensyms were created.
+
+\newpage
+\section{Tracing}
+
+\defun{trace-define}{syntax}
+\texttt{(trace-define (name . args) body body* ...)}\\
+\texttt{(trace-define name expression)}
+
+The \texttt{trace-define} syntax is similar to \texttt{define}
+except that the bound value, which must be a procedure, becomes a
+traced procedure.  A traced procedure prints its arguments when it
+is called and prints its values when it returns.  
+
+\begin{verbatim}
+   > (trace-define (fact n)
+       (if (zero? n) 1 (* n (fact (- n 1)))))
+   > (fact 5)
+   |(fact 5)
+   | (fact 4)
+   | |(fact 3)
+   | | (fact 2)
+   | | |(fact 1)
+   | | | (fact 0)
+   | | | 1
+   | | |1
+   | | 2
+   | |6
+   | 24
+   |120
+   120
+\end{verbatim}
+
+The tracing facility in Ikarus preserves and shows tail recursion
+and distinguishes it from non-tail recursion by showing tail calls
+starting at the same line in which their parent was called.  
+
+\begin{verbatim}
+   > (trace-define (fact n)
+       (trace-define (fact-aux n m)
+         (if (zero? n) m (fact-aux (- n 1) (* n m))))
+       (fact-aux n 1))
+   > (fact 5)
+   |(fact 5)
+   |(fact-aux 5 1)
+   |(fact-aux 4 5)
+   |(fact-aux 3 20)
+   |(fact-aux 2 60)
+   |(fact-aux 1 120)
+   |(fact-aux 0 120)
+   |120
+   120
+\end{verbatim}
+
+Moreover, the tracing facility interacts well with continuations and
+exceptions.
+
+\begin{verbatim}
+   > (call/cc
+       (lambda (k) 
+         (trace-define (loop n)
+           (if (zero? n) 
+               (k 'done)
+               (+ (loop (- n 1)) 1)))
+         (loop 5)))
+   |(loop 5)
+   | (loop 4)
+   | |(loop 3)
+   | | (loop 2)
+   | | |(loop 1)
+   | | | (loop 0)
+   done
+\end{verbatim}
+
+
+\defun{trace-lambda}{syntax}
+\texttt{(trace-lambda name args body body* ...)}
+
+The \texttt{trace-lambda} macro is similar to \texttt{lambda} except
+that the resulting procedure is traced: it prints the arguments it
+receives and the results it returns.
+
+\defun{make-traced-procedure}{procedure}
+\texttt{(make-traced-procedure name proc)}
+
+The procedure \texttt{make-traced-procedure} takes a name (typically
+a symbol) and a procedure.  It returns a procedure similar to
+\texttt{proc} except that it traces its arguments and values.
+
+\begin{verbatim}
+   > (define (fact n)
+       (if (zero? n)
+           (lambda (k) (k 1))
+           (lambda (k)
+             ((fact (- n 1))
+              (make-traced-procedure `(k ,n)
+                (lambda (v) 
+                  (k (* v n))))))))
+   > (call/cc
+       (lambda (k) 
+         ((fact 5) (make-traced-procedure 'K k))))
+   |((k 1) 1)
+   |((k 2) 1)
+   |((k 3) 2)
+   |((k 4) 6)
+   |((k 5) 24)
+   |(K 120)
+   120
+\end{verbatim}
+
+
+\newpage
+\section{Timing}
+
+This section describes some of Ikarus's timing facilities which may
+be useful for benchmarking and performance tuning.
+
+\defun{time}{syntax}
+\texttt{(time expression)}
+
+The \texttt{time} macro performs the following:  it evaluates
+\texttt{expression}, then prints a summary of the run time
+statistics, then returns the values returned by \texttt{expression}.
+The run-time summary includes the number of bytes allocated, the
+number of garbage collection runs, and the time spent in both the
+mutator and the collector.
+
+
+\begin{verbatim}
+   > (let ()                                   ;;; 10 million
+       (define ls (time (vector->list (make-vector 10000000))))
+       (time (append ls ls))
+       (values))
+   running stats for (vector->list (make-vector 10000000)):
+       3 collections
+       672 ms elapsed cpu time, including 547 ms collecting
+       674 ms elapsed real time, including 549 ms collecting
+       120012328 bytes allocated
+   running stats for (append ls ls):
+       4 collections
+       1536 ms elapsed cpu time, including 1336 ms collecting
+       1538 ms elapsed real time, including 1337 ms collecting
+       160000040 bytes allocated
+\end{verbatim}
+
+Note: The  output listed above is \emph{just a sample} that was
+taken at some point on some machine.  The output on your
+machine at the time you read this may vary.
+
+\newpage
+\defun{time-it}{procedure}
+\texttt{(time-it who thunk)}
+
+The procedure \texttt{time-it} takes a datum denoting the name of
+the computation and a thunk (i.e. a
+procedure with no arguments), invokes the thunk, prints the stats,
+and returns the values obtained from invoking the thunk.  
+If the value of \texttt{who} is non-false, \texttt{who}
+is used when displaying the run-time statistics.  If the value of
+\texttt{who} is \texttt{\#f}, then no name for the computation is
+displayed.
+
+\begin{verbatim}
+   > (time-it "a very fast computation"
+       (lambda () (values 1 2 3)))
+   running stats for a very fast computation:
+       no collections
+       0 ms elapsed cpu time, including 0 ms collecting
+       0 ms elapsed real time, including 0 ms collecting
+       56 bytes allocated
+   1
+   2
+   3
+
+   > (time-it #f (lambda () 12))
+   running stats:
+       no collections
+       0 ms elapsed cpu time, including 0 ms collecting
+       0 ms elapsed real time, including 0 ms collecting
+       32 bytes allocated
+   12
+\end{verbatim}
+
+\chapter{Missing Features}
+
+Ikarus does not fully conform to \rnrs{6} yet.  Although it
+implements the most immediately useful features of \rnrs{6}
+including more than 80\% of \rnrs{6}'s macros and procedures, some
+areas are still lacking.  This section summarizes the set of
+missing features and procedures.  
+
+
+\begin{itemize}
+\item Numeric tower is complete except for complex numbers.\\
+  Consequences: \\
+  -- Reader does not recognize complex number notation
+    (e.g.~\texttt{5-7i}).\\
+  -- Procedures that may construct complex numbers from non-complex
+    arguments may signal an error or return an incorrect value
+    (for example, \texttt{(sqrt -1)} should \emph{not} be \texttt{+nan.0}).
+\item Reader does not recognize \texttt{\#!r6rs} syntax.  It should
+be modified to accept both \texttt{\#!r6rs} and \texttt{\#!ikarus}
+so that Ikarus-specific reader features (gensym syntax, record
+syntax, shared graphs, fasl objects, etc.) can be enabled/disabled as needed.
+\item The procedure \texttt{equal?}\ may not terminate on
+\texttt{equal?}\ infinite (circular) input.
+\item Representation of I/O ports is missing a transcoder field.
+\end{itemize}
+\newpage
+\section{List of missing \rnrs{6} procedures}
+
+The following procedures are missing from \texttt{(rnrs base)}:
+\begin{Verbatim}
+angle imag-part magnitude make-polar make-rectangular real-part
+\end{Verbatim}
+
+The following procedures are missing form \texttt{(rnrs bytevectors)}:
+\begin{Verbatim}
+bytevector-ieee-double-native-ref  bytevector-ieee-double-native-set! 
+bytevector-ieee-double-ref         bytevector-ieee-single-native-ref    
+bytevector-ieee-single-ref         bytevector-ieee-single-native-set! 
+bytevector-s64-native-ref          bytevector-s64-native-set!    
+bytevector-s64-ref                 bytevector-s64-set!    
+bytevector-u64-native-ref          bytevector-u64-native-set!    
+bytevector-u64-ref                 bytevector-u64-set! 
+string->utf16     string->utf32    utf16->string     utf32->string
+\end{Verbatim}
+
+
+The following procedures are missing from \texttt{(rnrs unicode)}:
+\begin{Verbatim}
+string-downcase   string-foldcase   string-titlecase   string-upcase    
+string-normalize-nfc                string-normalize-nfd 
+string-normalize-nfkc               string-normalize-nfkd   
+\end{Verbatim}
+
+
+The following procedures are missing from \texttt{(rnrs arithmetic
+bitwise)}:
+\begin{Verbatim}
+bitwise-not    bitwise-and  bitwise-ior   bitwise-xor    bitwise-if 
+bitwise-copy-bit-field     bitwise-bit-set?        bitwise-copy-bit 
+bitwise-first-bit-set      bitwise-bit-count      bitwise-bit-field 
+bitwise-reverse-bit-field  bitwise-rotate-bit-field  bitwise-length  
+\end{Verbatim}
+
+
+The following procedures are missing from \texttt{(rnrs arithmetic
+fixnum)}:
+\begin{Verbatim}
+fxbit-count  fxbit-field  fxbit-set?  fxcopy-bit  fxcopy-bit-field
+fxdiv   fxdiv-and-mod   fxdiv0   fxdiv0-and-mod0   fxfirst-bit-set 
+fxlength   fxmod   fxmod0  fxreverse-bit-field  fxrotate-bit-field   
+\end{Verbatim}
+
+
+The following procedures are missing from \texttt{(rnrs arithmetic
+flonums)}:
+\begin{Verbatim}
+fldiv  fldiv-and-mod  fldiv0  fldiv0-and-mod0  flmod  flmod0 
+real->flonum    
+\end{Verbatim}
+
+The following procedures are missing from \texttt{(rnrs hashtables)}:
+\begin{Verbatim}
+hashtable-copy             hashtable-entries  
+make-eqv-hashtable         make-hashtable
+hashtable-hash-function    hashtable-equivalence-function 
+equal-hash   string-hash   string-ci-hash   symbol-hash
+\end{Verbatim}
+
+
+
+The following procedures are missing from \texttt{(rnrs io ports)}:
+\begin{Verbatim}
+call-with-bytevector-output-port     call-with-string-output-port
+binary-port?   port?    textual-port?    port-eof?     
+port-has-port-position?         port-position 
+port-has-set-port-position!?    set-port-position!    
+call-with-port        close-port     flush-output-port
+get-bytevector-all    get-bytevector-some
+get-bytevector-n      get-bytevector-n!
+get-char              put-char      lookahead-char    
+get-u8                lookahead-u8  put-u8
+get-string-all        get-string-n  get-string-n!  put-string
+get-datum             put-datum     get-line        
+make-custom-binary-input-port         make-custom-binary-input/output-port    
+make-custom-binary-output-port        make-custom-textual-input-port    
+make-custom-textual-input/output-port make-custom-textual-output-port
+open-bytevector-input-port            open-bytevector-output-port 
+open-file-input-port   open-file-input/output-port open-file-output-port    
+open-string-input-port open-string-output-port
+output-port-buffer-mode
+transcoded-port       port-transcoderput-bytevector 
+standard-error-port   standard-input-port   standard-output-port 
+string->bytevector    bytevector->string
+\end{Verbatim}
+
+
+
+
+\nocite{ghuloum-implicit}
+\nocite{ghuloum-generation}
+
+\backmatter
 \appendix
-
 \bibliographystyle{plain}
 \bibliography{ikarus-users-guide}
 \printindex
 
-\backmatter
 
 
 \end{document}
+
+
+
 
 
 
