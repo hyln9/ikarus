@@ -181,14 +181,15 @@ section entitled ``GNU Free Documentation License''.
 \section{Introduction}
 
 Ikarus Scheme is an implementation of the Scheme programming
-language.  The preliminary release of Ikarus
-implements the majority of the features found in the current
-standard, the Revised$^\mathrm{6}$ report on the algorithmic language
+language.  The preliminary release of Ikarus implements the majority
+of the features found in the current standard, the
+Revised$^\mathrm{6}$ report on the algorithmic language
 Scheme\cite{r6rs} including full \rnrs{6} library and script syntax,
 syntax-case, unicode strings, bytevectors, user-defined record
-types, exception handling, conditions, and enumerations.  Subsequent
-releases will proceed towards brining Ikarus to full \rnrs{6}
-conformance.
+types, exception handling, conditions, and enumerations.  Over 80\%
+of the \rnrs{6} procedures and keywords are currently implemented
+and subsequent releases will proceed towards brining Ikarus to full
+\rnrs{6} conformance.
 
 The main purpose behind releasing Ikarus early is to give Scheme
 programmers the opportunity to experiment with the various new
@@ -297,8 +298,8 @@ then all you need to know is that Ikarus uses the standard
 installation method found in most other Unix software.  Simply run
 the following commands from the shell:
 \begin{verbatim}
-  $ tar -zxf ikarus-scheme-n.n.n.tar.gz
-  $ cd ikarus-scheme-n.n.n
+  $ tar -zxf ikarus-n.n.n.tar.gz
+  $ cd ikarus-n.n.n
   $ ./configure [--prefix=path] [CFLAGS=-I/dir] [LDFLAGS=-L/dir]
   $ make
   $ make install
@@ -315,7 +316,7 @@ mentioned above.
 
 \item Download the Ikarus source distribution.  The source is
 distributed as a \texttt{gzip}-compressed \texttt{tar} file
-(\texttt{ikarus-scheme-n.n.n.tar.gz} where \texttt{n.n.n} is a 3-digit
+(\texttt{ikarus-n.n.n.tar.gz} where \texttt{n.n.n} is a 3-digit
 number indicating the current revision).  The latest revision can be
 downloaded from the following URL:\\
 \url{http://www.cs.indiana.edu/~aghuloum/ikarus/}
@@ -323,16 +324,16 @@ downloaded from the following URL:\\
 \item Unpack the source distribution package.  From your shell
 command, type:
 \begin{verbatim}
-  $ tar -zxf ikarus-scheme-n.n.n.tar.gz
+  $ tar -zxf ikarus-n.n.n.tar.gz
   $
 \end{verbatim}
-This creates the base directory \texttt{ikarus-scheme-n.n.n}.
+This creates the base directory \texttt{ikarus-n.n.n}.
 
 \item Configure the build system by running the \texttt{configure}
 script located in the base directory.  To do this, type the
 following commands:
 \begin{verbatim}
-  $ cd ikarus-scheme-n.n.n
+  $ cd ikarus-n.n.n
   $ ./configure
   checking build system type... i386-apple-darwin8.10.1
   checking host system type... i386-apple-darwin8.10.1
@@ -401,7 +402,7 @@ your system.  You may need to update the \texttt{PATH} variable in
 your environment to contain the directory in which the
 \texttt{ikarus} executable was installed.
 
-Do not delete the \texttt{ikarus-scheme-n.n.n} directory from which you
+Do not delete the \texttt{ikarus-n.n.n} directory from which you
 configured, built, and installed Ikarus.  It will be needed if you
 decide at a later time to uninstall Ikarus.
 
@@ -412,7 +413,7 @@ decide at a later time to uninstall Ikarus.
 To uninstall Ikarus, use the following steps:
 
 \begin{verbatim}
-  $ cd path/to/ikarus-pre-0-nnn
+  $ cd path/to/ikarus-n.n.n
   $ make uninstall
   $
 \end{verbatim}

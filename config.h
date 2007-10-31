@@ -125,19 +125,19 @@
 /* #undef LSTAT_FOLLOWS_SLASHED_SYMLINK */
 
 /* Name of package */
-#define PACKAGE "ikarus-scheme"
+#define PACKAGE "ikarus"
 
 /* Define to the address where bug reports for this package should be sent. */
 #define PACKAGE_BUGREPORT "aghuloum@cs.indiana.edu"
 
 /* Define to the full name of this package. */
-#define PACKAGE_NAME "ikarus-scheme"
+#define PACKAGE_NAME "ikarus"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "ikarus-scheme prerelease-0"
+#define PACKAGE_STRING "ikarus prerelease-0"
 
 /* Define to the one symbol short name of this package. */
-#define PACKAGE_TARNAME "ikarus-scheme"
+#define PACKAGE_TARNAME "ikarus"
 
 /* Define to the version of this package. */
 #define PACKAGE_VERSION "prerelease-0"
