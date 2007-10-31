@@ -15,10 +15,10 @@
 
 
 (library (ikarus pretty-print)
-  (export pretty-print)
+  (export pretty-print pretty-width)
   (import 
     (rnrs hashtables)
-    (except (ikarus) pretty-print))
+    (except (ikarus) pretty-print pretty-width))
   (define (map1ltr f ls)
     ;;; ltr so that gensym counts get assigned properly
     (cond
@@ -26,7 +26,14 @@
       [else
        (let ([a (f (car ls))])
          (cons a (map1ltr f (cdr ls))))]))
-  (define (pretty-width) 80)
+
+  (define pretty-width
+    (make-parameter 60
+      (lambda (x) 
+        (unless (and (exact? x) (integer? x) (> x 0))
+          (error 'pretty-width "invalid argument" x))
+        x)))
+
   (define (pretty-indent) 1)
   (define-struct cbox (length boxes))
   (define-struct pbox (length ls last))

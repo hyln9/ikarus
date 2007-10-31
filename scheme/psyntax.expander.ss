@@ -3202,7 +3202,15 @@
     (lambda (ls)
       (syntax-match ls ()
         ((ls ...)
-         (map (lambda (x) (make-stx (gensym 't) top-mark* '())) ls))
+         (map (lambda (x)
+                (make-stx 
+                  (let ([x (syntax->datum x)])
+                    (cond
+                      [(or (symbol? x) (string? x)) 
+                       (gensym x)]
+                      [else (gensym 't)]))
+                  top-mark* '()))
+              ls))
         (_ 
          (error 'generate-temporaries "not a list")))))
   
