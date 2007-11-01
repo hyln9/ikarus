@@ -18,6 +18,9 @@ case "$target_os" in
   *linux*)
     LDFLAGS="-rdynamic $LDFLAGS"
     ;;
+  *bsd*)
+    LDFLAGS="-Wl,-E $LDFLAGS"
+    ;;
   esac
 
 # Checks for libraries.

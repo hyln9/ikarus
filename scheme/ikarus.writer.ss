@@ -261,7 +261,7 @@
      "!$%&*/:<=>?^_~+-.@abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"))
   (define initials-map
    (ascii-map
-     "!$%&*/:<=>?^_~abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"))
+     "!$%&*/:<=>?^_~abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"))
 
 
   (define (in-map? byte map)
@@ -301,7 +301,8 @@
            (let* ([c0 ($string-ref str 0)]
                   [b0 ($char->fixnum c0)])
              (cond
-               [(in-map? b0 initials-map) (write-char c0 p)]
+               [(in-map? b0 initials-map) 
+                (write-char c0 p)]
                [($fx< b0 128) (write-inline-hex b0 p)]
                [(unicode-printable-char? c0) (write-char c0 p)]
                [else (write-inline-hex b0 p)])
