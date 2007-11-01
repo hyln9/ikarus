@@ -899,7 +899,7 @@
            [(fixnum? y) ($fl/ x ($fixnum->flonum y))]
            [(bignum? y) ($fl/ x (bignum->flonum y))]
            [(ratnum? y) ($fl/ x (ratnum->flonum y))]
-           [else (error '/ "BUG: unspported" x y)])]
+           [else (error '/ "not a number" y)])]
         [(fixnum? x)
          (cond
            [(flonum? y) ($fl/ ($fixnum->flonum x) y)]
@@ -941,7 +941,7 @@
                         (binary- 0 (quotient y g))))]))]
            [(ratnum? y) 
             (/ (* x ($ratnum-d y)) ($ratnum-n y))]
-           [else (error '/ "BUG: unsupported" x y)])]
+           [else (error '/ "not a number" y)])]
         [(bignum? x) 
          (cond
            [(fixnum? y) 
@@ -1020,7 +1020,7 @@
               [($fx= n 1) d]
               [($fx= n -1) (- d)]
               [else ($make-ratnum d n)]))]
-         [else (error '/ "BUG: unspported argument" x)])]
+         [else (error '/ "not a number" x)])]
       [(x y z . rest)
        (let f ([a (binary/ x y)] [b z] [ls rest])
          (cond
