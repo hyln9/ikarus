@@ -2983,7 +2983,7 @@
            r mr (reverse lex*) (reverse rhs*)))))
   
   (define library-body-expander
-    (lambda (exp* imp* b*)
+    (lambda (exp* imp* b* top?)
       (let-values (((exp-int* exp-ext*) (parse-exports exp*))
                    ((subst imp*) (parse-import-spec* imp*)))
         (let ((rib (make-top-rib subst)))
@@ -2993,7 +2993,7 @@
             (parameterize ((inv-collector rtc)
                            (vis-collector vtc))
               (let-values (((init* r mr lex* rhs*)
-                            (chi-library-internal b* rib #f)))
+                            (chi-library-internal b* rib top?)))
                 (seal-rib! rib)
                 (let ((rhs* (chi-rhs* rhs* r mr))
                       (init* (chi-expr* init* r mr)))
@@ -3019,7 +3019,7 @@
         (let-values (((name ver) (parse-library-name name*)))
           (let-values (((imp* invoke-req* visit-req* invoke-code
                               visit-code export-subst export-env)
-                        (library-body-expander exp* imp* b*)))
+                        (library-body-expander exp* imp* b* #f)))
              (values name ver imp* invoke-req* visit-req* 
                      invoke-code visit-code export-subst
                      export-env))))))
@@ -3035,7 +3035,7 @@
       (let-values (((imp* b*) (parse-top-level-program e*)))
           (let-values (((imp* invoke-req* visit-req* invoke-code
                          visit-code export-subst export-env)
-                        (library-body-expander '() imp* b*)))
+                        (library-body-expander '() imp* b* #t)))
             (values invoke-req* invoke-code)))))
 
   ;;; An env record encapsulates a substitution and a set of
