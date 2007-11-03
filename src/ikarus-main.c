@@ -43,7 +43,7 @@ void ikarus_usage(){
 Options for running ikarus scheme:\n\
 \n  ikarus -h\n\
     Prints this help message then exits.\n\
-\n  ikarus [-b <bootfile>] --r6r-script <scriptfile> opts ...\n\
+\n  ikarus [-b <bootfile>] --r6rs-script <scriptfile> opts ...\n\
     Starts ikarus in r6rs-script mode.  The script file is treated\n\
     as an R6RS-script.  The options opts ... can be obtained using\n\
     the \"command-line\" procedure in the (rnrs programs) library.\n\
