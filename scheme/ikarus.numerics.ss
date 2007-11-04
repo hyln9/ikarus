@@ -306,7 +306,8 @@
   (define (flexpt x y)
     (if (flonum? x)
         (if (flonum? y)
-            (let ([y^ ($flonum->exact y)])
+            (let ([y^ ($flonum->exact y)]) 
+              ;;; FIXME: performance bottleneck?
               (cond
                 [(fixnum? y^) (inexact (expt x y^))]
                 [(bignum? y^) (inexact (expt x y^))]
@@ -1668,6 +1669,8 @@
                 (/ 1 (expt n (- m))))]
            [else 
             (error 'expt "result is too big to compute" n m)])]
+        [(flonum? m) (flexpt (inexact n) m)]
+        [(ratnum? m) (flexpt (inexact n) (inexact m))]
         [else (error 'expt "not a number" m)])))
 
   (define quotient
