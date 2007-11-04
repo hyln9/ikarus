@@ -1,14 +1,13 @@
 * maze needs bitwise-and
 * quicksort needs bignum modulo.
-* scheme needs complex? and other stuff.
 * compiler needs string-downcase
-* nbody needs real-part
+* nbody needs real-part, make-polar
 
 * ntakl kinda slow
 * string too slow
 * nbody does not work
 
-* fibfp does not terminate
+* fibfp does not terminate (not anymore)
 * mbrot too slow
 * pnpoly kinda slow
 * sumfp/fpsum too slow

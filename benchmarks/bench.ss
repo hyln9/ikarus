@@ -7,7 +7,7 @@
                 (lambda ()
                   (eval 'main 
                     (environment
-                      (list 'r6rs-benchmarks name)))))])
+                      (list 'rnrs-benchmarks name)))))])
     (proc)))
 
 (apply 
