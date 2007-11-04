@@ -503,8 +503,11 @@ start in interactive mode.  Each of the \texttt{files} is first
 loaded, in the interaction environment.  The interaction environment
 initially contains all the bindings exported from the
 \texttt{(ikarus)} library (see Chapter~\ref{chapter:ikarus}).  The
-optional \texttt{arguments} following the \texttt{--} marker can be obtained
-by calling the \texttt{command-line} procedure.
+optional \texttt{arguments} following the \texttt{--} marker can be
+obtained by calling the \texttt{command-line} procedure.  In
+interactive mode, the first element of the returned list will be the
+string \texttt{"*interactive*"}, corresponding to the script name in
+\rnrs{6}-script mode.
 
 
 \BoxedText{Note:}{The interactive mode is intended for quickly
