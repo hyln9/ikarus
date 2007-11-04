@@ -2054,7 +2054,20 @@
             "not a valid location for ~s" x op))
        x)]
     [else
-     (error #f "not supported yet" op)]))
+     (let ()
+       (define-condition-type &url &condition
+         make-url-condition
+         url-condition?
+        (url condition-url))
+       (raise 
+         (condition 
+           (make-error)
+           (make-who-condition 'ikarus)
+           (make-message-condition
+            "not supported yet, please submit an implementation request")
+           (make-url-condition 
+             "https://bugs.launchpad.net/ikarus/")
+           (make-irritants-condition (list op)))))]))
 
 (define (primref-loc op)
   (mem (fx- disp-symbol-record-proc record-tag) 
