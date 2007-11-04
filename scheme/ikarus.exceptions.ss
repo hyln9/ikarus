@@ -30,7 +30,7 @@
     (make-parameter
       (list 
         (lambda (x) 
-          (printf "unhandled exception:\n")
+          (display "Unhandled exception:\n" (standard-error-port))
           (print-condition x)
           (exit -1)))))
   

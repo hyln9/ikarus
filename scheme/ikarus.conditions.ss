@@ -355,7 +355,7 @@
              (if (null? ls) 
                  (display "Condition object with no further information\n" p)
                  (begin
-                   (display " Condition components:\n")
+                   (display " Condition components:\n" p)
                    (let f ([ls ls] [i 1])
                      (unless (null? ls)
                        (display "   " p)
@@ -369,7 +369,7 @@
            (newline p)]))
       (case-lambda
         [(x) 
-         (print-condition x (console-output-port))]
+         (print-condition x (standard-error-port))]
         [(x port)
          (if (output-port? port) 
              (print-condition x port)
