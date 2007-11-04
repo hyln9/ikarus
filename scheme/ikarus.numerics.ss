@@ -1993,6 +1993,16 @@
         [else (error 'log "not a number" x)])))
 
   (define string->number
+    (case-lambda
+      [(x) (string->number-radix-10 x)]
+      [(x r) 
+       (unless (eqv? r 10) 
+         (error 'string->number
+                "BUG: only radix 10 is supported"
+                x r))
+       (string->number-radix-10 x)]))
+
+  (define string->number-radix-10
     (lambda (x)
       (define (convert-char c radix)
         (case radix
@@ -2288,6 +2298,29 @@
 
 
   )
+
+(library (ikarus complexnums)
+  (export real-part imag-part)
+  (import (except (ikarus) real-part imag-part))
+  ;;; stub implementation since we don't have a way of 
+  ;;; constructing complex numbers yet.
+
+  (define real-part
+    (lambda (x) 
+      (if (number? x) 
+          x
+          (error 'real-part "not a number" x))))
+
+  (define imag-part
+    (lambda (x)
+      (cond
+        [(fixnum? x) 0]
+        [(bignum? x) 0]
+        [(ratnum? x) 0]
+        [(flonum? x) 0.0]
+        [else 
+         (error 'imag-part "not a number" x)]))))
+
 
 
 (library (ikarus flonum-conversion)
