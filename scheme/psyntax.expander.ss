@@ -2084,7 +2084,7 @@
                  (let-values (((ynew maps)
                                (gen-syntax src y r maps ellipsis? vec?)))
                    (values (gen-cons e x y xnew ynew) maps))))
-              (#(ls ...) (not (stx? e))
+              (#(ls ...) 
                (let-values (((lsnew maps)
                              (gen-syntax src ls r maps ellipsis? #t)))
                  (values (gen-vector e ls lsnew) maps)))
