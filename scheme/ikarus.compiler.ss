@@ -2063,10 +2063,11 @@
          (condition 
            (make-error)
            (make-who-condition 'ikarus)
+           (make-message-condition "primitive not supported yet")
            (make-message-condition
-            "not supported yet, please submit an implementation request")
+             "please file a bug report to help us prioritize our goals")
            (make-url-condition 
-             "https://bugs.launchpad.net/ikarus/")
+             "https://bugs.launchpad.net/ikarus/+filebug")
            (make-irritants-condition (list op)))))]))
 
 (define (primref-loc op)
