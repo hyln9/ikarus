@@ -21,7 +21,8 @@
           boolean? char? vector? bytevector? string? procedure? null? pair?
           symbol? code? not weak-pair? eq? eqv? equal? boolean=?
           symbol=? finite? infinite? nan? real-valued?
-          rational-valued? integer-valued?)
+          rational-valued? integer-valued? 
+          output-port? input-port? port?)
 
   (import 
     (except (ikarus) fixnum? flonum? bignum? ratnum? number? complex? real?
