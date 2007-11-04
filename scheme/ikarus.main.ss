@@ -60,9 +60,7 @@
     (cond
       [(eq? script-type 'r6rs-script)
        (command-line-arguments (cons script args))
-       ;(for-each load files)
        (load-r6rs-top-level script)
-       ;(load script)
        (exit 0)]
       [(eq? script-type 'script) ; no greeting, no cafe
        (command-line-arguments (cons script args))
@@ -71,7 +69,7 @@
        (exit 0)]
       [else
        (print-greeting)
-       (command-line-arguments args)
+       (command-line-arguments (cons "*interactive*" args))
        (for-each load files)
        (new-cafe)
        (exit 0)])))
