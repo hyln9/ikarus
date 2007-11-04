@@ -234,7 +234,7 @@ memory is released back to the operating system.
 \textbf{Supports many operating systems:} Ikarus runs on the most
 popular and widely used operating systems for servers and personal
 computers.  The supported systems include Mac~OS~X,
-GNU/Linux, and Microsoft Windows.
+GNU/Linux, FreeBSD, NetBSD, and Microsoft Windows.
 
 
 \section{System Requirements}
@@ -259,6 +259,8 @@ Ikarus is tested under the following operating systems:
 \begin{itemize}
 \item Mac OS X version 10.4.
 \item Linux 2.6.18 (Debian, Fedora, Gentoo, and Ubuntu).
+\item FreeBSD version 6.2.
+\item NetBSD version 3.1.
 \item Microsoft Windows XP (using Cygwin 1.5.24).
 \end{itemize}
 
@@ -289,7 +291,11 @@ implementation of the LaTeX (and TeX) typesetting system.
 
 \end{itemize}
 
-\newpage
+\BoxedText{Note:}{Ikarus runs in 32-bit mode only.  
+To run it in 64-bit environments, you will have to obtain the 32-bit
+version of GMP, or compile it yourself after adding \texttt{ABI=32}
+to its configuration options.}
+
 
 \section{Installation}
 
@@ -566,7 +572,7 @@ the language (i.e. the variable and keyword bindings) in which the
 library body is written.  A very simple example of an \rnrs{6}
 script is listed below.
 
-\index{Examples!Hello World@\textit{Hello World}}
+\index{Examples!Hello World}
 \begin{CodeInline}
 (import (rnrs))
 
