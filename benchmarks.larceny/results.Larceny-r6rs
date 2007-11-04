@@ -8319,3 +8319,142 @@ Words allocated: 4193866
 Words reclaimed: 0
 Elapsed time...: 2013 ms (User: 534 ms; System: 749 ms)
 Elapsed GC time: 8 ms (CPU: 11 in 16 collections.)
+
+****************************
+Benchmarking Larceny-r6rs on Sun Nov 4 11:25:11 EST 2007 under Darwin adsl-70-239-94-218.dsl.bltnin.sbcglobal.net 8.10.1 Darwin Kernel Version 8.10.1: Wed May 23 16:33:00 PDT 2007; root:xnu-792.22.5~1/RELEASE_I386 i386 i386
+
+Testing fibfp under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 358610884
+Words reclaimed: 0
+Elapsed time...: 3287 ms (User: 3248 ms; System: 39 ms)
+Elapsed GC time: 479 ms (CPU: 490 in 1368 collections.)
+
+****************************
+Benchmarking Larceny-r6rs on Sun Nov 4 11:26:02 EST 2007 under Darwin adsl-70-239-94-218.dsl.bltnin.sbcglobal.net 8.10.1 Darwin Kernel Version 8.10.1: Wed May 23 16:33:00 PDT 2007; root:xnu-792.22.5~1/RELEASE_I386 i386 i386
+
+Testing mbrot under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 551809361
+Words reclaimed: 0
+Elapsed time...: 2256 ms (User: 2237 ms; System: 16 ms)
+Elapsed GC time: 766 ms (CPU: 756 in 2105 collections.)
+
+****************************
+Benchmarking Larceny-r6rs on Sun Nov 4 11:26:51 EST 2007 under Darwin adsl-70-239-94-218.dsl.bltnin.sbcglobal.net 8.10.1 Darwin Kernel Version 8.10.1: Wed May 23 16:33:00 PDT 2007; root:xnu-792.22.5~1/RELEASE_I386 i386 i386
+
+Testing pnpoly under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 72351714
+Words reclaimed: 0
+Elapsed time...: 1486 ms (User: 1482 ms; System: 3 ms)
+Elapsed GC time: 100 ms (CPU: 94 in 276 collections.)
+
+****************************
+Benchmarking Larceny-r6rs on Sun Nov 4 11:27:38 EST 2007 under Darwin adsl-70-239-94-218.dsl.bltnin.sbcglobal.net 8.10.1 Darwin Kernel Version 8.10.1: Wed May 23 16:33:00 PDT 2007; root:xnu-792.22.5~1/RELEASE_I386 i386 i386
+
+Testing fft under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 217579520
+Words reclaimed: 0
+Elapsed time...: 1644 ms (User: 1608 ms; System: 30 ms)
+Elapsed GC time: 521 ms (CPU: 474 in 830 collections.)
+
+****************************
+Benchmarking Larceny-r6rs on Sun Nov 4 11:28:31 EST 2007 under Darwin adsl-70-239-94-218.dsl.bltnin.sbcglobal.net 8.10.1 Darwin Kernel Version 8.10.1: Wed May 23 16:33:00 PDT 2007; root:xnu-792.22.5~1/RELEASE_I386 i386 i386
+
+Testing fib under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 0
+Words reclaimed: 0
+Elapsed time...: 1796 ms (User: 1793 ms; System: 2 ms)
+Elapsed GC time: 0 ms (CPU: 0 in 0 collections.)
+
+****************************
+Benchmarking Larceny-r6rs on Sun Nov 4 11:52:05 EST 2007 under Darwin adsl-70-239-94-218.dsl.bltnin.sbcglobal.net 8.10.1 Darwin Kernel Version 8.10.1: Wed May 23 16:33:00 PDT 2007; root:xnu-792.22.5~1/RELEASE_I386 i386 i386
+
+Testing scheme under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 29621938
+Words reclaimed: 0
+Elapsed time...: 1185 ms (User: 1177 ms; System: 8 ms)
+Elapsed GC time: 42 ms (CPU: 46 in 113 collections.)
+
+****************************
+Benchmarking Larceny-r6rs on Sun Nov 4 16:29:25 EST 2007 under Darwin Vesuvius.local 8.10.1 Darwin Kernel Version 8.10.1: Wed May 23 16:33:00 PDT 2007; root:xnu-792.22.5~1/RELEASE_I386 i386 i386
+
+Testing compiler under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> WARNING from macro expander:
+Redefining 
+bound?
+
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> bench DIED!

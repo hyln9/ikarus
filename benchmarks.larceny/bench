@@ -86,7 +86,7 @@ setup ()
 
   # For both Solaris and Linux machines.
 
-  BIGLOO=${BIGLOO:-"${APPS}/bin/bigloo"}
+  BIGLOO=${BIGLOO:-"bigloo"}
   MZSCHEME=${MZSCHEME:-"mzscheme"}
  
   CSC=$CHICKEN

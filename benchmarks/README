@@ -9,6 +9,7 @@ the benchmarks under ikarus.
 Files and directories:
 
   * bench.ss: a script for running a benchmark
+  * benchall.ss: a script for running all benchmarks
   * rnrs-benchmarks.ss: a library specifing the number of
     iterations that every benchmark should be run and some
     procedures (like run-benchmark) that the various benchmarks
@@ -20,22 +21,25 @@ To run a benchmark, type:
 
   $ ikarus --r6rs-script bench.ss <benchmark-name>
 
-Example:
-
-  $ ikarus --r6rs-script bench.ss nucleic
-  running stats for compile-nucleic:
-      7 collections
-      262 ms elapsed cpu time, including 84 ms collecting
-      262 ms elapsed real time, including 84 ms collecting
-      30095456 bytes allocated
-  running stats for nucleic:
-      154 collections
-      840 ms elapsed cpu time, including 77 ms collecting
-      842 ms elapsed real time, including 78 ms collecting
-      640581192 bytes allocated
+  Example:
+  
+    $ ikarus --r6rs-script bench.ss nucleic
+    running stats for compile-nucleic:
+        7 collections
+        262 ms elapsed cpu time, including 84 ms collecting
+        262 ms elapsed real time, including 84 ms collecting
+        30095456 bytes allocated
+    running stats for nucleic:
+        154 collections
+        840 ms elapsed cpu time, including 77 ms collecting
+        842 ms elapsed real time, including 78 ms collecting
+        640581192 bytes allocated
 
 The text that Ikarus's "time" macro and "time-it" procedure
 output is modeled after Chez Scheme's in order to facilitate
 interoperability with tools that parse benchmark data.
+
+BUGS: 
+  maze, nbody, and quicksort do not work yet.
 
 Aziz,,,
