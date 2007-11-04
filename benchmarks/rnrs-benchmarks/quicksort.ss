@@ -3,7 +3,7 @@
   
 (library (rnrs-benchmarks quicksort)
   (export main)
-  (import (rnrs) (rnrs mutable-pairs) (rnrs-benchmarks))
+  (import (except (rnrs) partition) (rnrs mutable-pairs) (rnrs-benchmarks))
 
   (define (quick-1 v less?)
     

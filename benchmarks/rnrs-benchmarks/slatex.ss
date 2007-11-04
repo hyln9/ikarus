@@ -10,7 +10,7 @@
     (rnrs) 
     (rnrs unicode)
     (rnrs mutable-pairs)
-    (rnrs i/o simple)
+    (rnrs io simple)
     (rnrs-benchmarks))
 
   (define *op-sys* 'unix)

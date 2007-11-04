@@ -1,12 +1,13 @@
 
 (library (rnrs-benchmarks)
   (export run-benchmark fatal-error include-source 
-    call-with-output-file/truncate
+    call-with-output-file/truncate fast-run
      ack-iters 
      array1-iters
      boyer-iters
      browse-iters
      cat-iters
+     compiler-iters
      conform-iters
      cpstak-iters
      ctak-iters
@@ -73,7 +74,7 @@
         [(ctxt name) 
          (cons #'begin
            (with-input-from-file 
-             (format "r6rs-benchmarks/~a" (syntax->datum #'name))
+             (format "rnrs-benchmarks/~a" (syntax->datum #'name))
              (lambda ()
                (let f ()
                  (let ([x (read)])
@@ -85,6 +86,8 @@
   (define (fatal-error . args)
     (error 'fatal-error "~a"
       (apply (lambda (x) (format "~a" x)) args)))
+
+  (define fast-run (make-parameter #f))
   
   (define (run-bench count run)
     (unless (= count 0)
@@ -98,7 +101,9 @@
     (let ([run (apply run-maker args)])
       (let ([result 
              (time-it name
-              (lambda () (run-bench count run)))])
+               (if (fast-run) 
+                   run
+                   (lambda () (run-bench count run))))])
         (unless (ok? result) 
           (error #f "*** wrong result ***")))))
 
