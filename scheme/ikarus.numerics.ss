@@ -1218,8 +1218,50 @@
         [(fixnum? n)
          (cond
            [(fixnum? m) ($fxmodulo n m)]
-           [else (error 'modulo "BUG: unsupported" m)])]
-        [else (error 'modulo "BUG: unsupported" n)])))
+           [(bignum? m) 
+            (if ($fx< n 0)
+                (if ($bignum-positive? m) 
+                    (foreign-call "ikrt_fxbnplus" n m)
+                    n)
+                (if ($bignum-positive? m) 
+                    n
+                    (foreign-call "ikrt_fxbnplus" n m)))]
+           [(flonum? m) 
+            (let ([v ($flonum->exact m)])
+              (cond
+                [(or (fixnum? v) (bignum? v)) 
+                 (inexact (modulo n v))]
+                [else
+                 (error 'modulo "not an integer" m)]))]
+           [(ratnum? m) (error 'modulo "not an integer" m)]
+           [else (error 'modulo "not a number" m)])]
+        [(bignum? n)
+         (cond
+           [(fixnum? m) 
+            (foreign-call "ikrt_bnfx_modulo" n m)]
+           [(bignum? m) 
+            (error 'modulo
+              "BUG: two bignum arguments are not yet implemented"
+              n m)
+            (foreign-call "ikrt_bnbn_modulo" n m)]
+           [(flonum? m) 
+            (let ([v ($flonum->exact m)])
+              (cond
+                [(or (fixnum? v) (bignum? v)) 
+                 (inexact (modulo n v))]
+                [else
+                 (error 'modulo "not an integer" m)]))] 
+           [(ratnum? m) (error 'modulo "not an integer" m)]
+           [else (error 'modulo "not a number" m)])]
+        [(flonum? n) 
+         (let ([v ($flonum->exact n)])
+           (cond
+             [(or (fixnum? v) (bignum? v)) 
+              (inexact (modulo v m))]
+             [else
+              (error 'modulo "not an integer" n)]))]
+        [(ratnum? n) (error 'modulo "not an integer" n)]
+        [else (error 'modulo "not a number" n)])))
 
   (define-syntax mk<
     (syntax-rules ()

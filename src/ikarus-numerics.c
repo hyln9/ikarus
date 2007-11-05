@@ -1435,6 +1435,43 @@ ikrt_bnfxdivrem(ikp x, ikp y, ikpcb* pcb){
   return p+pair_tag;
 }
 
+ikp
+ikrt_bnfx_modulo(ikp x, ikp y, ikpcb* pcb){
+  int yint = unfix(y);
+  mp_limb_t* s2p = (mp_limb_t*)(x+off_bignum_data);
+  ikp fst = ref(x, -vector_tag);
+  mp_size_t s2n = ((unsigned int) fst) >> bignum_length_shift;
+  if(yint < 0){
+    if(((unsigned int) fst) & bignum_sign_mask){
+      /* x negative, y negative */
+      mp_limb_t m = mpn_mod_1(s2p, s2n, -yint);
+      return fix(-m);
+    } else {
+      /* x positive, y negative */
+      mp_limb_t m = mpn_mod_1(s2p, s2n, -yint);
+      return fix(yint+m);
+    }
+  } else {
+    if(((unsigned int) fst) & bignum_sign_mask){
+      /* x negative, y positive */
+      mp_limb_t m = mpn_mod_1(s2p, s2n, yint);
+      return fix(yint-m);
+    } else {
+      /* x positive, y positive */
+      mp_limb_t m = mpn_mod_1(s2p, s2n, yint);
+      return fix(m);
+    }
+  }
+}
+
+ikp
+ikrt_bnbn_modulo(ikp x, ikp y, ikpcb* pcb){
+  fprintf(stderr, "error in bnbnmodulo\n");
+  exit(-1);
+}
+
+
+
 
 ikp
 ikrt_bignum_to_bytevector(ikp x, ikpcb* pcb){

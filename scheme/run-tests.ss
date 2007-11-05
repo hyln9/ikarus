@@ -1,4 +1,4 @@
-#!/usr/bin/env ikarus --r6rs-script
+#!../src/ikarus -b ikarus.boot --r6rs-script
 
 ;;; Ikarus Scheme -- A compiler for R6RS Scheme.
 ;;; Copyright (C) 2006,2007  Abdulaziz Ghuloum
@@ -23,7 +23,7 @@
         (tests strings)
         (tests hashtables)
         ;(tests numbers)
-        ;(tests bignums)
+        (tests bignums)
         (tests fxcarry)
         (tests bignum-to-flonum)
         (tests string-to-number))
@@ -48,7 +48,7 @@
 (test-bignum-to-flonum)
 (test-string-to-number)
 ;(test-div-and-mod)
-;(test-bignums)
+(test-bignums)
 (test-fxcarry)
 (test-lists)
 (test-hashtables)
