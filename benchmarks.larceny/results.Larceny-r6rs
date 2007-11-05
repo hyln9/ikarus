@@ -8458,3 +8458,59 @@ Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified
 
 
 > bench DIED!
+
+****************************
+Benchmarking Larceny-r6rs on Sun Nov 4 23:27:58 EST 2007 under Darwin Vesuvius.local 8.10.1 Darwin Kernel Version 8.10.1: Wed May 23 16:33:00 PDT 2007; root:xnu-792.22.5~1/RELEASE_I386 i386 i386
+
+Testing quicksort under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> bench DIED!
+
+****************************
+Benchmarking Larceny-r6rs on Sun Nov 4 23:33:16 EST 2007 under Darwin Vesuvius.local 8.10.1 Darwin Kernel Version 8.10.1: Wed May 23 16:33:00 PDT 2007; root:xnu-792.22.5~1/RELEASE_I386 i386 i386
+
+Testing quicksort under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 84219692
+Words reclaimed: 0
+Elapsed time...: 124748 ms (User: 73859 ms; System: 50830 ms)
+Elapsed GC time: 183 ms (CPU: 180 in 320 collections.)
+
+****************************
+Benchmarking Larceny-r6rs on Mon Nov 5 01:11:44 EST 2007 under Darwin Vesuvius.local 8.10.1 Darwin Kernel Version 8.10.1: Wed May 23 16:33:00 PDT 2007; root:xnu-792.22.5~1/RELEASE_I386 i386 i386
+
+Testing scheme under Larceny-r6rs
+Compiling...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+> 
+Running...
+Larceny v0.93 "Deviated Prevert" (Nov 10 2006 04:27:45, precise:BSD Unix:unified)
+
+
+> 
+Words allocated: 29621942
+Words reclaimed: 0
+Elapsed time...: 1199 ms (User: 1195 ms; System: 4 ms)
+Elapsed GC time: 44 ms (CPU: 48 in 113 collections.)

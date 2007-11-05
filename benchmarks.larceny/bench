@@ -81,6 +81,7 @@ setup ()
         CHICKEN_INIT="/Users/ikarus/.opt/bin/csi"
         GSI="/Users/ikarus/.opt/4.0b20/bin/gsi"
         GSC="/Users/ikarus/.opt/4.0b20/bin/gsc"
+        MIT="mit-scheme"
         ;;
   esac
 

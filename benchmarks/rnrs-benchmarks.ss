@@ -174,7 +174,7 @@
   (define parsing-iters    1000)
   (define gcold-iters     10000)
 
-  (define quicksort-iters 1)
+  (define quicksort-iters 100)
   (define fpsum-iters 10)
   (define nbody-iters         1) ; nondeterministic (order of evaluation)
     )

@@ -66,5 +66,6 @@
 (define gcold-iters     10000)
 ;(define nbody-iters         1) ; nondeterministic (order of evaluation)
 
+(define quicksort-iters   100)
 (define fpsum-iters        10)
 
