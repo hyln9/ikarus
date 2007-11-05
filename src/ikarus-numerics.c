@@ -1464,11 +1464,6 @@ ikrt_bnfx_modulo(ikp x, ikp y, ikpcb* pcb){
   }
 }
 
-ikp
-ikrt_bnbn_modulo(ikp x, ikp y, ikpcb* pcb){
-  fprintf(stderr, "error in bnbnmodulo\n");
-  exit(-1);
-}
 
 
 

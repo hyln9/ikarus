@@ -1240,10 +1240,17 @@
            [(fixnum? m) 
             (foreign-call "ikrt_bnfx_modulo" n m)]
            [(bignum? m) 
-            (error 'modulo
-              "BUG: two bignum arguments are not yet implemented"
-              n m)
-            (foreign-call "ikrt_bnbn_modulo" n m)]
+            (if ($bignum-positive? n) 
+                (if ($bignum-positive? m) 
+                    (remainder n m)
+                    (+ m (remainder n m)))
+                (if ($bignum-positive? m)
+                    (+ m (remainder n m))
+                    (remainder n m)))]
+            ;(error 'modulo
+            ;  "BUG: two bignum arguments are not yet implemented"
+            ;  n m)
+            ;(foreign-call "ikrt_bnbn_modulo" n m)]
            [(flonum? m) 
             (let ([v ($flonum->exact m)])
               (cond
