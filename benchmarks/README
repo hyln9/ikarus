@@ -40,6 +40,7 @@ output is modeled after Chez Scheme's in order to facilitate
 interoperability with tools that parse benchmark data.
 
 BUGS: 
-  maze and nbody do not work yet because they require make-polar.
+  maze and nbody do not work yet because they require bitwise-and 
+  and make-polar.
 
 Aziz,,,
