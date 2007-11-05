@@ -203,11 +203,6 @@
     [(_ e* ... e) 
      (make-seq (seq* e* ...) e)]))
 
-
-
-(include "pass-specify-rep.ss")
-
-
 (define (insert-engine-checks x)
   (define (Tail x)
     (make-seq
@@ -227,23 +222,16 @@
        (make-codes (map CodeExpr list) (Tail body))]))
   (CodesExpr x))
 
+
 (define (insert-stack-overflow-check x)
   (define who 'insert-stack-overflow-check)
   
   (define (Tail x) #t)
 
   (define (insert-check x)
-    (make-seq 
-      (make-shortcut 
-        (make-conditional 
-          (make-primcall '< 
-            (list esp (make-primcall 'mref (list pcr (make-constant 16)))))
-          (make-primcall 'interrupt '())
-          (make-primcall 'nop '()))
-        (make-forcall "ik_stack_overflow" '()))
-      x))
+    (make-seq (make-primcall '$stack-overflow-check '()) x))
 
-  (define (ClambdaCase x) 
+  (define (ClambdaCase x)
     (struct-case x
       [(clambda-case info body)
        (make-clambda-case info (Main body))]))
@@ -265,7 +253,7 @@
   ;;;
   (Program x))
 
-
+(include "pass-specify-rep.ss")
 
 (define parameter-registers '(%edi)) 
 (define return-value-register '%eax)
@@ -2831,8 +2819,8 @@
   (let* ([x (introduce-primcalls x)]
          [x (eliminate-fix x)]
          [x (insert-engine-checks x)]
-         [x (specify-representation x)]
          [x (insert-stack-overflow-check x)]
+         [x (specify-representation x)]
          [x (impose-calling-convention/evaluation-order x)]
          [x (time-it "frame" (lambda () (assign-frame-sizes x)))]
          [x (time-it "register" (lambda () (color-by-chaitin x)))]

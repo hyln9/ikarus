@@ -1127,8 +1127,6 @@
 
 /section)
 
-
-
 (section ;;; characters
 
 (define-primop char? safe
@@ -1529,6 +1527,16 @@
    (begin
      (interrupt)
      (prm 'incr/zero? pcr (K 36)))])
+
+(define-primop $stack-overflow-check unsafe
+  [(E) 
+   (make-shortcut 
+     (make-conditional 
+       (make-primcall '< 
+         (list esp (make-primcall 'mref (list pcr (make-constant 16)))))
+       (make-primcall 'interrupt '())
+       (make-primcall 'nop '()))
+     (make-forcall "ik_stack_overflow" '()))])
 
 /section)
 
