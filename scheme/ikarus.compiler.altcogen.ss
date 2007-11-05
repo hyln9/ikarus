@@ -204,14 +204,31 @@
      (make-seq (seq* e* ...) e)]))
 
 (define (insert-engine-checks x)
-  (define (Tail x)
-    (make-seq
-      (make-primcall '$do-event '())
-      x))
+  (define who 'insert-engine-checks)
+  (define (Expr x) 
+    (struct-case x
+      [(constant)                 #f]
+      [(var)                      #f]
+      [(primref)                  #f]
+      [(jmpcall label rator arg*) #t]
+      [(mvcall rator k)           #t] 
+      [(funcall rator arg*)
+       (if (primref? rator) (ormap Expr arg*) #t)]
+      [(bind lhs* rhs* body)      (or (ormap Expr rhs*) (Expr body))]
+      [(fix lhs* rhs* body)       (Expr body)]
+      [(conditional e0 e1 e2)     (or (Expr e0) (Expr e1) (Expr e2))]
+      [(seq e0 e1)                (or (Expr e0) (Expr e1))]
+      [(primcall op arg*)         (ormap Expr arg*)]
+      [(forcall op arg*)          (ormap Expr arg*)]
+      [else (error who "invalid expr" x)]))
+  (define (Main x)
+    (if (Expr x)
+        (make-seq (make-primcall '$do-event '()) x)
+        x))
   (define (CaseExpr x)
     (struct-case x 
       [(clambda-case info body)
-       (make-clambda-case info (Tail body))]))
+       (make-clambda-case info (Main body))]))
   (define (CodeExpr x)
     (struct-case x
       [(clambda L cases free name)
@@ -219,15 +236,43 @@
   (define (CodesExpr x)
     (struct-case x 
       [(codes list body)
-       (make-codes (map CodeExpr list) (Tail body))]))
+       (make-codes (map CodeExpr list) (Main body))]))
   (CodesExpr x))
 
 
 (define (insert-stack-overflow-check x)
   (define who 'insert-stack-overflow-check)
-  
-  (define (Tail x) #t)
-
+   (define (NonTail x)
+    (struct-case x
+      [(constant)                 #f]
+      [(var)                      #f]
+      [(primref)                  #f]
+      [(funcall rator arg*)       #t]
+      [(jmpcall label rator arg*) #t]
+      [(mvcall rator k)           #t] 
+      [(bind lhs* rhs* body)  (or (ormap NonTail rhs*) (NonTail body))]
+      [(fix lhs* rhs* body)   (NonTail body)]
+      [(conditional e0 e1 e2) (or (NonTail e0) (NonTail e1) (NonTail e2))]
+      [(seq e0 e1)            (or (NonTail e0) (NonTail e1))]
+      [(primcall op arg*)     (ormap NonTail arg*)]
+      [(forcall op arg*)      (ormap NonTail arg*)]
+      [else (error who "invalid expr" x)]))
+  (define (Tail x) 
+    (struct-case x
+      [(constant) #f]
+      [(var)      #f]
+      [(primref)  #f]
+      [(bind lhs* rhs* body)      (or (ormap NonTail rhs*) (Tail body))]
+      [(fix lhs* rhs* body)       (Tail body)]
+      [(conditional e0 e1 e2)     (or (NonTail e0) (Tail e1) (Tail e2))]
+      [(seq e0 e1)                (or (NonTail e0) (Tail e1))]
+      [(primcall op arg*)         (ormap NonTail arg*)]
+      [(forcall op arg*)          (ormap NonTail arg*)]
+      [(funcall rator arg*)       (or (NonTail rator) (ormap NonTail arg*))]
+      [(jmpcall label rator arg*) (or (NonTail rator) (ormap NonTail arg*))]
+      [(mvcall rator k) #t] ; punt
+      [else (error who "invalid expr" x)]))
+ 
   (define (insert-check x)
     (make-seq (make-primcall '$stack-overflow-check '()) x))
 
