@@ -44,6 +44,6 @@
   (define (main . args)
     (run-benchmark
       "ntakl"
-      takl-iters
+      ntakl-iters
       (lambda (result) (equal? result '(7 6 5 4 3 2 1)))
       (lambda () (lambda () (mas l18 l12 l6))))))
