@@ -609,6 +609,7 @@
        (if (output-port? p)
            (pretty x p)
            (error 'pretty-print "not an output port" p))]))
+  ;;; standard formats
   (set-fmt! 'quote '(read-macro . "'"))
   (set-fmt! 'unquote '(read-macro . ","))
   (set-fmt! 'unquote-splicing '(read-macro . ",@"))
@@ -627,7 +628,7 @@
   (set-fmt! 'let* '(_ (0 [e 0 e] ...) tab e ...))
   (set-fmt! 'let-values '(_ (0 [e 0 e] ...) tab e tab e* ...))
   (set-fmt! 'cond '(_ tab [0 e ...] ...))
-  (set-fmt! 'define '(_ name tab e tab e ...))
+  (set-fmt! 'define '(_ name tab e ...))
   (set-fmt! 'case-lambda 
      '(_ tab [0 e ...] ...))
   (set-fmt! 'struct-case 
@@ -643,6 +644,9 @@
                              tab (e 0 e 0 e ...) ...))
   (set-fmt! 'module '(alt (_ (fill ...) tab e ...)
                           (_ name (fill ...) tab e ...)))
+  (set-fmt! 'library '(_ name tab e ...))
+  (set-fmt! 'import '(_ tab e ...))
+
   )
 
 #!eof
