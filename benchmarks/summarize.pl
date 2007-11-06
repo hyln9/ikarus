@@ -56,14 +56,23 @@ my %gctimes;
 my @times = sort { $times{$a} <=> $times{$b} } keys %times;
 my @benchmarks = sort { $benchmarks{$a} <=> $benchmarks{$b} } keys %benchmarks;
 
+my $verbose = 0;
+
 foreach my $bench (@benchmarks){
   print "benchmark: $bench\n";
+  my $prev = 0;
   foreach my $time (@times){
     my @times = @{$runtimes{$bench}{$time}};
-    printf "   %6d  %6s  %6s           on $time\n", 
-      average(@times),
-      min(@times),
-      max(@times);
+    my $avg = average(@times);
+    if($prev){
+      my $diff = (($avg - $prev) / $prev) * 100;
+      printf "   %6d %6s             on $time\n", 
+        $avg,
+        sprintf("(%s%d%%)", ($diff>0) ? "+" : ($diff<0) ? "-" : "", abs $diff);
+    } else {
+      printf "   %6d                    on $time\n", $avg;
+    }
+    $prev = $avg;
   }
 }
 

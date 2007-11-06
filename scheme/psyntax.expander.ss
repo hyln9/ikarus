@@ -3028,7 +3028,12 @@
     (syntax-match e* ()
       (((import imp* ...) b* ...) (eq? import 'import)
        (values imp* b*))
-      (_ (error "invalid syntax of top-level program"))))
+      (((import . x) . y) (eq? import 'import)
+       (error 'expander 
+         "invalid syntax of top-level program"))
+      (_ 
+       (error 'expander 
+         "top-level program is missing an (import ---) clause"))))
 
   (define top-level-expander
     (lambda (e*)

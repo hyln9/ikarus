@@ -1719,6 +1719,56 @@ running stats for mazefun (2500):
     2197 ms elapsed cpu time, including 75 ms collecting
     2198 ms elapsed real time, including 76 ms collecting
     425212336 bytes allocated
+running stats for compile-mbrot:
+    1 collection
+    63 ms elapsed cpu time, including 40 ms collecting
+    63 ms elapsed real time, including 40 ms collecting
+    2163176 bytes allocated
+running stats for mbrot (120):
+    635 collections
+    2218 ms elapsed cpu time, including 243 ms collecting
+    2221 ms elapsed real time, including 246 ms collecting
+    2658913968 bytes allocated
+running stats for compile-mbrot:
+    1 collection
+    61 ms elapsed cpu time, including 39 ms collecting
+    62 ms elapsed real time, including 39 ms collecting
+    2163176 bytes allocated
+running stats for mbrot (120):
+    635 collections
+    2202 ms elapsed cpu time, including 240 ms collecting
+    2205 ms elapsed real time, including 242 ms collecting
+    2658913968 bytes allocated
+running stats for compile-mbrot:
+    1 collection
+    62 ms elapsed cpu time, including 39 ms collecting
+    62 ms elapsed real time, including 39 ms collecting
+    2163176 bytes allocated
+running stats for mbrot (120):
+    635 collections
+    2223 ms elapsed cpu time, including 241 ms collecting
+    2225 ms elapsed real time, including 244 ms collecting
+    2658913968 bytes allocated
+running stats for compile-mbrot:
+    1 collection
+    61 ms elapsed cpu time, including 38 ms collecting
+    62 ms elapsed real time, including 39 ms collecting
+    2163176 bytes allocated
+running stats for mbrot (120):
+    635 collections
+    2234 ms elapsed cpu time, including 241 ms collecting
+    2236 ms elapsed real time, including 243 ms collecting
+    2658913968 bytes allocated
+running stats for compile-mbrot:
+    1 collection
+    62 ms elapsed cpu time, including 39 ms collecting
+    62 ms elapsed real time, including 39 ms collecting
+    2163176 bytes allocated
+running stats for mbrot (120):
+    635 collections
+    2209 ms elapsed cpu time, including 242 ms collecting
+    2211 ms elapsed real time, including 246 ms collecting
+    2658913968 bytes allocated
 running stats for compile-nboyer:
     2 collections
     91 ms elapsed cpu time, including 41 ms collecting
@@ -4940,6 +4990,56 @@ running stats for mazefun (2500):
     2156 ms elapsed cpu time, including 71 ms collecting
     2157 ms elapsed real time, including 72 ms collecting
     425212336 bytes allocated
+running stats for compile-mbrot:
+    1 collection
+    59 ms elapsed cpu time, including 37 ms collecting
+    60 ms elapsed real time, including 38 ms collecting
+    2048312 bytes allocated
+running stats for mbrot (120):
+    635 collections
+    2081 ms elapsed cpu time, including 234 ms collecting
+    2082 ms elapsed real time, including 237 ms collecting
+    2658913968 bytes allocated
+running stats for compile-mbrot:
+    1 collection
+    59 ms elapsed cpu time, including 37 ms collecting
+    60 ms elapsed real time, including 38 ms collecting
+    2048312 bytes allocated
+running stats for mbrot (120):
+    635 collections
+    2072 ms elapsed cpu time, including 235 ms collecting
+    2075 ms elapsed real time, including 237 ms collecting
+    2658913968 bytes allocated
+running stats for compile-mbrot:
+    1 collection
+    59 ms elapsed cpu time, including 37 ms collecting
+    59 ms elapsed real time, including 37 ms collecting
+    2048312 bytes allocated
+running stats for mbrot (120):
+    635 collections
+    2079 ms elapsed cpu time, including 234 ms collecting
+    2080 ms elapsed real time, including 236 ms collecting
+    2658913968 bytes allocated
+running stats for compile-mbrot:
+    1 collection
+    59 ms elapsed cpu time, including 37 ms collecting
+    60 ms elapsed real time, including 38 ms collecting
+    2048312 bytes allocated
+running stats for mbrot (120):
+    635 collections
+    2090 ms elapsed cpu time, including 235 ms collecting
+    2092 ms elapsed real time, including 238 ms collecting
+    2658913968 bytes allocated
+running stats for compile-mbrot:
+    1 collection
+    58 ms elapsed cpu time, including 37 ms collecting
+    59 ms elapsed real time, including 37 ms collecting
+    2048312 bytes allocated
+running stats for mbrot (120):
+    635 collections
+    2073 ms elapsed cpu time, including 234 ms collecting
+    2075 ms elapsed real time, including 236 ms collecting
+    2658913968 bytes allocated
 running stats for compile-nboyer:
     1 collection
     84 ms elapsed cpu time, including 37 ms collecting

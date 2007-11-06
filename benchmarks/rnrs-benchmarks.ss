@@ -139,7 +139,7 @@
   (define fft-iters        4000)
   (define fib-iters           6)
   (define fibfp-iters         2)
-  (define mbrot-iters       100)
+  (define mbrot-iters       120)
   (define nucleic-iters      12)
   (define pnpoly-iters   140000)
   (define sum-iters       30000)
