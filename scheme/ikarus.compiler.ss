@@ -1467,6 +1467,7 @@
                            (let f ([fml* (cdr fml*)] [rand* rand*])
                              (cond
                                [(null? fml*) 
+                                ;;; FIXME: construct list afterwards
                                 (list (make-funcall (make-primref 'list) rand*))]
                                [else
                                 (cons (car rand*)

@@ -420,11 +420,9 @@
          (make-primcall 'nop '())
          (make-funcall 
            (make-primcall 'mref
-              (list (make-constant 
-                      (make-object
-                        (primref->symbol 
-                          'do-overflow)))
-                    (make-constant (- disp-symbol-record-proc symbol-ptag))))
+             (list
+               (make-constant (make-object (primref->symbol 'do-overflow)))
+               (make-constant (- disp-symbol-record-proc symbol-ptag))))
            (list size)))))
   ;;; impose value
   (define (V d x)
@@ -531,7 +529,8 @@
        (lambda (x)
          (make-seq
            (make-set return-value-register x)
-           (make-primcall 'return (list return-value-register))))))
+           (make-primcall 'return 
+             (list pcr esp apr return-value-register))))))
   ;;; impose effect
   (define (E x)
     (struct-case x
@@ -1482,6 +1481,7 @@
             [(reg? d) 
              (cond
                [(not (mem-reg? d rs))
+                (set-asm-instr-op! x 'nop)
                 (values vs rs fs ns)]
                [else
                 (let ([rs (rem-reg d rs)])
