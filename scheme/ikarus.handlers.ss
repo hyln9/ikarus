@@ -58,7 +58,7 @@
   
   (define $incorrect-args-error-handler
     (lambda (p n)
-      (error 'apply "incorrect number of argument" n p)))
+      (error 'apply "incorrect number of arguments" n p)))
   
   (define $multiple-values-error
     (lambda args
