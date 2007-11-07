@@ -44,6 +44,7 @@
   (printf "[exact-integer-sqrt] Happy Happy Joy Joy\n"))
 
 (test-reader)
+(test-char-syntax)
 (test-bytevectors)
 (test-strings)
 (test-exact-integer-sqrt)

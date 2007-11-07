@@ -1,5 +1,5 @@
 (library (tests reader)
-  (export test-reader)
+  (export test-reader test-char-syntax)
   (import (ikarus) (tests framework))
 
   (define t
@@ -71,7 +71,33 @@
     "#O+23761236721631263126371263712"
     "#O+0"
     "#O-0"
-    "#O0"
+    "#O0")
+  
+  (define-tests test-char-syntax
+    [(lambda (x) (= (char->integer x) #x0)) 
+     (read (open-input-string "#\\nul"))]
+    [(lambda (x) (= (char->integer x) #x7)) 
+     (read (open-input-string "#\\alarm"))]
+    [(lambda (x) (= (char->integer x) #x8)) 
+     (read (open-input-string "#\\backspace"))]
+    [(lambda (x) (= (char->integer x) #x9)) 
+     (read (open-input-string "#\\tab"))]
+    [(lambda (x) (= (char->integer x) #xA)) 
+     (read (open-input-string "#\\linefeed"))]
+    [(lambda (x) (= (char->integer x) #xA)) 
+     (read (open-input-string "#\\newline"))]
+    [(lambda (x) (= (char->integer x) #xB)) 
+     (read (open-input-string "#\\vtab"))]
+    [(lambda (x) (= (char->integer x) #xC)) 
+     (read (open-input-string "#\\page"))]
+    [(lambda (x) (= (char->integer x) #xD)) 
+     (read (open-input-string "#\\return"))]
+    [(lambda (x) (= (char->integer x) #x1B)) 
+     (read (open-input-string "#\\esc"))]
+    [(lambda (x) (= (char->integer x) #x20)) 
+     (read (open-input-string "#\\space"))]
+    [(lambda (x) (= (char->integer x) #x7F)) 
+     (read (open-input-string "#\\delete"))])
 
-    ))
+  )
 

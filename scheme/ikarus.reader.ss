@@ -190,15 +190,48 @@
         (cond
           [(eof-object? c)
            (error 'tokenize "invalid #\\ near end of file")]
-          [($char= #\s c) 
-           (tokenize-char-seq p "space" '(datum . #\space))]
-          [($char= #\n c) 
-           (tokenize-char-seq p "newline" '(datum . #\newline))]
-          [($char= #\t c) 
+          [(eqv? #\n c) 
+           (let ([c (read-char p)])
+             (cond
+               [(eof-object? c) 
+                (error 'tokenize "invalid eof inside character syntax")]
+               [(eqv? #\u c) 
+                (tokenize-char-seq p "ul" 
+                  (cons 'datum (integer->char 0)))]
+               [(eqv? #\e c) 
+                (tokenize-char-seq p "ewline" 
+                  (cons 'datum (integer->char #xA)))]
+               [else 
+                (error 'tokenize "invalid syntax" 
+                  (string #\# #\\ #\n c))]))]
+          [(eqv? #\a c) 
+           (tokenize-char-seq p "alarm" 
+             (cons 'datum (integer->char 7)))]
+          [(eqv? #\b c) 
+           (tokenize-char-seq p "backspace" 
+             (cons 'datum (integer->char 8)))]
+          [(eqv? #\t c)
            (tokenize-char-seq p "tab" '(datum . #\tab))]
-          [($char= #\r c) 
+          [(eqv? #\l c) 
+           (tokenize-char-seq p "linefeed" 
+             (cons 'datum (integer->char #xA)))]
+          [(eqv? #\v c) 
+           (tokenize-char-seq p "vtab" 
+             (cons 'datum (integer->char #xB)))]
+          [(eqv? #\p c) 
+           (tokenize-char-seq p "page" 
+             (cons 'datum (integer->char #xC)))]
+          [(eqv? #\r c) 
            (tokenize-char-seq p "return" '(datum . #\return))]
-          [($char= #\x c) 
+          [(eqv? #\e c) 
+           (tokenize-char-seq p "esc" 
+             (cons 'datum (integer->char #x1B)))]
+          [(eqv? #\s c) 
+           (tokenize-char-seq p "space" '(datum . #\space))]
+          [(eqv? #\d c)
+           (tokenize-char-seq p "delete" 
+             (cons 'datum (integer->char #x7F)))]
+          [(eqv? #\x c) 
            (let ([n (peek-char p)])
              (cond
                [(or (eof-object? n) (delimiter? n))
