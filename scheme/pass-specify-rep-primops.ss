@@ -1364,6 +1364,25 @@
                     (K (- disp-bytevector-data bytevector-tag)))
                (prm 'sll (T c) (K (- 8 fx-shift))))])])])
 
+
+(define-primop $bytevector-ieee-double-native-ref unsafe
+  [(V bv i)
+   (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
+     (prm 'mset x (K (- vector-tag)) (K flonum-tag))
+     (prm 'fl:load 
+       (prm 'int+ (T bv) (prm 'sra (T i) (K fixnum-shift)))
+       (K (- disp-bytevector-data bytevector-tag)))
+     (prm 'fl:store x (K (- disp-flonum-data vector-tag)))
+     x)])
+
+(define-primop $bytevector-ieee-double-native-set! unsafe
+  [(E bv i x)
+   (seq*
+     (prm 'fl:load (T x) (K (- disp-flonum-data vector-tag)))
+     (prm 'fl:store
+       (prm 'int+ (T bv) (prm 'sra (T i) (K fixnum-shift)))
+       (K (- disp-bytevector-data bytevector-tag))))])
+
 /section)
 
 (section ;;; strings

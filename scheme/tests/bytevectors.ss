@@ -277,6 +277,10 @@
        (bytevector-s32-set! v 0 -12345 'big)
        (bytevector-s32-ref v 0 'big))]
 
+    [(lambda (x) (= x 17.0))
+     (let ([v (make-bytevector 8)])
+       (bytevector-ieee-double-native-set! v 0 17.0)
+       (bytevector-ieee-double-native-ref v 0))]
 
 
 

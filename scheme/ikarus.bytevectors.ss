@@ -15,42 +15,45 @@
 
 
 (library (ikarus bytevectors)
-  (export make-bytevector bytevector-length bytevector-s8-ref
-          bytevector-u8-ref bytevector-u8-set! bytevector-s8-set!
-          bytevector-copy! u8-list->bytevector bytevector->u8-list
-          bytevector-u16-native-ref bytevector-u16-native-set!
-          bytevector-u32-native-ref bytevector-u32-native-set!
-          bytevector-s32-native-ref bytevector-s32-native-set!
-          bytevector-u16-ref bytevector-u16-set!
-          bytevector-u32-ref bytevector-u32-set!
-          bytevector-s32-ref bytevector-s32-set!
-          bytevector-s16-native-ref bytevector-s16-native-set!
-          bytevector-s16-ref bytevector-s16-set!
-          bytevector-fill! bytevector-copy bytevector=?
-          bytevector-uint-ref bytevector-sint-ref 
-          bytevector-uint-set!  bytevector-sint-set!
-          bytevector->uint-list bytevector->sint-list
-          uint-list->bytevector sint-list->bytevector
-          native-endianness)
+  (export
+    make-bytevector bytevector-length bytevector-s8-ref
+    bytevector-u8-ref bytevector-u8-set! bytevector-s8-set!
+    bytevector-copy! u8-list->bytevector bytevector->u8-list
+    bytevector-u16-native-ref bytevector-u16-native-set!
+    bytevector-u32-native-ref bytevector-u32-native-set!
+    bytevector-s32-native-ref bytevector-s32-native-set!
+    bytevector-u16-ref bytevector-u16-set!
+    bytevector-u32-ref bytevector-u32-set!
+    bytevector-s32-ref bytevector-s32-set!
+    bytevector-s16-native-ref bytevector-s16-native-set!
+    bytevector-s16-ref bytevector-s16-set!
+    bytevector-fill! bytevector-copy bytevector=?
+    bytevector-uint-ref bytevector-sint-ref 
+    bytevector-uint-set!  bytevector-sint-set!
+    bytevector->uint-list bytevector->sint-list
+    uint-list->bytevector sint-list->bytevector
+    bytevector-ieee-double-native-ref bytevector-ieee-double-native-set!
+    native-endianness)
   (import 
     (except (ikarus) 
-        make-bytevector bytevector-length bytevector-s8-ref
-        bytevector-u8-ref bytevector-u8-set! bytevector-s8-set! 
-        bytevector-copy! u8-list->bytevector bytevector->u8-list
-        bytevector-u16-native-ref bytevector-u16-native-set!
-        bytevector-u32-native-ref bytevector-u32-native-set!
-        bytevector-s32-native-ref bytevector-s32-native-set!
-        bytevector-u16-ref bytevector-u16-set!
-        bytevector-u32-ref bytevector-u32-set!
-        bytevector-s32-ref bytevector-s32-set!
-        bytevector-s16-native-ref bytevector-s16-native-set!
-        bytevector-s16-ref bytevector-s16-set!
-        bytevector-fill! bytevector-copy bytevector=?
-        bytevector-uint-ref bytevector-sint-ref
-        bytevector-uint-set!  bytevector-sint-set!
-        bytevector->uint-list bytevector->sint-list
-        uint-list->bytevector sint-list->bytevector
-        native-endianness)
+      make-bytevector bytevector-length bytevector-s8-ref
+      bytevector-u8-ref bytevector-u8-set! bytevector-s8-set! 
+      bytevector-copy! u8-list->bytevector bytevector->u8-list
+      bytevector-u16-native-ref bytevector-u16-native-set!
+      bytevector-u32-native-ref bytevector-u32-native-set!
+      bytevector-s32-native-ref bytevector-s32-native-set!
+      bytevector-u16-ref bytevector-u16-set!
+      bytevector-u32-ref bytevector-u32-set!
+      bytevector-s32-ref bytevector-s32-set!
+      bytevector-s16-native-ref bytevector-s16-native-set!
+      bytevector-s16-ref bytevector-s16-set!
+      bytevector-fill! bytevector-copy bytevector=?
+      bytevector-uint-ref bytevector-sint-ref
+      bytevector-uint-set!  bytevector-sint-set!
+      bytevector->uint-list bytevector->sint-list
+      uint-list->bytevector sint-list->bytevector
+      bytevector-ieee-double-native-ref bytevector-ieee-double-native-set!
+      native-endianness)
     (ikarus system $fx)
     (ikarus system $bignums)
     (ikarus system $pairs)
@@ -968,6 +971,30 @@
     (define sint-list->bytevector 
       (make-xint-list->bytevector 
         'sint-list->bytevector bytevector-sint-set!)))
+
+  (define (bytevector-ieee-double-native-ref bv i) 
+    (if (bytevector? bv) 
+        (if (and (fixnum? i) 
+                 ($fx>= i 0)
+                 ($fxzero? ($fxlogand i 3))
+                 ($fx< i ($bytevector-length bv)))
+            ($bytevector-ieee-double-native-ref bv i)
+            (error 'bytevector-ieee-double-native-ref "invalid index" i))
+        (error 'bytevector-ieee-double-native-ref "not a bytevector" bv)))
+
+
+  (define (bytevector-ieee-double-native-set! bv i x) 
+    (if (bytevector? bv) 
+        (if (and (fixnum? i) 
+                 ($fx>= i 0)
+                 ($fxzero? ($fxlogand i 3))
+                 ($fx< i ($bytevector-length bv)))
+            (if (flonum? x) 
+                ($bytevector-ieee-double-native-set! bv i x)
+                (error 'bytevector-ieee-double-native-ref "not a flonum" x))
+            (error 'bytevector-ieee-double-native-ref "invalid index" i))
+        (error 'bytevector-ieee-double-native-ref "not a bytevector" bv)))
+         
 
   )
 
