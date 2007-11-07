@@ -191,46 +191,42 @@
           [(eof-object? c)
            (error 'tokenize "invalid #\\ near end of file")]
           [(eqv? #\n c) 
-           (let ([c (read-char p)])
+           (let ([c (peek-char p)])
              (cond
-               [(eof-object? c) 
-                (error 'tokenize "invalid eof inside character syntax")]
+               [(eof-object? c)
+                (read-char p)
+                '(datum . #\n)]
                [(eqv? #\u c) 
-                (tokenize-char-seq p "ul" 
-                  (cons 'datum (integer->char 0)))]
+                (read-char p)
+                (tokenize-char-seq p "ul" '(datum . #\x0))]
                [(eqv? #\e c) 
-                (tokenize-char-seq p "ewline" 
-                  (cons 'datum (integer->char #xA)))]
+                (read-char p)
+                (tokenize-char-seq p "ewline" '(datum . #\xA))]
+               [(delimiter? c)
+                '(datum . #\n)]
                [else 
-                (error 'tokenize "invalid syntax" 
+                (error 'tokenize "invalid syntax"
                   (string #\# #\\ #\n c))]))]
           [(eqv? #\a c) 
-           (tokenize-char-seq p "alarm" 
-             (cons 'datum (integer->char 7)))]
+           (tokenize-char-seq p "alarm" '(datum . #\x7))]
           [(eqv? #\b c) 
-           (tokenize-char-seq p "backspace" 
-             (cons 'datum (integer->char 8)))]
+           (tokenize-char-seq p "backspace" '(datum . #\x8))]
           [(eqv? #\t c)
-           (tokenize-char-seq p "tab" '(datum . #\tab))]
+           (tokenize-char-seq p "tab" '(datum . #\x9))]
           [(eqv? #\l c) 
-           (tokenize-char-seq p "linefeed" 
-             (cons 'datum (integer->char #xA)))]
+           (tokenize-char-seq p "linefeed" '(datum . #\xA))]
           [(eqv? #\v c) 
-           (tokenize-char-seq p "vtab" 
-             (cons 'datum (integer->char #xB)))]
+           (tokenize-char-seq p "vtab" '(datum . #\xB))]
           [(eqv? #\p c) 
-           (tokenize-char-seq p "page" 
-             (cons 'datum (integer->char #xC)))]
+           (tokenize-char-seq p "page" '(datum . #\xC))]
           [(eqv? #\r c) 
-           (tokenize-char-seq p "return" '(datum . #\return))]
+           (tokenize-char-seq p "return" '(datum . #\xD))]
           [(eqv? #\e c) 
-           (tokenize-char-seq p "esc" 
-             (cons 'datum (integer->char #x1B)))]
+           (tokenize-char-seq p "esc" '(datum . #\x1B))]
           [(eqv? #\s c) 
-           (tokenize-char-seq p "space" '(datum . #\space))]
+           (tokenize-char-seq p "space" '(datum . #\x20))]
           [(eqv? #\d c)
-           (tokenize-char-seq p "delete" 
-             (cons 'datum (integer->char #x7F)))]
+           (tokenize-char-seq p "delete" '(datum . #\x7F))]
           [(eqv? #\x c) 
            (let ([n (peek-char p)])
              (cond
