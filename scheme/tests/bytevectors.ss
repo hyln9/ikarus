@@ -282,9 +282,17 @@
        (bytevector-ieee-double-native-set! v 0 17.0)
        (bytevector-ieee-double-native-ref v 0))]
 
-
-
-
+    [(lambda (x) (= x 17.0))
+     (let ([v (make-bytevector 8)])
+       (bytevector-ieee-double-set! v 0 17.0 'little)
+       (bytevector-ieee-double-ref v 0 'little))]
+    
+    [(lambda (x) (= x 17.0))
+     (let ([v1 (make-bytevector 8)])
+       (bytevector-ieee-double-set! v1 0 17.0 'little)
+       (let ([v2 (u8-list->bytevector
+                   (reverse (bytevector->u8-list v1)))])
+         (bytevector-ieee-double-ref v2 0 'big)))]
 
     ))
 

@@ -529,6 +529,14 @@
       [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
        (CODE #x66 (CODE #x0F ((CODE/digit #x2E dst) src ac)))]
       [else (error who "invalid" instr)])]
+   [(pshufb src dst)
+    (cond
+      [(and (xmmreg? dst) (mem? src))
+       (CODE #x66
+         (CODE #x0F
+           (CODE #x38 
+             ((CODE/digit #x00 dst) src ac))))]
+      [else (error who "invalid" instr)])]
    [(addl src dst)
     (cond   
       [(and (imm8? src) (reg? dst)) 

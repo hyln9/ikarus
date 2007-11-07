@@ -548,7 +548,7 @@
                   (make-disp (car s*) (cadr s*)) 
                   (caddr s*))))]
          [(fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
-                   fl:from-int) 
+                   fl:from-int fl:shuffle) 
           (S* rands
               (lambda (s*)
                 (make-asm-instr op (car s*) (cadr s*))))]
@@ -1504,7 +1504,7 @@
           (mark-reg/vars-conf! edx vs)
           (R s vs (rem-reg edx rs) fs ns)]
          [(mset bset/c bset/h fl:load fl:store fl:add! fl:sub!
-                fl:mul! fl:div! fl:from-int) 
+                fl:mul! fl:div! fl:from-int fl:shuffle) 
           (R* (list s d) vs rs fs ns)]
          [else (error who "invalid effect op" (unparse x))])]
       [(ntcall target value args mask size)
@@ -1709,7 +1709,7 @@
               sll sra srl
               cltd idiv int-/overflow int+/overflow int*/overflow
               fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
-              fl:from-int)
+              fl:from-int fl:shuffle)
             (make-asm-instr op (R d) (R s))]
            [(nop) (make-primcall 'nop '())]
            [else (error who "invalid op" op)])]
@@ -1956,7 +1956,7 @@
               (set-union (set-union (R eax) (R edx))
                      (set-union (R v) s)))]
            [(mset fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
-                  fl:from-int)
+                  fl:from-int fl:shuffle)
             (set-union (R v) (set-union (R d) s))]
            [else (error who "invalid effect" x)])]
         [(seq e0 e1) (E e0 (E e1 s))]
@@ -2288,7 +2288,7 @@
                    (E (make-asm-instr 'move u a))
                    (E (make-asm-instr op u b))))]
               [else x])]
-           [(fl:from-int) x]
+           [(fl:from-int fl:shuffle) x]
            [else (error who "invalid effect" op)])]
         [(primcall op rands) 
          (case op
@@ -2572,6 +2572,8 @@
           (cons `(movsd ,(R (make-disp s d)) xmm0) ac)]
          [(fl:from-int) 
           (cons `(cvtsi2sd ,(R s) xmm0) ac)]
+         [(fl:shuffle) 
+          (cons `(pshufb ,(R (make-disp s d)) xmm0) ac)]
          [(fl:add!) 
           (cons `(addsd ,(R (make-disp s d)) xmm0) ac)]
          [(fl:sub!) 

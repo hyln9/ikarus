@@ -1375,6 +1375,20 @@
      (prm 'fl:store x (K (- disp-flonum-data vector-tag)))
      x)])
 
+(define-primop $bytevector-ieee-double-nonnative-ref unsafe
+  [(V bv i)
+   (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
+     (prm 'mset x (K (- vector-tag)) (K flonum-tag))
+     (prm 'fl:load 
+       (prm 'int+ (T bv) (prm 'sra (T i) (K fixnum-shift)))
+       (K (- disp-bytevector-data bytevector-tag)))
+     (prm 'fl:shuffle
+       (K (make-object '#vu8(7 6 2 3 4 5 1 0)))
+       (K (- disp-bytevector-data bytevector-tag)))
+     (prm 'fl:store x (K (- disp-flonum-data vector-tag)))
+     x)])
+
+
 (define-primop $bytevector-ieee-double-native-set! unsafe
   [(E bv i x)
    (seq*

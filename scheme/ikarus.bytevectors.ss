@@ -33,6 +33,7 @@
     bytevector->uint-list bytevector->sint-list
     uint-list->bytevector sint-list->bytevector
     bytevector-ieee-double-native-ref bytevector-ieee-double-native-set!
+    bytevector-ieee-double-ref bytevector-ieee-double-set!
     native-endianness)
   (import 
     (except (ikarus) 
@@ -53,6 +54,7 @@
       bytevector->uint-list bytevector->sint-list
       uint-list->bytevector sint-list->bytevector
       bytevector-ieee-double-native-ref bytevector-ieee-double-native-set!
+      bytevector-ieee-double-ref bytevector-ieee-double-set!
       native-endianness)
     (ikarus system $fx)
     (ikarus system $bignums)
@@ -991,10 +993,39 @@
                  ($fx< i ($bytevector-length bv)))
             (if (flonum? x) 
                 ($bytevector-ieee-double-native-set! bv i x)
-                (error 'bytevector-ieee-double-native-ref "not a flonum" x))
-            (error 'bytevector-ieee-double-native-ref "invalid index" i))
-        (error 'bytevector-ieee-double-native-ref "not a bytevector" bv)))
-         
+                (error 'bytevector-ieee-double-native-set! "not a flonum" x))
+            (error 'bytevector-ieee-double-native-set! "invalid index" i))
+        (error 'bytevector-ieee-double-native-set! "not a bytevector" bv)))
+   
+  (define (bytevector-ieee-double-ref bv i endianness) 
+    (if (bytevector? bv) 
+        (if (and (fixnum? i) 
+                 ($fx>= i 0)
+                 ($fxzero? ($fxlogand i 3))
+                 ($fx< i ($bytevector-length bv)))
+            (case endianness
+              [(little) ($bytevector-ieee-double-native-ref bv i)]
+              [(big) ($bytevector-ieee-double-nonnative-ref bv i)]
+              [else (error 'bytevector-ieee-double-ref 
+                      "invalid endianness" endianness)])
+            (error 'bytevector-ieee-double-ref "invalid index" i))
+        (error 'bytevector-ieee-double-ref "not a bytevector" bv)))
+
+  (define (bytevector-ieee-double-set! bv i x endianness) 
+    (if (bytevector? bv) 
+        (if (and (fixnum? i) 
+                 ($fx>= i 0)
+                 ($fxzero? ($fxlogand i 3))
+                 ($fx< i ($bytevector-length bv)))
+            (if (flonum? x)
+                (case endianness
+                  [(little) ($bytevector-ieee-double-native-set! bv i x)]
+                  [(big) (error 'bytevector-ieee-double-set! "no big")]
+                  [else (error 'bytevector-ieee-double-set! 
+                          "invalid endianness" endianness)])
+                (error 'bytevector-ieee-double-set! "not a flonum" x))
+            (error 'bytevector-ieee-double-set! "invalid index" i))
+        (error 'bytevector-ieee-double-set! "not a bytevector" bv)))
 
   )
 

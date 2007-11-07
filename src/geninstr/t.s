@@ -1,4 +1,4 @@
 
 .text
-  addl $10, %esp
-  addl $-10, %esp
+  pshufb ($0x12345678), %xmm0
+  ret
