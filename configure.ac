@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(ikarus, prerelease-0, aghuloum@cs.indiana.edu)
+AC_INIT(ikarus, 0.0.1, aghuloum@cs.indiana.edu)
 AC_CANONICAL_SYSTEM
 AM_INIT_AUTOMAKE(ikarus, 0.0.1)
 AC_CONFIG_SRCDIR([src/])
@@ -24,12 +24,6 @@ case "$target_os" in
   esac
 
 # Checks for libraries.
-AC_HAVE_LIBRARY([gmp],,[AC_MSG_ERROR([
-ERROR: Cannot find libgmp. 
-ERROR: You might want to supply CFLAGS=-I</path/to/include> (containing
-ERROR: the gmp.h header file), and LDFLAGS=-L</path/to/lib> (containing
-ERROR: libgmp.so) if libgmp is installed in a non-standard location.
-ERROR: libgmp can be obtained from <http://gmplib.org>. ])])
 AC_SEARCH_LIBS(dlsym, dl,, [AC_MSG_ERROR([Cannot find libdl])])
 AC_SEARCH_LIBS(cos, m,, [AC_MSG_ERROR([Cannot find libm])])
 
@@ -44,6 +38,26 @@ AC_CHECK_HEADERS([assert.h dlfcn.h errno.h fcntl.h signal.h \
                   sys/mman.h sys/resource.h sys/stat.h \
                   sys/time.h sys/types.h sys/wait.h time.h \
                   unistd.h])
+
+# check that gmp is present
+AC_HAVE_LIBRARY([gmp],,[AC_MSG_ERROR([
+ERROR: Cannot find libgmp. 
+ERROR: You might want to supply CFLAGS=-I</path/to/include> (containing
+ERROR: the gmp.h header file), and LDFLAGS=-L</path/to/lib> (containing
+ERROR: libgmp.so) if libgmp is installed in a non-standard location.
+ERROR: libgmp can be obtained from <http://gmplib.org>. ])])
+
+# check that gmp exports mpn_mul
+# unfortunately, gmp.h defines mpn_mul as a macro
+# that expands to __gmpn_mul on my machine.
+AC_CHECK_LIB(gmp,__gmpn_mul,,[AC_MSG_ERROR([
+ERROR: your version of libgmp does not contain a binding for
+ERROR: some of the primitives that ikarus uses.  This is most
+ERROR: likely to happen if your version of gmp was compiled
+ERROR: in 64-bit mode, while ikarus expects needs the 32-bit
+ERROR: version.  Refer to the following bug report for details
+    https://bugs.launchpad.net/ikarus/+bug/159235 
+])])
 
 
 # Checks for typedefs, structures, and compiler characteristics.

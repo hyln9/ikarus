@@ -134,13 +134,13 @@
 #define PACKAGE_NAME "ikarus"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "ikarus prerelease-0"
+#define PACKAGE_STRING "ikarus 0.0.1"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "ikarus"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "prerelease-0"
+#define PACKAGE_VERSION "0.0.1"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
