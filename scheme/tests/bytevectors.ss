@@ -299,6 +299,13 @@
                    (reverse (bytevector->u8-list v1)))])
          (bytevector-ieee-double-ref v2 0 'big)))]
 
+    [(lambda (x) (= x 17.0))
+     (let ([v1 (make-bytevector 8)])
+       (bytevector-ieee-double-set! v1 0 17.0 'big)
+       (let ([v2 (u8-list->bytevector
+                   (reverse (bytevector->u8-list v1)))])
+         (bytevector-ieee-double-ref v2 0 'little)))]
+
     ))
 
 

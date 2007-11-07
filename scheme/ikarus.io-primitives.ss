@@ -18,7 +18,7 @@
   (export read-char unread-char peek-char write-char write-byte newline
           port-name input-port-name output-port-name
           close-input-port reset-input-port! 
-          flush-output-port close-output-port)
+          flush-output-port close-output-port get-line)
   (import 
     (ikarus system $io)
     (ikarus system $fx)
@@ -27,7 +27,7 @@
             write-byte
             newline port-name input-port-name output-port-name
             close-input-port reset-input-port!  flush-output-port
-            close-output-port))
+            close-output-port get-line))
 
   (define write-char
     (case-lambda
@@ -143,5 +143,28 @@
       [(p)
        (if (output-port? p)
            ($flush-output-port p)
-           (error 'flush-output-port "not an output-port" p))])))
+           (error 'flush-output-port "not an output-port" p))]))
+  
+  (define (get-line p)
+    (define (get-it p)
+      (let f ([p p] [n 0] [ac '()])
+        (let ([x ($read-char p)])
+          (cond
+            [(eqv? x #\newline) 
+             (make-it n ac)]
+            [(eof-object? x) 
+             (if (null? ac) x (make-it n ac))]
+            [else (f p (+ n 1) (cons x ac))]))))
+    (define (make-it n revls)
+      (let f ([s (make-string n)] [i (- n 1)] [ls revls])
+        (cond
+          [(pair? ls)
+           (string-set! s i (car ls))
+           (f s (- i 1) (cdr ls))]
+          [else s])))
+    (if (input-port? p)
+        (get-it p)
+        (error 'get-line "not an input port" p)))
+  
+  )
 

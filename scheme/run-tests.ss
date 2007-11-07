@@ -26,7 +26,9 @@
         (tests bignums)
         (tests fxcarry)
         (tests bignum-to-flonum)
-        (tests string-to-number))
+        (tests string-to-number)
+        (tests input-ports)
+        )
 
 (define (test-exact-integer-sqrt)
   (define (f i j inc)
@@ -52,4 +54,5 @@
 (test-fxcarry)
 (test-lists)
 (test-hashtables)
+(test-input-ports)
 (printf "Happy Happy Joy Joy\n")
