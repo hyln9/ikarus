@@ -1247,10 +1247,6 @@
                 (if ($bignum-positive? m)
                     (+ m (remainder n m))
                     (remainder n m)))]
-            ;(error 'modulo
-            ;  "BUG: two bignum arguments are not yet implemented"
-            ;  n m)
-            ;(foreign-call "ikrt_bnbn_modulo" n m)]
            [(flonum? m) 
             (let ([v ($flonum->exact m)])
               (cond
