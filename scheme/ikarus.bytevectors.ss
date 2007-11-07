@@ -446,7 +446,6 @@
               (error 'bytevector-s16-ref "invalid index" i))
           (error 'bytevector-s16-ref "not a bytevector" x))))
 
-
   (define bytevector-s16-set!
     (lambda (x i n end) 
       (if (bytevector? x) 
@@ -467,11 +466,6 @@
                   (error 'bytevector-s16-set! "invalid index" i))
               (error 'bytevector-s16-set! "invalid value" n))
           (error 'bytevector-s16-set! "not a bytevector" x))))
-
-
-
-
-
 
   (define bytevector->u8-list
     (lambda (x)
@@ -513,7 +507,6 @@
          (let ([n (race ls ls ls 0)])
            (let ([s ($make-bytevector n)])
              (fill s 0 ls))))))
-
 
   (define bytevector-copy
     (lambda (src)
@@ -984,7 +977,6 @@
             (error 'bytevector-ieee-double-native-ref "invalid index" i))
         (error 'bytevector-ieee-double-native-ref "not a bytevector" bv)))
 
-
   (define (bytevector-ieee-double-native-set! bv i x) 
     (if (bytevector? bv) 
         (if (and (fixnum? i) 
@@ -1020,7 +1012,7 @@
             (if (flonum? x)
                 (case endianness
                   [(little) ($bytevector-ieee-double-native-set! bv i x)]
-                  [(big) (error 'bytevector-ieee-double-set! "no big")]
+                  [(big) ($bytevector-ieee-double-nonnative-set! bv i x)]
                   [else (error 'bytevector-ieee-double-set! 
                           "invalid endianness" endianness)])
                 (error 'bytevector-ieee-double-set! "not a flonum" x))

@@ -286,6 +286,11 @@
      (let ([v (make-bytevector 8)])
        (bytevector-ieee-double-set! v 0 17.0 'little)
        (bytevector-ieee-double-ref v 0 'little))]
+
+    [(lambda (x) (= x 17.0))
+     (let ([v (make-bytevector 8)])
+       (bytevector-ieee-double-set! v 0 17.0 'big)
+       (bytevector-ieee-double-ref v 0 'big))]
     
     [(lambda (x) (= x 17.0))
      (let ([v1 (make-bytevector 8)])

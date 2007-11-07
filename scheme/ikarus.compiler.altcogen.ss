@@ -548,7 +548,7 @@
                   (make-disp (car s*) (cadr s*)) 
                   (caddr s*))))]
          [(fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
-                   fl:from-int fl:shuffle) 
+                   fl:from-int fl:shuffle bswap!) 
           (S* rands
               (lambda (s*)
                 (make-asm-instr op (car s*) (cadr s*))))]
@@ -1464,7 +1464,7 @@
                       (mark-nfv/frms-conf! d fs)
                       (R s vs rs fs (add-nfv d ns)))])]
                 [else (error who "invalid op d" (unparse x))])))] 
-         [(logand logor logxor sll sra srl int+ int- int*) 
+         [(logand logor logxor sll sra srl int+ int- int* bswap!) 
           (cond
             [(var? d) 
              (cond
@@ -1706,7 +1706,7 @@
                 [else
                  (make-asm-instr op d s)]))]
            [(logand logor logxor int+ int- int* mset bset/c bset/h 
-              sll sra srl
+              sll sra srl bswap!
               cltd idiv int-/overflow int+/overflow int*/overflow
               fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
               fl:from-int fl:shuffle)
@@ -1931,7 +1931,7 @@
             (let ([s (set-rem d (set-union s (exception-live-set)))])
               (set-for-each (lambda (y) (add-edge! g d y)) s)
               (set-union (set-union (R v) (R d)) s))] 
-           [(logand logxor int+ int- int* logor sll sra srl)
+           [(logand logxor int+ int- int* logor sll sra srl bswap!)
             (let ([s (set-rem d s)])
               (set-for-each (lambda (y) (add-edge! g d y)) s)
               (set-union (set-union (R v) (R d)) s))]
@@ -2233,6 +2233,15 @@
                         (E (make-asm-instr 'move u s1))
                         (E (make-asm-instr op a (make-disp s0 u)))))]
                    [else x]))] 
+              [else x])]
+           [(bswap!) 
+            (cond
+              [(mem? b)
+               (let ([u (mku)])
+                 (make-seq
+                   (E (make-asm-instr 'move u a))
+                   (E (make-asm-instr 'bswap! u u))
+                   (E (make-asm-instr 'move b u))))]
               [else x])]
            [(cltd) 
             (unless (and (symbol? a) (symbol? b)) 
@@ -2548,6 +2557,10 @@
          [(srl)  (cons `(shrl ,(R/cl s) ,(R d)) ac)]
          [(idiv) (cons `(idivl ,(R s)) ac)]
          [(cltd) (cons `(cltd) ac)]
+         [(bswap!) 
+          (let ([s (R s)] [d (R d)])
+            (unless (eq? s d) (error who "invalid instr" x))
+            (cons `(bswap ,s) ac))]
          [(int-/overflow)
           (let ([L (or (exception-label) 
                        (error who "no exception label"))])
