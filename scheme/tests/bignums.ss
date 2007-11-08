@@ -1,6 +1,24 @@
 (library (tests bignums)
-  (export test-bignums)
+  (export test-bignums test-bignum-conversion)
   (import (ikarus) (tests framework))
+
+  (define (test-bignum-conversion)
+    (define (test x) 
+      (define (test1 x prefix radix)
+        (let ([s (string-append prefix 
+                   (number->string x radix))])
+          (assert (equal? x (read (open-input-string s))))))
+      (test1 x "#x" 16)
+      (test1 x "#o" 8)
+      (test1 x "#b" 2))
+    (test #b11111111111111111111111111111111111111111111111111)
+    (test #b1111111111111111111111111111111111111111)
+    (test 39487932748923498234)
+    (test #b-11111111111111111111111111111111111111111111111111)
+    (test #b-1111111111111111111111111111111111111111)
+    (test -39487932748923498234))
+
+
 
   (define-tests test-bignums
     ; first, some simple quotients

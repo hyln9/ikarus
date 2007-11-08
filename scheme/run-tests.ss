@@ -56,4 +56,5 @@
 (test-lists)
 (test-hashtables)
 (test-input-ports)
+(test-bignum-conversion)
 (printf "Happy Happy Joy Joy\n")

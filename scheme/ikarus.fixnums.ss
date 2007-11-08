@@ -368,7 +368,7 @@
         (sra (- (- fx1 fx2) (+ s0 fx3)) (fixnum-width)))))
 
   (module (fixnum->string)
-    (define mapping-string "0123456789abcdef")
+    (define mapping-string "0123456789ABCDEF")
     (define f
       (lambda (n i j radix)
         (cond

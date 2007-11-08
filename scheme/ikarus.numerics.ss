@@ -1182,6 +1182,7 @@
     (cond
       [(fixnum? x) ($fxeven? x)]
       [(bignum? x) (even-bignum? x)]
+      [(flonum? x) (error 'even? "BUG" x)]
       [else (error 'even? "not an integer" x)]))
 
   (define (odd? x)
@@ -1189,28 +1190,85 @@
       (cond
         [(fixnum? x) ($fxeven? x)]
         [(bignum? x) (even-bignum? x)]
+        [(flonum? x) (error 'odd? "BUG" x)]
         [else (error 'odd? "not an integer" x)])))
-
-  (define bignum->string
-    (lambda (x)
-      (utf8->string
-        (foreign-call "ikrt_bignum_to_bytevector" x))))
   
-  (define ratnum->string
-    (lambda (x) 
-      (string-append 
-        (number->string ($ratnum-n x))
-        "/"
-        (number->string ($ratnum-d x)))))
-  
-  (define number->string
-    (lambda (x)
-      (cond
-        [(fixnum? x) (fixnum->string x)]
-        [(bignum? x) (bignum->string x)]
-        [(flonum? x) (flonum->string x)]
-        [(ratnum? x) (ratnum->string x)]
-        [else (error 'number->string "not a number" x)])))
+  (module (number->string)
+    (module (bignum->string)
+      (define (bignum->decimal-string x)
+        (utf8->string (foreign-call "ikrt_bignum_to_bytevector" x)))
+      (module (bignum->power-string)
+        (define string-map "0123456789ABCDEF")
+        (define (init-string x chars) 
+          (if ($bignum-positive? x) 
+              (make-string chars)
+              (let ([s (make-string ($fxadd1 chars))])
+                (string-set! s 0 #\-)
+                s)))
+        (define (bignum-bits x)
+          (define (add-bits b n)
+            (cond
+              [($fxzero? b) n]
+              [else (add-bits ($fxsra b 1) ($fx+ n 1))]))
+          (let f ([i ($fxsub1 ($bignum-size x))])
+            (let ([i ($fxsub1 i)])
+              (let ([b ($bignum-byte-ref x i)])
+                (cond
+                  [($fxzero? b) (f i)]
+                  [else (add-bits b ($fxsll i 3))])))))
+        (define (bignum->power-string x mask shift)
+          (let ([bits (bignum-bits x)])
+            (let ([chars (fxquotient (fx+ bits (fx- shift 1)) shift)])
+              (let* ([s (init-string x chars)]
+                     [n ($fx- (string-length s) 1)])
+                (let f ([i 0] [j 0] [k 0] [b 0])
+                  (cond
+                    [($fx= i chars) s]
+                    [($fx< k 8)
+                     (f i ($fxadd1 j) ($fx+ k 8)
+                        ($fxlogor b
+                          ($fxsll ($bignum-byte-ref x j) k)))]
+                    [else
+                     (string-set! s ($fx- n i) 
+                       (string-ref string-map 
+                         ($fxlogand mask b)))
+                     (f ($fxadd1 i) j ($fx- k shift) ($fxsra b shift))])))))))
+      (define (bignum->string x r)
+        (case r
+          [(10) (bignum->decimal-string x)]
+          [(2)  (bignum->power-string x  1 1)]
+          [(8)  (bignum->power-string x  7 3)]
+          [(16) (bignum->power-string x 15 4)]
+          [else (error 'number->string "BUG")])))
+    (define ratnum->string
+      (lambda (x r) 
+        (string-append 
+          ($number->string ($ratnum-n x) r)
+          "/"
+          ($number->string ($ratnum-d x) r))))
+    (define $number->string
+      (lambda (x r)
+        (cond
+          [(fixnum? x) (fixnum->string x r)]
+          [(bignum? x) (bignum->string x r)]
+          [(flonum? x) 
+           (unless (eqv? r 10) 
+             (error 'number->string 
+                "invalid radix for inexact number"
+                r x))
+           (flonum->string x)]
+          [(ratnum? x) (ratnum->string x r)]
+          [else (error 'number->string "not a number" x)])))
+    (define number->string
+      (case-lambda
+        [(x) ($number->string x 10)]
+        [(x r) 
+         (unless (memv r '(2 8 10 16)) 
+           (error 'number->string "invalid radix" r))
+         ($number->string x r)]
+        [(x r precision)
+         (error 'number->string 
+            "BUG: precision is not supported yet")])))
 
   (define modulo
     (lambda (n m)
