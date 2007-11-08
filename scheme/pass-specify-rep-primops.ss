@@ -694,14 +694,14 @@
 
 (define-primop $fxquotient unsafe
   [(V a b) 
-   (with-tmp ([b (T b)])
+   (with-tmp ([b (T b)]) ;;; FIXME: why is quotient called remainder?
     (prm 'sll (prm 'remainder (T a) b) (K fixnum-shift)))]
   [(P a b) (K #t)]
   [(E a b) (nop)])
 
 (define-primop $fxmodulo unsafe
   [(V a b)
-   (with-tmp ([b (T b)])
+   (with-tmp ([b (T b)]) ;;; FIXME: why is modulo called quotient?
      (with-tmp ([c (prm 'logand b 
                       (prm 'sra (prm 'logxor b (T a))
                          (K (sub1 (* 8 wordsize)))))])
@@ -857,6 +857,36 @@
      (prm 'fl:store x (K (- disp-flonum-data vector-tag)))
      x)])
 
+(define (check-flonums ls code)
+  (define (or* a*)
+    (cond
+      [(null? (cdr a*)) (car a*)]
+      [else (prm 'logor (car a*) (or* (cdr a*)))]))
+  (let ([check
+         (let f ([ls ls] [ac '()])
+           (cond
+             [(null? ls) ac]
+             [else
+              (struct-case (car ls)
+                [(constant v) 
+                 (if (flonum? v) 
+                     (f (cdr ls) ac)
+                     #f)]
+                [else (f (cdr ls) (cons (T (car ls)) ac))])]))])
+    (cond
+      [(not check) (interrupt)]
+      [(null? check) code]
+      [else
+       (seq* 
+         (interrupt-unless 
+           (tag-test (or* check) vector-mask vector-tag))
+         (interrupt-unless
+           (prm '= (or* (map (lambda (x) 
+                               (prm 'mref x (K (- vector-tag))))
+                             check))
+                (K flonum-tag)))
+         code)])))
+
 (define-primop $fl+ unsafe
   [(V x y) ($flop-aux 'fl:add! x y)])
 (define-primop $fl- unsafe
@@ -865,6 +895,23 @@
   [(V x y) ($flop-aux 'fl:mul! x y)])
 (define-primop $fl/ unsafe
   [(V x y) ($flop-aux 'fl:div! x y)])
+
+(define-primop fl+ safe
+  [(V x y) (check-flonums (list x y) ($flop-aux 'fl:add! x y))]
+  [(P x y) (check-flonums (list x y) (K #t))]
+  [(E x y) (check-flonums (list x y) (nop))])
+(define-primop fl- safe
+  [(V x y) (check-flonums (list x y) ($flop-aux 'fl:sub! x y))]
+  [(P x y) (check-flonums (list x y) (K #t))]
+  [(E x y) (check-flonums (list x y) (nop))])
+(define-primop fl* safe
+  [(V x y) (check-flonums (list x y) ($flop-aux 'fl:mul! x y))]
+  [(P x y) (check-flonums (list x y) (K #t))]
+  [(E x y) (check-flonums (list x y) (nop))])
+(define-primop fl/ safe
+  [(V x y) (check-flonums (list x y) ($flop-aux 'fl:div! x y))]
+  [(P x y) (check-flonums (list x y) (K #t))]
+  [(E x y) (check-flonums (list x y) (nop))])
 
 (define-primop $fl= unsafe
   [(P x y) ($flcmp-aux 'fl:= x y)])
@@ -876,6 +923,23 @@
   [(P x y) ($flcmp-aux 'fl:> x y)])
 (define-primop $fl>= unsafe
   [(P x y) ($flcmp-aux 'fl:>= x y)])
+
+(define-primop fl=? safe
+  [(P x y) (check-flonums (list x y) ($flcmp-aux 'fl:= x y))]
+  [(E x y) (check-flonums (list x y) (nop))])
+(define-primop fl<? safe
+  [(P x y) (check-flonums (list x y) ($flcmp-aux 'fl:< x y))]
+  [(E x y) (check-flonums (list x y) (nop))])
+(define-primop fl<=? safe
+  [(P x y) (check-flonums (list x y) ($flcmp-aux 'fl:<= x y))]
+  [(E x y) (check-flonums (list x y) (nop))])
+(define-primop fl>? safe
+  [(P x y) (check-flonums (list x y) ($flcmp-aux 'fl:> x y))]
+  [(E x y) (check-flonums (list x y) (nop))])
+(define-primop fl>=? safe
+  [(P x y) (check-flonums (list x y) ($flcmp-aux 'fl:>= x y))]
+  [(E x y) (check-flonums (list x y) (nop))])
+
 
 /section)
 
