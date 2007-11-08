@@ -226,7 +226,7 @@
   
   (define (flabs x)
     (if (flonum? x) 
-        (if ($fl> x 0.0) 
+        (if ($fx> ($flonum-u8-ref x 0) 127)
             ($fl* x -1.0)
             x)
         (error 'flabs "not a flonum" x)))
@@ -1117,7 +1117,7 @@
       [(bignum? x)
        (if ($bignum-positive? x) x (- x))]
       [(flonum? x)
-       (if ($flnegative? x) 
+       (if ($fx> ($flonum-u8-ref x 0) 127)
            ($fl* x -1.0)
            x)]
       [(ratnum? x) 
