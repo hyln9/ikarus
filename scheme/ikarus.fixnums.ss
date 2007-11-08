@@ -368,37 +368,52 @@
         (sra (- (- fx1 fx2) (+ s0 fx3)) (fixnum-width)))))
 
   (module (fixnum->string)
+    (define mapping-string "0123456789abcdef")
     (define f
-      (lambda (n i j)
+      (lambda (n i j radix)
         (cond
           [($fxzero? n) 
            (values (make-string i) j)]
           [else
-           (let ([q ($fxquotient n 10)])
+           (let* ([q ($fxquotient n radix)]
+                  [c ($string-ref mapping-string 
+                       ($fx- n ($fx* q radix)))])
              (call-with-values
-               (lambda () (f q ($fxadd1 i) j))
+               (lambda () (f q ($fxadd1 i) j radix))
                (lambda (str j)
-                 (let ([r ($fx- n ($fx* q 10))])
-                   (string-set! str j
-                      ($fixnum->char ($fx+ r ($char->fixnum #\0))))
-                   (values str ($fxadd1 j))))))])))
-    (define fixnum->string
-      (lambda (x)
-        (unless (fixnum? x) (error 'fixnum->string "not a fixnum" x))
+                 (string-set! str j c)
+                 (values str ($fxadd1 j)))))])))
+    (define $fixnum->string
+      (lambda (x radix)
         (cond
           [($fxzero? x) "0"]
-          [($fx> x 0) 
+          [($fx> x 0)
            (call-with-values
-             (lambda () (f x 0 0))
+             (lambda () (f x 0 0 radix))
              (lambda (str j) str))]
-          ;;; FIXME: DON'T HARDCODE CONSTANTS
-          [($fx= x -536870912) "-536870912"]
+          [($fx= x (least-fixnum))
+           (string-append
+             ($fixnum->string ($fxquotient x radix) radix)
+             ($fixnum->string ($fx- radix ($fxmodulo x radix)) radix))]
           [else
            (call-with-values
-             (lambda () (f ($fx- 0 x) 1 1))
+             (lambda () (f ($fx- 0 x) 1 1 radix))
              (lambda (str j)
                ($string-set! str 0 #\-)
-               str))]))))
+               str))])))
+    (define fixnum->string
+      (case-lambda
+        [(x) 
+         (unless (fixnum? x) (error 'fixnum->string "not a fixnum" x))
+         ($fixnum->string x 10)]
+        [(x r) 
+         (unless (fixnum? x) (error 'fixnum->string "not a fixnum" x))
+         (case r
+           [(2)  ($fixnum->string x 2)]
+           [(8)  ($fixnum->string x 8)]
+           [(10) ($fixnum->string x 10)]
+           [(16) ($fixnum->string x 16)]
+           [else (error 'fixnum->string "invalid radix" r)])])))
 
 
   )
