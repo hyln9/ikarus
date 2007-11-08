@@ -2075,7 +2075,7 @@
       (error 'fltruncate "not a flonum" x))
     (let ([v ($flonum->exact x)])
       (cond
-        [(ratnum? v) (exact->inexact ($ratnum-truncate x))]
+        [(ratnum? v) (exact->inexact ($ratnum-truncate v))]
         [else x])))
 
   (define log
