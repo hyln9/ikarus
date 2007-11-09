@@ -548,11 +548,13 @@
                   (make-disp (car s*) (cadr s*)) 
                   (caddr s*))))]
          [(fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
-                   fl:from-int fl:shuffle bswap!) 
+                   fl:from-int fl:shuffle bswap!
+                   fl:store-single fl:load-single) 
           (S* rands
               (lambda (s*)
                 (make-asm-instr op (car s*) (cadr s*))))]
-         [(nop interrupt incr/zero?) x]
+         [(nop interrupt incr/zero? fl:double->single
+               fl:single->double) x]
          [else (error 'impose-effect "invalid instr" x)])]
       [(funcall rator rands)
        (handle-nontail-call rator rands #f #f)]
@@ -1504,7 +1506,8 @@
           (mark-reg/vars-conf! edx vs)
           (R s vs (rem-reg edx rs) fs ns)]
          [(mset bset/c bset/h fl:load fl:store fl:add! fl:sub!
-                fl:mul! fl:div! fl:from-int fl:shuffle) 
+                fl:mul! fl:div! fl:from-int fl:shuffle
+                fl:load-single fl:store-single) 
           (R* (list s d) vs rs fs ns)]
          [else (error who "invalid effect op" (unparse x))])]
       [(ntcall target value args mask size)
@@ -1517,7 +1520,7 @@
        (E body vs rs fs ns)]
       [(primcall op args)
        (case op
-         [(nop) (values vs rs fs ns)]
+         [(nop fl:double->single fl:single->double) (values vs rs fs ns)]
          [(interrupt incr/zero?) 
           (let ([v (exception-live-set)])
             (unless (vector? v)
@@ -1709,7 +1712,7 @@
               sll sra srl bswap!
               cltd idiv int-/overflow int+/overflow int*/overflow
               fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
-              fl:from-int fl:shuffle)
+              fl:from-int fl:shuffle fl:load-single fl:store-single)
             (make-asm-instr op (R d) (R s))]
            [(nop) (make-primcall 'nop '())]
            [else (error who "invalid op" op)])]
@@ -1809,7 +1812,8 @@
              (NFE (fxsub1 i) (make-mask (fxsub1 i)) body)))]
         [(primcall op args)
          (case op
-           [(nop interrupt incr/zero?) x]
+           [(nop interrupt incr/zero? fl:double->single
+                 fl:single->double) x]
            [else (error who "invalid effect prim" op)])]
         [(shortcut body handler)
          (make-shortcut (E body) (E handler))]
@@ -1956,7 +1960,8 @@
               (set-union (set-union (R eax) (R edx))
                      (set-union (R v) s)))]
            [(mset fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
-                  fl:from-int fl:shuffle)
+                  fl:from-int fl:shuffle fl:store-single
+                  fl:load-single)
             (set-union (R v) (set-union (R d) s))]
            [else (error who "invalid effect" x)])]
         [(seq e0 e1) (E e0 (E e1 s))]
@@ -1967,7 +1972,7 @@
          (set-union (R* args) s)]
         [(primcall op arg*)
          (case op
-           [(nop) s]
+           [(nop fl:single->double fl:double->single) s]
            [(interrupt incr/zero?) 
             (or (exception-live-set) (error who "uninitialized exception"))]
            [else (error who "invalid effect primcall" op)])]
@@ -2289,7 +2294,8 @@
                         (E (make-asm-instr 'move u s2))
                         (E (make-asm-instr op (make-disp u s1) b))))]
                    [else x]))])]
-           [(fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!) 
+           [(fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
+             fl:load-single fl:store-single) 
             (cond
               [(mem? a) 
                (let ([u (mku)])
@@ -2301,7 +2307,8 @@
            [else (error who "invalid effect" op)])]
         [(primcall op rands) 
          (case op
-           [(nop interrupt incr/zero?) x]
+           [(nop interrupt incr/zero? fl:single->double
+                 fl:double->single) x]
            [else (error who "invalid op in" (unparse x))])]
         [(ntcall) x]
         [(shortcut body handler)
@@ -2581,8 +2588,12 @@
                    ac))]
          [(fl:store) 
           (cons `(movsd xmm0 ,(R (make-disp s d))) ac)]
+         [(fl:store-single) 
+          (cons `(movss xmm0 ,(R (make-disp s d))) ac)]
          [(fl:load) 
           (cons `(movsd ,(R (make-disp s d)) xmm0) ac)]
+         [(fl:load-single) 
+          (cons `(movss ,(R (make-disp s d)) xmm0) ac)]
          [(fl:from-int) 
           (cons `(cvtsi2sd ,(R s) xmm0) ac)]
          [(fl:shuffle) 
@@ -2610,6 +2621,10 @@
               `(addl 1 ,(R (make-disp (car rands) (cadr rands))))
               `(je ,l)
               ac))]
+         [(fl:double->single)
+          (cons '(cvtsd2ss xmm0 xmm0) ac)]
+         [(fl:single->double)
+          (cons '(cvtss2sd xmm0 xmm0) ac)]
          [else (error who "invalid effect" (unparse x))])]
       [(shortcut body handler)
        (let ([L (unique-interrupt-label)] [L2 (unique-label)])

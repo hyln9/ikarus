@@ -272,6 +272,7 @@
      (let ([v (make-bytevector 4)])
        (bytevector-s32-set! v 0 -12345 'little)
        (bytevector-s32-ref v 0 'little))]
+
     [(lambda (x) (= x -12345))
      (let ([v (make-bytevector 4)])
        (bytevector-s32-set! v 0 -12345 'big)
@@ -305,6 +306,38 @@
        (let ([v2 (u8-list->bytevector
                    (reverse (bytevector->u8-list v1)))])
          (bytevector-ieee-double-ref v2 0 'little)))]
+
+    [(lambda (x) (= x 17.0))
+     (let ([v (make-bytevector 4)])
+       (bytevector-ieee-single-native-set! v 0 17.0)
+       (bytevector-ieee-single-native-ref v 0))]
+
+    [(lambda (x) (= x 17.0))
+     (let ([v (make-bytevector 4)])
+       (bytevector-ieee-single-set! v 0 17.0 'little)
+       (bytevector-ieee-single-ref v 0 'little))]
+
+;    [(lambda (x) (= x 17.0))
+;     (let ([v (make-bytevector 8)])
+;       (bytevector-ieee-single-set! v 0 17.0 'big)
+;       (bytevector-ieee-single-ref v 0 'big))]
+;    
+;    [(lambda (x) (= x 17.0))
+;     (let ([v1 (make-bytevector 8)])
+;       (bytevector-ieee-single-set! v1 0 17.0 'little)
+;       (let ([v2 (u8-list->bytevector
+;                   (reverse (bytevector->u8-list v1)))])
+;         (bytevector-ieee-single-ref v2 0 'big)))]
+;
+;    [(lambda (x) (= x 17.0))
+;     (let ([v1 (make-bytevector 8)])
+;       (bytevector-ieee-single-set! v1 0 17.0 'big)
+;       (let ([v2 (u8-list->bytevector
+;                   (reverse (bytevector->u8-list v1)))])
+;         (bytevector-ieee-single-ref v2 0 'little)))]
+
+
+
 
     ))
 

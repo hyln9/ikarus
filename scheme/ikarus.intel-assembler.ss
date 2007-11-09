@@ -504,6 +504,27 @@
       [(and (xmmreg? dst) (mem? src))
        (CODE #xF2 (CODE #x0F ((CODE/digit #x2A dst) src ac)))]
       [else (error who "invalid" instr)])] 
+   [(cvtsd2ss src dst)
+    (cond
+      [(and (xmmreg? dst) (reg? src))
+       (CODE #xF2 (CODE #x0F (CODE #x5A (ModRM 3 src dst ac))))]
+      ;[(and (xmmreg? dst) (mem? src))
+      ; (CODE #xF2 (CODE #x0F ((CODE/digit #x5A dst) src ac)))]
+      [else (error who "invalid" instr)])]
+   [(cvtss2sd src dst)
+    (cond
+      [(and (xmmreg? dst) (reg? src))
+       (CODE #xF3 (CODE #x0F (CODE #x5A (ModRM 3 src dst ac))))]
+      ;[(and (xmmreg? dst) (mem? src))
+      ; (CODE #xF3 (CODE #x0F ((CODE/digit #x5A dst) src ac)))]
+      [else (error who "invalid" instr)])]
+   [(movss src dst)
+    (cond
+      [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
+       (CODE #xF3 (CODE #x0F ((CODE/digit #x10 dst) src ac)))]
+      [(and (xmmreg? src) (or (xmmreg? dst) (mem? dst)))
+       (CODE #xF3 (CODE #x0F ((CODE/digit #x11 src) dst ac)))]
+      [else (error who "invalid" instr)])]
    [(addsd src dst)
     (cond
       [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))

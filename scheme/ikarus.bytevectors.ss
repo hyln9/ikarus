@@ -33,7 +33,9 @@
     bytevector->uint-list bytevector->sint-list
     uint-list->bytevector sint-list->bytevector
     bytevector-ieee-double-native-ref bytevector-ieee-double-native-set!
+    bytevector-ieee-single-native-ref bytevector-ieee-single-native-set!
     bytevector-ieee-double-ref bytevector-ieee-double-set!
+    bytevector-ieee-single-ref bytevector-ieee-single-set!
     native-endianness)
   (import 
     (except (ikarus) 
@@ -55,8 +57,9 @@
       uint-list->bytevector sint-list->bytevector
       bytevector-ieee-double-native-ref bytevector-ieee-double-native-set!
       bytevector-ieee-double-ref bytevector-ieee-double-set!
+      bytevector-ieee-single-native-ref bytevector-ieee-single-native-set!
+      bytevector-ieee-single-ref bytevector-ieee-single-set!
       native-endianness)
-    ;(only (rnrs) bitwise-and)
     (ikarus system $fx)
     (ikarus system $bignums)
     (ikarus system $pairs)
@@ -972,17 +975,27 @@
     (if (bytevector? bv) 
         (if (and (fixnum? i) 
                  ($fx>= i 0)
-                 ($fxzero? ($fxlogand i 3))
+                 ($fxzero? ($fxlogand i 7))
                  ($fx< i ($bytevector-length bv)))
             ($bytevector-ieee-double-native-ref bv i)
             (error 'bytevector-ieee-double-native-ref "invalid index" i))
         (error 'bytevector-ieee-double-native-ref "not a bytevector" bv)))
 
-  (define (bytevector-ieee-double-native-set! bv i x) 
+  (define (bytevector-ieee-single-native-ref bv i)
     (if (bytevector? bv) 
         (if (and (fixnum? i) 
                  ($fx>= i 0)
                  ($fxzero? ($fxlogand i 3))
+                 ($fx< i ($bytevector-length bv)))
+            ($bytevector-ieee-single-native-ref bv i)
+            (error 'bytevector-ieee-single-native-ref "invalid index" i))
+        (error 'bytevector-ieee-single-native-ref "not a bytevector" bv)))
+
+  (define (bytevector-ieee-double-native-set! bv i x) 
+    (if (bytevector? bv) 
+        (if (and (fixnum? i) 
+                 ($fx>= i 0)
+                 ($fxzero? ($fxlogand i 7))
                  ($fx< i ($bytevector-length bv)))
             (if (flonum? x) 
                 ($bytevector-ieee-double-native-set! bv i x)
@@ -990,11 +1003,23 @@
             (error 'bytevector-ieee-double-native-set! "invalid index" i))
         (error 'bytevector-ieee-double-native-set! "not a bytevector" bv)))
    
-  (define (bytevector-ieee-double-ref bv i endianness) 
+  (define (bytevector-ieee-single-native-set! bv i x) 
     (if (bytevector? bv) 
         (if (and (fixnum? i) 
                  ($fx>= i 0)
                  ($fxzero? ($fxlogand i 3))
+                 ($fx< i ($bytevector-length bv)))
+            (if (flonum? x) 
+                ($bytevector-ieee-single-native-set! bv i x)
+                (error 'bytevector-ieee-single-native-set! "not a flonum" x))
+            (error 'bytevector-ieee-single-native-set! "invalid index" i))
+        (error 'bytevector-ieee-single-native-set! "not a bytevector" bv)))
+
+  (define (bytevector-ieee-double-ref bv i endianness) 
+    (if (bytevector? bv) 
+        (if (and (fixnum? i) 
+                 ($fx>= i 0)
+                 ($fxzero? ($fxlogand i 7))
                  ($fx< i ($bytevector-length bv)))
             (case endianness
               [(little) ($bytevector-ieee-double-native-ref bv i)]
@@ -1004,11 +1029,25 @@
             (error 'bytevector-ieee-double-ref "invalid index" i))
         (error 'bytevector-ieee-double-ref "not a bytevector" bv)))
 
-  (define (bytevector-ieee-double-set! bv i x endianness) 
+  (define (bytevector-ieee-single-ref bv i endianness) 
     (if (bytevector? bv) 
         (if (and (fixnum? i) 
                  ($fx>= i 0)
                  ($fxzero? ($fxlogand i 3))
+                 ($fx< i ($bytevector-length bv)))
+            (case endianness
+              [(little) ($bytevector-ieee-single-native-ref bv i)]
+              ;[(big) ($bytevector-ieee-single-nonnative-ref bv i)]
+              [else (error 'bytevector-ieee-single-ref 
+                      "invalid endianness" endianness)])
+            (error 'bytevector-ieee-single-ref "invalid index" i))
+        (error 'bytevector-ieee-single-ref "not a bytevector" bv)))
+
+  (define (bytevector-ieee-double-set! bv i x endianness) 
+    (if (bytevector? bv) 
+        (if (and (fixnum? i) 
+                 ($fx>= i 0)
+                 ($fxzero? ($fxlogand i 7))
                  ($fx< i ($bytevector-length bv)))
             (if (flonum? x)
                 (case endianness
@@ -1019,6 +1058,22 @@
                 (error 'bytevector-ieee-double-set! "not a flonum" x))
             (error 'bytevector-ieee-double-set! "invalid index" i))
         (error 'bytevector-ieee-double-set! "not a bytevector" bv)))
+
+  (define (bytevector-ieee-single-set! bv i x endianness) 
+    (if (bytevector? bv) 
+        (if (and (fixnum? i) 
+                 ($fx>= i 0)
+                 ($fxzero? ($fxlogand i 3))
+                 ($fx< i ($bytevector-length bv)))
+            (if (flonum? x)
+                (case endianness
+                  [(little) ($bytevector-ieee-single-native-set! bv i x)]
+              ;    [(big) ($bytevector-ieee-single-nonnative-set! bv i x)]
+                  [else (error 'bytevector-ieee-single-set! 
+                          "invalid endianness" endianness)])
+                (error 'bytevector-ieee-single-set! "not a flonum" x))
+            (error 'bytevector-ieee-single-set! "invalid index" i))
+        (error 'bytevector-ieee-single-set! "not a bytevector" bv)))
 
   )
 

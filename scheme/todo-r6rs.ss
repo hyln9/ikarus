@@ -255,7 +255,7 @@
     [bitwise-arithmetic-shift                   C bw]
     [bitwise-arithmetic-shift-left              C bw]
     [bitwise-arithmetic-shift-right             C bw]
-    [bitwise-not                                S bw]
+    [bitwise-not                                C bw]
     [bitwise-and                                C bw]
     [bitwise-ior                                S bw]
     [bitwise-xor                                S bw]

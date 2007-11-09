@@ -1438,6 +1438,7 @@
      (prm 'fl:store x (K (- disp-flonum-data vector-tag)))
      x)])
 
+
 ;;; the following uses unsupported sse3 instructions
 ;(define-primop $bytevector-ieee-double-nonnative-ref unsafe
 ;  [(V bv i)
@@ -1474,6 +1475,27 @@
    (seq*
      (prm 'fl:load (T x) (K (- disp-flonum-data vector-tag)))
      (prm 'fl:store
+       (prm 'int+ (T bv) (prm 'sra (T i) (K fixnum-shift)))
+       (K (- disp-bytevector-data bytevector-tag))))])
+
+
+(define-primop $bytevector-ieee-single-native-ref unsafe
+  [(V bv i)
+   (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
+     (prm 'mset x (K (- vector-tag)) (K flonum-tag))
+     (prm 'fl:load-single
+       (prm 'int+ (T bv) (prm 'sra (T i) (K fixnum-shift)))
+       (K (- disp-bytevector-data bytevector-tag)))
+     (prm 'fl:single->double)
+     (prm 'fl:store x (K (- disp-flonum-data vector-tag)))
+     x)])
+
+(define-primop $bytevector-ieee-single-native-set! unsafe
+  [(E bv i x)
+   (seq*
+     (prm 'fl:load (T x) (K (- disp-flonum-data vector-tag)))
+     (prm 'fl:double->single)
+     (prm 'fl:store-single
        (prm 'int+ (T bv) (prm 'sra (T i) (K fixnum-shift)))
        (K (- disp-bytevector-data bytevector-tag))))])
 
