@@ -108,6 +108,35 @@
      (modulo -536870912238479837489374 3248732398479823749283)]
     [(lambda (x) (= x -830066489308918857679))
      (modulo -536870912238479837489374 -3248732398479823749283)]
+
+
+
+
+    [(lambda (x) (= x -13)) (bitwise-not 12)]
+    [(lambda (x) (= x 11)) (bitwise-not -12)]
+    [(lambda (x) (= x 0)) (bitwise-not -1)]
+    [(lambda (x) (= x -1)) (bitwise-not 0)]
+    [(lambda (x) (= x (least-fixnum))) (bitwise-not (greatest-fixnum))]
+    [(lambda (x) (= x (greatest-fixnum))) (bitwise-not (least-fixnum))]
+
+    [(lambda (x) (= x -38947389478348937489375)) 
+     (bitwise-not 38947389478348937489374)]
+    [(lambda (x) (= x -22300745198530623141535718272648361505980416))
+     (bitwise-not #xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)]
+    [(lambda (x) (= x 38947389478348937489374)) 
+     (bitwise-not -38947389478348937489375)]
+    [(lambda (x) (= x 22300745198530623141535718272648361505980414))
+     (bitwise-not #x-FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)]
+    [(lambda (x) (= x -340282366920938463463374607431768211456))
+     (bitwise-not #xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)]
+    [(lambda (x) (= x 340282366920938463463374607431768211454))
+     (bitwise-not #x-FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)]
+    [(lambda (x) (= x -79228162514264337593543950337))
+     (bitwise-not #x1000000000000000000000000)]
+    [(lambda (x) (= x 79228162514264337593543950335))
+     (bitwise-not #x-1000000000000000000000000)]
+
+
     ))
 
 

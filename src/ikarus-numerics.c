@@ -1086,6 +1086,48 @@ bits_carry(unsigned int* s, int n){
   return 1;
 }
 
+ikp
+ikrt_bnlognot(ikp x, ikpcb* pcb){
+  ikp fst = ref(x, -vector_tag);
+  int n = ((unsigned int)fst) >> bignum_length_shift;
+  unsigned int* s1 = ((unsigned int*)(x+disp_bignum_data-vector_tag));
+  if(bignum_sign_mask & (unsigned int) fst){
+    /* negative */
+    ikp r = ik_alloc(pcb, align(disp_bignum_data + n*wordsize));
+    unsigned int* rd = (unsigned int*)(r+disp_bignum_data);
+    int i;
+    for(i=0; (i<n) && (s1[i] == 0); i++) {
+      rd[i] = -1;
+    }
+    rd[i] = s1[i] - 1;
+    for(i++; i<n; i++){
+      rd[i] = s1[i];
+    }
+    return normalize_bignum(n, 0, r);
+  } else {
+    /* positive */
+    int i;
+    for(i=0; (i<n) && (s1[i] == -1); i++) {/*nothing*/}
+    if(i==n){
+      ikp r = ik_alloc(pcb, align(disp_bignum_data + (n+1)*wordsize));
+      bzero(r+disp_bignum_data, n*wordsize);
+      ((unsigned int*)(r+disp_bignum_data))[n] = 1;
+      ref(r, 0) = (ikp)
+        (bignum_tag | (1<<bignum_sign_shift) | ((n+1) << bignum_length_shift));
+      return r+vector_tag;
+    } else {
+      ikp r = ik_alloc(pcb, align(disp_bignum_data + n*wordsize));
+      unsigned int* rd = (unsigned int*)(r+disp_bignum_data);
+      int j;
+      for(j=0; j<i; j++){ rd[j] = 0; }
+      rd[i] = s1[i] + 1;
+      for(j=i+1; j<n; j++){ rd[j] = s1[j]; }
+      ref(r, 0) = (ikp)
+        (bignum_tag | (1<<bignum_sign_shift) | (n << bignum_length_shift));
+      return r+vector_tag;
+    }
+  }
+}
 
 
 ikp

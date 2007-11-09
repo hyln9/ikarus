@@ -746,7 +746,7 @@
     [bitwise-arithmetic-shift                    i r bw]
     [bitwise-arithmetic-shift-left               i r bw]
     [bitwise-arithmetic-shift-right              i r bw]
-    [bitwise-not                                 r bw]
+    [bitwise-not                                 i r bw]
     [bitwise-and                                 i r bw]
     [bitwise-ior                                 r bw]
     [bitwise-xor                                 r bw]

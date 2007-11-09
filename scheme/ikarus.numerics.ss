@@ -325,8 +325,9 @@
 
 (library (ikarus generic-arithmetic)
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
-          modulo even? odd? logand bitwise-and 
-          bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left bitwise-arithmetic-shift 
+          modulo even? odd? bitwise-and bitwise-not
+          bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left 
+          bitwise-arithmetic-shift 
           positive? negative? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number min max
           abs truncate fltruncate sra sll
@@ -344,8 +345,9 @@
     (only (ikarus flonums) $flonum->exact $flzero? $flnegative?)
     (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
             remainder modulo even? odd? quotient+remainder number->string 
-            bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left bitwise-arithmetic-shift 
-            positive? negative? bitwise-and logand
+            bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left
+            bitwise-arithmetic-shift 
+            positive? negative? bitwise-and bitwise-not
             string->number expt gcd lcm numerator denominator
             exact->inexact inexact floor ceiling round log
             exact-integer-sqrt min max abs
@@ -770,14 +772,19 @@
          [else (error 'bitwise-and "not a number" a)])]
       [() -1]
       [(a b c d . e*)
-       (let f ([ac (binary-bitwise-and
-                     (binary-bitwise-and 
-                       (binary-bitwise-and a b) c) d)]
+       (let f ([ac (binary-bitwise-and a
+                     (binary-bitwise-and b 
+                       (binary-bitwise-and c d)))]
                [e* e*])
          (cond
            [(null? e*) ac]
            [else (f (binary-bitwise-and ac (car e*)) (cdr e*))]))]))
-  (define logand bitwise-and)
+
+  (define (bitwise-not x)
+    (cond
+      [(fixnum? x) ($fxlognot x)]
+      [(bignum? x) (foreign-call "ikrt_bnlognot" x)]
+      [else (error 'bitwise-not "invalid argument" x)]))
 
   (define -
     (case-lambda
