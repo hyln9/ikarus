@@ -325,7 +325,7 @@
 
 (library (ikarus generic-arithmetic)
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
-          modulo even? odd? logand $two-bignums
+          modulo even? odd? logand bitwise-and 
           bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left bitwise-arithmetic-shift 
           positive? negative? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number min max
@@ -345,7 +345,7 @@
     (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
             remainder modulo even? odd? quotient+remainder number->string 
             bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left bitwise-arithmetic-shift 
-            positive? negative? logand $two-bignums
+            positive? negative? bitwise-and logand
             string->number expt gcd lcm numerator denominator
             exact->inexact inexact floor ceiling round log
             exact-integer-sqrt min max abs
@@ -354,13 +354,6 @@
             sin cos tan asin acos atan sqrt truncate fltruncate
             flround flmax random))
 
-  (define ($two-bignums)
-    (list 1234567890 -1234567890
-          12345678901234567890
-          -12345678901234567890
-          1234567890123456789012345678901234567890
-          -1234567890123456789012345678901234567890))
-;    (foreign-call "ikrt_fixnum_to_flonum" x))
 
   (module (bignum->flonum)
     ;  sbe         f6     f5       f4       f3       f2       f1       f0
@@ -625,7 +618,7 @@
             (error '+ "not a number" y)])] 
         [else (error '+ "not a number" x)])))
 
-  (define binary-logand
+  (define binary-bitwise-and
     (lambda (x y)
       (cond
         [(fixnum? x)
@@ -634,7 +627,7 @@
            [(bignum? y)
             (foreign-call "ikrt_fxbnlogand" x y)]
            [else 
-            (error 'logand "not an exact integer" y)])]
+            (error 'bitwise-and "not an exact integer" y)])]
         [(bignum? x)
          (cond
            [(fixnum? y)
@@ -642,8 +635,8 @@
            [(bignum? y) 
             (foreign-call "ikrt_bnbnlogand" x y)]
            [else
-            (error 'logand "not an exact integer" y)])]
-        [else (error 'logand "not an exact integer" x)])))
+            (error 'bitwise-and "not an exact integer" y)])]
+        [else (error 'bitwise-and "not an exact integer" x)])))
 
 
   (define binary-
@@ -766,22 +759,25 @@
            [(null? e*) ac]
            [else (f (binary+ ac (car e*)) (cdr e*))]))]))
 
-  (define logand
+  (define bitwise-and
     (case-lambda
-      [(x y) (binary-logand x y)]
-      [(x y z) (binary-logand (binary-logand x y) z)]
+      [(x y) (binary-bitwise-and x y)]
+      [(x y z) (binary-bitwise-and (binary-bitwise-and x y) z)]
       [(a)
        (cond
          [(fixnum? a) a]
          [(bignum? a) a]
-         [else (error 'logand "not a number" a)])]
+         [else (error 'bitwise-and "not a number" a)])]
       [() -1]
       [(a b c d . e*)
-       (let f ([ac (binary-logand (binary-logand (binary-logand a b) c) d)]
+       (let f ([ac (binary-bitwise-and
+                     (binary-bitwise-and 
+                       (binary-bitwise-and a b) c) d)]
                [e* e*])
          (cond
            [(null? e*) ac]
-           [else (f (binary-logand ac (car e*)) (cdr e*))]))]))
+           [else (f (binary-bitwise-and ac (car e*)) (cdr e*))]))]))
+  (define logand bitwise-and)
 
   (define -
     (case-lambda
