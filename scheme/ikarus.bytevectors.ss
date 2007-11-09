@@ -1037,7 +1037,7 @@
                  ($fx< i ($bytevector-length bv)))
             (case endianness
               [(little) ($bytevector-ieee-single-native-ref bv i)]
-              ;[(big) ($bytevector-ieee-single-nonnative-ref bv i)]
+              [(big) ($bytevector-ieee-single-nonnative-ref bv i)]
               [else (error 'bytevector-ieee-single-ref 
                       "invalid endianness" endianness)])
             (error 'bytevector-ieee-single-ref "invalid index" i))
@@ -1068,7 +1068,7 @@
             (if (flonum? x)
                 (case endianness
                   [(little) ($bytevector-ieee-single-native-set! bv i x)]
-              ;    [(big) ($bytevector-ieee-single-nonnative-set! bv i x)]
+                  [(big) ($bytevector-ieee-single-nonnative-set! bv i x)]
                   [else (error 'bytevector-ieee-single-set! 
                           "invalid endianness" endianness)])
                 (error 'bytevector-ieee-single-set! "not a flonum" x))

@@ -1499,6 +1499,22 @@
        (prm 'int+ (T bv) (prm 'sra (T i) (K fixnum-shift)))
        (K (- disp-bytevector-data bytevector-tag))))])
 
+(define-primop $bytevector-ieee-single-nonnative-ref unsafe
+  [(V bv i)
+   (let ([bvoff (- disp-bytevector-data bytevector-tag)]
+         [floff (- disp-flonum-data vector-tag)])
+     (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
+       (prm 'mset x (K (- vector-tag)) (K flonum-tag))
+       (with-tmp ([t (prm 'int+ (T bv) (prm 'sra (T i) (K fixnum-shift)))])
+         (with-tmp ([x0 (prm 'mref t (K bvoff))])
+           (prm 'bswap! x0 x0)
+           (prm 'mset x (K floff) x0)))
+       (prm 'fl:load-single x (K floff))
+       (prm 'fl:single->double)
+       (prm 'fl:store x (K floff))
+       x))])
+
+
 ;;; the following uses unsupported sse3 instructions
 ;(define-primop $bytevector-ieee-double-nonnative-set! unsafe
 ;  [(E bv i x)
@@ -1524,6 +1540,19 @@
          (prm 'bswap! x0 x0)
          (prm 'mset t (K bvoff) x0))))])
 
+(define-primop $bytevector-ieee-single-nonnative-set! unsafe
+  [(E bv i x)
+   (let ([bvoff (- disp-bytevector-data bytevector-tag)]
+         [floff (- disp-flonum-data vector-tag)])
+     (seq*
+       (prm 'fl:load (T x) (K floff))
+       (prm 'fl:double->single)
+       (with-tmp ([t (prm 'int+ (T bv)
+                        (prm 'sra (T i) (K fixnum-shift)))])
+         (prm 'fl:store-single t (K bvoff))
+         (with-tmp ([x0 (prm 'mref t (K bvoff))])
+           (prm 'bswap! x0 x0)
+           (prm 'mset t (K bvoff) x0)))))])
 /section)
 
 (section ;;; strings
