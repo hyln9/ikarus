@@ -55,8 +55,7 @@
       ((memq (car ls1) ls2) (set-union (cdr ls1) ls2))
       (else (cons (car ls1) (set-union (cdr ls1) ls2)))))
   
-  (define-syntax no-source
-    (lambda (x) #f))
+  (define-syntax (no-source x) #f)
 
   ;;; the body of a library, when it's first processed, gets this
   ;;; set of marks. 
@@ -739,9 +738,10 @@
 
   (define parse-define-syntax
     (lambda (x)
-      ;;; FIXME: (define-syntax (f stx) ---) is not supported yet
       (syntax-match x ()
-        ((_ id val) (id? id) (values id val)))))
+        ((_ id val) (id? id) (values id val))
+        ((_ (id . args) e e* ...) (id? id)
+         (values id (cons* (bless 'lambda) args e e*))))))
 
   ;;; scheme-stx takes a symbol and if it's in the 
   ;;; (psyntax system $all) library, it creates a fresh identifier

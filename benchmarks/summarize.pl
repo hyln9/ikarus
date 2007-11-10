@@ -62,6 +62,7 @@ foreach my $bench (@benchmarks){
   print "benchmark: $bench\n";
   my $prev = 0;
   foreach my $time (@times){
+    defined $runtimes{$bench}{$time} or next;
     my @times = @{$runtimes{$bench}{$time}};
     my $avg = average(@times);
     if($prev){
