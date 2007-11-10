@@ -46,11 +46,17 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)"
-nodist_binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
-SCRIPTS = $(nodist_bin_SCRIPTS)
 SOURCES =
 DIST_SOURCES =
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
+am__installdirs = "$(DESTDIR)$(pkgdatadir)"
+nodist_pkgdataDATA_INSTALL = $(INSTALL_DATA)
+DATA = $(nodist_pkgdata_DATA)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMDEP_FALSE = @AMDEP_FALSE@
@@ -138,7 +144,7 @@ target_alias = @target_alias@
 target_cpu = @target_cpu@
 target_os = @target_os@
 target_vendor = @target_vendor@
-nodist_bin_SCRIPTS = ikarus.boot
+nodist_pkgdata_DATA = ikarus.boot
 EXTRA_DIST = ikarus.boot.orig ikarus.enumerations.ss \
 	ikarus.exceptions.ss ikarus.apply.ss ikarus.bytevectors.ss \
 	ikarus.cafe.ss ikarus.chars.ss ikarus.code-objects.ss \
@@ -167,7 +173,7 @@ EXTRA_DIST = ikarus.boot.orig ikarus.enumerations.ss \
 	ikarus/code-objects.ss ikarus/compiler.ss \
 	ikarus/intel-assembler.ss ikarus/fasl/write.ss \
 	unicode/unicode-char-cases.ss unicode/unicode-charinfo.ss
-CLEANFILES = $(nodist_bin_SCRIPTS)
+CLEANFILES = $(nodist_pkgdata_DATA)
 all: all-am
 
 .SUFFIXES:
@@ -200,26 +206,24 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
-install-nodist_binSCRIPTS: $(nodist_bin_SCRIPTS)
+uninstall-info-am:
+install-nodist_pkgdataDATA: $(nodist_pkgdata_DATA)
 	@$(NORMAL_INSTALL)
-	test -z "$(bindir)" || $(mkdir_p) "$(DESTDIR)$(bindir)"
-	@list='$(nodist_bin_SCRIPTS)'; for p in $$list; do \
+	test -z "$(pkgdatadir)" || $(mkdir_p) "$(DESTDIR)$(pkgdatadir)"
+	@list='$(nodist_pkgdata_DATA)'; for p in $$list; do \
 	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  if test -f $$d$$p; then \
-	    f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
-	    echo " $(nodist_binSCRIPT_INSTALL) '$$d$$p' '$(DESTDIR)$(bindir)/$$f'"; \
-	    $(nodist_binSCRIPT_INSTALL) "$$d$$p" "$(DESTDIR)$(bindir)/$$f"; \
-	  else :; fi; \
+	  f=$(am__strip_dir) \
+	  echo " $(nodist_pkgdataDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(pkgdatadir)/$$f'"; \
+	  $(nodist_pkgdataDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(pkgdatadir)/$$f"; \
 	done
 
-uninstall-nodist_binSCRIPTS:
+uninstall-nodist_pkgdataDATA:
 	@$(NORMAL_UNINSTALL)
-	@list='$(nodist_bin_SCRIPTS)'; for p in $$list; do \
-	  f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
-	  echo " rm -f '$(DESTDIR)$(bindir)/$$f'"; \
-	  rm -f "$(DESTDIR)$(bindir)/$$f"; \
+	@list='$(nodist_pkgdata_DATA)'; for p in $$list; do \
+	  f=$(am__strip_dir) \
+	  echo " rm -f '$(DESTDIR)$(pkgdatadir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(pkgdatadir)/$$f"; \
 	done
-uninstall-info-am:
 tags: TAGS
 TAGS:
 
@@ -257,9 +261,9 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(SCRIPTS)
+all-am: Makefile $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)"; do \
+	for dir in "$(DESTDIR)$(pkgdatadir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
 install: install-am
@@ -305,9 +309,9 @@ info: info-am
 
 info-am:
 
-install-data-am:
+install-data-am: install-nodist_pkgdataDATA
 
-install-exec-am: install-nodist_binSCRIPTS
+install-exec-am:
 
 install-info: install-info-am
 
@@ -331,23 +335,25 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-info-am uninstall-nodist_binSCRIPTS
+uninstall-am: uninstall-info-am uninstall-nodist_pkgdataDATA
 
 .PHONY: all all-am check check-am clean clean-generic distclean \
 	distclean-generic distdir dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am install-exec \
 	install-exec-am install-info install-info-am install-man \
-	install-nodist_binSCRIPTS install-strip installcheck \
+	install-nodist_pkgdataDATA install-strip installcheck \
 	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-generic pdf \
 	pdf-am ps ps-am uninstall uninstall-am uninstall-info-am \
-	uninstall-nodist_binSCRIPTS
+	uninstall-nodist_pkgdataDATA
 
 
-all: $(nodist_bin_SCRIPTS)
+all: $(nodist_pkgdata_DATA)
 
-ikarus.boot: $(EXTRA_DIST) 
+ikarus.boot: $(EXTRA_DIST) ../src/ikarus
 	../src/ikarus -b ./ikarus.boot.orig --r6rs-script makefile.ss
+
+# pkglibdir
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

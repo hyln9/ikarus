@@ -56,13 +56,10 @@ Options for running ikarus scheme:\n\
   If the option [-b <bootfile>] is provided, the bootfile is used\n\
   as the system's initial boot file from which the environment is\n\
   initialized.  If the -b option is not supplied, the default boot\n\
-  file (ikarus.boot if the executable name is ikarus) is used based\n\
-  on where the executable file is located in the PATH.  If ikarus\n\
-  was invoked using a path (e.g. ./ikarus or /bin/ikarus), then the\n\
-  PATH is not searched, instead, the path to the executable is used\n\
-  to locate the boot file (e.g. ./ikarus.boot or /bin/ikarus.boot).\n\
-  Consult the ikarus manual for more details.\n\n";
-  fprintf(stderr, helpstring);
+  file is used.  The current default boot file location is\n\
+  \"%s\".\n\
+  Consult the Ikarus Scheme User's Guide for more details.\n\n";
+  fprintf(stderr, helpstring, BOOTFILE);
 }
 
 
@@ -129,42 +126,6 @@ file_exists(char* filename){
   return (s == 0);
 }
 
-int
-copy_fst_path(char* buff, char* x){
-  int i = 0;
-  while(1){
-    char c = x[i];
-    if ((c == 0) || (c == ':')){
-      return i;
-    } 
-    buff[i] = c;
-    i++;
-  }
-}
-
-int global_exe(char* x){
-  while(1){
-    char c = *x;
-    if(c == 0){
-      return 1;
-    } 
-    if(c == '/'){
-      return 0;
-    }
-    x++;
-  }
-}
-
-static char* mystpcpy(char* x, char* y){
-  while(*y){
-    *x = *y;
-    x++; y++;
-  }
-  *x = 0;
-  return x;
-}
-
-
 int main(int argc, char** argv){
   if(get_option0("-h", argc, argv)){
     ikarus_usage();
@@ -174,53 +135,16 @@ int main(int argc, char** argv){
   char* boot_file = get_option("-b", argc, argv);
   if(boot_file){
     argc -= 2;
+  } else {
+    boot_file = BOOTFILE;
   }
-  else if(global_exe(argv[0])){
-    /* search path name */
-    char* path = getenv("PATH");
-    if(path == NULL){
-      fprintf(stderr,
-              "ikarus: unable to locate boot file in PATH=%s\n",
-              path);
-      ikarus_usage_short();
-      exit(-1);
-    }
-    while(*path){
-      int len = copy_fst_path(buff, path);
-      char* x = buff + len;
-      x = mystpcpy(x, "/");
-      x = mystpcpy(x, argv[0]);
-      if(file_exists(buff)){
-        x = mystpcpy(x, ".boot");
-        boot_file = buff;
-        path = "";
-      }
-      else {
-        if(path[len]){
-          path += (len+1);
-        } else {
-          fprintf(stderr,
-                  "ikarus: unable to locate executable \"%s\" in PATH=%s\n",
-                  argv[0],
-                  getenv("PATH"));
-          ikarus_usage_short();
-          exit(-1);
-        }
-      }
-    }
-  }
-  else {
-    char* x = buff;
-    x = mystpcpy(x, argv[0]);
-    x = mystpcpy(x, ".boot");
-    boot_file = buff;
-  }
-
   if(sizeof(mp_limb_t) != sizeof(int)){
-    fprintf(stderr, "ERROR: limb size\n");
+    fprintf(stderr, "ERROR: limb size does not match\n");
+    exit(-1);
   }
   if(mp_bits_per_limb != (8*sizeof(int))){
-    fprintf(stderr, "ERROR: bits_per_limb=%d\n", mp_bits_per_limb);
+    fprintf(stderr, "ERROR: invalid bits_per_limb=%d\n", mp_bits_per_limb);
+    exit(-1);
   }
   ikpcb* pcb = ik_make_pcb();
   the_pcb = pcb;
