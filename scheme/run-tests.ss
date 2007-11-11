@@ -28,6 +28,7 @@
         (tests bignum-to-flonum)
         (tests string-to-number)
         (tests input-ports)
+        (tests fldiv-and-mod)
         )
 
 (define (test-exact-integer-sqrt)
@@ -57,4 +58,5 @@
 (test-hashtables)
 (test-input-ports)
 (test-bignum-conversion)
+(test-fldiv-and-mod)
 (printf "Happy Happy Joy Joy\n")

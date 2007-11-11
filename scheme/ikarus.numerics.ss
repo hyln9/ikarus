@@ -81,32 +81,76 @@
   (define ($flonum-signed-biased-exponent x)
     (let ([b0 ($flonum-u8-ref x 0)]
           [b1 ($flonum-u8-ref x 1)])
-      (fxlogor (fxsll b0 4) (fxsra b1 4))))
+      ($fxlogor ($fxsll b0 4) ($fxsra b1 4))))
 
   (define ($flonum-rational? x)
-    (let ([be (fxlogand ($flonum-signed-biased-exponent x) (sub1 (fxsll 1 11)))])
-      (fx< be 2047)))
+    (let ([be ($fxlogand ($flonum-signed-biased-exponent x) 
+                ($fxsub1 ($fxsll 1 11)))])
+      ($fx< be 2047)))
 
   (define ($flonum-integer? x)
-    (let ([be (fxlogand ($flonum-signed-biased-exponent x) (sub1 (fxsll 1 11)))])
+    (let ([be ($fxlogand ($flonum-signed-biased-exponent x) 
+                ($fxsub1 ($fxsll 1 11)))])
       (cond
-        [(fx= be 2047)  ;;; nans and infs
+        [($fx= be 2047)  ;;; nans and infs
          #f]
-        [(fx>= be 1075) ;;; magnitue large enough
+        [($fx>= be 1075) ;;; magnitue large enough
          #t]
-        [(fx= be 0) ;;; denormalized double, only +/-0.0 is integer
-         (and (fx= ($flonum-u8-ref x 7) 0)
-              (fx= ($flonum-u8-ref x 6) 0) 
-              (fx= ($flonum-u8-ref x 5) 0) 
-              (fx= ($flonum-u8-ref x 4) 0) 
-              (fx= ($flonum-u8-ref x 3) 0) 
-              (fx= ($flonum-u8-ref x 2) 0) 
-              (fx= ($flonum-u8-ref x 1) 0))]
-        [(fx< be (fx+ 1075 -52)) ;;; too small to be an integer
+        [($fx= be 0) ;;; denormalized double, only +/-0.0 is integer
+         (and ($fx= ($flonum-u8-ref x 7) 0)
+              ($fx= ($flonum-u8-ref x 6) 0) 
+              ($fx= ($flonum-u8-ref x 5) 0) 
+              ($fx= ($flonum-u8-ref x 4) 0) 
+              ($fx= ($flonum-u8-ref x 3) 0) 
+              ($fx= ($flonum-u8-ref x 2) 0) 
+              ($fx= ($flonum-u8-ref x 1) 0))]
+        [($fx< be ($fx+ 1075 -52)) ;;; too small to be an integer
          #f]
         [else
          (let ([v ($flonum->exact x)])
            (or (fixnum? v) (bignum? v)))])))
+  
+;;;X (define ($fltruncate x)
+;;;X   ;(define bv 
+;;;X   ;  '#vu8(127 255 255 255  63 255 255 255  31 255 255 255  15 255 255 255
+;;;X   ;          7 255 255 255   3 255 255 255   1 255 255 255   0 255 255 255
+;;;X   ;          0 127 255 255   0  63 255 255   0  31 255 255   0  15 255 255   
+;;;X   ;          0   7 255 255   0   3 255 255   0   1 255 255   0   0 255 255   
+;;;X   ;          0   0 127 255   0   0  63 255   0   0  31 255   0   0  15 255   
+;;;X   ;          0   0   7 255   0   0   3 255   0   0   1 255   0   0   0 255   
+;;;X   ;          0   0   0 127   0   0   0  63   0   0   0  31   0   0   0  15   
+;;;X   ;          0   0   0   7   0   0   0   3   0   0   0   1   0   0   0   0))
+;;;X   ;(define bv
+;;;X   ;  '#vu8(255 255 255 255 255 255 255 255 0 0 0 0 0 0 0 0
+;;;X   ;        255 255 255 255 255 255 255 254 0 0 0 0 0 0 0 0
+;;;X   ;        255 255 255 255 255 255 255 252 0 0 0 0 0 0 0 0
+;;;X   ;        255 255 255 255 255 255 255 248 0 0 0 0 0 0 0 0
+;;;X   ;        255 255 255 255 255 255 255 240 0 0 0 0 0 0 0 0
+;;;X   ;        255 255 255 255 255 255 255 224 0 0 0 0 0 0 0 0
+;;;X   ;        255 255 255 255 255 255 255 192 0 0 0 0 0 0 0 0
+;;;X   ;        255 255 255 255 255 255 255 128 0 0 0 0 0 0 0 0
+;;;X
+;;;X   (let ([sbe ($flonum-signed-biased-exponent x)])
+;;;X     (let ([be ($fxlogand sbe ($fxsub1 ($fxsll 1 11)))])
+;;;X       (cond
+;;;X         [($fx= be 2047)  ;;; nans and infs
+;;;X          x]
+;;;X         [($fx>= be 1075) ;;; magnitue large enough
+;;;X          x]
+;;;X         [($fx= be 0) ;;; denormalized double
+;;;X          (if ($fxzero? sbe) 0.0 -0.0)]
+;;;X         [($fx< be ($fx+ 1075 -52)) ;;; too small to be an integer
+;;;X          (if ($fxzero? ($fxlogand sbe ($fxsll 1 11))) 0.0 -0.0)]
+;;;X         [else
+;;;X          (let ([v ($make-flonum)])
+;;;X
+;;;X
+;;;X          (let ([v ($flonum->exact x)])
+;;;X            (or (fixnum? v) (bignum? v)))]))))
+;;;X
+
+
+
 
   (define (flnumerator x) 
     (unless (flonum? x) 
@@ -2036,21 +2080,12 @@
                   [else
                    (if (even? q) q (- q 1))])))))))
 
-
   (define ($ratnum-truncate x)
     (let ([n ($ratnum-n x)] [d ($ratnum-d x)])
       (quotient n d)))
 
-  ;(define ($flround x)
-  ;  (foreign-call "ikrt_fl_round" x ($make-flonum)))
-
-  ;  (let ([e ($flonum->exact x)])
-  ;    (cond
-  ;      [(not e) x] ;;; infs and nans round to themselves
-  ;      [(ratnum? e) (exact->inexact ($ratnum-round e))]
-  ;      [else (exact->inexact e)])))
-
   (define (flround x)
+    ;;; FIXME: flround should preserve the sign of -0.0.
     (if (flonum? x)
         (let ([e ($flonum->exact x)])
            (cond
@@ -2059,6 +2094,7 @@
         (error 'flround "not a flonum" x)))
 
   (define (round x)
+    ;;; FIXME: flround should preserve the sign of -0.0.
     (cond
       [(flonum? x) 
        (let ([e (or ($flonum->exact x) 
@@ -2071,6 +2107,7 @@
       [else (error 'round "not a number" x)]))
 
   (define (truncate x)
+    ;;; FIXME: fltruncate should preserve the sign of -0.0.
     (cond
       [(flonum? x) 
        (let ([e (or ($flonum->exact x) 
@@ -2082,7 +2119,9 @@
       [(or (fixnum? x) (bignum? x)) x]
       [else (error 'truncate "not a number" x)]))
   
+
   (define (fltruncate x)
+    ;;; FIXME: fltruncate should preserve the sign of -0.0.
     (unless (flonum? x)
       (error 'fltruncate "not a flonum" x))
     (let ([v ($flonum->exact x)])
@@ -2697,4 +2736,58 @@
     (let-values ([(n m) (div0-and-mod0 x y)])
        m)))
   
+
+(library (ikarus flonums div-and-mod)
+  (export fldiv flmod fldiv-and-mod)
+  (import 
+    (ikarus system $flonums)
+    (ikarus system $fx)
+    (except (ikarus) fldiv flmod fldiv-and-mod))
+  
+  (define ($flmod n m)
+    (let ([d0 (fltruncate ($fl/ n m))])
+      (let ([m0 ($fl- n ($fl* d0 m))])
+        (if ($fl>= m0 0.0)
+            m0
+            (if ($fl>= m 0.0)
+                ($fl+ m0 m)
+                ($fl- m0 m))))))
+  
+  (define ($fldiv n m)
+    (let ([d0 (fltruncate ($fl/ n m))])
+      (if ($fl>= n ($fl* d0 m))
+          d0
+          (if ($fl>= m 0.0)
+              ($fl- d0 1.0)
+              ($fl+ d0 1.0)))))
+  
+  (define ($fldiv-and-mod n m)
+    (let ([d0 (fltruncate ($fl/ n m))])
+      (let ([m0 ($fl- n ($fl* d0 m))])
+        (if ($fl>= m0 0.0)
+            (values d0 m0)
+            (if ($fl>= m 0.0)
+                (values ($fl- d0 1.0) ($fl+ m0 m))
+                (values ($fl+ d0 1.0) ($fl- m0 m)))))))
+  
+  (define (fldiv n m)
+    (if (flonum? n)
+        (if (flonum? m) 
+            ($fldiv n m) 
+            (error 'fldiv "not a flonum" m))
+        (error 'fldiv "not a flonum" n)))
+  
+  (define (flmod n m)
+    (if (flonum? n)
+        (if (flonum? m)
+            ($flmod n m)
+            (error 'flmod "not a flonum" m))
+        (error 'flmod "not a flonum" n)))
+  
+  (define (fldiv-and-mod n m)
+    (if (flonum? n)
+        (if (flonum? m) 
+            ($fldiv-and-mod n m)
+            (error 'fldiv-and-mod "not a flonum" m))
+        (error 'fldiv-and-mod "not a flonum" n))))
 
