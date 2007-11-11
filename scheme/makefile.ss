@@ -1165,7 +1165,7 @@
     [hashtable-contains?                         i r ht]
     [hashtable-copy                              r ht]
     [hashtable-delete!                           i r ht]
-    [hashtable-entries                           r ht]
+    [hashtable-entries                           i r ht]
     [hashtable-keys                              i r ht]
     [hashtable-mutable?                          i r ht]
     [hashtable-ref                               i r ht]

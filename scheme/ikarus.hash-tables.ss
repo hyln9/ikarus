@@ -18,7 +18,7 @@
    (export make-eq-hashtable hashtable-ref hashtable-set! hashtable?
            hashtable-size hashtable-delete! hashtable-contains?
            hashtable-update! hashtable-keys hashtable-mutable?
-           hashtable-clear!)
+           hashtable-clear! hashtable-entries)
    (import 
      (ikarus system $pairs)
      (ikarus system $vectors)
@@ -27,7 +27,7 @@
      (except (ikarus) make-eq-hashtable hashtable-ref hashtable-set! hashtable?
              hashtable-size hashtable-delete! hashtable-contains?
              hashtable-update! hashtable-keys hashtable-mutable?
-             hashtable-clear!))
+             hashtable-clear! hashtable-entries))
 
    (define-struct hasht (vec count tc mutable?))
 
@@ -260,6 +260,26 @@
                             [else (f i b kv)])))
                       ($fxsub1 j) kv v)))])))))
 
+  (define (get-entries h)
+    (let ([v (hasht-vec h)] [n (hasht-count h)])
+      (let ([kv (make-vector n)] [vv (make-vector n)])
+        (let f ([i ($fxsub1 n)] [j ($fxsub1 (vector-length v))] [kv kv] [vv vv] [v v])
+          (cond
+            [($fx= i -1) (values kv vv)]
+            [else 
+             (let ([b ($vector-ref v j)])
+               (if (fixnum? b) 
+                   (f i ($fxsub1 j) kv vv v)
+                   (f (let f ([i i] [b b] [kv kv] [vv vv])
+                        ($vector-set! kv i ($tcbucket-key b))
+                        ($vector-set! vv i ($tcbucket-val b))
+                        (let ([b ($tcbucket-next b)]
+                              [i ($fxsub1 i)])
+                          (cond
+                            [(fixnum? b) i]
+                            [else (f i b kv vv)])))
+                      ($fxsub1 j) kv vv v)))])))))
+
   ;;; public interface
   (define (hashtable? x) (hasht? x))
 
@@ -324,6 +344,11 @@
               (del-hash h x)
               (error 'hashtable-delete! "hashtable is immutable" h))
           (error 'hashtable-delete! "not a hash table" h))))
+
+  (define (hashtable-entries h)
+    (if (hasht? h) 
+        (get-entries h)
+        (error 'hashtable-entries "not a hash table" h)))
 
   (define (hashtable-keys h)
     (if (hasht? h) 
