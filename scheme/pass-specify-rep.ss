@@ -336,6 +336,7 @@
                      (fxlogor char-tag
                        (fxsll (char->integer c) char-shift)))]
         [(null? c) (make-constant nil)]
+        [(eof-object? c) (make-constant eof)]
         [(object? c) (error 'constant-rep "double-wrap")]
         [else (make-constant (make-object c))])))
 

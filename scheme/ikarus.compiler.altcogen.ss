@@ -355,6 +355,15 @@
             (do-bind (list t) (list x)
               (k t)))]
          [else (error who "invalid S" x)])]))
+  ;(define (Mem x k) 
+  ;  (struct-case x 
+  ;    [(primcall op arg*) 
+  ;     (if (eq? op 'mref)
+  ;         (S* arg*
+  ;            (lambda (arg*)
+  ;               (make-disp (car arg*) (cadr arg*))))
+  ;         (S x k))]
+  ;    [else (S x k)]))
   ;;;
   (define (do-bind lhs* rhs* body)
     (cond
@@ -583,6 +592,10 @@
             (let ([t (unique-var 'tmp)])
               (P (make-bind (list t) (list a)
                     (make-primcall op (list t b)))))]
+           ;[(constant? a) 
+           ; (Mem b (lambda (b) (make-asm-instr op a b)))]
+           ;[(constant? b)
+           ; (Mem a (lambda (a) (make-asm-instr op a b)))]
            [else
             (S* rands
                 (lambda (rands)
@@ -751,60 +764,48 @@
   (make-empty-set set-member? set-add set-rem set-difference set-union
    empty-set?
    set->list list->set)
-
   (define-struct set (v))
-
   (define (make-empty-set) (make-set '()))
   (define (set-member? x s) 
     ;(unless (fixnum? x) (error 'set-member? "not a fixnum" x))
     (unless (set? s) (error 'set-member? "not a set" s))
     (memq x (set-v s)))
-
   (define (empty-set? s)
     (unless (set? s) (error 'empty-set? "not a set" s))
     (null? (set-v s)))
-    
   (define (set->list s)
     (unless (set? s) (error 'set->list "not a set" s))
     (set-v s))
-    
   (define (set-add x s)
     ;(unless (fixnum? x) (error 'set-add "not a fixnum" x))
     (unless (set? s) (error 'set-add "not a set" s))
     (cond
       [(memq x (set-v s)) s]
       [else (make-set (cons x (set-v s)))]))
-             
   (define (rem x s)
     (cond
       [(null? s) '()]
       [(eq? x (car s)) (cdr s)]
       [else (cons (car s) (rem x (cdr s)))])) 
-
   (define (set-rem x s)
     ;(unless (fixnum? x) (error 'set-rem "not a fixnum" x))
     (unless (set? s) (error 'set-rem "not a set" s))
     (make-set (rem x (set-v s))))
-  
   (define (difference s1 s2)
     (cond
       [(null? s2) s1]
       [else (difference (rem (car s2) s1) (cdr s2))]))
-
   (define (set-difference s1 s2)
     (unless (set? s1) (error 'set-difference "not a set" s1))
     (unless (set? s2) (error 'set-difference "not a set" s2))
     (make-set (difference (set-v s1) (set-v s2))))
-    
   (define (set-union s1 s2)
     (unless (set? s1) (error 'set-union "not a set" s1))
     (unless (set? s2) (error 'set-union "not a set" s2))
     (make-set (union (set-v s1) (set-v s2))))
-
   (define (list->set ls)
     ;(unless (andmap fixnum? ls) (error 'set-rem "not a list of fixnum" ls))
     (make-set ls))
-
   (define (union s1 s2)
     (cond
       [(null? s1) s2]
@@ -813,10 +814,8 @@
 
 (module IntegerSet
   (make-empty-set set-member? set-add set-rem set-difference
-   set-union empty-set? set->list list->set
-   ;set-map set-for-each set-ormap set-andmap
-   )
-  
+   set-union empty-set? set->list list->set)
+  ;;; 
   (begin
     (define-syntax car      (identifier-syntax $car))
     (define-syntax cdr      (identifier-syntax $cdr))
@@ -830,11 +829,11 @@
     (define-syntax fxeven?
       (syntax-rules ()
         [(_ x) ($fxzero? ($fxlogand x 1))])))
-
+  ;;;
   (define bits 28)
   (define (index-of n) (fxquotient n bits))
   (define (mask-of n)  (fxsll 1 (fxremainder n bits)))
-
+  ;;;
   (define (make-empty-set) 0)
   (define (empty-set? s) (eqv? s 0))
   
@@ -848,7 +847,7 @@
              (f (cdr s) (fxsra i 1) j))]
         [(eq? i 0) (eq? j (fxlogand s j))]
         [else #f])))
-
+  ;;;
   (define (set-add n s)
     (unless (fixnum? n) (error 'set-add "not a fixnum" n))
     (let f ([s s] [i (index-of n)] [j (mask-of n)])
@@ -866,12 +865,12 @@
          (if (fxeven? i) 
              (cons (f s (fxsra i 1) j) 0)
              (cons s (f 0 (fxsra i 1) j)))])))
-
+  ;;;
   (define (cons^ a d)
     (if (and (eq? d 0) (fixnum? a))
         a
         (cons a d)))
-
+  ;;;
   (define (set-rem n s)
     (unless (fixnum? n) (error 'set-rem "not a fixnum" n))
     (let f ([s s] [i (index-of n)] [j (mask-of n)])
@@ -893,7 +892,7 @@
           (let ([a1 (set-union^ a0 m2)])
             (if (eq? a0 a1) s1 (cons a1 (cdr s1)))))
         (fxlogor s1 m2)))
-
+  ;;;
   (define (set-union s1 s2)
     (if (pair? s1)
         (if (pair? s2)
@@ -909,7 +908,7 @@
               (let ([a1 (set-union^ a0 s1)])
                 (if (eq? a0 a1) s2 (cons a1 (cdr s2)))))
             (fxlogor s1 s2))))
-
+  ;;;
   (define (set-difference^ s1 m2)
     (if (pair? s1)
         (let ([a0 (car s1)])
@@ -921,7 +920,7 @@
     (if (pair? s2)
         (set-difference^^ m1 (car s2))
         (fxlogand m1 (fxlognot s2))))
-
+  ;;;
   (define (set-difference s1 s2)
     (if (pair? s1)
         (if (pair? s2)
@@ -935,14 +934,14 @@
         (if (pair? s2) 
             (set-difference^^ s1 (car s2)) 
             (fxlogand s1 (fxlognot s2)))))
-
+  ;;; 
   (define (list->set ls)
     (unless (andmap fixnum? ls) (error 'list->set "not a list of fixnum" ls))
     (let f ([ls ls] [s 0])
       (cond
         [(null? ls) s]
         [else (f (cdr ls) (set-add (car ls) s))])))
-
+  ;;;
   (define (set->list s)
     (let f ([i 0] [j 1] [s s] [ac '()])
       (cond
@@ -958,73 +957,6 @@
                   (f (fx+ i 1) (fxsra m 1) ac))]
              [else 
               (f (fx+ i 1) (fxsra m 1) (cons i ac))]))])))
-
-
-;;;  (define (set-map proc s)
-;;;    (let f ([i 0] [j (fxsll 1 shift)] [s s] [ac '()])
-;;;      (cond
-;;;        [(pair? s)
-;;;         (f i (fxsll j 1) (car s)
-;;;            (f (fxlogor i j) (fxsll j 1) (cdr s) ac))]
-;;;        [else
-;;;         (let f ([i i] [m s] [ac ac])
-;;;           (cond
-;;;             [(fxeven? m) 
-;;;              (if (fxzero? m) 
-;;;                  ac
-;;;                  (f (fx+ i 1) (fxsra m 1) ac))]
-;;;             [else 
-;;;              (f (fx+ i 1) (fxsra m 1) (cons (proc i) ac))]))])))
-;;;
-;;;  (define (set-for-each proc s)
-;;;    (let f ([i 0] [j (fxsll 1 shift)] [s s])
-;;;      (cond
-;;;        [(pair? s)
-;;;         (f i (fxsll j 1) (car s))
-;;;         (f (fxlogor i j) (fxsll j 1) (cdr s))]
-;;;        [else
-;;;         (let f ([i i] [m s])
-;;;           (cond
-;;;             [(fxeven? m) 
-;;;              (unless (fxzero? m) 
-;;;                (f (fx+ i 1) (fxsra m 1)))]
-;;;             [else 
-;;;              (proc i)
-;;;              (f (fx+ i 1) (fxsra m 1))]))])))
-;;;
-;;;  (define (set-ormap proc s)
-;;;    (let f ([i 0] [j (fxsll 1 shift)] [s s])
-;;;      (cond
-;;;        [(pair? s)
-;;;         (or (f i (fxsll j 1) (car s))
-;;;             (f (fxlogor i j) (fxsll j 1) (cdr s)))]
-;;;        [else
-;;;         (let f ([i i] [m s])
-;;;           (cond
-;;;             [(fxeven? m) 
-;;;              (if (fxzero? m) 
-;;;                  #f
-;;;                  (f (fx+ i 1) (fxsra m 1)))]
-;;;             [else 
-;;;              (or (proc i)
-;;;                  (f (fx+ i 1) (fxsra m 1)))]))])))
-;;;
-;;;  (define (set-andmap proc s)
-;;;    (let f ([i 0] [j (fxsll 1 shift)] [s s])
-;;;      (cond
-;;;        [(pair? s)
-;;;         (and (f i (fxsll j 1) (car s))
-;;;              (f (fxlogor i j) (fxsll j 1) (cdr s)))]
-;;;        [else
-;;;         (let f ([i i] [m s])
-;;;           (cond
-;;;             [(fxeven? m) 
-;;;              (if (fxzero? m) 
-;;;                  #t
-;;;                  (f (fx+ i 1) (fxsra m 1)))]
-;;;             [else 
-;;;              (and (proc i)
-;;;                   (f (fx+ i 1) (fxsra m 1)))]))])))
 #|IntegerSet|#)
 
 (module ListyGraphs 
@@ -1041,7 +973,7 @@
   ;;;
   (define (single x)
     (set-add x (make-empty-set)))
-
+  ;;;
   (define (add-edge! g x y)
     (let ([ls (graph-ls g)])
       (cond
@@ -1079,7 +1011,7 @@
     (cond
       [(assq x (graph-ls g)) => cdr]
       [else (make-empty-set)]))
-
+  ;;;
   (define (delete-node! x g)
     (let ([ls (graph-ls g)])
       (cond
@@ -1109,7 +1041,7 @@
   ;;;
   (define (single x)
     (set-add x (make-empty-set)))
-
+  ;;;
   (define (add-edge! g x y)
     (let ([ls (graph-ls g)])
       (cond
@@ -1147,7 +1079,7 @@
     (cond
       [(assq x (graph-ls g)) => cdr]
       [else (make-empty-set)]))
-
+  ;;;
   (define (delete-node! x g)
     (let ([ls (graph-ls g)])
       (cond
@@ -2318,15 +2250,6 @@
     (define (P x)
       (struct-case x
         [(constant) x]
-        [(primcall op rands)
-         (let ([a0 (car rands)] [a1 (cadr rands)])
-           (cond
-             [(and (fvar? a0) (fvar? a1))
-              (let ([u (mku)])
-                (make-seq 
-                  (make-asm-instr 'move  u a0)
-                  (make-primcall op (list u a1))))]
-             [else x]))]
         [(conditional e0 e1 e2)
          (make-conditional (P e0) (P e1) (P e2))]
         [(seq e0 e1) (make-seq (E e0) (P e1))]
