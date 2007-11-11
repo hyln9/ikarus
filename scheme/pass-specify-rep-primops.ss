@@ -858,34 +858,61 @@
      x)])
 
 (define (check-flonums ls code)
-  (define (or* a*)
-    (cond
-      [(null? (cdr a*)) (car a*)]
-      [else (prm 'logor (car a*) (or* (cdr a*)))]))
-  (let ([check
-         (let f ([ls ls] [ac '()])
-           (cond
-             [(null? ls) ac]
-             [else
-              (struct-case (car ls)
-                [(constant v) 
-                 (if (flonum? v) 
-                     (f (cdr ls) ac)
-                     #f)]
-                [else (f (cdr ls) (cons (T (car ls)) ac))])]))])
-    (cond
-      [(not check) (interrupt)]
-      [(null? check) code]
-      [else
-       (seq* 
-         (interrupt-unless 
-           (tag-test (or* check) vector-mask vector-tag))
-         (interrupt-unless
-           (prm '= (or* (map (lambda (x) 
-                               (prm 'mref x (K (- vector-tag))))
-                             check))
-                (K flonum-tag)))
-         code)])))
+  (cond
+    [(null? ls) code]
+    [else
+     (struct-case (car ls) 
+       [(constant v) 
+        (if (flonum? v) 
+            (check-flonums (cdr ls) code)
+            (interrupt))]
+       [else
+        (check-flonums (cdr ls) 
+          (with-tmp ([x (T (car ls))])
+            (interrupt-unless 
+              (tag-test x vector-mask vector-tag))
+            (interrupt-unless
+              (prm '= (prm 'mref x (K (- vector-tag)))
+                   (K flonum-tag)))
+            code))])]))
+
+;  (define (primary-tag-tests ls)
+;    (cond
+;      [(null? ls) (prm 'nop)]
+;      [else 
+;       (seq* 
+;         (interrupt-unless 
+;           (tag-test (car ls) vector-mask vector-tag))
+;         (primary-tag-tests (cdr ls)))]))
+;  (define (secondary-tag-tests ls)
+;    (define (or* a*)
+;      (cond
+;        [(null? (cdr a*)) (car a*)]
+;        [else (prm 'logor (car a*) (or* (cdr a*)))]))
+;    (interrupt-unless
+;      (prm '= (or* (map (lambda (x) 
+;                          (prm 'mref x (K (- vector-tag))))
+;                        ls))
+;           (K flonum-tag))))
+;  (let ([check
+;         (let f ([ls ls] [ac '()])
+;           (cond
+;             [(null? ls) ac]
+;             [else
+;              (struct-case (car ls)
+;                [(constant v) 
+;                 (if (flonum? v) 
+;                     (f (cdr ls) ac)
+;                     #f)]
+;                [else (f (cdr ls) (cons (T (car ls)) ac))])]))])
+;    (cond
+;      [(not check) (interrupt)]
+;      [(null? check) code]
+;      [else
+;       (seq* 
+;         (primary-tag-tests check)
+;         (secondary-tag-tests check)
+;         code)])))
 
 (define-primop $fl+ unsafe
   [(V x y) ($flop-aux 'fl:add! x y)])
