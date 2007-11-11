@@ -330,7 +330,7 @@
           bitwise-arithmetic-shift 
           positive? negative? expt gcd lcm numerator denominator exact-integer-sqrt
           quotient+remainder number->string string->number min max
-          abs truncate fltruncate sra sll
+          abs truncate fltruncate sra sll real->flonum
           exact->inexact inexact floor ceiling round log fl=? fl<? fl<=? fl>?
           fl>=? fl+ fl- fl* fl/ flsqrt flmin flzero? flnegative?
           sin cos tan asin acos atan sqrt exp
@@ -350,7 +350,7 @@
             positive? negative? bitwise-and bitwise-not
             string->number expt gcd lcm numerator denominator
             exact->inexact inexact floor ceiling round log
-            exact-integer-sqrt min max abs
+            exact-integer-sqrt min max abs real->flonum
             fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt flmin
             flzero? flnegative? sra sll exp
             sin cos tan asin acos atan sqrt truncate fltruncate
@@ -1169,6 +1169,15 @@
         [else
          (error 'inexact "not a number" x)])))
 
+  (define real->flonum
+    (lambda (x)
+      (cond
+        [(fixnum? x) ($fixnum->flonum x)]
+        [(bignum? x) (bignum->flonum x)]
+        [(ratnum? x) (ratnum->flonum x)]
+        [(flonum? x) x]
+        [else
+         (error 'real->flonum "not a real number" x)])))
 
   (define positive-bignum?
     (lambda (x) 
