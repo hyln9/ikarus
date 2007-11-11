@@ -4,6 +4,7 @@
     call-with-output-file/truncate fast-run
      ack-iters 
      array1-iters
+     bibfreq-iters
      boyer-iters
      browse-iters
      cat-iters
@@ -178,6 +179,7 @@
 
   (define quicksort-iters 60)
   (define fpsum-iters 60)
-  (define nbody-iters         1) ; nondeterministic (order of evaluation)
+  (define nbody-iters         1)
+  (define bibfreq-iters 2)
 )
   
