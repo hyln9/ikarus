@@ -1270,7 +1270,7 @@
     [pretty-width                                i]
     [module                                      i cm]
     [syntax-dispatch                             ]
-    [syntax-error                                i sc]
+    [syntax-error                                i r sc]
     [$transcoder?                                $transc]
     [$transcoder->data                           $transc]
     [$data->transcoder                           $transc]

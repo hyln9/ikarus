@@ -1,6 +1,3 @@
-#pdfdir=$(pkgdatadir)
-datarootdir=${prefix}/share
-docdir=${datarootdir}/doc/${PACKAGE}
 
 dist_doc_DATA=ikarus-users-guide.pdf
 EXTRA_DIST = ikarus-users-guide.tex ikarus-users-guide.bib ikarus-users-guide.pdf

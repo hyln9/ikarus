@@ -29,7 +29,7 @@
     (except (rnrs) 
       environment environment? identifier?
       eval generate-temporaries free-identifier=?
-      bound-identifier=? datum->syntax
+      bound-identifier=? datum->syntax syntax-error
       syntax->datum make-variable-transformer
       null-environment)
     (rnrs base)

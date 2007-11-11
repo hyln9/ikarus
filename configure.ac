@@ -11,6 +11,7 @@ AC_CONFIG_SRCDIR([src/])
 AM_PROG_AS
 # Checks for programs.
 AC_PROG_CC
+AM_PROG_CC_C_O
 
 CFLAGS="$CFLAGS -DNDEBUG -O3"
 
