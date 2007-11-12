@@ -1399,6 +1399,20 @@ will be printed using the \texttt{\#\\x} notation.
 as if the procedure \texttt{display} has printed it.  Strings and
 characters are placed as they are in the output.
 
+\item[\texttt{"\~{}b"}] instructs the formatter to convert the next
+argument to its binary (base 2) representation.  The argument must be an
+exact number.  Note that the \texttt{\#b} numeric prefix is not
+produced in the output.
+
+\item[\texttt{"\~{}o"}] is similar to \texttt{"\~{}b"} except that
+the number is printed in octal (base 8).
+
+\item[\texttt{"\~{}x"}] is similar to \texttt{"\~{}b"} except that
+the number is printed in hexadecimal (base 16).
+
+\item[\texttt{"\~{}d"}] outputs the next argument, which can be an
+exact or inexact number in its decimal (base 10) representation.
+
 \item[\texttt{"\~{}\~{}"}] instructs the formatter to place a tilde
 character, \texttt{\~{}}, in the output without consuming an
 argument.
