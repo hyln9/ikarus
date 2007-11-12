@@ -24,6 +24,7 @@
         (tests hashtables)
         ;(tests numbers)
         (tests bignums)
+        (tests fixnums)
         (tests fxcarry)
         (tests bignum-to-flonum)
         (tests string-to-number)
@@ -60,4 +61,5 @@
 (test-bignum-conversion)
 (test-fldiv-and-mod)
 (test-fldiv0-and-mod0)
+(test-fxdiv-and-mod)
 (printf "Happy Happy Joy Joy\n")

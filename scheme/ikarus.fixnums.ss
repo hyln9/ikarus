@@ -417,3 +417,64 @@
 
 
   )
+
+(library (ikarus fixnums div-and-mod)
+  (export fxdiv fxmod fxdiv-and-mod)
+  (import 
+    (ikarus system $fx)
+    (except (ikarus) fxdiv fxmod fxdiv-and-mod))
+
+  (define ($fxdiv-and-mod n m)
+    (let ([d0 ($fxquotient n m)])
+      (let ([m0 ($fx- n ($fx* d0 m))])
+        (if ($fx>= m0 0)
+            (values d0 m0)
+            (if ($fx>= m 0)
+                (values ($fx- d0 1) ($fx+ m0 m))
+                (values ($fx+ d0 1) ($fx- m0 m)))))))
+
+  (define ($fxdiv n m)
+    (let ([d0 ($fxquotient n m)])
+      (if ($fx>= n ($fx* d0 m))
+          d0
+          (if ($fx>= m 0)
+              ($fx- d0 1)
+              ($fx+ d0 1)))))
+
+  (define ($fxmod n m)
+    (let ([d0 ($fxquotient n m)])
+      (let ([m0 ($fx- n ($fx* d0 m))])
+        (if ($fx>= m0 0)
+            m0
+            (if ($fx>= m 0)
+                ($fx+ m0 m)
+                ($fx- m0 m))))))
+
+  (define (fxdiv-and-mod x y)
+    (if (fixnum? x) 
+        (if (fixnum? y) 
+            (if ($fx= y 0) 
+                (error 'fxdiv-and-mod "division by 0")
+                ($fxdiv-and-mod x y))
+            (error 'fxdiv-and-mod "not a fixnum" y))
+        (error 'fxdiv-and-mod "not a fixnum" x)))
+
+  (define (fxdiv x y)
+    (if (fixnum? x) 
+        (if (fixnum? y) 
+            (if ($fx= y 0) 
+                (error 'fxdiv "division by 0")
+                ($fxdiv x y))
+            (error 'fxdiv "not a fixnum" y))
+        (error 'fxdiv "not a fixnum" x)))
+
+  (define (fxmod x y)
+    (if (fixnum? x) 
+        (if (fixnum? y) 
+            (if ($fx= y 0) 
+                (error 'fxmod "modision by 0")
+                ($fxmod x y))
+            (error 'fxmod "not a fixnum" y))
+        (error 'fxmod "not a fixnum" x)))
+  )
+

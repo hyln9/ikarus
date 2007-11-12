@@ -1,4 +1,4 @@
-#!/usr/bin/env ikarus --r6rs-script
+#!/usr/bin/env scheme-script
 ;;; Ikarus Scheme -- A compiler for R6RS Scheme.
 ;;; Copyright (C) 2006,2007  Abdulaziz Ghuloum
 ;;; 
@@ -293,8 +293,8 @@
     [fxbit-set?                                 S fx]
     [fxcopy-bit                                 S fx]
     [fxcopy-bit-field                           S fx]
-    [fxdiv                                      S fx]
-    [fxdiv-and-mod                              S fx]
+    [fxdiv                                      C fx]
+    [fxdiv-and-mod                              C fx]
     [fxdiv0                                     S fx]
     [fxdiv0-and-mod0                            S fx]
     [fxeven?                                    C fx]
@@ -304,7 +304,7 @@
     [fxlength                                   S fx]
     [fxmax                                      C fx]
     [fxmin                                      C fx]
-    [fxmod                                      S fx]
+    [fxmod                                      C fx]
     [fxmod0                                     S fx]
     [fxnegative?                                C fx]
     [fxnot                                      C fx]
