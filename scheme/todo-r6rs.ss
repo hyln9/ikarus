@@ -683,7 +683,7 @@
     ;;;
     [hashtable-clear!                           C ht]
     [hashtable-contains?                        C ht]
-    [hashtable-copy                             S ht]
+    [hashtable-copy                             C ht]
     [hashtable-delete!                          C ht]
     [hashtable-entries                          C ht]
     [hashtable-keys                             C ht]

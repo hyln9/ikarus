@@ -18,7 +18,7 @@
    (export make-eq-hashtable hashtable-ref hashtable-set! hashtable?
            hashtable-size hashtable-delete! hashtable-contains?
            hashtable-update! hashtable-keys hashtable-mutable?
-           hashtable-clear! hashtable-entries)
+           hashtable-clear! hashtable-entries hashtable-copy)
    (import 
      (ikarus system $pairs)
      (ikarus system $vectors)
@@ -27,7 +27,7 @@
      (except (ikarus) make-eq-hashtable hashtable-ref hashtable-set! hashtable?
              hashtable-size hashtable-delete! hashtable-contains?
              hashtable-update! hashtable-keys hashtable-mutable?
-             hashtable-clear! hashtable-entries))
+             hashtable-clear! hashtable-entries hashtable-copy))
 
    (define-struct hasht (vec count tc mutable?))
 
@@ -280,6 +280,28 @@
                             [else (f i b kv vv)])))
                       ($fxsub1 j) kv vv v)))])))))
 
+  (define (hasht-copy h mutable?)
+    (define (dup-hasht h mutable? n)
+      (let ([x (cons #f #f)])
+        (let ([tc (cons x x)])
+          (make-hasht (make-base-vec n) 0 tc mutable?))))
+    (let ([v (hasht-vec h)] [n (hasht-count h)])
+      (let ([r (dup-hasht h mutable? (vector-length v))])
+        (let f ([i ($fxsub1 n)] [j ($fxsub1 (vector-length v))] [r r] [v v])
+          (cond
+            [($fx= i -1) r]
+            [else 
+             (let ([b ($vector-ref v j)])
+               (if (fixnum? b) 
+                   (f i ($fxsub1 j) r v)
+                   (f (let f ([i i] [b b] [r r])
+                        (put-hash! r ($tcbucket-key b) ($tcbucket-val b))
+                        (let ([b ($tcbucket-next b)] [i ($fxsub1 i)])
+                          (cond
+                            [(fixnum? b) i]
+                            [else (f i b r)])))
+                      ($fxsub1 j) r v)))])))))
+
   ;;; public interface
   (define (hashtable? x) (hasht? x))
 
@@ -366,4 +388,16 @@
             (clear-hash! h)
             (error 'hashtable-clear! "hashtable is immutable" h))
         (error 'hashtable-clear! "not a hash table" h)))
+
+  (define hashtable-copy 
+    (case-lambda
+      [(h) 
+       (if (hasht? h) 
+           (hasht-copy h #f)
+           (error 'hashtable-copy "not a hash table" h))]
+      [(h mutable?)
+       (if (hasht? h) 
+           (hasht-copy h (and mutable? #t))
+           (error 'hashtable-copy "not a hash table" h))]))
+
 )

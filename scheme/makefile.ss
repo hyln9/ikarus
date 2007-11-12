@@ -1163,7 +1163,7 @@
     [call-with-output-file                       i r is se]
     [hashtable-clear!                            i r ht]
     [hashtable-contains?                         i r ht]
-    [hashtable-copy                              r ht]
+    [hashtable-copy                              i r ht]
     [hashtable-delete!                           i r ht]
     [hashtable-entries                           i r ht]
     [hashtable-keys                              i r ht]
