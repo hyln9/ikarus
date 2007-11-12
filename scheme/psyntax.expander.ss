@@ -1712,7 +1712,7 @@
                      accessor* aux-accessor*))))])))
   
   (define incorrect-usage-macro
-    (lambda (e) (stx-error e "incorrect usage of auxilary keyword")))
+    (lambda (e) (stx-error e "incorrect usage of auxiliary keyword")))
   
   (define parameterize-transformer ;;; go away
     (lambda (e r mr)
