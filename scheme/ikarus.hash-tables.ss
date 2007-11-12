@@ -393,11 +393,15 @@
     (case-lambda
       [(h) 
        (if (hasht? h) 
-           (hasht-copy h #f)
+           (if (hasht-mutable? h) 
+               (hasht-copy h #f)
+               h)
            (error 'hashtable-copy "not a hash table" h))]
       [(h mutable?)
        (if (hasht? h) 
-           (hasht-copy h (and mutable? #t))
+           (if (or mutable? (hasht-mutable? h))
+               (hasht-copy h (and mutable? #t))
+               h)
            (error 'hashtable-copy "not a hash table" h))]))
 
 )
