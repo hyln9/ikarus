@@ -59,4 +59,5 @@
 (test-input-ports)
 (test-bignum-conversion)
 (test-fldiv-and-mod)
+(test-fldiv0-and-mod0)
 (printf "Happy Happy Joy Joy\n")

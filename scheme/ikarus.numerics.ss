@@ -2738,11 +2738,12 @@
   
 
 (library (ikarus flonums div-and-mod)
-  (export fldiv flmod fldiv-and-mod)
+  (export fldiv flmod fldiv-and-mod fldiv0 flmod0 fldiv0-and-mod0)
   (import 
     (ikarus system $flonums)
     (ikarus system $fx)
-    (except (ikarus) fldiv flmod fldiv-and-mod))
+    (except (ikarus) 
+      fldiv flmod fldiv-and-mod fldiv0 flmod0 fldiv0-and-mod0))
   
   (define ($flmod n m)
     (let ([d0 (fltruncate ($fl/ n m))])
@@ -2789,5 +2790,74 @@
         (if (flonum? m) 
             ($fldiv-and-mod n m)
             (error 'fldiv-and-mod "not a flonum" m))
-        (error 'fldiv-and-mod "not a flonum" n))))
+        (error 'fldiv-and-mod "not a flonum" n)))
+
+  (define ($fldiv0-and-mod0 n m)
+    (let ([d0 (fltruncate ($fl/ n m))])
+      (let ([m0 ($fl- n ($fl* d0 m))])
+        (if ($fl>= m 0.0)
+            (if ($fl< m0 ($fl/ m 2.0))
+                (if ($fl>= m0 ($fl/ m -2.0))
+                    (values d0 m0)
+                    (values ($fl- d0 1.0) ($fl+ m0 m)))
+                (values ($fl+ d0 1.0) ($fl- m0 m)))
+            (if ($fl< m0 ($fl/ m -2.0))
+                (if ($fl>= m0 ($fl/ m 2.0))
+                    (values d0 m0)
+                    (values ($fl+ d0 1.0) ($fl- m0 m)))
+                (values ($fl- d0 1.0) ($fl+ m0 m)))))))
+
+  (define ($fldiv0 n m)
+    (let ([d0 (fltruncate ($fl/ n m))])
+      (let ([m0 ($fl- n ($fl* d0 m))])
+        (if ($fl>= m 0.0)
+            (if ($fl< m0 ($fl/ m 2.0))
+                (if ($fl>= m0 ($fl/ m -2.0))
+                    d0
+                    ($fl- d0 1.0))
+                ($fl+ d0 1.0))
+            (if ($fl< m0 ($fl/ m -2.0))
+                (if ($fl>= m0 ($fl/ m 2.0))
+                    d0
+                    ($fl+ d0 1.0))
+                ($fl- d0 1.0))))))
+
+  (define ($flmod0 n m)
+    (let ([d0 (fltruncate ($fl/ n m))])
+      (let ([m0 ($fl- n ($fl* d0 m))])
+        (if ($fl>= m 0.0)
+            (if ($fl< m0 ($fl/ m 2.0))
+                (if ($fl>= m0 ($fl/ m -2.0))
+                    m0
+                    ($fl+ m0 m))
+                ($fl- m0 m))
+            (if ($fl< m0 ($fl/ m -2.0))
+                (if ($fl>= m0 ($fl/ m 2.0))
+                    m0
+                    ($fl- m0 m))
+                ($fl+ m0 m))))))
+
+  (define (fldiv0 n m)
+    (if (flonum? n)
+        (if (flonum? m) 
+            ($fldiv0 n m)
+            (error 'fldiv0 "not a flonum" m))
+        (error 'fldiv0 "not a flonum" n)))
+
+  (define (flmod0 n m)
+    (if (flonum? n)
+        (if (flonum? m) 
+            ($flmod0 n m)
+            (error 'flmod0 "not a flonum" m))
+        (error 'flmod0 "not a flonum" n)))
+
+  (define (fldiv0-and-mod0 n m)
+    (if (flonum? n)
+        (if (flonum? m) 
+            ($fldiv0-and-mod0 n m)
+            (error 'fldiv0-and-mod0 "not a flonum" m))
+        (error 'fldiv0-and-mod0 "not a flonum" n))))
+
+
+
 
