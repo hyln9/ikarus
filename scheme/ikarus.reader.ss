@@ -692,32 +692,32 @@
          [(#\1) 1]
          [else #f])]
       [else (error 'radix-digit "invalid radix" radix)]))
-  (define (read-char* p ls str who) 
-    (let f ([i 0] [ls ls])
-      (let ([c (read-char p)])
-        (cond
-          [(fx= i (string-length str)) 
-           (cond
-             [(eof-object? c) (void)]
-             [(delimiter? c) (unread-char c p)]
-             [else
-              (unread-char c p)
-              (error 'tokenize 
-                (format "invalid ~a: ~s" who 
-                  (list->string (reverse (cons c ls)))))])]
-          [else
-           (cond
-             [(eof-object? c) 
-              (error 'tokenize
-                (format "invalid eof inside ~a" who))]
-             [(char=? c (string-ref str i)) 
-              (f (add1 i) (cons c ls))]
-             [else 
-              (unread-char c p)
-              (error 'tokenize 
-                (format "invalid ~a: ~s" who
-                  (list->string (reverse (cons c ls)))))])]))))
   (define (tokenize-integer/nan/inf-no-digits p ls)
+    (define (read-char* p ls str who)
+      (let f ([i 0] [ls ls])
+        (let ([c (read-char p)])
+          (cond
+            [(fx= i (string-length str)) 
+             (cond
+               [(eof-object? c) (void)]
+               [(delimiter? c) (unread-char c p)]
+               [else
+                (unread-char c p)
+                (error 'tokenize 
+                  (format "invalid ~a: ~s" who 
+                    (list->string (reverse (cons c ls)))))])]
+            [else
+             (cond
+               [(eof-object? c) 
+                (error 'tokenize
+                  (format "invalid eof inside ~a" who))]
+               [(char=? (char-downcase c) (string-ref str i))
+                (f (add1 i) (cons c ls))]
+               [else 
+                (unread-char c p)
+                (error 'tokenize 
+                  (format "invalid ~a: ~s" who
+                    (list->string (reverse (cons c ls)))))])]))))
     (let ([c (read-char p)])
       (cond
         [(eof-object? c) (num-error "invalid eof" ls)]
@@ -726,10 +726,10 @@
            (tokenize-integer p (cons c ls) #f 10 d))]
         [(char=? c #\.) 
          (tokenize-decimal-no-digits p (cons c ls) #f)]
-        [(char=? c #\i) 
+        [(memv c '(#\i #\I)) 
          (read-char* p (cons #\i ls) "nf.0" "number sequence")
          +inf.0]
-        [(char=? c #\n)
+        [(memv c '(#\n #\N))
          (read-char* p (cons #\i ls) "an.0" "number sequence")
          +nan.0]
         [else (num-error "invalid sequence" (cons c ls))]))) 

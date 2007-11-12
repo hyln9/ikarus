@@ -2351,10 +2351,10 @@
         (cond
           [(fx= n (string-length "+xxx.0"))
            (cond
-             [(string=? x "+inf.0") +inf.0]
-             [(string=? x "-inf.0") -inf.0]
-             [(string=? x "+nan.0") +nan.0]
-             [(string=? x "-nan.0") -nan.0]
+             [(string-ci=? x "+inf.0") +inf.0]
+             [(string-ci=? x "-inf.0") -inf.0]
+             [(string-ci=? x "+nan.0") +nan.0]
+             [(string-ci=? x "-nan.0") -nan.0]
              [else (start x n 0 #f #f)])]
           [(fx> n 0) (start x n 0 #f #f)]
           [else #f]))))
