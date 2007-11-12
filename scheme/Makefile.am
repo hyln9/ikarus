@@ -6,7 +6,7 @@ all: $(nodist_pkglib_DATA)
 
 CLEANFILES=$(nodist_pkglib_DATA)
 
-ikarus.boot: $(EXTRA_DIST) ../src/ikarus
+ikarus.boot: $(EXTRA_DIST)
 	../src/ikarus -b ./ikarus.boot.orig --r6rs-script makefile.ss
 
 # pkglibdir

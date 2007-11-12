@@ -47,19 +47,16 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_ikarus_OBJECTS = ikarus-ikarus-collect.$(OBJEXT) \
-	ikarus-ikarus-exec.$(OBJEXT) ikarus-ikarus-fasl.$(OBJEXT) \
-	ikarus-ikarus-flonums.$(OBJEXT) ikarus-ikarus-main.$(OBJEXT) \
-	ikarus-ikarus-numerics.$(OBJEXT) ikarus-ikarus-print.$(OBJEXT) \
-	ikarus-ikarus-runtime.$(OBJEXT) \
-	ikarus-ikarus-symbol-table.$(OBJEXT) \
-	ikarus-ikarus-verify-integrity.$(OBJEXT) \
-	ikarus-ikarus-weak-pairs.$(OBJEXT) \
-	ikarus-ikarus-winmmap.$(OBJEXT) ikarus-enter.$(OBJEXT)
-ikarus_OBJECTS = $(am_ikarus_OBJECTS)
+am_ikarus_OBJECTS = ikarus-collect.$(OBJEXT) ikarus-exec.$(OBJEXT) \
+	ikarus-fasl.$(OBJEXT) ikarus-flonums.$(OBJEXT) \
+	ikarus-main.$(OBJEXT) ikarus-numerics.$(OBJEXT) \
+	ikarus-print.$(OBJEXT) ikarus-runtime.$(OBJEXT) \
+	ikarus-symbol-table.$(OBJEXT) \
+	ikarus-verify-integrity.$(OBJEXT) ikarus-weak-pairs.$(OBJEXT) \
+	ikarus-winmmap.$(OBJEXT) ikarus-enter.$(OBJEXT)
+nodist_ikarus_OBJECTS =
+ikarus_OBJECTS = $(am_ikarus_OBJECTS) $(nodist_ikarus_OBJECTS)
 ikarus_LDADD = $(LDADD)
-ikarus_LINK = $(CCLD) $(ikarus_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
-	$(LDFLAGS) -o $@
 binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 SCRIPTS = $(bin_SCRIPTS)
 DEFAULT_INCLUDES = -I. -I$(top_builddir)@am__isrc@
@@ -70,7 +67,7 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 CCASCOMPILE = $(CCAS) $(AM_CCASFLAGS) $(CCASFLAGS)
-SOURCES = $(ikarus_SOURCES)
+SOURCES = $(ikarus_SOURCES) $(nodist_ikarus_SOURCES)
 DIST_SOURCES = $(ikarus_SOURCES)
 ETAGS = etags
 CTAGS = ctags
@@ -176,10 +173,12 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ikarus_SOURCES = ikarus-collect.c ikarus-exec.c ikarus-fasl.c ikarus-flonums.c ikarus-main.c ikarus-numerics.c ikarus-print.c ikarus-runtime.c ikarus-symbol-table.c ikarus-verify-integrity.c ikarus-weak-pairs.c ikarus-winmmap.c ikarus-data.h ikarus-winmmap.h ikarus-enter.s
-ikarus_CFLAGS = -DBOOTFILE="\"$(pkglibdir)/ikarus.boot\""
+nodist_ikarus_SOURCES = bootfileloc.h
+BUILT_SOURCES = bootfileloc.h
 bin_SCRIPTS = scheme-script
-CLEANFILES = scheme-script
-all: all-am
+CLEANFILES = scheme-script bootfileloc.h
+all: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .o .obj .s
@@ -237,7 +236,7 @@ clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
 ikarus$(EXEEXT): $(ikarus_OBJECTS) $(ikarus_DEPENDENCIES) 
 	@rm -f ikarus$(EXEEXT)
-	$(ikarus_LINK) $(ikarus_OBJECTS) $(ikarus_LDADD) $(LIBS)
+	$(LINK) $(ikarus_OBJECTS) $(ikarus_LDADD) $(LIBS)
 install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
@@ -264,18 +263,18 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-ikarus-collect.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-ikarus-exec.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-ikarus-fasl.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-ikarus-flonums.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-ikarus-main.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-ikarus-numerics.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-ikarus-print.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-ikarus-runtime.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-ikarus-symbol-table.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-ikarus-verify-integrity.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-ikarus-weak-pairs.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-ikarus-winmmap.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-collect.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-exec.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-fasl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-flonums.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-numerics.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-print.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-runtime.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-symbol-table.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-verify-integrity.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-weak-pairs.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-winmmap.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -290,174 +289,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
-
-ikarus-ikarus-collect.o: ikarus-collect.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-collect.o -MD -MP -MF $(DEPDIR)/ikarus-ikarus-collect.Tpo -c -o ikarus-ikarus-collect.o `test -f 'ikarus-collect.c' || echo '$(srcdir)/'`ikarus-collect.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-collect.Tpo $(DEPDIR)/ikarus-ikarus-collect.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-collect.c' object='ikarus-ikarus-collect.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-collect.o `test -f 'ikarus-collect.c' || echo '$(srcdir)/'`ikarus-collect.c
-
-ikarus-ikarus-collect.obj: ikarus-collect.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-collect.obj -MD -MP -MF $(DEPDIR)/ikarus-ikarus-collect.Tpo -c -o ikarus-ikarus-collect.obj `if test -f 'ikarus-collect.c'; then $(CYGPATH_W) 'ikarus-collect.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-collect.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-collect.Tpo $(DEPDIR)/ikarus-ikarus-collect.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-collect.c' object='ikarus-ikarus-collect.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-collect.obj `if test -f 'ikarus-collect.c'; then $(CYGPATH_W) 'ikarus-collect.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-collect.c'; fi`
-
-ikarus-ikarus-exec.o: ikarus-exec.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-exec.o -MD -MP -MF $(DEPDIR)/ikarus-ikarus-exec.Tpo -c -o ikarus-ikarus-exec.o `test -f 'ikarus-exec.c' || echo '$(srcdir)/'`ikarus-exec.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-exec.Tpo $(DEPDIR)/ikarus-ikarus-exec.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-exec.c' object='ikarus-ikarus-exec.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-exec.o `test -f 'ikarus-exec.c' || echo '$(srcdir)/'`ikarus-exec.c
-
-ikarus-ikarus-exec.obj: ikarus-exec.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-exec.obj -MD -MP -MF $(DEPDIR)/ikarus-ikarus-exec.Tpo -c -o ikarus-ikarus-exec.obj `if test -f 'ikarus-exec.c'; then $(CYGPATH_W) 'ikarus-exec.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-exec.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-exec.Tpo $(DEPDIR)/ikarus-ikarus-exec.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-exec.c' object='ikarus-ikarus-exec.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-exec.obj `if test -f 'ikarus-exec.c'; then $(CYGPATH_W) 'ikarus-exec.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-exec.c'; fi`
-
-ikarus-ikarus-fasl.o: ikarus-fasl.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-fasl.o -MD -MP -MF $(DEPDIR)/ikarus-ikarus-fasl.Tpo -c -o ikarus-ikarus-fasl.o `test -f 'ikarus-fasl.c' || echo '$(srcdir)/'`ikarus-fasl.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-fasl.Tpo $(DEPDIR)/ikarus-ikarus-fasl.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-fasl.c' object='ikarus-ikarus-fasl.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-fasl.o `test -f 'ikarus-fasl.c' || echo '$(srcdir)/'`ikarus-fasl.c
-
-ikarus-ikarus-fasl.obj: ikarus-fasl.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-fasl.obj -MD -MP -MF $(DEPDIR)/ikarus-ikarus-fasl.Tpo -c -o ikarus-ikarus-fasl.obj `if test -f 'ikarus-fasl.c'; then $(CYGPATH_W) 'ikarus-fasl.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-fasl.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-fasl.Tpo $(DEPDIR)/ikarus-ikarus-fasl.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-fasl.c' object='ikarus-ikarus-fasl.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-fasl.obj `if test -f 'ikarus-fasl.c'; then $(CYGPATH_W) 'ikarus-fasl.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-fasl.c'; fi`
-
-ikarus-ikarus-flonums.o: ikarus-flonums.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-flonums.o -MD -MP -MF $(DEPDIR)/ikarus-ikarus-flonums.Tpo -c -o ikarus-ikarus-flonums.o `test -f 'ikarus-flonums.c' || echo '$(srcdir)/'`ikarus-flonums.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-flonums.Tpo $(DEPDIR)/ikarus-ikarus-flonums.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-flonums.c' object='ikarus-ikarus-flonums.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-flonums.o `test -f 'ikarus-flonums.c' || echo '$(srcdir)/'`ikarus-flonums.c
-
-ikarus-ikarus-flonums.obj: ikarus-flonums.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-flonums.obj -MD -MP -MF $(DEPDIR)/ikarus-ikarus-flonums.Tpo -c -o ikarus-ikarus-flonums.obj `if test -f 'ikarus-flonums.c'; then $(CYGPATH_W) 'ikarus-flonums.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-flonums.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-flonums.Tpo $(DEPDIR)/ikarus-ikarus-flonums.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-flonums.c' object='ikarus-ikarus-flonums.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-flonums.obj `if test -f 'ikarus-flonums.c'; then $(CYGPATH_W) 'ikarus-flonums.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-flonums.c'; fi`
-
-ikarus-ikarus-main.o: ikarus-main.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-main.o -MD -MP -MF $(DEPDIR)/ikarus-ikarus-main.Tpo -c -o ikarus-ikarus-main.o `test -f 'ikarus-main.c' || echo '$(srcdir)/'`ikarus-main.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-main.Tpo $(DEPDIR)/ikarus-ikarus-main.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-main.c' object='ikarus-ikarus-main.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-main.o `test -f 'ikarus-main.c' || echo '$(srcdir)/'`ikarus-main.c
-
-ikarus-ikarus-main.obj: ikarus-main.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-main.obj -MD -MP -MF $(DEPDIR)/ikarus-ikarus-main.Tpo -c -o ikarus-ikarus-main.obj `if test -f 'ikarus-main.c'; then $(CYGPATH_W) 'ikarus-main.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-main.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-main.Tpo $(DEPDIR)/ikarus-ikarus-main.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-main.c' object='ikarus-ikarus-main.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-main.obj `if test -f 'ikarus-main.c'; then $(CYGPATH_W) 'ikarus-main.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-main.c'; fi`
-
-ikarus-ikarus-numerics.o: ikarus-numerics.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-numerics.o -MD -MP -MF $(DEPDIR)/ikarus-ikarus-numerics.Tpo -c -o ikarus-ikarus-numerics.o `test -f 'ikarus-numerics.c' || echo '$(srcdir)/'`ikarus-numerics.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-numerics.Tpo $(DEPDIR)/ikarus-ikarus-numerics.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-numerics.c' object='ikarus-ikarus-numerics.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-numerics.o `test -f 'ikarus-numerics.c' || echo '$(srcdir)/'`ikarus-numerics.c
-
-ikarus-ikarus-numerics.obj: ikarus-numerics.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-numerics.obj -MD -MP -MF $(DEPDIR)/ikarus-ikarus-numerics.Tpo -c -o ikarus-ikarus-numerics.obj `if test -f 'ikarus-numerics.c'; then $(CYGPATH_W) 'ikarus-numerics.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-numerics.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-numerics.Tpo $(DEPDIR)/ikarus-ikarus-numerics.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-numerics.c' object='ikarus-ikarus-numerics.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-numerics.obj `if test -f 'ikarus-numerics.c'; then $(CYGPATH_W) 'ikarus-numerics.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-numerics.c'; fi`
-
-ikarus-ikarus-print.o: ikarus-print.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-print.o -MD -MP -MF $(DEPDIR)/ikarus-ikarus-print.Tpo -c -o ikarus-ikarus-print.o `test -f 'ikarus-print.c' || echo '$(srcdir)/'`ikarus-print.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-print.Tpo $(DEPDIR)/ikarus-ikarus-print.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-print.c' object='ikarus-ikarus-print.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-print.o `test -f 'ikarus-print.c' || echo '$(srcdir)/'`ikarus-print.c
-
-ikarus-ikarus-print.obj: ikarus-print.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-print.obj -MD -MP -MF $(DEPDIR)/ikarus-ikarus-print.Tpo -c -o ikarus-ikarus-print.obj `if test -f 'ikarus-print.c'; then $(CYGPATH_W) 'ikarus-print.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-print.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-print.Tpo $(DEPDIR)/ikarus-ikarus-print.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-print.c' object='ikarus-ikarus-print.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-print.obj `if test -f 'ikarus-print.c'; then $(CYGPATH_W) 'ikarus-print.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-print.c'; fi`
-
-ikarus-ikarus-runtime.o: ikarus-runtime.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-runtime.o -MD -MP -MF $(DEPDIR)/ikarus-ikarus-runtime.Tpo -c -o ikarus-ikarus-runtime.o `test -f 'ikarus-runtime.c' || echo '$(srcdir)/'`ikarus-runtime.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-runtime.Tpo $(DEPDIR)/ikarus-ikarus-runtime.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-runtime.c' object='ikarus-ikarus-runtime.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-runtime.o `test -f 'ikarus-runtime.c' || echo '$(srcdir)/'`ikarus-runtime.c
-
-ikarus-ikarus-runtime.obj: ikarus-runtime.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-runtime.obj -MD -MP -MF $(DEPDIR)/ikarus-ikarus-runtime.Tpo -c -o ikarus-ikarus-runtime.obj `if test -f 'ikarus-runtime.c'; then $(CYGPATH_W) 'ikarus-runtime.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-runtime.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-runtime.Tpo $(DEPDIR)/ikarus-ikarus-runtime.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-runtime.c' object='ikarus-ikarus-runtime.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-runtime.obj `if test -f 'ikarus-runtime.c'; then $(CYGPATH_W) 'ikarus-runtime.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-runtime.c'; fi`
-
-ikarus-ikarus-symbol-table.o: ikarus-symbol-table.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-symbol-table.o -MD -MP -MF $(DEPDIR)/ikarus-ikarus-symbol-table.Tpo -c -o ikarus-ikarus-symbol-table.o `test -f 'ikarus-symbol-table.c' || echo '$(srcdir)/'`ikarus-symbol-table.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-symbol-table.Tpo $(DEPDIR)/ikarus-ikarus-symbol-table.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-symbol-table.c' object='ikarus-ikarus-symbol-table.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-symbol-table.o `test -f 'ikarus-symbol-table.c' || echo '$(srcdir)/'`ikarus-symbol-table.c
-
-ikarus-ikarus-symbol-table.obj: ikarus-symbol-table.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-symbol-table.obj -MD -MP -MF $(DEPDIR)/ikarus-ikarus-symbol-table.Tpo -c -o ikarus-ikarus-symbol-table.obj `if test -f 'ikarus-symbol-table.c'; then $(CYGPATH_W) 'ikarus-symbol-table.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-symbol-table.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-symbol-table.Tpo $(DEPDIR)/ikarus-ikarus-symbol-table.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-symbol-table.c' object='ikarus-ikarus-symbol-table.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-symbol-table.obj `if test -f 'ikarus-symbol-table.c'; then $(CYGPATH_W) 'ikarus-symbol-table.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-symbol-table.c'; fi`
-
-ikarus-ikarus-verify-integrity.o: ikarus-verify-integrity.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-verify-integrity.o -MD -MP -MF $(DEPDIR)/ikarus-ikarus-verify-integrity.Tpo -c -o ikarus-ikarus-verify-integrity.o `test -f 'ikarus-verify-integrity.c' || echo '$(srcdir)/'`ikarus-verify-integrity.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-verify-integrity.Tpo $(DEPDIR)/ikarus-ikarus-verify-integrity.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-verify-integrity.c' object='ikarus-ikarus-verify-integrity.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-verify-integrity.o `test -f 'ikarus-verify-integrity.c' || echo '$(srcdir)/'`ikarus-verify-integrity.c
-
-ikarus-ikarus-verify-integrity.obj: ikarus-verify-integrity.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-verify-integrity.obj -MD -MP -MF $(DEPDIR)/ikarus-ikarus-verify-integrity.Tpo -c -o ikarus-ikarus-verify-integrity.obj `if test -f 'ikarus-verify-integrity.c'; then $(CYGPATH_W) 'ikarus-verify-integrity.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-verify-integrity.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-verify-integrity.Tpo $(DEPDIR)/ikarus-ikarus-verify-integrity.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-verify-integrity.c' object='ikarus-ikarus-verify-integrity.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-verify-integrity.obj `if test -f 'ikarus-verify-integrity.c'; then $(CYGPATH_W) 'ikarus-verify-integrity.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-verify-integrity.c'; fi`
-
-ikarus-ikarus-weak-pairs.o: ikarus-weak-pairs.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-weak-pairs.o -MD -MP -MF $(DEPDIR)/ikarus-ikarus-weak-pairs.Tpo -c -o ikarus-ikarus-weak-pairs.o `test -f 'ikarus-weak-pairs.c' || echo '$(srcdir)/'`ikarus-weak-pairs.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-weak-pairs.Tpo $(DEPDIR)/ikarus-ikarus-weak-pairs.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-weak-pairs.c' object='ikarus-ikarus-weak-pairs.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-weak-pairs.o `test -f 'ikarus-weak-pairs.c' || echo '$(srcdir)/'`ikarus-weak-pairs.c
-
-ikarus-ikarus-weak-pairs.obj: ikarus-weak-pairs.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-weak-pairs.obj -MD -MP -MF $(DEPDIR)/ikarus-ikarus-weak-pairs.Tpo -c -o ikarus-ikarus-weak-pairs.obj `if test -f 'ikarus-weak-pairs.c'; then $(CYGPATH_W) 'ikarus-weak-pairs.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-weak-pairs.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-weak-pairs.Tpo $(DEPDIR)/ikarus-ikarus-weak-pairs.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-weak-pairs.c' object='ikarus-ikarus-weak-pairs.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-weak-pairs.obj `if test -f 'ikarus-weak-pairs.c'; then $(CYGPATH_W) 'ikarus-weak-pairs.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-weak-pairs.c'; fi`
-
-ikarus-ikarus-winmmap.o: ikarus-winmmap.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-winmmap.o -MD -MP -MF $(DEPDIR)/ikarus-ikarus-winmmap.Tpo -c -o ikarus-ikarus-winmmap.o `test -f 'ikarus-winmmap.c' || echo '$(srcdir)/'`ikarus-winmmap.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-winmmap.Tpo $(DEPDIR)/ikarus-ikarus-winmmap.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-winmmap.c' object='ikarus-ikarus-winmmap.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-winmmap.o `test -f 'ikarus-winmmap.c' || echo '$(srcdir)/'`ikarus-winmmap.c
-
-ikarus-ikarus-winmmap.obj: ikarus-winmmap.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -MT ikarus-ikarus-winmmap.obj -MD -MP -MF $(DEPDIR)/ikarus-ikarus-winmmap.Tpo -c -o ikarus-ikarus-winmmap.obj `if test -f 'ikarus-winmmap.c'; then $(CYGPATH_W) 'ikarus-winmmap.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-winmmap.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/ikarus-ikarus-winmmap.Tpo $(DEPDIR)/ikarus-ikarus-winmmap.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ikarus-winmmap.c' object='ikarus-ikarus-winmmap.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ikarus_CFLAGS) $(CFLAGS) -c -o ikarus-ikarus-winmmap.obj `if test -f 'ikarus-winmmap.c'; then $(CYGPATH_W) 'ikarus-winmmap.c'; else $(CYGPATH_W) '$(srcdir)/ikarus-winmmap.c'; fi`
 
 .s.o:
 	$(CCASCOMPILE) -c -o $@ $<
@@ -540,13 +371,15 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-check: check-am
+check: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) check-am
 all-am: Makefile $(PROGRAMS) $(SCRIPTS)
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
-install: install-am
+install: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) install-am
 install-exec: install-exec-am
 install-data: install-data-am
 uninstall: uninstall-am
@@ -571,6 +404,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
 clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
@@ -644,6 +478,9 @@ uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS
 	tags uninstall uninstall-am uninstall-binPROGRAMS \
 	uninstall-binSCRIPTS
 
+
+bootfileloc.h: Makefile
+	echo '#define BOOTFILE "$(pkglibdir)/ikarus.boot"' >$@
 
 scheme-script: 
 	echo "#!/bin/sh" > scheme-script

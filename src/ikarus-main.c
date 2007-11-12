@@ -17,7 +17,7 @@
 
 
 
-
+#include "bootfileloc.h"
 #include "ikarus-data.h"
 #include <stdio.h>
 #include <stdlib.h>
