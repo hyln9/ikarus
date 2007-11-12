@@ -108,23 +108,29 @@
   ;;;  #<rib list-of-symbols list-of-list-of-marks list-of-labels #f>
   
   (define (extend-rib! rib id label)
-    (define (find sym mark* sym* mark**)
+    (define (find sym mark* sym* mark** label*)
       (and (pair? sym*)
-           (or (and (eq? sym (car sym*))
-                    (same-marks? mark* (car mark**)))
-               (find sym mark* (cdr sym*) (cdr mark**)))))
+           (if (and (eq? sym (car sym*)) (same-marks? mark* (car mark**)))
+               (car label*)
+               (find sym mark* (cdr sym*) (cdr mark**) (cdr label*)))))
     (when (rib-sealed/freq rib)
       (error 'extend-rib! "rib is sealed" rib))
-    (let ((sym (id->sym id)) (mark* (stx-mark* id)))
+    (let ((sym (id->sym id))
+          (mark* (stx-mark* id)))
       (let ((sym* (rib-sym* rib)))
-        (when (and (memq sym (rib-sym* rib))
-                   (find sym mark* sym* (rib-mark** rib)))
-          ;;; signal an error if the identifier was already
-          ;;; in the rib.
-          (stx-error id "cannot redefine"))
-        (set-rib-sym*! rib (cons sym sym*))
-        (set-rib-mark**! rib (cons mark* (rib-mark** rib)))
-        (set-rib-label*! rib (cons label (rib-label* rib))))))
+        (cond
+          [(and (memq sym (rib-sym* rib))
+                (find sym mark* sym* (rib-mark** rib) (rib-label* rib)))
+           =>
+           (lambda (label^) 
+             (unless (eq? label label^)
+               ;;; signal an error if the identifier was already
+               ;;; in the rib.
+               (stx-error id "cannot redefine")))]
+          [else
+           (set-rib-sym*! rib (cons sym sym*))
+           (set-rib-mark**! rib (cons mark* (rib-mark** rib)))
+           (set-rib-label*! rib (cons label (rib-label* rib)))]))))
 
   ;;; A rib can be sealed once all bindings are inserted.  To seal
   ;;; a rib, we convert the lists sym*, mark**, and label* to vectors 
@@ -2629,7 +2635,8 @@
                                     (let ([name (car x)])
                                       (datum->stx ctxt name)))
                                subst)
-                             (map cdr subst)))]))
+                             (map cdr subst)))]
+                        [_ (stx-error e "invalid import form")]))
                     (let-values (((id* lab*) 
                                   (if (module-import? e) 
                                       (module-import e r)
