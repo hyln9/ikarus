@@ -419,10 +419,10 @@
   )
 
 (library (ikarus fixnums div-and-mod)
-  (export fxdiv fxmod fxdiv-and-mod)
+  (export fxdiv fxmod fxdiv-and-mod fxdiv0 fxmod0 fxdiv0-and-mod0)
   (import 
     (ikarus system $fx)
-    (except (ikarus) fxdiv fxmod fxdiv-and-mod))
+    (except (ikarus) fxdiv fxmod fxdiv-and-mod fxdiv0 fxmod0 fxdiv0-and-mod0))
 
   (define ($fxdiv-and-mod n m)
     (let ([d0 ($fxquotient n m)])
@@ -476,5 +476,92 @@
                 ($fxmod x y))
             (error 'fxmod "not a fixnum" y))
         (error 'fxmod "not a fixnum" x)))
+
+  (define ($fxdiv0-and-mod0 n m)
+    (let ([d0 (quotient n m)])
+      (let ([m0 (- n (* d0 m))])
+        (if (>= m 0)
+            (if (< (* m0 2) m)
+                (if (<= (* m0 -2) m)
+                    (values d0 m0)
+                    (values (- d0 1) (+ m0 m)))
+                (values (+ d0 1) (- m0 m)))
+            (if (> (* m0 -2) m)
+                (if (>= (* m0 2) m)
+                    (values d0 m0)
+                    (values (+ d0 1) (- m0 m)))
+                (values (- d0 1) (+ m0 m)))))))
+
+  (define ($fxdiv0 n m)
+    (let ([d0 (quotient n m)])
+      (let ([m0 (- n (* d0 m))])
+        (if (>= m 0)
+            (if (< (* m0 2) m)
+                (if (<= (* m0 -2) m)
+                    d0
+                    (- d0 1))
+                (+ d0 1))
+            (if (> (* m0 -2) m)
+                (if (>= (* m0 2) m)
+                    d0
+                    (+ d0 1))
+                (- d0 1))))))
+
+  (define ($fxmod0 n m)
+    (let ([d0 (quotient n m)])
+      (let ([m0 (- n (* d0 m))])
+        (if (>= m 0)
+            (if (< (* m0 2) m)
+                (if (<= (* m0 -2) m)
+                    m0
+                    (+ m0 m))
+                (- m0 m))
+            (if (> (* m0 -2) m)
+                (if (>= (* m0 2) m)
+                    m0
+                    (- m0 m))
+                (+ m0 m))))))
+
+  (define (fxdiv0-and-mod0 x y)
+    (if (fixnum? x)
+        (if (fixnum? y)
+            (if ($fx= y 0)
+                (error 'fxdiv0-and-mod0 "division by 0")
+                (let-values ([(d m) ($fxdiv0-and-mod0 x y)])
+                  (if (and (fixnum? d) (fixnum? m))
+                      (values d m)
+                      (error 'fxdiv0-and-mod0 
+                        "results not representable as fixnums"
+                        x y))))
+            (error 'fxdiv0-and-mod0 "not a fixnum" y))
+        (error 'fxdiv0-and-mod0 "not a fixnum" x)))
+
+  (define (fxdiv0 x y)
+    (if (fixnum? x)
+        (if (fixnum? y)
+            (if ($fx= y 0)
+                (error 'fxdiv0 "division by 0")
+                (let ([d ($fxdiv0 x y)])
+                  (if (fixnum? d)
+                      d
+                      (error 'fxdiv0 
+                        "result not representable as fixnum"
+                        x y))))
+            (error 'fxdiv0 "not a fixnum" y))
+        (error 'fxdiv0 "not a fixnum" x)))
+
+  (define (fxmod0 x y)
+    (if (fixnum? x)
+        (if (fixnum? y)
+            (if ($fx= y 0)
+                (error 'fxmod0 "division by 0")
+                (let ([d ($fxmod0 x y)])
+                  (if (fixnum? d)
+                      d
+                      (error 'fxmod0 
+                        "result not representable as fixnum"
+                        x y))))
+            (error 'fxmod0 "not a fixnum" y))
+        (error 'fxmod0 "not a fixnum" x)))
   )
 

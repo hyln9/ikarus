@@ -44,7 +44,7 @@
     (test +17.0 -inf.0 #f)
     (test -17.0 +inf.0 #f)
     (test -17.0 -inf.0 #f))
-  
+
   (define (test-fldiv0-and-mod0)
     (define (test x1 x2 verify?)
       (let-values ([(d m) (fldiv0-and-mod0 x1 x2)])

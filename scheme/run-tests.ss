@@ -62,4 +62,5 @@
 (test-fldiv-and-mod)
 (test-fldiv0-and-mod0)
 (test-fxdiv-and-mod)
+(test-fxdiv0-and-mod0)
 (printf "Happy Happy Joy Joy\n")
