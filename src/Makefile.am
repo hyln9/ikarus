@@ -9,3 +9,5 @@ bin_SCRIPTS = scheme-script
 scheme-script: 
 	echo "#!/bin/sh" > scheme-script
 	echo "$(bindir)/ikarus --r6rs-script \$$@" >> scheme-script
+
+CLEANFILES = scheme-script
