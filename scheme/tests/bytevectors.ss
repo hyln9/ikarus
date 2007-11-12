@@ -336,6 +336,44 @@
                    (reverse (bytevector->u8-list v1)))])
          (bytevector-ieee-single-ref v2 0 'little)))]
 
+    [(lambda (x) (= x 18302628885633695743))
+     (let ([bv (u8-list->bytevector 
+                 '(255 255 255 255 255 255 255 255 
+                   255 255 255 255 255 255 255 253))])
+       (bytevector-u64-ref bv 8 (endianness little)))]
+
+    [(lambda (x) (= x -144115188075855873))
+     (let ([bv (u8-list->bytevector 
+                 '(255 255 255 255 255 255 255 255 
+                   255 255 255 255 255 255 255 253))])
+       (bytevector-s64-ref bv 8 (endianness little)))]
+
+    [(lambda (x) (= x 18446744073709551613))
+     (let ([bv (u8-list->bytevector 
+                 '(255 255 255 255 255 255 255 255 
+                   255 255 255 255 255 255 255 253))])
+       (bytevector-u64-ref bv 8 (endianness big)))]
+
+    [(lambda (x) (= x -3))
+     (let ([bv (u8-list->bytevector 
+                 '(255 255 255 255 255 255 255 255 
+                   255 255 255 255 255 255 255 253))])
+       (bytevector-s64-ref bv 8 (endianness big)))]
+
+    [(lambda (x) (= x 18302628885633695743))
+     (let ([bv (u8-list->bytevector 
+                 '(255 255 255 255 255 255 255 255 
+                   255 255 255 255 255 255 255 253))])
+       (bytevector-u64-native-ref bv 8))]
+
+    [(lambda (x) (= x -144115188075855873))
+     (let ([bv (u8-list->bytevector 
+                 '(255 255 255 255 255 255 255 255 
+                   255 255 255 255 255 255 255 253))])
+       (bytevector-s64-native-ref bv 8))]
+
+
+
     ))
 
 

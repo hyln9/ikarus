@@ -20,13 +20,17 @@
     bytevector-u8-ref bytevector-u8-set! bytevector-s8-set!
     bytevector-copy! u8-list->bytevector bytevector->u8-list
     bytevector-u16-native-ref bytevector-u16-native-set!
+    bytevector-s16-native-ref bytevector-s16-native-set!
     bytevector-u32-native-ref bytevector-u32-native-set!
     bytevector-s32-native-ref bytevector-s32-native-set!
+    bytevector-u64-native-ref bytevector-u64-native-set!
+    bytevector-s64-native-ref bytevector-s64-native-set!
     bytevector-u16-ref bytevector-u16-set!
+    bytevector-s16-ref bytevector-s16-set!
     bytevector-u32-ref bytevector-u32-set!
     bytevector-s32-ref bytevector-s32-set!
-    bytevector-s16-native-ref bytevector-s16-native-set!
-    bytevector-s16-ref bytevector-s16-set!
+    bytevector-u64-ref bytevector-u64-set!
+    bytevector-s64-ref bytevector-s64-set!
     bytevector-fill! bytevector-copy bytevector=?
     bytevector-uint-ref bytevector-sint-ref 
     bytevector-uint-set!  bytevector-sint-set!
@@ -43,13 +47,17 @@
       bytevector-u8-ref bytevector-u8-set! bytevector-s8-set! 
       bytevector-copy! u8-list->bytevector bytevector->u8-list
       bytevector-u16-native-ref bytevector-u16-native-set!
+      bytevector-s16-native-ref bytevector-s16-native-set!
       bytevector-u32-native-ref bytevector-u32-native-set!
       bytevector-s32-native-ref bytevector-s32-native-set!
+      bytevector-u64-native-ref bytevector-u64-native-set!
+      bytevector-s64-native-ref bytevector-s64-native-set!
       bytevector-u16-ref bytevector-u16-set!
+      bytevector-s16-ref bytevector-s16-set!
       bytevector-u32-ref bytevector-u32-set!
       bytevector-s32-ref bytevector-s32-set!
-      bytevector-s16-native-ref bytevector-s16-native-set!
-      bytevector-s16-ref bytevector-s16-set!
+      bytevector-u64-ref bytevector-u64-set!
+      bytevector-s64-ref bytevector-s64-set!
       bytevector-fill! bytevector-copy bytevector=?
       bytevector-uint-ref bytevector-sint-ref
       bytevector-uint-set!  bytevector-sint-set!
@@ -1074,6 +1082,67 @@
                 (error 'bytevector-ieee-single-set! "not a flonum" x))
             (error 'bytevector-ieee-single-set! "invalid index" i))
         (error 'bytevector-ieee-single-set! "not a bytevector" bv)))
+
+
+  (define ($bytevector-ref/64 bv i who decoder endianness)
+    (if (bytevector? bv) 
+        (if (and (fixnum? i) 
+                 ($fx>= i 0)
+                 ($fxzero? ($fxlogand i 7))
+                 ($fx< i ($bytevector-length bv)))
+            (case endianness
+              [(little big) 
+               (decoder bv i endianness 8)]
+              [else (error who "invalid endianness" endianness)])
+            (error who "invalid index" i))
+        (error who "not a bytevector" bv)))
+
+  (define (bytevector-u64-native-ref bv i) 
+    ($bytevector-ref/64 bv i 'bytevector-u64-native-ref 
+       bytevector-uint-ref 'little))
+  (define (bytevector-s64-native-ref bv i) 
+    ($bytevector-ref/64 bv i 'bytevector-s64-native-ref 
+       bytevector-sint-ref 'little))
+  (define (bytevector-u64-ref bv i endianness)
+    ($bytevector-ref/64 bv i 'bytevector-u64-native-ref 
+       bytevector-uint-ref endianness))
+  (define (bytevector-s64-ref bv i endianness)
+    ($bytevector-ref/64 bv i 'bytevector-s64-native-ref 
+       bytevector-sint-ref endianness))
+
+  (define ($bytevector-set/64 bv i n lo hi who setter endianness)
+    (if (bytevector? bv)
+        (if (and (fixnum? i) 
+                 ($fx>= i 0)
+                 ($fxzero? ($fxlogand i 7))
+                 ($fx< i ($bytevector-length bv)))
+            (case endianness
+              [(little big) 
+               (unless (or (fixnum? n) (bignum? n))
+                 (error who 
+                   (if (number? n) 
+                       "number is not exact" 
+                       "not a number")
+                   n))
+               (unless (and (<= lo n) (< n hi))
+                 (error who "number out of range" n))
+               (setter bv i n endianness 8)]
+              [else (error who "invalid endianness" endianness)])
+            (error who "invalid index" i))
+        (error who "not a bytevector" bv)))
+
+  (define (bytevector-u64-native-set! bv i n) 
+    ($bytevector-set/64 bv i n 0 (expt 2 64)
+       'bytevector-u64-native-ref bytevector-uint-set! 'little))
+  (define (bytevector-s64-native-set! bv i n) 
+    ($bytevector-set/64 bv i n (- (expt 2 63)) (expt 2 63)
+       'bytevector-s64-native-ref bytevector-sint-set! 'little))
+  (define (bytevector-u64-set! bv i n endianness) 
+    ($bytevector-set/64 bv i n 0 (expt 2 64)
+       'bytevector-u64-ref bytevector-uint-set! endianness))
+  (define (bytevector-s64-set! bv i n endianness) 
+    ($bytevector-set/64 bv i n (- (expt 2 63)) (expt 2 63) 
+       'bytevector-s64-ref bytevector-sint-set! endianness))
 
   )
 
