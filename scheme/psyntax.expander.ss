@@ -570,7 +570,8 @@
       (syntax-case x ()
         ((_ stx)
          (syntax (error 'expander "invalid syntax" (stx->datum stx))))
-        ((_ stx msg) (syntax (error 'expander msg (strip stx '())))))))
+        ((_ stx msg arg* ...)
+         (syntax (error 'expander msg (strip stx '()) arg* ...))))))
   
   ;;; when the rhs of a syntax definition is evaluated, it should be
   ;;; either a procedure, an identifier-syntax transformer or an
@@ -2599,10 +2600,15 @@
                       m-exp-id* m-exp-lab*)
                     (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* rib top?)))
                  ((library) 
-                  ((current-library-expander) (stx->datum e))
+                  (library-expander (stx->datum e))
                   (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* rib top?))
                  ((import)
                   (let ()
+                    (define (module-import? e)
+                      (syntax-match e ()
+                        [(_ id) (id? id) #t]
+                        [(_ imp* ...) #f]
+                        [_ (stx-error e "malformed import form")]))
                     (define (module-import e r)
                       (syntax-match e ()
                         ((_ id) (id? id)
@@ -2613,7 +2619,21 @@
                                 (let ((id* (car iface)) (lab* (cdr iface)))
                                   (values id* lab*))))
                              (else (stx-error e "invalid import")))))))
-                    (let-values (((id* lab*) (module-import e r)))
+                    (define (library-import e) 
+                      (syntax-match e ()
+                        [(ctxt imp* ...)
+                         (let ((subst (parse-import-spec* 
+                                        (syntax->datum imp*))))
+                           (values 
+                             (map (lambda (x) 
+                                    (let ([name (car x)])
+                                      (datum->stx ctxt name)))
+                               subst)
+                             (map cdr subst)))]))
+                    (let-values (((id* lab*) 
+                                  (if (module-import? e) 
+                                      (module-import e r)
+                                      (library-import e))))
                       (for-each
                         (lambda (id lab) (extend-rib! rib id lab))
                         id* lab*)))
@@ -2693,8 +2713,31 @@
                ((macro macro!)
                 (chi-top* (cons (chi-macro value e) (cdr e*)) init*))
                ((library) 
-                ((current-library-expander) (stx->datum e))
+                (library-expander (stx->datum e))
                 (chi-top* (cdr e*) init*))
+               ((import) 
+                (begin
+                  (syntax-match e ()
+                    [(ctxt imp* ...)
+                     (let ((subst (parse-import-spec* (syntax->datum imp*))))
+                       (cond
+                         ((interaction-library) =>
+                          (lambda (lib)
+                            (for-each 
+                              (lambda (x) 
+                                (let ([sym (car x)] [label (cdr x)])
+                                  (cond
+                                    ((assq sym (library-subst lib)) =>
+                                     (lambda (p) 
+                                       (unless (eq? (cdr p) label)
+                                         (stx-error e 
+                                           "identifier conflict"
+                                           sym))))
+                                    (else 
+                                     (extend-library-subst! lib sym label)))))
+                              subst)))
+                         (else (error 'import "BUG: cannot happen"))))])
+                  (chi-top* (cdr e*) init*)))
                (else
                 (chi-top* (cdr e*)
                    (cons (cons #f (chi-expr e '() '()))
@@ -2772,7 +2815,6 @@
   ;;; returns: ((z . z$label) (y . x$label) (q . q$label))
   ;;;     and  (#<library (foo)> #<library (bar)>)
   (define (parse-import-spec* imp*)
-    (define imp-collector (make-collector))
     (define (merge-substs s subst)
       (define (insert-to-subst a subst)
         (let ((name (car a)) (label (cdr a)))
@@ -2930,7 +2972,7 @@
                   "library does not satisfy version specification"
                   lib
                   spec*))
-             (imp-collector lib)
+             ((imp-collector) lib)
              (library-subst lib))))
         ((x x* ...)
          (not (memq x '(rename except only prefix library)))
@@ -2938,7 +2980,7 @@
         (spec (error 'import "invalid import spec" spec))))
     (let f ((imp* imp*) (subst '()))
       (cond
-        ((null? imp*) (values subst (imp-collector)))
+        ((null? imp*) subst)
         (else
          (f (cdr imp*) (merge-substs (get-import (car imp*)) subst))))))
 
@@ -2983,6 +3025,15 @@
           (error 'vis-collector "not a procedure" x))
         x)))
   
+  (define imp-collector
+    (make-parameter
+      (lambda args
+        (error 'imp-collector "not initialized"))
+      (lambda (x)
+        (unless (procedure? x)
+          (error 'imp-collector "not a procedure" x))
+        x)))
+
   (define chi-library-internal
     (lambda (e* rib top?)
       (let-values (((e* r mr lex* rhs* mod** _kwd*)
@@ -2992,34 +3043,36 @@
   
   (define library-body-expander
     (lambda (exp* imp* b* top?)
-      (let-values (((exp-int* exp-ext*) (parse-exports exp*))
-                   ((subst imp*) (parse-import-spec* imp*)))
-        (let ((rib (make-top-rib subst)))
-          (let ((b* (map (lambda (x) (mkstx x top-mark* (list rib))) b*))
-                (rtc (make-collector))
-                (vtc (make-collector)))
-            (parameterize ((inv-collector rtc)
-                           (vis-collector vtc))
-              (let-values (((init* r mr lex* rhs*)
-                            (chi-library-internal b* rib top?)))
-                (seal-rib! rib)
-                (let ((rhs* (chi-rhs* rhs* r mr))
-                      (init* (chi-expr* init* r mr)))
-                  (unseal-rib! rib)
-                  (let ((export-subst (make-export-subst exp-int* exp-ext* rib)))
-                    (let-values (((export-env global* macro*)
-                                  (make-export-env/macros r)))
-                      (let ((invoke-body
-                             (build-letrec* no-source lex* rhs* 
-                                (build-exports global* init*)))
-                            (invoke-definitions 
-                             (map build-global-define (map cdr global*))))
-                        (values
-                          imp* (rtc) (vtc)
-                          (build-sequence no-source 
-                            (append invoke-definitions
-                              (list invoke-body)))
-                          macro* export-subst export-env))))))))))))
+      (define itc (make-collector))
+      (parameterize ((imp-collector itc))
+        (let-values (((exp-int* exp-ext*) (parse-exports exp*)))
+          (let ((subst (parse-import-spec* imp*)))
+            (let ((rib (make-top-rib subst)))
+              (let ((b* (map (lambda (x) (mkstx x top-mark* (list rib))) b*))
+                    (rtc (make-collector))
+                    (vtc (make-collector)))
+                (parameterize ((inv-collector rtc)
+                               (vis-collector vtc))
+                  (let-values (((init* r mr lex* rhs*)
+                                (chi-library-internal b* rib top?)))
+                    (seal-rib! rib)
+                    (let ((rhs* (chi-rhs* rhs* r mr))
+                          (init* (chi-expr* init* r mr)))
+                      (unseal-rib! rib)
+                      (let ((export-subst (make-export-subst exp-int* exp-ext* rib)))
+                        (let-values (((export-env global* macro*)
+                                      (make-export-env/macros r)))
+                          (let ((invoke-body
+                                 (build-letrec* no-source lex* rhs* 
+                                    (build-exports global* init*)))
+                                (invoke-definitions 
+                                 (map build-global-define (map cdr global*))))
+                            (values
+                              (itc) (rtc) (vtc)
+                              (build-sequence no-source 
+                                (append invoke-definitions
+                                  (list invoke-body)))
+                              macro* export-subst export-env))))))))))))))
 
   (define core-library-expander
     (lambda (e)
@@ -3053,7 +3106,7 @@
 
   ;;; An env record encapsulates a substitution and a set of
   ;;; libraries.
-  (define-record env (subst imp*)
+  (define-record env (subst itc)
     (lambda (x p)
       (unless (env? x)
         (error 'record-type-printer "not an environment"))
@@ -3067,8 +3120,10 @@
   ;;; eval and/or expand.
   (define environment
     (lambda imp*
-      (let-values (((subst imp*) (parse-import-spec* imp*)))
-        (make-env subst imp*))))
+      (let ([itc (make-collector)])
+        (parameterize ([imp-collector itc])
+          (let ((subst (parse-import-spec* imp*)))
+            (make-env subst itc))))))
   
   ;;; R6RS's null-environment and scheme-report-environment are
   ;;; constructed simply using the corresponding libraries.
@@ -3092,11 +3147,13 @@
       (let ((subst (env-subst env)))
         (let ((rib (make-top-rib subst)))
           (let ((x (mkstx x top-mark* (list rib)))
+                (itc (env-itc env))
                 (rtc (make-collector))
                 (vtc (make-collector)))
               (let ((x
                      (parameterize ((inv-collector rtc)
-                                    (vis-collector vtc))
+                                    (vis-collector vtc)
+                                    (imp-collector itc))
                         (chi-expr x '() '()))))
                 (seal-rib! rib)
                 (values x (rtc))))))))
@@ -3133,7 +3190,7 @@
                   (core-library-expander x)))
       (let ((id (gensym))
             (name name)
-            (ver ver)  ;;; FIXME
+            (ver ver)
             (imp* (map library-spec imp*))
             (vis* (map library-spec vis*))
             (inv* (map library-spec inv*)))
@@ -3309,10 +3366,12 @@
             (loc (set-symbol-value! loc (eval-core (expanded->core expr))))
             (else (eval-core (expanded->core expr))))))
       (let ((rtc (make-collector))
+            (itc (make-collector))
             (vtc (make-collector)))
         (let ((init*
                (parameterize ((inv-collector rtc)
                               (vis-collector vtc)
+                              (imp-collector itc)
                               (interaction-library
                                (find-library-by-name '(ikarus interaction))))
                  (chi-top* (list (mkstx x top-mark* '())) '()))))
