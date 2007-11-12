@@ -690,6 +690,23 @@
                        (error who "insufficient arguments"))
                      (write-to-port (car args) p)
                      (f (fxadd1 i) (cdr args))]
+                    [(assv c '([#\b . 2] [#\o . 8] [#\x . 16] [#\d . 10]))
+                     =>
+                     (lambda (x)
+                       (when (null? args)
+                         (error who "insufficient arguments"))
+                       (let ([a (car args)])
+                         (cond
+                           [(or (fixnum? a) (bignum? a) (ratnum? a))
+                            (display-to-port (number->string a (cdr x)) p)]
+                           [(flonum? a)
+                            (unless (eqv? c #\d) 
+                              (error who 
+                                (format "flonums cannot be printed with ~~~a" c)))
+                            (display-to-port (number->string a) p)]
+                           [else 
+                            (error who "not a number" a)]))
+                       (f (fxadd1 i) (cdr args)))]
                     [else
                      (error who "invalid sequence character after ~" c)])))]
               [else 

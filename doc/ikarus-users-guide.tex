@@ -137,6 +137,7 @@ Ikarus Scheme User's Guide
 % \rnrs{6} Crash Course\\
 % Ikarus
 (Preliminary Document)
+\hfill Version~0.0.2
 }
 \vfill
 {
@@ -1795,13 +1796,6 @@ angle magnitude make-polar make-rectangular
 
 The following procedures are missing form \texttt{(rnrs bytevectors)}:
 \begin{Verbatim}
-bytevector-ieee-double-native-ref  bytevector-ieee-double-native-set! 
-bytevector-ieee-double-ref         bytevector-ieee-single-native-ref    
-bytevector-ieee-single-ref         bytevector-ieee-single-native-set! 
-bytevector-s64-native-ref          bytevector-s64-native-set!    
-bytevector-s64-ref                 bytevector-s64-set!    
-bytevector-u64-native-ref          bytevector-u64-native-set!    
-bytevector-u64-ref                 bytevector-u64-set! 
 string->utf16     string->utf32    utf16->string     utf32->string
 \end{Verbatim}
 
@@ -1817,7 +1811,7 @@ string-normalize-nfkc               string-normalize-nfkd
 The following procedures are missing from \texttt{(rnrs arithmetic
 bitwise)}:
 \begin{Verbatim}
-bitwise-not    bitwise-and  bitwise-ior   bitwise-xor    bitwise-if 
+bitwise-ior  bitwise-xor   bitwise-if 
 bitwise-copy-bit-field     bitwise-bit-set?        bitwise-copy-bit 
 bitwise-first-bit-set      bitwise-bit-count      bitwise-bit-field 
 bitwise-reverse-bit-field  bitwise-rotate-bit-field  bitwise-length  
@@ -1828,21 +1822,13 @@ The following procedures are missing from \texttt{(rnrs arithmetic
 fixnum)}:
 \begin{Verbatim}
 fxbit-count  fxbit-field  fxbit-set?  fxcopy-bit  fxcopy-bit-field
-fxdiv   fxdiv-and-mod   fxdiv0   fxdiv0-and-mod0   fxfirst-bit-set 
-fxlength   fxmod   fxmod0  fxreverse-bit-field  fxrotate-bit-field   
+fxfirst-bit-set fxlength  fxreverse-bit-field   fxrotate-bit-field   
 \end{Verbatim}
 
-
-The following procedures are missing from \texttt{(rnrs arithmetic
-flonums)}:
-\begin{Verbatim}
-fldiv  fldiv-and-mod  fldiv0  fldiv0-and-mod0  flmod  flmod0 
-real->flonum    
-\end{Verbatim}
 
 The following procedures are missing from \texttt{(rnrs hashtables)}:
 \begin{Verbatim}
-hashtable-copy             hashtable-entries  
+hashtable-copy
 make-eqv-hashtable         make-hashtable
 hashtable-hash-function    hashtable-equivalence-function 
 equal-hash   string-hash   string-ci-hash   symbol-hash
@@ -1853,16 +1839,16 @@ equal-hash   string-hash   string-ci-hash   symbol-hash
 The following procedures are missing from \texttt{(rnrs io ports)}:
 \begin{Verbatim}
 call-with-bytevector-output-port     call-with-string-output-port
-binary-port?   port?    textual-port?    port-eof?     
+binary-port?   textual-port?    port-eof?     
 port-has-port-position?         port-position 
-port-has-set-port-position!?    set-port-position!    
-call-with-port        close-port     flush-output-port
+port-has-set-port-position!?    set-port-position!
+call-with-port        close-port
 get-bytevector-all    get-bytevector-some
 get-bytevector-n      get-bytevector-n!
 get-char              put-char      lookahead-char    
 get-u8                lookahead-u8  put-u8
 get-string-all        get-string-n  get-string-n!  put-string
-get-datum             put-datum     get-line        
+get-datum             put-datum
 make-custom-binary-input-port         make-custom-binary-input/output-port    
 make-custom-binary-output-port        make-custom-textual-input-port    
 make-custom-textual-input/output-port make-custom-textual-output-port
