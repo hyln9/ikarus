@@ -1367,11 +1367,15 @@
       (cdr x)))
   (for-each f identifier->library-map))
 
-(define (make-collection)
-  (let ([set '()])
-    (case-lambda
-      [() set]
-      [(x) (set! set (cons x set))])))
+(library (ikarus makefile collections)
+  (export make-collection)
+  (import (rnrs))
+  (define (make-collection)
+    (let ([set '()])
+      (case-lambda
+        [() set]
+        [(x) (set! set (cons x set))]))))
+(import (ikarus makefile collections))
 
 (define (assq1 x ls)
   (let f ([x x] [ls ls] [p #f])
