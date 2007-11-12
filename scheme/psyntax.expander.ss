@@ -538,7 +538,8 @@
              (case type
                ((lexical core-prim macro macro! global local-macro
                  local-macro! global-macro global-macro!
-                 displaced-lexical syntax import $module $core-rtd)
+                 displaced-lexical syntax import $module $core-rtd
+                 library)
                 (values type (binding-value b) id))
                (else (values 'other #f #f))))))
         ((syntax-pair? e)
@@ -552,7 +553,7 @@
                  (case type
                    ((define define-syntax core-macro begin macro
                       macro! local-macro local-macro! global-macro
-                      global-macro! module set! let-syntax 
+                      global-macro! module library set! let-syntax 
                       letrec-syntax import $core-rtd)
                     (values type (binding-value b) id))
                    (else
@@ -2359,7 +2360,7 @@
           ((displaced-lexical)
            (stx-error e "identifier out of context"))
           ((syntax) (stx-error e "reference to pattern variable outside a syntax form"))
-          ((define define-syntax module import)
+          ((define define-syntax module import library)
            (stx-error e "invalid expression"))
           (else
            ;(error 'chi-expr "invalid type " type (strip e '()))
@@ -2596,6 +2597,9 @@
                       (lambda (id lab) (extend-rib! rib id lab))
                       m-exp-id* m-exp-lab*)
                     (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* rib top?)))
+                 ((library) 
+                  ((current-library-expander) (stx->datum e))
+                  (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* rib top?))
                  ((import)
                   (let ()
                     (define (module-import e r)
@@ -2687,6 +2691,9 @@
                 (chi-top* (cons (chi-local-macro value e) (cdr e*)) init*))
                ((macro macro!)
                 (chi-top* (cons (chi-macro value e) (cdr e*)) init*))
+               ((library) 
+                ((current-library-expander) (stx->datum e))
+                (chi-top* (cdr e*) init*))
                (else
                 (chi-top* (cdr e*)
                    (cons (cons #f (chi-expr e '() '()))
