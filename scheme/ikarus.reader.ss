@@ -596,7 +596,7 @@
          (unless (= radix 10)
            (num-error "invalid decimal" (cons c ls)))
          (let ([ex (tokenize-exponent-start p (cons c ls))])
-           (let ([ac (convert/exact (or exact? 'i) ac)])
+           (convert/exact (or exact? 'i)
              (* ac (expt radix ex))))]
         [(delimiter? c)
          (unread-char c p)

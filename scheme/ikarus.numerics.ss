@@ -2311,8 +2311,8 @@
                [(memv c '(#\e #\E))
                 (let ([ex (parse-exponent-start x n (fxadd1 i) radix)])
                   (and ex 
-                       (let ([ac (exact-conv (or exact? 'i) ac)])
-                         (* (if pos? ac (- ac)) (expt radix ex)))))]
+                     (let ([ac (* (if pos? ac (- ac)) (expt radix ex))])
+                       (exact-conv (or exact? 'i) ac))))]
                [else #f]))]))
       (define (parse-integer-no-digits x n i pos? radix exact?) 
         (cond
