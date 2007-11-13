@@ -64,16 +64,16 @@ foreach my $bench (@benchmarks){
   foreach my $time (@times){
     defined $runtimes{$bench}{$time} or next;
     my @times = @{$runtimes{$bench}{$time}};
-    my $avg = average(@times);
+    my $t = min(@times);
     if($prev){
-      my $diff = (($avg - $prev) / $prev) * 100;
+      my $diff = (($t - $prev) / $prev) * 100;
       printf "   %6d %6s             on $time\n", 
-        $avg,
+        $t,
         sprintf("(%s%d%%)", ($diff>0) ? "+" : ($diff<0) ? "-" : "", abs $diff);
     } else {
-      printf "   %6d                    on $time\n", $avg;
+      printf "   %6d                    on $time\n", $t;
     }
-    $prev = $avg;
+    $prev = $t;
   }
 }
 

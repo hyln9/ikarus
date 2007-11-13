@@ -191,6 +191,7 @@
       (fx> b0 127)))
 
   (define ($flonum->exact x)
+    ;;; this really needs to get optimized.
     (let-values ([(pos? be m) (flonum-parts x)])
       (cond
         [(<= 1 be 2046) ; normalized flonum

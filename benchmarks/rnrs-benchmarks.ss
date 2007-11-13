@@ -163,7 +163,7 @@
   (define peval-iters       400)
   (define pi-iters            3)
   (define primes-iters   180000)
-  (define ray-iters           3)
+  (define ray-iters           5)
   (define scheme-iters    40000)
   (define simplex-iters  160000)
   (define slatex-iters       30)

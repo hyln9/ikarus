@@ -125,16 +125,18 @@
          (let ([len ($string-length s)])
            (unless (and (fixnum? n)
                         ($fx>= n 0)
-                        ($fx< n len))
+                        ($fx<= n len))
              (error 'substring "not a valid start index" n s))
            (unless (and (fixnum? m)
                         ($fx>= m 0)
                         ($fx<= m len))
              (error 'substring "not a valid end index" m s))
+           (unless ($fx<= n m)
+             (error 'substring "indices are in decreasing order" n m))
            (let ([len ($fx- m n)])
-             (if ($fx<= len 0)
-                 ""
-                 (fill s ($make-string len) n m 0)))))))
+             (if ($fx> len 0)
+                 (fill s ($make-string len) n m 0)
+                 ""))))))
 
   (define string-copy 
     (lambda (s)

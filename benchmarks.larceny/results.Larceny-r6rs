@@ -8534,3 +8534,23 @@ Words allocated: 36171538
 Words reclaimed: 0
 Elapsed time...: 5849 ms (User: 5815 ms; System: 31 ms)
 Elapsed GC time: 83 ms (CPU: 86 in 138 collections.)
+
+****************************
+Benchmarking Larceny-r6rs on Tue Nov 13 03:44:36 EST 2007 under Darwin Vesuvius.local 8.10.1 Darwin Kernel Version 8.10.1: Wed May 23 16:33:00 PDT 2007; root:xnu-792.22.5~1/RELEASE_I386 i386 i386
+
+Testing ray under Larceny-r6rs
+Compiling...
+Larceny v0.95 "First Safety" (Nov  8 2007 04:30:20, precise:BSD Unix:unified)
+larceny.heap, built on Thu Nov  8 04:39:44 EST 2007
+
+> 
+> 
+Running...
+Larceny v0.95 "First Safety" (Nov  8 2007 04:30:20, precise:BSD Unix:unified)
+larceny.heap, built on Thu Nov  8 04:39:44 EST 2007
+
+> 
+Words allocated: 220925448
+Words reclaimed: 0
+Elapsed time...: 20757 ms (User: 10967 ms; System: 9775 ms)
+Elapsed GC time: 179 ms (CPU: 176 in 843 collections.)
