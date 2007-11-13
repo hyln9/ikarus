@@ -109,48 +109,6 @@
         [else
          (let ([v ($flonum->exact x)])
            (or (fixnum? v) (bignum? v)))])))
-  
-;;;X (define ($fltruncate x)
-;;;X   ;(define bv 
-;;;X   ;  '#vu8(127 255 255 255  63 255 255 255  31 255 255 255  15 255 255 255
-;;;X   ;          7 255 255 255   3 255 255 255   1 255 255 255   0 255 255 255
-;;;X   ;          0 127 255 255   0  63 255 255   0  31 255 255   0  15 255 255   
-;;;X   ;          0   7 255 255   0   3 255 255   0   1 255 255   0   0 255 255   
-;;;X   ;          0   0 127 255   0   0  63 255   0   0  31 255   0   0  15 255   
-;;;X   ;          0   0   7 255   0   0   3 255   0   0   1 255   0   0   0 255   
-;;;X   ;          0   0   0 127   0   0   0  63   0   0   0  31   0   0   0  15   
-;;;X   ;          0   0   0   7   0   0   0   3   0   0   0   1   0   0   0   0))
-;;;X   ;(define bv
-;;;X   ;  '#vu8(255 255 255 255 255 255 255 255 0 0 0 0 0 0 0 0
-;;;X   ;        255 255 255 255 255 255 255 254 0 0 0 0 0 0 0 0
-;;;X   ;        255 255 255 255 255 255 255 252 0 0 0 0 0 0 0 0
-;;;X   ;        255 255 255 255 255 255 255 248 0 0 0 0 0 0 0 0
-;;;X   ;        255 255 255 255 255 255 255 240 0 0 0 0 0 0 0 0
-;;;X   ;        255 255 255 255 255 255 255 224 0 0 0 0 0 0 0 0
-;;;X   ;        255 255 255 255 255 255 255 192 0 0 0 0 0 0 0 0
-;;;X   ;        255 255 255 255 255 255 255 128 0 0 0 0 0 0 0 0
-;;;X
-;;;X   (let ([sbe ($flonum-signed-biased-exponent x)])
-;;;X     (let ([be ($fxlogand sbe ($fxsub1 ($fxsll 1 11)))])
-;;;X       (cond
-;;;X         [($fx= be 2047)  ;;; nans and infs
-;;;X          x]
-;;;X         [($fx>= be 1075) ;;; magnitue large enough
-;;;X          x]
-;;;X         [($fx= be 0) ;;; denormalized double
-;;;X          (if ($fxzero? sbe) 0.0 -0.0)]
-;;;X         [($fx< be ($fx+ 1075 -52)) ;;; too small to be an integer
-;;;X          (if ($fxzero? ($fxlogand sbe ($fxsll 1 11))) 0.0 -0.0)]
-;;;X         [else
-;;;X          (let ([v ($make-flonum)])
-;;;X
-;;;X
-;;;X          (let ([v ($flonum->exact x)])
-;;;X            (or (fixnum? v) (bignum? v)))]))))
-;;;X
-
-
-
 
   (define (flnumerator x) 
     (unless (flonum? x) 
@@ -2103,9 +2061,6 @@
   (define ($ratnum-truncate x)
     (let ([n ($ratnum-n x)] [d ($ratnum-d x)])
       (quotient n d)))
-
-  (define ($flround x) 
-    ($fl/ ($fl* x 5e-324) 5e-324))
 
   (define (flround x)
     (if (flonum? x)

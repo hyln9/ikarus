@@ -967,6 +967,18 @@
   [(P x y) (check-flonums (list x y) ($flcmp-aux 'fl:>= x y))]
   [(E x y) (check-flonums (list x y) (nop))])
 
+(define-primop $flround unsafe
+  [(V fl) 
+   (let ([bv #vu8(1 0 0 0 0 0 0 0)])
+     (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
+       (prm 'mset x (K (- vector-tag)) (K flonum-tag))
+       (prm 'fl:load (T fl) (K (- disp-flonum-data vector-tag)))
+       (prm 'fl:mul! (K (make-object bv))
+            (K (- disp-bytevector-data bytevector-tag)))
+       (prm 'fl:div! (K (make-object bv))
+            (K (- disp-bytevector-data bytevector-tag)))
+       (prm 'fl:store x (K (- disp-flonum-data vector-tag)))
+       x))])
 
 /section)
 
