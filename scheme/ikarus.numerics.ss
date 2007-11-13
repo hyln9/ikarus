@@ -2104,24 +2104,26 @@
     (let ([n ($ratnum-n x)] [d ($ratnum-d x)])
       (quotient n d)))
 
+  (define ($flround x) 
+    ($fl/ ($fl* x 5e-324) 5e-324))
+
   (define (flround x)
-    ;;; FIXME: flround should preserve the sign of -0.0.
     (if (flonum? x)
-        (let ([e ($flonum->exact x)])
-           (cond
-             [(ratnum? e) (exact->inexact ($ratnum-round e))]
-             [else x]))
+        ($flround x)
         (error 'flround "not a flonum" x)))
 
+  ;(define (flround x)
+  ;  ;;; FIXME: flround should preserve the sign of -0.0.
+  ;  (if (flonum? x)
+  ;      (let ([e ($flonum->exact x)])
+  ;         (cond
+  ;           [(ratnum? e) (exact->inexact ($ratnum-round e))]
+  ;           [else x]))
+  ;      (error 'flround "not a flonum" x)))
+
   (define (round x)
-    ;;; FIXME: flround should preserve the sign of -0.0.
     (cond
-      [(flonum? x) 
-       (let ([e (or ($flonum->exact x) 
-                    (error 'round "number has no real value" x))])
-         (cond
-           [(ratnum? e) (exact->inexact ($ratnum-round e))]
-           [else x]))]
+      [(flonum? x) ($flround x)]
       [(ratnum? x) ($ratnum-round x)]
       [(or (fixnum? x) (bignum? x)) x]
       [else (error 'round "not a number" x)]))
