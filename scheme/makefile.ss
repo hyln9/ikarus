@@ -760,7 +760,7 @@
     [bitwise-bit-set?                            r bw]
     [bitwise-copy-bit                            r bw]
     [bitwise-copy-bit-field                      r bw]
-    [bitwise-first-bit-set                       r bw]
+    [bitwise-first-bit-set                       i r bw]
     [bitwise-if                                  r bw]
     [bitwise-length                              r bw]
     [bitwise-reverse-bit-field                   r bw]

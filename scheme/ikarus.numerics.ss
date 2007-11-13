@@ -2858,6 +2858,45 @@
             (error 'fldiv0-and-mod0 "not a flonum" m))
         (error 'fldiv0-and-mod0 "not a flonum" n))))
 
+(library (ikarus bitwise misc)
+  (export bitwise-first-bit-set)
+  (import 
+    (ikarus system $fx)
+    (ikarus system $bignums)
+    (except (ikarus) bitwise-first-bit-set))
 
+  (module (bitwise-first-bit-set)
+    (define (byte-first-bit-set x i) 
+      (case ($fxlogand x #b11)
+        [(0) (byte-first-bit-set ($fxsra x 2) ($fx+ i 2))]
+        [(2) ($fx+ i 1)]
+        [else i]))
+    
+    (define (fx-first-bit-set x i)
+      (let ([y ($fxlogand x 255)])
+        (if ($fx= y 0)
+            (fx-first-bit-set ($fxsra x 8) ($fx+ i 8))
+            (byte-first-bit-set y i))))
+    
+    (define (bn-first-bit-set x i idx)
+      (let ([b ($bignum-byte-ref x idx)])
+        (if ($fxzero? b) 
+            (bn-first-bit-set x ($fx+ i 8) ($fx+ idx 1))
+            (byte-first-bit-set b i))))
+    
+    (define (bitwise-first-bit-set x)
+      (cond
+        [(fixnum? x) 
+         (if ($fx> x 0) 
+             (fx-first-bit-set x 0)
+             (if ($fx= x 0) 
+                 -1 
+                 (if ($fx> x (least-fixnum)) 
+                     (fx-first-bit-set ($fx- 0 x) 0)
+                     (bn-first-bit-set (- x) 0 0))))]
+        [(bignum? x) (bn-first-bit-set x 0 0)]
+        [else (error 'bitwise-first-bit-set "not an exact integer" x)])))
+  
+  )
 
 

@@ -263,7 +263,7 @@
     [bitwise-bit-set?                           S bw]
     [bitwise-copy-bit                           S bw]
     [bitwise-copy-bit-field                     S bw]
-    [bitwise-first-bit-set                      S bw]
+    [bitwise-first-bit-set                      C bw]
     [bitwise-if                                 S bw]
     [bitwise-length                             S bw]
     [bitwise-reverse-bit-field                  S bw]
