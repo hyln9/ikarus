@@ -669,6 +669,8 @@
     (cond
       [(and (imm8? src) (reg? dst)) 
        (CODE #x83 (ModRM 3 '/6 dst (IMM8 src ac)))]
+      [(and (imm8? src) (mem? dst))
+       ((CODE/digit #x83 '/6) dst (IMM8 src ac))]
       [(and (imm? src) (eq? dst '%eax)) 
        (CODE #x35 (IMM32 src ac))]
       [(and (reg? src) (reg? dst))
