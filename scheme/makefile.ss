@@ -433,6 +433,7 @@
     [$fl>=                                       $flonums]
     [$flround                                    $flonums]
     [$fixnum->flonum                             $flonums]
+    [$flonum-sbe                                 $flonums]
     [$make-bignum                                $bignums]
     [$bignum-positive?                           $bignums]
     [$bignum-size                                $bignums]

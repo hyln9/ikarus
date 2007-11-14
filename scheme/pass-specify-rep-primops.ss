@@ -980,6 +980,15 @@
        (prm 'fl:store x (K (- disp-flonum-data vector-tag)))
        x))])
 
+(define-primop $flonum-sbe unsafe
+  [(V x) 
+   (prm 'sll 
+     (prm 'srl 
+       (prm 'mref (T x)
+          (K (- (+ disp-flonum-data 4) vector-tag)))
+       (K 20))
+     (K fixnum-shift))])
+
 /section)
 
 (section ;;; ratnums
