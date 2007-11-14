@@ -1,5 +1,5 @@
 (library (tests bignums)
-  (export test-bignums test-bignum-conversion)
+  (export test-bignums test-bignum-conversion test-bitwise-bit-count)
   (import (ikarus) (tests framework))
 
   (define (test-bignum-conversion)
@@ -19,6 +19,30 @@
     (test -39487932748923498234))
 
 
+  (define (test-bitwise-bit-count)
+    (define (test n)
+      (define (pos-count-bits n)
+        (if (zero? n) 
+            0
+            (let ([c (count-bits (bitwise-arithmetic-shift-right n 1))])
+              (if (even? n) c (+ c 1)))))
+      (define (count-bits n)
+        (if (>= n 0)
+            (pos-count-bits n)
+            (bitwise-not (pos-count-bits (bitwise-not n)))))
+      (let ([bc0 (bitwise-bit-count n)]
+            [bc1 (count-bits n)])
+        (unless (= bc0 bc1)
+          (error 'test-bitcount "failed/expected/got" n bc1 bc0))))
+    (define (test-fx n)
+      (when (fixnum? n) 
+        (when (zero? (fxlogand n #x7FFFFFF))
+          (printf "bitwise-bit-count ~s\n" n))
+        (test n)
+        (test-fx (+ n 512))))
+    (test-fx (least-fixnum))
+    (test 28472347823493290482390849023840928390482309480923840923840983)
+    (test -847234234903290482390849023840928390482309480923840923840983))
 
   (define-tests test-bignums
     ; first, some simple quotients

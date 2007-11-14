@@ -756,7 +756,7 @@
     [bitwise-and                                 i r bw]
     [bitwise-ior                                 r bw]
     [bitwise-xor                                 r bw]
-    [bitwise-bit-count                           r bw]
+    [bitwise-bit-count                           i r bw]
     [bitwise-bit-field                           r bw]
     [bitwise-bit-set?                            r bw]
     [bitwise-copy-bit                            r bw]

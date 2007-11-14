@@ -2837,43 +2837,80 @@
         (error 'fldiv0-and-mod0 "not a flonum" n))))
 
 (library (ikarus bitwise misc)
-  (export bitwise-first-bit-set)
+  (export bitwise-first-bit-set
+          bitwise-bit-count)
   (import 
     (ikarus system $fx)
     (ikarus system $bignums)
-    (except (ikarus) bitwise-first-bit-set))
+    (except (ikarus) 
+      bitwise-first-bit-set
+      bitwise-bit-count))
 
-  (module (bitwise-first-bit-set)
+  (define (bitwise-first-bit-set x)
     (define (byte-first-bit-set x i) 
       (case ($fxlogand x #b11)
         [(0) (byte-first-bit-set ($fxsra x 2) ($fx+ i 2))]
         [(2) ($fx+ i 1)]
         [else i]))
-    
     (define (fx-first-bit-set x i)
       (let ([y ($fxlogand x 255)])
         (if ($fx= y 0)
             (fx-first-bit-set ($fxsra x 8) ($fx+ i 8))
             (byte-first-bit-set y i))))
-    
     (define (bn-first-bit-set x i idx)
       (let ([b ($bignum-byte-ref x idx)])
         (if ($fxzero? b) 
             (bn-first-bit-set x ($fx+ i 8) ($fx+ idx 1))
             (byte-first-bit-set b i))))
-    
-    (define (bitwise-first-bit-set x)
-      (cond
-        [(fixnum? x) 
-         (if ($fx> x 0) 
-             (fx-first-bit-set x 0)
-             (if ($fx= x 0) 
-                 -1 
-                 (if ($fx> x (least-fixnum)) 
-                     (fx-first-bit-set ($fx- 0 x) 0)
-                     (bn-first-bit-set (- x) 0 0))))]
-        [(bignum? x) (bn-first-bit-set x 0 0)]
-        [else (error 'bitwise-first-bit-set "not an exact integer" x)])))
+    (cond
+      [(fixnum? x) 
+       (if ($fx> x 0) 
+           (fx-first-bit-set x 0)
+           (if ($fx= x 0) 
+               -1 
+               (if ($fx> x (least-fixnum)) 
+                   (fx-first-bit-set ($fx- 0 x) 0)
+                   (bn-first-bit-set (- x) 0 0))))]
+      [(bignum? x) (bn-first-bit-set x 0 0)]
+      [else (error 'bitwise-first-bit-set "not an exact integer" x)]))
+
+  (define (bitwise-bit-count n)
+    (define (pos-fxbitcount n)
+      ;;; nifty parrallel count from:
+      ;;; http://infolab.stanford.edu/~manku/bitcount/bitcount.html
+      (let ([m0 #x15555555]
+            [m1 #x13333333]
+            [m2 #x0f0f0f0f])
+        (let* ([n ($fx+ ($fxlogand n m0) ($fxlogand ($fxsra n 1) m0))]
+               [n ($fx+ ($fxlogand n m1) ($fxlogand ($fxsra n 2) m1))]
+               [n ($fx+ ($fxlogand n m2) ($fxlogand ($fxsra n 4) m2))])
+          ($fxmodulo n 255))))
+    (define (fxbitcount n)
+      (if ($fx< n 0)
+          (fxlognot (pos-fxbitcount (fxlognot n)))
+          (pos-fxbitcount n)))
+    (define (bnbitcount n)
+      (define (poscount x idx c)
+        (let ([c (+ c 
+                    ($fx+ (pos-fxbitcount 
+                            ($fxlogor 
+                              ($fxsll ($bignum-byte-ref x ($fx+ idx 3)) 8)
+                              ($bignum-byte-ref x ($fx+ idx 2))))
+                          (pos-fxbitcount 
+                            ($fxlogor 
+                              ($fxsll ($bignum-byte-ref x ($fxadd1 idx)) 8)
+                              ($bignum-byte-ref x idx)))))])
+          (if ($fx= idx 0) 
+              c 
+              (poscount x ($fx- idx 4) c))))
+      (if ($bignum-positive? n)
+          (poscount n ($fx- ($bignum-size n) 4) 0)
+          (let ([n (bitwise-not n)])
+            (bitwise-not (poscount n ($fx- ($bignum-size n) 4) 0)))))
+    (cond
+      [(fixnum? n) (fxbitcount n)]
+      [(bignum? n) (bnbitcount n)]
+      [else (error 'bitwise-bit-count "not an exact integer" n)]))
   
   )
 
