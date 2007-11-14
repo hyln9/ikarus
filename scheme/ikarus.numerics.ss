@@ -2838,13 +2838,13 @@
 
 (library (ikarus bitwise misc)
   (export bitwise-first-bit-set
-          bitwise-bit-count)
+          fxbit-count bitwise-bit-count)
   (import 
     (ikarus system $fx)
     (ikarus system $bignums)
     (except (ikarus) 
       bitwise-first-bit-set
-      bitwise-bit-count))
+      fxbit-count bitwise-bit-count))
 
   (define (bitwise-first-bit-set x)
     (define (byte-first-bit-set x i) 
@@ -2874,7 +2874,7 @@
       [(bignum? x) (bn-first-bit-set x 0 0)]
       [else (error 'bitwise-first-bit-set "not an exact integer" x)]))
 
-  (define (bitwise-bit-count n)
+  (module (fxbit-count bitwise-bit-count)
     (define (pos-fxbitcount n)
       ;;; nifty parrallel count from:
       ;;; http://infolab.stanford.edu/~manku/bitcount/bitcount.html
@@ -2885,7 +2885,7 @@
                [n ($fx+ ($fxlogand n m1) ($fxlogand ($fxsra n 2) m1))]
                [n ($fx+ ($fxlogand n m2) ($fxlogand ($fxsra n 4) m2))])
           ($fxmodulo n 255))))
-    (define (fxbitcount n)
+    (define ($fxbitcount n)
       (if ($fx< n 0)
           (fxlognot (pos-fxbitcount (fxlognot n)))
           (pos-fxbitcount n)))
@@ -2907,10 +2907,15 @@
           (poscount n ($fx- ($bignum-size n) 4) 0)
           (let ([n (bitwise-not n)])
             (bitwise-not (poscount n ($fx- ($bignum-size n) 4) 0)))))
-    (cond
-      [(fixnum? n) (fxbitcount n)]
-      [(bignum? n) (bnbitcount n)]
-      [else (error 'bitwise-bit-count "not an exact integer" n)]))
+    (define (fxbit-count n)
+      (cond
+        [(fixnum? n) ($fxbitcount n)]
+        [else (error 'fxbit-count "not a fixnum" n)]))
+    (define (bitwise-bit-count n)
+      (cond
+        [(fixnum? n) ($fxbitcount n)]
+        [(bignum? n) (bnbitcount n)]
+        [else (error 'bitwise-bit-count "not an exact integer" n)])))
   
   )
 

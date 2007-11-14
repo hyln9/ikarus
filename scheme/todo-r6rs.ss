@@ -288,7 +288,7 @@
     [fxarithmetic-shift                         C fx]
     [fxarithmetic-shift-left                    C fx]
     [fxarithmetic-shift-right                   C fx]
-    [fxbit-count                                S fx]
+    [fxbit-count                                C fx]
     [fxbit-field                                S fx]
     [fxbit-set?                                 S fx]
     [fxcopy-bit                                 S fx]
