@@ -301,7 +301,7 @@
     [fxfirst-bit-set                            S fx]
     [fxif                                       C fx]
     [fxior                                      C fx]
-    [fxlength                                   S fx]
+    [fxlength                                   C fx]
     [fxmax                                      C fx]
     [fxmin                                      C fx]
     [fxmod                                      C fx]

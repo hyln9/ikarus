@@ -2838,13 +2838,16 @@
 
 (library (ikarus bitwise misc)
   (export bitwise-first-bit-set
-          fxbit-count bitwise-bit-count)
+          fxbit-count bitwise-bit-count
+          fxlength)
   (import 
     (ikarus system $fx)
     (ikarus system $bignums)
+    (ikarus system $flonums)
     (except (ikarus) 
       bitwise-first-bit-set
-      fxbit-count bitwise-bit-count))
+      fxbit-count bitwise-bit-count
+      fxlength))
 
   (define (bitwise-first-bit-set x)
     (define (byte-first-bit-set x i) 
@@ -2917,6 +2920,19 @@
         [(bignum? n) (bnbitcount n)]
         [else (error 'bitwise-bit-count "not an exact integer" n)])))
   
+
+  (define (fxlength x) 
+    (if (fixnum? x) 
+        (let ([fl ($fixnum->flonum
+                    (if ($fx< x 0) ($fxlognot x) x))])
+          (let ([sbe ($fxlogor 
+                       ($fxsll ($flonum-u8-ref fl 0) 4)
+                       ($fxsra ($flonum-u8-ref fl 1) 4))])
+            (cond
+              [($fx= sbe 0) 0]
+              [else ($fx- sbe 1022)])))
+        (error 'fxlength "not a fixnum" x)))
+
   )
 
 

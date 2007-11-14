@@ -1,6 +1,7 @@
 
 (library (tests fixnums)
-  (export test-fxdiv-and-mod test-fxdiv0-and-mod0)
+  (export test-fxdiv-and-mod test-fxdiv0-and-mod0
+          test-fxlength)
   (import (ikarus))
 
   (define (test-fxdiv-and-mod)
@@ -82,5 +83,34 @@
     (test (least-fixnum) (greatest-fixnum))
     (test (greatest-fixnum) (greatest-fixnum)))
   
+
+  (define (test-fxlength)
+    (define (test x)
+      (define (bitlen x)
+        (if (zero? x) 
+            0
+            (+ 1 (bitlen (bitwise-arithmetic-shift-right x 1)))))
+      (define (len x) 
+        (if (< x 0) 
+            (bitlen (bitwise-not x))
+            (bitlen x)))
+      (let ([c0 (len x)]
+            [c1 (fxlength x)])
+        (unless (= c0 c1) 
+          (error 'test-fxlength "failed/expected/got" x c0 c1))))
+    (define (fxtest x)
+      (when (fixnum? x) 
+        (when (zero? (bitwise-and x #xFFFFFFF)) 
+          (printf "fxlength ~s\n" x))
+        (test x) 
+        (fxtest (+ x #x100))))
+    (test 0)
+    (test 1)
+    (test 2)
+    (test 3)
+    (test -1)
+    (test -2)
+    (test -3)
+    (fxtest (least-fixnum)))
   )
 

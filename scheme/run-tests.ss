@@ -63,5 +63,6 @@
 (test-fldiv0-and-mod0)
 (test-fxdiv-and-mod)
 (test-fxdiv0-and-mod0)
+(test-fxlength)
 (test-bitwise-bit-count)
 (printf "Happy Happy Joy Joy\n")

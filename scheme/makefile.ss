@@ -798,7 +798,7 @@
     [fxfirst-bit-set                             r fx]
     [fxif                                        i r fx]
     [fxior                                       i r fx]
-    [fxlength                                    r fx]
+    [fxlength                                    i r fx]
     [fxmax                                       i r fx]
     [fxmin                                       i r fx]
     [fxmod                                       i r fx]
