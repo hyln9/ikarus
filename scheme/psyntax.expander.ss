@@ -1527,14 +1527,14 @@
         (syntax-match spec ()
           [(foo make-foo foo?) foo]
           [foo foo]))
-      (define (get-record-constructor-name spec ctxt)
+      (define (get-record-constructor-name spec)
         (syntax-match spec ()
           [(foo make-foo foo?) make-foo]
-          [foo (id ctxt "make-" (stx->datum foo))]))
-      (define (get-record-predicate-name spec ctxt)
+          [foo (id? foo) (id foo "make-" (stx->datum foo))]))
+      (define (get-record-predicate-name spec)
         (syntax-match spec ()
           [(foo make-foo foo?) foo?]
-          [foo (id ctxt (stx->datum foo) "?")]))
+          [foo (id? foo) (id foo (stx->datum foo) "?")]))
       (define (get-clause id ls)
         (syntax-match ls ()
           [() #f]
@@ -1542,7 +1542,7 @@
            (if (free-id=? (bless id) x)
                `(,x . ,rest)
                (get-clause id ls))]))
-      (define (foo-rtd-code ctxt name clause*) 
+      (define (foo-rtd-code name clause*) 
         (define (convert-field-spec* ls)
           (list->vector
             (map (lambda (x) 
@@ -1601,9 +1601,9 @@
              (cons i (f rest (+ i 1)))]
             [(_ . rest)
              (f rest (+ i 1))])))
-      (define (get-mutators foo fields ctxt)
+      (define (get-mutators foo fields)
         (define (gen-name x) 
-          (datum->syntax ctxt
+          (datum->syntax foo
             (string->symbol 
               (string-append "set-" 
                 (symbol->string (syntax->datum foo))
@@ -1618,9 +1618,9 @@
             [((mutable name) . rest)
              (cons (gen-name name) (f rest))]
             [(_ . rest) (f rest)])))
-      (define (get-accessors foo fields ctxt)
+      (define (get-accessors foo fields)
         (define (gen-name x) 
-          (datum->syntax ctxt
+          (datum->syntax foo
             (string->symbol 
               (string-append
                 (symbol->string (syntax->datum foo))
@@ -1641,19 +1641,19 @@
           (cond
             [(null? ls) '()]
             [else (cons i (f (cdr ls) (+ i 1)))])))
-      (define (do-define-record ctxt namespec clause*)
+      (define (do-define-record namespec clause*)
         (let* ([foo (get-record-name namespec)]
                [foo-rtd (gensym)]
                [foo-rcd (gensym)]
                [protocol (gensym)]
-               [make-foo (get-record-constructor-name namespec ctxt)]
+               [make-foo (get-record-constructor-name namespec)]
                [fields (get-fields clause*)]
                [idx* (enumerate fields)]
-               [foo-x* (get-accessors foo fields ctxt)]
-               [set-foo-x!* (get-mutators foo fields ctxt)]
+               [foo-x* (get-accessors foo fields)]
+               [set-foo-x!* (get-mutators foo fields)]
                [set-foo-idx* (get-mutator-indices fields)]
-               [foo? (get-record-predicate-name namespec ctxt)]
-               [foo-rtd-code (foo-rtd-code ctxt foo clause*)]
+               [foo? (get-record-predicate-name namespec)]
+               [foo-rtd-code (foo-rtd-code foo clause*)]
                [foo-rcd-code (foo-rcd-code clause* foo-rtd protocol)]
                [protocol-code (get-protocol-code clause*)])
           (bless
@@ -1673,8 +1673,8 @@
                      `(define ,set-foo-x! (record-mutator ,foo-rtd ,idx)))
                    set-foo-x!* set-foo-idx*)))))
       (syntax-match x ()
-        [(ctxt namespec clause* ...)
-         (do-define-record ctxt namespec clause*)])))
+        [(_ namespec clause* ...)
+         (do-define-record namespec clause*)])))
   
   (define define-condition-type-macro
     (lambda (x)
