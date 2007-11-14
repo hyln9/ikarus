@@ -3083,14 +3083,15 @@
 
   (define core-library-expander
     (lambda (e)
-      (let-values (((name* exp* imp* b*) (parse-library e)))
-        (let-values (((name ver) (parse-library-name name*)))
-          (let-values (((imp* invoke-req* visit-req* invoke-code
-                              visit-code export-subst export-env)
-                        (library-body-expander exp* imp* b* #f)))
-             (values name ver imp* invoke-req* visit-req* 
-                     invoke-code visit-code export-subst
-                     export-env))))))
+      (parameterize ([interaction-library #f])
+        (let-values (((name* exp* imp* b*) (parse-library e)))
+          (let-values (((name ver) (parse-library-name name*)))
+            (let-values (((imp* invoke-req* visit-req* invoke-code
+                                visit-code export-subst export-env)
+                          (library-body-expander exp* imp* b* #f)))
+               (values name ver imp* invoke-req* visit-req* 
+                       invoke-code visit-code export-subst
+                       export-env)))))))
   
   (define (parse-top-level-program e*)
     (syntax-match e* ()
