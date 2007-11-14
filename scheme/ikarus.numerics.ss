@@ -21,7 +21,7 @@
 
 
 (library (ikarus flonums)
-  (export $flonum->exact flonum-parts
+  (export $flonum->exact $flonum->integer flonum-parts
           inexact->exact exact $flonum-rational? $flonum-integer? $flzero?
           $flnegative? flpositive? flabs fixnum->flonum
           flsin flcos fltan flasin flacos flatan fleven? flodd?
@@ -98,9 +98,42 @@
               ($fx= ($flonum-u8-ref x 1) 0))]
         [($fx< be ($fx+ 1075 -52)) ;;; too small to be an integer
          #f]
-        [else
-         (let ([v ($flonum->exact x)])
-           (or (fixnum? v) (bignum? v)))])))
+        [else ($fl= x ($flround x))])))
+
+  (define ($flonum->integer x)
+    (define ($flonum-signed-mantissa x)
+      (let ([b0 ($flonum-u8-ref x 0)])
+        (let ([m0 ($fx+ ($flonum-u8-ref x 7) 
+                        ($fx+ ($fxsll ($flonum-u8-ref x 6) 8)
+                              ($fxsll ($flonum-u8-ref x 5) 16)))]
+              [m1 ($fx+ ($flonum-u8-ref x 4)
+                        ($fx+ ($fxsll ($flonum-u8-ref x 3) 8)
+                              ($fxsll ($flonum-u8-ref x 2) 16)))]
+              [m2 (let ([b1 ($flonum-u8-ref x 1)])
+                    (if (and ($fx= ($fxlogand b0 #x7F) 0)
+                             ($fx= ($fxsra b1 4) 0))
+                        ($fxlogand b1 #xF)
+                        ($fxlogor ($fxlogand b1 #xF) #x10)))])
+          (if ($fx= 0 ($fxlogand #x80 b0))
+              (+ (bitwise-arithmetic-shift-left ($fxlogor m1 ($fxsll m2 24)) 24) m0)
+              (+ (bitwise-arithmetic-shift-left 
+                   ($fx- 0 ($fxlogor m1 ($fxsll m2 24))) 24)
+                 ($fx- 0 m0))))))
+    (let ([sbe ($flonum-sbe x)])
+      (let ([be ($fxlogand sbe #x7FF)])
+        (cond
+          [($fx= be 2047) #f] ;;; nans/infs
+          [($fx>= be 1075)    ;;; magnitude large enough to be an integer
+           (bitwise-arithmetic-shift-left 
+             ($flonum-signed-mantissa x)
+             (- be 1075))]
+          [else
+           (let ([x0 ($fl* x 5e-324)])
+             (cond
+               [($fl= x ($fl/ x0 5e-324)) ;;; x == round(x)
+                ($flonum-signed-mantissa x0)]
+               [else #f]))]))))
+
 
   (define (flnumerator x) 
     (unless (flonum? x) 
@@ -122,6 +155,7 @@
       [else 1.0]))
 
   (define (fleven? x)
+    ;;; FIXME: optimize
     (unless (flonum? x) 
       (error 'fleven? "not a flonum" x))
     (let ([v ($flonum->exact x)])
@@ -134,6 +168,7 @@
   (define (flodd? x)
     (unless (flonum? x) 
       (error 'flodd? "not a flonum" x))
+    ;;; FIXME: optimize
     (let ([v ($flonum->exact x)])
       (cond
         [(fixnum? v) ($fx= ($fxlogand v 1) 1)]
@@ -194,7 +229,6 @@
             (* m (expt 2 -1074)))]
         [else #f])))
   
-
 
 
 
@@ -272,6 +306,7 @@
           (if (>= n 0) q (- q 1)))))
     (cond
       [(flonum? x) 
+       ;;; optimize for integer flonums case
        (let ([e ($flonum->exact x)])
          (cond
            [(ratnum? e)
@@ -282,6 +317,7 @@
   (define (flceiling x)
     (cond
       [(flonum? x) 
+       ;;; optimize for integer flonums case
        (let ([e ($flonum->exact x)])
          (cond
            [(ratnum? e)
@@ -340,7 +376,8 @@
     (ikarus system $bignums)
     (ikarus system $chars)
     (ikarus system $strings)
-    (only (ikarus flonums) $flonum->exact $flzero? $flnegative?)
+    (only (ikarus flonums) $flonum->exact $flzero? $flnegative?
+          $flonum->integer)
     (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
             remainder modulo even? odd? quotient+remainder number->string 
             bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left
@@ -1315,10 +1352,9 @@
                     n
                     (foreign-call "ikrt_fxbnplus" n m)))]
            [(flonum? m) 
-            (let ([v ($flonum->exact m)])
+            (let ([v ($flonum->integer m)])
               (cond
-                [(or (fixnum? v) (bignum? v)) 
-                 (inexact (modulo n v))]
+                [v (inexact (modulo n v))]
                 [else
                  (error 'modulo "not an integer" m)]))]
            [(ratnum? m) (error 'modulo "not an integer" m)]
@@ -1336,19 +1372,17 @@
                     (+ m (remainder n m))
                     (remainder n m)))]
            [(flonum? m) 
-            (let ([v ($flonum->exact m)])
+            (let ([v ($flonum->integer m)])
               (cond
-                [(or (fixnum? v) (bignum? v)) 
-                 (inexact (modulo n v))]
+                [v (inexact (modulo n v))]
                 [else
                  (error 'modulo "not an integer" m)]))] 
            [(ratnum? m) (error 'modulo "not an integer" m)]
            [else (error 'modulo "not a number" m)])]
         [(flonum? n) 
-         (let ([v ($flonum->exact n)])
+         (let ([v ($flonum->integer n)])
            (cond
-             [(or (fixnum? v) (bignum? v)) 
-              (inexact (modulo v m))]
+             [v (inexact (modulo v m))]
              [else
               (error 'modulo "not an integer" n)]))]
         [(ratnum? n) (error 'modulo "not an integer" n)]
@@ -1829,9 +1863,9 @@
                     (fxremainder x y))]
            [(bignum? y) (values 0 x)]
            [(flonum? y) 
-            (let ([v ($flonum->exact y)])
+            (let ([v ($flonum->integer y)])
               (cond
-                [(or (fixnum? v) (bignum? v)) 
+                [v
                  (let-values ([(q r) (quotient+remainder x v)])
                    (values (inexact q) (inexact r)))]
                 [else
@@ -1846,18 +1880,18 @@
             (let ([p (foreign-call "ikrt_bnbndivrem" x y)])
               (values (car p) (cdr p)))]
            [(flonum? y) 
-            (let ([v ($flonum->exact y)])
+            (let ([v ($flonum->integer y)])
               (cond
-                [(or (fixnum? v) (bignum? v)) 
+                [v
                  (let-values ([(q r) (quotient+remainder x v)])
                    (values (inexact q) (inexact r)))]
                 [else
                  (error 'quotient+remainder "not an integer" y)]))] 
            [else (error 'quotient+remainder "not a number" y)])]
         [(flonum? x) 
-         (let ([v ($flonum->exact x)])
+         (let ([v ($flonum->integer x)])
            (cond
-             [(or (fixnum? v) (bignum? v)) 
+             [v
               (let-values ([(q r) (quotient+remainder v y)])
                 (values (inexact q) (inexact r)))]
              [else (error 'quotient+remainder "not an integer" x)]))]
@@ -2010,6 +2044,7 @@
           (if (>= n 0) q (- q 1)))))
     (cond
       [(flonum? x) 
+       ;;; optimize for integer flonums
        (let ([e (or ($flonum->exact x)
                     (error 'floor "number has no real value" x))])
          (cond
@@ -2027,6 +2062,7 @@
           (if (< n 0) q (+ q 1)))))
     (cond
       [(flonum? x) 
+       ;;; optimize for integer flonums
        (let ([e (or ($flonum->exact x)
                     (error 'ceiling "number has no real value" x))])
          (cond
@@ -2063,15 +2099,6 @@
         ($flround x)
         (error 'flround "not a flonum" x)))
 
-  ;(define (flround x)
-  ;  ;;; FIXME: flround should preserve the sign of -0.0.
-  ;  (if (flonum? x)
-  ;      (let ([e ($flonum->exact x)])
-  ;         (cond
-  ;           [(ratnum? e) (exact->inexact ($ratnum-round e))]
-  ;           [else x]))
-  ;      (error 'flround "not a flonum" x)))
-
   (define (round x)
     (cond
       [(flonum? x) ($flround x)]
@@ -2081,6 +2108,7 @@
 
   (define (truncate x)
     ;;; FIXME: fltruncate should preserve the sign of -0.0.
+    ;;; 
     (cond
       [(flonum? x) 
        (let ([e (or ($flonum->exact x) 
