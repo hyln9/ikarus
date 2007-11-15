@@ -100,7 +100,7 @@
          #f]
         [else ($fl= x ($flround x))])))
 
-  (define ($flonum->integer x)
+  (module ($flonum->integer $flonum->exact)
     (define ($flonum-signed-mantissa x)
       (let ([b0 ($flonum-u8-ref x 0)])
         (let ([m0 ($fx+ ($flonum-u8-ref x 7) 
@@ -119,21 +119,59 @@
               (+ (bitwise-arithmetic-shift-left 
                    ($fx- 0 ($fxlogor m1 ($fxsll m2 24))) 24)
                  ($fx- 0 m0))))))
-    (let ([sbe ($flonum-sbe x)])
-      (let ([be ($fxlogand sbe #x7FF)])
-        (cond
-          [($fx= be 2047) #f] ;;; nans/infs
-          [($fx>= be 1075)    ;;; magnitude large enough to be an integer
-           (bitwise-arithmetic-shift-left 
-             ($flonum-signed-mantissa x)
-             (- be 1075))]
-          [else
-           (let ([x0 ($fl* x 5e-324)])
-             (cond
-               [($fl= x ($fl/ x0 5e-324)) ;;; x == round(x)
-                ($flonum-signed-mantissa x0)]
-               [else #f]))]))))
+    (define ($flonum->integer x)
+      (let ([sbe ($flonum-sbe x)])
+        (let ([be ($fxlogand sbe #x7FF)])
+          (cond
+            [($fx= be 2047) #f] ;;; nans/infs
+            [($fx>= be 1075)    ;;; magnitude large enough to be an integer
+             (bitwise-arithmetic-shift-left 
+               ($flonum-signed-mantissa x)
+               (- be 1075))]
+            [else
+             (let ([x0 ($fl* x 5e-324)])
+               (cond
+                 [($fl= x ($fl/ x0 5e-324)) ;;; x == round(x)
+                  ($flonum-signed-mantissa x0)]
+                 [else #f]))]))))
+    (define ($flonum->exact x)
+      (let ([sbe ($flonum-sbe x)])
+        (let ([be ($fxlogand sbe #x7FF)])
+          (cond
+            [($fx= be 2047) #f] ;;; nans/infs
+            [($fx>= be 1075)    ;;; magnitude large enough to be an integer
+             (bitwise-arithmetic-shift-left 
+               ($flonum-signed-mantissa x)
+               (- be 1075))]
+            [else
+             (let* ([x0 ($fl* x 5e-324)]
+                    [x1 ($fl/ x0 5e-324)])
+               (cond
+                 [($fl= x x1) ;;; x == round(x)
+                  ($flonum-signed-mantissa x0)]
+                 [($fx= be 0) ;;; denormal
+                  (/ ($flonum-signed-mantissa x)
+                     (bitwise-arithmetic-shift-left 1 1074))]
+                 [else ;;; x has a fraction
+                  (let ([v ($flonum-signed-mantissa x)])
+                    (let ([bits (- 1075 be)])
+                      (let ([int (bitwise-arithmetic-shift-right v bits)]
+                            [frac 
+                             (let ([e (bitwise-arithmetic-shift-left 1 bits)])
+                               (/ (bitwise-and v (- e 1)) e))])
+                        (+ int frac))))]))])))))
 
+;;;OLD  (define ($flonum->exact x)
+;;;OLD    ;;; this really needs to get optimized.
+;;;OLD    (let-values ([(pos? be m) (flonum-parts x)])
+;;;OLD      (cond
+;;;OLD        [(<= 1 be 2046) ; normalized flonum
+;;;OLD         (* (if pos? 1 -1)
+;;;OLD            (* (+ m (expt 2 52)) (expt 2 (- be 1075))))]
+;;;OLD        [(= be 0) 
+;;;OLD         (* (if pos? 1 -1) 
+;;;OLD            (* m (expt 2 -1074)))]
+;;;OLD        [else #f])))
 
   (define (flnumerator x) 
     (unless (flonum? x) 
@@ -217,17 +255,6 @@
     (let ([b0 ($flonum-u8-ref x 0)])
       (fx> b0 127)))
 
-  (define ($flonum->exact x)
-    ;;; this really needs to get optimized.
-    (let-values ([(pos? be m) (flonum-parts x)])
-      (cond
-        [(<= 1 be 2046) ; normalized flonum
-         (* (if pos? 1 -1)
-            (* (+ m (expt 2 52)) (expt 2 (- be 1075))))]
-        [(= be 0) 
-         (* (if pos? 1 -1) 
-            (* m (expt 2 -1074)))]
-        [else #f])))
   
 
 
