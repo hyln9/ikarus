@@ -2889,7 +2889,8 @@
   (export fxfirst-bit-set bitwise-first-bit-set
           fxbit-count bitwise-bit-count
           fxlength
-          fxbit-set?)
+          fxbit-set?
+          fxcopy-bit)
   (import 
     (ikarus system $fx)
     (ikarus system $bignums)
@@ -2898,7 +2899,8 @@
       fxfirst-bit-set bitwise-first-bit-set
       fxbit-count bitwise-bit-count
       fxlength
-      fxbit-set?))
+      fxbit-set?
+      fxcopy-bit))
 
   (module (bitwise-first-bit-set fxfirst-bit-set)
     (define (byte-first-bit-set x i) 
@@ -3012,6 +3014,18 @@
             (error who "index is not a fixnum" i))
         (error who "not a fixnum" x)))
 
+  (define (fxcopy-bit x i b)
+    (define who 'fxcopy-bit)
+    (if (fixnum? x) 
+        (if (fixnum? i) 
+            (if (and ($fx<= 0 i) ($fx< i (fixnum-width)))
+                (case b
+                  [(0) ($fxlogand x ($fxlognot ($fxsll 1 i)))]
+                  [(1) ($fxlogor x ($fxsll 1 i))]
+                  [else (error who "invalid bit value" b)])
+                (error who "index out of range" i))
+            (error who "index is not a fixnum" i))
+        (error who "not a fixnum" x)))
   )
 
 

@@ -789,7 +789,7 @@
     [fxbit-count                                 i r fx]
     [fxbit-field                                 r fx]
     [fxbit-set?                                  i r fx]
-    [fxcopy-bit                                  r fx]
+    [fxcopy-bit                                  i r fx]
     [fxcopy-bit-field                            r fx]
     [fxdiv                                       i r fx]
     [fxdiv-and-mod                               i r fx]

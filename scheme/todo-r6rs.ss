@@ -291,7 +291,7 @@
     [fxbit-count                                C fx]
     [fxbit-field                                S fx]
     [fxbit-set?                                 C fx]
-    [fxcopy-bit                                 S fx]
+    [fxcopy-bit                                 C fx]
     [fxcopy-bit-field                           S fx]
     [fxdiv                                      C fx]
     [fxdiv-and-mod                              C fx]
