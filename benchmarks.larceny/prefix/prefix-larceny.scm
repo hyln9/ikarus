@@ -27,6 +27,9 @@
   (apply error #f args))
 
 (define (call-with-output-file/truncate filename proc)
+  (display "opening ")
+  (write filename)
+  (newline)
   (call-with-output-file filename proc))
 
 ; Bitwise operations on exact integers.

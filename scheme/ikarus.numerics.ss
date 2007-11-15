@@ -1305,11 +1305,10 @@
               [($fxzero? b) n]
               [else (add-bits ($fxsra b 1) ($fx+ n 1))]))
           (let f ([i ($fxsub1 ($bignum-size x))])
-            (let ([i ($fxsub1 i)])
-              (let ([b ($bignum-byte-ref x i)])
-                (cond
-                  [($fxzero? b) (f i)]
-                  [else (add-bits b ($fxsll i 3))])))))
+            (let ([b ($bignum-byte-ref x i)])
+              (cond
+                [($fxzero? b) (f ($fxsub1 i))]
+                [else (add-bits b ($fxsll i 3))]))))
         (define (bignum->power-string x mask shift)
           (let ([bits (bignum-bits x)])
             (let ([chars (fxquotient (fx+ bits (fx- shift 1)) shift)])
