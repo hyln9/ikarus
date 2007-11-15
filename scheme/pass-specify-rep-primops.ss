@@ -803,6 +803,20 @@
      (prm 'fl:store x (K (- disp-flonum-data vector-tag)))
      x))
 
+(define ($flop-aux* op fl fl*)
+  (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
+     (prm 'mset x (K (- vector-tag)) (K flonum-tag))
+     (prm 'fl:load (T fl) (K (- disp-flonum-data vector-tag)))
+     (let f ([fl* fl*])
+       (cond
+         [(null? fl*) (prm 'nop)]
+         [else
+          (make-seq 
+            (prm op (T (car fl*)) (K (- disp-flonum-data vector-tag)))
+            (f (cdr fl*)))]))
+     (prm 'fl:store x (K (- disp-flonum-data vector-tag)))
+     x))
+
 (define ($flcmp-aux op fl0 fl1)
   (make-seq 
     (prm 'fl:load (T fl0) (K (- disp-flonum-data vector-tag)))
@@ -924,21 +938,27 @@
   [(V x y) ($flop-aux 'fl:div! x y)])
 
 (define-primop fl+ safe
-  [(V x y) (check-flonums (list x y) ($flop-aux 'fl:add! x y))]
-  [(P x y) (check-flonums (list x y) (K #t))]
-  [(E x y) (check-flonums (list x y) (nop))])
-(define-primop fl- safe
-  [(V x y) (check-flonums (list x y) ($flop-aux 'fl:sub! x y))]
-  [(P x y) (check-flonums (list x y) (K #t))]
-  [(E x y) (check-flonums (list x y) (nop))])
+  [(V) (K (make-object 0.0))]
+  [(V x) (check-flonums (list x) (T x))]
+  [(V x . x*) (check-flonums (cons x x*) ($flop-aux* 'fl:add! x x*))]
+  [(P . x*) (check-flonums x* (K #t))]
+  [(E . x*) (check-flonums x* (nop))])
 (define-primop fl* safe
-  [(V x y) (check-flonums (list x y) ($flop-aux 'fl:mul! x y))]
-  [(P x y) (check-flonums (list x y) (K #t))]
-  [(E x y) (check-flonums (list x y) (nop))])
+  [(V) (K (make-object 1.0))]
+  [(V x) (check-flonums (list x) (T x))]
+  [(V x . x*) (check-flonums (cons x x*) ($flop-aux* 'fl:mul! x x*))]
+  [(P . x*) (check-flonums x* (K #t))]
+  [(E . x*) (check-flonums x* (nop))])
+(define-primop fl- safe
+  [(V x) (check-flonums (list x) ($flop-aux 'fl:sub! (K 0.0) x))]
+  [(V x . x*) (check-flonums (cons x x*) ($flop-aux* 'fl:sub! x x*))]
+  [(P x . x*) (check-flonums (cons x x*) (K #t))]
+  [(E x . x*) (check-flonums (cons x x*) (nop))])
 (define-primop fl/ safe
-  [(V x y) (check-flonums (list x y) ($flop-aux 'fl:div! x y))]
-  [(P x y) (check-flonums (list x y) (K #t))]
-  [(E x y) (check-flonums (list x y) (nop))])
+  [(V x) (check-flonums (list x) ($flop-aux 'fl:div! (K 1.0) x))]
+  [(V x . x*) (check-flonums (cons x x*) ($flop-aux* 'fl:div! x x*))]
+  [(P x . x*) (check-flonums (cons x x*) (K #t))]
+  [(E x . x*) (check-flonums (cons x x*) (nop))])
 
 (define-primop $fl= unsafe
   [(P x y) ($flcmp-aux 'fl:= x y)])
