@@ -155,8 +155,7 @@
 
   (define (find-external-library name)
     (when (member name (external-pending-libraries))
-      (error #f "circular attempt to import library was detected"
-             name))
+      (error #f "circular attempt to import library was detected" name))
     (parameterize ((external-pending-libraries
                     (cons name (external-pending-libraries))))
       (let ((lib-expr ((library-locator) name)))
@@ -166,7 +165,7 @@
         (or (find-library-by
               (lambda (x) (equal? (library-name x) name)))
             (error #f
-              "handling external library did not yield the currect library"
+              "handling external library did not yield the correct library"
                name)))))
           
   (define (find-library-by-name name)
