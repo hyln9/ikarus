@@ -292,7 +292,7 @@
     [fxbit-field                                S fx]
     [fxbit-set?                                 C fx]
     [fxcopy-bit                                 C fx]
-    [fxcopy-bit-field                           S fx]
+    [fxcopy-bit-field                           C fx]
     [fxdiv                                      C fx]
     [fxdiv-and-mod                              C fx]
     [fxdiv0                                     C fx]

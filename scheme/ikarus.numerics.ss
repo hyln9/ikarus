@@ -2890,7 +2890,8 @@
           fxbit-count bitwise-bit-count
           fxlength
           fxbit-set?
-          fxcopy-bit)
+          fxcopy-bit
+          fxcopy-bit-field)
   (import 
     (ikarus system $fx)
     (ikarus system $bignums)
@@ -2900,7 +2901,8 @@
       fxbit-count bitwise-bit-count
       fxlength
       fxbit-set?
-      fxcopy-bit))
+      fxcopy-bit
+      fxcopy-bit-field))
 
   (module (bitwise-first-bit-set fxfirst-bit-set)
     (define (byte-first-bit-set x i) 
@@ -3026,6 +3028,33 @@
                 (error who "index out of range" i))
             (error who "index is not a fixnum" i))
         (error who "not a fixnum" x)))
+
+  (define (fxcopy-bit-field x i j b)
+    (define who 'fxcopy-bit-field)
+    (if (fixnum? x) 
+        (if (fixnum? i)
+            (if ($fx<= 0 i)
+                (if (fixnum? j) 
+                    (if ($fx< j (fixnum-width))
+                        (if ($fx<= i j)
+                            (if (fixnum? b) 
+                                (let ([m 
+                                       ($fxlogxor
+                                         ($fxsub1 ($fxsll 1 i))
+                                         ($fxsub1 ($fxsll 1 j)))])
+                                  ($fxlogor
+                                    ($fxlogand m b)
+                                    ($fxlogand ($fxlognot m) x)))
+                                (error who "not a fixnum" b))
+                            (if ($fx<= 0 j)
+                                (error who "index out of range" j)
+                                (error who "indices not in order" i j)))
+                        (error who "index out of range" j))
+                    (error who "not a fixnum" j))
+                (error who "index out of range" i))
+            (error who "not a fixnum" i))
+        (error who "not a fixnum" x)))
+
   )
 
 
