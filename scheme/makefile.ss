@@ -788,7 +788,7 @@
     [fxarithmetic-shift-right                    i r fx]
     [fxbit-count                                 i r fx]
     [fxbit-field                                 r fx]
-    [fxbit-set?                                  r fx]
+    [fxbit-set?                                  i r fx]
     [fxcopy-bit                                  r fx]
     [fxcopy-bit-field                            r fx]
     [fxdiv                                       i r fx]
