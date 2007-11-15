@@ -26516,3 +26516,3374 @@ running stats for wc (15):
     2242 ms elapsed cpu time, including 0 ms collecting
     2242 ms elapsed real time, including 0 ms collecting
     194232 bytes allocated
+NOW: 2007-11-15 08:38:01
+running stats for compile-ack:
+    1 collection
+    62 ms elapsed cpu time, including 39 ms collecting
+    89 ms elapsed real time, including 39 ms collecting
+    1487512 bytes allocated
+running stats for ack (20):
+    no collections
+    1681 ms elapsed cpu time, including 0 ms collecting
+    1683 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-ack:
+    1 collection
+    56 ms elapsed cpu time, including 39 ms collecting
+    57 ms elapsed real time, including 40 ms collecting
+    1487512 bytes allocated
+running stats for ack (20):
+    no collections
+    1681 ms elapsed cpu time, including 0 ms collecting
+    1683 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-ack:
+    1 collection
+    56 ms elapsed cpu time, including 39 ms collecting
+    57 ms elapsed real time, including 39 ms collecting
+    1487512 bytes allocated
+running stats for ack (20):
+    no collections
+    1681 ms elapsed cpu time, including 0 ms collecting
+    1681 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-ack:
+    1 collection
+    56 ms elapsed cpu time, including 39 ms collecting
+    57 ms elapsed real time, including 40 ms collecting
+    1487512 bytes allocated
+running stats for ack (20):
+    no collections
+    1681 ms elapsed cpu time, including 0 ms collecting
+    1681 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-ack:
+    1 collection
+    56 ms elapsed cpu time, including 39 ms collecting
+    57 ms elapsed real time, including 39 ms collecting
+    1487512 bytes allocated
+running stats for ack (20):
+    no collections
+    1681 ms elapsed cpu time, including 0 ms collecting
+    1681 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-array1:
+    1 collection
+    62 ms elapsed cpu time, including 39 ms collecting
+    412 ms elapsed real time, including 39 ms collecting
+    1855832 bytes allocated
+running stats for array1 (2):
+    80 collections
+    1945 ms elapsed cpu time, including 477 ms collecting
+    1947 ms elapsed real time, including 478 ms collecting
+    320011280 bytes allocated
+running stats for compile-array1:
+    1 collection
+    58 ms elapsed cpu time, including 38 ms collecting
+    59 ms elapsed real time, including 39 ms collecting
+    1855832 bytes allocated
+running stats for array1 (2):
+    80 collections
+    1945 ms elapsed cpu time, including 475 ms collecting
+    1946 ms elapsed real time, including 476 ms collecting
+    320011280 bytes allocated
+running stats for compile-array1:
+    1 collection
+    58 ms elapsed cpu time, including 38 ms collecting
+    59 ms elapsed real time, including 39 ms collecting
+    1855832 bytes allocated
+running stats for array1 (2):
+    80 collections
+    1945 ms elapsed cpu time, including 475 ms collecting
+    1946 ms elapsed real time, including 476 ms collecting
+    320011280 bytes allocated
+running stats for compile-array1:
+    1 collection
+    58 ms elapsed cpu time, including 38 ms collecting
+    59 ms elapsed real time, including 39 ms collecting
+    1855832 bytes allocated
+running stats for array1 (2):
+    80 collections
+    1945 ms elapsed cpu time, including 476 ms collecting
+    1947 ms elapsed real time, including 477 ms collecting
+    320011280 bytes allocated
+running stats for compile-array1:
+    1 collection
+    58 ms elapsed cpu time, including 38 ms collecting
+    60 ms elapsed real time, including 39 ms collecting
+    1855832 bytes allocated
+running stats for array1 (2):
+    80 collections
+    1947 ms elapsed cpu time, including 476 ms collecting
+    1948 ms elapsed real time, including 477 ms collecting
+    320011280 bytes allocated
+running stats for compile-bibfreq:
+    1 collection
+    63 ms elapsed cpu time, including 39 ms collecting
+    407 ms elapsed real time, including 40 ms collecting
+    1913144 bytes allocated
+running stats for bibfreq (2):
+    35 collections
+    2982 ms elapsed cpu time, including 75 ms collecting
+    3001 ms elapsed real time, including 76 ms collecting
+    148615408 bytes allocated
+running stats for compile-bibfreq:
+    1 collection
+    59 ms elapsed cpu time, including 38 ms collecting
+    59 ms elapsed real time, including 39 ms collecting
+    1913144 bytes allocated
+running stats for bibfreq (2):
+    35 collections
+    2974 ms elapsed cpu time, including 75 ms collecting
+    2975 ms elapsed real time, including 76 ms collecting
+    148615408 bytes allocated
+running stats for compile-bibfreq:
+    1 collection
+    59 ms elapsed cpu time, including 38 ms collecting
+    59 ms elapsed real time, including 39 ms collecting
+    1913144 bytes allocated
+running stats for bibfreq (2):
+    35 collections
+    2974 ms elapsed cpu time, including 75 ms collecting
+    2974 ms elapsed real time, including 76 ms collecting
+    148615408 bytes allocated
+running stats for compile-bibfreq:
+    1 collection
+    59 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 39 ms collecting
+    1913144 bytes allocated
+running stats for bibfreq (2):
+    35 collections
+    2973 ms elapsed cpu time, including 75 ms collecting
+    2973 ms elapsed real time, including 75 ms collecting
+    148615408 bytes allocated
+running stats for compile-bibfreq:
+    1 collection
+    59 ms elapsed cpu time, including 38 ms collecting
+    59 ms elapsed real time, including 39 ms collecting
+    1913144 bytes allocated
+running stats for bibfreq (2):
+    35 collections
+    2975 ms elapsed cpu time, including 75 ms collecting
+    2975 ms elapsed real time, including 76 ms collecting
+    148615408 bytes allocated
+running stats for compile-boyer:
+    1 collection
+    79 ms elapsed cpu time, including 38 ms collecting
+    110 ms elapsed real time, including 39 ms collecting
+    3807024 bytes allocated
+running stats for boyer (50):
+    44 collections
+    1931 ms elapsed cpu time, including 101 ms collecting
+    1931 ms elapsed real time, including 102 ms collecting
+    182096432 bytes allocated
+running stats for compile-boyer:
+    1 collection
+    75 ms elapsed cpu time, including 38 ms collecting
+    75 ms elapsed real time, including 39 ms collecting
+    3807024 bytes allocated
+running stats for boyer (50):
+    44 collections
+    1931 ms elapsed cpu time, including 101 ms collecting
+    1931 ms elapsed real time, including 102 ms collecting
+    182096432 bytes allocated
+running stats for compile-boyer:
+    1 collection
+    75 ms elapsed cpu time, including 38 ms collecting
+    75 ms elapsed real time, including 39 ms collecting
+    3807024 bytes allocated
+running stats for boyer (50):
+    44 collections
+    1931 ms elapsed cpu time, including 101 ms collecting
+    1931 ms elapsed real time, including 102 ms collecting
+    182096432 bytes allocated
+running stats for compile-boyer:
+    1 collection
+    75 ms elapsed cpu time, including 38 ms collecting
+    76 ms elapsed real time, including 39 ms collecting
+    3807024 bytes allocated
+running stats for boyer (50):
+    44 collections
+    1931 ms elapsed cpu time, including 101 ms collecting
+    1931 ms elapsed real time, including 102 ms collecting
+    182096432 bytes allocated
+running stats for compile-boyer:
+    1 collection
+    75 ms elapsed cpu time, including 38 ms collecting
+    76 ms elapsed real time, including 39 ms collecting
+    3807024 bytes allocated
+running stats for boyer (50):
+    44 collections
+    1931 ms elapsed cpu time, including 101 ms collecting
+    1931 ms elapsed real time, including 102 ms collecting
+    182096432 bytes allocated
+running stats for compile-browse:
+    1 collection
+    79 ms elapsed cpu time, including 38 ms collecting
+    81 ms elapsed real time, including 39 ms collecting
+    4639816 bytes allocated
+running stats for browse (600):
+    152 collections
+    1966 ms elapsed cpu time, including 82 ms collecting
+    1967 ms elapsed real time, including 83 ms collecting
+    633621936 bytes allocated
+running stats for compile-browse:
+    1 collection
+    76 ms elapsed cpu time, including 38 ms collecting
+    76 ms elapsed real time, including 39 ms collecting
+    4639816 bytes allocated
+running stats for browse (600):
+    152 collections
+    1967 ms elapsed cpu time, including 82 ms collecting
+    1968 ms elapsed real time, including 83 ms collecting
+    633621936 bytes allocated
+running stats for compile-browse:
+    1 collection
+    76 ms elapsed cpu time, including 38 ms collecting
+    76 ms elapsed real time, including 39 ms collecting
+    4639816 bytes allocated
+running stats for browse (600):
+    152 collections
+    1966 ms elapsed cpu time, including 82 ms collecting
+    1967 ms elapsed real time, including 83 ms collecting
+    633621936 bytes allocated
+running stats for compile-browse:
+    1 collection
+    76 ms elapsed cpu time, including 38 ms collecting
+    77 ms elapsed real time, including 39 ms collecting
+    4639816 bytes allocated
+running stats for browse (600):
+    152 collections
+    1966 ms elapsed cpu time, including 82 ms collecting
+    1966 ms elapsed real time, including 83 ms collecting
+    633621936 bytes allocated
+running stats for compile-browse:
+    1 collection
+    76 ms elapsed cpu time, including 38 ms collecting
+    76 ms elapsed real time, including 39 ms collecting
+    4639816 bytes allocated
+running stats for browse (600):
+    152 collections
+    1964 ms elapsed cpu time, including 82 ms collecting
+    1965 ms elapsed real time, including 83 ms collecting
+    633621936 bytes allocated
+running stats for compile-cat:
+    1 collection
+    62 ms elapsed cpu time, including 39 ms collecting
+    400 ms elapsed real time, including 40 ms collecting
+    1587624 bytes allocated
+running stats for cat (12):
+    no collections
+    2063 ms elapsed cpu time, including 0 ms collecting
+    2279 ms elapsed real time, including 0 ms collecting
+    414504 bytes allocated
+running stats for compile-cat:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 40 ms collecting
+    1587624 bytes allocated
+running stats for cat (12):
+    no collections
+    2057 ms elapsed cpu time, including 0 ms collecting
+    2127 ms elapsed real time, including 0 ms collecting
+    414504 bytes allocated
+running stats for compile-cat:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 40 ms collecting
+    1587624 bytes allocated
+running stats for cat (12):
+    no collections
+    2057 ms elapsed cpu time, including 0 ms collecting
+    2271 ms elapsed real time, including 0 ms collecting
+    414504 bytes allocated
+running stats for compile-cat:
+    1 collection
+    59 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 40 ms collecting
+    1587624 bytes allocated
+running stats for cat (12):
+    no collections
+    2058 ms elapsed cpu time, including 0 ms collecting
+    2125 ms elapsed real time, including 0 ms collecting
+    414504 bytes allocated
+running stats for compile-cat:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1587624 bytes allocated
+running stats for cat (12):
+    no collections
+    2056 ms elapsed cpu time, including 0 ms collecting
+    2150 ms elapsed real time, including 0 ms collecting
+    414504 bytes allocated
+running stats for compile-compiler:
+    162 collections
+    9692 ms elapsed cpu time, including 1578 ms collecting
+    9722 ms elapsed real time, including 1580 ms collecting
+    682753336 bytes allocated
+running stats for compiler (500):
+    87 collections
+    1935 ms elapsed cpu time, including 180 ms collecting
+    1936 ms elapsed real time, including 181 ms collecting
+    365056064 bytes allocated
+running stats for compile-compiler:
+    162 collections
+    9669 ms elapsed cpu time, including 1578 ms collecting
+    9671 ms elapsed real time, including 1580 ms collecting
+    682753336 bytes allocated
+running stats for compiler (500):
+    87 collections
+    1936 ms elapsed cpu time, including 181 ms collecting
+    1936 ms elapsed real time, including 182 ms collecting
+    365056064 bytes allocated
+running stats for compile-compiler:
+    162 collections
+    9678 ms elapsed cpu time, including 1578 ms collecting
+    9679 ms elapsed real time, including 1579 ms collecting
+    682753336 bytes allocated
+running stats for compiler (500):
+    87 collections
+    1936 ms elapsed cpu time, including 180 ms collecting
+    1936 ms elapsed real time, including 182 ms collecting
+    365056064 bytes allocated
+running stats for compile-compiler:
+    162 collections
+    9778 ms elapsed cpu time, including 1578 ms collecting
+    9778 ms elapsed real time, including 1579 ms collecting
+    682753336 bytes allocated
+running stats for compiler (500):
+    87 collections
+    1936 ms elapsed cpu time, including 181 ms collecting
+    1936 ms elapsed real time, including 182 ms collecting
+    365056064 bytes allocated
+running stats for compile-compiler:
+    162 collections
+    9675 ms elapsed cpu time, including 1578 ms collecting
+    9676 ms elapsed real time, including 1580 ms collecting
+    682753336 bytes allocated
+running stats for compiler (500):
+    87 collections
+    1937 ms elapsed cpu time, including 181 ms collecting
+    1937 ms elapsed real time, including 182 ms collecting
+    365056064 bytes allocated
+running stats for compile-conform:
+    3 collections
+    134 ms elapsed cpu time, including 50 ms collecting
+    162 ms elapsed real time, including 50 ms collecting
+    10587496 bytes allocated
+running stats for conform (70):
+    91 collections
+    1918 ms elapsed cpu time, including 103 ms collecting
+    1918 ms elapsed real time, including 103 ms collecting
+    379897856 bytes allocated
+running stats for compile-conform:
+    3 collections
+    129 ms elapsed cpu time, including 50 ms collecting
+    130 ms elapsed real time, including 50 ms collecting
+    10587496 bytes allocated
+running stats for conform (70):
+    91 collections
+    1917 ms elapsed cpu time, including 102 ms collecting
+    1918 ms elapsed real time, including 102 ms collecting
+    379897856 bytes allocated
+running stats for compile-conform:
+    3 collections
+    129 ms elapsed cpu time, including 50 ms collecting
+    130 ms elapsed real time, including 51 ms collecting
+    10587496 bytes allocated
+running stats for conform (70):
+    91 collections
+    1918 ms elapsed cpu time, including 102 ms collecting
+    1918 ms elapsed real time, including 103 ms collecting
+    379897856 bytes allocated
+running stats for compile-conform:
+    3 collections
+    129 ms elapsed cpu time, including 50 ms collecting
+    130 ms elapsed real time, including 50 ms collecting
+    10587496 bytes allocated
+running stats for conform (70):
+    91 collections
+    1918 ms elapsed cpu time, including 102 ms collecting
+    1919 ms elapsed real time, including 103 ms collecting
+    379897856 bytes allocated
+running stats for compile-conform:
+    3 collections
+    129 ms elapsed cpu time, including 50 ms collecting
+    130 ms elapsed real time, including 51 ms collecting
+    10587496 bytes allocated
+running stats for conform (70):
+    91 collections
+    1918 ms elapsed cpu time, including 103 ms collecting
+    1919 ms elapsed real time, including 103 ms collecting
+    379897856 bytes allocated
+running stats for compile-cpstak:
+    1 collection
+    60 ms elapsed cpu time, including 39 ms collecting
+    62 ms elapsed real time, including 39 ms collecting
+    1622272 bytes allocated
+running stats for cpstak (1700):
+    413 collections
+    2016 ms elapsed cpu time, including 149 ms collecting
+    2016 ms elapsed real time, including 150 ms collecting
+    1730137648 bytes allocated
+running stats for compile-cpstak:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1622272 bytes allocated
+running stats for cpstak (1700):
+    413 collections
+    2015 ms elapsed cpu time, including 149 ms collecting
+    2015 ms elapsed real time, including 150 ms collecting
+    1730137648 bytes allocated
+running stats for compile-cpstak:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1622272 bytes allocated
+running stats for cpstak (1700):
+    413 collections
+    2017 ms elapsed cpu time, including 149 ms collecting
+    2017 ms elapsed real time, including 151 ms collecting
+    1730137648 bytes allocated
+running stats for compile-cpstak:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1622272 bytes allocated
+running stats for cpstak (1700):
+    413 collections
+    2014 ms elapsed cpu time, including 148 ms collecting
+    2015 ms elapsed real time, including 150 ms collecting
+    1730137648 bytes allocated
+running stats for compile-cpstak:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1622272 bytes allocated
+running stats for cpstak (1700):
+    413 collections
+    2015 ms elapsed cpu time, including 149 ms collecting
+    2015 ms elapsed real time, including 150 ms collecting
+    1730137648 bytes allocated
+running stats for compile-ctak:
+    1 collection
+    61 ms elapsed cpu time, including 39 ms collecting
+    91 ms elapsed real time, including 39 ms collecting
+    1696896 bytes allocated
+running stats for ctak (160):
+    204 collections
+    1938 ms elapsed cpu time, including 293 ms collecting
+    1940 ms elapsed real time, including 294 ms collecting
+    854906272 bytes allocated
+running stats for compile-ctak:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1696896 bytes allocated
+running stats for ctak (160):
+    204 collections
+    1939 ms elapsed cpu time, including 294 ms collecting
+    1941 ms elapsed real time, including 295 ms collecting
+    854906272 bytes allocated
+running stats for compile-ctak:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1696896 bytes allocated
+running stats for ctak (160):
+    204 collections
+    1936 ms elapsed cpu time, including 293 ms collecting
+    1937 ms elapsed real time, including 295 ms collecting
+    854906272 bytes allocated
+running stats for compile-ctak:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1696896 bytes allocated
+running stats for ctak (160):
+    204 collections
+    1936 ms elapsed cpu time, including 293 ms collecting
+    1937 ms elapsed real time, including 294 ms collecting
+    854906272 bytes allocated
+running stats for compile-ctak:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1696896 bytes allocated
+running stats for ctak (160):
+    204 collections
+    1936 ms elapsed cpu time, including 293 ms collecting
+    1938 ms elapsed real time, including 294 ms collecting
+    854906272 bytes allocated
+running stats for compile-dderiv:
+    1 collection
+    65 ms elapsed cpu time, including 39 ms collecting
+    441 ms elapsed real time, including 39 ms collecting
+    2341504 bytes allocated
+running stats for dderiv (3000000):
+    390 collections
+    2109 ms elapsed cpu time, including 143 ms collecting
+    2109 ms elapsed real time, including 145 ms collecting
+    1632000048 bytes allocated
+running stats for compile-dderiv:
+    1 collection
+    61 ms elapsed cpu time, including 38 ms collecting
+    62 ms elapsed real time, including 39 ms collecting
+    2341504 bytes allocated
+running stats for dderiv (3000000):
+    390 collections
+    2113 ms elapsed cpu time, including 143 ms collecting
+    2114 ms elapsed real time, including 145 ms collecting
+    1632000048 bytes allocated
+running stats for compile-dderiv:
+    1 collection
+    61 ms elapsed cpu time, including 38 ms collecting
+    63 ms elapsed real time, including 39 ms collecting
+    2341504 bytes allocated
+running stats for dderiv (3000000):
+    390 collections
+    2109 ms elapsed cpu time, including 144 ms collecting
+    2109 ms elapsed real time, including 145 ms collecting
+    1632000048 bytes allocated
+running stats for compile-dderiv:
+    1 collection
+    61 ms elapsed cpu time, including 38 ms collecting
+    62 ms elapsed real time, including 39 ms collecting
+    2341504 bytes allocated
+running stats for dderiv (3000000):
+    390 collections
+    2116 ms elapsed cpu time, including 144 ms collecting
+    2117 ms elapsed real time, including 145 ms collecting
+    1632000048 bytes allocated
+running stats for compile-dderiv:
+    1 collection
+    61 ms elapsed cpu time, including 38 ms collecting
+    62 ms elapsed real time, including 39 ms collecting
+    2341504 bytes allocated
+running stats for dderiv (3000000):
+    390 collections
+    2114 ms elapsed cpu time, including 143 ms collecting
+    2114 ms elapsed real time, including 145 ms collecting
+    1632000048 bytes allocated
+running stats for compile-deriv:
+    1 collection
+    63 ms elapsed cpu time, including 39 ms collecting
+    402 ms elapsed real time, including 40 ms collecting
+    1769656 bytes allocated
+running stats for deriv (4000000):
+    374 collections
+    1812 ms elapsed cpu time, including 140 ms collecting
+    1813 ms elapsed real time, including 142 ms collecting
+    1568000048 bytes allocated
+running stats for compile-deriv:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 40 ms collecting
+    1769656 bytes allocated
+running stats for deriv (4000000):
+    374 collections
+    1815 ms elapsed cpu time, including 142 ms collecting
+    1816 ms elapsed real time, including 143 ms collecting
+    1568000048 bytes allocated
+running stats for compile-deriv:
+    1 collection
+    59 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 40 ms collecting
+    1769656 bytes allocated
+running stats for deriv (4000000):
+    374 collections
+    1813 ms elapsed cpu time, including 141 ms collecting
+    1814 ms elapsed real time, including 142 ms collecting
+    1568000048 bytes allocated
+running stats for compile-deriv:
+    1 collection
+    59 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 40 ms collecting
+    1769656 bytes allocated
+running stats for deriv (4000000):
+    374 collections
+    1813 ms elapsed cpu time, including 141 ms collecting
+    1814 ms elapsed real time, including 142 ms collecting
+    1568000048 bytes allocated
+running stats for compile-deriv:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 40 ms collecting
+    1769656 bytes allocated
+running stats for deriv (4000000):
+    374 collections
+    1810 ms elapsed cpu time, including 141 ms collecting
+    1811 ms elapsed real time, including 142 ms collecting
+    1568000048 bytes allocated
+running stats for compile-destruc:
+    1 collection
+    66 ms elapsed cpu time, including 39 ms collecting
+    67 ms elapsed real time, including 39 ms collecting
+    2379632 bytes allocated
+running stats for destruc (800):
+    98 collections
+    1934 ms elapsed cpu time, including 72 ms collecting
+    1935 ms elapsed real time, including 72 ms collecting
+    411910448 bytes allocated
+running stats for compile-destruc:
+    1 collection
+    62 ms elapsed cpu time, including 39 ms collecting
+    63 ms elapsed real time, including 39 ms collecting
+    2379632 bytes allocated
+running stats for destruc (800):
+    98 collections
+    1933 ms elapsed cpu time, including 72 ms collecting
+    1934 ms elapsed real time, including 72 ms collecting
+    411910448 bytes allocated
+running stats for compile-destruc:
+    1 collection
+    62 ms elapsed cpu time, including 39 ms collecting
+    63 ms elapsed real time, including 39 ms collecting
+    2379632 bytes allocated
+running stats for destruc (800):
+    98 collections
+    1933 ms elapsed cpu time, including 71 ms collecting
+    1933 ms elapsed real time, including 72 ms collecting
+    411910448 bytes allocated
+running stats for compile-destruc:
+    1 collection
+    62 ms elapsed cpu time, including 39 ms collecting
+    63 ms elapsed real time, including 39 ms collecting
+    2379632 bytes allocated
+running stats for destruc (800):
+    98 collections
+    1933 ms elapsed cpu time, including 72 ms collecting
+    1934 ms elapsed real time, including 72 ms collecting
+    411910448 bytes allocated
+running stats for compile-destruc:
+    1 collection
+    62 ms elapsed cpu time, including 39 ms collecting
+    63 ms elapsed real time, including 40 ms collecting
+    2379632 bytes allocated
+running stats for destruc (800):
+    98 collections
+    1933 ms elapsed cpu time, including 72 ms collecting
+    1934 ms elapsed real time, including 72 ms collecting
+    411910448 bytes allocated
+running stats for compile-diviter:
+    1 collection
+    61 ms elapsed cpu time, including 39 ms collecting
+    401 ms elapsed real time, including 39 ms collecting
+    1615920 bytes allocated
+running stats for diviter (1200000):
+    229 collections
+    1474 ms elapsed cpu time, including 95 ms collecting
+    1476 ms elapsed real time, including 96 ms collecting
+    960000048 bytes allocated
+running stats for compile-diviter:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1615920 bytes allocated
+running stats for diviter (1200000):
+    229 collections
+    1474 ms elapsed cpu time, including 95 ms collecting
+    1475 ms elapsed real time, including 96 ms collecting
+    960000048 bytes allocated
+running stats for compile-diviter:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 39 ms collecting
+    1615920 bytes allocated
+running stats for diviter (1200000):
+    229 collections
+    1474 ms elapsed cpu time, including 95 ms collecting
+    1475 ms elapsed real time, including 96 ms collecting
+    960000048 bytes allocated
+running stats for compile-diviter:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1615920 bytes allocated
+running stats for diviter (1200000):
+    229 collections
+    1475 ms elapsed cpu time, including 96 ms collecting
+    1476 ms elapsed real time, including 97 ms collecting
+    960000048 bytes allocated
+running stats for compile-diviter:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1615920 bytes allocated
+running stats for diviter (1200000):
+    229 collections
+    1474 ms elapsed cpu time, including 96 ms collecting
+    1475 ms elapsed real time, including 96 ms collecting
+    960000048 bytes allocated
+running stats for compile-divrec:
+    1 collection
+    60 ms elapsed cpu time, including 39 ms collecting
+    62 ms elapsed real time, including 39 ms collecting
+    1590264 bytes allocated
+running stats for divrec (1200000):
+    229 collections
+    1992 ms elapsed cpu time, including 95 ms collecting
+    1992 ms elapsed real time, including 96 ms collecting
+    960000048 bytes allocated
+running stats for compile-divrec:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1590264 bytes allocated
+running stats for divrec (1200000):
+    229 collections
+    1991 ms elapsed cpu time, including 95 ms collecting
+    1992 ms elapsed real time, including 96 ms collecting
+    960000048 bytes allocated
+running stats for compile-divrec:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1590264 bytes allocated
+running stats for divrec (1200000):
+    229 collections
+    1991 ms elapsed cpu time, including 95 ms collecting
+    1991 ms elapsed real time, including 96 ms collecting
+    960000048 bytes allocated
+running stats for compile-divrec:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1590264 bytes allocated
+running stats for divrec (1200000):
+    229 collections
+    1993 ms elapsed cpu time, including 95 ms collecting
+    1994 ms elapsed real time, including 96 ms collecting
+    960000048 bytes allocated
+running stats for compile-divrec:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1590264 bytes allocated
+running stats for divrec (1200000):
+    229 collections
+    1993 ms elapsed cpu time, including 95 ms collecting
+    1993 ms elapsed real time, including 96 ms collecting
+    960000048 bytes allocated
+running stats for compile-dynamic:
+    11 collections
+    562 ms elapsed cpu time, including 125 ms collecting
+    564 ms elapsed real time, including 126 ms collecting
+    46036016 bytes allocated
+running stats for dynamic (70):
+    51 collections
+    1900 ms elapsed cpu time, including 166 ms collecting
+    1901 ms elapsed real time, including 167 ms collecting
+    212735064 bytes allocated
+running stats for compile-dynamic:
+    11 collections
+    559 ms elapsed cpu time, including 125 ms collecting
+    561 ms elapsed real time, including 126 ms collecting
+    46036016 bytes allocated
+running stats for dynamic (70):
+    51 collections
+    1901 ms elapsed cpu time, including 166 ms collecting
+    1901 ms elapsed real time, including 167 ms collecting
+    212735064 bytes allocated
+running stats for compile-dynamic:
+    11 collections
+    559 ms elapsed cpu time, including 125 ms collecting
+    560 ms elapsed real time, including 126 ms collecting
+    46036016 bytes allocated
+running stats for dynamic (70):
+    51 collections
+    1902 ms elapsed cpu time, including 167 ms collecting
+    1902 ms elapsed real time, including 168 ms collecting
+    212735064 bytes allocated
+running stats for compile-dynamic:
+    11 collections
+    559 ms elapsed cpu time, including 125 ms collecting
+    561 ms elapsed real time, including 126 ms collecting
+    46036016 bytes allocated
+running stats for dynamic (70):
+    51 collections
+    1903 ms elapsed cpu time, including 166 ms collecting
+    1904 ms elapsed real time, including 167 ms collecting
+    212735064 bytes allocated
+running stats for compile-dynamic:
+    11 collections
+    558 ms elapsed cpu time, including 124 ms collecting
+    559 ms elapsed real time, including 125 ms collecting
+    46036016 bytes allocated
+running stats for dynamic (70):
+    51 collections
+    1899 ms elapsed cpu time, including 165 ms collecting
+    1899 ms elapsed real time, including 166 ms collecting
+    212735064 bytes allocated
+running stats for compile-earley:
+    3 collections
+    123 ms elapsed cpu time, including 46 ms collecting
+    149 ms elapsed real time, including 46 ms collecting
+    11190528 bytes allocated
+running stats for earley (400):
+    302 collections
+    2019 ms elapsed cpu time, including 395 ms collecting
+    2019 ms elapsed real time, including 397 ms collecting
+    1262956336 bytes allocated
+running stats for compile-earley:
+    3 collections
+    119 ms elapsed cpu time, including 46 ms collecting
+    120 ms elapsed real time, including 46 ms collecting
+    11190528 bytes allocated
+running stats for earley (400):
+    302 collections
+    2019 ms elapsed cpu time, including 395 ms collecting
+    2020 ms elapsed real time, including 398 ms collecting
+    1262956336 bytes allocated
+running stats for compile-earley:
+    3 collections
+    119 ms elapsed cpu time, including 46 ms collecting
+    120 ms elapsed real time, including 46 ms collecting
+    11190528 bytes allocated
+running stats for earley (400):
+    302 collections
+    2019 ms elapsed cpu time, including 394 ms collecting
+    2019 ms elapsed real time, including 396 ms collecting
+    1262956336 bytes allocated
+running stats for compile-earley:
+    3 collections
+    119 ms elapsed cpu time, including 46 ms collecting
+    120 ms elapsed real time, including 47 ms collecting
+    11190528 bytes allocated
+running stats for earley (400):
+    302 collections
+    2018 ms elapsed cpu time, including 394 ms collecting
+    2019 ms elapsed real time, including 396 ms collecting
+    1262956336 bytes allocated
+running stats for compile-earley:
+    3 collections
+    119 ms elapsed cpu time, including 46 ms collecting
+    120 ms elapsed real time, including 46 ms collecting
+    11190528 bytes allocated
+running stats for earley (400):
+    302 collections
+    2019 ms elapsed cpu time, including 394 ms collecting
+    2020 ms elapsed real time, including 396 ms collecting
+    1262956336 bytes allocated
+running stats for compile-fft:
+    1 collection
+    77 ms elapsed cpu time, including 39 ms collecting
+    79 ms elapsed real time, including 39 ms collecting
+    3561120 bytes allocated
+running stats for fft (4000):
+    447 collections
+    1734 ms elapsed cpu time, including 169 ms collecting
+    1734 ms elapsed real time, including 170 ms collecting
+    1872396336 bytes allocated
+running stats for compile-fft:
+    1 collection
+    73 ms elapsed cpu time, including 39 ms collecting
+    74 ms elapsed real time, including 40 ms collecting
+    3561120 bytes allocated
+running stats for fft (4000):
+    447 collections
+    1731 ms elapsed cpu time, including 168 ms collecting
+    1732 ms elapsed real time, including 170 ms collecting
+    1872396336 bytes allocated
+running stats for compile-fft:
+    1 collection
+    73 ms elapsed cpu time, including 39 ms collecting
+    74 ms elapsed real time, including 40 ms collecting
+    3561120 bytes allocated
+running stats for fft (4000):
+    447 collections
+    1729 ms elapsed cpu time, including 168 ms collecting
+    1731 ms elapsed real time, including 170 ms collecting
+    1872396336 bytes allocated
+running stats for compile-fft:
+    1 collection
+    73 ms elapsed cpu time, including 39 ms collecting
+    74 ms elapsed real time, including 39 ms collecting
+    3561120 bytes allocated
+running stats for fft (4000):
+    447 collections
+    1725 ms elapsed cpu time, including 168 ms collecting
+    1727 ms elapsed real time, including 170 ms collecting
+    1872396336 bytes allocated
+running stats for compile-fft:
+    1 collection
+    73 ms elapsed cpu time, including 39 ms collecting
+    74 ms elapsed real time, including 39 ms collecting
+    3561120 bytes allocated
+running stats for fft (4000):
+    447 collections
+    1728 ms elapsed cpu time, including 168 ms collecting
+    1730 ms elapsed real time, including 169 ms collecting
+    1872396336 bytes allocated
+running stats for compile-fib:
+    1 collection
+    61 ms elapsed cpu time, including 39 ms collecting
+    62 ms elapsed real time, including 40 ms collecting
+    1446712 bytes allocated
+running stats for fib (6):
+    no collections
+    1977 ms elapsed cpu time, including 0 ms collecting
+    1977 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-fib:
+    1 collection
+    57 ms elapsed cpu time, including 40 ms collecting
+    59 ms elapsed real time, including 40 ms collecting
+    1446712 bytes allocated
+running stats for fib (6):
+    no collections
+    2001 ms elapsed cpu time, including 0 ms collecting
+    2001 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-fib:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 40 ms collecting
+    1446712 bytes allocated
+running stats for fib (6):
+    no collections
+    2006 ms elapsed cpu time, including 0 ms collecting
+    2007 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-fib:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 40 ms collecting
+    1446712 bytes allocated
+running stats for fib (6):
+    no collections
+    2014 ms elapsed cpu time, including 0 ms collecting
+    2014 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-fib:
+    1 collection
+    58 ms elapsed cpu time, including 40 ms collecting
+    58 ms elapsed real time, including 41 ms collecting
+    1446712 bytes allocated
+running stats for fib (6):
+    no collections
+    2015 ms elapsed cpu time, including 0 ms collecting
+    2016 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-fibc:
+    1 collection
+    61 ms elapsed cpu time, including 39 ms collecting
+    401 ms elapsed real time, including 39 ms collecting
+    1668984 bytes allocated
+running stats for fibc (900):
+    143 collections
+    1912 ms elapsed cpu time, including 264 ms collecting
+    1914 ms elapsed real time, including 265 ms collecting
+    601935024 bytes allocated
+running stats for compile-fibc:
+    1 collection
+    57 ms elapsed cpu time, including 38 ms collecting
+    57 ms elapsed real time, including 39 ms collecting
+    1668984 bytes allocated
+running stats for fibc (900):
+    143 collections
+    1918 ms elapsed cpu time, including 265 ms collecting
+    1919 ms elapsed real time, including 266 ms collecting
+    601935024 bytes allocated
+running stats for compile-fibc:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1668984 bytes allocated
+running stats for fibc (900):
+    143 collections
+    1912 ms elapsed cpu time, including 265 ms collecting
+    1914 ms elapsed real time, including 266 ms collecting
+    601935024 bytes allocated
+running stats for compile-fibc:
+    1 collection
+    57 ms elapsed cpu time, including 38 ms collecting
+    57 ms elapsed real time, including 39 ms collecting
+    1668984 bytes allocated
+running stats for fibc (900):
+    143 collections
+    1914 ms elapsed cpu time, including 262 ms collecting
+    1915 ms elapsed real time, including 264 ms collecting
+    601935024 bytes allocated
+running stats for compile-fibc:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1668984 bytes allocated
+running stats for fibc (900):
+    143 collections
+    1914 ms elapsed cpu time, including 264 ms collecting
+    1916 ms elapsed real time, including 265 ms collecting
+    601935024 bytes allocated
+running stats for compile-fibfp:
+    1 collection
+    60 ms elapsed cpu time, including 39 ms collecting
+    94 ms elapsed real time, including 39 ms collecting
+    1499192 bytes allocated
+running stats for fibfp (2):
+    342 collections
+    1163 ms elapsed cpu time, including 131 ms collecting
+    1165 ms elapsed real time, including 133 ms collecting
+    1433313744 bytes allocated
+running stats for compile-fibfp:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    57 ms elapsed real time, including 39 ms collecting
+    1499192 bytes allocated
+running stats for fibfp (2):
+    342 collections
+    1164 ms elapsed cpu time, including 131 ms collecting
+    1165 ms elapsed real time, including 133 ms collecting
+    1433313744 bytes allocated
+running stats for compile-fibfp:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    57 ms elapsed real time, including 39 ms collecting
+    1499192 bytes allocated
+running stats for fibfp (2):
+    342 collections
+    1165 ms elapsed cpu time, including 131 ms collecting
+    1166 ms elapsed real time, including 133 ms collecting
+    1433313744 bytes allocated
+running stats for compile-fibfp:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 40 ms collecting
+    1499192 bytes allocated
+running stats for fibfp (2):
+    342 collections
+    1165 ms elapsed cpu time, including 131 ms collecting
+    1165 ms elapsed real time, including 133 ms collecting
+    1433313744 bytes allocated
+running stats for compile-fibfp:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    57 ms elapsed real time, including 40 ms collecting
+    1499192 bytes allocated
+running stats for fibfp (2):
+    342 collections
+    1163 ms elapsed cpu time, including 131 ms collecting
+    1163 ms elapsed real time, including 133 ms collecting
+    1433313744 bytes allocated
+running stats for compile-fpsum:
+    1 collection
+    60 ms elapsed cpu time, including 39 ms collecting
+    61 ms elapsed real time, including 39 ms collecting
+    1461736 bytes allocated
+running stats for fpsum (60):
+    458 collections
+    956 ms elapsed cpu time, including 153 ms collecting
+    956 ms elapsed real time, including 155 ms collecting
+    1920001968 bytes allocated
+running stats for compile-fpsum:
+    1 collection
+    56 ms elapsed cpu time, including 39 ms collecting
+    57 ms elapsed real time, including 39 ms collecting
+    1461736 bytes allocated
+running stats for fpsum (60):
+    458 collections
+    961 ms elapsed cpu time, including 153 ms collecting
+    961 ms elapsed real time, including 154 ms collecting
+    1920001968 bytes allocated
+running stats for compile-fpsum:
+    1 collection
+    56 ms elapsed cpu time, including 39 ms collecting
+    57 ms elapsed real time, including 39 ms collecting
+    1461736 bytes allocated
+running stats for fpsum (60):
+    458 collections
+    951 ms elapsed cpu time, including 154 ms collecting
+    951 ms elapsed real time, including 155 ms collecting
+    1920001968 bytes allocated
+running stats for compile-fpsum:
+    1 collection
+    56 ms elapsed cpu time, including 39 ms collecting
+    57 ms elapsed real time, including 39 ms collecting
+    1461736 bytes allocated
+running stats for fpsum (60):
+    458 collections
+    949 ms elapsed cpu time, including 153 ms collecting
+    950 ms elapsed real time, including 155 ms collecting
+    1920001968 bytes allocated
+running stats for compile-fpsum:
+    1 collection
+    56 ms elapsed cpu time, including 39 ms collecting
+    57 ms elapsed real time, including 39 ms collecting
+    1461736 bytes allocated
+running stats for fpsum (60):
+    458 collections
+    955 ms elapsed cpu time, including 153 ms collecting
+    956 ms elapsed real time, including 155 ms collecting
+    1920001968 bytes allocated
+running stats for compile-gcbench:
+    1 collection
+    70 ms elapsed cpu time, including 38 ms collecting
+    103 ms elapsed real time, including 39 ms collecting
+    3182016 bytes allocated
+The garbage collector should touch about 32 megabytes of heap storage.
+The use of more or less memory will skew the results.
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+running stats for GCBench18 (2):
+    181 collections
+    2541 ms elapsed cpu time, including 743 ms collecting
+    2543 ms elapsed real time, including 744 ms collecting
+    757030864 bytes allocated
+running stats for compile-gcbench:
+    1 collection
+    66 ms elapsed cpu time, including 38 ms collecting
+    67 ms elapsed real time, including 39 ms collecting
+    3182016 bytes allocated
+The garbage collector should touch about 32 megabytes of heap storage.
+The use of more or less memory will skew the results.
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+running stats for GCBench18 (2):
+    181 collections
+    2540 ms elapsed cpu time, including 741 ms collecting
+    2541 ms elapsed real time, including 742 ms collecting
+    757030864 bytes allocated
+running stats for compile-gcbench:
+    1 collection
+    66 ms elapsed cpu time, including 38 ms collecting
+    67 ms elapsed real time, including 39 ms collecting
+    3182016 bytes allocated
+The garbage collector should touch about 32 megabytes of heap storage.
+The use of more or less memory will skew the results.
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+running stats for GCBench18 (2):
+    181 collections
+    2539 ms elapsed cpu time, including 741 ms collecting
+    2540 ms elapsed real time, including 742 ms collecting
+    757030864 bytes allocated
+running stats for compile-gcbench:
+    1 collection
+    66 ms elapsed cpu time, including 38 ms collecting
+    67 ms elapsed real time, including 39 ms collecting
+    3182016 bytes allocated
+The garbage collector should touch about 32 megabytes of heap storage.
+The use of more or less memory will skew the results.
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+running stats for GCBench18 (2):
+    181 collections
+    2542 ms elapsed cpu time, including 742 ms collecting
+    2542 ms elapsed real time, including 743 ms collecting
+    757030864 bytes allocated
+running stats for compile-gcbench:
+    1 collection
+    66 ms elapsed cpu time, including 38 ms collecting
+    67 ms elapsed real time, including 39 ms collecting
+    3182016 bytes allocated
+The garbage collector should touch about 32 megabytes of heap storage.
+The use of more or less memory will skew the results.
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+running stats for GCBench18 (2):
+    181 collections
+    2540 ms elapsed cpu time, including 741 ms collecting
+    2541 ms elapsed real time, including 742 ms collecting
+    757030864 bytes allocated
+running stats for compile-gcold:
+    2 collections
+    100 ms elapsed cpu time, including 42 ms collecting
+    102 ms elapsed real time, including 42 ms collecting
+    7523296 bytes allocated
+25 megabytes
+0 work units per step.
+promotion ratio is 1:10
+pointer mutation rate is 10
+600 steps
+Allocating 76 trees.
+  (24902160 bytes)
+  (1245108 nodes)
+Initialization complete...
+running stats for GCOld (1):
+    158 collections
+    1524 ms elapsed cpu time, including 583 ms collecting
+    1525 ms elapsed real time, including 583 ms collecting
+    660927408 bytes allocated
+Allocated 600 Mb of young gen garbage
+    (actually allocated 6e2 megabytes)
+Promoted 6e1 Mb
+    (actually promoted 59.86 megabytes)
+Mutated 6000 pointers
+running stats for compile-gcold:
+    2 collections
+    96 ms elapsed cpu time, including 42 ms collecting
+    98 ms elapsed real time, including 42 ms collecting
+    7523296 bytes allocated
+25 megabytes
+0 work units per step.
+promotion ratio is 1:10
+pointer mutation rate is 10
+600 steps
+Allocating 76 trees.
+  (24902160 bytes)
+  (1245108 nodes)
+Initialization complete...
+running stats for GCOld (1):
+    158 collections
+    1523 ms elapsed cpu time, including 583 ms collecting
+    1525 ms elapsed real time, including 584 ms collecting
+    660927408 bytes allocated
+Allocated 600 Mb of young gen garbage
+    (actually allocated 6e2 megabytes)
+Promoted 6e1 Mb
+    (actually promoted 59.86 megabytes)
+Mutated 6000 pointers
+running stats for compile-gcold:
+    2 collections
+    97 ms elapsed cpu time, including 42 ms collecting
+    97 ms elapsed real time, including 42 ms collecting
+    7523296 bytes allocated
+25 megabytes
+0 work units per step.
+promotion ratio is 1:10
+pointer mutation rate is 10
+600 steps
+Allocating 76 trees.
+  (24902160 bytes)
+  (1245108 nodes)
+Initialization complete...
+running stats for GCOld (1):
+    158 collections
+    1525 ms elapsed cpu time, including 583 ms collecting
+    1526 ms elapsed real time, including 584 ms collecting
+    660927408 bytes allocated
+Allocated 600 Mb of young gen garbage
+    (actually allocated 6e2 megabytes)
+Promoted 6e1 Mb
+    (actually promoted 59.86 megabytes)
+Mutated 6000 pointers
+running stats for compile-gcold:
+    2 collections
+    97 ms elapsed cpu time, including 42 ms collecting
+    97 ms elapsed real time, including 42 ms collecting
+    7523296 bytes allocated
+25 megabytes
+0 work units per step.
+promotion ratio is 1:10
+pointer mutation rate is 10
+600 steps
+Allocating 76 trees.
+  (24902160 bytes)
+  (1245108 nodes)
+Initialization complete...
+running stats for GCOld (1):
+    158 collections
+    1524 ms elapsed cpu time, including 583 ms collecting
+    1524 ms elapsed real time, including 584 ms collecting
+    660927408 bytes allocated
+Allocated 600 Mb of young gen garbage
+    (actually allocated 6e2 megabytes)
+Promoted 6e1 Mb
+    (actually promoted 59.86 megabytes)
+Mutated 6000 pointers
+running stats for compile-gcold:
+    2 collections
+    97 ms elapsed cpu time, including 42 ms collecting
+    98 ms elapsed real time, including 42 ms collecting
+    7523296 bytes allocated
+25 megabytes
+0 work units per step.
+promotion ratio is 1:10
+pointer mutation rate is 10
+600 steps
+Allocating 76 trees.
+  (24902160 bytes)
+  (1245108 nodes)
+Initialization complete...
+running stats for GCOld (1):
+    158 collections
+    1523 ms elapsed cpu time, including 582 ms collecting
+    1524 ms elapsed real time, including 583 ms collecting
+    660927408 bytes allocated
+Allocated 600 Mb of young gen garbage
+    (actually allocated 6e2 megabytes)
+Promoted 6e1 Mb
+    (actually promoted 59.86 megabytes)
+Mutated 6000 pointers
+running stats for compile-graphs:
+    2 collections
+    98 ms elapsed cpu time, including 42 ms collecting
+    424 ms elapsed real time, including 42 ms collecting
+    6127808 bytes allocated
+running stats for graphs (500):
+    314 collections
+    1743 ms elapsed cpu time, including 160 ms collecting
+    1745 ms elapsed real time, including 161 ms collecting
+    1317128336 bytes allocated
+running stats for compile-graphs:
+    2 collections
+    93 ms elapsed cpu time, including 42 ms collecting
+    94 ms elapsed real time, including 42 ms collecting
+    6127808 bytes allocated
+running stats for graphs (500):
+    314 collections
+    1743 ms elapsed cpu time, including 160 ms collecting
+    1744 ms elapsed real time, including 161 ms collecting
+    1317128336 bytes allocated
+running stats for compile-graphs:
+    2 collections
+    93 ms elapsed cpu time, including 42 ms collecting
+    94 ms elapsed real time, including 42 ms collecting
+    6127808 bytes allocated
+running stats for graphs (500):
+    314 collections
+    1743 ms elapsed cpu time, including 160 ms collecting
+    1744 ms elapsed real time, including 161 ms collecting
+    1317128336 bytes allocated
+running stats for compile-graphs:
+    2 collections
+    93 ms elapsed cpu time, including 42 ms collecting
+    94 ms elapsed real time, including 42 ms collecting
+    6127808 bytes allocated
+running stats for graphs (500):
+    314 collections
+    1745 ms elapsed cpu time, including 160 ms collecting
+    1746 ms elapsed real time, including 161 ms collecting
+    1317128336 bytes allocated
+running stats for compile-graphs:
+    2 collections
+    93 ms elapsed cpu time, including 41 ms collecting
+    94 ms elapsed real time, including 42 ms collecting
+    6127808 bytes allocated
+running stats for graphs (500):
+    314 collections
+    1743 ms elapsed cpu time, including 159 ms collecting
+    1744 ms elapsed real time, including 161 ms collecting
+    1317128336 bytes allocated
+running stats for compile-lattice:
+    1 collection
+    74 ms elapsed cpu time, including 39 ms collecting
+    445 ms elapsed real time, including 40 ms collecting
+    3317248 bytes allocated
+running stats for lattice (2):
+    184 collections
+    2689 ms elapsed cpu time, including 90 ms collecting
+    2691 ms elapsed real time, including 90 ms collecting
+    771403536 bytes allocated
+running stats for compile-lattice:
+    1 collection
+    69 ms elapsed cpu time, including 39 ms collecting
+    69 ms elapsed real time, including 39 ms collecting
+    3317248 bytes allocated
+running stats for lattice (2):
+    184 collections
+    2690 ms elapsed cpu time, including 90 ms collecting
+    2691 ms elapsed real time, including 91 ms collecting
+    771403536 bytes allocated
+running stats for compile-lattice:
+    1 collection
+    68 ms elapsed cpu time, including 39 ms collecting
+    69 ms elapsed real time, including 39 ms collecting
+    3317248 bytes allocated
+running stats for lattice (2):
+    184 collections
+    2689 ms elapsed cpu time, including 90 ms collecting
+    2691 ms elapsed real time, including 91 ms collecting
+    771403536 bytes allocated
+running stats for compile-lattice:
+    1 collection
+    68 ms elapsed cpu time, including 39 ms collecting
+    69 ms elapsed real time, including 39 ms collecting
+    3317248 bytes allocated
+running stats for lattice (2):
+    184 collections
+    2689 ms elapsed cpu time, including 90 ms collecting
+    2690 ms elapsed real time, including 91 ms collecting
+    771403536 bytes allocated
+running stats for compile-lattice:
+    1 collection
+    69 ms elapsed cpu time, including 39 ms collecting
+    69 ms elapsed real time, including 39 ms collecting
+    3317248 bytes allocated
+running stats for lattice (2):
+    184 collections
+    2689 ms elapsed cpu time, including 90 ms collecting
+    2691 ms elapsed real time, including 90 ms collecting
+    771403536 bytes allocated
+running stats for compile-matrix:
+    2 collections
+    110 ms elapsed cpu time, including 43 ms collecting
+    652 ms elapsed real time, including 44 ms collecting
+    8139784 bytes allocated
+running stats for matrix (600):
+    213 collections
+    1687 ms elapsed cpu time, including 97 ms collecting
+    1687 ms elapsed real time, including 98 ms collecting
+    889850736 bytes allocated
+running stats for compile-matrix:
+    2 collections
+    104 ms elapsed cpu time, including 43 ms collecting
+    105 ms elapsed real time, including 44 ms collecting
+    8139784 bytes allocated
+running stats for matrix (600):
+    213 collections
+    1687 ms elapsed cpu time, including 97 ms collecting
+    1687 ms elapsed real time, including 98 ms collecting
+    889850736 bytes allocated
+running stats for compile-matrix:
+    2 collections
+    104 ms elapsed cpu time, including 43 ms collecting
+    106 ms elapsed real time, including 43 ms collecting
+    8139784 bytes allocated
+running stats for matrix (600):
+    213 collections
+    1689 ms elapsed cpu time, including 97 ms collecting
+    1689 ms elapsed real time, including 98 ms collecting
+    889850736 bytes allocated
+running stats for compile-matrix:
+    2 collections
+    104 ms elapsed cpu time, including 43 ms collecting
+    106 ms elapsed real time, including 44 ms collecting
+    8139784 bytes allocated
+running stats for matrix (600):
+    213 collections
+    1687 ms elapsed cpu time, including 97 ms collecting
+    1688 ms elapsed real time, including 98 ms collecting
+    889850736 bytes allocated
+running stats for compile-matrix:
+    2 collections
+    104 ms elapsed cpu time, including 43 ms collecting
+    105 ms elapsed real time, including 44 ms collecting
+    8139784 bytes allocated
+running stats for matrix (600):
+    213 collections
+    1687 ms elapsed cpu time, including 97 ms collecting
+    1688 ms elapsed real time, including 98 ms collecting
+    889850736 bytes allocated
+running stats for compile-maze:
+    2 collections
+    108 ms elapsed cpu time, including 43 ms collecting
+    441 ms elapsed real time, including 44 ms collecting
+    8599568 bytes allocated
+running stats for maze (4000):
+    85 collections
+    1732 ms elapsed cpu time, including 77 ms collecting
+    1733 ms elapsed real time, including 77 ms collecting
+    352812352 bytes allocated
+running stats for compile-maze:
+    2 collections
+    103 ms elapsed cpu time, including 43 ms collecting
+    103 ms elapsed real time, including 43 ms collecting
+    8599568 bytes allocated
+running stats for maze (4000):
+    85 collections
+    1733 ms elapsed cpu time, including 77 ms collecting
+    1733 ms elapsed real time, including 77 ms collecting
+    352812352 bytes allocated
+running stats for compile-maze:
+    2 collections
+    102 ms elapsed cpu time, including 43 ms collecting
+    103 ms elapsed real time, including 43 ms collecting
+    8599568 bytes allocated
+running stats for maze (4000):
+    85 collections
+    1732 ms elapsed cpu time, including 77 ms collecting
+    1733 ms elapsed real time, including 77 ms collecting
+    352812352 bytes allocated
+running stats for compile-maze:
+    2 collections
+    102 ms elapsed cpu time, including 43 ms collecting
+    103 ms elapsed real time, including 43 ms collecting
+    8599568 bytes allocated
+running stats for maze (4000):
+    85 collections
+    1732 ms elapsed cpu time, including 77 ms collecting
+    1733 ms elapsed real time, including 77 ms collecting
+    352812352 bytes allocated
+running stats for compile-maze:
+    2 collections
+    102 ms elapsed cpu time, including 43 ms collecting
+    103 ms elapsed real time, including 43 ms collecting
+    8599568 bytes allocated
+running stats for maze (4000):
+    85 collections
+    1732 ms elapsed cpu time, including 77 ms collecting
+    1733 ms elapsed real time, including 77 ms collecting
+    352812352 bytes allocated
+running stats for compile-mazefun:
+    1 collection
+    74 ms elapsed cpu time, including 38 ms collecting
+    76 ms elapsed real time, including 39 ms collecting
+    3814608 bytes allocated
+running stats for mazefun (2500):
+    102 collections
+    2166 ms elapsed cpu time, including 72 ms collecting
+    2167 ms elapsed real time, including 72 ms collecting
+    425212336 bytes allocated
+running stats for compile-mazefun:
+    1 collection
+    70 ms elapsed cpu time, including 38 ms collecting
+    71 ms elapsed real time, including 39 ms collecting
+    3814608 bytes allocated
+running stats for mazefun (2500):
+    102 collections
+    2166 ms elapsed cpu time, including 72 ms collecting
+    2167 ms elapsed real time, including 72 ms collecting
+    425212336 bytes allocated
+running stats for compile-mazefun:
+    1 collection
+    70 ms elapsed cpu time, including 38 ms collecting
+    72 ms elapsed real time, including 39 ms collecting
+    3814608 bytes allocated
+running stats for mazefun (2500):
+    102 collections
+    2166 ms elapsed cpu time, including 72 ms collecting
+    2167 ms elapsed real time, including 72 ms collecting
+    425212336 bytes allocated
+running stats for compile-mazefun:
+    1 collection
+    70 ms elapsed cpu time, including 38 ms collecting
+    71 ms elapsed real time, including 39 ms collecting
+    3814608 bytes allocated
+running stats for mazefun (2500):
+    102 collections
+    2165 ms elapsed cpu time, including 72 ms collecting
+    2166 ms elapsed real time, including 72 ms collecting
+    425212336 bytes allocated
+running stats for compile-mazefun:
+    1 collection
+    70 ms elapsed cpu time, including 38 ms collecting
+    71 ms elapsed real time, including 39 ms collecting
+    3814608 bytes allocated
+running stats for mazefun (2500):
+    102 collections
+    2166 ms elapsed cpu time, including 72 ms collecting
+    2167 ms elapsed real time, including 72 ms collecting
+    425212336 bytes allocated
+running stats for compile-mbrot:
+    1 collection
+    65 ms elapsed cpu time, including 38 ms collecting
+    89 ms elapsed real time, including 39 ms collecting
+    2379552 bytes allocated
+running stats for mbrot (120):
+    635 collections
+    1417 ms elapsed cpu time, including 235 ms collecting
+    1417 ms elapsed real time, including 237 ms collecting
+    2658913968 bytes allocated
+running stats for compile-mbrot:
+    1 collection
+    61 ms elapsed cpu time, including 38 ms collecting
+    62 ms elapsed real time, including 39 ms collecting
+    2379552 bytes allocated
+running stats for mbrot (120):
+    635 collections
+    1388 ms elapsed cpu time, including 235 ms collecting
+    1390 ms elapsed real time, including 238 ms collecting
+    2658913968 bytes allocated
+running stats for compile-mbrot:
+    1 collection
+    61 ms elapsed cpu time, including 38 ms collecting
+    62 ms elapsed real time, including 39 ms collecting
+    2379552 bytes allocated
+running stats for mbrot (120):
+    635 collections
+    1395 ms elapsed cpu time, including 234 ms collecting
+    1395 ms elapsed real time, including 237 ms collecting
+    2658913968 bytes allocated
+running stats for compile-mbrot:
+    1 collection
+    61 ms elapsed cpu time, including 38 ms collecting
+    62 ms elapsed real time, including 38 ms collecting
+    2379552 bytes allocated
+running stats for mbrot (120):
+    635 collections
+    1403 ms elapsed cpu time, including 236 ms collecting
+    1404 ms elapsed real time, including 238 ms collecting
+    2658913968 bytes allocated
+running stats for compile-mbrot:
+    1 collection
+    61 ms elapsed cpu time, including 38 ms collecting
+    62 ms elapsed real time, including 39 ms collecting
+    2379552 bytes allocated
+running stats for mbrot (120):
+    635 collections
+    1396 ms elapsed cpu time, including 235 ms collecting
+    1397 ms elapsed real time, including 237 ms collecting
+    2658913968 bytes allocated
+running stats for compile-nboyer:
+    1 collection
+    91 ms elapsed cpu time, including 39 ms collecting
+    93 ms elapsed real time, including 40 ms collecting
+    5038296 bytes allocated
+running stats for nboyer0 (150):
+    73 collections
+    1902 ms elapsed cpu time, including 166 ms collecting
+    1903 ms elapsed real time, including 167 ms collecting
+    305508832 bytes allocated
+running stats for compile-nboyer:
+    1 collection
+    86 ms elapsed cpu time, including 39 ms collecting
+    86 ms elapsed real time, including 40 ms collecting
+    5038296 bytes allocated
+running stats for nboyer0 (150):
+    73 collections
+    1903 ms elapsed cpu time, including 166 ms collecting
+    1903 ms elapsed real time, including 167 ms collecting
+    305508832 bytes allocated
+running stats for compile-nboyer:
+    1 collection
+    86 ms elapsed cpu time, including 39 ms collecting
+    87 ms elapsed real time, including 40 ms collecting
+    5038296 bytes allocated
+running stats for nboyer0 (150):
+    73 collections
+    1903 ms elapsed cpu time, including 166 ms collecting
+    1903 ms elapsed real time, including 168 ms collecting
+    305508832 bytes allocated
+running stats for compile-nboyer:
+    1 collection
+    87 ms elapsed cpu time, including 39 ms collecting
+    87 ms elapsed real time, including 40 ms collecting
+    5038296 bytes allocated
+running stats for nboyer0 (150):
+    73 collections
+    1902 ms elapsed cpu time, including 166 ms collecting
+    1903 ms elapsed real time, including 167 ms collecting
+    305508832 bytes allocated
+running stats for compile-nboyer:
+    1 collection
+    86 ms elapsed cpu time, including 39 ms collecting
+    86 ms elapsed real time, including 40 ms collecting
+    5038296 bytes allocated
+running stats for nboyer0 (150):
+    73 collections
+    1902 ms elapsed cpu time, including 166 ms collecting
+    1903 ms elapsed real time, including 167 ms collecting
+    305508832 bytes allocated
+running stats for compile-nqueens:
+    1 collection
+    63 ms elapsed cpu time, including 39 ms collecting
+    402 ms elapsed real time, including 40 ms collecting
+    1769200 bytes allocated
+running stats for nqueens (4000):
+    110 collections
+    2163 ms elapsed cpu time, including 73 ms collecting
+    2164 ms elapsed real time, including 73 ms collecting
+    461440048 bytes allocated
+running stats for compile-nqueens:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 40 ms collecting
+    1769200 bytes allocated
+running stats for nqueens (4000):
+    110 collections
+    2163 ms elapsed cpu time, including 72 ms collecting
+    2163 ms elapsed real time, including 73 ms collecting
+    461440048 bytes allocated
+running stats for compile-nqueens:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 40 ms collecting
+    1769200 bytes allocated
+running stats for nqueens (4000):
+    110 collections
+    2163 ms elapsed cpu time, including 73 ms collecting
+    2164 ms elapsed real time, including 73 ms collecting
+    461440048 bytes allocated
+running stats for compile-nqueens:
+    1 collection
+    59 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 40 ms collecting
+    1769200 bytes allocated
+running stats for nqueens (4000):
+    110 collections
+    2163 ms elapsed cpu time, including 73 ms collecting
+    2165 ms elapsed real time, including 73 ms collecting
+    461440048 bytes allocated
+running stats for compile-nqueens:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 40 ms collecting
+    1769200 bytes allocated
+running stats for nqueens (4000):
+    110 collections
+    2163 ms elapsed cpu time, including 73 ms collecting
+    2164 ms elapsed real time, including 73 ms collecting
+    461440048 bytes allocated
+running stats for compile-ntakl:
+    1 collection
+    61 ms elapsed cpu time, including 39 ms collecting
+    408 ms elapsed real time, including 39 ms collecting
+    1754864 bytes allocated
+running stats for ntakl (600):
+    no collections
+    1918 ms elapsed cpu time, including 0 ms collecting
+    1917 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-ntakl:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 39 ms collecting
+    1754864 bytes allocated
+running stats for ntakl (600):
+    no collections
+    1918 ms elapsed cpu time, including 0 ms collecting
+    1918 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-ntakl:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 39 ms collecting
+    1754864 bytes allocated
+running stats for ntakl (600):
+    no collections
+    1918 ms elapsed cpu time, including 0 ms collecting
+    1918 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-ntakl:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 39 ms collecting
+    1754864 bytes allocated
+running stats for ntakl (600):
+    no collections
+    1918 ms elapsed cpu time, including 0 ms collecting
+    1918 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-ntakl:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 39 ms collecting
+    1754864 bytes allocated
+running stats for ntakl (600):
+    no collections
+    1918 ms elapsed cpu time, including 0 ms collecting
+    1918 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-nucleic:
+    8 collections
+    328 ms elapsed cpu time, including 96 ms collecting
+    363 ms elapsed real time, including 97 ms collecting
+    33832928 bytes allocated
+running stats for nucleic (12):
+    268 collections
+    1406 ms elapsed cpu time, including 121 ms collecting
+    1408 ms elapsed real time, including 123 ms collecting
+    1120621776 bytes allocated
+running stats for compile-nucleic:
+    8 collections
+    323 ms elapsed cpu time, including 95 ms collecting
+    323 ms elapsed real time, including 96 ms collecting
+    33832928 bytes allocated
+running stats for nucleic (12):
+    268 collections
+    1403 ms elapsed cpu time, including 121 ms collecting
+    1404 ms elapsed real time, including 122 ms collecting
+    1120621776 bytes allocated
+running stats for compile-nucleic:
+    8 collections
+    323 ms elapsed cpu time, including 96 ms collecting
+    324 ms elapsed real time, including 96 ms collecting
+    33832928 bytes allocated
+running stats for nucleic (12):
+    268 collections
+    1403 ms elapsed cpu time, including 121 ms collecting
+    1405 ms elapsed real time, including 123 ms collecting
+    1120621776 bytes allocated
+running stats for compile-nucleic:
+    8 collections
+    323 ms elapsed cpu time, including 95 ms collecting
+    323 ms elapsed real time, including 96 ms collecting
+    33832928 bytes allocated
+running stats for nucleic (12):
+    268 collections
+    1404 ms elapsed cpu time, including 121 ms collecting
+    1406 ms elapsed real time, including 123 ms collecting
+    1120621776 bytes allocated
+running stats for compile-nucleic:
+    8 collections
+    323 ms elapsed cpu time, including 95 ms collecting
+    323 ms elapsed real time, including 96 ms collecting
+    33832928 bytes allocated
+running stats for nucleic (12):
+    268 collections
+    1404 ms elapsed cpu time, including 121 ms collecting
+    1404 ms elapsed real time, including 122 ms collecting
+    1120621776 bytes allocated
+running stats for compile-paraffins:
+    1 collection
+    77 ms elapsed cpu time, including 39 ms collecting
+    407 ms elapsed real time, including 40 ms collecting
+    4097272 bytes allocated
+running stats for paraffins (1800):
+    358 collections
+    1970 ms elapsed cpu time, including 793 ms collecting
+    1971 ms elapsed real time, including 795 ms collecting
+    1496373936 bytes allocated
+running stats for compile-paraffins:
+    1 collection
+    72 ms elapsed cpu time, including 39 ms collecting
+    73 ms elapsed real time, including 40 ms collecting
+    4097272 bytes allocated
+running stats for paraffins (1800):
+    358 collections
+    1972 ms elapsed cpu time, including 794 ms collecting
+    1973 ms elapsed real time, including 795 ms collecting
+    1496373936 bytes allocated
+running stats for compile-paraffins:
+    1 collection
+    72 ms elapsed cpu time, including 39 ms collecting
+    73 ms elapsed real time, including 40 ms collecting
+    4097272 bytes allocated
+running stats for paraffins (1800):
+    358 collections
+    1973 ms elapsed cpu time, including 793 ms collecting
+    1973 ms elapsed real time, including 795 ms collecting
+    1496373936 bytes allocated
+running stats for compile-paraffins:
+    1 collection
+    72 ms elapsed cpu time, including 39 ms collecting
+    73 ms elapsed real time, including 40 ms collecting
+    4097272 bytes allocated
+running stats for paraffins (1800):
+    358 collections
+    1972 ms elapsed cpu time, including 793 ms collecting
+    1972 ms elapsed real time, including 795 ms collecting
+    1496373936 bytes allocated
+running stats for compile-paraffins:
+    1 collection
+    72 ms elapsed cpu time, including 39 ms collecting
+    73 ms elapsed real time, including 40 ms collecting
+    4097272 bytes allocated
+running stats for paraffins (1800):
+    358 collections
+    1972 ms elapsed cpu time, including 793 ms collecting
+    1972 ms elapsed real time, including 795 ms collecting
+    1496373936 bytes allocated
+running stats for compile-parsing:
+    3 collections
+    141 ms elapsed cpu time, including 45 ms collecting
+    534 ms elapsed real time, including 46 ms collecting
+    10201576 bytes allocated
+running stats for parsing:parsing-data.ss:360 (360):
+    17 collections
+    2136 ms elapsed cpu time, including 41 ms collecting
+    2136 ms elapsed real time, including 41 ms collecting
+    72939696 bytes allocated
+running stats for compile-parsing:
+    3 collections
+    135 ms elapsed cpu time, including 45 ms collecting
+    136 ms elapsed real time, including 46 ms collecting
+    10201576 bytes allocated
+running stats for parsing:parsing-data.ss:360 (360):
+    17 collections
+    2134 ms elapsed cpu time, including 41 ms collecting
+    2135 ms elapsed real time, including 41 ms collecting
+    72939696 bytes allocated
+running stats for compile-parsing:
+    3 collections
+    135 ms elapsed cpu time, including 45 ms collecting
+    136 ms elapsed real time, including 46 ms collecting
+    10201576 bytes allocated
+running stats for parsing:parsing-data.ss:360 (360):
+    17 collections
+    2134 ms elapsed cpu time, including 41 ms collecting
+    2135 ms elapsed real time, including 41 ms collecting
+    72939696 bytes allocated
+running stats for compile-parsing:
+    3 collections
+    135 ms elapsed cpu time, including 45 ms collecting
+    136 ms elapsed real time, including 45 ms collecting
+    10201576 bytes allocated
+running stats for parsing:parsing-data.ss:360 (360):
+    17 collections
+    2135 ms elapsed cpu time, including 41 ms collecting
+    2136 ms elapsed real time, including 41 ms collecting
+    72939696 bytes allocated
+running stats for compile-parsing:
+    3 collections
+    135 ms elapsed cpu time, including 45 ms collecting
+    136 ms elapsed real time, including 45 ms collecting
+    10201576 bytes allocated
+running stats for parsing:parsing-data.ss:360 (360):
+    17 collections
+    2135 ms elapsed cpu time, including 41 ms collecting
+    2136 ms elapsed real time, including 41 ms collecting
+    72939696 bytes allocated
+running stats for compile-perm9:
+    1 collection
+    64 ms elapsed cpu time, including 39 ms collecting
+    66 ms elapsed real time, including 39 ms collecting
+    2227264 bytes allocated
+running stats for perm9 (12):
+    49 collections
+    1828 ms elapsed cpu time, including 1386 ms collecting
+    1828 ms elapsed real time, including 1387 ms collecting
+    204598704 bytes allocated
+running stats for compile-perm9:
+    1 collection
+    60 ms elapsed cpu time, including 38 ms collecting
+    61 ms elapsed real time, including 39 ms collecting
+    2227264 bytes allocated
+running stats for perm9 (12):
+    49 collections
+    1827 ms elapsed cpu time, including 1386 ms collecting
+    1829 ms elapsed real time, including 1387 ms collecting
+    204598704 bytes allocated
+running stats for compile-perm9:
+    1 collection
+    60 ms elapsed cpu time, including 38 ms collecting
+    61 ms elapsed real time, including 39 ms collecting
+    2227264 bytes allocated
+running stats for perm9 (12):
+    49 collections
+    1825 ms elapsed cpu time, including 1384 ms collecting
+    1827 ms elapsed real time, including 1385 ms collecting
+    204598704 bytes allocated
+running stats for compile-perm9:
+    1 collection
+    60 ms elapsed cpu time, including 38 ms collecting
+    61 ms elapsed real time, including 39 ms collecting
+    2227264 bytes allocated
+running stats for perm9 (12):
+    49 collections
+    1825 ms elapsed cpu time, including 1383 ms collecting
+    1826 ms elapsed real time, including 1384 ms collecting
+    204598704 bytes allocated
+running stats for compile-perm9:
+    1 collection
+    60 ms elapsed cpu time, including 38 ms collecting
+    61 ms elapsed real time, including 39 ms collecting
+    2227264 bytes allocated
+running stats for perm9 (12):
+    49 collections
+    1825 ms elapsed cpu time, including 1385 ms collecting
+    1828 ms elapsed real time, including 1386 ms collecting
+    204598704 bytes allocated
+running stats for compile-peval:
+    3 collections
+    130 ms elapsed cpu time, including 48 ms collecting
+    159 ms elapsed real time, including 48 ms collecting
+    10639920 bytes allocated
+running stats for peval (400):
+    77 collections
+    1905 ms elapsed cpu time, including 69 ms collecting
+    1905 ms elapsed real time, including 70 ms collecting
+    324433488 bytes allocated
+running stats for compile-peval:
+    3 collections
+    124 ms elapsed cpu time, including 48 ms collecting
+    125 ms elapsed real time, including 48 ms collecting
+    10639920 bytes allocated
+running stats for peval (400):
+    77 collections
+    1905 ms elapsed cpu time, including 69 ms collecting
+    1906 ms elapsed real time, including 70 ms collecting
+    324433488 bytes allocated
+running stats for compile-peval:
+    3 collections
+    124 ms elapsed cpu time, including 48 ms collecting
+    126 ms elapsed real time, including 48 ms collecting
+    10639920 bytes allocated
+running stats for peval (400):
+    77 collections
+    1905 ms elapsed cpu time, including 69 ms collecting
+    1905 ms elapsed real time, including 70 ms collecting
+    324433488 bytes allocated
+running stats for compile-peval:
+    3 collections
+    124 ms elapsed cpu time, including 48 ms collecting
+    125 ms elapsed real time, including 48 ms collecting
+    10639920 bytes allocated
+running stats for peval (400):
+    77 collections
+    1905 ms elapsed cpu time, including 69 ms collecting
+    1906 ms elapsed real time, including 70 ms collecting
+    324433488 bytes allocated
+running stats for compile-peval:
+    3 collections
+    124 ms elapsed cpu time, including 48 ms collecting
+    125 ms elapsed real time, including 48 ms collecting
+    10639920 bytes allocated
+running stats for peval (400):
+    77 collections
+    1905 ms elapsed cpu time, including 69 ms collecting
+    1906 ms elapsed real time, including 70 ms collecting
+    324433488 bytes allocated
+running stats for compile-pi:
+    1 collection
+    71 ms elapsed cpu time, including 39 ms collecting
+    430 ms elapsed real time, including 40 ms collecting
+    3602896 bytes allocated
+running stats for pi (3):
+    62 collections
+    2316 ms elapsed cpu time, including 651 ms collecting
+    2318 ms elapsed real time, including 652 ms collecting
+    385056280 bytes allocated
+running stats for compile-pi:
+    1 collection
+    66 ms elapsed cpu time, including 39 ms collecting
+    67 ms elapsed real time, including 39 ms collecting
+    3602896 bytes allocated
+running stats for pi (3):
+    62 collections
+    2316 ms elapsed cpu time, including 650 ms collecting
+    2316 ms elapsed real time, including 650 ms collecting
+    385056280 bytes allocated
+running stats for compile-pi:
+    1 collection
+    66 ms elapsed cpu time, including 39 ms collecting
+    68 ms elapsed real time, including 39 ms collecting
+    3602896 bytes allocated
+running stats for pi (3):
+    62 collections
+    2317 ms elapsed cpu time, including 651 ms collecting
+    2318 ms elapsed real time, including 652 ms collecting
+    385056280 bytes allocated
+running stats for compile-pi:
+    1 collection
+    66 ms elapsed cpu time, including 39 ms collecting
+    67 ms elapsed real time, including 39 ms collecting
+    3602896 bytes allocated
+running stats for pi (3):
+    62 collections
+    2318 ms elapsed cpu time, including 653 ms collecting
+    2319 ms elapsed real time, including 654 ms collecting
+    385056280 bytes allocated
+running stats for compile-pi:
+    1 collection
+    66 ms elapsed cpu time, including 39 ms collecting
+    67 ms elapsed real time, including 40 ms collecting
+    3602896 bytes allocated
+running stats for pi (3):
+    62 collections
+    2318 ms elapsed cpu time, including 653 ms collecting
+    2318 ms elapsed real time, including 653 ms collecting
+    385056280 bytes allocated
+running stats for compile-pnpoly:
+    1 collection
+    68 ms elapsed cpu time, including 38 ms collecting
+    432 ms elapsed real time, including 39 ms collecting
+    2669088 bytes allocated
+running stats for pnpoly (140000):
+    112 collections
+    1361 ms elapsed cpu time, including 72 ms collecting
+    1361 ms elapsed real time, including 72 ms collecting
+    469280048 bytes allocated
+running stats for compile-pnpoly:
+    1 collection
+    64 ms elapsed cpu time, including 38 ms collecting
+    65 ms elapsed real time, including 39 ms collecting
+    2669088 bytes allocated
+running stats for pnpoly (140000):
+    112 collections
+    1361 ms elapsed cpu time, including 71 ms collecting
+    1362 ms elapsed real time, including 72 ms collecting
+    469280048 bytes allocated
+running stats for compile-pnpoly:
+    1 collection
+    64 ms elapsed cpu time, including 38 ms collecting
+    65 ms elapsed real time, including 39 ms collecting
+    2669088 bytes allocated
+running stats for pnpoly (140000):
+    112 collections
+    1361 ms elapsed cpu time, including 71 ms collecting
+    1361 ms elapsed real time, including 72 ms collecting
+    469280048 bytes allocated
+running stats for compile-pnpoly:
+    1 collection
+    64 ms elapsed cpu time, including 38 ms collecting
+    65 ms elapsed real time, including 39 ms collecting
+    2669088 bytes allocated
+running stats for pnpoly (140000):
+    112 collections
+    1361 ms elapsed cpu time, including 71 ms collecting
+    1363 ms elapsed real time, including 72 ms collecting
+    469280048 bytes allocated
+running stats for compile-pnpoly:
+    1 collection
+    64 ms elapsed cpu time, including 38 ms collecting
+    65 ms elapsed real time, including 39 ms collecting
+    2669088 bytes allocated
+running stats for pnpoly (140000):
+    112 collections
+    1361 ms elapsed cpu time, including 71 ms collecting
+    1361 ms elapsed real time, including 72 ms collecting
+    469280048 bytes allocated
+running stats for compile-primes:
+    1 collection
+    60 ms elapsed cpu time, including 38 ms collecting
+    62 ms elapsed real time, including 39 ms collecting
+    1667304 bytes allocated
+running stats for primes (180000):
+    158 collections
+    1996 ms elapsed cpu time, including 81 ms collecting
+    1997 ms elapsed real time, including 81 ms collecting
+    663840048 bytes allocated
+running stats for compile-primes:
+    1 collection
+    57 ms elapsed cpu time, including 38 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1667304 bytes allocated
+running stats for primes (180000):
+    158 collections
+    1997 ms elapsed cpu time, including 81 ms collecting
+    1998 ms elapsed real time, including 81 ms collecting
+    663840048 bytes allocated
+running stats for compile-primes:
+    1 collection
+    57 ms elapsed cpu time, including 38 ms collecting
+    57 ms elapsed real time, including 39 ms collecting
+    1667304 bytes allocated
+running stats for primes (180000):
+    158 collections
+    1996 ms elapsed cpu time, including 81 ms collecting
+    1997 ms elapsed real time, including 81 ms collecting
+    663840048 bytes allocated
+running stats for compile-primes:
+    1 collection
+    57 ms elapsed cpu time, including 38 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1667304 bytes allocated
+running stats for primes (180000):
+    158 collections
+    1995 ms elapsed cpu time, including 80 ms collecting
+    1996 ms elapsed real time, including 81 ms collecting
+    663840048 bytes allocated
+running stats for compile-primes:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1667304 bytes allocated
+running stats for primes (180000):
+    158 collections
+    1997 ms elapsed cpu time, including 81 ms collecting
+    1998 ms elapsed real time, including 81 ms collecting
+    663840048 bytes allocated
+running stats for compile-puzzle:
+    1 collection
+    83 ms elapsed cpu time, including 39 ms collecting
+    441 ms elapsed real time, including 39 ms collecting
+    4930968 bytes allocated
+running stats for puzzle (180):
+    43 collections
+    2055 ms elapsed cpu time, including 48 ms collecting
+    2055 ms elapsed real time, including 49 ms collecting
+    178451424 bytes allocated
+running stats for compile-puzzle:
+    1 collection
+    77 ms elapsed cpu time, including 39 ms collecting
+    78 ms elapsed real time, including 39 ms collecting
+    4930968 bytes allocated
+running stats for puzzle (180):
+    43 collections
+    2055 ms elapsed cpu time, including 48 ms collecting
+    2055 ms elapsed real time, including 49 ms collecting
+    178451424 bytes allocated
+running stats for compile-puzzle:
+    1 collection
+    78 ms elapsed cpu time, including 39 ms collecting
+    79 ms elapsed real time, including 39 ms collecting
+    4930968 bytes allocated
+running stats for puzzle (180):
+    43 collections
+    2054 ms elapsed cpu time, including 48 ms collecting
+    2055 ms elapsed real time, including 49 ms collecting
+    178451424 bytes allocated
+running stats for compile-puzzle:
+    1 collection
+    77 ms elapsed cpu time, including 39 ms collecting
+    78 ms elapsed real time, including 39 ms collecting
+    4930968 bytes allocated
+running stats for puzzle (180):
+    43 collections
+    2055 ms elapsed cpu time, including 48 ms collecting
+    2055 ms elapsed real time, including 49 ms collecting
+    178451424 bytes allocated
+running stats for compile-puzzle:
+    1 collection
+    77 ms elapsed cpu time, including 39 ms collecting
+    78 ms elapsed real time, including 39 ms collecting
+    4930968 bytes allocated
+running stats for puzzle (180):
+    43 collections
+    2055 ms elapsed cpu time, including 48 ms collecting
+    2055 ms elapsed real time, including 49 ms collecting
+    178451424 bytes allocated
+running stats for compile-quicksort:
+    1 collection
+    69 ms elapsed cpu time, including 38 ms collecting
+    407 ms elapsed real time, including 39 ms collecting
+    2927256 bytes allocated
+running stats for quicksort30 (60):
+    38 collections
+    2038 ms elapsed cpu time, including 69 ms collecting
+    2039 ms elapsed real time, including 69 ms collecting
+    157352288 bytes allocated
+running stats for compile-quicksort:
+    1 collection
+    65 ms elapsed cpu time, including 38 ms collecting
+    65 ms elapsed real time, including 39 ms collecting
+    2927256 bytes allocated
+running stats for quicksort30 (60):
+    38 collections
+    2038 ms elapsed cpu time, including 68 ms collecting
+    2038 ms elapsed real time, including 69 ms collecting
+    157352288 bytes allocated
+running stats for compile-quicksort:
+    1 collection
+    65 ms elapsed cpu time, including 38 ms collecting
+    65 ms elapsed real time, including 38 ms collecting
+    2927256 bytes allocated
+running stats for quicksort30 (60):
+    38 collections
+    2050 ms elapsed cpu time, including 69 ms collecting
+    2050 ms elapsed real time, including 69 ms collecting
+    157352288 bytes allocated
+running stats for compile-quicksort:
+    1 collection
+    65 ms elapsed cpu time, including 38 ms collecting
+    66 ms elapsed real time, including 39 ms collecting
+    2927256 bytes allocated
+running stats for quicksort30 (60):
+    38 collections
+    2045 ms elapsed cpu time, including 68 ms collecting
+    2046 ms elapsed real time, including 69 ms collecting
+    157352288 bytes allocated
+running stats for compile-quicksort:
+    1 collection
+    65 ms elapsed cpu time, including 38 ms collecting
+    65 ms elapsed real time, including 39 ms collecting
+    2927256 bytes allocated
+running stats for quicksort30 (60):
+    38 collections
+    2039 ms elapsed cpu time, including 69 ms collecting
+    2039 ms elapsed real time, including 69 ms collecting
+    157352288 bytes allocated
+running stats for compile-ray:
+    2 collections
+    89 ms elapsed cpu time, including 41 ms collecting
+    426 ms elapsed real time, including 41 ms collecting
+    5463456 bytes allocated
+running stats for ray (5):
+    164 collections
+    1243 ms elapsed cpu time, including 84 ms collecting
+    1243 ms elapsed real time, including 85 ms collecting
+    686254592 bytes allocated
+running stats for compile-ray:
+    2 collections
+    84 ms elapsed cpu time, including 41 ms collecting
+    84 ms elapsed real time, including 41 ms collecting
+    5463456 bytes allocated
+running stats for ray (5):
+    164 collections
+    1243 ms elapsed cpu time, including 84 ms collecting
+    1243 ms elapsed real time, including 85 ms collecting
+    686254592 bytes allocated
+running stats for compile-ray:
+    2 collections
+    84 ms elapsed cpu time, including 41 ms collecting
+    84 ms elapsed real time, including 41 ms collecting
+    5463456 bytes allocated
+running stats for ray (5):
+    164 collections
+    1243 ms elapsed cpu time, including 84 ms collecting
+    1244 ms elapsed real time, including 85 ms collecting
+    686254592 bytes allocated
+running stats for compile-ray:
+    2 collections
+    84 ms elapsed cpu time, including 41 ms collecting
+    84 ms elapsed real time, including 41 ms collecting
+    5463456 bytes allocated
+running stats for ray (5):
+    164 collections
+    1247 ms elapsed cpu time, including 84 ms collecting
+    1323 ms elapsed real time, including 86 ms collecting
+    686254592 bytes allocated
+running stats for compile-ray:
+    2 collections
+    84 ms elapsed cpu time, including 41 ms collecting
+    85 ms elapsed real time, including 42 ms collecting
+    5463456 bytes allocated
+running stats for ray (5):
+    164 collections
+    1245 ms elapsed cpu time, including 85 ms collecting
+    1246 ms elapsed real time, including 86 ms collecting
+    686254592 bytes allocated
+running stats for compile-sboyer:
+    2 collections
+    91 ms elapsed cpu time, including 40 ms collecting
+    111 ms elapsed real time, including 40 ms collecting
+    5085016 bytes allocated
+running stats for sboyer0 (200):
+    31 collections
+    2411 ms elapsed cpu time, including 44 ms collecting
+    2411 ms elapsed real time, including 44 ms collecting
+    132330736 bytes allocated
+running stats for compile-sboyer:
+    2 collections
+    87 ms elapsed cpu time, including 40 ms collecting
+    88 ms elapsed real time, including 41 ms collecting
+    5085016 bytes allocated
+running stats for sboyer0 (200):
+    31 collections
+    2411 ms elapsed cpu time, including 44 ms collecting
+    2411 ms elapsed real time, including 45 ms collecting
+    132330736 bytes allocated
+running stats for compile-sboyer:
+    2 collections
+    87 ms elapsed cpu time, including 40 ms collecting
+    88 ms elapsed real time, including 40 ms collecting
+    5085016 bytes allocated
+running stats for sboyer0 (200):
+    31 collections
+    2411 ms elapsed cpu time, including 44 ms collecting
+    2412 ms elapsed real time, including 45 ms collecting
+    132330736 bytes allocated
+running stats for compile-sboyer:
+    2 collections
+    87 ms elapsed cpu time, including 40 ms collecting
+    88 ms elapsed real time, including 41 ms collecting
+    5085016 bytes allocated
+running stats for sboyer0 (200):
+    31 collections
+    2411 ms elapsed cpu time, including 44 ms collecting
+    2412 ms elapsed real time, including 45 ms collecting
+    132330736 bytes allocated
+running stats for compile-sboyer:
+    2 collections
+    87 ms elapsed cpu time, including 40 ms collecting
+    88 ms elapsed real time, including 41 ms collecting
+    5085016 bytes allocated
+running stats for sboyer0 (200):
+    31 collections
+    2410 ms elapsed cpu time, including 44 ms collecting
+    2410 ms elapsed real time, including 44 ms collecting
+    132330736 bytes allocated
+running stats for compile-scheme:
+    4 collections
+    183 ms elapsed cpu time, including 72 ms collecting
+    508 ms elapsed real time, including 73 ms collecting
+    15561952 bytes allocated
+running stats for scheme (40000):
+    70 collections
+    1804 ms elapsed cpu time, including 51 ms collecting
+    1803 ms elapsed real time, including 51 ms collecting
+    293760048 bytes allocated
+running stats for compile-scheme:
+    4 collections
+    179 ms elapsed cpu time, including 71 ms collecting
+    179 ms elapsed real time, including 72 ms collecting
+    15561952 bytes allocated
+running stats for scheme (40000):
+    70 collections
+    1803 ms elapsed cpu time, including 50 ms collecting
+    1804 ms elapsed real time, including 51 ms collecting
+    293760048 bytes allocated
+running stats for compile-scheme:
+    4 collections
+    179 ms elapsed cpu time, including 72 ms collecting
+    179 ms elapsed real time, including 72 ms collecting
+    15561952 bytes allocated
+running stats for scheme (40000):
+    70 collections
+    1803 ms elapsed cpu time, including 50 ms collecting
+    1804 ms elapsed real time, including 51 ms collecting
+    293760048 bytes allocated
+running stats for compile-scheme:
+    4 collections
+    179 ms elapsed cpu time, including 71 ms collecting
+    179 ms elapsed real time, including 72 ms collecting
+    15561952 bytes allocated
+running stats for scheme (40000):
+    70 collections
+    1804 ms elapsed cpu time, including 50 ms collecting
+    1804 ms elapsed real time, including 51 ms collecting
+    293760048 bytes allocated
+running stats for compile-scheme:
+    4 collections
+    179 ms elapsed cpu time, including 72 ms collecting
+    179 ms elapsed real time, including 72 ms collecting
+    15561952 bytes allocated
+running stats for scheme (40000):
+    70 collections
+    1804 ms elapsed cpu time, including 51 ms collecting
+    1804 ms elapsed real time, including 51 ms collecting
+    293760048 bytes allocated
+running stats for compile-simplex:
+    2 collections
+    109 ms elapsed cpu time, including 43 ms collecting
+    128 ms elapsed real time, including 44 ms collecting
+    8395200 bytes allocated
+running stats for simplex (160000):
+    211 collections
+    1615 ms elapsed cpu time, including 95 ms collecting
+    1617 ms elapsed real time, including 96 ms collecting
+    881932336 bytes allocated
+running stats for compile-simplex:
+    2 collections
+    104 ms elapsed cpu time, including 43 ms collecting
+    105 ms elapsed real time, including 44 ms collecting
+    8395200 bytes allocated
+running stats for simplex (160000):
+    211 collections
+    1614 ms elapsed cpu time, including 95 ms collecting
+    1616 ms elapsed real time, including 96 ms collecting
+    881932336 bytes allocated
+running stats for compile-simplex:
+    2 collections
+    104 ms elapsed cpu time, including 43 ms collecting
+    105 ms elapsed real time, including 44 ms collecting
+    8395200 bytes allocated
+running stats for simplex (160000):
+    211 collections
+    1614 ms elapsed cpu time, including 94 ms collecting
+    1616 ms elapsed real time, including 96 ms collecting
+    881932336 bytes allocated
+running stats for compile-simplex:
+    2 collections
+    104 ms elapsed cpu time, including 43 ms collecting
+    105 ms elapsed real time, including 44 ms collecting
+    8395200 bytes allocated
+running stats for simplex (160000):
+    211 collections
+    1615 ms elapsed cpu time, including 94 ms collecting
+    1616 ms elapsed real time, including 96 ms collecting
+    881932336 bytes allocated
+running stats for compile-simplex:
+    2 collections
+    104 ms elapsed cpu time, including 43 ms collecting
+    105 ms elapsed real time, including 44 ms collecting
+    8395200 bytes allocated
+running stats for simplex (160000):
+    211 collections
+    1613 ms elapsed cpu time, including 94 ms collecting
+    1614 ms elapsed real time, including 95 ms collecting
+    881932336 bytes allocated
+running stats for compile-slatex:
+    10 collections
+    544 ms elapsed cpu time, including 124 ms collecting
+    882 ms elapsed real time, including 124 ms collecting
+    42345112 bytes allocated
+running stats for slatex (30):
+    14 collections
+    2656 ms elapsed cpu time, including 238 ms collecting
+    3826 ms elapsed real time, including 238 ms collecting
+    57370536 bytes allocated
+running stats for compile-slatex:
+    10 collections
+    539 ms elapsed cpu time, including 124 ms collecting
+    541 ms elapsed real time, including 124 ms collecting
+    42345112 bytes allocated
+running stats for slatex (30):
+    14 collections
+    2101 ms elapsed cpu time, including 237 ms collecting
+    3804 ms elapsed real time, including 237 ms collecting
+    57370536 bytes allocated
+running stats for compile-slatex:
+    10 collections
+    536 ms elapsed cpu time, including 121 ms collecting
+    538 ms elapsed real time, including 122 ms collecting
+    42345112 bytes allocated
+running stats for slatex (30):
+    14 collections
+    2086 ms elapsed cpu time, including 237 ms collecting
+    3752 ms elapsed real time, including 238 ms collecting
+    57370536 bytes allocated
+running stats for compile-slatex:
+    10 collections
+    539 ms elapsed cpu time, including 124 ms collecting
+    541 ms elapsed real time, including 124 ms collecting
+    42345112 bytes allocated
+running stats for slatex (30):
+    14 collections
+    2075 ms elapsed cpu time, including 235 ms collecting
+    3864 ms elapsed real time, including 236 ms collecting
+    57370536 bytes allocated
+running stats for compile-slatex:
+    10 collections
+    536 ms elapsed cpu time, including 121 ms collecting
+    538 ms elapsed real time, including 122 ms collecting
+    42345112 bytes allocated
+running stats for slatex (30):
+    14 collections
+    2061 ms elapsed cpu time, including 235 ms collecting
+    4240 ms elapsed real time, including 236 ms collecting
+    57370536 bytes allocated
+running stats for compile-string:
+    1 collection
+    61 ms elapsed cpu time, including 39 ms collecting
+    78 ms elapsed real time, including 39 ms collecting
+    1823312 bytes allocated
+running stats for string (4):
+    159 collections
+    2117 ms elapsed cpu time, including 1375 ms collecting
+    2118 ms elapsed real time, including 1376 ms collecting
+    503273424 bytes allocated
+running stats for compile-string:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 39 ms collecting
+    1823312 bytes allocated
+running stats for string (4):
+    159 collections
+    2116 ms elapsed cpu time, including 1373 ms collecting
+    2117 ms elapsed real time, including 1375 ms collecting
+    503273424 bytes allocated
+running stats for compile-string:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 39 ms collecting
+    1823312 bytes allocated
+running stats for string (4):
+    159 collections
+    2118 ms elapsed cpu time, including 1376 ms collecting
+    2119 ms elapsed real time, including 1378 ms collecting
+    503273424 bytes allocated
+running stats for compile-string:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 39 ms collecting
+    1823312 bytes allocated
+running stats for string (4):
+    159 collections
+    2164 ms elapsed cpu time, including 1408 ms collecting
+    2382 ms elapsed real time, including 1550 ms collecting
+    503273424 bytes allocated
+running stats for compile-string:
+    1 collection
+    62 ms elapsed cpu time, including 42 ms collecting
+    62 ms elapsed real time, including 42 ms collecting
+    1823312 bytes allocated
+running stats for string (4):
+    159 collections
+    2222 ms elapsed cpu time, including 1473 ms collecting
+    2237 ms elapsed real time, including 1483 ms collecting
+    503273424 bytes allocated
+running stats for compile-sum:
+    1 collection
+    60 ms elapsed cpu time, including 42 ms collecting
+    116 ms elapsed real time, including 42 ms collecting
+    1450424 bytes allocated
+running stats for sum (30000):
+    no collections
+    1733 ms elapsed cpu time, including 0 ms collecting
+    1736 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-sum:
+    1 collection
+    60 ms elapsed cpu time, including 42 ms collecting
+    61 ms elapsed real time, including 43 ms collecting
+    1450424 bytes allocated
+running stats for sum (30000):
+    no collections
+    1852 ms elapsed cpu time, including 0 ms collecting
+    1856 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-sum:
+    1 collection
+    60 ms elapsed cpu time, including 41 ms collecting
+    60 ms elapsed real time, including 42 ms collecting
+    1450424 bytes allocated
+running stats for sum (30000):
+    no collections
+    1891 ms elapsed cpu time, including 0 ms collecting
+    1894 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-sum:
+    1 collection
+    60 ms elapsed cpu time, including 41 ms collecting
+    60 ms elapsed real time, including 42 ms collecting
+    1450424 bytes allocated
+running stats for sum (30000):
+    no collections
+    1877 ms elapsed cpu time, including 0 ms collecting
+    1882 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-sum:
+    1 collection
+    62 ms elapsed cpu time, including 43 ms collecting
+    63 ms elapsed real time, including 43 ms collecting
+    1450424 bytes allocated
+running stats for sum (30000):
+    no collections
+    1798 ms elapsed cpu time, including 0 ms collecting
+    1800 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-sum1:
+    1 collection
+    62 ms elapsed cpu time, including 39 ms collecting
+    87 ms elapsed real time, including 40 ms collecting
+    1614448 bytes allocated
+running stats for sum1 (5):
+    142 collections
+    2359 ms elapsed cpu time, including 81 ms collecting
+    2380 ms elapsed real time, including 82 ms collecting
+    596924888 bytes allocated
+running stats for compile-sum1:
+    1 collection
+    65 ms elapsed cpu time, including 43 ms collecting
+    65 ms elapsed real time, including 44 ms collecting
+    1614448 bytes allocated
+running stats for sum1 (5):
+    142 collections
+    2511 ms elapsed cpu time, including 88 ms collecting
+    2522 ms elapsed real time, including 90 ms collecting
+    596924888 bytes allocated
+running stats for compile-sum1:
+    1 collection
+    64 ms elapsed cpu time, including 43 ms collecting
+    64 ms elapsed real time, including 44 ms collecting
+    1614448 bytes allocated
+running stats for sum1 (5):
+    142 collections
+    2433 ms elapsed cpu time, including 86 ms collecting
+    2435 ms elapsed real time, including 87 ms collecting
+    596924888 bytes allocated
+running stats for compile-sum1:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1614448 bytes allocated
+running stats for sum1 (5):
+    142 collections
+    2311 ms elapsed cpu time, including 79 ms collecting
+    2311 ms elapsed real time, including 80 ms collecting
+    596924888 bytes allocated
+running stats for compile-sum1:
+    1 collection
+    57 ms elapsed cpu time, including 38 ms collecting
+    57 ms elapsed real time, including 39 ms collecting
+    1614448 bytes allocated
+running stats for sum1 (5):
+    142 collections
+    2310 ms elapsed cpu time, including 79 ms collecting
+    2311 ms elapsed real time, including 80 ms collecting
+    596924888 bytes allocated
+running stats for compile-sumfp:
+    1 collection
+    59 ms elapsed cpu time, including 39 ms collecting
+    87 ms elapsed real time, including 39 ms collecting
+    1489224 bytes allocated
+running stats for sumfp (8000):
+    611 collections
+    1249 ms elapsed cpu time, including 198 ms collecting
+    1249 ms elapsed real time, including 201 ms collecting
+    2560256048 bytes allocated
+running stats for compile-sumfp:
+    1 collection
+    56 ms elapsed cpu time, including 39 ms collecting
+    57 ms elapsed real time, including 39 ms collecting
+    1489224 bytes allocated
+running stats for sumfp (8000):
+    611 collections
+    1277 ms elapsed cpu time, including 198 ms collecting
+    1278 ms elapsed real time, including 202 ms collecting
+    2560256048 bytes allocated
+running stats for compile-sumfp:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 40 ms collecting
+    1489224 bytes allocated
+running stats for sumfp (8000):
+    611 collections
+    1310 ms elapsed cpu time, including 202 ms collecting
+    1323 ms elapsed real time, including 215 ms collecting
+    2560256048 bytes allocated
+running stats for compile-sumfp:
+    1 collection
+    56 ms elapsed cpu time, including 39 ms collecting
+    57 ms elapsed real time, including 39 ms collecting
+    1489224 bytes allocated
+running stats for sumfp (8000):
+    611 collections
+    1270 ms elapsed cpu time, including 198 ms collecting
+    1274 ms elapsed real time, including 204 ms collecting
+    2560256048 bytes allocated
+running stats for compile-sumfp:
+    1 collection
+    56 ms elapsed cpu time, including 39 ms collecting
+    57 ms elapsed real time, including 39 ms collecting
+    1489224 bytes allocated
+running stats for sumfp (8000):
+    611 collections
+    1250 ms elapsed cpu time, including 197 ms collecting
+    1250 ms elapsed real time, including 200 ms collecting
+    2560256048 bytes allocated
+running stats for compile-sumloop:
+    1 collection
+    60 ms elapsed cpu time, including 39 ms collecting
+    84 ms elapsed real time, including 39 ms collecting
+    1683976 bytes allocated
+running stats for sumloop (2):
+    no collections
+    1775 ms elapsed cpu time, including 0 ms collecting
+    1776 ms elapsed real time, including 0 ms collecting
+    80 bytes allocated
+running stats for compile-sumloop:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 40 ms collecting
+    1683976 bytes allocated
+running stats for sumloop (2):
+    no collections
+    1784 ms elapsed cpu time, including 0 ms collecting
+    1785 ms elapsed real time, including 0 ms collecting
+    80 bytes allocated
+running stats for compile-sumloop:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1683976 bytes allocated
+running stats for sumloop (2):
+    no collections
+    1780 ms elapsed cpu time, including 0 ms collecting
+    1781 ms elapsed real time, including 0 ms collecting
+    80 bytes allocated
+running stats for compile-sumloop:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 40 ms collecting
+    1683976 bytes allocated
+running stats for sumloop (2):
+    no collections
+    1782 ms elapsed cpu time, including 0 ms collecting
+    1784 ms elapsed real time, including 0 ms collecting
+    80 bytes allocated
+running stats for compile-sumloop:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 40 ms collecting
+    1683976 bytes allocated
+running stats for sumloop (2):
+    no collections
+    1778 ms elapsed cpu time, including 0 ms collecting
+    1779 ms elapsed real time, including 0 ms collecting
+    80 bytes allocated
+running stats for compile-tail:
+    1 collection
+    61 ms elapsed cpu time, including 39 ms collecting
+    63 ms elapsed real time, including 39 ms collecting
+    1740744 bytes allocated
+running stats for tail (4):
+    86 collections
+    1816 ms elapsed cpu time, including 387 ms collecting
+    1818 ms elapsed real time, including 388 ms collecting
+    361734664 bytes allocated
+running stats for compile-tail:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1740744 bytes allocated
+running stats for tail (4):
+    86 collections
+    1816 ms elapsed cpu time, including 386 ms collecting
+    1818 ms elapsed real time, including 388 ms collecting
+    361734664 bytes allocated
+running stats for compile-tail:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1740744 bytes allocated
+running stats for tail (4):
+    86 collections
+    1816 ms elapsed cpu time, including 387 ms collecting
+    1818 ms elapsed real time, including 388 ms collecting
+    361734664 bytes allocated
+running stats for compile-tail:
+    1 collection
+    57 ms elapsed cpu time, including 38 ms collecting
+    58 ms elapsed real time, including 39 ms collecting
+    1740744 bytes allocated
+running stats for tail (4):
+    86 collections
+    1816 ms elapsed cpu time, including 386 ms collecting
+    1817 ms elapsed real time, including 387 ms collecting
+    361734664 bytes allocated
+running stats for compile-tail:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    59 ms elapsed real time, including 40 ms collecting
+    1740744 bytes allocated
+running stats for tail (4):
+    86 collections
+    1820 ms elapsed cpu time, including 390 ms collecting
+    1821 ms elapsed real time, including 391 ms collecting
+    361734664 bytes allocated
+running stats for compile-tak:
+    1 collection
+    61 ms elapsed cpu time, including 39 ms collecting
+    78 ms elapsed real time, including 40 ms collecting
+    1483872 bytes allocated
+running stats for tak (3000):
+    no collections
+    2223 ms elapsed cpu time, including 0 ms collecting
+    2223 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-tak:
+    1 collection
+    58 ms elapsed cpu time, including 40 ms collecting
+    58 ms elapsed real time, including 40 ms collecting
+    1483872 bytes allocated
+running stats for tak (3000):
+    no collections
+    2223 ms elapsed cpu time, including 0 ms collecting
+    2223 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-tak:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 40 ms collecting
+    1483872 bytes allocated
+running stats for tak (3000):
+    no collections
+    2223 ms elapsed cpu time, including 0 ms collecting
+    2223 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-tak:
+    1 collection
+    57 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 40 ms collecting
+    1483872 bytes allocated
+running stats for tak (3000):
+    no collections
+    2222 ms elapsed cpu time, including 0 ms collecting
+    2223 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-tak:
+    1 collection
+    58 ms elapsed cpu time, including 39 ms collecting
+    58 ms elapsed real time, including 40 ms collecting
+    1483872 bytes allocated
+running stats for tak (3000):
+    no collections
+    2223 ms elapsed cpu time, including 0 ms collecting
+    2224 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-takl:
+    1 collection
+    63 ms elapsed cpu time, including 40 ms collecting
+    64 ms elapsed real time, including 40 ms collecting
+    1750488 bytes allocated
+running stats for takl (500):
+    no collections
+    1808 ms elapsed cpu time, including 0 ms collecting
+    1810 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-takl:
+    1 collection
+    60 ms elapsed cpu time, including 40 ms collecting
+    60 ms elapsed real time, including 41 ms collecting
+    1750488 bytes allocated
+running stats for takl (500):
+    no collections
+    1808 ms elapsed cpu time, including 0 ms collecting
+    1809 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-takl:
+    1 collection
+    60 ms elapsed cpu time, including 40 ms collecting
+    60 ms elapsed real time, including 40 ms collecting
+    1750488 bytes allocated
+running stats for takl (500):
+    no collections
+    1808 ms elapsed cpu time, including 0 ms collecting
+    1809 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-takl:
+    1 collection
+    60 ms elapsed cpu time, including 39 ms collecting
+    60 ms elapsed real time, including 40 ms collecting
+    1750488 bytes allocated
+running stats for takl (500):
+    no collections
+    1808 ms elapsed cpu time, including 0 ms collecting
+    1810 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-takl:
+    1 collection
+    59 ms elapsed cpu time, including 39 ms collecting
+    61 ms elapsed real time, including 40 ms collecting
+    1750488 bytes allocated
+running stats for takl (500):
+    no collections
+    1808 ms elapsed cpu time, including 0 ms collecting
+    1808 ms elapsed real time, including 0 ms collecting
+    48 bytes allocated
+running stats for compile-trav1:
+    1 collection
+    79 ms elapsed cpu time, including 39 ms collecting
+    104 ms elapsed real time, including 40 ms collecting
+    4324632 bytes allocated
+running stats for trav1 (150):
+    46 collections
+    1896 ms elapsed cpu time, including 158 ms collecting
+    1899 ms elapsed real time, including 159 ms collecting
+    192204760 bytes allocated
+running stats for compile-trav1:
+    1 collection
+    74 ms elapsed cpu time, including 39 ms collecting
+    76 ms elapsed real time, including 40 ms collecting
+    4324632 bytes allocated
+running stats for trav1 (150):
+    46 collections
+    1898 ms elapsed cpu time, including 160 ms collecting
+    1902 ms elapsed real time, including 161 ms collecting
+    192204760 bytes allocated
+running stats for compile-trav1:
+    1 collection
+    74 ms elapsed cpu time, including 39 ms collecting
+    74 ms elapsed real time, including 39 ms collecting
+    4324632 bytes allocated
+running stats for trav1 (150):
+    46 collections
+    1898 ms elapsed cpu time, including 159 ms collecting
+    1901 ms elapsed real time, including 160 ms collecting
+    192204760 bytes allocated
+running stats for compile-trav1:
+    1 collection
+    74 ms elapsed cpu time, including 39 ms collecting
+    75 ms elapsed real time, including 39 ms collecting
+    4324632 bytes allocated
+running stats for trav1 (150):
+    46 collections
+    1897 ms elapsed cpu time, including 159 ms collecting
+    1900 ms elapsed real time, including 160 ms collecting
+    192204760 bytes allocated
+running stats for compile-trav1:
+    1 collection
+    74 ms elapsed cpu time, including 39 ms collecting
+    75 ms elapsed real time, including 39 ms collecting
+    4324632 bytes allocated
+running stats for trav1 (150):
+    46 collections
+    1894 ms elapsed cpu time, including 158 ms collecting
+    1896 ms elapsed real time, including 159 ms collecting
+    192204760 bytes allocated
+running stats for compile-trav2:
+    2 collections
+    93 ms elapsed cpu time, including 41 ms collecting
+    429 ms elapsed real time, including 41 ms collecting
+    5618816 bytes allocated
+running stats for trav2 (40):
+    3 collections
+    1884 ms elapsed cpu time, including 18 ms collecting
+    1885 ms elapsed real time, including 18 ms collecting
+    16012976 bytes allocated
+running stats for compile-trav2:
+    2 collections
+    89 ms elapsed cpu time, including 41 ms collecting
+    89 ms elapsed real time, including 42 ms collecting
+    5618816 bytes allocated
+running stats for trav2 (40):
+    3 collections
+    1884 ms elapsed cpu time, including 18 ms collecting
+    1885 ms elapsed real time, including 19 ms collecting
+    16012976 bytes allocated
+running stats for compile-trav2:
+    2 collections
+    89 ms elapsed cpu time, including 41 ms collecting
+    89 ms elapsed real time, including 42 ms collecting
+    5618816 bytes allocated
+running stats for trav2 (40):
+    3 collections
+    1884 ms elapsed cpu time, including 19 ms collecting
+    1885 ms elapsed real time, including 19 ms collecting
+    16012976 bytes allocated
+running stats for compile-trav2:
+    2 collections
+    89 ms elapsed cpu time, including 41 ms collecting
+    89 ms elapsed real time, including 42 ms collecting
+    5618816 bytes allocated
+running stats for trav2 (40):
+    3 collections
+    1884 ms elapsed cpu time, including 18 ms collecting
+    1884 ms elapsed real time, including 19 ms collecting
+    16012976 bytes allocated
+running stats for compile-trav2:
+    2 collections
+    89 ms elapsed cpu time, including 41 ms collecting
+    89 ms elapsed real time, including 42 ms collecting
+    5618816 bytes allocated
+running stats for trav2 (40):
+    3 collections
+    1884 ms elapsed cpu time, including 19 ms collecting
+    1885 ms elapsed real time, including 19 ms collecting
+    16012976 bytes allocated
+running stats for compile-triangl:
+    1 collection
+    68 ms elapsed cpu time, including 39 ms collecting
+    91 ms elapsed real time, including 40 ms collecting
+    2438080 bytes allocated
+running stats for triangl (12):
+    8 collections
+    2158 ms elapsed cpu time, including 20 ms collecting
+    2158 ms elapsed real time, including 20 ms collecting
+    32207760 bytes allocated
+running stats for compile-triangl:
+    1 collection
+    65 ms elapsed cpu time, including 39 ms collecting
+    65 ms elapsed real time, including 40 ms collecting
+    2438080 bytes allocated
+running stats for triangl (12):
+    8 collections
+    2158 ms elapsed cpu time, including 20 ms collecting
+    2158 ms elapsed real time, including 20 ms collecting
+    32207760 bytes allocated
+running stats for compile-triangl:
+    1 collection
+    65 ms elapsed cpu time, including 39 ms collecting
+    65 ms elapsed real time, including 40 ms collecting
+    2438080 bytes allocated
+running stats for triangl (12):
+    8 collections
+    2159 ms elapsed cpu time, including 20 ms collecting
+    2159 ms elapsed real time, including 20 ms collecting
+    32207760 bytes allocated
+running stats for compile-triangl:
+    1 collection
+    65 ms elapsed cpu time, including 39 ms collecting
+    65 ms elapsed real time, including 40 ms collecting
+    2438080 bytes allocated
+running stats for triangl (12):
+    8 collections
+    2158 ms elapsed cpu time, including 20 ms collecting
+    2160 ms elapsed real time, including 20 ms collecting
+    32207760 bytes allocated
+running stats for compile-triangl:
+    1 collection
+    64 ms elapsed cpu time, including 39 ms collecting
+    65 ms elapsed real time, including 40 ms collecting
+    2438080 bytes allocated
+running stats for triangl (12):
+    8 collections
+    2158 ms elapsed cpu time, including 20 ms collecting
+    2158 ms elapsed real time, including 20 ms collecting
+    32207760 bytes allocated
+running stats for compile-wc:
+    1 collection
+    64 ms elapsed cpu time, including 39 ms collecting
+    65 ms elapsed real time, including 40 ms collecting
+    1903528 bytes allocated
+running stats for wc (15):
+    no collections
+    2199 ms elapsed cpu time, including 0 ms collecting
+    2200 ms elapsed real time, including 0 ms collecting
+    194232 bytes allocated
+running stats for compile-wc:
+    1 collection
+    60 ms elapsed cpu time, including 39 ms collecting
+    61 ms elapsed real time, including 40 ms collecting
+    1903528 bytes allocated
+running stats for wc (15):
+    no collections
+    2199 ms elapsed cpu time, including 0 ms collecting
+    2200 ms elapsed real time, including 0 ms collecting
+    194232 bytes allocated
+running stats for compile-wc:
+    1 collection
+    61 ms elapsed cpu time, including 39 ms collecting
+    61 ms elapsed real time, including 40 ms collecting
+    1903528 bytes allocated
+running stats for wc (15):
+    no collections
+    2199 ms elapsed cpu time, including 0 ms collecting
+    2200 ms elapsed real time, including 0 ms collecting
+    194232 bytes allocated
+running stats for compile-wc:
+    1 collection
+    61 ms elapsed cpu time, including 39 ms collecting
+    61 ms elapsed real time, including 40 ms collecting
+    1903528 bytes allocated
+running stats for wc (15):
+    no collections
+    2199 ms elapsed cpu time, including 0 ms collecting
+    2201 ms elapsed real time, including 0 ms collecting
+    194232 bytes allocated
+running stats for compile-wc:
+    1 collection
+    61 ms elapsed cpu time, including 39 ms collecting
+    61 ms elapsed real time, including 40 ms collecting
+    1903528 bytes allocated
+running stats for wc (15):
+    no collections
+    2199 ms elapsed cpu time, including 0 ms collecting
+    2200 ms elapsed real time, including 0 ms collecting
+    194232 bytes allocated

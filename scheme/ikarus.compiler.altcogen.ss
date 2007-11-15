@@ -421,12 +421,26 @@
           (if value-dest
               (make-seq body (make-set value-dest return-value-register))
               body)))))
+  ;;; (define (alloc-check size)
+  ;;;   (E (make-conditional ;;; PCB ALLOC-REDLINE
+  ;;;        (make-primcall '<= 
+  ;;;          (list (make-primcall 'int+ (list apr size)) 
+  ;;;                (make-primcall 'mref (list pcr (make-constant 4)))))
+  ;;;        (make-primcall 'nop '())
+  ;;;        (make-funcall 
+  ;;;          (make-primcall 'mref
+  ;;;            (list
+  ;;;              (make-constant (make-object (primref->symbol 'do-overflow)))
+  ;;;              (make-constant (- disp-symbol-record-proc symbol-ptag))))
+  ;;;          (list size)))))
   (define (alloc-check size)
-    (E (make-conditional ;;; PCB ALLOC-REDLINE
-         (make-primcall '<= 
-           (list (make-primcall 'int+ (list apr size)) 
-                 (make-primcall 'mref (list pcr (make-constant 4)))))
-         (make-primcall 'nop '())
+    (E (make-shortcut
+         (make-conditional ;;; PCB ALLOC-REDLINE
+           (make-primcall '<= 
+             (list (make-primcall 'int+ (list apr size)) 
+                   (make-primcall 'mref (list pcr (make-constant 4)))))
+           (make-primcall 'nop '())
+           (make-primcall 'interrupt '()))
          (make-funcall 
            (make-primcall 'mref
              (list

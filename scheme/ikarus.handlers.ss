@@ -45,8 +45,13 @@
   (define interrupt-handler
     (make-parameter
       (lambda ()
+        (define-condition-type &interrupted &condition
+          make-interrupted-condition interrupted-condition?)
         (set-port-output-index! (console-output-port) 0)
-        (error #f "interrupted"))
+        (raise-continuable
+          (condition
+            (make-interrupted-condition)
+            (make-message-condition "received an interrupt signal"))))
       (lambda (x)
         (if (procedure? x)
             x

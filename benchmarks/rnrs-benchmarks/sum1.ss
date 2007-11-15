@@ -25,7 +25,10 @@
     (run-benchmark
      "sum1"
      sum1-iters
-     (lambda (result) (and (fl>=? result 15794.974999999)
-                           (fl<=? result 15794.975000001)))
+     (lambda (result) 
+       (display result)
+       (newline)
+       (and (fl>=? result 15794.974999999)
+            (fl<=? result 15794.975000001)))
      (lambda () (lambda () (go))))))
 
