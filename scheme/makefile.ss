@@ -796,7 +796,7 @@
     [fxdiv0                                      i r fx]
     [fxdiv0-and-mod0                             i r fx]
     [fxeven?                                     i r fx]
-    [fxfirst-bit-set                             r fx]
+    [fxfirst-bit-set                             i r fx]
     [fxif                                        i r fx]
     [fxior                                       i r fx]
     [fxlength                                    i r fx]

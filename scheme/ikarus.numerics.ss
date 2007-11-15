@@ -2886,7 +2886,7 @@
         (error 'fldiv0-and-mod0 "not a flonum" n))))
 
 (library (ikarus bitwise misc)
-  (export bitwise-first-bit-set
+  (export fxfirst-bit-set bitwise-first-bit-set
           fxbit-count bitwise-bit-count
           fxlength)
   (import 
@@ -2894,37 +2894,56 @@
     (ikarus system $bignums)
     (ikarus system $flonums)
     (except (ikarus) 
-      bitwise-first-bit-set
+      fxfirst-bit-set bitwise-first-bit-set
       fxbit-count bitwise-bit-count
       fxlength))
 
-  (define (bitwise-first-bit-set x)
+  (module (bitwise-first-bit-set fxfirst-bit-set)
     (define (byte-first-bit-set x i) 
-      (case ($fxlogand x #b11)
-        [(0) (byte-first-bit-set ($fxsra x 2) ($fx+ i 2))]
-        [(2) ($fx+ i 1)]
-        [else i]))
-    (define (fx-first-bit-set x i)
+      (import (ikarus system $bytevectors))
+      (define-syntax make-first-bit-set-bytevector
+        (lambda (x)
+          (define (fst n)
+            (cond
+              [(zero? n) 0]
+              [(even? n) (fst (bitwise-arithmetic-shift-right n 1))]
+              [else (+ 1 (fst (bitwise-arithmetic-shift-right n 1)))]))
+          (u8-list->bytevector
+            (let f ([i 0])
+              (cond
+                [(= i 256) '()]
+                [else (cons (fst i) (f (+ i 1)))])))))
+      (define bv (make-first-bit-set-bytevector))
+      ($fx+ i ($bytevector-u8-ref bv i)))
+    (define ($fxloop x i)
       (let ([y ($fxlogand x 255)])
         (if ($fx= y 0)
-            (fx-first-bit-set ($fxsra x 8) ($fx+ i 8))
+            ($fxloop ($fxsra x 8) ($fx+ i 8))
             (byte-first-bit-set y i))))
-    (define (bn-first-bit-set x i idx)
+    (define ($bnloop x i idx)
       (let ([b ($bignum-byte-ref x idx)])
         (if ($fxzero? b) 
-            (bn-first-bit-set x ($fx+ i 8) ($fx+ idx 1))
+            ($bnloop x ($fx+ i 8) ($fx+ idx 1))
             (byte-first-bit-set b i))))
-    (cond
-      [(fixnum? x) 
-       (if ($fx> x 0) 
-           (fx-first-bit-set x 0)
-           (if ($fx= x 0) 
-               -1 
-               (if ($fx> x (least-fixnum)) 
-                   (fx-first-bit-set ($fx- 0 x) 0)
-                   (bn-first-bit-set (- x) 0 0))))]
-      [(bignum? x) (bn-first-bit-set x 0 0)]
-      [else (error 'bitwise-first-bit-set "not an exact integer" x)]))
+    (define ($fxfirst-bit-set x)
+      (if ($fx> x 0) 
+          ($fxloop x 0)
+          (if ($fx= x 0) 
+              -1 
+              (if ($fx> x (least-fixnum)) 
+                  ($fxloop ($fx- 0 x) 0)
+                  ($bnloop (- x) 0 0)))))
+    (define (fxfirst-bit-set x)
+      (cond
+        [(fixnum? x) 
+         ($fxfirst-bit-set x)]
+        [else (error 'fxfirst-bit-set "not a fixnum" x)]))
+    (define (bitwise-first-bit-set x)
+      (cond
+        [(fixnum? x) 
+         ($fxfirst-bit-set x)]
+        [(bignum? x) ($bnloop x 0 0)]
+        [else (error 'bitwise-first-bit-set "not an exact integer" x)])))
 
   (module (fxbit-count bitwise-bit-count)
     (define (pos-fxbitcount n)
