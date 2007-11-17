@@ -104,7 +104,7 @@
 (define-struct var 
    (name assigned referenced 
          reg-conf frm-conf var-conf reg-move frm-move var-move
-         loc index))
+         loc index global-loc))
 (define-struct cp-var (idx))
 (define-struct frame-var (idx))
 (define-struct new-frame (base-idx size body))
@@ -162,7 +162,7 @@
         [else (error 'mkfvar "not a fixnum" i)]))))
 
 (define (unique-var x)
-  (make-var (gensym x) #f #f #f #f #f #f #f #f #f #f))
+  (make-var (gensym x) #f #f #f #f #f #f #f #f #f #f #f))
 
 (define (recordize x)
   (define *cookie* (gensym))
@@ -224,6 +224,9 @@
             (caar cls*)]
            [else (f (cdr cls*))]))]
       [else '()]))
+  (define (make-global-set! lhs rhs)
+    (make-funcall (make-primref '$init-symbol-value!)
+      (list (make-constant lhs) rhs)))
   (define (E x ctxt)
     (cond
       [(pair? x)
@@ -240,10 +243,7 @@
               [(lexical lhs) => 
                (lambda (var) 
                  (make-assign var (E rhs lhs)))]
-              [else
-               (make-funcall (make-primref '$init-symbol-value!)
-                 (list (make-constant lhs)
-                       (E rhs lhs)))]))]
+              [else (make-global-set! lhs (E rhs lhs))]))] 
          [(begin)
           (let f ([a (cadr x)] [d (cddr x)])
             (cond
@@ -272,21 +272,32 @@
                   [loc* (map cadr bind*)]
                   [rhs* (map caddr bind*)])
               (let ([nlhs* (gen-fml* lhs*)])
+                (for-each 
+                  (lambda (lhs loc) 
+                    (set-var-global-loc! lhs loc))
+                  nlhs* loc*)
                 (let ([expr (make-rec*bind nlhs* (map E rhs* lhs*)
-                              (let f ([nlhs* nlhs*] [loc* loc*])
-                                (cond
-                                  [(null? nlhs*) (E body ctxt)]
-                                  [(not (car loc*)) 
-                                   (f (cdr nlhs*) (cdr loc*))]
-                                  [else
-                                   (make-seq 
-                                     (make-funcall
-                                       (make-primref '$init-symbol-value!)
-                                       (list (make-constant (car loc*))
-                                             (car nlhs*)))
-                                     (f (cdr nlhs*) (cdr loc*)))])))])
+                               (let f ([lhs* nlhs*] [loc* loc*])
+                                 (cond
+                                   [(null? lhs*) (E body ctxt)]
+                                   [(not (car loc*)) (f (cdr lhs*) (cdr loc*))]
+                                   [else
+                                    (make-seq 
+                                      (make-global-set! (car loc*) (car lhs*))
+                                      (f (cdr lhs*) (cdr loc*)))])))])
                   (ungen-fml* lhs*)
                   expr))))]
+         ;[(library-letrec*)
+         ; (let ([bind* (cadr x)] [body (caddr x)])
+         ;   (let ([lhs* (map car bind*)]
+         ;         [loc* (map cadr bind*)]
+         ;         [rhs* (map caddr bind*)])
+         ;     (let ([nlhs* (gen-fml* lhs*)])
+         ;       (let ([expr (make-library-recbind nlhs* loc*
+         ;                     (map E rhs* lhs*)
+         ;                     (E body ctxt))])
+         ;         (ungen-fml* lhs*)
+         ;         expr))))]
          [(case-lambda)
           (let ([cls*
                  (map
@@ -359,6 +370,10 @@
       [(rec*bind lhs* rhs* body) 
        `(letrec* ,(map (lambda (lhs rhs) (list (E lhs) (E rhs))) lhs* rhs*)
           ,(E body))]
+      ;[(library-recbind lhs* loc* rhs* body) 
+      ; `(letrec ,(map (lambda (lhs loc rhs) (list (E lhs) loc (E rhs))) 
+      ;                lhs* loc* rhs*)
+      ;    ,(E body))]
       [(fix lhs* rhs* body) 
        `(fix ,(map (lambda (lhs rhs) (list (E lhs) (E rhs))) lhs* rhs*)
           ,(E body))]
@@ -548,6 +563,8 @@
        (make-forcall rator (map Expr rand*))]
       [(assign lhs rhs)
        (make-assign lhs (Expr rhs))]
+      ;[(library-recbind lhs* loc* rhs* body)
+      ; (make-library-recbind lhs* loc* (map Expr rhs*) (Expr body))]
       [else (error who "invalid expression" (unparse x))]))
   (Expr x))
 
@@ -625,7 +642,7 @@
            [else
             (values (cons lhs slhs*) (cons rhs srhs*) llhs* lrhs* clhs* crhs*)]
            ))]))
-  (define (do-recbind lhs* rhs* body ref comp letrec?)
+  (define (do-recbind lhs* rhs* body ref comp letrec?) 
     (let ([h (make-eq-hashtable)]
           [vref (make-vector (length lhs*) #f)]
           [vcomp (make-vector (length lhs*) #f)])
@@ -634,22 +651,15 @@
         (let ([rhs* (do-rhs* 0 lhs* rhs* ref comp vref vcomp)])
           (let-values ([(slhs* srhs* llhs* lrhs* clhs* crhs*)
                         (partition-rhs* 0 lhs* rhs* vref vcomp)])
-           (let ([v* (map (lambda (x) (make-constant (void))) clhs*)])
-             ;(let ([ls 
-             ;       (let f ([ls clhs*])
-             ;         (cond
-             ;           [(null? ls) '()]
-             ;           [(var-assigned (car ls)) (f (cdr ls))]
-             ;           [else (cons (var-name (car ls)) (f (cdr ls)))]))])
-             ;  (unless (null? ls) (printf "complex: ~s\n" ls)))
-             (make-bind slhs* srhs*
-               (make-bind clhs* v*
-                 (make-fix llhs* lrhs*
-                   (if letrec?
-                       (let ([t* (map (lambda (x) (unique-var 'tmp)) clhs*)])
-                         (make-bind t* crhs*
-                           (build-assign* clhs* t* body)))
-                       (build-assign* clhs* crhs* body)))))))))))
+            (let ([v* (map (lambda (x) (make-constant (void))) clhs*)])
+              (make-bind slhs* srhs*
+                (make-bind clhs* v*
+                  (make-fix llhs* lrhs*
+                    (if letrec?
+                        (let ([t* (map (lambda (x) (unique-var 'tmp)) clhs*)])
+                          (make-bind t* crhs*
+                            (build-assign* clhs* t* body)))
+                        (build-assign* clhs* crhs* body)))))))))))
   (define (build-assign* lhs* rhs* body)
     (cond
       [(null? lhs*) body]
@@ -707,9 +717,22 @@
          (make-mvcall p c))]
       [(forcall rator rand*) 
        (make-forcall rator (E* rand* ref comp))]
+      ;[(library-recbind lhs* loc* rhs* body)
+      ; (E (make-rec*bind lhs* rhs* 
+      ;      (let f ([lhs* lhs*] [loc* loc*])
+      ;        (cond
+      ;          [(null? lhs*) body]
+      ;          [(not (car loc*)) (f (cdr lhs*) (cdr loc*))]
+      ;          [else (make-seq 
+      ;                   (make-funcall
+      ;                     (make-primref '$init-symbol-value!)
+      ;                     (list (make-constant (car loc*)) (car lhs*)))
+      ;                   (f (cdr lhs*) (cdr loc*)))])))
+      ;    ref comp)]
       [else (error who "invalid expression" (unparse x))]))
   (E x (lambda (x) (error who "free var found" x))
        void))
+
 
 
 (define (uncover-assigned/referenced x)
@@ -1391,7 +1414,7 @@
        (let ([x (car lhs*)])
          (let-values ([(lhs* a-lhs* a-rhs*) (fix-lhs* (cdr lhs*))])
            (cond
-             [(var-assigned x)
+             [(and (var-assigned x) (not (var-global-loc x)))
               (let ([t (unique-var 'assignment-tmp)])
                 (values (cons t lhs*) (cons x a-lhs*) (cons t a-rhs*)))]
              [else
@@ -1408,8 +1431,16 @@
       [(constant) x]
       [(var) 
        (cond
-         [(var-assigned x) 
-          (make-funcall (make-primref '$vector-ref) (list x (make-constant 0)))]
+         [(var-assigned x)
+          (cond
+            [(var-global-loc x) =>
+             (lambda (loc) 
+               (make-funcall 
+                 (make-primref 'top-level-value) 
+                 (list (make-constant loc))))]
+            [else
+             (make-funcall (make-primref '$vector-ref)
+               (list x (make-constant 0)))])]
          [else x])]
       [(primref) x]
       [(bind lhs* rhs* body)
@@ -1441,8 +1472,14 @@
       [(assign lhs rhs)
        (unless (var-assigned lhs)
          (error 'rewrite-assignments "not assigned" lhs x))
-       (make-funcall (make-primref '$vector-set!)
-         (list lhs (make-constant 0) (Expr rhs)))]
+       (cond
+         [(var-global-loc lhs) =>
+          (lambda (loc) 
+            (make-funcall (make-primref '$init-symbol-value!)
+               (list (make-constant loc) (Expr rhs))))]
+         [else
+          (make-funcall (make-primref '$vector-set!)
+            (list lhs (make-constant 0) (Expr rhs)))])]
       [(mvcall p c) (make-mvcall (Expr p) (Expr c))]
       [else (error who "invalid expression" (unparse x))]))
   (Expr x))
