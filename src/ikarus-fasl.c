@@ -45,6 +45,8 @@ typedef struct {
   char* membase;
   char* memp;
   char* memq;
+  ikp code_ap;
+  ikp code_ep;
 #endif
   ikp* marks;
   int marks_size;
@@ -66,6 +68,8 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
   p.marks_size = 0;
   ikp v = ik_fasl_read(pcb, &p);
   while(v){
+    p.code_ap = 0;
+    p.code_ep = 0;
     if(p.marks){
       bzero(p.marks, p.marks_size * sizeof(ikp*));
     }
@@ -153,12 +157,31 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
 }
 #endif
 
-
 static ikp 
-alloc_code(int size, ikpcb* pcb){
-  int required_memory = align_to_next_page(size);
-  ikp mem = ik_mmap_code(required_memory, 0, pcb);
-  return (ikp)mem;
+alloc_code(int size, ikpcb* pcb, fasl_port* p){
+  int asize = align(size);
+  ikp ap = p->code_ap;
+  ikp nap = ap + asize;
+  if(nap <= p->code_ep){
+    p->code_ap = nap;
+    return ap;
+  } else if (asize < pagesize){
+    ikp mem = ik_mmap_code(pagesize, 0, pcb);
+    int bytes_remaining = pagesize - asize;
+    int previous_bytes = 
+      ((unsigned int)p->code_ep) - ((unsigned int)ap);
+    if(bytes_remaining <= previous_bytes){
+      return mem;
+    } else {
+      p->code_ap = mem+asize;
+      p->code_ep = mem+pagesize;
+      return mem;
+    }
+  } else {
+    int asize = align_to_next_page(size);
+    ikp mem = ik_mmap_code(asize, 0, pcb);
+    return mem;
+  }
 }
 
 
@@ -305,7 +328,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     fasl_read_buf(p, &code_size, sizeof(int));
     fasl_read_buf(p, &freevars, sizeof(ikp));
     ikp annotation = do_read(pcb, p);
-    ikp code = alloc_code(align(code_size+disp_code_data), pcb);
+    ikp code = alloc_code(align(code_size+disp_code_data), pcb, p);
     ref(code, 0) = code_tag;
     ref(code, disp_code_code_size) = fix(code_size);
     ref(code, disp_code_freevars) = freevars;

@@ -484,7 +484,7 @@ bootfileloc.h: Makefile
 
 scheme-script: 
 	echo "#!/bin/sh" > scheme-script
-	echo "$(bindir)/ikarus --r6rs-script \$$@" >> scheme-script
+	echo "exec $(bindir)/ikarus --r6rs-script \$$@" >> scheme-script
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
