@@ -8599,3 +8599,28 @@ Words allocated: 221189818
 Words reclaimed: 0
 Elapsed time...: 20809 ms (User: 11008 ms; System: 9796 ms)
 Elapsed GC time: 164 ms (CPU: 175 in 844 collections.)
+
+****************************
+Benchmarking Larceny-r6rs on Sat Nov 17 09:16:18 EST 2007 under Darwin Vesuvius.local 8.10.1 Darwin Kernel Version 8.10.1: Wed May 23 16:33:00 PDT 2007; root:xnu-792.22.5~1/RELEASE_I386 i386 i386
+
+Testing ray under Larceny-r6rs
+Compiling...
+Larceny v0.95 "First Safety" (Nov  8 2007 04:30:20, precise:BSD Unix:unified)
+larceny.heap, built on Thu Nov  8 04:39:44 EST 2007
+
+> 
+> 
+Running...
+Larceny v0.95 "First Safety" (Nov  8 2007 04:30:20, precise:BSD Unix:unified)
+larceny.heap, built on Thu Nov  8 04:39:44 EST 2007
+
+> 
+opening "spheres.pgm"
+opening "spheres.pgm"
+opening "spheres.pgm"
+opening "spheres.pgm"
+opening "spheres.pgm"
+Words allocated: 221189818
+Words reclaimed: 0
+Elapsed time...: 20868 ms (User: 11040 ms; System: 9770 ms)
+Elapsed GC time: 159 ms (CPU: 170 in 844 collections.)

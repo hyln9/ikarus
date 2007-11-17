@@ -266,6 +266,27 @@
                 (let ([expr (make-rec*bind nlhs* (map E rhs* lhs*) (E body ctxt))])
                   (ungen-fml* lhs*)
                   expr))))]
+         [(library-letrec*)
+          (let ([bind* (cadr x)] [body (caddr x)])
+            (let ([lhs* (map car bind*)]
+                  [loc* (map cadr bind*)]
+                  [rhs* (map caddr bind*)])
+              (let ([nlhs* (gen-fml* lhs*)])
+                (let ([expr (make-rec*bind nlhs* (map E rhs* lhs*)
+                              (let f ([nlhs* nlhs*] [loc* loc*])
+                                (cond
+                                  [(null? nlhs*) (E body ctxt)]
+                                  [(not (car loc*)) 
+                                   (f (cdr nlhs*) (cdr loc*))]
+                                  [else
+                                   (make-seq 
+                                     (make-funcall
+                                       (make-primref '$init-symbol-value!)
+                                       (list (make-constant (car loc*))
+                                             (car nlhs*)))
+                                     (f (cdr nlhs*) (cdr loc*)))])))])
+                  (ungen-fml* lhs*)
+                  expr))))]
          [(case-lambda)
           (let ([cls*
                  (map

@@ -3069,14 +3069,21 @@
                                 (chi-library-internal b* rib top?)))
                     (seal-rib! rib)
                     (let ((rhs* (chi-rhs* rhs* r mr))
+                          (loc* (map gen-global lex*))
                           (init* (chi-expr* init* r mr)))
                       (unseal-rib! rib)
                       (let ((export-subst (make-export-subst exp-int* exp-ext* rib)))
                         (let-values (((export-env global* macro*)
-                                      (make-export-env/macros r)))
+                                      (make-export-env/macros lex* loc* r)))
                           (let ((invoke-body
-                                 (build-letrec* no-source lex* rhs* 
-                                    (build-exports global* init*)))
+                                 (build-library-letrec* no-source
+                                   lex* loc* rhs*
+                                   (if (null? init*) 
+                                       (build-void)
+                                       (build-sequence no-source init*))))
+                                ;(invoke-body
+                                ; (build-letrec* no-source lex* rhs* 
+                                ;    (build-exports global* init*)))
                                 (invoke-definitions 
                                  (map build-global-define (map cdr global*))))
                             (values
@@ -3250,7 +3257,15 @@
           (cons ext label)))
       int* ext*))
   
-  (define (make-export-env/macros r)
+  (define (make-export-env/macros lex* loc* r)
+    (define (lookup x)
+      (let f ([x x] [lex* lex*] [loc* loc*])
+        (cond
+          [(pair? lex*) 
+           (if (eq? x (car lex*)) 
+               (car loc*)
+               (f x (cdr lex*) (cdr loc*)))]
+          [else (error 'lookup-make-export "BUG")])))
     (let f ((r r) (env '()) (global* '()) (macro* '()))
       (cond
         ((null? r) (values env global* macro*))
@@ -3259,7 +3274,7 @@
            (let ((label (car x)) (b (cdr x)))
              (case (binding-type b)
                ((lexical)
-                (let ((loc (gen-global (binding-value b))))
+                (let ((loc (lookup (binding-value b))))
                   (f (cdr r)
                      (cons (cons* label 'global loc) env)
                      (cons (cons (binding-value b) loc) global*)
