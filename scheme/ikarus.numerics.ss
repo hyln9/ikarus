@@ -27,18 +27,19 @@
           flsin flcos fltan flasin flacos flatan fleven? flodd?
           flfloor flceiling flnumerator fldenominator flexp fllog
           flinteger? flonum-bytes flnan? flfinite? flinfinite?
-          flexpt)
+          flexpt $flround flround)
   (import 
     (ikarus system $bytevectors)
     (ikarus system $fx) 
     (only (ikarus system $flonums) $fl>= $flonum-sbe)
     (ikarus system $bignums)
-    (except (ikarus system $flonums) $flonum-rational? $flonum-integer?)
+    (except (ikarus system $flonums) $flonum-rational?
+            $flonum-integer? $flround)
     (except (ikarus) inexact->exact exact flpositive? flabs fixnum->flonum
             flsin flcos fltan flasin flacos flatan fleven? flodd?
             flfloor flceiling flnumerator fldenominator flexp fllog
             flexpt flinteger? flonum-parts flonum-bytes flnan? flfinite?
-            flinfinite?))
+            flinfinite? flround))
   
   (define (flonum-bytes f)
     (unless (flonum? f) 
@@ -100,6 +101,15 @@
          #f]
         [else ($fl= x ($flround x))])))
 
+
+  (define ($flround x) 
+    (foreign-call "ikrt_fl_round" x ($make-flonum)))
+
+  (define (flround x)
+    (if (flonum? x)
+        ($flround x)
+        (error 'flround "not a flonum" x)))
+
   (module ($flonum->integer $flonum->exact)
     (define ($flonum-signed-mantissa x)
       (let ([b0 ($flonum-u8-ref x 0)])
@@ -129,10 +139,16 @@
                ($flonum-signed-mantissa x)
                (- be 1075))]
             [else
-             (let ([x0 ($fl* x 5e-324)])
+             (let-values ([(pos? be m) (flonum-parts x)])
                (cond
-                 [($fl= x ($fl/ x0 5e-324)) ;;; x == round(x)
-                  ($flonum-signed-mantissa x0)]
+                 [(<= 1 be 2046) ; normalized flonum
+                  (let ([n (+ m (expt 2 52))]
+                        [d (expt 2 (- be 1075))])
+                    (let-values ([(q r) (quotient+remainder n d)])
+                      (if (= r 0) 
+                          (if pos? q (- q))
+                          #f)))]
+                 [(= be 0) (if (= m 0) 0 #f)]
                  [else #f]))]))))
     (define ($flonum->exact x)
       (let ([sbe ($flonum-sbe x)])
@@ -144,34 +160,34 @@
                ($flonum-signed-mantissa x)
                (- be 1075))]
             [else
-             (let* ([x0 ($fl* x 5e-324)]
-                    [x1 ($fl/ x0 5e-324)])
+             ;;; this really needs to get optimized.
+             (let-values ([(pos? be m) (flonum-parts x)])
                (cond
-                 [($fl= x x1) ;;; x == round(x)
-                  ($flonum-signed-mantissa x0)]
-                 [($fx= be 0) ;;; denormal
-                  (/ ($flonum-signed-mantissa x)
-                     (bitwise-arithmetic-shift-left 1 1074))]
-                 [else ;;; x has a fraction
-                  (let ([v ($flonum-signed-mantissa x)])
-                    (let ([bits (- 1075 be)])
-                      (let ([int (bitwise-arithmetic-shift-right v bits)]
-                            [frac 
-                             (let ([e (bitwise-arithmetic-shift-left 1 bits)])
-                               (/ (bitwise-and v (- e 1)) e))])
-                        (+ int frac))))]))])))))
+                 [(<= 1 be 2046) ; normalized flonum
+                  (* (if pos? 1 -1)
+                     (* (+ m (expt 2 52)) (expt 2 (- be 1075))))]
+                 [(= be 0) 
+                  (* (if pos? 1 -1) 
+                     (* m (expt 2 -1074)))]
+                 [else #f]))])))))
 
-;;;OLD  (define ($flonum->exact x)
-;;;OLD    ;;; this really needs to get optimized.
-;;;OLD    (let-values ([(pos? be m) (flonum-parts x)])
-;;;OLD      (cond
-;;;OLD        [(<= 1 be 2046) ; normalized flonum
-;;;OLD         (* (if pos? 1 -1)
-;;;OLD            (* (+ m (expt 2 52)) (expt 2 (- be 1075))))]
-;;;OLD        [(= be 0) 
-;;;OLD         (* (if pos? 1 -1) 
-;;;OLD            (* m (expt 2 -1074)))]
-;;;OLD        [else #f])))
+;;; INCORRECT (define ($flonum->exact x)
+;;; INCORRECT   (let* ([x0 ($fl* x 5e-324)]
+;;; INCORRECT          [x1 ($fl/ x0 5e-324)])
+;;; INCORRECT     (cond
+;;; INCORRECT       [($fl= x x1) ;;; x == round(x)
+;;; INCORRECT        ($flonum-signed-mantissa x0)]
+;;; INCORRECT       [($fx= be 0) ;;; denormal
+;;; INCORRECT        (/ ($flonum-signed-mantissa x)
+;;; INCORRECT           (bitwise-arithmetic-shift-left 1 1074))]
+;;; INCORRECT       [else ;;; x has a fraction
+;;; INCORRECT        (let ([v ($flonum-signed-mantissa x)])
+;;; INCORRECT          (let ([bits (- 1075 be)])
+;;; INCORRECT            (let ([int (bitwise-arithmetic-shift-right v bits)]
+;;; INCORRECT                  [frac 
+;;; INCORRECT                   (let ([e (bitwise-arithmetic-shift-left 1 bits)])
+;;; INCORRECT                     (/ (bitwise-and v (- e 1)) e))])
+;;; INCORRECT              (+ int frac))))])))
 
   (define (flnumerator x) 
     (unless (flonum? x) 
@@ -395,7 +411,7 @@
           exact->inexact inexact floor ceiling round log fl=? fl<? fl<=? fl>?
           fl>=? fl+ fl- fl* fl/ flsqrt flmin flzero? flnegative?
           sin cos tan asin acos atan sqrt exp
-          flround flmax random)
+          flmax random)
   (import 
     (ikarus system $fx)
     (ikarus system $flonums)
@@ -404,7 +420,7 @@
     (ikarus system $chars)
     (ikarus system $strings)
     (only (ikarus flonums) $flonum->exact $flzero? $flnegative?
-          $flonum->integer)
+          $flonum->integer $flround)
     (except (ikarus) + - * / zero? = < <= > >= add1 sub1 quotient
             remainder modulo even? odd? quotient+remainder number->string 
             bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left
@@ -416,7 +432,7 @@
             fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt flmin
             flzero? flnegative? sra sll exp
             sin cos tan asin acos atan sqrt truncate fltruncate
-            flround flmax random))
+            flmax random))
 
 
   (module (bignum->flonum)
@@ -615,32 +631,32 @@
   
 
 
-  (define (ratnum->flonum x)
-    (define (->flonum n d)
+  ;;; (define (ratnum->flonum x)
+  ;;;   (define (->flonum n d)
+  ;;;     (let-values ([(q r) (quotient+remainder n d)])
+  ;;;       (if (= r 0) 
+  ;;;           (inexact q)
+  ;;;           (if (= q 0) 
+  ;;;               (/ (->flonum d n))
+  ;;;               (+ q (->flonum r d))))))
+  ;;;   (let ([n (numerator x)] [d (denominator x)])
+  ;;;     (let ([b (bitwise-first-bit-set n)])
+  ;;;       (if (eqv? b 0)
+  ;;;           (let ([b (bitwise-first-bit-set d)])
+  ;;;             (if (eqv? b 0)
+  ;;;                 (->flonum n d)
+  ;;;                 (/ (->flonum n (bitwise-arithmetic-shift-right d b))
+  ;;;                    (expt 2.0 b))))
+  ;;;           (* (->flonum (bitwise-arithmetic-shift-right n b) d)
+  ;;;              (expt 2.0 b))))))
+  (define (ratnum->flonum x) 
+    (let f ([n ($ratnum-n x)] [d ($ratnum-d x)])
       (let-values ([(q r) (quotient+remainder n d)])
-        (if (= r 0) 
-            (inexact q)
-            (if (= q 0) 
-                (/ (->flonum d n))
-                (+ q (->flonum r d))))))
-    (let ([n (numerator x)] [d (denominator x)])
-      (let ([b (bitwise-first-bit-set n)])
-        (if (eqv? b 0)
-            (let ([b (bitwise-first-bit-set d)])
-              (if (eqv? b 0)
-                  (->flonum n d)
-                  (/ (->flonum n (bitwise-arithmetic-shift-right d b))
-                     (expt 2.0 b))))
-            (* (->flonum (bitwise-arithmetic-shift-right n b) d)
-               (expt 2.0 b))))))
- ;;; (define (ratnum->flonum x) 
- ;;;   (let f ([n ($ratnum-n x)] [d ($ratnum-d x)])
- ;;;     (let-values ([(q r) (quotient+remainder n d)])
- ;;;       (if (= q 0) 
- ;;;           (/ 1.0 (f d n))
- ;;;           (if (= r 0)
- ;;;               (inexact q)
- ;;;               (+ q (f r d)))))))
+        (if (= q 0) 
+            (/ 1.0 (f d n))
+            (if (= r 0)
+                (inexact q)
+                (+ q (f r d)))))))
 
   (define binary+
     (lambda (x y)
@@ -2120,10 +2136,6 @@
     (let ([n ($ratnum-n x)] [d ($ratnum-d x)])
       (quotient n d)))
 
-  (define (flround x)
-    (if (flonum? x)
-        ($flround x)
-        (error 'flround "not a flonum" x)))
 
   (define (round x)
     (cond
