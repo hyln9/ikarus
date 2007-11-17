@@ -2384,8 +2384,13 @@
               (build-lexical-assignment no-source
                 value
                 (chi-expr v r mr)))
-             ((global core-prim)
-              (stx-error e "cannot modify imported identifier in"))
+             ((core-prim)
+              (stx-error e "cannot modify imported core primitive"))
+             ((global)
+              (let ((loc (gen-global-var-binding x e)))
+                (let ((rhs (chi-expr v r mr)))
+                  (build-global-assignment no-source loc rhs))))
+;              (stx-error e "cannot modify imported identifier in"))
              ((global-macro!)
               (chi-expr (chi-global-macro value e) r mr))
              ((local-macro!)
