@@ -150,7 +150,14 @@
                           #f)))]
                  [(= be 0) (if (= m 0) 0 #f)]
                  [else #f]))]))))
+    (define-syntax ctexpt
+      (lambda (x)
+        (import (ikarus))
+        (syntax-case x ()
+          [(_ n m) 
+           (expt (syntax->datum #'n) (syntax->datum #'m))])))
     (define ($flonum->exact x)
+      (import (ikarus))
       (let ([sbe ($flonum-sbe x)])
         (let ([be ($fxlogand sbe #x7FF)])
           (cond
@@ -163,31 +170,16 @@
              ;;; this really needs to get optimized.
              (let-values ([(pos? be m) (flonum-parts x)])
                (cond
-                 [(<= 1 be 2046) ; normalized flonum
-                  (* (if pos? 1 -1)
-                     (* (+ m (expt 2 52)) (expt 2 (- be 1075))))]
-                 [(= be 0) 
-                  (* (if pos? 1 -1) 
-                     (* m (expt 2 -1074)))]
-                 [else #f]))])))))
-
-;;; INCORRECT (define ($flonum->exact x)
-;;; INCORRECT   (let* ([x0 ($fl* x 5e-324)]
-;;; INCORRECT          [x1 ($fl/ x0 5e-324)])
-;;; INCORRECT     (cond
-;;; INCORRECT       [($fl= x x1) ;;; x == round(x)
-;;; INCORRECT        ($flonum-signed-mantissa x0)]
-;;; INCORRECT       [($fx= be 0) ;;; denormal
-;;; INCORRECT        (/ ($flonum-signed-mantissa x)
-;;; INCORRECT           (bitwise-arithmetic-shift-left 1 1074))]
-;;; INCORRECT       [else ;;; x has a fraction
-;;; INCORRECT        (let ([v ($flonum-signed-mantissa x)])
-;;; INCORRECT          (let ([bits (- 1075 be)])
-;;; INCORRECT            (let ([int (bitwise-arithmetic-shift-right v bits)]
-;;; INCORRECT                  [frac 
-;;; INCORRECT                   (let ([e (bitwise-arithmetic-shift-left 1 bits)])
-;;; INCORRECT                     (/ (bitwise-and v (- e 1)) e))])
-;;; INCORRECT              (+ int frac))))])))
+                 [(= be 0) ;;; denormalized
+                  (if (= m 0) 
+                      0
+                      (* (if pos? 1 -1) 
+                         (/ m (ctexpt 2 1074))))]
+                 [else ; normalized flonum
+                  (/ (+ m (ctexpt 2 52))
+                     (bitwise-arithmetic-shift-left 
+                       (if pos? 1 -1) 
+                       (- 1075 be)))]))])))))
 
   (define (flnumerator x) 
     (unless (flonum? x) 
