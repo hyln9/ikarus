@@ -651,6 +651,8 @@
         (let ([rhs* (do-rhs* 0 lhs* rhs* ref comp vref vcomp)])
           (let-values ([(slhs* srhs* llhs* lrhs* clhs* crhs*)
                         (partition-rhs* 0 lhs* rhs* vref vcomp)])
+            ;(unless (null? clhs*)
+            ;  (printf "CLHS* = ~s\n" (map unparse clhs*)))
             (let ([v* (map (lambda (x) (make-constant (void))) clhs*)])
               (make-bind slhs* srhs*
                 (make-bind clhs* v*
@@ -1436,7 +1438,7 @@
             [(var-global-loc x) =>
              (lambda (loc) 
                (make-funcall 
-                 (make-primref 'top-level-value) 
+                 (make-primref '$symbol-value)
                  (list (make-constant loc))))]
             [else
              (make-funcall (make-primref '$vector-ref)
@@ -1475,7 +1477,7 @@
        (cond
          [(var-global-loc lhs) =>
           (lambda (loc) 
-            (make-funcall (make-primref '$init-symbol-value!)
+            (make-funcall (make-primref '$set-symbol-value!)
                (list (make-constant loc) (Expr rhs))))]
          [else
           (make-funcall (make-primref '$vector-set!)

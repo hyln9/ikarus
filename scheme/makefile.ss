@@ -1571,10 +1571,12 @@
               [else 
                (error 'bootstrap "no location for primitive" x)])))
         (let ([p (open-output-file "ikarus.boot" 'replace)])
-          (for-each 
-            (lambda (x) 
-              (compile-core-expr-to-port x p))
-            core*)
+          (time-it "code generation and serialization"
+            (lambda ()
+              (for-each 
+                (lambda (x) 
+                  (compile-core-expr-to-port x p))
+                core*)))
           (close-output-port p)))))
 
 (printf "Happy Happy Joy Joy\n")

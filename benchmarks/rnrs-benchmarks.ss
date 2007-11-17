@@ -92,12 +92,13 @@
   (define fast-run (make-parameter #f))
   
   (define (run-bench count run)
-    (unless (= count 0)
-      (let f ([count (- count 1)])
+    (import (ikarus system $fx))
+    (unless ($fx= count 0)
+      (let f ([count ($fx- count 1)] [run run])
         (cond
-          [(= count 0) (run)]
+          [($fx= count 0) (run)]
           [else 
-           (begin (run) (f (- count 1)))]))))
+           (begin (run) (f ($fx- count 1) run))]))))
 
   (define (run-benchmark name count ok? run-maker . args)
     (let ([run (apply run-maker args)])

@@ -17,7 +17,8 @@
     (fprintf (standard-error-port) "running ~s\n" x)
     (for-each 
       (lambda (_)
-        (unless (zero? (system (format "ikarus --r6rs-script bench.ss ~a" x)))
+        (define cmd "ikarus -b ../scheme/ikarus.boot --r6rs-script bench.ss ~a")
+        (unless (zero? (system (format cmd x)))
           (fprintf (standard-error-port) "ERROR: ~s failed\n" x)))
       (make-list 5)))
   all-benchmarks)
