@@ -15,16 +15,17 @@
 
 
 (library (ikarus io-primitives)
-  (export read-char unread-char peek-char write-char write-byte newline
-          port-name input-port-name output-port-name
+  (export read-char unread-char peek-char write-char write-byte
+          put-u8 put-char get-char
+          newline port-name input-port-name output-port-name
           close-input-port reset-input-port! 
           flush-output-port close-output-port get-line)
   (import 
     (ikarus system $io)
     (ikarus system $fx)
     (ikarus system $ports)
-    (except (ikarus) read-char unread-char peek-char write-char
-            write-byte
+    (except (ikarus) read-char unread-char peek-char write-char write-byte 
+            put-u8 put-char get-char
             newline port-name input-port-name output-port-name
             close-input-port reset-input-port!  flush-output-port
             close-output-port get-line))
@@ -42,6 +43,14 @@
                (error 'write-char "not an output-port" p))
            (error 'write-char "not a character" c))]))
    
+  (define put-char
+    (lambda (c p)
+      (if (char? c)
+          (if (output-port? p)
+              ($write-char c p)
+              (error 'put-char "not an output-port" p))
+          (error 'put-char "not a character" c))))
+
   (define write-byte
     (case-lambda
       [(b)
@@ -54,6 +63,14 @@
                ($write-byte b p)
                (error 'write-byte "not an output-port" p))
            (error 'write-byte "not a byte" b))]))
+
+  (define put-u8
+    (lambda (b p)
+      (if (and (fixnum? b) ($fx<= 0 b) ($fx<= b 255))
+          (if (output-port? p)
+              ($write-byte b p)
+              (error 'put-u8 "not an output-port" p))
+          (error 'put-u8 "not a u8" b))))
   ;;;
   (define newline
     (case-lambda
@@ -84,6 +101,12 @@
       (if (port? p) 
           (($port-handler p) 'port-name p)
           (error 'output-port-name "not a port" p))))
+
+  (define get-char
+    (lambda (p) 
+      (if (input-port? p)
+           ($read-char p)
+           (error 'get-char "not an input-port" p))))
 
   (define read-char
     (case-lambda
