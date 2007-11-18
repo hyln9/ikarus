@@ -154,7 +154,7 @@ int main(int argc, char** argv){
     while(i > 0){
       char* s = argv[i];
       int n = strlen(s);
-      ikp str = ik_alloc(pcb, align(n*string_char_size+disp_string_data+1))
+      ikp str = ik_unsafe_alloc(pcb, align(n*string_char_size+disp_string_data+1))
                 + string_tag;
       ref(str, off_string_length) = fix(n);
       {
@@ -163,7 +163,7 @@ int main(int argc, char** argv){
           string_set(str, i, integer_to_char(s[i]));
         }
       }
-      ikp p = ik_alloc(pcb, pair_size);
+      ikp p = ik_unsafe_alloc(pcb, pair_size);
       ref(p, disp_car) = str;
       ref(p, disp_cdr) = arg_list;
       arg_list = p+pair_tag;

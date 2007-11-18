@@ -198,7 +198,7 @@ ikp ik_cstring_to_symbol(char*, ikpcb*);
 ikp ik_asm_enter(ikpcb*, ikp code_object, ikp arg);
 ikp ik_asm_reenter(ikpcb*, ikp code_object, ikp val);
 ikp ik_underflow_handler(ikpcb*);
-ikp ik_alloc(ikpcb* pcb, int size);
+ikp ik_unsafe_alloc(ikpcb* pcb, int size);
 
 
 #define IK_FASL_HEADER "#@IK01"

@@ -342,7 +342,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     return code+vector_tag;
   }
   else if(c == 'P'){
-    ikp pair = ik_alloc(pcb, pair_size) + pair_tag;
+    ikp pair = ik_unsafe_alloc(pcb, pair_size) + pair_tag;
     if(put_mark_index){
       p->marks[put_mark_index] = pair;
     }
@@ -364,7 +364,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     int len;
     fasl_read_buf(p, &len, sizeof(int));
     int size = align(len*string_char_size + disp_string_data);
-    ikp str = ik_alloc(pcb, size) + string_tag;
+    ikp str = ik_unsafe_alloc(pcb, size) + string_tag;
     ref(str, off_string_length) = fix(len);
     fasl_read_buf(p, str+off_string_data, len);
     {
@@ -386,7 +386,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     int len;
     fasl_read_buf(p, &len, sizeof(int));
     int size = align(len*string_char_size + disp_string_data);
-    ikp str = ik_alloc(pcb, size) + string_tag;
+    ikp str = ik_unsafe_alloc(pcb, size) + string_tag;
     ref(str, off_string_length) = fix(len);
     int i;
     for(i=0; i<len; i++){
@@ -405,7 +405,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     int len;
     fasl_read_buf(p, &len, sizeof(int));
     int size = align(len * wordsize + disp_vector_data);
-    ikp vec = ik_alloc(pcb, size) + vector_tag;
+    ikp vec = ik_unsafe_alloc(pcb, size) + vector_tag;
     if(put_mark_index){
       p->marks[put_mark_index] = vec;
     }
@@ -453,7 +453,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     if(n == 0){
       fields = null_object;
     } else {
-      fields = ik_alloc(pcb, n * align(pair_size)) + pair_tag;
+      fields = ik_unsafe_alloc(pcb, n * align(pair_size)) + pair_tag;
       ikp ptr = fields;
       for(i=0; i<n; i++){
         ref(ptr, off_car) = do_read(pcb, p);
@@ -466,7 +466,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     ikp gensym_val = ref(symb, off_symbol_record_value);
     ikp rtd;
     if(gensym_val == unbound_object){
-      rtd = ik_alloc(pcb, align(rtd_size)) + vector_tag;
+      rtd = ik_unsafe_alloc(pcb, align(rtd_size)) + vector_tag;
       ikp base_rtd = pcb->base_rtd;
       ref(rtd, off_rtd_rtd) = base_rtd;
       ref(rtd, off_rtd_name) = name;
@@ -485,7 +485,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     return rtd;
   }
   else if(c == 'Q'){ /* thunk */
-    ikp proc = ik_alloc(pcb, align(disp_closure_data)) + closure_tag;
+    ikp proc = ik_unsafe_alloc(pcb, align(disp_closure_data)) + closure_tag;
     if(put_mark_index){
       p->marks[put_mark_index] = proc;
     }
@@ -517,7 +517,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     int len;
     fasl_read_buf(p, &len, sizeof(int));
     int size = align(len + disp_bytevector_data + 1);
-    ikp x = ik_alloc(pcb, size) + bytevector_tag;
+    ikp x = ik_unsafe_alloc(pcb, size) + bytevector_tag;
     ref(x, off_bytevector_length) = fix(len);
     fasl_read_buf(p, x+off_bytevector_data, len);
     x[off_bytevector_data+len] = 0;
@@ -532,7 +532,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
       fprintf(stderr, "invalid len=%d\n", len);
       exit(-1);
     }
-    ikp pair = ik_alloc(pcb, pair_size * (len+1)) + pair_tag;
+    ikp pair = ik_unsafe_alloc(pcb, pair_size * (len+1)) + pair_tag;
     if(put_mark_index){
       p->marks[put_mark_index] = pair;
     }
@@ -553,7 +553,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
       fprintf(stderr, "invalid len=%d\n", len);
       exit(-1);
     }
-    ikp pair = ik_alloc(pcb, pair_size * (len+1)) + pair_tag;
+    ikp pair = ik_unsafe_alloc(pcb, pair_size * (len+1)) + pair_tag;
     if(put_mark_index){
       p->marks[put_mark_index] = pair;
     }
@@ -568,7 +568,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     return pair;
   }
   else if(c == 'f'){
-    ikp x = ik_alloc(pcb, flonum_size) + vector_tag;
+    ikp x = ik_unsafe_alloc(pcb, flonum_size) + vector_tag;
     ref(x, -vector_tag) = flonum_tag;
     fasl_read_buf(p, x+disp_flonum_data-vector_tag, 8);
     if(put_mark_index){
@@ -595,7 +595,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
     }
     unsigned int tag = bignum_tag | (sign << bignum_sign_shift) | 
       ((len >> 2) << bignum_length_shift);
-    ikp x = ik_alloc(pcb, align(len + disp_bignum_data)) + vector_tag;
+    ikp x = ik_unsafe_alloc(pcb, align(len + disp_bignum_data)) + vector_tag;
     ref(x, -vector_tag) = (ikp) tag;
     fasl_read_buf(p, x+off_bignum_data, len);
     if(put_mark_index){

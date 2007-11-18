@@ -344,7 +344,7 @@ ikpcb* ik_make_pcb(){
   }
   /* initialize base rtd */
   {
-    ikp r = ik_alloc(pcb, align(rtd_size)) + rtd_tag;
+    ikp r = ik_unsafe_alloc(pcb, align(rtd_size)) + rtd_tag;
     ref(r, off_rtd_rtd) = r;
     ref(r, off_rtd_length) = (ikp) (rtd_size-wordsize);
     ref(r, off_rtd_name) = 0;
@@ -396,7 +396,7 @@ void ik_delete_pcb(ikpcb* pcb){
 
 
 ikp
-ik_alloc(ikpcb* pcb, int size){
+ik_unsafe_alloc(ikpcb* pcb, int size){
   assert(size == align(size));
   ikp ap = pcb->allocation_pointer;
   ikp ep = pcb->heap_base + pcb->heap_size;
@@ -460,7 +460,7 @@ void ik_stack_overflow(ikpcb* pcb){
   fprintf(stderr, "underflow_handler = 0x%08x\n", (int)underflow_handler);
 #endif
   /* capture continuation and set it as next_k */
-  ikp k = ik_alloc(pcb, align(continuation_size)) + vector_tag;
+  ikp k = ik_unsafe_alloc(pcb, align(continuation_size)) + vector_tag;
   ref(k, -vector_tag) = continuation_tag;
   ref(k, off_continuation_top) = pcb->frame_pointer;
   ref(k, off_continuation_size) = 
@@ -946,7 +946,7 @@ ikrt_register_guardian_pair(ikp p0, ikpcb* pcb){
 
 ikp 
 ikrt_register_guardian(ikp tc, ikp obj, ikpcb* pcb){
-  ikp p0 = ik_alloc(pcb, pair_size) + pair_tag;
+  ikp p0 = ik_unsafe_alloc(pcb, pair_size) + pair_tag;
   ref(p0, off_car) = tc;
   ref(p0, off_cdr) = obj;
   return ikrt_register_guardian_pair(p0, pcb);
@@ -1013,13 +1013,13 @@ ikrt_getenv(ikp str, ikpcb* pcb){
   char* v = getenv((char*)str + off_bytevector_data);
   if(v){
     int n = strlen(v);
-    ikp s = ik_alloc(pcb, align(n+disp_string_data+1)) + string_tag;
+    ikp s = ik_unsafe_alloc(pcb, align(n+disp_string_data+1)) + string_tag;
     ref(s, -string_tag) = fix(n);
     memcpy(s+off_string_data, v, n+1);
     return s;
   } 
   else {
-    ikp s = ik_alloc(pcb, align(disp_string_data+1)) + string_tag;
+    ikp s = ik_unsafe_alloc(pcb, align(disp_string_data+1)) + string_tag;
     ref(s, -string_tag) = fix(0);
     ref(s, off_string_data) = 0;
     return s;
@@ -1050,10 +1050,10 @@ ikrt_environ(ikpcb* pcb){
   ikp ac = null_object;
   for(i=0; (e=es[i]); i++){
     int n = strlen(e);
-    ikp s = ik_alloc(pcb, align(n+disp_string_data+1)) + string_tag;
+    ikp s = ik_unsafe_alloc(pcb, align(n+disp_string_data+1)) + string_tag;
     ref(s, -string_tag) = fix(n);
     memcpy(s+off_string_data, e, n+1);
-    ikp p = ik_alloc(pcb, pair_size) + pair_tag;
+    ikp p = ik_unsafe_alloc(pcb, pair_size) + pair_tag;
     ref(p, off_cdr) = ac;
     ref(p, off_car) = s;
     ac = p;

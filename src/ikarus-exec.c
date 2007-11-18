@@ -43,7 +43,7 @@ ikp ik_exec_code(ikpcb* pcb, ikp code_ptr){
       exit(-1);
     }
     if(framesize < k->size){
-      cont* nk = (cont*) ik_alloc(pcb, sizeof(cont));
+      cont* nk = (cont*) ik_unsafe_alloc(pcb, sizeof(cont));
       nk->tag = k->tag;
       nk->next = k->next;
       nk->top = top + framesize;

@@ -66,7 +66,7 @@ static int strings_eqp(ikp str1, ikp str2){
 #if 0
 static ikp 
 ik_make_symbol(ikp str, ikp ustr, ikpcb* pcb){
-  ikp sym = ik_alloc(pcb, symbol_size) + symbol_tag;
+  ikp sym = ik_unsafe_alloc(pcb, symbol_size) + symbol_tag;
   ref(sym, off_symbol_string)  = str;
   ref(sym, off_symbol_ustring) = ustr;
   ref(sym, off_symbol_value)   = unbound_object;
@@ -81,7 +81,7 @@ ik_make_symbol(ikp str, ikp ustr, ikpcb* pcb){
 
 static ikp 
 ik_make_symbol(ikp str, ikp ustr, ikpcb* pcb){
-  ikp sym = ik_alloc(pcb, symbol_record_size) + record_tag;
+  ikp sym = ik_unsafe_alloc(pcb, symbol_record_size) + record_tag;
   ref(sym, -record_tag) = symbol_record_tag;
   ref(sym, off_symbol_record_string)  = str;
   ref(sym, off_symbol_record_ustring) = ustr;
@@ -108,7 +108,7 @@ intern_string(ikp str, ikp st, ikpcb* pcb){
     b = ref(b, off_cdr);
   }
   ikp sym = ik_make_symbol(str, false_object,  pcb);
-  b = ik_alloc(pcb, pair_size) + pair_tag;
+  b = ik_unsafe_alloc(pcb, pair_size) + pair_tag;
   ref(b, off_car) = sym;
   ref(b, off_cdr) = bckt;
   ref(st, off_vector_data + idx*wordsize) = b;
@@ -131,7 +131,7 @@ intern_unique_string(ikp str, ikp ustr, ikp st, ikpcb* pcb){
     b = ref(b, off_cdr);
   }
   ikp sym = ik_make_symbol(str, ustr, pcb);
-  b = ik_alloc(pcb, pair_size) + pair_tag;
+  b = ik_unsafe_alloc(pcb, pair_size) + pair_tag;
   ref(b, off_car) = sym;
   ref(b, off_cdr) = bckt;
   ref(st, off_vector_data + idx*wordsize) = b;
@@ -159,7 +159,7 @@ ikrt_intern_gensym(ikp sym, ikpcb* pcb){
     }
     b = ref(b, off_cdr);
   }
-  b = ik_alloc(pcb, pair_size) + pair_tag;
+  b = ik_unsafe_alloc(pcb, pair_size) + pair_tag;
   ref(b, off_car) = sym;
   ref(b, off_cdr) = bckt;
   ref(st, off_vector_data + idx*wordsize) = b;
@@ -201,7 +201,7 @@ ikp
 ik_cstring_to_symbol(char* str, ikpcb* pcb){
   int n = strlen(str);
   int size = n + disp_string_data + 1;
-  ikp s = ik_alloc(pcb, align(size)) + string_tag;
+  ikp s = ik_unsafe_alloc(pcb, align(size)) + string_tag;
   ref(s, off_string_length) = fix(n);
   memcpy(s+off_string_data, str, n+1);
   ikp sym = ikrt_string_to_symbol(s, pcb);
