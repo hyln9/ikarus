@@ -394,6 +394,35 @@ void ik_delete_pcb(ikpcb* pcb){
   ik_free(pcb, sizeof(ikpcb));
 }
 
+ikp
+ik_safe_alloc(ikpcb* pcb, int size){
+  assert(size == align(size));
+  ikp ap = pcb->allocation_pointer;
+  ikp ep = pcb->heap_base + pcb->heap_size;
+  ikp nap = ap + size;
+  if(nap < ep){
+    pcb->allocation_pointer = nap;
+    return ap;
+  } 
+  else {
+    ik_collect(size, pcb);
+    ikp ap = pcb->allocation_pointer;
+    ikp ep = pcb->heap_base + pcb->heap_size;
+    ikp nap = ap + size;
+    if(nap < ep){
+      pcb->allocation_pointer = nap;
+      return ap;
+    } else {
+      fprintf(stderr,
+              "ikaurs: BUG: collector did not leave enough room for %d\n",
+               size);
+      exit(-1);
+    }
+  }
+}
+
+
+
 
 ikp
 ik_unsafe_alloc(ikpcb* pcb, int size){

@@ -138,6 +138,8 @@ typedef struct ikpcb{
   ikp   collect_key;                  /* offset = 48 */
   /* the rest are not used by any scheme code        */
   /* they only support the runtime system (gc, etc.) */
+  ikp* root0;
+  ikp* root1;
   unsigned int* segment_vector; 
   ikp weak_pairs_ap;
   ikp weak_pairs_ep;
@@ -199,6 +201,7 @@ ikp ik_asm_enter(ikpcb*, ikp code_object, ikp arg);
 ikp ik_asm_reenter(ikpcb*, ikp code_object, ikp val);
 ikp ik_underflow_handler(ikpcb*);
 ikp ik_unsafe_alloc(ikpcb* pcb, int size);
+ikp ik_safe_alloc(ikpcb* pcb, int size);
 
 
 #define IK_FASL_HEADER "#@IK01"
