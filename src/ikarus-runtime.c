@@ -1036,21 +1036,21 @@ ikrt_waitpid(ikp pid){
 }
 
 ikp 
-ikrt_getenv(ikp str, ikpcb* pcb){
-  fprintf(stderr, "getenv busted!\n");
-  exit(-1);
-  char* v = getenv((char*)str + off_bytevector_data);
+ikrt_getenv(ikp bv, ikpcb* pcb){
+  char* v = getenv((char*)bv + off_bytevector_data);
   if(v){
     int n = strlen(v);
-    ikp s = ik_unsafe_alloc(pcb, align(n+disp_string_data+1)) + string_tag;
-    ref(s, -string_tag) = fix(n);
-    memcpy(s+off_string_data, v, n+1);
+    ikp s = ik_safe_alloc(pcb, align(n+disp_bytevector_data+1))
+              + bytevector_tag;
+    ref(s, -bytevector_tag) = fix(n);
+    memcpy(s+off_bytevector_data, v, n+1);
     return s;
   } 
   else {
-    ikp s = ik_unsafe_alloc(pcb, align(disp_string_data+1)) + string_tag;
-    ref(s, -string_tag) = fix(0);
-    ref(s, off_string_data) = 0;
+    ikp s = ik_safe_alloc(pcb, align(disp_bytevector_data+1)) 
+          + bytevector_tag;
+    ref(s, -bytevector_tag) = fix(0);
+    ref(s, off_bytevector_data) = 0;
     return s;
   }
 }

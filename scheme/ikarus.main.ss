@@ -51,14 +51,14 @@
                      (let ([d (cdr args)])
                        (cond
                          [(null? d)
-                          (error #f "--script requires a script name")]
+                          (error 'ikarus "--script requires a script name")]
                          [else
                           (values '() (car d) 'script (cdr d))]))]
                     [(string=? (car args) "--r6rs-script")
                      (let ([d (cdr args)])
                        (cond
                          [(null? d)
-                          (error #f "--r6rs-script requires a script name")]
+                          (error 'ikarus "--r6rs-script requires a script name")]
                          [else
                           (values '() (car d) 'r6rs-script (cdr d))]))]
                     [else

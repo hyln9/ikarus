@@ -1266,6 +1266,7 @@
     [string-normalize-nfkd                       r uc]
     [string-titlecase                            r uc]
     [string-upcase                               r uc]
+    [getenv                                      i]
     [char-ready?                                 ]
     [interaction-environment                     ]
     [load                                        i]

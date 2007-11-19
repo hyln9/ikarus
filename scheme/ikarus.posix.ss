@@ -16,12 +16,12 @@
 
 (library (ikarus posix)
   (export posix-fork fork waitpid system file-exists? delete-file
-          env environ)
+          getenv env environ)
   (import 
     (rnrs bytevectors)
     (except (ikarus)
        posix-fork fork waitpid system file-exists? delete-file
-       env environ))
+       getenv env environ))
 
   (define posix-fork
     (lambda ()
@@ -95,6 +95,16 @@
                     [(10) "internal access error while deleting"]
                     [else "Unknown error while deleting"])
                   x)]))))
+
+  (define ($getenv-bv key)
+    (foreign-call "ikrt_getenv" key))
+  (define ($getenv-str key) 
+    (utf8->string ($getenv-bv (string->utf8 key))))
+
+  (define (getenv key)
+    (if (string? key)
+        ($getenv-str key)
+        (error 'getenv "the key is not a string" key)))
 
   (define env
     (let ()
