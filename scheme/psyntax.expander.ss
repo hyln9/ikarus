@@ -3400,7 +3400,14 @@
       (define (eval-binding x)
         (let ((loc (car x)) (expr (cdr x)))
           (cond
-            (loc (set-symbol-value! loc (eval-core (expanded->core expr))))
+            (loc (set-symbol-value! loc 
+                   (let ([g (gensym loc)])
+                     (eval-core 
+                       (expanded->core 
+                         (build-application no-source
+                           (build-lambda no-source
+                             (list g) g)
+                           (list expr)))))))
             (else (eval-core (expanded->core expr))))))
       (let ((rtc (make-collector))
             (itc (make-collector))

@@ -4,12 +4,13 @@ EXTRA_DIST=ikarus.boot.orig ikarus.enumerations.ss ikarus.exceptions.ss ikarus.a
 
 all: $(nodist_pkglib_DATA)
 
-ikarus.version.ss: Makefile
+ikarus.config.ss: Makefile
 	echo '(define ikarus-version "$(PACKAGE_VERSION)")' >$@
+	echo '(define ikarus-lib-dir "$(pkglibdir)")' >>$@
 
-CLEANFILES=$(nodist_pkglib_DATA) ikarus.version.ss
+CLEANFILES=$(nodist_pkglib_DATA) ikarus.config.ss
 
-ikarus.boot: $(EXTRA_DIST) ikarus.version.ss
+ikarus.boot: $(EXTRA_DIST) ikarus.config.ss
 	../src/ikarus -b ./ikarus.boot.orig --r6rs-script makefile.ss
 
 # pkglibdir

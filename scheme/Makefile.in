@@ -183,7 +183,7 @@ EXTRA_DIST = ikarus.boot.orig ikarus.enumerations.ss \
 	ikarus/code-objects.ss ikarus/compiler.ss \
 	ikarus/intel-assembler.ss ikarus/fasl/write.ss \
 	unicode/unicode-char-cases.ss unicode/unicode-charinfo.ss
-CLEANFILES = $(nodist_pkglib_DATA) ikarus.version.ss
+CLEANFILES = $(nodist_pkglib_DATA) ikarus.config.ss
 all: all-am
 
 .SUFFIXES:
@@ -369,10 +369,11 @@ uninstall-am: uninstall-nodist_pkglibDATA
 
 all: $(nodist_pkglib_DATA)
 
-ikarus.version.ss: Makefile
+ikarus.config.ss: Makefile
 	echo '(define ikarus-version "$(PACKAGE_VERSION)")' >$@
+	echo '(define ikarus-lib-dir "$(pkglibdir)")' >>$@
 
-ikarus.boot: $(EXTRA_DIST) ikarus.version.ss
+ikarus.boot: $(EXTRA_DIST) ikarus.config.ss
 	../src/ikarus -b ./ikarus.boot.orig --r6rs-script makefile.ss
 
 # pkglibdir

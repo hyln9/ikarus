@@ -23,7 +23,7 @@
     visit-library library-name library-version library-exists?
     find-library-by-name install-library library-spec invoke-library 
     extend-library-subst! extend-library-env! current-library-expander
-    current-library-collection)
+    current-library-collection library-path)
   (import (rnrs) (psyntax compat) (rnrs r5rs))
 
   (define (make-collection)
@@ -76,7 +76,6 @@
       '(".")
       (lambda (x)
         (if (and (list? x) (for-all string? x))
-            ;(map values x)
             (map (lambda (x) x) x)
             (error 'library-path "not a list of strings" x)))))
   

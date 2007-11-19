@@ -23,7 +23,7 @@
   (import (ikarus))
   (letrec-syntax ([compile-time-string 
                     (lambda (x) 
-                      (include "ikarus.version.ss")
+                      (include "ikarus.config.ss")
                       ikarus-version)])
     (define (print-greeting)
       (printf "Ikarus Scheme version ~a\n" (compile-time-string))
@@ -37,6 +37,10 @@
   (import (ikarus)
           (ikarus greeting)
           (only (ikarus load) load-r6rs-top-level))
+  (library-path 
+    (let ()
+      (include "ikarus.config.ss")
+      (list "." ikarus-lib-dir)))
   (let-values ([(files script script-type args)
                 (let f ([args (command-line-arguments)])
                   (cond
