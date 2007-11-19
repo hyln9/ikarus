@@ -882,6 +882,8 @@
         [($char= #\. c)
          (tokenize-dot p)]
         [($char= #\| c)
+         (when (eq? (port-mode p) 'r6rs-mode)
+           (error 'tokenize "|symbol| syntax is invalid in #!r6rs mode"))
          (let ([ls (reverse (tokenize-bar p '()))])
            (cons 'datum (string->symbol (list->string ls))))]
         [($char= #\\ c)
