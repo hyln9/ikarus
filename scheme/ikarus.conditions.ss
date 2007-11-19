@@ -336,18 +336,21 @@
             (display name p))
           (let ([v (record-type-field-names rtd)])
             (case (vector-length v)
+              [(0) (newline p)]
               [(1) 
                (display ": " p)
-               (write ((record-accessor rtd 0) x) p)]
+               (write ((record-accessor rtd 0) x) p)
+               (newline p)]
               [else
+               (display ":\n" p)
                (let f ([i 0])
                  (unless (= i (vector-length v))
-                   (display "  " p)
+                   (display "       " p)
                    (display (vector-ref v i) p)
-                   (display "=" p)
+                   (display ": " p)
                    (write ((record-accessor rtd i) x) p)
-                   (f (+ i 1))))]))
-          (newline p)))
+                   (newline)
+                   (f (+ i 1))))]))))
       (define (print-condition x p)
         (cond
           [(condition? x) 
