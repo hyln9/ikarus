@@ -4,8 +4,16 @@ EXTRA_DIST=ikarus.boot.orig ikarus.enumerations.ss ikarus.exceptions.ss ikarus.a
 
 all: $(nodist_pkglib_DATA)
 
-ikarus.config.ss: Makefile
+revnofile = "../.bzr/branch/last-revision"
+revno = "$(shell sed 's/ .*//' $(revnofile))"
+
+if [-f $(revnofile)] ; then \
+  revnodeps = $(revnofile) \
+fi
+
+ikarus.config.ss: Makefile $(revnodeps)
 	echo '(define ikarus-version "$(PACKAGE_VERSION)")' >$@
+	echo '(define ikarus-revision $(revno))' >>$@
 	echo '(define ikarus-lib-dir "$(pkglibdir)")' >>$@
 
 CLEANFILES=$(nodist_pkglib_DATA) ikarus.config.ss
@@ -14,3 +22,6 @@ ikarus.boot: $(EXTRA_DIST) ikarus.config.ss
 	../src/ikarus -b ./ikarus.boot.orig --r6rs-script makefile.ss
 
 # pkglibdir
+# if [-f "../.bzr/branch/last-revision"] \
+#   echo '(define ikarus-reversion "$(PACKAGE_VERSION)")' >>$@ \
+# fi 

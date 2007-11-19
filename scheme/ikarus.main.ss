@@ -24,7 +24,14 @@
   (include "ikarus.config.ss")
   
   (define (print-greeting)
-    (printf "Ikarus Scheme version ~a\n" ikarus-version)
+    (printf "Ikarus Scheme version ~a\n" 
+      (if (zero? (string-length ikarus-revision))
+          ikarus-version
+          (format "~a+ (revision ~a, build ~a)"
+            ikarus-version
+            ikarus-revision
+            (let-syntax ([ds (lambda (x) (date-string))])
+              ds))))
     (display "Copyright (c) 2006-2007 Abdulaziz Ghuloum\n\n"))
 
   (define (init-library-path) 
