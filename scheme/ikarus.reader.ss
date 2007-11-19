@@ -72,6 +72,7 @@
          [(delimiter? c)
           (unread-char c p)
           ls]
+         [(char=? c #\\) (tokenize-backslash ls p)]
          [else
           (unread-char c p)
           (error 'tokenize "invalid identifier syntax" 
@@ -786,11 +787,11 @@
                [else (tokenize-bar p (cons c ac))]))]
           [($char= #\| c) ac]
           [else (tokenize-bar p (cons c ac))]))))
-  (define (tokenize-backslash p)
+  (define (tokenize-backslash main-ac p)
     (let ([c (read-char p)])
       (cond
         [(eof-object? c) 
-         (error 'tokenize "invalid eof after \\")]
+         (error 'tokenize "invalid eof after symbol escape")]
         [($char= #\x c) 
          (let ([c (read-char p)])
            (cond
@@ -806,11 +807,7 @@
                          (format "invalid eof after ~a"
                            (list->string (reverse ac))))]
                       [($char= #\; c)
-                       (cons 'datum 
-                         (string->symbol 
-                           (list->string 
-                             (cons (integer->char v)
-                               (reverse (tokenize-identifier '() p))))))]
+                       (tokenize-identifier (cons (integer->char v) main-ac) p)]
                       [(hex c) =>
                        (lambda (v0)
                          (f (+ (* v 16) v0) (cons c ac)))]
@@ -887,7 +884,10 @@
          (let ([ls (reverse (tokenize-bar p '()))])
            (cons 'datum (string->symbol (list->string ls))))]
         [($char= #\\ c)
-         (tokenize-backslash p)]
+         (cons 'datum 
+            (string->symbol
+              (list->string
+                (reverse (tokenize-backslash '() p)))))]
         [else
          (unread-char c p) 
          (error 'tokenize "invalid syntax" c)])))
