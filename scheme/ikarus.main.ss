@@ -21,9 +21,12 @@
 (library (ikarus greeting)
   (export print-greeting)
   (import (ikarus))
-  (letrec-syntax ([compile-time-string (lambda (x) (date-string))])
+  (letrec-syntax ([compile-time-string 
+                    (lambda (x) 
+                      (include "ikarus.version.ss")
+                      ikarus-version)])
     (define (print-greeting)
-      (printf "Ikarus Scheme (Build ~a)\n" (compile-time-string))
+      (printf "Ikarus Scheme version ~a\n" (compile-time-string))
       (display "Copyright (c) 2006-2007 Abdulaziz Ghuloum\n\n"))))
 
 
