@@ -354,25 +354,30 @@
          (let ([e (read-char p)])
            (when (eof-object? e)
              (error 'tokenize "invalid eof near #!"))
-           (unless ($char= #\e e)
-             (error 'tokenize
-               (format "invalid syntax near #!~a" e)))
-           (let ([o (read-char p)])
-             (when (eof-object? o)
-               (error 'tokenize "invalid eof near #!e"))
-             (unless ($char= #\o o)
-               (error 'tokenize 
-                 (format "invalid syntax near #!e~a" o)))
-             (let ([f (read-char p)])
-               (when (eof-object? f)
-                 (error 'tokenize "invalid syntax near #!eo"))
-               (unless ($char= #\f f)
-                 (error 'tokenize 
-                   (format "invalid syntax near #!eo~a" f)))
-               (cons 'datum (eof-object)))))]
+           (case e
+             [(#\e) 
+              (read-char* p '(#\e) "of" "eof sequence" #f #f)
+              (cons 'datum (eof-object))]
+             [(#\r) 
+              (read-char* p '(#\r) "6rs" "#!r6rs comment" #f #f)
+              (set-port-mode! p 'r6rs-mode)
+              (tokenize p)]
+             [(#\i) 
+              (read-char* p '(#\i) "karus" "#!ikarus comment" #f #f)
+              (set-port-mode! p 'ikarus-mode)
+              (tokenize p)]
+             [else
+              (error 'tokenize
+                (format "invalid syntax near #!~a" e))]))]
         [(digit? c) 
+         (when (eq? (port-mode p) 'r6rs-mode)
+           (error 'tokenize "graph syntax is invalid in #!r6rs mode"
+              (format "#~a" c)))
          (tokenize-hashnum p (char->num c))]
         [($char= #\: c)
+         (when (eq? (port-mode p) 'r6rs-mode)
+           (error 'tokenize "gensym syntax is invalid in #!r6rs mode"
+              (format "#~a" c)))
          (let* ([c (skip-whitespace p "gensym")]
                 [id0 
                  (cond
@@ -387,6 +392,9 @@
                       "invalid char inside gensym" c)])])
               (cons 'datum (gensym id0)))]
         [($char= #\{ c)
+         (when (eq? (port-mode p) 'r6rs-mode)
+           (error 'tokenize "gensym syntax is invalid in #!r6rs mode"
+              (format "#~a" c)))
          (let* ([c (skip-whitespace p "gensym")]
                 [id0 
                  (cond
@@ -463,6 +471,9 @@
         [(memq c '(#\d #\D)) 
          (cons 'datum (tokenize-radix-mark p (list c #\#) 10))]
         [($char= #\@ c)
+         (when (eq? (port-mode p) 'r6rs-mode)
+           (error 'tokenize "fasl syntax is invalid in #!r6rs mode"
+              (format "#~a" c)))
          (error 'read "FIXME: fasl read disabled")
          '(cons 'datum ($fasl-read p))]
         [else 
@@ -692,32 +703,33 @@
          [(#\1) 1]
          [else #f])]
       [else (error 'radix-digit "invalid radix" radix)]))
+  (define (read-char* p ls str who ci? delimited?)
+    (let f ([i 0] [ls ls])
+      (cond
+        [(fx= i (string-length str)) 
+         (when delimited?
+           (let ([c (peek-char p)])
+             (when (and (not (eof-object? c)) (not (delimiter? c)))
+               (error 'tokenize 
+                 (format "invalid ~a: ~s" who 
+                   (list->string (reverse (cons c ls))))))))]
+        [else
+         (let ([c (read-char p)])
+           (cond
+             [else
+              (cond
+                [(eof-object? c) 
+                 (error 'tokenize
+                   (format "invalid eof inside ~a" who))]
+                [(or (and (not ci?) (char=? c (string-ref str i)))
+                     (and ci? (char=? (char-downcase c) (string-ref str i))))
+                 (f (add1 i) (cons c ls))]
+                [else 
+                 (unread-char c p)
+                 (error 'tokenize 
+                   (format "invalid ~a: ~s" who
+                     (list->string (reverse (cons c ls)))))])]))])))
   (define (tokenize-integer/nan/inf-no-digits p ls)
-    (define (read-char* p ls str who)
-      (let f ([i 0] [ls ls])
-        (let ([c (read-char p)])
-          (cond
-            [(fx= i (string-length str)) 
-             (cond
-               [(eof-object? c) (void)]
-               [(delimiter? c) (unread-char c p)]
-               [else
-                (unread-char c p)
-                (error 'tokenize 
-                  (format "invalid ~a: ~s" who 
-                    (list->string (reverse (cons c ls)))))])]
-            [else
-             (cond
-               [(eof-object? c) 
-                (error 'tokenize
-                  (format "invalid eof inside ~a" who))]
-               [(char=? (char-downcase c) (string-ref str i))
-                (f (add1 i) (cons c ls))]
-               [else 
-                (unread-char c p)
-                (error 'tokenize 
-                  (format "invalid ~a: ~s" who
-                    (list->string (reverse (cons c ls)))))])]))))
     (let ([c (read-char p)])
       (cond
         [(eof-object? c) (num-error "invalid eof" ls)]
@@ -727,10 +739,10 @@
         [(char=? c #\.) 
          (tokenize-decimal-no-digits p (cons c ls) #f)]
         [(memv c '(#\i #\I)) 
-         (read-char* p (cons #\i ls) "nf.0" "number sequence")
+         (read-char* p (cons #\i ls) "nf.0" "number sequence" #t #t)
          +inf.0]
         [(memv c '(#\n #\N))
-         (read-char* p (cons #\i ls) "an.0" "number sequence")
+         (read-char* p (cons #\i ls) "an.0" "number sequence" #t #t)
          +nan.0]
         [else (num-error "invalid sequence" (cons c ls))]))) 
   (define (tokenize-integer-no-digits p ls exact? radix?)
