@@ -18,16 +18,38 @@
 ;;; this is here to test that we can import things from other
 ;;; libraries within the compiler itself.
 
-(library (ikarus greeting)
-  (export print-greeting)
+(library (ikarus startup)
+  (export print-greeting init-library-path)
   (import (ikarus))
-  (letrec-syntax ([compile-time-string 
-                    (lambda (x) 
-                      (include "ikarus.config.ss")
-                      ikarus-version)])
-    (define (print-greeting)
-      (printf "Ikarus Scheme version ~a\n" (compile-time-string))
-      (display "Copyright (c) 2006-2007 Abdulaziz Ghuloum\n\n"))))
+  (include "ikarus.config.ss")
+  
+  (define (print-greeting)
+    (printf "Ikarus Scheme version ~a\n" ikarus-version)
+    (display "Copyright (c) 2006-2007 Abdulaziz Ghuloum\n\n"))
+
+  (define (init-library-path) 
+    (define (split s)
+      (define (nodata i s ls)
+        (cond
+          [(= i (string-length s)) ls]
+          [(char=? (string-ref s i) #\:) (nodata (+ i 1) s ls)]
+          [else (data (+ i 1) s ls (list (string-ref s i)))]))
+      (define (data i s ls ac)
+        (cond
+          [(= i (string-length s)) 
+           (cons (list->string (reverse ac)) ls)]
+          [(char=? (string-ref s i) #\:) 
+           (nodata (+ i 1) s
+             (cons (list->string (reverse ac)) ls))]
+          [else (data (+ i 1) s ls (cons (string-ref s i) ac))]))
+      (reverse (nodata 0 s '())))
+    (library-path
+      (cons "."
+        (append 
+          (split (getenv "IKARUS_LIBRARY_PATH"))
+          (list ikarus-lib-dir)))))
+
+  )
 
 
 ;;; Finally, we're ready to evaluate the files and enter the cafe.
@@ -35,12 +57,9 @@
 (library (ikarus main)
   (export)
   (import (ikarus)
-          (ikarus greeting)
+          (ikarus startup)
           (only (ikarus load) load-r6rs-top-level))
-  (library-path 
-    (let ()
-      (include "ikarus.config.ss")
-      (list "." ikarus-lib-dir)))
+  (init-library-path)
   (let-values ([(files script script-type args)
                 (let f ([args (command-line-arguments)])
                   (cond
