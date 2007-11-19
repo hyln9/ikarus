@@ -2369,7 +2369,16 @@
            (stx-error e "identifier out of context"))
           ((syntax) (stx-error e "reference to pattern variable outside a syntax form"))
           ((define define-syntax module import library)
-           (stx-error e "invalid expression"))
+           (stx-error e 
+             (string-append 
+               (case type
+                 ((define)        "a definition")
+                 ((define-syntax) "a define-syntax")
+                 ((module)        "a module definition")
+                 ((library)       "a library definition")
+                 ((import)        "an import declaration")
+                 (else            "a non-expression"))
+               " was found where an expression was expected")))
           (else
            ;(error 'chi-expr "invalid type " type (strip e '()))
            (stx-error e "invalid expression"))))))

@@ -917,11 +917,18 @@
                  (library-info (car x))))
        library-names)
      (printf "Status Codes:\n")
-     (for-each 
-       (lambda (x) 
-         (printf "   ~a  ~a  (~s ids)\n" (car x) (cadr x)
-           (count-status (car x))))
-       status-names)]
+     (let* ([s* (map 
+                  (lambda (x)
+                    (count-status (car x)))
+                  status-names)]
+            [all (apply + s*)])
+       (for-each 
+         (lambda (x s) 
+           (printf "   ~a  ~a  (~s ids == ~s%)\n"
+                   (car x) (cadr x) 
+                   s
+                   (/ (round (* (/ s all) 10000)) 100.0)))
+         status-names s*))]
     [else
      (let-values ([(s* l*)
                    (split 
