@@ -1985,9 +1985,9 @@
   (define disp-port-index          8)
   (define disp-port-size          12)
   (define disp-port-handler       16)
-  (define disp-port-unused1   20)
-  (define disp-port-unused2   24)
-  (define disp-port-unused3   28)
+  (define disp-port-attributes    20)
+  (define disp-port-unused1   24)
+  (define disp-port-unused2   28)
   (define port-size               32)
 
 

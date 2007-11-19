@@ -21,7 +21,8 @@
           port-input-index   set-port-input-index!
           port-input-size    set-port-input-size!
           port-output-index  set-port-output-index!
-          port-output-size   set-port-output-size!)
+          port-output-size   set-port-output-size!
+          port-mode          set-port-mode!)
   (import 
     (ikarus system $ports)
     (ikarus system $strings)
@@ -34,7 +35,8 @@
          port-input-index   set-port-input-index!
          port-input-size    set-port-input-size!
          port-output-index  set-port-output-index!
-         port-output-size   set-port-output-size!))
+         port-output-size   set-port-output-size!
+         port-mode          set-port-mode!))
   ;;; GENERIC PORTS: BASIC PRIMITIVES
   ;;;
   ;;; Exports: 
@@ -173,7 +175,27 @@
                       (error 'set-port-output-size! "size is too big" i))
                   (error 'set-port-output-size! "size is negative" i))
               (error 'set-port-output-size! "not a valid size" i))
-          (error 'set-port-output-size! "not an output-port" p)))))
+          (error 'set-port-output-size! "not an output-port" p))))
+  
+  (define (port-mode p)
+    (if (port? p)
+        (let ([attr ($port-attributes p)])
+          (case (fxand attr 1)
+            [(0)  'ikarus-mode]
+            [else 'r6rs-mode]))
+        (error 'port-mode "not a port" p)))
+
+  (define (set-port-mode! p m)
+    (if (port? p)
+        (let ([attr ($port-attributes p)]) 
+          ($set-port-attributes! p
+            (case m
+              [(ikarus-mode)  (fxand attr (fxnot 1))]
+              [(r6rs-mode)    (fxior attr 1)]
+              [else (error 'set-port-mode! "invalid mode" m)])))
+        (error 'port-mode "not a port" p)))
+  
+  )
 
 
 
