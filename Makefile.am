@@ -1,4 +1,4 @@
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = src scheme doc
+SUBDIRS = src scheme doc extras
 EXTRA_DIST = README COPYING GPL-3
 dist_doc_DATA=README COPYING GPL-3
