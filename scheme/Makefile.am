@@ -5,11 +5,10 @@ EXTRA_DIST=ikarus.boot.orig ikarus.enumerations.ss ikarus.exceptions.ss ikarus.a
 all: $(nodist_pkglib_DATA)
 
 revnofile = "../.bzr/branch/last-revision"
+revnodeps = $(shell ls $(revnofile))
 revno = "$(shell sed 's/ .*//' $(revnofile))"
 
-if [-f $(revnofile)] ; then \
-  revnodeps = $(revnofile) \
-fi
+
 
 ikarus.config.ss: Makefile $(revnodeps)
 	echo '(define ikarus-version "$(PACKAGE_VERSION)")' >$@

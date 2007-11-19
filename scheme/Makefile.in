@@ -184,6 +184,7 @@ EXTRA_DIST = ikarus.boot.orig ikarus.enumerations.ss \
 	ikarus/intel-assembler.ss ikarus/fasl/write.ss \
 	unicode/unicode-char-cases.ss unicode/unicode-charinfo.ss
 revnofile = "../.bzr/branch/last-revision"
+revnodeps = $(shell ls $(revnofile))
 revno = "$(shell sed 's/ .*//' $(revnofile))"
 CLEANFILES = $(nodist_pkglib_DATA) ikarus.config.ss
 all: all-am
@@ -370,10 +371,6 @@ uninstall-am: uninstall-nodist_pkglibDATA
 
 
 all: $(nodist_pkglib_DATA)
-
-if [-f $(revnofile)] ; then \
-  revnodeps = $(revnofile) \
-fi
 
 ikarus.config.ss: Makefile $(revnodeps)
 	echo '(define ikarus-version "$(PACKAGE_VERSION)")' >$@
