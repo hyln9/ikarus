@@ -45,8 +45,7 @@
   (define interrupt-handler
     (make-parameter
       (lambda ()
-        (define-condition-type &interrupted &condition
-          make-interrupted-condition interrupted-condition?)
+        (import (ikarus system interrupts))
         (set-port-output-index! (console-output-port) 0)
         (raise-continuable
           (condition

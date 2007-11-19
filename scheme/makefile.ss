@@ -196,7 +196,8 @@
     [&i/o-decoding             ($core-rtd . (&i/o-decoding-rtd &i/o-decoding-rcd))]
     [&i/o-encoding             ($core-rtd . (&i/o-encoding-rtd &i/o-encoding-rcd))]
     [&no-infinities            ($core-rtd . (&no-infinities-rtd &no-infinities-rcd ))]
-    [&no-nans                  ($core-rtd . (&no-nans-rtd &no-nans-rcd ))]
+    [&no-nans                  ($core-rtd . (&no-nans-rtd &no-nans-rcd))]
+    [&interrupted              ($core-rtd . (&interrupted-rtd &interrupted-rcd))]
     ))
 
 (define library-legend
@@ -254,6 +255,7 @@
     [$arg-list   (ikarus system $arg-list)             #f     #t]
     [$stack      (ikarus system $stack)                #f     #t]
     [$interrupts (ikarus system $interrupts)           #f     #t]
+    [interrupts  (ikarus system interrupts)            #f     #t]
     [$all        (psyntax system $all)                 #f     #t]
     [$boot       (psyntax system $bootstrap)           #f     #t]
     ))
@@ -539,6 +541,8 @@
     [$make-values-procedure                      $stack]
     [$interrupted?                               $interrupts]
     [$unset-interrupted!                         $interrupts]
+    [interrupted-condition?                      interrupts]
+    [make-interrupted-condition                  interrupts]
     [$apply-nonprocedure-error-handler           ]
     [$incorrect-args-error-handler               ]
     [$multiple-values-error                      ]
@@ -1342,6 +1346,8 @@
     [&no-infinities-rcd]
     [&no-nans-rtd]
     [&no-nans-rcd]
+    [&interrupted-rtd]
+    [&interrupted-rcd]
   ))
 
 (define (macro-identifier? x) 

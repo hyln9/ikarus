@@ -50,7 +50,8 @@
           i/o-encoding-error? i/o-encoding-error-char
           no-infinities-violation? make-no-infinities-violation
           no-nans-violation? make-no-nans-violation
-          
+          interrupted-condition? make-interrupted-condition 
+
           &condition-rtd &condition-rcd &message-rtd &message-rcd
           &warning-rtd &warning-rcd &serious-rtd &serious-rcd
           &error-rtd &error-rcd &violation-rtd &violation-rcd
@@ -70,7 +71,7 @@
           &i/o-decoding-rtd &i/o-decoding-rcd &i/o-encoding-rtd
           &i/o-encoding-rcd &no-infinities-rtd &no-infinities-rcd
           &no-nans-rtd &no-nans-rcd
-
+          &interrupted-rtd &interrupted-rcd 
           )
   (import
     (rnrs records inspection)
@@ -327,6 +328,10 @@
   
   (define-condition-type &no-nans &implementation-restriction
     make-no-nans-violation no-nans-violation?)
+
+  ;;; ikarus-specific conditions
+  (define-condition-type &interrupted &condition
+    make-interrupted-condition interrupted-condition?)
 
   (define print-condition 
     (let ()
