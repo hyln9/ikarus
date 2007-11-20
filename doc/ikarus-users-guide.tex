@@ -91,12 +91,15 @@
    numbers=left, numbersep=1ex,
    frame=lines ,framerule=1pt} 
 
-
-\newcommand{\idxdefun}[3]{
+\newcommand{\idxlabeldefun}[5]{
 \vspace{1ex}
 \rule{\textwidth}{2pt}
-{\index{#1@\texttt{#2}}\label{#1}{\Large\texttt{#2}} \hfill \textbf{#3}}\\
+{\index{#1@\texttt{#2}}\label{#3}{\Large\texttt{#4}} \hfill \textbf{#5}}\\
 }
+
+
+\newcommand{\idxdefun}[3]{\idxlabeldefun{#1}{#2}{#1}{#2}{#3}}
+
 
 \newcommand{\defun}[2]{\idxdefun{#1}{#1}{#2}}
 
@@ -137,7 +140,7 @@ Ikarus Scheme User's Guide
 % \rnrs{6} Crash Course\\
 % Ikarus
 (Preliminary Document)
-\hfill Version~0.0.2
+\hfill Version~0.0.1+
 }
 \vfill
 {
@@ -281,8 +284,8 @@ executable (e.g. the garbage collector, loader, and OS-related
 runtime).  GCC versions 4.1 and 4.2 were successfully used to build
 Ikarus.
 
-\item\textbf{Autoconf and Automake:} The GNU Autoconf (version 2.59)
-and GNU Automake (version 1.9) tools are required if one
+\item\textbf{Autoconf and Automake:} The GNU Autoconf (version 2.61)
+and GNU Automake (version 1.10) tools are required if one
 wishes to modify the Ikarus source base.  They are not
 required to build the official release of Ikarus.
 
@@ -399,7 +402,7 @@ need to have administrator privileges (use the \texttt{sudo} or
 \item Test that Ikarus runs from the command line.
 \begin{verbatim}
   $ ikarus
-  Ikarus Scheme (Build 2007-10-20)
+  Ikarus Scheme version 0.0.2
   Copyright (c) 2006-2007 Abdulaziz Ghuloum
 
   > 
@@ -446,37 +449,9 @@ The \texttt{-b} flag (which requires an extra argument) directs
 \texttt{ikarus} to use the specified boot file as the initial system
 boot file.  \index{Boot files} The boot file is a binary file that
 contains all the code and data of the Scheme system.  In the absence
-of \texttt{-b} flag, the executable attempts to guess the location
-of the boot file using the following strategy:
-\begin{enumerate}
-
-\item If \texttt{ikarus} was started by supplying an explicit
-location such as
-\texttt{/usr/local/bin/ikarus} or
-\texttt{./ikarus},
-then the name of the boot file is the concatenation of a
-\texttt{.boot} prefix to the executable file name (e.g.
-\texttt{/usr/local/bin/ikarus.boot} or \texttt{./ikarus.boot}).
-
-\item Otherwise, \texttt{ikarus} assumes that it was started from a
-location in the \texttt{PATH} environment variable.  In that case,
-it searches for the location of \texttt{ikarus} in the
-\texttt{PATH}.  If \texttt{ikarus} is found in
-\texttt{/path/to/ikarus}, then the name of the boot file
-becomes \texttt{/path/to/ikarus.boot}.
-
-\item Failing both guesses, \texttt{ikarus} prints an error message
-and exits.
-
-\end{enumerate}
-
-The motivation for this strategy was to allow one to (1) rename the
-\texttt{ikarus} executable and the corresponding boot file to some
-new names (e.g. \texttt{my-ikarus} and \texttt{my-ikarus.boot}) without
-conflicting with other installed versions of Ikarus, and (2)
-override the location of the boot file for testing and building
-purposes (e.g. the installation process using one boot file to build
-another).
+of \texttt{-b} flag, the executable will use the default boot file.
+Running \texttt{ikarus~-h} shows the location where the default boot
+file was installed.
 
 The rest of the command-line arguments are recognized by the
 standard Scheme run time system.   They are processed after the
@@ -527,8 +502,32 @@ subsystems in the future.}
 
 \end{itemize}
 
-%\section{Executable Scripts}
-%FIXME
+\section{Executable Scripts}
+
+Scheme scripts can be executed using the
+\texttt{ikarus~--r6rs-script~\textit{script-name}} command as
+described in the previous section.  For convenience, Ikarus
+follows the \rnrs{6} recommendations and installs a wrapper program
+called \texttt{scheme-script}.  Typically, a script you write would
+start with a \texttt{\#!}\ line that directs your operating system
+to the interpreter used to evaluate the script file.  The following
+example shows a very simple script that uses the
+\texttt{scheme-script} command.
+
+\begin{CodeInline}
+#!/usr/bin/env scheme-script
+
+(import (rnrs))
+(display "Hello World\n")
+\end{CodeInline}
+
+\newpage
+
+\section{Installing Additional Libraries}
+
+\subsection{\texttt{IKARUS\_LIBRARY\_PATH}}
+
+
 %\subsection{Mac OS X}
 %FIXME
 %\subsection{GNU/Linux}
@@ -554,16 +553,17 @@ users may redefine any of the initial bindings.  The semantics of a
 loading a file depends on the state of the environment at the time
 the file contents are evaluated.
 
-\index{R6RS Script@\rnrs{6} Script!Import}
+\index{R6RS Script@\rnrs{6} Script!Import} 
+%
 \rnrs{6} differs from \rnrs{5} in that it specifies how \emph{whole
 programs}, or scripts, are compiled and evaluated.  An \rnrs{6}
 script is closed in the sense that all the identifiers found in the
 body of the script must either be defined in the script or imported
 from a library.  \rnrs{6} also specifies how \emph{libraries} can be
-defined and used.  While files in \rnrs{5} are \emph{loaded}
-imperatively into the top-level environments, \rnrs{6} libraries can
-be \emph{imported} declaratively in scripts and in other \rnrs{6}
-libraries. 
+defined and used.  While files in \rnrs{5} are typically
+\emph{loaded} imperatively into the top-level environments, \rnrs{6}
+libraries are \emph{imported} declaratively in scripts and in other
+\rnrs{6} libraries. 
 
 \section{\label{sec:scripts}Writing a simple script}
 
@@ -575,8 +575,8 @@ script is listed below.
 
 \index{Examples!Hello World}
 \begin{CodeInline}
+#!/usr/bin/env scheme-script
 (import (rnrs))
-
 (display "Hello World!\n")
 \end{CodeInline}
 
@@ -595,6 +595,7 @@ script below defines the variable \texttt{greeting} and calls the
 procedure bound to it.
 
 \begin{CodeInline}
+#!/usr/bin/env scheme-script
 (import (rnrs))
 
 (define greeting
@@ -611,6 +612,7 @@ the script displays \texttt{Hello World} 3 times.
 \newpage
 
 \begin{CodeInline}
+#!/usr/bin/env scheme-script
 (import (rnrs))
 
 (define greeting
@@ -685,6 +687,7 @@ makes all of \texttt{(iteration)}'s exported identifiers, e.g.
 \texttt{do-times},  visible in the body of the script.
 
 \begin{CodeInline}
+#!/usr/bin/env scheme-script
 (import (rnrs) (iteration))
 
 (define greeting
@@ -1011,6 +1014,11 @@ library---it exports a superset of all the supported bindings of
 \rnrs{6}.  While not all of the exports of \texttt{(ikarus)} are
 documented at this time, this chapter attempts to describe a few of
 these useful extensions.  
+
+\idxlabeldefun{\#"!ikarus}{\#"!ikarus}{shebang}{\#!ikarus}{comment}
+%\defun{\#"!ikarus}{comment}
+%{\index{\#"!ikarus@\texttt{\#"!ikarus}}\label{shebang}{\Large\texttt{\#!ikarus}}
+%\hfill \textbf{comment}}
 
 \newpage
 \section{Parameters}
