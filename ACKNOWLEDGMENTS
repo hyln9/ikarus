@@ -6,8 +6,12 @@ much harder.  I'm very thankful.
 
    Aziz,,,
 
+
 ====================================================================
 VERSION 0.0.2:
+
+- Everybody who took the time to email me when Ikarus was released.
+  Thanks for the encouragements.
 
 - Eric Hanchrow (offby1) reported the first public bug on bignum
   division error
@@ -16,7 +20,8 @@ VERSION 0.0.2:
   FreeBSD, increasing the number of supported platforms from 3 to 5.
   The Solaris port is still unfinished though.
 
-- Tom Gordon reported installation problems on 64-bit systems.
+- Tom Gordon reported installation problems on 64-bit systems which
+  resulted in improving the error report of the configure script.
 
 - Jens Axel Søgaard(and his brother) provided solutions for
   compiling Ikarus on 64-bit machines.
@@ -29,10 +34,11 @@ VERSION 0.0.2:
   making the command-line procedure consistent for scripts and
   interactive sessions, installing the boot file in a proper
   location (along with some help in using automake and autoconf),
-  and filed bug reports (on expt, modulo, error, get-line,
+  filed bug reports (on expt, modulo, error, get-line,
   number->string, truncate, fltruncate, flabs, substring,
-  define-record-type, put-u8, the expander, and the
-  compiler).
+  define-record-type, put-u8, the expander, and the compiler), and
+  helped cut startup time in half by instrumenting the ikarus
+  loader.
 
 - Phil Bewig wrote SRFI-41 (streams) in R6RS, which loads flawlessly
   in Ikarus.
@@ -45,8 +51,12 @@ VERSION 0.0.2:
   reading identifiers containing unicode escape sequences and
   corrected a minor bug with export classifications.
 
+- Kent Dybvig approved of an idea for optimizing closures that
+  resulted in cutting the bootstrap time in half.
+
 - Will Clinger indirectly reported that Ikarus does not support the
   #!r6rs comment.
+
 
 ====================================================================
 VERSION 0.0.1:
@@ -55,7 +65,7 @@ VERSION 0.0.1:
   release should build and install using the standard ./configure,
   make, make install sequence.   This made the lauch of Ikarus very
   successful as people had little or no problems building and
-  installing it.
+  installing it.  
 
 - Will Byrd gave suggestions about the minimum stuff that should go
   into the user's guide and suggested having a small R6RS tutorial.
