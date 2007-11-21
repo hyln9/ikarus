@@ -257,37 +257,44 @@
     (define (constructor main-rtd size prcd proto)
       (if (not prcd) ;;; base
           (lambda (f*)
-            (let ([v (lambda flds
-                       (let ([n (rtd-size main-rtd)])
-                         (unless (= (length flds) size)
-                           (error 'record-constructor 
-                              "main expecting args, got" n flds))
-                         (let ([r ($make-struct main-rtd n)])
-                           (let f ([i 0] [r r] [flds flds] [f* f*])
-                             (cond
-                               [(null? flds)
-                                (if (null? f*)
-                                    r
-                                    (f i r (car f*) (cdr f*)))]
-                               [else
-                                ($struct-set! r i (car flds))
-                                (f (add1 i) r (cdr flds) f*)])))))])
-              (if proto (proto v) v)))
+            (let ([a-record-constructor
+                   (lambda flds
+                      (let ([n (rtd-size main-rtd)])
+                        (unless (= (length flds) size)
+                          (error 'record-constructor 
+                             "main expecting args, got" n flds))
+                        (let ([r ($make-struct main-rtd n)])
+                          (let f ([i 0] [r r] [flds flds] [f* f*])
+                            (cond
+                              [(null? flds)
+                               (if (null? f*)
+                                   r
+                                   (f i r (car f*) (cdr f*)))]
+                              [else
+                               ($struct-set! r i (car flds))
+                               (f (add1 i) r (cdr flds) f*)])))))])
+              (if proto
+                 (proto a-record-constructor)
+                 a-record-constructor)))
           (let ([pprcd (rcd-prcd prcd)]
                 [sz (rtd-size (rcd-rtd prcd))])
             (let ([p (constructor main-rtd sz pprcd (rcd-proc prcd))]
                   [n (- size sz)]
-                  [proto 
+                  [protocol
                    (if proto
                        proto
                        (lambda (new)
-                         (lambda all-fields
-                           (let-values ([(parent-fields myfields) 
-                                         (split all-fields 
-                                           (- (length all-fields) (- size sz)))])
-                              (apply (apply new parent-fields) myfields)))))])
+                         (let ([a-record-constructor
+                                (lambda all-fields
+                                  (let-values ([(parent-fields myfields) 
+                                                (split all-fields 
+                                                  (- (length all-fields)
+                                                     (- size sz)))])
+                                     (apply (apply new parent-fields)
+                                            myfields)))])
+                           a-record-constructor)))])
               (lambda (f*)
-                (proto 
+                (protocol
                   (lambda fmls
                     (lambda flds
                       (unless (= (length flds) n) 
@@ -313,20 +320,22 @@
       (let ([i (if p (+ k (rtd-size p)) k)])
         (unless (fx< i sz) 
           (error who "not a valid index" k))
-        (lambda (x) 
-          (cond
-            [($struct/rtd? x rtd) ($struct-ref x i)]
-            [($struct? x)
-             (let ([xrtd ($struct-rtd x)])
-               (unless (rtd? xrtd) 
-                 (error who "invalid type" x rtd))
-               (let f ([prtd (rtd-parent xrtd)] [rtd rtd] [x x] [i i])
+        (let ([a-record-accessor
+               (lambda (x) 
                  (cond
-                   [(eq? prtd rtd) ($struct-ref x i)]
-                   [(not prtd) 
-                    (error who "invalid type" x rtd)]
-                   [else (f (rtd-parent prtd) rtd x i)])))]
-            [else (error who "invalid type" x rtd)])))))
+                   [($struct/rtd? x rtd) ($struct-ref x i)]
+                   [($struct? x)
+                    (let ([xrtd ($struct-rtd x)])
+                      (unless (rtd? xrtd) 
+                        (error who "invalid type" x rtd))
+                      (let f ([prtd (rtd-parent xrtd)] [rtd rtd] [x x] [i i])
+                        (cond
+                          [(eq? prtd rtd) ($struct-ref x i)]
+                          [(not prtd) 
+                           (error who "invalid type" x rtd)]
+                          [else (f (rtd-parent prtd) rtd x i)])))]
+                   [else (error who "invalid type" x rtd)]))])
+          a-record-accessor))))
 
   (define (record-mutator rtd k) 
     (define who 'record-mutator)
@@ -341,20 +350,22 @@
           (error who "not a valid index" k))
         (unless (car (vector-ref (rtd-fields rtd) k))
           (error who "field is not mutable" k rtd))
-        (lambda (x v) 
-          (cond
-            [($struct/rtd? x rtd) ($struct-set! x i v)]
-            [($struct? x)
-             (let ([xrtd ($struct-rtd x)])
-               (unless (rtd? xrtd) 
-                 (error who "invalid type" x rtd))
-               (let f ([prtd (rtd-parent xrtd)] [rtd rtd] [x x] [i i] [v v])
+        (let ([a-record-mutator
+               (lambda (x v) 
                  (cond
-                   [(eq? prtd rtd) ($struct-set! x i v)]
-                   [(not prtd) 
-                    (error who "invalid type" x rtd)]
-                   [else (f (rtd-parent prtd) rtd x i v)])))]
-            [else (error who "invalid type" x rtd)])))))
+                   [($struct/rtd? x rtd) ($struct-set! x i v)]
+                   [($struct? x)
+                    (let ([xrtd ($struct-rtd x)])
+                      (unless (rtd? xrtd) 
+                        (error who "invalid type" x rtd))
+                      (let f ([prtd (rtd-parent xrtd)] [rtd rtd] [x x] [i i] [v v])
+                        (cond
+                          [(eq? prtd rtd) ($struct-set! x i v)]
+                          [(not prtd) 
+                           (error who "invalid type" x rtd)]
+                          [else (f (rtd-parent prtd) rtd x i v)])))]
+                   [else (error who "invalid type" x rtd)]))])
+          a-record-mutator))))
 
   (define (record-predicate rtd) 
     (define who 'record-predicate)
@@ -362,18 +373,20 @@
       (error who "not an rtd" rtd))
     (let ([sz (rtd-size rtd)]
           [p (rtd-parent rtd)])
-       (lambda (x) 
-         (cond
-           [($struct/rtd? x rtd) #t]
-           [($struct? x)
-            (let ([xrtd ($struct-rtd x)])
-              (and (rtd? xrtd) 
-                   (let f ([prtd (rtd-parent xrtd)] [rtd rtd])
-                     (cond
-                       [(eq? prtd rtd) #t]
-                       [(not prtd)     #f]
-                       [else (f (rtd-parent prtd) rtd)]))))]
-           [else #f]))))
+      (let ([a-record-predicate
+             (lambda (x) 
+               (cond
+                 [($struct/rtd? x rtd) #t]
+                 [($struct? x)
+                  (let ([xrtd ($struct-rtd x)])
+                    (and (rtd? xrtd) 
+                         (let f ([prtd (rtd-parent xrtd)] [rtd rtd])
+                           (cond
+                             [(eq? prtd rtd) #t]
+                             [(not prtd)     #f]
+                             [else (f (rtd-parent prtd) rtd)]))))]
+                 [else #f]))])
+        a-record-predicate)))
 
 
   (define (record-field-mutable? rtd k) 
