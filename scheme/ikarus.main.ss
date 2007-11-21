@@ -29,7 +29,7 @@
           ikarus-version
           (format "~a+ (revision ~a, build ~a)"
             ikarus-version
-            ikarus-revision
+            (+ 1 (string->number ikarus-revision))
             (let-syntax ([ds (lambda (x) (date-string))])
               ds))))
     (display "Copyright (c) 2006-2007 Abdulaziz Ghuloum\n\n"))

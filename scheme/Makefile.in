@@ -183,10 +183,8 @@ EXTRA_DIST = ikarus.boot.orig ikarus.enumerations.ss \
 	ikarus/code-objects.ss ikarus/compiler.ss \
 	ikarus/intel-assembler.ss ikarus/fasl/write.ss \
 	unicode/unicode-char-cases.ss unicode/unicode-charinfo.ss
-revnofile = "../.bzr/branch/last-revision"
-revnodeps = $(shell ls $(revnofile))
-revno = "$(shell sed 's/ .*//' $(revnofile))"
-CLEANFILES = $(nodist_pkglib_DATA) ikarus.config.ss
+revno = "$(shell sed 's/ .*//' ../.bzr/branch/last-revision)"
+CLEANFILES = $(nodist_pkglib_DATA) ikarus.config.ss last-revision
 all: all-am
 
 .SUFFIXES:
@@ -371,19 +369,16 @@ uninstall-am: uninstall-nodist_pkglibDATA
 
 
 all: $(nodist_pkglib_DATA)
+last-revision: $(shell ls ../.bzr/branch/last-revision) 
+	echo $(revno) >$@
 
-ikarus.config.ss: Makefile $(revnodeps)
+ikarus.config.ss: Makefile last-revision
 	echo '(define ikarus-version "$(PACKAGE_VERSION)")' >$@
-	echo '(define ikarus-revision $(revno))' >>$@
+	echo '(define ikarus-revision "$(shell cat last-revision)")' >>$@
 	echo '(define ikarus-lib-dir "$(pkglibdir)")' >>$@
 
 ikarus.boot: $(EXTRA_DIST) ikarus.config.ss
 	../src/ikarus -b ./ikarus.boot.orig --r6rs-script makefile.ss
-
-# pkglibdir
-# if [-f "../.bzr/branch/last-revision"] \
-#   echo '(define ikarus-reversion "$(PACKAGE_VERSION)")' >>$@ \
-# fi 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
