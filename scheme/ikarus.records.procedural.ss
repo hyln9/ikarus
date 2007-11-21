@@ -261,8 +261,12 @@
                    (lambda flds
                       (let ([n (rtd-size main-rtd)])
                         (unless (= (length flds) size)
-                          (error 'record-constructor 
-                             "main expecting args, got" n flds))
+                          (apply error
+                             'a-record-constructor
+                             (format 
+                               "expected ~a args, got ~a instead" 
+                               n (length flds))
+                             flds))
                         (let ([r ($make-struct main-rtd n)])
                           (let f ([i 0] [r r] [flds flds] [f* f*])
                             (cond
@@ -298,8 +302,12 @@
                   (lambda fmls
                     (lambda flds
                       (unless (= (length flds) n) 
-                        (error 'record-constructor 
-                           "expecting args, got" n flds))
+                        (apply error
+                           'a-record-constructor
+                           (format 
+                             "expected ~a args, got ~a instead" 
+                             n (length flds))
+                           flds))
                       (apply (p (cons flds f*)) fmls)))))))))
     (unless (rcd? rcd)
       (error who "not a record constructor descriptor" rcd))
