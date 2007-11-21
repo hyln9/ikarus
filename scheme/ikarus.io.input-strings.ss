@@ -15,7 +15,7 @@
 
 
 (library (ikarus io input-strings)
-  (export open-input-string with-input-from-string)
+  (export open-input-string open-string-input-port with-input-from-string)
   (import 
     (ikarus system $strings)
     (ikarus system $bytevectors)
@@ -23,7 +23,9 @@
     (ikarus system $pairs)
     (ikarus system $ports)
     (ikarus system $io)
-    (except (ikarus) open-input-string with-input-from-string))
+    (except (ikarus)
+      open-input-string open-string-input-port 
+      with-input-from-string))
  
   (define-syntax message-case
     (syntax-rules (else)
@@ -82,15 +84,23 @@
              (error 'input-string-handler
                     "message not handled" (cons msg args))]))))) 
 
+  (define ($open-input-string str) 
+    (let ([port (make-input-port
+                    (make-input-string-handler str)
+                    '#vu8())])
+        port))
+
   (define open-input-string
     (lambda (str)
       (unless (string? str)
         (error 'open-input-string "not a string" str))
-      (let ([port (make-input-port
-                    (make-input-string-handler str)
-                    '#vu8())])
-        port)))
+      ($open-input-string str)))
 
+  (define open-string-input-port
+    (lambda (str)
+      (unless (string? str)
+        (error 'open-string-input-port "not a string" str))
+      ($open-input-string str)))
 
   (define with-input-from-string
      (lambda (str proc)
