@@ -13,7 +13,8 @@ ikarus.config.ss: Makefile last-revision
 	echo '(define ikarus-revision "$(shell cat last-revision)")' >>$@
 	echo '(define ikarus-lib-dir "$(pkglibdir)")' >>$@
 
-CLEANFILES=$(nodist_pkglib_DATA) ikarus.config.ss last-revision
+CLEANFILES=$(nodist_pkglib_DATA) ikarus.config.ss
+MAINTAINERCLEANFILES=last-revision
 
 ikarus.boot: $(EXTRA_DIST) ikarus.config.ss
 	../src/ikarus -b ./ikarus.boot.orig --r6rs-script makefile.ss

@@ -184,7 +184,8 @@ EXTRA_DIST = ikarus.boot.orig ikarus.enumerations.ss \
 	ikarus/intel-assembler.ss ikarus/fasl/write.ss \
 	unicode/unicode-char-cases.ss unicode/unicode-charinfo.ss
 revno = "$(shell sed 's/ .*//' ../.bzr/branch/last-revision)"
-CLEANFILES = $(nodist_pkglib_DATA) ikarus.config.ss last-revision
+CLEANFILES = $(nodist_pkglib_DATA) ikarus.config.ss
+MAINTAINERCLEANFILES = last-revision
 all: all-am
 
 .SUFFIXES:
@@ -299,6 +300,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
 clean: clean-am
 
 clean-am: clean-generic mostlyclean-am
