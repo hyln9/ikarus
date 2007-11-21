@@ -126,7 +126,7 @@
 (define-struct seq (e0 e1))
 (define-struct case-info (label args proper))
 (define-struct clambda-case (info body))
-(define-struct clambda (label cases free name))
+(define-struct clambda (label cases cp free name))
 (define-struct closure (code free*))
 (define-struct funcall (op rand*))
 (define-struct jmpcall (label op rand*))
@@ -313,7 +313,7 @@
                                (list? fml*)) 
                              body)))))
                    (cdr x))])
-            (make-clambda (gensym) cls* #f ctxt))]
+            (make-clambda (gensym) cls* #f #f ctxt))]
          [(lambda) 
           (E `(case-lambda ,(cdr x)) ctxt)]
          [(foreign-call)
@@ -385,10 +385,9 @@
              [else (cons (E x) ac)]))
          (cons 'begin (f e0 (f e1 '()))))]
       [(clambda-case info body)
-       `(,(E-args (case-info-proper info)
-                               (case-info-args info))
-            ,(E body))]
-      [(clambda g cls* free)
+       `(,(E-args (case-info-proper info) (case-info-args info))
+          ,(E body))]
+      [(clambda g cls* cp free)
        `(,g (case-lambda . ,(map E cls*)))]
       [(clambda label clauses free)
        `(code ,label . ,(map E clauses))]
@@ -549,14 +548,14 @@
          (Expr altern))]
       [(seq e0 e1) 
        (make-seq (Expr e0) (Expr e1))]
-      [(clambda g cls* free name)
+      [(clambda g cls* cp free name)
        (make-clambda g
          (map (lambda (x)
                 (struct-case x
                   [(clambda-case info body)
                    (make-clambda-case info (Expr body))]))
               cls*)
-         free name)]
+         cp free name)]
       [(funcall rator rand*)
        (inline (Expr rator) (map Expr rand*))]
       [(forcall rator rand*) 
@@ -694,7 +693,7 @@
       [(conditional e0 e1 e2)
        (make-conditional (E e0 ref comp) (E e1 ref comp) (E e2 ref comp))]
       [(seq e0 e1) (make-seq (E e0 ref comp) (E e1 ref comp))]
-      [(clambda g cls* free name)
+      [(clambda g cls* cp free name)
        (make-clambda g
          (map (lambda (x)
                 (struct-case x
@@ -703,7 +702,7 @@
                      (let ([body (E body (extend-hash (case-info-args info) h ref) void)])
                        (make-clambda-case info body)))]))
               cls*)
-         free name)]
+         cp free name)]
       [(funcall rator rand*)
        (let ([rator (E rator ref comp)] [rand* (E* rand* ref comp)])
          (struct-case rator
@@ -1243,14 +1242,14 @@
        (make-seq (make-seq e0 (seq-e0 e1)) (seq-e1 e1))]
       [else
        (make-seq e0 e1)]))
-  (define (do-clambda g cls* free name)
+  (define (do-clambda g cls* cp free name)
     (make-clambda g
       (map (lambda (cls)
              (struct-case cls
                [(clambda-case info body)
                 (make-clambda-case info (Value body))]))
            cls*)
-      free name))
+      cp free name))
   (define (Effect x)
     (struct-case x
       [(constant) the-void]
@@ -1379,7 +1378,8 @@
                        (make-conditional e0 e1 e2))]
                   [else (make-conditional e0 e1 e2)])))]))]
       [(seq e0 e1) (mk-seq (Effect e0) (Value e1))]
-      [(clambda g cls* free name) (do-clambda g cls* free name)]
+      [(clambda g cls* cp free name) 
+       (do-clambda g cls* cp free name)]
       [(primcall rator rand*) 
        (optimize-primcall 'v rator (map Value rand*))]
       [(funcall rator rand*)
@@ -1454,7 +1454,7 @@
       [(conditional test conseq altern)
        (make-conditional (Expr test) (Expr conseq) (Expr altern))]
       [(seq e0 e1) (make-seq (Expr e0) (Expr e1))]
-      [(clambda g cls* free name) 
+      [(clambda g cls* cp free name) 
        (make-clambda g
          (map (lambda (cls)
                 (struct-case cls
@@ -1466,7 +1466,7 @@
                           (make-case-info label fml* proper)
                           (bind-assigned a-lhs* a-rhs* (Expr body))))])]))
               cls*)
-         free name)]
+         cp free name)]
       [(forcall op rand*)
        (make-forcall op (map Expr rand*))]
       [(funcall rator rand*)
@@ -1549,7 +1549,7 @@
       [(conditional test conseq altern)
        (make-conditional (Expr test) (Expr conseq) (Expr altern))]
       [(seq e0 e1) (make-seq (Expr e0) (Expr e1))]
-      [(clambda g cls* free name) 
+      [(clambda g cls* cp free name) 
        (make-clambda g
          (map (lambda (cls)
                 (struct-case cls
@@ -1557,7 +1557,7 @@
                    (for-each init-var (case-info-args info))
                    (make-clambda-case info (Expr body))]))
               cls*)
-         free name)]
+         cp free name)]
       [(forcall op rand*)
        (make-forcall op (map Expr rand*))]
       [(funcall rator rand*)
@@ -1589,16 +1589,16 @@
        (let-values ([(a a-free) (Expr (car x*))]
                     [(d d-free) (Expr* (cdr x*))])
          (values (cons a d) (union a-free d-free)))]))
-   (define (do-clambda* x*)
+   (define (do-clambda* lhs* x*)
     (cond
       [(null? x*) (values '() '())]
       [else
-       (let-values ([(a a-free) (do-clambda (car x*))]
-                    [(d d-free) (do-clambda* (cdr x*))])
+       (let-values ([(a a-free) (do-clambda (car lhs*) (car x*))]
+                    [(d d-free) (do-clambda* (cdr lhs*) (cdr x*))])
          (values (cons a d) (union a-free d-free)))]))
-  (define (do-clambda x)
+  (define (do-clambda lhs x)
     (struct-case x 
-      [(clambda g cls* _free name)
+      [(clambda g cls* _cp _free name)
        (let-values ([(cls* free) 
                      (let f ([cls* cls*])
                        (cond
@@ -1612,8 +1612,12 @@
                                  (cons (make-clambda-case info body) cls*)
                                  (union (difference body-free (case-info-args info))
                                         cls*-free)))])]))])
-          (values (make-closure (make-clambda g cls* free name) free)
-                  free))]))
+          (let ([free (difference free (list lhs))])
+            (values 
+              (make-closure 
+                (make-clambda g cls* lhs free name)
+                free)
+              free)))]))
   (define (Expr ex)
     (struct-case ex
       [(constant) (values ex '())]
@@ -1625,7 +1629,7 @@
           (values (make-bind lhs* rhs* body)
                   (union rhs-free (difference body-free lhs*))))]
       [(fix lhs* rhs* body)
-       (let-values ([(rhs* rfree) (do-clambda* rhs*)]
+       (let-values ([(rhs* rfree) (do-clambda* lhs* rhs*)]
                     [(body bfree) (Expr body)])
           (values (make-fix lhs* rhs* body)
                   (difference (union bfree rfree) lhs*)))]
@@ -1640,7 +1644,7 @@
                     [(e1 e1-free) (Expr e1)])
          (values (make-seq e0 e1) (union e0-free e1-free)))]
       [(clambda)
-       (do-clambda ex)]
+       (do-clambda #f ex)]
       [(forcall op rand*)
        (let-values ([(rand* rand*-free) (Expr* rand*)])
          (values (make-forcall op rand*)  rand*-free))]
@@ -1693,7 +1697,7 @@
       [else #f]))
   (define (trim/lift-code code free*)
     (struct-case code
-      [(clambda label cls* free*/dropped name)
+      [(clambda label cls* cp free*/dropped name)
        (let ([cls* (map
                      (lambda (x)
                        (struct-case x 
@@ -1704,7 +1708,7 @@
                      cls*)])
          (let ([g (make-code-loc label)])
            (set! all-codes
-             (cons (make-clambda label cls* free* name) all-codes))
+             (cons (make-clambda label cls* cp free* name) all-codes))
            g))]))
   (define (optimize-one-closure code free)
     (let ([free (trim-vars free)])
@@ -1807,7 +1811,7 @@
       [(jmpcall label rator rand*) (make-jmpcall label (E rator) (map E rand*))]
       [(mvcall p c)
        (struct-case c 
-         [(clambda label cases free name)
+         [(clambda label cases cp free name)
           (make-mvcall (E p) 
             (make-clambda label
               (map (lambda (x)
@@ -1815,10 +1819,17 @@
                        [(clambda-case info body)
                         (make-clambda-case info (E body))]))
                    cases)
-              free name))])]
+              cp free name))])]
       [else (error who "invalid expression" (unparse x))]))
+  (when (assembler-output) 
+    (printf "BEFORE\n")
+    (pretty-print (unparse x)))
   (let ([x (E x)])
-    (make-codes all-codes x)))
+    (let ([v (make-codes all-codes x)])
+      (when (assembler-output) 
+        (printf "AFTER\n")
+        (pretty-print (unparse v)))
+      v)))
 
 
 
@@ -1836,8 +1847,8 @@
        (make-clambda-case info (Tail body))]))
   (define (CodeExpr x)
     (struct-case x
-      [(clambda L cases free name)
-       (make-clambda L (map CaseExpr cases) free name)]))
+      [(clambda L cases cp free name)
+       (make-clambda L (map CaseExpr cases) cp free name)]))
   (define (CodesExpr x)
     (struct-case x 
       [(codes list body)

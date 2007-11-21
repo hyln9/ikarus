@@ -29,7 +29,7 @@
 ;;;           | (jmpcall <label> <Expr> <Expr>*)
 ;;;           | (mvcall <Expr> <clambda>)
 ;;;  <codeloc> ::= (code-loc <label>)
-;;;  <clambda> ::= (clambda <label> <case>* <free var>*) 
+;;;  <clambda> ::= (clambda <label> <case>* <cp> <free var>*) 
 ;;;  <case>    ::= (clambda-case <info> <body>)
 ;;;  <info>    ::= (clambda-info label <arg var>* proper)
 ;;;  <Program> ::= (codes <clambda>* <Expr>)
@@ -106,8 +106,8 @@
   ;;;
   (define (Clambda x)
     (struct-case x
-      [(clambda label case* free* name)
-       (make-clambda label (map ClambdaCase case*) free* name)]
+      [(clambda label case* cp free* name)
+       (make-clambda label (map ClambdaCase case*) cp free* name)]
       [else (error who "invalid clambda" x)]))
   ;;;
   (define (Program x)
@@ -124,15 +124,18 @@
   ;;;
   (define who 'eliminate-fix)
   ;;;
-  (define (Expr cpvar free*)
+  (define (Expr main-cpvar cpvar free*)
     ;;;
     (define (Var x)
-      (let f ([free* free*] [i 0])
-        (cond
-          [(null? free*) x]
-          [(eq? x (car free*))
-           (make-primcall '$cpref (list cpvar (make-constant i)))]
-          [else (f (cdr free*) (fxadd1 i))])))
+      (cond
+        [(eq? x main-cpvar) cpvar]
+        [else
+         (let f ([free* free*] [i 0])
+           (cond
+             [(null? free*) x]
+             [(eq? x (car free*))
+              (make-primcall '$cpref (list cpvar (make-constant i)))]
+             [else (f (cdr free*) (fxadd1 i))]))]))
     (define (do-fix lhs* rhs* body)
       (define (handle-closure x)
         (struct-case x
@@ -168,7 +171,7 @@
         [else (error who "invalid expr" x)]))
     Expr)
   ;;;
-  (define (ClambdaCase free*)
+  (define (ClambdaCase main-cp free*)
     (lambda (x)
       (struct-case x
         [(clambda-case info body)
@@ -177,20 +180,20 @@
             (let ([cp (unique-var 'cp)])
               (make-clambda-case 
                 (make-case-info label (cons cp args) proper)
-                ((Expr cp free*) body)))])]
+                ((Expr main-cp cp free*) body)))])]
         [else (error who "invalid clambda-case" x)])))
   ;;;
   (define (Clambda x)
     (struct-case x
-      [(clambda label case* free* name)
-       (make-clambda label (map (ClambdaCase free*) case*) 
-                     free* name)]
+      [(clambda label case* cp free* name)
+       (make-clambda label (map (ClambdaCase cp free*) case*) 
+                     cp free* name)]
       [else (error who "invalid clambda" x)]))
   ;;;
   (define (Program x)
     (struct-case x 
       [(codes code* body)
-       (make-codes (map Clambda code*) ((Expr #f '()) body))]
+       (make-codes (map Clambda code*) ((Expr #f #f '()) body))]
       [else (error who "invalid program" x)]))
   ;;;
   (Program x))
@@ -231,8 +234,8 @@
        (make-clambda-case info (Main body))]))
   (define (CodeExpr x)
     (struct-case x
-      [(clambda L cases free name)
-       (make-clambda L (map CaseExpr cases) free name)]))
+      [(clambda L cases cp free name)
+       (make-clambda L (map CaseExpr cases) cp free name)]))
   (define (CodesExpr x)
     (struct-case x 
       [(codes list body)
@@ -283,8 +286,8 @@
   ;;;
   (define (Clambda x)
     (struct-case x
-      [(clambda label case* free* name)
-       (make-clambda label (map ClambdaCase case*) free* name)]))
+      [(clambda label case* cp free* name)
+       (make-clambda label (map ClambdaCase case*) cp free* name)]))
   ;;;
   (define (Main x)
     (if (Tail x) 
@@ -758,8 +761,8 @@
   ;;;
   (define (Clambda x)
     (struct-case x
-      [(clambda label case* free* name)
-       (make-clambda label (map ClambdaCase case*) free* name)]))
+      [(clambda label case* cp free* name)
+       (make-clambda label (map ClambdaCase case*) cp free* name)]))
   ;;;
   (define (Main x)
     (set! locals '())
@@ -1813,8 +1816,8 @@
   ;;;
   (define (Clambda x)
     (struct-case x
-      [(clambda label case* free* name)
-       (make-clambda label (map ClambdaCase case*) free* name)]))
+      [(clambda label case* cp free* name)
+       (make-clambda label (map ClambdaCase case*) cp free* name)]))
   ;;;
   (define (Program x)
     (struct-case x 
@@ -2323,8 +2326,8 @@
     ;;;
     (define (Clambda x)
       (struct-case x
-        [(clambda label case* free* name)
-         (make-clambda label (map ClambdaCase case*) free* name)]))
+        [(clambda label case* cp free* name)
+         (make-clambda label (map ClambdaCase case*) cp free* name)]))
     ;;;
     (define (Program x)
       (struct-case x 
@@ -2793,7 +2796,7 @@
   ;;;
   (define (Clambda x)
     (struct-case x
-      [(clambda L case* free* name)
+      [(clambda L case* cp free* name)
        (cons* (length free*) 
               `(name ,name)
               (label L)
