@@ -1233,21 +1233,46 @@ add_object_proc(gc_t* gc, ikp x)
       return y;
     }
     else if(tagof(fst) == rtd_tag){
-      /* record */
+      /* struct / record */
       int size = (int) ref(fst, off_rtd_length);
-      if(size > 4096){
-        fprintf(stderr, "large rec size=0x%08x\n", size);
+      if(size & ((1<<align_shift)-1)) {
+        /* size = n * object_alignment + 4 =>
+           memreq = n * object_alignment + 8 
+                  = (n+1) * object_alignment  => aligned */
+        ikp y = gc_alloc_new_ptr(size+wordsize, gen, gc) + vector_tag;
+        ref(y, -vector_tag) = fst;
+        {
+          int i;
+          ikp p = y+disp_record_data-vector_tag;
+          ikp q = x+disp_record_data-vector_tag;
+          ref(p, 0) = ref(q, 0);
+          for(i=wordsize; i<size; i+=(2*wordsize)){
+            ref(p, i) = ref(q, i);
+            ref(p, i+wordsize) = ref(q, i+wordsize);
+          }
+        }
+        ref(x,-vector_tag) = forward_ptr;
+        ref(x,wordsize-vector_tag) = y;
+        return y;
+      } else {
+        /* size = n * object_alignment =>
+           memreq = n * object_alignment + 4 + 4 (pad) */
+        ikp y = gc_alloc_new_ptr(size+(2*wordsize), gen, gc) + vector_tag;
+        ref(y, -vector_tag) = fst;
+        {
+          int i;
+          ikp p = y+disp_record_data-vector_tag;
+          ikp q = x+disp_record_data-vector_tag;
+          for(i=0; i<size; i+=(2*wordsize)){
+            ref(p, i) = ref(q, i);
+            ref(p, i+wordsize) = ref(q, i+wordsize);
+          }
+        }
+        ref(y, size+disp_record_data-vector_tag) = 0;
+        ref(x,-vector_tag) = forward_ptr;
+        ref(x,wordsize-vector_tag) = y;
+        return y;
       }
-      int memreq = align(size + disp_record_data);
-      ikp y = gc_alloc_new_ptr(memreq, gen, gc) + vector_tag;
-      ref(y, memreq-vector_tag-wordsize) = 0;
-      memcpy(y-vector_tag, x-vector_tag, size+wordsize);
-      ref(x,-vector_tag) = forward_ptr;
-      ref(x,wordsize-vector_tag) = y;
-#if accounting
-        record_count++;
-#endif
-      return y;
     }
     else if(fst == code_tag){
       ikp entry = x + off_code_data;
