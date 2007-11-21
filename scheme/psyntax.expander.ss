@@ -951,7 +951,7 @@
       (syntax-match e ()
         ((_ (fmls* b* b** ...) ...)
          (let-values (((fmls* body*)
-                       (chi-lambda-clause* fmls*
+                       (chi-lambda-clause* e fmls*
                          (map cons b* b**) r mr)))
            (build-case-lambda no-source fmls* body*))))))
   
@@ -960,7 +960,7 @@
       (syntax-match e ()
         ((_ fmls b b* ...)
          (let-values (((fmls body)
-                       (chi-lambda-clause fmls
+                       (chi-lambda-clause e fmls
                           (cons b b*) r mr)))
            (build-lambda no-source fmls body))))))
   
@@ -985,18 +985,36 @@
            `(syntax-case (list . ,expr*) ()
               (,fml* (begin ,b . ,b*))))))))
   
+  (define (invalid-fmls-error stx fmls)
+    (syntax-match fmls ()
+      [(id* ... . last) 
+       (let f ([id* (cond
+                      [(id? last) (cons last id*)]
+                      [(syntax-null? last) id*]
+                      [else 
+                       (stx-error stx "not an identifier" last)])])
+         (cond
+           [(null? id*) (values)]
+           [(not (id? (car id*)))
+            (stx-error stx "not an identifier" (car id*))]
+           [else 
+            (f (cdr id*))
+            (when (bound-id-member? (car id*) (cdr id*))
+              (stx-error stx "duplicate binding" (car id*)))]))]
+      [_ (stx-error stx "malformed binding form" fmls)])) 
+  
   (define let-macro
     (lambda (stx)
       (syntax-match stx ()
         ((_ ((lhs* rhs*) ...) b b* ...)
          (if (valid-bound-ids? lhs*)
              (bless `((lambda ,lhs* ,b . ,b*) . ,rhs*))
-             (stx-error stx "invalid bindings")))
+             (invalid-fmls-error stx lhs*)))
         ((_ f ((lhs* rhs*) ...) b b* ...) (id? f)
          (if (valid-bound-ids? lhs*)
              (bless `(letrec ((,f (lambda ,lhs* ,b . ,b*)))
                         (,f . ,rhs*)))
-             (stx-error stx "invalid syntax"))))))
+             (invalid-fmls-error stx lhs*))))))
   
   (define trace-lambda-macro
     (lambda (stx)
@@ -1005,12 +1023,12 @@
          (if (valid-bound-ids? fmls)
              (bless `(make-traced-procedure ',who
                        (lambda ,fmls ,b . ,b*)))
-             (stx-error stx "invalid formals")))
+             (invalid-fmls-error stx fmls)))
         ((_  who (fmls ... . last) b b* ...)
          (if (valid-bound-ids? (cons last fmls))
              (bless `(make-traced-procedure ',who
                        (lambda (,@fmls . ,last) ,b . ,b*)))
-             (stx-error stx "invalid formals"))))))
+             (invalid-fmls-error stx (append fmls last)))))))
   
   (define trace-define-macro
     (lambda (stx)
@@ -1020,13 +1038,13 @@
              (bless `(define ,who
                        (make-traced-procedure ',who
                          (lambda ,fmls ,b . ,b*))))
-             (stx-error stx "invalid formals")))
+             (invalid-fmls-error stx fmls)))
         ((_ (who fmls ... . last) b b* ...)
          (if (valid-bound-ids? (cons last fmls))
              (bless `(define ,who
                        (make-traced-procedure ',who
                          (lambda (,@fmls . ,last) ,b . ,b*))))
-             (stx-error stx "invalid formals")))
+             (invalid-fmls-error stx (append fmls last))))
         ((_ who expr)
          (if (id? who)
              (bless `(define ,who
@@ -1035,7 +1053,7 @@
                              (make-traced-procedure ',who v)
                              (error 'trace-define
                                 "not a procedure" v)))))
-             (stx-error stx "invalid formals"))))))
+             (stx-error stx "invalid name"))))))
   
   (define guard-macro
     (lambda (x)
@@ -2406,7 +2424,7 @@
              (else (stx-error e))))))))
   
   (define chi-lambda-clause
-    (lambda (fmls body* r mr)
+    (lambda (stx fmls body* r mr)
       (syntax-match fmls ()
         ((x* ...)
          (if (valid-bound-ids? x*)
@@ -2418,7 +2436,7 @@
                    (add-subst (make-full-rib x* lab*) body*)
                    (add-lexicals lab* lex* r)
                    mr)))
-             (stx-error fmls "invalid fmls")))
+             (invalid-fmls-error stx fmls)))
         ((x* ... . x)
          (if (valid-bound-ids? (cons x x*))
              (let ((lex* (map gen-lexical x*)) (lab* (map gen-label x*))
@@ -2431,18 +2449,18 @@
                      body*)
                    (add-lexicals (cons lab lab*) (cons lex lex*) r)
                    mr)))
-             (stx-error fmls "invalid fmls")))
-        (_ (stx-error fmls "invalid fmls")))))
+             (invalid-fmls-error stx fmls)))
+        (_ (stx-error fmls "invalid syntax")))))
   
   (define chi-lambda-clause*
-    (lambda (fmls* body** r mr)
+    (lambda (stx fmls* body** r mr)
       (cond
         ((null? fmls*) (values '() '()))
         (else
          (let-values (((a b)
-                       (chi-lambda-clause (car fmls*) (car body**) r mr)))
+                       (chi-lambda-clause stx (car fmls*) (car body**) r mr)))
            (let-values (((a* b*)
-                         (chi-lambda-clause* (cdr fmls*) (cdr body**) r mr)))
+                         (chi-lambda-clause* stx (cdr fmls*) (cdr body**) r mr)))
              (values (cons a a*) (cons b b*))))))))
 
   (define chi-rhs
@@ -2452,7 +2470,7 @@
          (let ((x (cdr rhs)))
            (let ((fmls (car x)) (body* (cdr x)))
              (let-values (((fmls body)
-                           (chi-lambda-clause fmls body* r mr)))
+                           (chi-lambda-clause fmls fmls body* r mr)))
                (build-lambda no-source fmls body)))))
         ((expr)
          (let ((expr (cdr rhs)))
