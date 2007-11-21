@@ -3358,9 +3358,15 @@
     (lambda (x . args)
       (unless (for-all string? args)
         (error 'syntax-error "invalid argument" args))
-      (error 'expander "invalid syntax"
-          (stx->datum x) (apply string-append args))))
-  
+      (raise 
+        (condition 
+          (make-who-condition 'expander)
+          (make-message-condition
+            (if (null? args) 
+                "invalid syntax"
+                (apply string-append args)))
+          (stx->datum x)))))
+
   (define identifier? (lambda (x) (id? x)))
   
   (define datum->syntax
