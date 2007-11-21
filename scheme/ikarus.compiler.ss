@@ -1821,14 +1821,14 @@
                    cases)
               cp free name))])]
       [else (error who "invalid expression" (unparse x))]))
-  (when (assembler-output) 
-    (printf "BEFORE\n")
-    (pretty-print (unparse x)))
+  ;(when (assembler-output) 
+  ;  (printf "BEFORE\n")
+  ;  (pretty-print (unparse x)))
   (let ([x (E x)])
     (let ([v (make-codes all-codes x)])
-      (when (assembler-output) 
-        (printf "AFTER\n")
-        (pretty-print (unparse v)))
+      ;(when (assembler-output) 
+      ;  (printf "AFTER\n")
+      ;  (pretty-print (unparse v)))
       v)))
 
 

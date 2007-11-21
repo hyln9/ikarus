@@ -2585,6 +2585,11 @@
   (define (unique-label)
     (label (gensym)))
   ;;;
+  (define (constant=? x k)
+    (struct-case x 
+      [(constant k0) (equal? k0 k)]
+      [else #f]))
+  ;;;
   (define (P x lt lf ac)
     (struct-case x
       [(constant c) 
@@ -2595,6 +2600,10 @@
        (E e0 (P e1 lt lf ac))]
       [(conditional e0 e1 e2)
        (cond
+         [(and (constant=? e1 #t) (constant=? e2 #f))
+          (P e0 lt lf ac)]
+         [(and (constant=? e1 #f) (constant=? e2 #t))
+          (P e0 lf lt ac)]
          [(and lt lf) 
           (let ([l (unique-label)])
             (P e0 #f l
