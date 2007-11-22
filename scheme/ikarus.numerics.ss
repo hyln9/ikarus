@@ -2402,20 +2402,26 @@
 
 
   (define (shift-right-arithmetic n m who) 
-    (unless (fixnum? m)
-      (error who "shift amount is not a fixnum"))
     (cond
-      [(fixnum? n) 
+      [(fixnum? m) 
        (cond
-         [($fx>= m 0) ($fxsra n m)]
-         [else (error who "offset must be non-negative" m)])]
-      [(bignum? n) 
+         [(fixnum? n) 
+          (cond
+            [($fx>= m 0) ($fxsra n m)]
+            [else (error who "offset must be non-negative" m)])]
+         [(bignum? n) 
+          (cond
+            [($fx> m 0)  
+             (foreign-call "ikrt_bignum_shift_right" n m)]
+            [($fx= m 0) n]
+            [else (error who "offset must be non-negative" m)])]
+         [else (error who "not an exact integer" n)])]
+      [(bignum? m) 
        (cond
-         [($fx> m 0)  
-          (foreign-call "ikrt_bignum_shift_right" n m)]
-         [($fx= m 0) n]
-         [else (error who "offset must be non-negative" m)])]
-      [else (error who "not an exact integer" n)]))
+         [(fixnum? n) (if ($fx>= n 0) 0 -1)]
+         [(bignum? n) (if ($bignum-positive? n) 0 -1)]
+         [else (error who "not an exact integer" n)])]
+      [else (error who "not an exact integer offset" m)]))
 
   (define (sra n m)
     (shift-right-arithmetic n m 'sra))
@@ -2890,7 +2896,7 @@
         (error 'fldiv0-and-mod0 "not a flonum" n))))
 
 (library (ikarus bitwise misc)
-  (export fxfirst-bit-set bitwise-first-bit-set
+  (export fxfirst-bit-set bitwise-bit-set? bitwise-first-bit-set
           fxbit-count bitwise-bit-count
           fxlength
           fxbit-set?
@@ -2902,7 +2908,7 @@
     (ikarus system $bignums)
     (ikarus system $flonums)
     (except (ikarus) 
-      fxfirst-bit-set bitwise-first-bit-set
+      fxfirst-bit-set bitwise-bit-set? bitwise-first-bit-set
       fxbit-count bitwise-bit-count
       fxlength
       fxbit-set?
@@ -3021,6 +3027,41 @@
                 (error who "index out of range" i))
             (error who "index is not a fixnum" i))
         (error who "not a fixnum" x)))
+
+  (define (bitwise-bit-set? x i)
+    (define who 'bitwise-bit-set?)
+    (cond
+      [(fixnum? i) 
+       (when ($fx< i 0) 
+         (error who "index must be non-negative" i))
+       (cond
+         [(fixnum? x) 
+          (if ($fx< i (fixnum-width))
+              ($fx= ($fxlogand ($fxsra x i) 1) 1)
+              ($fx< x 0))]
+         [(bignum? x) 
+          (let ([n ($bignum-size x)])
+            (let ([m ($fx* n 8)])
+              (if ($fx< m i) 
+                  (not ($bignum-positive? x)) 
+                  (if ($bignum-positive? x) 
+                      (let ([b ($bignum-byte-ref x ($fxsra i 3))])
+                        ($fx= ($fxlogand ($fxsra b ($fxlogand i 7)) 1) 1))
+                      (= 1 (bitwise-and
+                             (bitwise-arithmetic-shift-right x i)
+                             1))))))]
+         [else (error who "not an exact integer" x)])]
+      [(bignum? i) 
+       (unless ($bignum-positive? i) 
+         (error who "index must be non-negative"))
+       (cond
+         [(fixnum? x) ($fx< x 0)]
+         [(bignum? x) 
+          (= 1 (bitwise-and (bitwise-arithmetic-shift-right x i) 1))]
+         [else (error who "not an exact integer" x)])]
+      [else 
+       (error who "index is not an exact integer" i)]))
+
 
   (define (fxcopy-bit x i b)
     (define who 'fxcopy-bit)

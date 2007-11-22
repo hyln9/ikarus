@@ -768,7 +768,7 @@
     [bitwise-xor                                 r bw]
     [bitwise-bit-count                           i r bw]
     [bitwise-bit-field                           r bw]
-    [bitwise-bit-set?                            r bw]
+    [bitwise-bit-set?                            i r bw]
     [bitwise-copy-bit                            r bw]
     [bitwise-copy-bit-field                      r bw]
     [bitwise-first-bit-set                       i r bw]
