@@ -16,7 +16,7 @@
 
 (library (ikarus io-primitives)
   (export read-char unread-char peek-char write-char write-byte
-          put-u8 put-char put-string get-char get-u8
+          put-u8 put-char put-string put-bytevector get-char get-u8
           newline port-name input-port-name output-port-name
           close-input-port reset-input-port! 
           flush-output-port close-output-port get-line)
@@ -25,7 +25,7 @@
     (ikarus system $fx)
     (ikarus system $ports)
     (except (ikarus) read-char unread-char peek-char write-char write-byte 
-            put-u8 put-char put-string get-char get-u8
+            put-u8 put-char put-string put-bytevector get-char get-u8
             newline port-name input-port-name output-port-name
             close-input-port reset-input-port!  flush-output-port
             close-output-port get-line))
@@ -244,6 +244,54 @@
                  c))
              ($put-string p s i j)))])))
  
+  (module (put-bytevector)
+    (import (ikarus system $bytevectors)
+            (ikarus system $fx))
+    (define ($put-bytevector p bv i j)
+      (unless ($fx= i j) 
+        ($write-byte ($bytevector-u8-ref bv i) p)
+        ($put-bytevector p bv ($fx+ i 1) j)))
+    (define put-bytevector
+      (case-lambda
+        [(p s) 
+         (unless (output-port? p) 
+           (error 'put-bytevector "not an output port" p))
+         (unless (bytevector? s) 
+           (error 'put-bytevector "not a bytevector" s))
+         ($put-bytevector p s 0 (bytevector-length s))]
+        [(p s i) 
+         (unless (output-port? p) 
+           (error 'put-bytevector "not an output port" p))
+         (unless (bytevector? s) 
+           (error 'put-bytevector "not a bytevector" s))
+         (let ([len ($bytevector-length s)])
+           (unless (fixnum? i) 
+             (error 'put-bytevector "starting index is not a fixnum" i))
+           (when (or ($fx< i 0) ($fx> i len))
+             (error 'put-bytevector 
+               (format "starting index is out of range 0..~a" len)
+               i))
+           ($put-bytevector p s i len))]
+        [(p s i c) 
+         (unless (output-port? p) 
+           (error 'put-bytevector "not an output port" p))
+         (unless (bytevector? s) 
+           (error 'put-bytevector "not a bytevector" s))
+         (let ([len ($bytevector-length s)])
+           (unless (fixnum? i) 
+             (error 'put-bytevector "starting index is not a fixnum" i))
+           (when (or ($fx< i 0) ($fx> i len))
+             (error 'put-bytevector 
+               (format "starting index is out of range 0..~a" len)
+               i))
+           (unless (fixnum? c) 
+             (error 'put-bytevector "count is not a fixnum" c))
+           (let ([j (+ i c)])
+             (when (or ($fx< c 0) (> j len))
+               (error 'put-bytevector 
+                 (format "count is out of range 0..~a" (- len i))
+                 c))
+             ($put-bytevector p s i j)))])))
 
   )
 

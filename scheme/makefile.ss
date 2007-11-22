@@ -1135,7 +1135,7 @@
     [port-position                               r ip]
     [port-transcoder                             r ip]
     [port?                                       i r ip]
-    [put-bytevector                              r ip]
+    [put-bytevector                              i r ip]
     [put-char                                    i r ip]
     [put-datum                                   i r ip]
     [put-string                                  i r ip]

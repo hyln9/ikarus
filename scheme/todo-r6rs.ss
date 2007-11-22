@@ -640,7 +640,7 @@
     [port-position                              S ip]
     [port-transcoder                            S ip]
     [port?                                      C ip]
-    [put-bytevector                             S ip]
+    [put-bytevector                             C ip]
     [put-char                                   C ip]
     [put-datum                                  C ip]
     [put-string                                 C ip]
