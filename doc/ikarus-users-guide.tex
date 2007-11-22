@@ -94,8 +94,7 @@
 \newcommand{\idxlabeldefun}[5]{
 \vspace{1ex}
 \rule{\textwidth}{2pt}
-{\index{#1@\texttt{#2}}\label{#3}{\Large\texttt{#4}} \hfill \textbf{#5}}\\
-}
+{\index{#1@\texttt{#2}}\label{#3}{\Large\texttt{#4}}\hfill\textbf{#5}}\\}
 
 
 \newcommand{\idxdefun}[3]{\idxlabeldefun{#1}{#2}{#1}{#2}{#3}}
@@ -524,8 +523,10 @@ example shows a very simple script that uses the
 \newpage
 
 \section{Installing Additional Libraries}
-
+FIXME
 \subsection{\texttt{IKARUS\_LIBRARY\_PATH}}
+\index{ikarus library path@\texttt{IKARUS\_LIBRARY\_PATH}}
+FIXME
 
 
 %\subsection{Mac OS X}
@@ -1148,11 +1149,20 @@ module system is similar in spirit to that of Chez Scheme.
 \defun{module}{syntax}
 \texttt{(module M definitions ... expressions ...)}\\
 \texttt{(module definitions ... expressions ...)}
+FIXME
 
 \defun{import}{syntax}
 \texttt{(import M)}
+FIXME
 
 \newpage
+\section{Local Library Imports}
+\defun{import}{syntax}
+\texttt{(import import-spec* ...)}
+FIXME
+
+\newpage
+
 \section{\label{sec:gensyms}Gensyms}
 
 Gensym stands for a \emph{generated symbol}---a fresh symbol that is
@@ -1241,12 +1251,14 @@ associated with the gensym argument.
 
 
 \idxdefun{gensym syntax}{\#\{gensym\}}{reader syntax}
+\texttt{\#\{unique-name\}}
 \index{\#\{pretty unique\}@\texttt{\#\{pretty unique\}} reader syntax}
+\\
+\texttt{\#\{pretty-name unique-name\}}
 \index{\#\{unique\}@\texttt{\#\{unique\}} reader syntax}
-\index{\#:pretty@\texttt{\#:pretty} reader syntax}
-\texttt{\#\{unique-name\}}\\
-\texttt{\#\{pretty-name unique-name\}}\\
+\\
 \texttt{\#:pretty-name}
+\index{\#:pretty@\texttt{\#:pretty} reader syntax}
 
 Ikarus's \texttt{read} and \texttt{write} procedures extends the
 lexical syntax of Scheme by the ability to read and write gensyms
@@ -1833,9 +1845,8 @@ string-normalize-nfkc               string-normalize-nfkd
 The following procedures are missing from \texttt{(rnrs arithmetic
 bitwise)}:
 \begin{Verbatim}
-bitwise-ior  bitwise-xor   bitwise-if 
+bitwise-ior  bitwise-xor   bitwise-if             bitwise-bit-field 
 bitwise-copy-bit-field     bitwise-bit-set?        bitwise-copy-bit 
-bitwise-first-bit-set      bitwise-bit-count      bitwise-bit-field 
 bitwise-reverse-bit-field  bitwise-rotate-bit-field  bitwise-length  
 \end{Verbatim}
 
@@ -1843,14 +1854,12 @@ bitwise-reverse-bit-field  bitwise-rotate-bit-field  bitwise-length
 The following procedures are missing from \texttt{(rnrs arithmetic
 fixnum)}:
 \begin{Verbatim}
-fxbit-count  fxbit-field  fxbit-set?  fxcopy-bit  fxcopy-bit-field
-fxfirst-bit-set fxlength  fxreverse-bit-field   fxrotate-bit-field   
+fxreverse-bit-field   fxrotate-bit-field   
 \end{Verbatim}
 
 
 The following procedures are missing from \texttt{(rnrs hashtables)}:
 \begin{Verbatim}
-hashtable-copy
 make-eqv-hashtable         make-hashtable
 hashtable-hash-function    hashtable-equivalence-function 
 equal-hash   string-hash   string-ci-hash   symbol-hash
@@ -1861,14 +1870,14 @@ equal-hash   string-hash   string-ci-hash   symbol-hash
 The following procedures are missing from \texttt{(rnrs io ports)}:
 \begin{Verbatim}
 call-with-bytevector-output-port     call-with-string-output-port
-binary-port?   textual-port?    port-eof?     
+binary-port?   textual-port?    port-eof?
 port-has-port-position?         port-position 
 port-has-set-port-position!?    set-port-position!
 call-with-port        close-port
 get-bytevector-all    get-bytevector-some
 get-bytevector-n      get-bytevector-n!
-get-char              put-char      lookahead-char    
-get-u8                lookahead-u8  put-u8
+lookahead-char
+lookahead-u8
 get-string-all        get-string-n  get-string-n!  put-string
 get-datum             put-datum
 make-custom-binary-input-port         make-custom-binary-input/output-port    
@@ -1876,7 +1885,6 @@ make-custom-binary-output-port        make-custom-textual-input-port
 make-custom-textual-input/output-port make-custom-textual-output-port
 open-bytevector-input-port            open-bytevector-output-port 
 open-file-input-port   open-file-input/output-port open-file-output-port    
-open-string-input-port open-string-output-port
 output-port-buffer-mode
 transcoded-port       port-transcoderput-bytevector 
 standard-error-port   standard-input-port   standard-output-port 

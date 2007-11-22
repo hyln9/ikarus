@@ -16,7 +16,7 @@
 
 (library (ikarus io-primitives)
   (export read-char unread-char peek-char write-char write-byte
-          put-u8 put-char get-char
+          put-u8 put-char get-char get-u8
           newline port-name input-port-name output-port-name
           close-input-port reset-input-port! 
           flush-output-port close-output-port get-line)
@@ -25,7 +25,7 @@
     (ikarus system $fx)
     (ikarus system $ports)
     (except (ikarus) read-char unread-char peek-char write-char write-byte 
-            put-u8 put-char get-char
+            put-u8 put-char get-char get-u8
             newline port-name input-port-name output-port-name
             close-input-port reset-input-port!  flush-output-port
             close-output-port get-line))
@@ -107,6 +107,12 @@
       (if (input-port? p)
            ($read-char p)
            (error 'get-char "not an input-port" p))))
+
+  (define get-u8
+    (lambda (p) 
+      (if (input-port? p)
+           ($get-u8 p)
+           (error 'get-u8 "not an input-port" p))))
 
   (define read-char
     (case-lambda

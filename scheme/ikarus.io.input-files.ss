@@ -125,6 +125,27 @@
                             (error 'read-char "Cannot read from file"
                                    port-name)]))
                        (error 'read-char "port is closed" p))))]
+            [(get-u8 p)
+             (unless (input-port? p)
+               (error 'get-u8 "not an input port" p))
+             (let ([idx ($port-index p)])
+               (if ($fx< idx ($port-size p))
+                   (let ([b ($bytevector-u8-ref ($port-buffer p) idx)])
+                      ($set-port-index! p ($fxadd1 idx))
+                      b)
+                   (if open?
+                       (let ([bytes
+                              (foreign-call "ikrt_read" 
+                                 fd ($port-buffer p))])
+                         (cond
+                           [($fx> bytes 0)
+                            ($set-port-size! p bytes)
+                            ($get-u8 p)]
+                           [($fx= bytes 0)
+                            (eof-object)]
+                           [else
+                            (error 'get-u8 "Cannot read from file" port-name)]))
+                       (error 'get-u8 "port is closed" p))))]
             [(peek-char p)
              (unless (input-port? p)
                (error 'peek-char "not an input port" p))
