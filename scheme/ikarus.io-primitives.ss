@@ -17,7 +17,9 @@
 (library (ikarus io-primitives)
   (export read-char unread-char peek-char write-char write-byte
           put-u8 put-char put-string put-bytevector 
-          get-char get-u8 get-string-n get-string-n! get-bytevector-n
+          get-char get-u8
+          get-string-n get-string-n! 
+          get-bytevector-n get-bytevector-n!
           newline port-name input-port-name output-port-name
           close-input-port reset-input-port! 
           flush-output-port close-output-port get-line)
@@ -27,7 +29,9 @@
     (ikarus system $ports)
     (except (ikarus) read-char unread-char peek-char write-char write-byte 
             put-u8 put-char put-string put-bytevector
-            get-char get-u8 get-string-n get-string-n! get-bytevector-n
+            get-char get-u8 
+            get-string-n get-string-n! 
+            get-bytevector-n get-bytevector-n!
             newline port-name input-port-name output-port-name
             close-input-port reset-input-port!  flush-output-port
             close-output-port get-line))
@@ -393,5 +397,46 @@
                       (f p n s i)))]))))]
       [($fx= n 0) '#vu8()]
       [else (error 'get-bytevector-n "count is negative" n)]))
+
+
+  (define (get-bytevector-n! p s i c) 
+    (import (ikarus system $fx) (ikarus system $bytevectors))
+    (unless (input-port? p) 
+      (error 'get-bytevector-n! "not an input port" p))
+    (unless (bytevector? s) 
+      (error 'get-bytevector-n! "not a bytevector" s))
+    (let ([len ($bytevector-length s)])
+      (unless (fixnum? i) 
+        (error 'get-bytevector-n! "starting index is not a fixnum" i))
+      (when (or ($fx< i 0) ($fx> i len))
+        (error 'get-bytevector-n! 
+          (format "starting index is out of range 0..~a" len)
+          i))
+      (unless (fixnum? c) 
+        (error 'get-bytevector-n! "count is not a fixnum" c))
+      (cond
+        [($fx> c 0)
+         (let ([j (+ i c)])
+           (when (> j len)
+             (error 'get-bytevector-n! 
+               (format "count is out of range 0..~a" (- len i))
+               c))
+           (let ([x ($get-u8 p)])
+             (cond
+               [(eof-object? x) x]
+               [else
+                ($bytevector-set! s i x)
+                (let f ([p p] [s s] [start i] [i 1] [c c])
+                  (let ([x ($get-u8 p)])
+                    (cond
+                      [(eof-object? x) i]
+                      [else
+                       ($bytevector-set! s ($fx+ start i) x)
+                       (let ([i ($fxadd1 i)])
+                         (if ($fx= i c)
+                             i
+                             (f p s start i c)))])))])))]
+        [($fx= c 0) 0]
+        [else (error 'get-bytevector-n! "count is negative" c)])))
   )
 
