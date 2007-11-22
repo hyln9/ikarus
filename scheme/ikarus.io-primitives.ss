@@ -17,7 +17,7 @@
 (library (ikarus io-primitives)
   (export read-char unread-char peek-char write-char write-byte
           put-u8 put-char put-string put-bytevector 
-          get-char get-u8 get-string-n get-bytevector-n
+          get-char get-u8 get-string-n get-string-n! get-bytevector-n
           newline port-name input-port-name output-port-name
           close-input-port reset-input-port! 
           flush-output-port close-output-port get-line)
@@ -27,7 +27,7 @@
     (ikarus system $ports)
     (except (ikarus) read-char unread-char peek-char write-char write-byte 
             put-u8 put-char put-string put-bytevector
-            get-char get-u8 get-string-n get-bytevector-n
+            get-char get-u8 get-string-n get-string-n! get-bytevector-n
             newline port-name input-port-name output-port-name
             close-input-port reset-input-port!  flush-output-port
             close-output-port get-line))
@@ -321,6 +321,45 @@
       [($fx= n 0) ""]
       [else (error 'get-string-n "count is negative" n)]))
 
+  (define (get-string-n! p s i c) 
+    (import (ikarus system $fx) (ikarus system $strings))
+    (unless (input-port? p) 
+      (error 'get-string-n! "not an input port" p))
+    (unless (string? s) 
+      (error 'get-string-n! "not a string" s))
+    (let ([len ($string-length s)])
+      (unless (fixnum? i) 
+        (error 'get-string-n! "starting index is not a fixnum" i))
+      (when (or ($fx< i 0) ($fx> i len))
+        (error 'get-string-n! 
+          (format "starting index is out of range 0..~a" len)
+          i))
+      (unless (fixnum? c) 
+        (error 'get-string-n! "count is not a fixnum" c))
+      (cond
+        [($fx> c 0)
+         (let ([j (+ i c)])
+           (when (> j len)
+             (error 'get-string-n! 
+               (format "count is out of range 0..~a" (- len i))
+               c))
+           (let ([x ($read-char p)])
+             (cond
+               [(eof-object? x) x]
+               [else
+                ($string-set! s i x)
+                (let f ([p p] [s s] [start i] [i 1] [c c])
+                  (let ([x ($read-char p)])
+                    (cond
+                      [(eof-object? x) i]
+                      [else
+                       ($string-set! s ($fx+ start i) x)
+                       (let ([i ($fxadd1 i)])
+                         (if ($fx= i c)
+                             i
+                             (f p s start i c)))])))])))]
+        [($fx= c 0) 0]
+        [else (error 'get-string-n! "count is negative" c)])))
 
   (define (get-bytevector-n p n) 
     (import (ikarus system $fx) (ikarus system $bytevectors))

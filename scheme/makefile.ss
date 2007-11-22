@@ -1066,7 +1066,7 @@
     [get-line                                    i r ip]
     [get-string-all                              r ip]
     [get-string-n                                i r ip]
-    [get-string-n!                               r ip]
+    [get-string-n!                               i r ip]
     [get-u8                                      i r ip]
     [$get-u8                                     $io]
     [&i/o                                        i r ip is fi]

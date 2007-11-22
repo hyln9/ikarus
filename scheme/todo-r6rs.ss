@@ -572,7 +572,7 @@
     [get-line                                   C ip]
     [get-string-all                             S ip]
     [get-string-n                               C ip]
-    [get-string-n!                              S ip]
+    [get-string-n!                              C ip]
     [get-u8                                     C ip]
     [&i/o                                       C ip is fi]
     [&i/o-decoding                              C ip]
