@@ -642,7 +642,7 @@
     [port?                                      C ip]
     [put-bytevector                             S ip]
     [put-char                                   C ip]
-    [put-datum                                  S ip]
+    [put-datum                                  C ip]
     [put-string                                 S ip]
     [put-u8                                     C ip]
     [set-port-position!                         S ip]

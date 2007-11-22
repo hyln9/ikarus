@@ -15,7 +15,8 @@
 
 
 (library (ikarus writer)
-  (export write display format printf fprintf print-error print-unicode print-graph)
+  (export write display format printf fprintf print-error print-unicode print-graph
+          put-datum)
   (import 
     (rnrs hashtables)
     (ikarus system $chars)
@@ -28,7 +29,8 @@
     (ikarus system $transcoders)
     (only (ikarus unicode-data) unicode-printable-char?) 
     (except (ikarus) 
-      write display format printf fprintf print-error print-unicode print-graph))
+      write display format printf fprintf print-error print-unicode print-graph
+      put-datum))
 
   (define print-unicode
     (make-parameter #t))
@@ -755,6 +757,11 @@
        (unless (output-port? p) 
          (error 'write "not an output port" p))
        (write-to-port x p)]))
+
+  (define (put-datum p x)
+    (unless (output-port? p) 
+      (error 'put-datum "not an output port" p))
+    (write-to-port x p))
 
   (define display 
     (case-lambda
