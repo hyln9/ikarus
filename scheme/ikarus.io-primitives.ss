@@ -16,7 +16,8 @@
 
 (library (ikarus io-primitives)
   (export read-char unread-char peek-char write-char write-byte
-          put-u8 put-char put-string put-bytevector get-char get-u8
+          put-u8 put-char put-string put-bytevector 
+          get-char get-u8 get-string-n
           newline port-name input-port-name output-port-name
           close-input-port reset-input-port! 
           flush-output-port close-output-port get-line)
@@ -25,7 +26,8 @@
     (ikarus system $fx)
     (ikarus system $ports)
     (except (ikarus) read-char unread-char peek-char write-char write-byte 
-            put-u8 put-char put-string put-bytevector get-char get-u8
+            put-u8 put-char put-string put-bytevector
+            get-char get-u8 get-string-n
             newline port-name input-port-name output-port-name
             close-input-port reset-input-port!  flush-output-port
             close-output-port get-line))
@@ -293,5 +295,29 @@
                  c))
              ($put-bytevector p s i j)))])))
 
+  (define (get-string-n p n) 
+    (import (ikarus system $fx) (ikarus system $strings))
+    (unless (input-port? p) 
+      (error 'get-string-n "not an input port" p))
+    (unless (fixnum? n) 
+      (error 'get-string-n "count is not a fixnum" n))
+    (cond
+      [($fx> n 0) 
+       (let ([s ($make-string n)])
+         (let f ([p p] [n n] [s s] [i 0])
+           (let ([x ($read-char p)])
+             (cond
+               [(eof-object? x) 
+                (if ($fx= i 0) 
+                    (eof-object)
+                    (substring s 0 i))]
+               [else
+                ($string-set! s i x) 
+                (let ([i ($fxadd1 i)])
+                  (if ($fx= i n) 
+                      s
+                      (f p n s i)))]))))]
+      [($fx= n 0) ""]
+      [else (error 'get-string-n "count is negative" n)]))
   )
 

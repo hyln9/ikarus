@@ -571,7 +571,7 @@
     [get-datum                                  C ip]
     [get-line                                   C ip]
     [get-string-all                             S ip]
-    [get-string-n                               S ip]
+    [get-string-n                               C ip]
     [get-string-n!                              S ip]
     [get-u8                                     C ip]
     [&i/o                                       C ip is fi]
