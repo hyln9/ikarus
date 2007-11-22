@@ -51,6 +51,11 @@ compute_hash(ikp str){
   return h;
 }
 
+ikp 
+ikrt_string_hash(ikp str){
+  return fix(compute_hash(str));
+}
+
 static int strings_eqp(ikp str1, ikp str2){
   ikp len = ref(str1, off_string_length);
   if(len == ref(str2, off_string_length)){

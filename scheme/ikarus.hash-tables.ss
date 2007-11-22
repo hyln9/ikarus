@@ -18,7 +18,8 @@
    (export make-eq-hashtable hashtable-ref hashtable-set! hashtable?
            hashtable-size hashtable-delete! hashtable-contains?
            hashtable-update! hashtable-keys hashtable-mutable?
-           hashtable-clear! hashtable-entries hashtable-copy)
+           hashtable-clear! hashtable-entries hashtable-copy
+           string-hash)
    (import 
      (ikarus system $pairs)
      (ikarus system $vectors)
@@ -27,7 +28,8 @@
      (except (ikarus) make-eq-hashtable hashtable-ref hashtable-set! hashtable?
              hashtable-size hashtable-delete! hashtable-contains?
              hashtable-update! hashtable-keys hashtable-mutable?
-             hashtable-clear! hashtable-entries hashtable-copy))
+             hashtable-clear! hashtable-entries hashtable-copy
+             string-hash))
 
    (define-struct hasht (vec count tc mutable?))
 
@@ -403,5 +405,10 @@
                (hasht-copy h (and mutable? #t))
                h)
            (error 'hashtable-copy "not a hash table" h))]))
+
+  (define (string-hash s)
+    (if (string? s) 
+        (foreign-call "ikrt_string_hash" s)
+        (error 'string-hash "not a string" s)))
 
 )

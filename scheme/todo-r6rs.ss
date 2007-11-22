@@ -565,7 +565,7 @@
     [flush-output-port                          C ip]
     [get-bytevector-all                         S ip]
     [get-bytevector-n                           C ip]
-    [get-bytevector-n!                          S ip]
+    [get-bytevector-n!                          C ip]
     [get-bytevector-some                        S ip]
     [get-char                                   C ip]
     [get-datum                                  C ip]
@@ -699,7 +699,7 @@
     [make-hashtable                             S ht]
     [hashtable-equivalence-function             S ht]
     [equal-hash                                 S ht]
-    [string-hash                                S ht]
+    [string-hash                                C ht]
     [string-ci-hash                             S ht]
     [symbol-hash                                S ht]
     ;;;

@@ -1192,7 +1192,7 @@
     [make-hashtable                              r ht]
     [hashtable-equivalence-function              r ht]
     [equal-hash                                  r ht]
-    [string-hash                                 r ht]
+    [string-hash                                 i r ht]
     [string-ci-hash                              r ht]
     [symbol-hash                                 r ht]
     [list-sort                                   i r sr]
