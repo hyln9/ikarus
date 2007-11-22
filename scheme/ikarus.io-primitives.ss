@@ -17,7 +17,7 @@
 (library (ikarus io-primitives)
   (export read-char unread-char peek-char write-char write-byte
           put-u8 put-char put-string put-bytevector 
-          get-char get-u8 get-string-n
+          get-char get-u8 get-string-n get-bytevector-n
           newline port-name input-port-name output-port-name
           close-input-port reset-input-port! 
           flush-output-port close-output-port get-line)
@@ -27,7 +27,7 @@
     (ikarus system $ports)
     (except (ikarus) read-char unread-char peek-char write-char write-byte 
             put-u8 put-char put-string put-bytevector
-            get-char get-u8 get-string-n
+            get-char get-u8 get-string-n get-bytevector-n
             newline port-name input-port-name output-port-name
             close-input-port reset-input-port!  flush-output-port
             close-output-port get-line))
@@ -295,6 +295,7 @@
                  c))
              ($put-bytevector p s i j)))])))
 
+
   (define (get-string-n p n) 
     (import (ikarus system $fx) (ikarus system $strings))
     (unless (input-port? p) 
@@ -319,5 +320,39 @@
                       (f p n s i)))]))))]
       [($fx= n 0) ""]
       [else (error 'get-string-n "count is negative" n)]))
+
+
+  (define (get-bytevector-n p n) 
+    (import (ikarus system $fx) (ikarus system $bytevectors))
+    (define (subbytevector s n)
+      (let ([p ($make-bytevector n)])
+        (let f ([s s] [n n] [p p])
+          (let ([n ($fx- n 1)])
+            ($bytevector-set! p n ($bytevector-u8-ref s n))
+            (if ($fx= n 0) 
+                p
+                (f s n p))))))
+    (unless (input-port? p) 
+      (error 'get-bytevector-n "not an input port" p))
+    (unless (fixnum? n) 
+      (error 'get-bytevector-n "count is not a fixnum" n))
+    (cond
+      [($fx> n 0) 
+       (let ([s ($make-bytevector n)])
+         (let f ([p p] [n n] [s s] [i 0])
+           (let ([x ($get-u8 p)])
+             (cond
+               [(eof-object? x) 
+                (if ($fx= i 0) 
+                    (eof-object)
+                    (subbytevector s i))]
+               [else
+                ($bytevector-set! s i x)
+                (let ([i ($fxadd1 i)])
+                  (if ($fx= i n) 
+                      s
+                      (f p n s i)))]))))]
+      [($fx= n 0) '#vu8()]
+      [else (error 'get-bytevector-n "count is negative" n)]))
   )
 

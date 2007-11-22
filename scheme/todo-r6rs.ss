@@ -564,7 +564,7 @@
     [file-options                               C ip]
     [flush-output-port                          C ip]
     [get-bytevector-all                         S ip]
-    [get-bytevector-n                           S ip]
+    [get-bytevector-n                           C ip]
     [get-bytevector-n!                          S ip]
     [get-bytevector-some                        S ip]
     [get-char                                   C ip]

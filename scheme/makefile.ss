@@ -1058,7 +1058,7 @@
     [file-options                                i r ip]
     [flush-output-port                           i r ip]
     [get-bytevector-all                          r ip]
-    [get-bytevector-n                            r ip]
+    [get-bytevector-n                            i r ip]
     [get-bytevector-n!                           r ip]
     [get-bytevector-some                         r ip]
     [get-char                                    i r ip]
