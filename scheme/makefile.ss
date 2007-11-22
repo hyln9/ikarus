@@ -1138,7 +1138,7 @@
     [put-bytevector                              r ip]
     [put-char                                    i r ip]
     [put-datum                                   i r ip]
-    [put-string                                  r ip]
+    [put-string                                  i r ip]
     [put-u8                                      i r ip]
     [set-port-position!                          r ip]
     [standard-error-port                         i r ip]

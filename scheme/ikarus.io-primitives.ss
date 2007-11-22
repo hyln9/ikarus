@@ -16,7 +16,7 @@
 
 (library (ikarus io-primitives)
   (export read-char unread-char peek-char write-char write-byte
-          put-u8 put-char get-char get-u8
+          put-u8 put-char put-string get-char get-u8
           newline port-name input-port-name output-port-name
           close-input-port reset-input-port! 
           flush-output-port close-output-port get-line)
@@ -25,7 +25,7 @@
     (ikarus system $fx)
     (ikarus system $ports)
     (except (ikarus) read-char unread-char peek-char write-char write-byte 
-            put-u8 put-char get-char get-u8
+            put-u8 put-char put-string get-char get-u8
             newline port-name input-port-name output-port-name
             close-input-port reset-input-port!  flush-output-port
             close-output-port get-line))
@@ -195,5 +195,55 @@
         (get-it p)
         (error 'get-line "not an input port" p)))
   
+  (module (put-string)
+    (import (ikarus system $strings)
+            (ikarus system $fx))
+    (define ($put-string p s i j)
+      (unless ($fx= i j) 
+        ($write-char ($string-ref s i) p)
+        ($put-string p s ($fx+ i 1) j))) 
+    (define put-string
+      (case-lambda
+        [(p s) 
+         (unless (output-port? p) 
+           (error 'put-string "not an output port" p))
+         (unless (string? s) 
+           (error 'put-string "not a string" s))
+         ($put-string p s 0 (string-length s))]
+        [(p s i) 
+         (unless (output-port? p) 
+           (error 'put-string "not an output port" p))
+         (unless (string? s) 
+           (error 'put-string "not a string" s))
+         (let ([len ($string-length s)])
+           (unless (fixnum? i) 
+             (error 'put-string "starting index is not a fixnum" i))
+           (when (or ($fx< i 0) ($fx> i len))
+             (error 'put-string 
+               (format "starting index is out of range 0..~a" len)
+               i))
+           ($put-string p s i len))]
+        [(p s i c) 
+         (unless (output-port? p) 
+           (error 'put-string "not an output port" p))
+         (unless (string? s) 
+           (error 'put-string "not a string" s))
+         (let ([len ($string-length s)])
+           (unless (fixnum? i) 
+             (error 'put-string "starting index is not a fixnum" i))
+           (when (or ($fx< i 0) ($fx> i len))
+             (error 'put-string 
+               (format "starting index is out of range 0..~a" len)
+               i))
+           (unless (fixnum? c) 
+             (error 'put-string "count is not a fixnum" c))
+           (let ([j (+ i c)])
+             (when (or ($fx< c 0) (> j len))
+               (error 'put-string 
+                 (format "count is out of range 0..~a" (- len i))
+                 c))
+             ($put-string p s i j)))])))
+ 
+
   )
 
