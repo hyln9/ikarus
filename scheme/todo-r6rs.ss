@@ -700,8 +700,8 @@
     [hashtable-equivalence-function             S ht]
     [equal-hash                                 S ht]
     [string-hash                                C ht]
-    [string-ci-hash                             S ht]
-    [symbol-hash                                S ht]
+    [string-ci-hash                             C ht]
+    [symbol-hash                                C ht]
     ;;;
     [list-sort                                  C sr]
     [vector-sort                                C sr]

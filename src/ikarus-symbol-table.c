@@ -53,7 +53,7 @@ compute_hash(ikp str){
 
 ikp 
 ikrt_string_hash(ikp str){
-  return fix(compute_hash(str));
+  return compute_hash(str) & (~ fx_mask);
 }
 
 static int strings_eqp(ikp str1, ikp str2){

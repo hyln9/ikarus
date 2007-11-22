@@ -19,7 +19,7 @@
            hashtable-size hashtable-delete! hashtable-contains?
            hashtable-update! hashtable-keys hashtable-mutable?
            hashtable-clear! hashtable-entries hashtable-copy
-           string-hash)
+           string-hash string-ci-hash symbol-hash)
    (import 
      (ikarus system $pairs)
      (ikarus system $vectors)
@@ -29,7 +29,7 @@
              hashtable-size hashtable-delete! hashtable-contains?
              hashtable-update! hashtable-keys hashtable-mutable?
              hashtable-clear! hashtable-entries hashtable-copy
-             string-hash))
+             string-hash string-ci-hash symbol-hash))
 
    (define-struct hasht (vec count tc mutable?))
 
@@ -410,5 +410,16 @@
     (if (string? s) 
         (foreign-call "ikrt_string_hash" s)
         (error 'string-hash "not a string" s)))
+
+  (define (string-ci-hash s)
+    (if (string? s) 
+        (foreign-call "ikrt_string_hash" 
+          (string-foldcase s))
+        (error 'string-ci-hash "not a string" s)))
+
+  (define (symbol-hash s)
+    (if (symbol? s) 
+        (foreign-call "ikrt_string_hash" (symbol->string s))
+        (error 'symbol-hash "not a symbol" s)))
 
 )
