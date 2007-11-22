@@ -1062,7 +1062,7 @@
     [get-bytevector-n!                           r ip]
     [get-bytevector-some                         r ip]
     [get-char                                    i r ip]
-    [get-datum                                   r ip]
+    [get-datum                                   i r ip]
     [get-line                                    i r ip]
     [get-string-all                              r ip]
     [get-string-n                                r ip]

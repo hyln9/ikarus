@@ -15,14 +15,14 @@
 
 
 (library (ikarus reader)
-  (export read read-initial read-token comment-handler)
+  (export read read-initial read-token comment-handler get-datum)
   (import
     (ikarus system $chars)
     (ikarus system $fx)
     (ikarus system $pairs)
     (ikarus system $bytevectors)
     (only (ikarus unicode-data) unicode-printable-char?) 
-    (except (ikarus) read read-token comment-handler))
+    (except (ikarus) read read-token comment-handler get-datum))
 
   (define delimiter?
     (lambda (c)
@@ -1169,6 +1169,11 @@
        (if (input-port? p)
            (my-read p)
            (error 'read "not an input port" p))]))
+
+  (define (get-datum p)
+    (unless (input-port? p) 
+      (error 'get-datum "not an input port"))
+    (my-read p))
 
   (define comment-handler
     (make-parameter
