@@ -36,6 +36,7 @@
     (rnrs lists)
     (rnrs control)
     (rnrs io simple)
+    (rnrs mutable-pairs)
     (psyntax library-manager)
     (psyntax builders)
     (psyntax compat)
@@ -547,7 +548,7 @@
                ((lexical core-prim macro macro! global local-macro
                  local-macro! global-macro global-macro!
                  displaced-lexical syntax import $module $core-rtd
-                 library)
+                 library mutable)
                 (values type (binding-value b) id))
                (else (values 'other #f #f))))))
         ((syntax-pair? e)
@@ -557,7 +558,7 @@
                       (b (label->binding label r))
                       (type (binding-type b)))
                  (unless label ;;; fail early.
-                   (stx-error e "unbound identifier"))
+                   (stx-error id "unbound identifier"))
                  (case type
                    ((define define-syntax core-macro begin macro
                       macro! local-macro local-macro! global-macro
@@ -770,9 +771,12 @@
           (else (mkstx sym top-mark* '()))))))
 
   ;;; macros
+  (define lexical-var car)
+  (define lexical-mutable? cdr)
+  (define set-lexical-mutable! set-cdr!)
   (define add-lexical
     (lambda (lab lex r)
-      (cons (cons* lab 'lexical lex) r)))
+      (cons (cons* lab 'lexical lex #f) r)))
   ;;;
   (define add-lexicals
     (lambda (lab* lex* r)
@@ -2349,7 +2353,7 @@
              (build-primref no-source name)))
           ((call) (chi-application e r mr))
           ((lexical)
-           (let ((lex value))
+           (let ((lex (lexical-var value)))
              (build-lexical-reference no-source lex)))
           ((global-macro global-macro!)
            (chi-expr (chi-global-macro value e) r mr))
@@ -2396,6 +2400,9 @@
                  ((import)        "an import declaration")
                  (else            "a non-expression"))
                " was found where an expression was expected")))
+          ((mutable) 
+           (stx-error e 
+             "attempt to reference an unexportable variable"))
           (else
            ;(error 'chi-expr "invalid type " type (strip e '()))
            (stx-error e "invalid expression"))))))
@@ -2407,8 +2414,9 @@
          (let-values (((type value kwd) (syntax-type x r)))
            (case type
              ((lexical)
+              (set-lexical-mutable! value #t)
               (build-lexical-assignment no-source
-                value
+                (lexical-var value)
                 (chi-expr v r mr)))
              ((core-prim)
               (stx-error e "cannot modify imported core primitive"))
@@ -2416,11 +2424,13 @@
               (let ((loc (gen-global-var-binding x e)))
                 (let ((rhs (chi-expr v r mr)))
                   (build-global-assignment no-source loc rhs))))
-;              (stx-error e "cannot modify imported identifier in"))
              ((global-macro!)
               (chi-expr (chi-global-macro value e) r mr))
              ((local-macro!)
               (chi-expr (chi-local-macro value e) r mr))
+             ((mutable) 
+              (stx-error e 
+                "attempt to assign to an unexportable variable"))
              (else (stx-error e))))))))
   
   (define chi-lambda-clause
@@ -3099,8 +3109,20 @@
                           (init* (chi-expr* init* r mr)))
                       (unseal-rib! rib)
                       (let ((export-subst (make-export-subst exp-int* exp-ext* rib)))
+                        (define errstr
+                          "attempt to export mutated variable")
                         (let-values (((export-env global* macro*)
                                       (make-export-env/macros lex* loc* r)))
+                          (for-each
+                            (lambda (s) 
+                              (let ([name (car s)] [label (cdr s)])
+                                (let ([p (assq label export-env)])
+                                  (when p
+                                    (let ([b (cdr p)])
+                                      (let ([type (car b)])
+                                        (when (eq? type 'mutable)
+                                          (error 'export errstr name))))))))
+                            export-subst)
                           (let ((invoke-body
                                  (build-library-letrec* no-source
                                    lex* loc* rhs*
@@ -3111,7 +3133,7 @@
                                 ; (build-letrec* no-source lex* rhs* 
                                 ;    (build-exports global* init*)))
                                 (invoke-definitions 
-                                 (map build-global-define (map cdr global*))))
+                                  (map build-global-define (map cdr global*))))
                             (values
                               (itc) (rtc) (vtc)
                               (build-sequence no-source 
@@ -3300,11 +3322,15 @@
            (let ((label (car x)) (b (cdr x)))
              (case (binding-type b)
                ((lexical)
-                (let ((loc (lookup (binding-value b))))
-                  (f (cdr r)
-                     (cons (cons* label 'global loc) env)
-                     (cons (cons (binding-value b) loc) global*)
-                     macro*)))
+                (let ([v (binding-value b)])
+                  (let ((loc (lookup (lexical-var v)))
+                        (type (if (lexical-mutable? v) 
+                                  'mutable
+                                  'global)))
+                    (f (cdr r)
+                       (cons (cons* label type loc) env)
+                       (cons (cons (lexical-var v) loc) global*)
+                       macro*))))
                ((local-macro)
                 (let ((loc (gensym)))
                   (f (cdr r)
