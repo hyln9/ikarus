@@ -1812,13 +1812,12 @@ missing features and procedures.
   -- Procedures that may construct complex numbers from non-complex
     arguments may signal an error or return an incorrect value
     (for example, \texttt{(sqrt -1)} should \emph{not} be \texttt{+nan.0}).
-\item Reader does not recognize \texttt{\#!r6rs} syntax.  It should
-be modified to accept both \texttt{\#!r6rs} and \texttt{\#!ikarus}
-so that Ikarus-specific reader features (gensym syntax, record
-syntax, shared graphs, fasl objects, etc.) can be enabled/disabled as needed.
 \item The procedure \texttt{equal?}\ may not terminate on
 \texttt{equal?}\ infinite (circular) input.
 \item Representation of I/O ports is missing a transcoder field.
+\item \texttt{number->string} does not accept the third argument
+(precision).  Similarly, \texttt{string->number} and the reader do
+not recognize the \texttt{|p} notation. 
 \end{itemize}
 \newpage
 \section{List of missing \rnrs{6} procedures}
@@ -1836,18 +1835,18 @@ string->utf16     string->utf32    utf16->string     utf32->string
 
 The following procedures are missing from \texttt{(rnrs unicode)}:
 \begin{Verbatim}
-string-downcase   string-foldcase   string-titlecase   string-upcase    
-string-normalize-nfc                string-normalize-nfd 
-string-normalize-nfkc               string-normalize-nfkd   
+string-downcase   string-titlecase   string-upcase    
+string-normalize-nfc      string-normalize-nfd 
+string-normalize-nfkc     string-normalize-nfkd   
 \end{Verbatim}
 
 
 The following procedures are missing from \texttt{(rnrs arithmetic
 bitwise)}:
 \begin{Verbatim}
-bitwise-ior  bitwise-xor   bitwise-if             bitwise-bit-field 
-bitwise-copy-bit-field     bitwise-bit-set?        bitwise-copy-bit 
-bitwise-reverse-bit-field  bitwise-rotate-bit-field  bitwise-length  
+bitwise-ior  bitwise-xor    bitwise-if         bitwise-bit-field 
+bitwise-copy-bit-field      bitwise-copy-bit   bitwise-length  
+bitwise-reverse-bit-field   bitwise-rotate-bit-field  
 \end{Verbatim}
 
 
@@ -1860,32 +1859,26 @@ fxreverse-bit-field   fxrotate-bit-field
 
 The following procedures are missing from \texttt{(rnrs hashtables)}:
 \begin{Verbatim}
-make-eqv-hashtable         make-hashtable
+make-eqv-hashtable         make-hashtable           equal-hash
 hashtable-hash-function    hashtable-equivalence-function 
-equal-hash   string-hash   string-ci-hash   symbol-hash
 \end{Verbatim}
 
 
 
 The following procedures are missing from \texttt{(rnrs io ports)}:
 \begin{Verbatim}
-call-with-bytevector-output-port     call-with-string-output-port
-binary-port?   textual-port?    port-eof?
-port-has-port-position?         port-position 
-port-has-set-port-position!?    set-port-position!
-call-with-port        close-port
-get-bytevector-all    get-bytevector-some
-get-bytevector-n      get-bytevector-n!
-lookahead-char         lookahead-u8
-get-string-all        get-string-n  get-string-n!  put-string
+call-with-bytevector-output-port    call-with-string-output-port
+binary-port?     textual-port?      port-eof?
+port-has-port-position?             port-position 
+port-has-set-port-position!?        set-port-position!
+call-with-port       lookahead-char    lookahead-u8
+get-bytevector-all   get-bytevector-some     get-string-all
 make-custom-binary-input-port         make-custom-binary-input/output-port    
 make-custom-binary-output-port        make-custom-textual-input-port    
 make-custom-textual-input/output-port make-custom-textual-output-port
 open-bytevector-input-port            open-bytevector-output-port 
 open-file-input-port   open-file-input/output-port open-file-output-port    
-output-port-buffer-mode
-transcoded-port       port-transcoderput-bytevector 
-standard-error-port   standard-input-port   standard-output-port 
+output-port-buffer-mode   transcoded-port   port-transcoderput-bytevector 
 string->bytevector    bytevector->string
 \end{Verbatim}
 

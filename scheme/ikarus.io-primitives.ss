@@ -21,7 +21,7 @@
           get-string-n get-string-n! 
           get-bytevector-n get-bytevector-n!
           newline port-name input-port-name output-port-name
-          close-input-port reset-input-port! 
+          close-input-port reset-input-port! close-port
           flush-output-port close-output-port get-line)
   (import 
     (ikarus system $io)
@@ -34,7 +34,7 @@
             get-bytevector-n get-bytevector-n!
             newline port-name input-port-name output-port-name
             close-input-port reset-input-port!  flush-output-port
-            close-output-port get-line))
+            close-output-port close-port get-line))
 
   (define write-char
     (case-lambda
@@ -171,6 +171,13 @@
        (if (output-port? p)
            ($close-output-port p)
            (error 'close-output-port "not an output-port" p))]))
+  ;;;
+  (define (close-port p)
+    (cond
+      [(input-port? p)  ($close-input-port p)]
+      [(output-port? p) ($close-output-port p)]
+      [else (error 'close-port "not a port" p)]))
+
   ;;;
   (define flush-output-port
     (case-lambda

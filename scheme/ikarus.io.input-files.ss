@@ -16,7 +16,7 @@
 
 (library (ikarus io input-files)
   (export open-input-file current-input-port console-input-port
-          with-input-from-file call-with-input-file)
+          standard-input-port with-input-from-file call-with-input-file)
   (import
     (ikarus system $ports)
     (ikarus system $io)
@@ -28,7 +28,7 @@
     (except (ikarus)
             open-input-file current-input-port console-input-port
             with-input-from-file call-with-input-file
-            *standard-input-port* *current-input-port*))
+            standard-input-port current-input-port))
 
   (define-syntax message-case
     (syntax-rules (else)
@@ -254,6 +254,9 @@
   (define *current-input-port* #f)
 
   (define console-input-port 
+    (lambda () *standard-input-port*))
+
+  (define standard-input-port 
     (lambda () *standard-input-port*))
 
   (define current-input-port 

@@ -1052,7 +1052,7 @@
     [null-environment                            i r5 se]
     [quotient                                    i r r5 se]
     [scheme-report-environment                   r5 se]
-    [close-port                                  r ip]
+    [close-port                                  i r ip]
     [eol-style                                   i r ip]
     [error-handling-mode                         i r ip]
     [file-options                                i r ip]
