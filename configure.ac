@@ -22,6 +22,9 @@ case "$target_os" in
   *bsd*)
     LDFLAGS="-Wl,-E $LDFLAGS"
     ;;
+  *cygwin*)
+    LDFLAGS="-Wl,-E -Wl,--export-all-symbols $LDFLAGS"
+    ;;
   esac
 
 # Checks for libraries.
