@@ -24,14 +24,14 @@
           bound-identifier=? datum->syntax syntax-error
           syntax->datum make-variable-transformer
           eval-r6rs-top-level boot-library-expand eval-top-level
-          null-environment)
+          null-environment scheme-report-environment)
   (import
     (except (rnrs) 
       environment environment? identifier?
       eval generate-temporaries free-identifier=?
       bound-identifier=? datum->syntax syntax-error
       syntax->datum make-variable-transformer
-      null-environment)
+      null-environment scheme-report-environment)
     (rnrs base)
     (rnrs lists)
     (rnrs control)

@@ -207,8 +207,6 @@
     [symbols     (ikarus symbols)                      #t     #t]
     [parameters  (ikarus parameters)                   #t     #t]
     [interaction (ikarus interaction)                  #t     #t]
-    [ne          (ikarus null-environment-5)           #t     #t]
-    [se          (ikarus scheme-report-environment-5)  #t     #t]
     [r           (rnrs)                                #t     #t]
     [r5          (rnrs r5rs)                           #t     #t]
     [ct          (rnrs control)                        #t     #t]
@@ -258,6 +256,8 @@
     [interrupts  (ikarus system interrupts)            #f     #t]
     [$all        (psyntax system $all)                 #f     #t]
     [$boot       (psyntax system $bootstrap)           #f     #t]
+    [ne          (psyntax null-environment-5)          #f     #f]
+    [se          (psyntax scheme-report-environment-5) #f     #f]
     ))
 
 (define identifier->library-map
@@ -1051,7 +1051,7 @@
     [remainder                                   i r r5 se]
     [null-environment                            i r5 se]
     [quotient                                    i r r5 se]
-    [scheme-report-environment                   r5 se]
+    [scheme-report-environment                   i r5 se]
     [close-port                                  i r ip]
     [eol-style                                   i r ip]
     [error-handling-mode                         i r ip]
