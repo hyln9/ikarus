@@ -1156,7 +1156,7 @@
     [output-port?                                i r is ip se]
     [current-input-port                          i r ip is se]
     [current-output-port                         i r ip is se]
-    [current-error-port                          r ip is]
+    [current-error-port                          i r ip is]
     [eof-object                                  i r ip is se]
     [eof-object?                                 i r ip is]
     [close-input-port                            i r is se]

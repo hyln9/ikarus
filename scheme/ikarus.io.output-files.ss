@@ -16,7 +16,7 @@
 
 (library (ikarus io output-files)
   (export standard-output-port standard-error-port
-          console-output-port current-output-port
+          console-output-port current-output-port current-error-port
           open-output-file with-output-to-file call-with-output-file)
   (import 
     (ikarus system $ports)
@@ -28,11 +28,8 @@
     (rnrs bytevectors)
     (except (ikarus)
             standard-output-port standard-error-port   
-            console-output-port current-output-port    
-            *standard-output-port* *standard-error-port*
-            *current-output-port*
-            open-output-file with-output-to-file
-            call-with-output-file))
+            console-output-port current-output-port current-error-port  
+            open-output-file with-output-to-file call-with-output-file))
 
   (define-syntax message-case
     (syntax-rules (else)
@@ -155,6 +152,7 @@
   (define *standard-error-port* #f)
   
   (define *current-output-port* #f)
+  (define *current-error-port* #f)
 
   (define standard-output-port 
      (lambda () *standard-output-port*))
@@ -172,6 +170,14 @@
         (if (output-port? p)
             (set! *current-output-port* p)
             (error 'current-output-port "not an output port" p))]))
+
+  (define current-error-port 
+     (case-lambda
+       [() *current-error-port*]
+       [(p)
+        (if (output-port? p)
+            (set! *current-error-port* p)
+            (error 'current-error-port "not an error port" p))]))
 
   (define open-output-file 
     (case-lambda
@@ -224,4 +230,8 @@
   (set! *standard-error-port* 
     (make-output-port
       (make-output-file-handler 2 '*stderr*)
-      ($make-bytevector 4096))) )
+      ($make-bytevector 4096))) 
+  (set! *current-error-port* *standard-error-port*)
+  
+  
+  )
