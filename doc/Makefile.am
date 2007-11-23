@@ -5,11 +5,14 @@ EXTRA_DIST = ikarus-users-guide.tex ikarus-users-guide.bib ikarus-users-guide.pd
 TEX=xelatex -output-driver="xdvipdfmx -q -E" 
 
 ikarus-users-guide.pdf: ikarus-users-guide.tex ikarus-users-guide.bib
-	$(TEX) ikarus-users-guide
-	makeindex ikarus-users-guide
-	bibtex ikarus-users-guide
-	$(TEX) ikarus-users-guide
-	$(TEX) ikarus-users-guide
+	if test -x "`which xelatex`" ; \
+	then \
+	  $(TEX) ikarus-users-guide && \
+	  makeindex ikarus-users-guide && \
+	  bibtex ikarus-users-guide && \
+	  $(TEX) ikarus-users-guide && \
+	  $(TEX) ikarus-users-guide ; \
+	fi 
 
 all: ikarus-users-guide.pdf
 
