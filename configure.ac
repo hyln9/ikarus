@@ -2,9 +2,9 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(ikarus, 0.0.1, aghuloum@cs.indiana.edu)
+AC_INIT(ikarus, 0.0.2-rc1, aghuloum@cs.indiana.edu)
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(ikarus, 0.0.1)
+AM_INIT_AUTOMAKE(ikarus, 0.0.2-rc1)
 AC_CONFIG_SRCDIR([src/])
 
 
@@ -88,6 +88,6 @@ AC_FUNC_STRFTIME
 AC_FUNC_STRTOD
 AC_CHECK_FUNCS([bzero gettimeofday memmove memset munmap setenv sqrt strerror])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES(Makefile src/Makefile scheme/Makefile doc/Makefile extras/Makefile)
+AC_CONFIG_FILES(Makefile src/Makefile scheme/Makefile doc/Makefile extras/Makefile benchmarks/Makefile)
 AC_OUTPUT #(Makefile src/Makefile scheme/Makefile doc/Makefile)
 

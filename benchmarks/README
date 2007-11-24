@@ -35,6 +35,15 @@ To run a benchmark, type:
         842 ms elapsed real time, including 78 ms collecting
         640581192 bytes allocated
 
+To run all benchmarks, type:
+
+  $ ikarus --r6rs-script benchall.ss
+
+Or, alternatively, run `make benchall` to run all benchmarks and 
+append the results to the file 'timelog'.
+  
+
+
 The text that Ikarus's "time" macro and "time-it" procedure
 output is modeled after Chez Scheme's in order to facilitate
 interoperability with tools that parse benchmark data.

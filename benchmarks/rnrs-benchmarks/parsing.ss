@@ -64,7 +64,7 @@
       (run-benchmark benchmark-name
                      n
                      (lambda ()
-                       (let ((in (open-input-string input-string)))
+                       (let ((in (open-string-input-port input-string)))
                          (do ((x (read in) (read in))
                               (y #f x))
                              ((eof-object? x) y))))

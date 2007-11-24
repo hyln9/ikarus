@@ -27,9 +27,7 @@
     (except (ikarus)
         compile-core-expr-to-port assembler-output
         current-primitive-locations eval-core)
-    (ikarus intel-assembler)
-    ;(ikarus fasl write)
-    )
+    (ikarus intel-assembler))
 
 
 (define-syntax struct-case
@@ -287,17 +285,6 @@
                                       (f (cdr lhs*) (cdr loc*)))])))])
                   (ungen-fml* lhs*)
                   expr))))]
-         ;[(library-letrec*)
-         ; (let ([bind* (cadr x)] [body (caddr x)])
-         ;   (let ([lhs* (map car bind*)]
-         ;         [loc* (map cadr bind*)]
-         ;         [rhs* (map caddr bind*)])
-         ;     (let ([nlhs* (gen-fml* lhs*)])
-         ;       (let ([expr (make-library-recbind nlhs* loc*
-         ;                     (map E rhs* lhs*)
-         ;                     (E body ctxt))])
-         ;         (ungen-fml* lhs*)
-         ;         expr))))]
          [(case-lambda)
           (let ([cls*
                  (map
@@ -652,9 +639,9 @@
                         (partition-rhs* 0 lhs* rhs* vref vcomp)])
             ;(unless (null? clhs*)
             ;  (printf "CLHS* = ~s\n" (map unparse clhs*)))
-            (let ([v* (map (lambda (x) (make-constant (void))) clhs*)])
+            (let ([void* (map (lambda (x) (make-constant (void))) clhs*)])
               (make-bind slhs* srhs*
-                (make-bind clhs* v*
+                (make-bind clhs* void*
                   (make-fix llhs* lrhs*
                     (if letrec?
                         (let ([t* (map (lambda (x) (unique-var 'tmp)) clhs*)])
@@ -718,18 +705,6 @@
          (make-mvcall p c))]
       [(forcall rator rand*) 
        (make-forcall rator (E* rand* ref comp))]
-      ;[(library-recbind lhs* loc* rhs* body)
-      ; (E (make-rec*bind lhs* rhs* 
-      ;      (let f ([lhs* lhs*] [loc* loc*])
-      ;        (cond
-      ;          [(null? lhs*) body]
-      ;          [(not (car loc*)) (f (cdr lhs*) (cdr loc*))]
-      ;          [else (make-seq 
-      ;                   (make-funcall
-      ;                     (make-primref '$init-symbol-value!)
-      ;                     (list (make-constant (car loc*)) (car lhs*)))
-      ;                   (f (cdr lhs*) (cdr loc*)))])))
-      ;    ref comp)]
       [else (error who "invalid expression" (unparse x))]))
   (E x (lambda (x) (error who "free var found" x))
        void))
@@ -1478,7 +1453,7 @@
          [(var-global-loc lhs) =>
           (lambda (loc) 
             (make-funcall (make-primref '$set-symbol-value!)
-               (list (make-constant loc) (Expr rhs))))]
+              (list (make-constant loc) (Expr rhs))))]
          [else
           (make-funcall (make-primref '$vector-set!)
             (list lhs (make-constant 0) (Expr rhs)))])]
