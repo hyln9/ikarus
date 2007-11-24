@@ -11,13 +11,15 @@
     slatex string sum sum1 sumfp sumloop tail tak takl trav1 trav2
     triangl wc))
 
+        
+(define cmd 
+  "../src/ikarus -b ../scheme/ikarus.boot --r6rs-script bench.ss ~a")
 
 (for-each 
   (lambda (x) 
     (fprintf (standard-error-port) "running ~s\n" x)
     (for-each 
       (lambda (_)
-        (define cmd "ikarus -b ../scheme/ikarus.boot --r6rs-script bench.ss ~a")
         (unless (zero? (system (format cmd x)))
           (fprintf (standard-error-port) "ERROR: ~s failed\n" x)))
       (make-list 5)))
