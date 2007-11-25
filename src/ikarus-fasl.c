@@ -36,55 +36,19 @@
 #define RTLD_DEFAULT 0
 #endif
 
-#define USE_ZLIB 0
 
 typedef struct {
-#if USE_ZLIB
-  gzFile fh;
-#else
   char* membase;
   char* memp;
   char* memq;
   ikp code_ap;
   ikp code_ep;
-#endif
   ikp* marks;
   int marks_size;
 } fasl_port;
 
 static ikp ik_fasl_read(ikpcb* pcb, fasl_port* p);
 
-#if USE_ZLIB
-void ik_fasl_load(ikpcb* pcb, char* fasl_file){
-  dead!!!
-  gzFile fh = gzopen(fasl_file, "rb");
-  if(fh == NULL){
-    fprintf(stderr, "cannot open %s\n", fasl_file);
-    exit(-1);
-  }
-  fasl_port p;
-  p.fh = fh;
-  p.marks = NULL;
-  p.marks_size = 0;
-  ikp v = ik_fasl_read(pcb, &p);
-  while(v){
-    p.code_ap = 0;
-    p.code_ep = 0;
-    if(p.marks){
-      bzero(p.marks, p.marks_size * sizeof(ikp*));
-    }
-    ikp val = ik_exec_code(pcb, v);
-    val = void_object;
-    if(val != void_object){
-      ik_print(val);
-    }
-    v = ik_fasl_read(pcb, &p);
-  };
-
-  fprintf(stderr, "here\n");
-  exit(-1);
-}
-#else
 void ik_fasl_load(ikpcb* pcb, char* fasl_file){ 
   int fd = open(fasl_file, O_RDONLY);
   if(fd == -1){
@@ -130,6 +94,8 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
   p.marks = 0;
   p.marks_size = 0;
   while(p.memp < p.memq){
+    p.code_ap = 0;
+    p.code_ep = 0;
     ikp v = ik_fasl_read(pcb, &p);
     if(p.marks_size){
       ik_munmap((unsigned char*) p.marks, p.marks_size*sizeof(ikp*));
@@ -155,7 +121,6 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
   }
   close(fd);
 }
-#endif
 
 static ikp 
 alloc_code(int size, ikpcb* pcb, fasl_port* p){
@@ -251,16 +216,10 @@ ik_relocate_code(ikp code){
 
 
 static char fasl_read_byte(fasl_port* p){
-#if USE_ZLIB
-  int c = gzgetc(p->fh);
-  if(c != -1){
-    return (char)c;
-#else
   if(p->memp < p->memq){
     char c = *(p->memp);
     p->memp++;
     return c;
-#endif
   } else {
     fprintf(stderr, "fasl_read_byte: read beyond eof\n");
     exit(-1);
@@ -268,15 +227,9 @@ static char fasl_read_byte(fasl_port* p){
 }
 
 static void fasl_read_buf(fasl_port* p, void* buf, int n){
-#if USE_ZLIB
-  int bytes = gzread(p->fh, buf, n);
-  if(bytes == n){
-    return;
-#else
   if((p->memp+n) <= p->memq){
     memcpy(buf, p->memp, n);
     p->memp += n;
-#endif
   } else {
     fprintf(stderr, "fasl_read_buf: read beyond eof\n");
     exit(-1);
@@ -613,14 +566,7 @@ static ikp do_read(ikpcb* pcb, fasl_port* p){
 static ikp ik_fasl_read(ikpcb* pcb, fasl_port* p){
   /* first check the header */
   char buf[IK_FASL_HEADER_LEN];
-#if USE_ZLIB
-  int bytes = gzread(p->fh, buf, IK_FASL_HEADER_LEN);
-  if(bytes == 0){
-    return 0;
-  }
-#else
   fasl_read_buf(p, buf, IK_FASL_HEADER_LEN);
-#endif
   if(strncmp(buf, IK_FASL_HEADER, IK_FASL_HEADER_LEN) != 0){
     fprintf(stderr, "invalid fasl header\n");
     exit(-1);
