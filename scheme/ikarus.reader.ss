@@ -357,6 +357,8 @@
              (error 'tokenize "invalid eof near #!"))
            (case e
              [(#\e) 
+              (when (eq? (port-mode p) 'r6rs-mode)
+                (error 'tokenize "invalid syntax: #!e"))
               (read-char* p '(#\e) "of" "eof sequence" #f #f)
               (cons 'datum (eof-object))]
              [(#\r) 

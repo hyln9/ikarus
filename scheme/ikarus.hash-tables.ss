@@ -116,23 +116,6 @@
                 (void))))))))
 
 
-  (define unlink! 
-    (lambda (h b)
-      (let ([vec (hasht-vec h)]
-            [next ($tcbucket-next b)])
-        ;;; first remove it from its old place
-        (let ([idx 
-               (if (fixnum? next)
-                   next
-                   (get-bucket-index next))])
-          (let ([fst ($vector-ref vec idx)])
-            (cond
-              [(eq? fst b) 
-               ($vector-set! vec idx next)]
-              [else 
-               (replace! fst b next)])))
-        ;;; set next to be #f, denoting, not in table
-        ($set-tcbucket-next! b #f))))
 
   (define (get-bucket h x)
     (let ([pv (pointer-value x)]
@@ -153,10 +136,28 @@
     (and (get-bucket h x) #t))
 
   (define (del-hash h x)
+    (define unlink! 
+      (lambda (h b)
+        (let ([vec (hasht-vec h)]
+              [next ($tcbucket-next b)])
+          ;;; first remove it from its old place
+          (let ([idx 
+                 (if (fixnum? next)
+                     next
+                     (get-bucket-index next))])
+            (let ([fst ($vector-ref vec idx)])
+              (cond
+                [(eq? fst b) 
+                 ($vector-set! vec idx next)]
+                [else 
+                 (replace! fst b next)])))
+          ;;; set next to be #f, denoting, not in table
+          ($set-tcbucket-next! b #f))))
     (cond
       [(get-bucket h x) => 
        (lambda (b) 
          (unlink! h b)
+         ;;; don't forget the count.
          (set-hasht-count! h (- (hasht-count h) 1)))]))
 
   (define put-hash!
