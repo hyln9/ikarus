@@ -1,6 +1,8 @@
+%!TEX TS-program = xelatex
 
 \documentclass[onecolumn, 12pt, twoside, openright, dvipdfm]{book}
 \usepackage{fontspec}
+\usepackage{hanging}
 
 \defaultfontfeatures{Scale=MatchLowercase} 
 %\setmainfont[Mapping=tex-text]{Cochin} 
@@ -45,7 +47,8 @@
 
 \newcommand{\coderefpage}[1]{figure~\ref{#1}, p.~\pageref{#1}}
 \newcommand{\figrefpage}[1]{figure~\ref{#1}, p.~\pageref{#1}}
-\newcommand{\defref}[1]{\texttt{#1}~(page~\pageref{#1})}
+\newcommand{\deflabelref}[2]{\texttt{#1}~(page~\pageref{#2})}
+\newcommand{\defref}[1]{\deflabelref{#1}{#1}}
 
 \newcommand{\coderef}[1]{figure~\ref{#1}}
 \newcommand{\figref}[1]{figure~\ref{#1}}
@@ -189,7 +192,7 @@ of the features found in the current standard, the
 Revised$^\mathrm{6}$ report on the algorithmic language
 Scheme\cite{r6rs} including full \rnrs{6} library and script syntax,
 syntax-case, unicode strings, bytevectors, user-defined record
-types, exception handling, conditions, and enumerations.  Over 80\%
+types, exception handling, conditions, and enumerations.  Over 90\%
 of the \rnrs{6} procedures and keywords are currently implemented
 and subsequent releases will proceed towards brining Ikarus to full
 \rnrs{6} conformance.
@@ -278,6 +281,12 @@ available for most operating systems.  Alternatively, GMP can be
 downloaded from \\
 \url{http://gmplib.org/}.
 
+\BoxedText{Note:}{Ikarus runs in 32-bit mode only.  
+To run it in 64-bit environments, you will have to obtain the 32-bit
+version of GMP, or compile it yourself after adding \texttt{ABI=32}
+to its configuration options.}
+
+
 \item\textbf{GCC:} The GNU C Compiler is required to build the Ikarus
 executable (e.g. the garbage collector, loader, and OS-related
 runtime).  GCC versions 4.1 and 4.2 were successfully used to build
@@ -293,12 +302,6 @@ for building the documentation.  XeLaTeX (and XeTeX) is an
 implementation of the LaTeX (and TeX) typesetting system.
 
 \end{itemize}
-
-\BoxedText{Note:}{Ikarus runs in 32-bit mode only.  
-To run it in 64-bit environments, you will have to obtain the 32-bit
-version of GMP, or compile it yourself after adding \texttt{ABI=32}
-to its configuration options.}
-
 
 \section{Installation}
 
@@ -1014,12 +1017,108 @@ useful features.  The \texttt{(ikarus)} library is a composite
 library---it exports a superset of all the supported bindings of
 \rnrs{6}.  While not all of the exports of \texttt{(ikarus)} are
 documented at this time, this chapter attempts to describe a few of
-these useful extensions.  
+these useful extensions.  Extansions to Scheme's lexical syntax are
+also documented.
 
-\idxlabeldefun{\#"!ikarus}{\#"!ikarus}{shebang}{\#!ikarus}{comment}
-%\defun{\#"!ikarus}{comment}
-%{\index{\#"!ikarus@\texttt{\#"!ikarus}}\label{shebang}{\Large\texttt{\#!ikarus}}
-%\hfill \textbf{comment}}
+\idxlabeldefun{\#"!ikarus}{\#"!ikarus}{shebang-ikarus}{\#!ikarus}{reader syntax}
+
+Ikarus extends Scheme's lexical syntax (\rnrs{6}~Chapter~4) in a
+variety of ways including:\\
+$\bullet$ end-of-file marker, \deflabelref{\#!eof}{shebang-eof}\\
+$\bullet$ gensym syntax, \deflabelref{\#\{gensym\}}{gensym syntax}\\
+$\bullet$ graph syntax, \deflabelref{\#nn= \#nn\#}{graph syntax}
+
+The syntax extensions are made available by default on all input
+ports, until the \texttt{\#!r6rs} token is read.  Thus, reading the
+\texttt{\#!r6rs} token disables all extensions to the lexical syntax
+on the specific port, and the \texttt{\#!ikarus} enables them again.
+
+If you are writing code that is intended to be portable across
+different Scheme implementations, we recommend adding the
+\texttt{\#!r6rs} token to the top of every script and library that
+you write.  This allows Ikarus to alert you when using non-portable
+features.  If you're writing code that's intended to be
+Ikarus-specific, we adding the \texttt{\#!ikarus} token in order to
+get an immediate error when your code is run under other
+implementations.
+
+\defun{port-mode}{procedure}
+\texttt{(port-mode ip)} 
+
+The \texttt{port-mode} procedure accepts an input port as an
+argument and returns one of \texttt{r6rs-mode} or
+\texttt{ikarus-mode} as a result.  All input ports initially start
+in the \texttt{ikarus-mode} and thus accept Ikarus-specific reader
+extensions.  When the \texttt{\#!r6rs} token is read from a port,
+its mode changes to \texttt{ikarus-mode}.
+
+\begin{verbatim}
+   $ (port-mode (current-input-port))
+   ikarus-mode
+   $ #!r6rs (port-mode (current-input-port))
+   r6rs-mode
+   $ #!ikarus (port-mode (current-input-port))
+   ikarus-mode
+\end{verbatim}
+
+\defun{set-port-mode!}{procedure}
+\texttt{(set-port-mode! ip mode)} 
+
+The \texttt{set-port-mode!} procedure modifies the lexical syntax
+accepted by subsequent calls to \texttt{read} on the input port.
+The mode is a symbol which should be one of \texttt{r6rs-mode} or
+\texttt{ikarus-mode}.  The effect of setting the port mode is
+similar to that of reading the \texttt{\#!r6rs} or \texttt{\#ikarus}
+from that port.
+
+\begin{verbatim}
+   > (set-port-mode! (current-input-port) 'r6rs-mode)
+   > (port-mode (current-input-port))
+   r6rs-mode
+\end{verbatim}
+
+\newpage
+\idxlabeldefun{\#"!eof}{\#"!eof}{shebang-eof}{\#!eof}{reader syntax}
+
+The end-of-file marker, \texttt{\#!eof}, is an extension to the
+\rnrs{6} syntax.  The primary utility of the \texttt{\#!eof} marker
+is to stop the reader (e.g. \texttt{read} and \texttt{get-datum})
+from reading the rest of the file.  
+\begin{verbatim}
+   #!/usr/bin/env scheme-script
+   (import (ikarus))
+   <some code>
+   (display "goodbye\n")
+
+   #!eof
+   <some junk>
+\end{verbatim}
+
+
+The \texttt{\#!eof} marker also serves as a datum in Ikarus, much
+like \texttt{\#t} and \texttt{\#f}, when it is found inside other
+expressions.
+
+\begin{verbatim}
+   > (eof-object)
+   #!eof
+   > (read (open-input-string ""))
+   #!eof
+   > (read (open-input-string "#!eof"))
+   #!eof
+   > (quote #!eof)
+   #!eof
+   > (eof-object? '#!eof)
+   #t
+   > #!r6rs #!eof
+   Unhandled exception
+    Condition components:
+      1. &error
+      2. &who: tokenize
+      3. &message: "invalid syntax: #!e"
+   > #!ikarus #!eof
+   $ 
+\end{verbatim}
 
 \newpage
 \section{Parameters}
@@ -1407,37 +1506,45 @@ to the value of \texttt{fmt-string} and the supplied arguments.  The
 format string contains markers in which the string
 representation of each argument is placed.  The markers include:
 
-\begin{itemize}
 
-\item[\texttt{"\~{}s"}] instructs the formatter to place the next argument
+\hangpara{2em}{1}
+\verb|"~s"| instructs the formatter to place the next argument
 as if the procedure \texttt{write} has printed it.  If the argument
 contains a string, the string will be quoted and all quotes and
 backslashes in the string will be escaped.  Similarly, characters
-will be printed using the \texttt{\#\\x} notation.
+will be printed using the \verb|#\x| notation.
 
-\item[\texttt{"\~{}a"}] instructs the formatter to place the next argument
+\hangpara{2em}{1}
+\verb|"~a"| instructs the formatter to place the next argument
 as if the procedure \texttt{display} has printed it.  Strings and
 characters are placed as they are in the output.
 
-\item[\texttt{"\~{}b"}] instructs the formatter to convert the next
+\hangpara{2em}{1}
+\verb|"~b"| instructs the formatter to convert the next
 argument to its binary (base 2) representation.  The argument must be an
 exact number.  Note that the \texttt{\#b} numeric prefix is not
 produced in the output.
 
-\item[\texttt{"\~{}o"}] is similar to \texttt{"\~{}b"} except that
+\hangpara{2em}{1}
+\verb|"~o"| is similar to \verb|"~b"|  except that
 the number is printed in octal (base 8).
 
-\item[\texttt{"\~{}x"}] is similar to \texttt{"\~{}b"} except that
+\hangpara{2em}{1}
+\verb|"~x"|  is similar to \verb|"~b"|  except that
 the number is printed in hexadecimal (base 16).
 
-\item[\texttt{"\~{}d"}] outputs the next argument, which can be an
+\hangpara{2em}{1}
+\verb|"~d"|  outputs the next argument, which can be an
 exact or inexact number in its decimal (base 10) representation.
 
-\item[\texttt{"\~{}\~{}"}] instructs the formatter to place a tilde
-character, \texttt{\~{}}, in the output without consuming an
+\hangpara{2em}{1}
+\verb|"~~"|  instructs the formatter to place a tilde
+character, \verb|~|, in the output without consuming an
 argument.
 
-\end{itemize}
+Note that the \texttt{\#b}, \texttt{\#o}, and \texttt{\#x} numeric
+prefixes are not added to the output when \verb|~b|, \verb|~o|, and
+\verb|~x| are used.
 
 \begin{verbatim}
    > (format "message: ~s, ~s, and ~s" 'symbol "string" #\c)
@@ -1455,11 +1562,9 @@ that the output is sent to the \texttt{current-output-port} instead
 of being collected in a string.
 
 \begin{verbatim}
-   > (printf "message: ~s, ~s, and ~s\n" 'symbol "string" #\c)
-   message: symbol, "string", and #\c
-
-   > (printf "message: ~a, ~a, and ~a\n" 'symbol "string" #\c)
-   message: symbol, string, and c
+   > (let ([n (+ (expt 2 32) #b11001)])
+       (printf "~d = #b~b = #x~x\n" n n n))
+   4294967321 = #b100000000000000000000000000011001 = #x100000019
 \end{verbatim}
 
 
@@ -1484,7 +1589,6 @@ If the value of \texttt{print-graph} is set to \texttt{\#f} (the
 default), then the writers does not attempt to detect shared data
 structures.  Any part of the input that is shared is printed as if
 no sharing is present.
-
 If the value of \texttt{print-graph} is set to \texttt{\#t}, all
 sharing of data structures is marked using the \texttt{\#n=} and
 \texttt{\#n\#} notation. 
@@ -1808,7 +1912,7 @@ FIXME (add stuff)
 
 Ikarus does not fully conform to \rnrs{6} yet.  Although it
 implements the most immediately useful features of \rnrs{6}
-including more than 80\% of \rnrs{6}'s macros and procedures, some
+including more than 90\% of \rnrs{6}'s macros and procedures, some
 areas are still lacking.  This section summarizes the set of
 missing features and procedures.  
 
