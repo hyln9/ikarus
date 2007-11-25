@@ -154,7 +154,10 @@
 
   (define (del-hash h x)
     (cond
-      [(get-bucket h x) => (lambda (b) (unlink! h b))]))
+      [(get-bucket h x) => 
+       (lambda (b) 
+         (unlink! h b)
+         (set-hasht-count! h (- (hasht-count h) 1)))]))
 
   (define put-hash!
     (lambda (h x v)
