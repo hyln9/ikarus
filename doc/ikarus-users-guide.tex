@@ -26,7 +26,7 @@
     %pagebackref=true,
     breaklinks=true,
 %    pdfview=FitH,       % Or try pdfstartview={FitV}, This lead to uncorrect bookmarks
-    urlcolor=cyan,
+    urlcolor=blue,
     colorlinks=true,
     citecolor=blue,          %citeref's color
     linkcolor=blue,
@@ -430,7 +430,6 @@ To uninstall Ikarus, use the following steps:
   $
 \end{verbatim}
 
-\newpage
 
 \section{\index{Command-line switches}Command-line Switches}
 
@@ -504,7 +503,7 @@ subsystems in the future.}
 
 \end{itemize}
 
-\section{Executable Scripts}
+\section{Using \texttt{scheme-script}}
 
 Scheme scripts can be executed using the
 \texttt{ikarus~--r6rs-script~\textit{script-name}} command as
@@ -523,17 +522,30 @@ example shows a very simple script that uses the
 (display "Hello World\n")
 \end{CodeInline}
 
-\newpage
+If the above script was placed in a file called
+\texttt{hello-world}, then one can make it executable using the
+\texttt{chmod} Unix command.
 
-\section{Installing Additional Libraries}
-FIXME
-\subsection{\texttt{IKARUS\_LIBRARY\_PATH}}
-\index{ikarus library path@\texttt{IKARUS\_LIBRARY\_PATH}}
-FIXME
+\begin{verbatim}
+   $ cat hello-world
+   #!/usr/bin/env scheme-script
+   
+   (import (rnrs))
+   (display "Hello World\n")
+   
+   $ chmod 755 hello-world
+   $ ./hello-world
+   Hello World
+   $
+\end{verbatim}
+
+\BoxedText{Under Mac OS X,}{if a script name ends with the
+\texttt{.command} extension, then it can be executed from the Finder
+by double-clicking on it.  This brings up a terminal window in which
+the script is executed.  The \texttt{.command} extension can be
+hidden from the \emph{Get Info} item from the Finder's File menu.}
 
 
-%\subsection{Mac OS X}
-%FIXME
 %\subsection{GNU/Linux}
 %FIXME
 %\subsection{Windows/Cygwin}
@@ -1231,6 +1243,37 @@ when the body returns.
 (newline)
 \end{CodeInline}
 
+\newpage
+\section{Local Library Imports}
+\defun{import}{syntax}
+\texttt{(import import-spec* ...)}
+
+The \texttt{import} keyword which is exported from the
+\texttt{(ikarus)} library can be used anywhere definitions can
+occur: at a script body, library's top-level, or in internal
+definitions context.  The syntax of the local \texttt{import} form
+is similar to the \texttt{import} that appears at the top of a
+library or a script form, and carries with it the same restrictions:
+no identifier name may be imported twice unless it denotes the same
+identifier; no identifier may be both imported and defined; and
+imported identifiers are immutable.
+
+Local \texttt{import} forms are useful for two reasons: (1) they
+minimize the namespace clutter that usually occurs when many
+libraries are imported at the top level, and (2) they limit the
+scope of the import thus easily help modularize a library's
+dependencies.
+
+Suppose you are constructing a large library and at some point you
+realize that one of your procedures needs to make use of some other
+library for performing a specific task.  Importing that library at
+top level makes it available for the entire library.  Consequently,
+even if that library is no longer used anywhere in the code (say
+when the code that uses it is deleted), it becomes very hard to
+delete the import without first examiniming the entire library body
+for potential usage leaks.  By locally importing a library into the
+appropriate scope, we gain the ability to delete the \texttt{import}
+form when the procedure that was using it is deleted.
 
 
 \newpage
@@ -1248,17 +1291,10 @@ module system is similar in spirit to that of Chez Scheme.
 \defun{module}{syntax}
 \texttt{(module M definitions ... expressions ...)}\\
 \texttt{(module definitions ... expressions ...)}
-FIXME
 
 \defun{import}{syntax}
 \texttt{(import M)}
-FIXME
 
-\newpage
-\section{Local Library Imports}
-\defun{import}{syntax}
-\texttt{(import import-spec* ...)}
-FIXME
 
 \newpage
 
@@ -1620,7 +1656,6 @@ sharing of data structures is marked using the \texttt{\#n=} and
 \end{verbatim}
 
 
-% FIXME 
 % \defun{print-unicode}{parameter}
 % \texttt{(print-unicode)} \\
 % \texttt{(print-unicode \#t)} \\
@@ -1901,12 +1936,74 @@ displayed.
 
 \chapter{Contributed Libraries}
 
-FIXME (add intro)
+We try to keep Ikarus Scheme small and its complexity manageable.
+Libraries that are not an essential part of Ikarus are not included
+in the Ikarus proper, instead, they are distributed with Ikarus in
+source form.  Such libraries may be written specifically
+for Ikarus, or they may be portable libraries that can be used in
+Ikarus.   SRFIs or other libraries contributed by members of the
+Scheme community belong to this section.
+
+Using constributed libraries is no different from using any of the
+built-in libraries---all one has to do is add the library name to
+the \texttt{import} clause and the rest is done by the system.
+
+If you have written a useful \rnrs{6} library and wish for it to be
+available for a wider audience, contact us and we would be delighted
+to include it in the next release of Ikarus.  High quality SRFIs
+with \rnrs{6} reference implementations will be distributed with
+Ikarus as they become available.
+
+\BoxedText{Note:}{Contributed libraries may have bugs on their own
+or may exhibit bugs in Ikarus itself.  If you have a problem using
+any of these libraries, please try to resolve the issue by
+contacting the library author first.  Do not hesitate to file a bug
+on Ikarus if you believe that Ikarus is at fault.}
+
+\section{Library Location}
+
+
+
+\subsection{\texttt{IKARUS\_LIBRARY\_PATH}}
+\index{ikarus library path@\texttt{IKARUS\_LIBRARY\_PATH}}
+FIXME
+
+
 
 \newpage
 \section{SRFI-41: \texttt{(streams)}}
+The \texttt{(streams)}, \texttt{(streams~primitive)}, and
+\texttt{(streams~derived)} libraries are written by Philip L.~Bewig 
+as the reference implementation for SRFI-41.  
+See \url{http://srfi.schemers.org/srfi-41/srfi-41.html} for more
+details.  The following abstract is excerpted from the SRFI document.
+\nocite{srfi41}
 
-FIXME (add stuff)
+\begin{center}
+\rule{\textwidth}{1pt}
+Abstract
+\end{center}
+
+Streams, sometimes called lazy lists, are a sequential data
+structure containing elements computed only on demand. A stream is
+either null or is a pair with a stream in its cdr. Since elements of
+a stream are computed only when accessed, streams can be infinite.
+Once computed, the value of a stream element is cached in case it is
+needed again.
+
+Streams without memoization were first described by Peter Landin in
+1965. Memoization became accepted as an essential feature of streams
+about a decade later. Today, streams are the signature data type of
+functional programming languages such as Haskell.
+
+This Scheme Request for Implementation describes two libraries for
+operating on streams: a canonical set of stream primitives and a set
+of procedures and syntax derived from those primitives that permits
+convenient expression of stream operations. They rely on facilities
+provided by \rnrs{6}, including libraries, records, and error reporting.
+To load both stream libraries, say:
+
+\texttt{(import (streams))}
 
 \chapter{Missing Features}
 

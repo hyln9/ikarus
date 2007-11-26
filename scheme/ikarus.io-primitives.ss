@@ -50,7 +50,7 @@
            (error 'write-char "not a character" c))]))
    
   (define put-char
-    (lambda (c p)
+    (lambda (p c)
       (if (char? c)
           (if (output-port? p)
               ($write-char c p)
@@ -71,7 +71,7 @@
            (error 'write-byte "not a byte" b))]))
 
   (define put-u8
-    (lambda (b p)
+    (lambda (p b)
       (if (and (fixnum? b) ($fx<= 0 b) ($fx<= b 255))
           (if (output-port? p)
               ($write-byte b p)
