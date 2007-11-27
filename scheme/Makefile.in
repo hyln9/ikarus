@@ -155,7 +155,7 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 nodist_pkglib_DATA = ikarus.boot
-EXTRA_DIST = ikarus.boot.orig ikarus.enumerations.ss \
+EXTRA_DIST = ikarus.boot.prebuilt ikarus.enumerations.ss \
 	ikarus.exceptions.ss ikarus.apply.ss ikarus.bytevectors.ss \
 	ikarus.cafe.ss ikarus.chars.ss ikarus.code-objects.ss \
 	ikarus.codecs.ss ikarus.collect.ss ikarus.command-line.ss \
@@ -380,7 +380,7 @@ ikarus.config.ss: Makefile last-revision
 	echo '(define ikarus-lib-dir "$(pkglibdir)")' >>$@
 
 ikarus.boot: $(EXTRA_DIST) ikarus.config.ss
-	../src/ikarus -b ./ikarus.boot.orig --r6rs-script makefile.ss
+	../src/ikarus -b ./ikarus.boot.prebuilt --r6rs-script makefile.ss
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
