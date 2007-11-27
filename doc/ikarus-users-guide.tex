@@ -19,11 +19,11 @@
 
 \usepackage[dvipdfm,CJKbookmarks,bookmarks=true,bookmarksopen=true]{hyperref}
 \hypersetup{
-    pdftitle={},
+    pdftitle={Ikarus Scheme User's Guide},
     pdfauthor={Abdulaziz Ghuloum},
-    pdfkeywords={},
+    pdfkeywords={Scheme, R6RS, Compiler, Ikarus},
     bookmarksnumbered=true,
-    %pagebackref=true,
+    pagebackref=true,
     breaklinks=true,
 %    pdfview=FitH,       % Or try pdfstartview={FitV}, This lead to uncorrect bookmarks
     urlcolor=blue,
@@ -97,7 +97,7 @@
 \newcommand{\idxlabeldefun}[5]{
 \vspace{1ex}
 \rule{\textwidth}{2pt}
-{\index{#1@\texttt{#2}}\label{#3}{\Large\texttt{#4}}\hfill\textbf{#5}}\\}
+{\phantomsection\index{#1@\texttt{#2}}\label{#3}{\Large\texttt{#4}}\hfill\textbf{#5}}\\}
 
 
 \newcommand{\idxdefun}[3]{\idxlabeldefun{#1}{#2}{#1}{#2}{#3}}
@@ -1616,6 +1616,7 @@ first argument.
 \texttt{(print-graph \#t)}\\
 \texttt{(print-graph \#f)}
 
+\phantomsection
 \label{graph-syntax}
 The graph notation is a way of marking and referencing parts of a
 data structure and, consequently, creating shared and cyclic data
