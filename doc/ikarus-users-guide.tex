@@ -1038,7 +1038,7 @@ Ikarus extends Scheme's lexical syntax (\rnrs{6}~Chapter~4) in a
 variety of ways including:\\
 $\bullet$ end-of-file marker, \deflabelref{\#!eof}{shebang-eof}\\
 $\bullet$ gensym syntax, \deflabelref{\#\{gensym\}}{gensym syntax}\\
-$\bullet$ graph syntax, \deflabelref{\#nn= \#nn\#}{graph syntax}
+$\bullet$ graph syntax, \deflabelref{\#nn= \#nn\#}{graph-syntax}
 
 The syntax extensions are made available by default on all input
 ports, until the \texttt{\#!r6rs} token is read.  Thus, reading the
@@ -1616,6 +1616,31 @@ first argument.
 \texttt{(print-graph \#t)}\\
 \texttt{(print-graph \#f)}
 
+\label{graph-syntax}
+The graph notation is a way of marking and referencing parts of a
+data structure and, consequently, creating shared and cyclic data
+structures at read time instead of resorting to explicit mutation at
+run time.  The \verb|#n=| marks the following data structure with
+mark $n$, where $n$ is a nonnegative integer.  The \verb|#n#|
+references the data structure marked $n$.  Marks can be assigned and
+referenced in any order but each mark must be assigned to exactly
+once in an expression.
+
+\begin{verbatim}
+   > (let ([x '#0=(1 2 3)])
+       (eq? x '#0#))
+   #t
+   > (let ([x '#0#] [y '#0=(1 2 3)])
+       (eq? x y))
+   #t
+   > (eq? (cdr '(12 . #1#)) '#1=(1 2 3))
+   #t
+   > (let ([x '#1=(#1# . #1#)])
+       (and (eq? x (car x)) 
+            (eq? x (cdr x))))
+   #t
+\end{verbatim}
+
 The \texttt{print-graph} parameter controls how the writers (e.g.
 \texttt{pretty-print} and \texttt{write}) handle shared and cyclic
 data structures.  In Ikarus, all writers detect cyclic data
@@ -1628,6 +1653,7 @@ no sharing is present.
 If the value of \texttt{print-graph} is set to \texttt{\#t}, all
 sharing of data structures is marked using the \texttt{\#n=} and
 \texttt{\#n\#} notation. 
+
 
 \begin{verbatim}
    > (parameterize ([print-graph #f])
@@ -1707,7 +1733,8 @@ generated strings to have pretty names in the sequence \texttt{g0},
 \texttt{g1}, \texttt{g2}, etc. 
 
 \begin{verbatim}
-   > (parameterize ([gensym-prefix "var"] [print-gensym #f])
+   > (parameterize ([gensym-prefix "var"]
+                    [print-gensym #f])
         (pretty-print (list (gensym) (gensym) (gensym))))
    (var0 var1 var2)
 \end{verbatim}
