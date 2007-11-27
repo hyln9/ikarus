@@ -142,7 +142,7 @@ Ikarus Scheme User's Guide
 % \rnrs{6} Crash Course\\
 % Ikarus
 (Preliminary Document)
-\hfill Version~0.0.1+
+\hfill Version~0.0.2-rc1+
 }
 \vfill
 {
@@ -1050,8 +1050,8 @@ different Scheme implementations, we recommend adding the
 \texttt{\#!r6rs} token to the top of every script and library that
 you write.  This allows Ikarus to alert you when using non-portable
 features.  If you're writing code that's intended to be
-Ikarus-specific, we adding the \texttt{\#!ikarus} token in order to
-get an immediate error when your code is run under other
+Ikarus-specific, we recommend adding the \texttt{\#!ikarus} token in
+order to get an immediate error when your code is run under other
 implementations.
 
 \defun{port-mode}{procedure}
@@ -1065,11 +1065,11 @@ extensions.  When the \texttt{\#!r6rs} token is read from a port,
 its mode changes to \texttt{ikarus-mode}.
 
 \begin{verbatim}
-   $ (port-mode (current-input-port))
+   > (port-mode (current-input-port))
    ikarus-mode
-   $ #!r6rs (port-mode (current-input-port))
+   > #!r6rs (port-mode (current-input-port))
    r6rs-mode
-   $ #!ikarus (port-mode (current-input-port))
+   > #!ikarus (port-mode (current-input-port))
    ikarus-mode
 \end{verbatim}
 
