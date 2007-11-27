@@ -3386,12 +3386,14 @@
         (error 'syntax-error "invalid argument" args))
       (raise 
         (condition 
-          (make-who-condition 'expander)
+          ;(make-who-condition 'expander)
           (make-message-condition
             (if (null? args) 
                 "invalid syntax"
                 (apply string-append args)))
-          (stx->datum x)))))
+          (make-syntax-violation 
+            (stx->datum x)
+            'none)))))
 
   (define identifier? (lambda (x) (id? x)))
   
