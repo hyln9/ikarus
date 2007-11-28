@@ -1,20 +1,20 @@
 
-dist_doc_DATA=ikarus-users-guide.pdf
-EXTRA_DIST = ikarus-users-guide.tex ikarus-users-guide.bib ikarus-users-guide.pdf
+dist_doc_DATA=ikarus-scheme-users-guide.pdf
+EXTRA_DIST = ikarusu-scheme-users-guide.tex ikarus-scheme-users-guide.bib ikarus-scheme-users-guide.pdf
 
 TEX=xelatex -output-driver="xdvipdfmx -q -E" 
 
-ikarus-users-guide.pdf: ikarus-users-guide.tex ikarus-users-guide.bib
+ikarus-scheme-users-guide.pdf: ikarus-scheme-users-guide.tex ikarus-scheme-users-guide.bib
 	if test -x "`which xelatex`" ; \
 	then \
-	  $(TEX) ikarus-users-guide && \
-	  makeindex ikarus-users-guide && \
-	  bibtex ikarus-users-guide && \
-	  $(TEX) ikarus-users-guide && \
-	  $(TEX) ikarus-users-guide ; \
+	  $(TEX) ikarus-scheme-users-guide && \
+	  makeindex ikarus-scheme-users-guide && \
+	  bibtex ikarus-scheme-users-guide && \
+	  $(TEX) ikarus-scheme-users-guide && \
+	  $(TEX) ikarus-scheme-users-guide ; \
 	fi 
 
-all: ikarus-users-guide.pdf
+all: ikarus-scheme-users-guide.pdf
 
 clean: 
-	rm -f *.aux *.log *.toc *.out *.idx *.ind *.ilg
+	rm -f *.aux *.log *.toc *.out *.idx *.ind *.ilg *.blg *.bbl
