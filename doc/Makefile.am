@@ -1,6 +1,6 @@
 
 dist_doc_DATA=ikarus-scheme-users-guide.pdf
-EXTRA_DIST = ikarusu-scheme-users-guide.tex ikarus-scheme-users-guide.bib ikarus-scheme-users-guide.pdf
+EXTRA_DIST = ikarus-scheme-users-guide.tex ikarus-scheme-users-guide.bib ikarus-scheme-users-guide.pdf
 
 TEX=xelatex -output-driver="xdvipdfmx -q -E" 
 
