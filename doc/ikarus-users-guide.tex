@@ -1,16 +1,20 @@
 %!TEX TS-program = xelatex
 
 \documentclass[onecolumn, 12pt, twoside, openright, dvipdfm]{book}
+
 \usepackage{fontspec}
 \usepackage{hanging}
+\usepackage{xltxtra}
 
 \defaultfontfeatures{Scale=MatchLowercase} 
 %\setmainfont[Mapping=tex-text]{Cochin} 
 %\setmainfont[Mapping=tex-text]{Palatino}
 %\setmainfont[Mapping=tex-text]{Baskerville}
+%\setmainfont[Mapping=tex-text]{Perpetua}
+%\setmainfont[Mapping=tex-text]{Lido STF}
 \setmainfont[Mapping=tex-text]{Perpetua}
-\setsansfont[Mapping=tex-text]{Geneva} 
-\setmonofont{Monaco} 
+\setsansfont[Mapping=tex-text]{Geneva}
+\setmonofont{Monaco}
 
 \usepackage{fancyhdr}
 \usepackage{makeidx}
@@ -119,16 +123,17 @@
 \mbox{}
 \vspace{3in}
 
+\newcommand{\fstpagefont}[0]
+%{\fontspec{Korner Deli NF}}
+%{\fontspec{Teen Light Italic}}
+%{\fontspec{Venus Rising}}
+%{\fontspec{Vibrocentric}}
+%{\fontspec{Electroharmonix}}
+{\fontspec{Hoefler Text Italic}}
+
 {
 \fontsize{66}{66}
-\fontspec{Hoefler Text Italic}
-% \fontspec{Palatino}
-% \rnrs{6} Libraries
-% {
-% \fontsize{36}{36}
-% \fontspec{Palatino}
-%  and syntax-case system
-% }
+\fstpagefont{}
 \begin{center}
 Ikarus Scheme User's Guide
 \end{center} 
@@ -136,30 +141,31 @@ Ikarus Scheme User's Guide
 \noindent
 \rule{\textwidth}{6pt} 
 {\fontsize{18}{18}
-\fontspec{Hoefler Text Italic}
+\fstpagefont{}
 \hfill{}
 % Quick Start\\
 % \rnrs{6} Crash Course\\
 % Ikarus
 (Preliminary Document)
-\hfill Version~0.0.2-rc1+
+\hfill Version~0.0.2
 }
 \vfill
 {
 \fontsize{24}{24}
-\fontspec{Hoefler Text Italic}
+\fstpagefont{}
 \hfill{} Abdulaziz Ghuloum
 }
 
 {
 \fontsize{18}{18}
-\fontspec{Hoefler Text Italic}
+\fstpagefont{}
 \hfill{} \today
 }
 
 \newpage
 \mbox{}
 \vfill{}
+%\addcontentsline{toc}{section}{Copyrights}
 \noindent
 Ikarus Scheme User's Guide\\
 Copyright \copyright{} 2007,  Abdulaziz Ghuloum\\
@@ -176,6 +182,8 @@ section entitled ``GNU Free Documentation License''.
 \newpage
 
 \pagestyle{fancy}
+\phantomsection
+\addcontentsline{toc}{section}{Contents}
 \tableofcontents
 
 \newpage
@@ -213,7 +221,7 @@ libraries.
 
 \newpage
 
-\section{Technology Overview}
+\section{Technology overview}
 
 Ikarus Scheme provides the programmer with many advantages:
 
@@ -243,7 +251,7 @@ computers.  The supported systems include Mac~OS~X,
 GNU/Linux, FreeBSD, NetBSD, and Microsoft Windows.
 
 
-\section{System Requirements}
+\section{System requirements}
 
 \subsection{Hardware}
 
@@ -258,7 +266,7 @@ The Ikarus compiler generates SSE2 instructions to handle Scheme's
 IEEE floating point representation (\emph{flonums}) for inexact
 numbers. 
 
-\subsection{Operating Systems}
+\subsection{Operating systems}
 
 Ikarus is tested under the following operating systems:
 
@@ -270,7 +278,7 @@ Ikarus is tested under the following operating systems:
 \item Microsoft Windows XP (using Cygwin 1.5.24).
 \end{itemize}
 
-\subsection{Additional Software}
+\subsection{Additional software}
 
 \begin{itemize}
 \item\textbf{GMP:} Ikarus uses the GNU Multiple Precision Arithmetic
@@ -297,9 +305,14 @@ and GNU Automake (version 1.10) tools are required if one
 wishes to modify the Ikarus source base.  They are not
 required to build the official release of Ikarus.
 
-\item\textbf{XeLaTeX:}  The XeLaTeX typesetting system is required
-for building the documentation.  XeLaTeX (and XeTeX) is an
-implementation of the LaTeX (and TeX) typesetting system.
+\item\textbf{\XeLaTeX{}:}  The \XeLaTeX\ typesetting system is
+required for building the documentation.  \XeLaTeX\ (and \XeTeX) is
+an implementation of the \LaTeX\ (and \TeX) typesetting system.
+\XeLaTeX\ can be obtained from \url{http://scripts.sil.org/xetex}
+and is included with \TeX-Live\footnote{
+\url{http://tug.org/texlive/}} and and
+Mac-\TeX\footnote{\url{http://tug.org/mactex/}} distributions.
+
 
 \end{itemize}
 
@@ -322,7 +335,7 @@ The rest of this section describes the build process in more
 details.  It is targeted to users who are unfamiliar with steps
 mentioned above.
 
-\subsection{Installation Details}
+\subsection{Installation details}
 
 \begin{enumerate}
 
@@ -431,7 +444,7 @@ To uninstall Ikarus, use the following steps:
 \end{verbatim}
 
 
-\section{\index{Command-line switches}Command-line Switches}
+\section{\index{Command-line switches}Command-line switches}
 
 The \texttt{ikarus} executable recognizes a few command-line
 switches that influence how Ikarus starts.
@@ -545,12 +558,51 @@ by double-clicking on it.  This brings up a terminal window in which
 the script is executed.  The \texttt{.command} extension can be
 hidden from the \emph{Get Info} item from the Finder's File menu.}
 
+\newpage
 
-%\subsection{GNU/Linux}
-%FIXME
-%\subsection{Windows/Cygwin}
-%FIXME
+\section{Mapping library names to file names}
 
+The name of an \rnrs{6} library consists of a non-empty list of
+identifiers (symbols), followed by an optional version number.  All
+of the standard \rnrs{6} libraries are built into Ikarus, thus
+importing any one of them does not require any special action other
+than listing the library name in the \texttt{import} part of a
+library or a script.  The same holds for the \texttt{(ikarus)}
+library (chapter~\ref{chapter:ikarus},
+page~\pageref{chapter:ikarus}).
+
+When writing a new library to a file, Ikarus uses a simple mechanism
+to map library names to file names.  A library name is converted to
+a file path by joining the library identifiers with a path
+separator, e.g. \verb|"/"|, and appending the \emph{scheme source},
+e.g. \verb|".ss"|, suffix at the end.  
+
+\begin{center}
+\begin{tabular}{lcl}
+  Library Name & \hspace{2em}$\Rightarrow$\hspace{2em} & File path \\
+  \hline
+  \verb|(foo)|         & $\Rightarrow$ & \verb|foo.ss| \\
+  \verb|(foo bar)|     & $\Rightarrow$ & \verb|foo/bar.ss| \\
+  \verb|(foo bar baz)| & $\Rightarrow$ & \verb|foo/bar/baz.ss| 
+\end{tabular}
+\end{center}
+
+Having mapped a library name to a file path, Ikarus attempts to
+locate that library in the current working directory.  If the file
+is not found in the current directory, Ikarus tries to find it in
+the Ikarus library directory.  The Ikarus library directory is
+determined when Ikarus is installed (based on the \texttt{--prefix}
+argument that was passed to the \texttt{configure} script).  See
+Chapter~\ref{chapter:contributed} for more details about the library
+locations.
+
+
+\BoxedText{Tip:}{Use simple library names for the libraries that
+you define.  Library names that contain non-printable characters,
+complex punctuations, or unicode may pose a challenge for some
+operating systems.  If Ikarus cannot find a library, it will raise
+an error listing the locations in which it looked, helping you move
+the library file to a place where Ikarus can find it.}
 
 \chapter{\rnrs{6} Crash Course}
 
@@ -896,7 +948,7 @@ custom constructor may be defined.
 \end{CodeInline}
 
 
-\section{Exception Handling}
+\section{Exception handling}
 
 The procedure \texttt{with-exception-handler} allows the programmer
 to specify how to handle exceptional situations.  It takes two
@@ -1246,7 +1298,7 @@ when the body returns.
 \end{CodeInline}
 
 \newpage
-\section{Local Library Imports}
+\section{Local library imports}
 \defun{import}{syntax}
 \texttt{(import import-spec* ...)}
 
@@ -1279,7 +1331,7 @@ form when the procedure that was using it is deleted.
 
 
 \newpage
-\section{Local Modules}
+\section{Local modules}
 
 This section is not documented yet.
 Please refer to Section~10.5 of Chez Scheme
@@ -1314,7 +1366,7 @@ Ikarus is similar to Chez Scheme in that the readers (including the
 \texttt{pretty-print}) maintain the read/write invariance on
 gensyms.  When a gensym is written to an output port, the system
 automatically generates a random unique identifier for the gensym.
-When the gensym is read back though the \texttt{\#\{gensym\}} read
+When the gensym is read back though the \verb|#{gensym}| read
 syntax, a new gensym is \emph{not} regenerated, but instead, it is
 looked up in the global symbol table. 
 
@@ -1322,7 +1374,7 @@ A gensym's name is composed of two parts: a \emph{pretty} string and
 a \emph{unique} string.  The Scheme procedure
 \texttt{symbol->string} returns the pretty string of the gensym and
 not its unique string.  Gensyms are printed by default as 
-\texttt{\#\{pretty-string~unique-string\}}.
+\verb|#{pretty-string unique-string}|.
 
 \defun{gensym}{procedure}
 \texttt{(gensym)}\\
@@ -1401,7 +1453,7 @@ Ikarus's \texttt{read} and \texttt{write} procedures extends the
 lexical syntax of Scheme by the ability to read and write gensyms
 using one of the three forms listed above.
 
-\texttt{\#\{unique-name\}} constructs, at read time, a gensym whose
+\verb|#{unique-name}| constructs, at read time, a gensym whose
 unique name is the one specified.   If a gensym with the same unique
 name already exists in the system's symbol table, that gensym is
 returned.
@@ -1414,7 +1466,7 @@ returned.
    #t
 \end{verbatim}
 
-The two-part \texttt{\#\{pretty-name unique-name\}} gensym syntax is
+The two-part \verb|#{pretty-name unique-name}| gensym syntax is
 similar to the syntax shown above with the exception that if a new
 gensym is constructed (that is, if the gensym did not already exist
 in the symbol table), the pretty name of the constructed gensym is
@@ -1623,8 +1675,8 @@ first argument.
 The graph notation is a way of marking and referencing parts of a
 data structure and, consequently, creating shared and cyclic data
 structures at read time instead of resorting to explicit mutation at
-run time.  The \verb|#n=| marks the following data structure with
-mark $n$, where $n$ is a nonnegative integer.  The \verb|#n#|
+run time.  The \texttt{\#$n$=} marks the following data structure with
+mark $n$, where $n$ is a nonnegative integer.  The \texttt{\#$n$\#}
 references the data structure marked $n$.  Marks can be assigned and
 referenced in any order but each mark must be assigned to exactly
 once in an expression.
@@ -1654,8 +1706,8 @@ default), then the writers does not attempt to detect shared data
 structures.  Any part of the input that is shared is printed as if
 no sharing is present.
 If the value of \texttt{print-graph} is set to \texttt{\#t}, all
-sharing of data structures is marked using the \texttt{\#n=} and
-\texttt{\#n\#} notation. 
+sharing of data structures is marked using the \texttt{\#$n$=} and
+\texttt{\#$n$\#} notation. 
 
 
 \begin{verbatim}
@@ -1703,7 +1755,7 @@ by the various writers.
 If the value of \texttt{print-gensym} is \texttt{\#f}, then gensym
 syntax is suppressed by the writers and only the gensyms' pretty
 names are printed.  If the value of \texttt{print-gensym} is
-\texttt{\#t}, then the full \texttt{\#\{pretty~unique\}} syntax is
+\texttt{\#t}, then the full \verb|#{pretty unique}| syntax is
 printed.  Finally, if the value of \texttt{print-gensym} is the
 symbol \texttt{pretty}, then gensyms are printed using the
 \texttt{\#:pretty} notation.  
@@ -1964,7 +2016,7 @@ displayed.
    12
 \end{verbatim}
 
-\chapter{Contributed Libraries}
+\chapter{\label{chapter:contributed}Contributed Libraries}
 
 We try to keep Ikarus Scheme small and its complexity manageable.
 Libraries that are not an essential part of Ikarus are not included
@@ -1990,18 +2042,57 @@ any of these libraries, please try to resolve the issue by
 contacting the library author first.  Do not hesitate to file a bug
 on Ikarus if you believe that Ikarus is at fault.}
 
-\section{Library Location}
+\newpage
+\section*{Library files}
 
+The contributed libraries are installed in your system when Ikarus
+was installed.   By default, running the \texttt{configure} script
+installs the libraries into the \verb|/usr/local/lib/ikarus|
+directory.  If a \verb|--prefix DIR| argument was supplied to
+\texttt{configure}, then the libraries are installed in the
+\verb|DIR/ikarus/lib| directory.  For example, the
+\texttt{(streams~derived)} library is installed in the
+\verb|/usr/local/lib/ikarus/streams/derived.ss| directory by
+default.
 
+You may install additional libraries into the Ikarus library
+directory.  Doing so makes them available for \texttt{import} into
+other libraries and script regardless of where the importing code is
+located or the current directory in which it is executed.  
 
-\subsection{\texttt{IKARUS\_LIBRARY\_PATH}}
+\section*{Defining \texttt{IKARUS\_LIBRARY\_PATH}}
 \index{ikarus library path@\texttt{IKARUS\_LIBRARY\_PATH}}
-FIXME
+
+There may be situations in which you may wish to install your own
+libraries into a different location.  For example, you may not have
+sufficient administrative privileges to write to the system
+directory, or you may wish to keep your own libraries separate from
+the standard libraries.  Whatever the reason is, your can store your
+library files in any location you want and set up the
+\verb|IKARUS_LIBRARY_PATH| environment variable to point to these
+locations.  The value of \verb|IKARUS_LIBRARY_PATH| is a
+colon-separated list of directories in which Ikarus will look
+sequentially until it finds the required library file.  
+
+The method in which the value of \verb|IKARUS_LIBRARY_PATH| is
+defined is typically shell dependant.  If you use GNU Bash, you
+typically set the values of environment variables in the
+\verb|~/.bash_profile| or \verb|~/.bashrc| file by adding the
+following lines:
+
+\begin{verbatim}
+   IKARUS_LIBRARY_PATH=/path/to/some/directory:/and/another
+   export IKARUS_LIBRARY_PATH
+\end{verbatim}
 
 
 
 \newpage
 \section{SRFI-41: \texttt{(streams)}}
+\index{SRFI-41: Streams}
+\index{SRFI-41: Streams!1@\texttt{(streams)}}
+\index{SRFI-41: Streams!2@\texttt{(streams primitive)}}
+\index{SRFI-41: Streams!3@\texttt{(streams derived)}}
 The \texttt{(streams)}, \texttt{(streams~primitive)}, and
 \texttt{(streams~derived)} libraries are written by Philip L.~Bewig 
 as the reference implementation for SRFI-41.  
@@ -2128,14 +2219,18 @@ string->bytevector    bytevector->string
 \nocite{ghuloum-implicit}
 \nocite{ghuloum-generation}
 
+\newpage
 \backmatter
 \appendix
+\phantomsection
+%\addcontentsline{toc}{chapter}{Bibliogaraphy}
+\addcontentsline{toc}{chapter}{\bibname}
 \bibliographystyle{plain}
 \bibliography{ikarus-users-guide}
+\newpage
+\phantomsection
+\addcontentsline{toc}{chapter}{Index}
 \printindex
-
-
-
 \end{document}
 
 
