@@ -36660,3 +36660,49 @@ running stats for compile-array1:
     48 ms elapsed cpu time, including 31 ms collecting
     48 ms elapsed real time, including 32 ms collecting
     1722224 bytes allocated
+NOW: 2007-11-28 22:35:27
+running stats for compile-ack:
+    1 collection
+    55 ms elapsed cpu time, including 35 ms collecting
+    91 ms elapsed real time, including 41 ms collecting
+    1370184 bytes allocated
+running stats for ack (20):
+    no collections
+    1609 ms elapsed cpu time, including 0 ms collecting
+    1612 ms elapsed real time, including 0 ms collecting
+    24 bytes allocated
+running stats for compile-ack:
+    1 collection
+    53 ms elapsed cpu time, including 37 ms collecting
+    53 ms elapsed real time, including 37 ms collecting
+    1370184 bytes allocated
+running stats for ack (20):
+    no collections
+    1614 ms elapsed cpu time, including 0 ms collecting
+    1621 ms elapsed real time, including 0 ms collecting
+    24 bytes allocated
+running stats for compile-ack:
+    1 collection
+    53 ms elapsed cpu time, including 37 ms collecting
+    54 ms elapsed real time, including 37 ms collecting
+    1370184 bytes allocated
+running stats for ack (20):
+    no collections
+    1615 ms elapsed cpu time, including 0 ms collecting
+    1621 ms elapsed real time, including 0 ms collecting
+    24 bytes allocated
+running stats for compile-ack:
+    1 collection
+    54 ms elapsed cpu time, including 37 ms collecting
+    55 ms elapsed real time, including 38 ms collecting
+    1370184 bytes allocated
+running stats for ack (20):
+    no collections
+    1615 ms elapsed cpu time, including 0 ms collecting
+    1622 ms elapsed real time, including 0 ms collecting
+    24 bytes allocated
+running stats for compile-ack:
+    1 collection
+    53 ms elapsed cpu time, including 37 ms collecting
+    54 ms elapsed real time, including 38 ms collecting
+    1370184 bytes allocated
