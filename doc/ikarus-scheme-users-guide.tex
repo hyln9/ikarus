@@ -588,13 +588,16 @@ e.g. \verb|".ss"|, suffix at the end.
 \end{center}
 
 Having mapped a library name to a file path, Ikarus attempts to
-locate that library in the current working directory.  If the file
-is not found in the current directory, Ikarus tries to find it in
-the Ikarus library directory.  The Ikarus library directory is
-determined when Ikarus is installed (based on the \texttt{--prefix}
-argument that was passed to the \texttt{configure} script).  See
-Chapter~\ref{chapter:contributed} for more details about the library
-locations.
+locate that file in one of several locations.  First, Ikarus
+attempts to locate the file in the current working directory from
+which Ikarus was invoked.  If the file is not found in the current
+directory, Ikarus tries to find it in the Ikarus library directory.
+The Ikarus library directory is determined when Ikarus is installed
+(based on the \texttt{--prefix} argument that was passed to the
+\texttt{configure} script).  If Ikarus failes to locate the library
+file, it raises an exception and exits. 
+See Chapter~\ref{chapter:contributed} for more details about the
+library locations.
 
 
 \BoxedText{Tip:}{Use simple library names for the libraries that
@@ -2050,10 +2053,7 @@ was installed.   By default, running the \texttt{configure} script
 installs the libraries into the \verb|/usr/local/lib/ikarus|
 directory.  If a \verb|--prefix DIR| argument was supplied to
 \texttt{configure}, then the libraries are installed in the
-\verb|DIR/ikarus/lib| directory.  For example, the
-\texttt{(streams~derived)} library is installed in the
-\verb|/usr/local/lib/ikarus/streams/derived.ss| directory by
-default.
+\verb|DIR/ikarus/lib| directory.  
 
 You may install additional libraries into the Ikarus library
 directory.  Doing so makes them available for \texttt{import} into
@@ -2071,8 +2071,28 @@ the standard libraries.  Whatever the reason is, your can store your
 library files in any location you want and set up the
 \verb|IKARUS_LIBRARY_PATH| environment variable to point to these
 locations.  The value of \verb|IKARUS_LIBRARY_PATH| is a
-colon-separated list of directories in which Ikarus will look
-sequentially until it finds the required library file.  
+colon-separated list of directories in which Ikarus will search.
+
+For example, suppose your script imports the
+\texttt{(streams~derived)} library.  First, Ikarus will map the
+library name to the file path \verb|streams/derived.ss|.  Suppose
+that Ikarus was installed using the \verb|--prefix /usr/local|
+configuration option, and suppose further that the value of
+\verb|IKARUS_LIBRARY_PATH| is set to
+\verb|/home/john/ikarus-libraries:/home/john/srfis|.  Ikarus will
+search in the following locations in sequence until it finds the
+file it is looking for.
+
+\begin{verbatim}
+   ./streams/derived.ss
+   /home/john/ikarus-libraries/streams/derived.ss
+   /home/john/srfis/streams/derived.ss
+   /usr/local/lib/ikarus/streams/derived.ss
+\end{verbatim}
+
+\BoxedText{Warning:}{The current behavior of Ikarus regarding the
+\texttt{IKARUS\_LIBRARY\_PATH} is preliminary and is likely to change
+in future releases.}
 
 The method in which the value of \verb|IKARUS_LIBRARY_PATH| is
 defined is typically shell dependant.  If you use GNU Bash, you
