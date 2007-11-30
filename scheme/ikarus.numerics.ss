@@ -1153,6 +1153,11 @@
              (if ($fx> x y) x y)]
             [(bignum? y)
              (if (positive-bignum? y) y x)]
+            [(flonum? y) 
+             (let ([x ($fixnum->flonum x)]) 
+               (if ($fl>= y x) y x))]
+            [(ratnum? y) ;;; FIXME: optimize
+             (if (>= x y) x y)]
             [else (error 'max "not a number" y)])]
          [(bignum? x)
           (cond
@@ -1160,6 +1165,34 @@
              (if (positive-bignum? x) x y)]
             [(bignum? y)
              (if (bnbn> x y) x y)]
+            [(flonum? y) 
+             (let ([x (bignum->flonum x)]) 
+               (if ($fl>= y x) y x))]
+            [(ratnum? y) ;;; FIXME: optimize
+             (if (>= x y) x y)]
+            [else (error 'max "not a number" y)])]
+         [(flonum? x) 
+          (cond
+            [(flonum? y) 
+             (if ($fl>= x y) x y)]
+            [(fixnum? y) 
+             (let ([y ($fixnum->flonum y)]) 
+               (if ($fl>= y x) y x))]
+            [(bignum? y)
+             (let ([y (bignum->flonum y)]) 
+               (if ($fl>= y x) y x))]
+            [(ratnum? y)
+             ;;; FIXME: may be incorrect
+             (let ([y (ratnum->flonum y)])
+               (if ($fl>= y x) y x))]
+            [else (error 'max "not a number" y)])]
+         [(ratnum? x) 
+          (cond
+            [(or (fixnum? y) (bignum? y) (ratnum? y))
+             (if (>= x y) x y)]
+            [(flonum? y) 
+             (let ([x (ratnum->flonum x)])
+               (if ($fl>= x y) x y))]
             [else (error 'max "not a number" y)])]
          [else (error 'max "not a number" x)])]
       [(x y z . rest)
@@ -1183,6 +1216,11 @@
              (if ($fx> x y) y x)]
             [(bignum? y)
              (if (positive-bignum? y) x y)]
+            [(flonum? y) 
+             (let ([x ($fixnum->flonum x)]) 
+               (if ($fl>= y x) x y))]
+            [(ratnum? y) ;;; FIXME: optimize
+             (if (>= x y) y x)]
             [else (error 'min "not a number" y)])]
          [(bignum? x)
           (cond
@@ -1190,6 +1228,34 @@
              (if (positive-bignum? x) y x)]
             [(bignum? y)
              (if (bnbn> x y) y x)]
+            [(flonum? y) 
+             (let ([x (bignum->flonum x)]) 
+               (if ($fl>= y x) x y))]
+            [(ratnum? y) ;;; FIXME: optimize
+             (if (>= x y) y x)]
+            [else (error 'min "not a number" y)])]
+         [(flonum? x) 
+          (cond
+            [(flonum? y) 
+             (if ($fl>= x y) y x)]
+            [(fixnum? y) 
+             (let ([y ($fixnum->flonum y)]) 
+               (if ($fl>= y x) x y))]
+            [(bignum? y)
+             (let ([y (bignum->flonum y)]) 
+               (if ($fl>= y x) x y))]
+            [(ratnum? y)
+             ;;; FIXME: may be incorrect
+             (let ([y (ratnum->flonum y)])
+               (if ($fl>= y x) x y))]
+            [else (error 'min "not a number" y)])]
+         [(ratnum? x) 
+          (cond
+            [(or (fixnum? y) (bignum? y) (ratnum? y))
+             (if (>= x y) y x)]
+            [(flonum? y) 
+             (let ([x (ratnum->flonum x)])
+               (if ($fl>= x y) y x))]
             [else (error 'min "not a number" y)])]
          [else (error 'min "not a number" x)])]
       [(x y z . rest)
