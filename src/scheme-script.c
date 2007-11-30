@@ -23,7 +23,7 @@
 
 int main(int argc, char** argv){
   if(argc >= 2){
-    char** a = calloc(argc+1, sizeof(char*));
+    char** a = calloc(argc+2, sizeof(char*));
     if(! a) {
       fprintf(stderr, "Error in scheme-script: cannot calloc\n");
       exit(-1);
@@ -34,6 +34,7 @@ int main(int argc, char** argv){
     for(i=1; i<argc; i++){
       a[i+1] = argv[i];
     }
+    a[argc+1] = 0;
     int rv = execv(EXEFILE, a);
     fprintf(stderr, "Error executing ikarus from scheme-script: %s\n",
         strerror(errno));
