@@ -169,6 +169,25 @@
                             ($set-port-size! p bytes)
                             ($peek-char p)]))
                        (error 'peek-char "port is closed" p))))]
+            [(lookahead-u8 p)
+             (unless (input-port? p)
+               (error 'lookahead-u8 "not an input port" p))
+             (let ([idx ($port-index p)])
+               (if ($fx< idx ($port-size p))
+                   ($bytevector-u8-ref ($port-buffer p) idx)
+                   (if open?
+                       (let ([bytes
+                              (foreign-call "ikrt_read" fd
+                                (port-input-buffer p))])
+                         (cond
+                           [(not bytes)
+                            (error 'lookahead-u8
+                               "Cannot read from file" port-name)]
+                           [($fx= bytes 0)
+                            (eof-object)]
+                           [else
+                            ($bytevector-u8-ref ($port-buffer p) 0)]))
+                       (error 'lookahead-u8 "port is closed" p))))]
             [(unread-char c p)
              (unless (input-port? p)
                (error 'unread-char "not an input port" p))

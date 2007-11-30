@@ -17,7 +17,7 @@
 (library (ikarus io-primitives)
   (export read-char unread-char peek-char write-char write-byte
           put-u8 put-char put-string put-bytevector 
-          get-char get-u8
+          get-char get-u8 lookahead-u8
           get-string-n get-string-n! 
           get-bytevector-n get-bytevector-n!
           newline port-name input-port-name output-port-name
@@ -29,7 +29,7 @@
     (ikarus system $ports)
     (except (ikarus) read-char unread-char peek-char write-char write-byte 
             put-u8 put-char put-string put-bytevector
-            get-char get-u8 
+            get-char get-u8 lookahead-u8
             get-string-n get-string-n! 
             get-bytevector-n get-bytevector-n!
             newline port-name input-port-name output-port-name
@@ -119,6 +119,12 @@
       (if (input-port? p)
            ($get-u8 p)
            (error 'get-u8 "not an input-port" p))))
+
+  (define lookahead-u8
+    (lambda (p) 
+      (if (input-port? p)
+          ($lookahead-u8 p)
+          (error 'lookahead-u8 "not an input-port" p))))
 
   (define read-char
     (case-lambda
