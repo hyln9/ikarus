@@ -1693,9 +1693,34 @@
                    (lambda (set-foo-x! idx)
                      `(define ,set-foo-x! (record-mutator ,foo-rtd ,idx)))
                    set-foo-x!* set-foo-idx*)))))
+      (define (verify-clauses x cls*)
+        (define valid-kwds 
+          (map bless 
+            '(fields parent parent-rtd protocol sealed opaque nongenerative)))
+        (define (free-id-member? x ls) 
+          (and (pair? ls) 
+               (or (free-id=? x (car ls)) 
+                   (free-id-member? x (cdr ls)))))
+        (let f ([cls* cls*] [seen* '()])
+          (unless (null? cls*)
+            (syntax-match (car cls*) ()
+              [(kwd . rest)
+               (cond
+                 [(or (not (id? kwd)) 
+                      (not (free-id-member? kwd valid-kwds)))
+                  (stx-error kwd "not a valid define-record-type keyword")]
+                 [(bound-id-member? kwd seen*)
+                  (stx-error x 
+                    "duplicate use of keyword "
+                    (symbol->string (stx->datum kwd)))]
+                 [else (f (cdr cls*) (cons kwd seen*))])]
+              [cls
+               (stx-error cls "malformed define-record-type clause")]))))
       (syntax-match x ()
         [(_ namespec clause* ...)
-         (do-define-record namespec clause*)])))
+         (begin
+           (verify-clauses x clause*)
+           (do-define-record namespec clause*))])))
   
   (define define-condition-type-macro
     (lambda (x)
