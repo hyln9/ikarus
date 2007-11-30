@@ -30,6 +30,7 @@
 #include <signal.h>
 #include <sys/mman.h>
 
+
 void register_handlers();
 void register_alt_stack();
 
@@ -257,7 +258,7 @@ register_alt_stack(){
     exit(-1);
   }
 
-  struct sigaltstack sa;
+  stack_t sa;
   sa.ss_sp = stk;
   sa.ss_size = SIGSTKSZ;
   sa.ss_flags = 0;
