@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
@@ -34,7 +33,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-bin_PROGRAMS = ikarus$(EXEEXT)
+bin_PROGRAMS = ikarus$(EXEEXT) scheme-script$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -44,7 +43,7 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)"
+am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_ikarus_OBJECTS = ikarus-collect.$(OBJEXT) ikarus-exec.$(OBJEXT) \
@@ -57,8 +56,9 @@ am_ikarus_OBJECTS = ikarus-collect.$(OBJEXT) ikarus-exec.$(OBJEXT) \
 nodist_ikarus_OBJECTS =
 ikarus_OBJECTS = $(am_ikarus_OBJECTS) $(nodist_ikarus_OBJECTS)
 ikarus_LDADD = $(LDADD)
-binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
-SCRIPTS = $(bin_SCRIPTS)
+am_scheme_script_OBJECTS = scheme-script.$(OBJEXT)
+scheme_script_OBJECTS = $(am_scheme_script_OBJECTS)
+scheme_script_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I. -I$(top_builddir)@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -67,8 +67,9 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 CCASCOMPILE = $(CCAS) $(AM_CCASFLAGS) $(CCASFLAGS)
-SOURCES = $(ikarus_SOURCES) $(nodist_ikarus_SOURCES)
-DIST_SOURCES = $(ikarus_SOURCES)
+SOURCES = $(ikarus_SOURCES) $(nodist_ikarus_SOURCES) \
+	$(scheme_script_SOURCES)
+DIST_SOURCES = $(ikarus_SOURCES) $(scheme_script_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -173,10 +174,10 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ikarus_SOURCES = ikarus-collect.c ikarus-exec.c ikarus-fasl.c ikarus-flonums.c ikarus-main.c ikarus-numerics.c ikarus-print.c ikarus-runtime.c ikarus-symbol-table.c ikarus-verify-integrity.c ikarus-weak-pairs.c ikarus-winmmap.c ikarus-data.h ikarus-winmmap.h ikarus-enter.s
+scheme_script_SOURCES = scheme-script.c
 nodist_ikarus_SOURCES = bootfileloc.h
 BUILT_SOURCES = bootfileloc.h
-bin_SCRIPTS = scheme-script
-CLEANFILES = scheme-script bootfileloc.h
+CLEANFILES = bootfileloc.h
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -237,25 +238,9 @@ clean-binPROGRAMS:
 ikarus$(EXEEXT): $(ikarus_OBJECTS) $(ikarus_DEPENDENCIES) 
 	@rm -f ikarus$(EXEEXT)
 	$(LINK) $(ikarus_OBJECTS) $(ikarus_LDADD) $(LIBS)
-install-binSCRIPTS: $(bin_SCRIPTS)
-	@$(NORMAL_INSTALL)
-	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
-	@list='$(bin_SCRIPTS)'; for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  if test -f $$d$$p; then \
-	    f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
-	    echo " $(binSCRIPT_INSTALL) '$$d$$p' '$(DESTDIR)$(bindir)/$$f'"; \
-	    $(binSCRIPT_INSTALL) "$$d$$p" "$(DESTDIR)$(bindir)/$$f"; \
-	  else :; fi; \
-	done
-
-uninstall-binSCRIPTS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(bin_SCRIPTS)'; for p in $$list; do \
-	  f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
-	  echo " rm -f '$(DESTDIR)$(bindir)/$$f'"; \
-	  rm -f "$(DESTDIR)$(bindir)/$$f"; \
-	done
+scheme-script$(EXEEXT): $(scheme_script_OBJECTS) $(scheme_script_DEPENDENCIES) 
+	@rm -f scheme-script$(EXEEXT)
+	$(LINK) $(scheme_script_OBJECTS) $(scheme_script_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -275,6 +260,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-verify-integrity.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-weak-pairs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-winmmap.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scheme-script.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -373,9 +359,9 @@ distdir: $(DISTFILES)
 check-am: all-am
 check: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) check-am
-all-am: Makefile $(PROGRAMS) $(SCRIPTS)
+all-am: Makefile $(PROGRAMS)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)"; do \
+	for dir in "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -429,7 +415,7 @@ install-data-am:
 
 install-dvi: install-dvi-am
 
-install-exec-am: install-binPROGRAMS install-binSCRIPTS
+install-exec-am: install-binPROGRAMS
 
 install-html: install-html-am
 
@@ -460,7 +446,7 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS
+uninstall-am: uninstall-binPROGRAMS
 
 .MAKE: install-am install-strip
 
@@ -468,23 +454,19 @@ uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS
 	clean-generic ctags distclean distclean-compile \
 	distclean-generic distclean-tags distdir dvi dvi-am html \
 	html-am info info-am install install-am install-binPROGRAMS \
-	install-binSCRIPTS install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-binPROGRAMS \
-	uninstall-binSCRIPTS
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
+	uninstall-am uninstall-binPROGRAMS
 
 
 bootfileloc.h: Makefile
 	echo '#define BOOTFILE "$(pkglibdir)/ikarus.boot"' >$@
-
-scheme-script: 
-	echo "#!/bin/sh" > scheme-script
-	echo "exec $(bindir)/ikarus --r6rs-script \$$@" >> scheme-script
+	echo '#define EXEFILE "$(bindir)/ikarus"' >>$@
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
