@@ -2550,8 +2550,9 @@
                          r mr '() '() '() '() rib #f)))
            (when (null? e*)
              (stx-error e* "no expression in body"))
-           (let ((rhs* (chi-rhs* rhs* r mr))
-                 (init* (chi-expr* (append (apply append (reverse mod**)) e*) r mr)))
+           (let* ((init* 
+                   (chi-expr* (append (apply append (reverse mod**)) e*) r mr))
+                  (rhs* (chi-rhs* rhs* r mr)))
              (build-letrec* no-source
                 (reverse lex*) (reverse rhs*)
                 (build-sequence no-source init*)))))))
@@ -3114,6 +3115,7 @@
         (values (append (apply append (reverse mod**)) e*)
            r mr (reverse lex*) (reverse rhs*)))))
   
+
   (define library-body-expander
     (lambda (exp* imp* b* top?)
       (define itc (make-collector))
@@ -3129,11 +3131,11 @@
                   (let-values (((init* r mr lex* rhs*)
                                 (chi-library-internal b* rib top?)))
                     (seal-rib! rib)
-                    (let ((rhs* (chi-rhs* rhs* r mr))
-                          (loc* (map gen-global lex*))
-                          (init* (chi-expr* init* r mr)))
+                    (let* ((init* (chi-expr* init* r mr))
+                           (rhs* (chi-rhs* rhs* r mr)))
                       (unseal-rib! rib)
-                      (let ((export-subst (make-export-subst exp-int* exp-ext* rib)))
+                      (let ((loc* (map gen-global lex*))
+                            (export-subst (make-export-subst exp-int* exp-ext* rib)))
                         (define errstr
                           "attempt to export mutated variable")
                         (let-values (((export-env global* macro*)
