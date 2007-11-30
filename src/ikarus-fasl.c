@@ -102,9 +102,20 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
       p.marks = 0;
       p.marks_size = 0;
     }
+    if(p.memp == p.memq){
+      int err = munmap(mem, mapsize);
+      if(err != 0){
+        fprintf(stderr, "Failed to unmap fasl file: %s\n", strerror(errno));
+        exit(-1);
+      }
+      close(fd);
+    }
     ikp val = ik_exec_code(pcb, v);
     val = void_object;
     if(val != void_object){
+      /* this is from revision 1 
+         and is no longer needed 
+         and should be removed */
       ik_print(val);
     }
   }
@@ -112,14 +123,6 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
     fprintf(stderr, "fasl-read did not reach eof!\n");
     exit(-10);
   }
-  {
-    int err = munmap(mem, mapsize);
-    if(err != 0){
-      fprintf(stderr, "Failed to unmap fasl file: %s\n", strerror(errno));
-      exit(-1);
-    }
-  }
-  close(fd);
 }
 
 static ikp 
