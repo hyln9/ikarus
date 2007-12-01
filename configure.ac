@@ -88,6 +88,6 @@ AC_FUNC_STRFTIME
 AC_FUNC_STRTOD
 AC_CHECK_FUNCS([bzero gettimeofday memmove memset munmap setenv sqrt strerror])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES(Makefile src/Makefile scheme/Makefile doc/Makefile extras/Makefile benchmarks/Makefile)
+AC_CONFIG_FILES(Makefile src/Makefile scheme/Makefile doc/Makefile lib/Makefile benchmarks/Makefile)
 AC_OUTPUT #(Makefile src/Makefile scheme/Makefile doc/Makefile)
 

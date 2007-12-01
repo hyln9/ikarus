@@ -8296,7 +8296,7 @@ done
 
 ac_config_headers="$ac_config_headers config.h"
 
-ac_config_files="$ac_config_files Makefile src/Makefile scheme/Makefile doc/Makefile extras/Makefile benchmarks/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile scheme/Makefile doc/Makefile lib/Makefile benchmarks/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -8895,7 +8895,7 @@ do
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "scheme/Makefile") CONFIG_FILES="$CONFIG_FILES scheme/Makefile" ;;
     "doc/Makefile") CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
-    "extras/Makefile") CONFIG_FILES="$CONFIG_FILES extras/Makefile" ;;
+    "lib/Makefile") CONFIG_FILES="$CONFIG_FILES lib/Makefile" ;;
     "benchmarks/Makefile") CONFIG_FILES="$CONFIG_FILES benchmarks/Makefile" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
