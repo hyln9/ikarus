@@ -83,15 +83,19 @@
         (cond
          [(eof-object? c) 
           (error 'tokenize "end-of-file while inside a string")]
-         [($char= #\" c)  ls]
+         [($char= #\" c) ls]
          [($char= #\\ c) 
           (let ([c (read-char p)])
             (cond
-              [($char= #\" c) (tokenize-string (cons #\" ls) p)]
-              [($char= #\\ c) (tokenize-string (cons #\\ ls) p)]
-              [($char= #\n c) (tokenize-string (cons #\newline ls) p)]
-              [($char= #\r c) (tokenize-string (cons #\return ls) p)]
-              [($char= #\t c) (tokenize-string (cons #\tab ls) p)]
+              [($char= #\a c) (tokenize-string (cons #\x7 ls) p)]
+              [($char= #\b c) (tokenize-string (cons #\x8 ls) p)]
+              [($char= #\t c) (tokenize-string (cons #\x9 ls) p)]
+              [($char= #\n c) (tokenize-string (cons #\xA ls) p)]
+              [($char= #\v c) (tokenize-string (cons #\xB ls) p)]
+              [($char= #\f c) (tokenize-string (cons #\xC ls) p)]
+              [($char= #\r c) (tokenize-string (cons #\xD ls) p)]
+              [($char= #\" c) (tokenize-string (cons #\x22 ls) p)]
+              [($char= #\\ c) (tokenize-string (cons #\x5C ls) p)]
               [($char= #\x c) ;;; unicode escape \xXXX;
                (let ([c (read-char p)])
                  (cond
@@ -116,6 +120,7 @@
                    [else 
                     (error 'tokenize
                       "invalid char in escape sequence" c)]))]
+              ;;; FIXME: handle whitespace
               [else (error 'tokenize "invalid string escape" c)]))]
          [else
           (tokenize-string (cons c ls) p)]))))
@@ -1064,6 +1069,10 @@
            [(eq? (car t) 'datum) (values (cdr t) locs k)]
            [(eq? (car t) 'macro)
             (let-values ([(expr locs k) (read-expr p locs k)])
+              (when (eof-object? expr) 
+                (error 'read 
+                  (format "invalid eof after ~a read macro"
+                          (cdr t))))
               (let ([x (list expr)])
                 (values (cons (cdr t) x) locs
                         (if (loc? expr)
