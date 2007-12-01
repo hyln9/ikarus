@@ -1626,11 +1626,11 @@
         (define (gen-name x) 
           (datum->syntax foo
             (string->symbol 
-              (string-append "set-" 
+              (string-append
                 (symbol->string (syntax->datum foo))
                 "-"
                 (symbol->string (syntax->datum x))
-                "!"))))
+                "-set!"))))
         (let f ([fields fields])
           (syntax-match fields (mutable)
             [() '()]
