@@ -1136,6 +1136,7 @@
       [(fix lhs* rhs* body) (known-value body)]
       [(seq e0 e1) (known-value e1)]
       [else #f]))
+    
   (define (same-values? x y)
     (cond
       [(constant? x)
@@ -1174,7 +1175,9 @@
              [(var-referenced lhs)
               (values (cons lhs lhs*) (cons rhs rhs*) eff*)]
              [else
-              (values lhs* rhs* (mk-seq eff* (Effect rhs)))])))]))
+              (values lhs* rhs* 
+                (mk-seq eff* 
+                  (Effect rhs)))])))]))
   (define (partition/assign-known lhs* rhs*)
     (cond
       [(null? lhs*) (values '() '() the-void)]
@@ -1225,50 +1228,53 @@
                 (make-clambda-case info (Value body))]))
            cls*)
       cp free name))
-  (define (Effect x)
-    (struct-case x
-      [(constant) the-void]
-      [(var)      the-void]
-      [(primref)  the-void]
-      [(bind lhs* rhs* body)
-       (do-bind lhs* rhs* body Effect)]
-      [(fix lhs* rhs* body)
-       (do-fix lhs* rhs* body Effect)]
-      [(conditional e0 e1 e2)
-       (let ([e0 (Pred e0)])
-         (cond
-           [(predicate-value e0) =>
-            (lambda (v)
-              (mk-seq e0 (if (eq? v 't) (Effect e1) (Effect e2))))]
-           [else
-            (make-conditional e0 (Effect e1) (Effect e2))]))]
-      [(seq e0 e1) (mk-seq (Effect e0) (Effect e1))]
-      [(clambda g cls*) the-void]
-      [(primcall rator rand*) 
-       (optimize-primcall 'e rator (map Value rand*))]
-      [(funcall rator rand*)
-       (let ([rator (Value rator)])
-         (cond
-           [(known-value rator) =>
-            (lambda (v)
-              (struct-case v
-                [(primref op)
-                 (mk-seq rator
-                    (optimize-primcall 'e op (map Value rand*)))]
-                [else
-                 (make-funcall rator (map Value rand*))]))]
-           [else (make-funcall rator (map Value rand*))]))]
-      [(forcall rator rand*) 
-       (make-forcall rator (map Value rand*))]
-      [(mvcall p c)
-       (mk-mvcall (Value p) (Value c))]
-      [(assign lhs rhs)
-       (unless (var-assigned lhs)
-         (error who "var is not assigned" lhs))
-       (if (var-referenced lhs)
-           (make-assign lhs (Value rhs))
-           (Effect rhs))]
-      [else (error who "invalid effect expression" (unparse x))]))
+  (define (MKEffect ctxt)
+    (define (Effect x)
+      (struct-case x
+        [(constant) the-void]
+        [(var)      the-void]
+        [(primref)  the-void]
+        [(bind lhs* rhs* body)
+         (do-bind lhs* rhs* body Effect)]
+        [(fix lhs* rhs* body)
+         (do-fix lhs* rhs* body Effect)]
+        [(conditional e0 e1 e2)
+         (let ([e0 (Pred e0)])
+           (cond
+             [(predicate-value e0) =>
+              (lambda (v)
+                (mk-seq e0 (if (eq? v 't) (Effect e1) (Effect e2))))]
+             [else
+              (make-conditional e0 (Effect e1) (Effect e2))]))]
+        [(seq e0 e1) (mk-seq (Effect e0) (Effect e1))]
+        [(clambda g cls*) the-void]
+        [(primcall rator rand*) 
+         (optimize-primcall ctxt rator (map Value rand*))]
+        [(funcall rator rand*)
+         (let ([rator (Value rator)])
+           (cond
+             [(known-value rator) =>
+              (lambda (v)
+                (struct-case v
+                  [(primref op)
+                   (mk-seq rator
+                      (optimize-primcall ctxt op (map Value rand*)))]
+                  [else
+                   (make-funcall rator (map Value rand*))]))]
+             [else (make-funcall rator (map Value rand*))]))]
+        [(forcall rator rand*) 
+         (make-forcall rator (map Value rand*))]
+        [(mvcall p c)
+         (mk-mvcall (Value p) (Value c))]
+        [(assign lhs rhs)
+         (unless (var-assigned lhs)
+           (error who "var is not assigned" lhs))
+         (if (var-referenced lhs)
+             (make-assign lhs (Value rhs))
+             (Effect rhs))]
+        [else (error who "invalid effect expression" (unparse x))]))
+    Effect)
+  (define Effect (MKEffect 'e))
   (define (Pred x)
     (struct-case x
       [(constant) x]
