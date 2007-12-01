@@ -560,10 +560,10 @@
         [(not (bytevector? dst)) 
          (error 'bytevector-copy! "not a bytevector" dst)]
         [(let ([n ($fx+ src-start k)])
-           (or ($fx< n 0) ($fx>= n ($bytevector-length src))))
+           (or ($fx< n 0) ($fx> n ($bytevector-length src))))
          (error 'bytevector-copy! "out of range" src-start k)]
         [(let ([n ($fx+ dst-start k)])
-           (or ($fx< n 0) ($fx>= n ($bytevector-length dst))))
+           (or ($fx< n 0) ($fx> n ($bytevector-length dst))))
          (error 'bytevector-copy! "out of range" dst-start k)]
         [(eq? src dst)
          (cond
