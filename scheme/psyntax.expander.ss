@@ -1582,11 +1582,11 @@
                  [(_ uid) `',uid]
                  [_       #f])]
               [sealed?
-               (syntax-match (get-clause 'sealed? clause*) ()
+               (syntax-match (get-clause 'sealed clause*) ()
                  [(_ #t) #t]
                  [_      #f])]
               [opaque?
-               (syntax-match (get-clause 'opaque? clause*) ()
+               (syntax-match (get-clause 'opaque clause*) ()
                  [(_ #t) #t]
                  [_      #f])]
               [fields 
