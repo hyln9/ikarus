@@ -1056,6 +1056,36 @@ ikrt_getenv(ikp bv, ikpcb* pcb){
 }
 
 ikp 
+ikrt_make_vector1(ikp len, ikpcb* pcb){
+  if(is_fixnum(len) && (((int)len) >= 0)){
+    ikp s = ik_safe_alloc(pcb, align(((int)len) + disp_vector_data));
+    ref(s, 0) = len;
+    memset(s+disp_vector_data, 0, (int)len);
+    return s+vector_tag;
+  } else {
+    return 0;
+  }
+}
+
+#if 0
+ikp 
+ikrt_make_vector2(ikp len, ikp obj, ikpcb* pcb){
+  if(is_fixnum(len) && ((len >> 31)!=0)){
+    pcb->root0 = &obj;
+    ikp s = ik_safe_alloc(pcb, align(((int)len) + disp_vector_data));
+    pcb->root0 = 0;
+    ref(s, 0) = len;
+
+    memset(s+disp_vector_data, 0, (int)len);
+    return s+vector_tag;
+  } else {
+    return false_object;
+  }
+}
+#endif
+
+
+ikp 
 ikrt_setenv(ikp key, ikp val, ikp overwrite){
   fprintf(stderr, "setenv busted!\n");
   exit(-1);

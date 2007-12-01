@@ -358,6 +358,14 @@
   [(P len) (K #t)]
   [(E len) (nop)])
 
+(define-primop make-vector safe
+  [(V len) 
+   (with-tmp ([x (make-forcall "ikrt_make_vector1" (list (T len)))]) 
+      (interrupt-when (prm '= x (K 0)))
+      x)])
+
+
+
 (define-primop $vector-ref unsafe
   [(V x i)
    (or 
