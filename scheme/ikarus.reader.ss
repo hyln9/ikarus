@@ -27,7 +27,7 @@
   (define delimiter?
     (lambda (c)
       (or (char-whitespace? c)
-          (memq c '(#\( #\) #\[ #\] #\{ #\} #\' #\` #\, #\")))))
+          (memq c '(#\( #\) #\[ #\] #\" #\# #\;)))))
   (define digit?
     (lambda (c)
       (and ($char<= #\0 c) ($char<= c #\9))))
