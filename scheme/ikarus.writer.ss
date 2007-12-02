@@ -137,19 +137,27 @@
 
   (define write-struct
     (lambda (x p m h i)
-      (write-char #\# p)
-      (write-char #\[ p)
-      (let ([i (writer (struct-name x) p m h i)])
-        (let ([n (struct-length x)])
-          (let f ([idx 0] [i i])
-            (cond
-              [(fx= idx n)
-               (write-char #\] p)
-               i]
-              [else 
-               (write-char #\space p)
-               (f (fxadd1 idx) 
-                  (writer (struct-ref x idx) p m h i))]))))))
+      (cond
+        [(let ([rtd (struct-type-descriptor x)])
+           (and (record-type-descriptor? rtd) 
+                (record-type-opaque? rtd)))
+         (write-char* "#<unknown>" p)
+         i]
+        [else
+         (write-char #\# p)
+         (write-char #\[ p)
+         (let ([i (writer (struct-name x) p m h i)])
+           (let ([n (struct-length x)])
+             (let f ([idx 0] [i i])
+               (cond
+                 [(fx= idx n)
+                  (write-char #\] p)
+                  i]
+                 [else 
+                  (write-char #\space p)
+                  (f (fxadd1 idx) 
+                     (writer (struct-ref x idx) p m h
+                             i))]))))])))
   
   (define initial?
     (lambda (c)
@@ -563,6 +571,8 @@
         [(hashtable? x)
          (write-char* "#<hashtable>" p)
          i]
+        ;[(record? x) 
+        ; (write-shareable x p m h i write-struct)]
         [(struct? x)
          (let ([printer (struct-printer x)])
            (if (procedure? printer)
@@ -622,7 +632,9 @@
          (cond
            [(hashtable-ref h x #f) =>
             (lambda (n)
-              (hashtable-set! h x (fxadd1 n)))])]))
+              (hashtable-set! h x (fxadd1 n)))])]
+        ;;; FIXME: recursive records/structs
+        ))
     (define (dynamic x h)
       (cond
         [(pair? x)
@@ -647,7 +659,9 @@
             (vec-dynamic x 0 (vector-length x) h)
             (when (and (hashtable-ref h x #f)
                        (fxzero? (hashtable-ref h x #f)))
-              (hashtable-set! h x #f))])])) 
+              (hashtable-set! h x #f))])]
+        ;;; FIXME: recursive records/structs
+        ))
     (if (print-graph) 
         (graph x h)
         (dynamic x h)))
