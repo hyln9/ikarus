@@ -2794,48 +2794,88 @@
     (except (ikarus) 
       div mod div-and-mod div0 mod0 div0-and-mod0))
 
+  (define (div-and-mod* n m who)
+    (import (ikarus system $fx)
+            (only (ikarus system $flonums) $fl=)
+            (ikarus flonums))
+    (define (int-div-and-mod n m)
+      (let ([d0 (quotient n m)])
+        (let ([m0 (- n (* d0 m))])
+          (if (>= m0 0)
+              (values d0 m0)
+              (if (>= m 0)
+                  (values (- d0 1) (+ m0 m))
+                  (values (+ d0 1) (- m0 m)))))))
+    (define (rat-div-and-mod n m) 
+      (let ([x (/ n m)])
+        (cond
+          [(or (fixnum? x) (bignum? x)) 
+           (values x 0)]
+          [else
+           (let-values ([(a b)
+                         (int-div-and-mod (numerator x) (denominator x))])
+             (values a (/ b m)))])))
+    (cond
+      [(fixnum? m) 
+       (cond
+         [($fx= m 0) 
+          (error who "division by 0")]
+         [(or (fixnum? n) (bignum? n))
+          (int-div-and-mod n m)]
+         [(flonum? n) 
+          (fldiv-and-mod n (fixnum->flonum m))]
+         [(ratnum? n) 
+          (rat-div-and-mod n m)]
+         [else (error who "not a number" n)])]
+      [(bignum? m) 
+       (cond
+         [(or (fixnum? n) (bignum? n))
+          (int-div-and-mod n m)]
+         [(flonum? n) 
+          (let ([v ($flonum->exact n)])
+            (unless v 
+              (error who "invalid argument" n))
+            (let-values ([(a b) (div-and-mod* v m who)])
+              (values (inexact a) (inexact b))))]
+         [(ratnum? n) 
+          (rat-div-and-mod n m)]
+         [else (error who "not a number" n)])]
+      [(ratnum? m) 
+       (cond
+         [(or (fixnum? n) (bignum? n) (ratnum? n))
+          (rat-div-and-mod n m)]
+         [(flonum? n) 
+          (let ([v ($flonum->exact n)])
+            (unless v 
+              (error who "invalid argument" n))
+            (let-values ([(a b) (div-and-mod* v m who)])
+              (values (inexact a) (inexact b))))]
+         [else (error who "not a number" n)])]
+      [(flonum? m) 
+       (cond
+         [($fl= m 0.0) 
+          (error who "division by 0.0")]
+         [(flonum? n) (fldiv-and-mod n m)]
+         [(fixnum? n) 
+          (fldiv-and-mod (fixnum->flonum n) m)]
+         [(or (bignum? n) (ratnum? n))
+          (let ([v ($flonum->exact m)])
+            (unless v 
+              (error who "invalid argument" m))
+            (let-values ([(a b) (div-and-mod* n v who)])
+              (values (inexact a) (inexact b))))]
+         [else (error who "not a number" n)])]
+      [else (error who "not a number" m)]))
+
   (define (div-and-mod n m)
-    (define who 'div-and-mod)
-    (unless (integer? n)
-      (error who "not an integer" n))
-    (unless (and (integer? m) (not (= m 0)))
-      (error who "not an integer" m))
-    (let ([d0 (quotient n m)])
-      (let ([m0 (- n (* d0 m))])
-        (if (>= m0 0)
-            (values d0 m0)
-            (if (>= m 0)
-                (values (- d0 1) (+ m0 m))
-                (values (+ d0 1) (- m0 m)))))))
+    (div-and-mod* n m 'div-and-mod))
 
   (define (div n m) 
-    (define who 'div)
-    (unless (integer? n)
-      (error who "not an integer" n))
-    (unless (and (integer? m) (not (= m 0)))
-      (error who "not an integer" m))
-    (let ([d0 (quotient n m)])
-      (let ([m0 (- n (* d0 m))])
-        (if (>= m0 0)
-            d0
-            (if (>= m 0)
-                (- d0 1)
-                (+ d0 1))))))
-  
+    (let-values ([(a b) (div-and-mod* n m 'div)])
+      a))
   (define (mod n m) 
-    (define who 'mod)
-    (unless (integer? n)
-      (error who "not an integer" n))
-    (unless (and (integer? m) (not (= m 0)))
-      (error who "not an integer" m))
-    (let ([d0 (quotient n m)])
-      (let ([m0 (- n (* d0 m))])
-        (if (>= m0 0)
-            m0
-            (if (>= m 0)
-                (+ m0 m)
-                (- m0 m))))))
-
+    (let-values ([(a b) (div-and-mod* n m 'mod)])
+      b))
   
   (define (div0-and-mod0 x y) 
     (define who 'div0-and-mod0)
