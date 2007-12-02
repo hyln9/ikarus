@@ -708,6 +708,7 @@
   [(P a b) (K #t)]
   [(E a b) (nop)])
 
+
 (define-primop $fxmodulo unsafe
   [(V a b)
    (with-tmp ([b (T b)]) ;;; FIXME: why is modulo called quotient?
@@ -1159,6 +1160,30 @@
      (interrupt-unless (cogen-pred-fixnum? x))
      (cogen-pred-$fxzero? x))]
   [(E x) (interrupt-unless (cogen-pred-fixnum? x))])
+
+(define (log2 n) 
+  (let f ([n n] [i 0])
+    (cond
+      [(zero? (fxand n 1))
+       (f (fxsra n 1) (+ i 1))]
+      [(= n 1) i]
+      [else #f])))
+
+(define-primop div safe
+  [(V x n) 
+   (struct-case n 
+     [(constant i) 
+      (cond
+        [(and (fixnum? i) (> i 0) (log2 i)) =>
+         (lambda (bits) 
+           (seq* 
+             (interrupt-unless (cogen-pred-fixnum? x))
+             (prm 'sll 
+               (prm 'sra (T x) (K (+ bits fx-shift)))
+               (K fx-shift))))]
+        [else
+         (interrupt)])]
+     [else (interrupt)])])
 
 (define-primop quotient safe
   [(V x n) 
