@@ -77,82 +77,107 @@
           (unread-char c p)
           (error 'tokenize "invalid identifier syntax" 
                  (list->string (reverse (cons c ls))))]))))
-  (define tokenize-string
-    (lambda (ls p)
-      (define (intraline-whitespace? c) 
-        (or (eqv? c #\x9) 
-            (eq? (char-general-category c) 'Zs)))
+  (define (tokenize-string ls p)
+    (let ([c (read-char p)])
+      (cond
+        [(eof-object? c) 
+         (error 'tokenize "invalid eof inside string")]
+        [else (tokenize-string-char ls p c)])))
+  (define (tokenize-string-char ls p c)
+    (define (intraline-whitespace? c)
+      (or (eqv? c #\x9) 
+          (eq? (char-general-category c) 'Zs)))
+    (define (tokenize-string-continue ls p c)
+      (cond
+        [(eof-object? c) 
+         (error 'tokenize "invalid eof inside string")]
+        [(intraline-whitespace? c)
+         (let f ()
+           (let ([c (read-char p)])
+             (cond
+               [(eof-object? c) 
+                (error 'tokenize "invalid eof inside string")]
+               [(intraline-whitespace? c) (f)]
+               [else (tokenize-string-char ls p c)])))]
+        [else (tokenize-string-char ls p c)]))
+    (cond
+     [($char= #\" c) ls]
+     [($char= #\\ c)
       (let ([c (read-char p)])
         (cond
-         [(eof-object? c)
-          (error 'tokenize "end-of-file while inside a string")]
-         [($char= #\" c) ls]
-         [($char= #\\ c)
-          (let ([c (read-char p)])
-            (cond
-              [($char= #\a c) (tokenize-string (cons #\x7 ls) p)]
-              [($char= #\b c) (tokenize-string (cons #\x8 ls) p)]
-              [($char= #\t c) (tokenize-string (cons #\x9 ls) p)]
-              [($char= #\n c) (tokenize-string (cons #\xA ls) p)]
-              [($char= #\v c) (tokenize-string (cons #\xB ls) p)]
-              [($char= #\f c) (tokenize-string (cons #\xC ls) p)]
-              [($char= #\r c) (tokenize-string (cons #\xD ls) p)]
-              [($char= #\" c) (tokenize-string (cons #\x22 ls) p)]
-              [($char= #\\ c) (tokenize-string (cons #\x5C ls) p)]
-              [($char= #\x c) ;;; unicode escape \xXXX;
-               (let ([c (read-char p)])
-                 (cond
-                   [(eof-object? c) 
-                    (error 'tokenize "invalid eof inside string")]
-                   [(hex c) =>
-                    (lambda (n)
-                      (let f ([n n])
-                        (let ([c (read-char p)])
-                          (cond
-                            [(eof-object? n) 
-                             (error 'tokenize "invalid eof inside string")]
-                            [(hex c) =>
-                             (lambda (v) (f (+ (* n 16) v)))]
-                            [($char= c #\;) 
-                             (tokenize-string
-                               (cons (integer->char n) ls) p)]
-                            [else
-                             (error 'tokenize
-                               "invalid char in escape sequence"
-                               c)]))))]
-                   [else 
-                    (error 'tokenize
-                      "invalid char in escape sequence" c)]))]
-              [(eof-object? c) 
-               (error 'tokenize "invalid eof after string escape")]
-              [(intraline-whitespace? c)
-               (let ([c 
-                      (let ([c (read-char p)])
-                        (cond
-                          [(memv c '(#\xA #\x85 #\x2028)) (read-char p)]
-                          [(memv c '(#\xD)) 
-                           (let ([c (read-char p)])
-                             (cond
-                               [(memv c '(#\A #\x85)) 
-                                (read-char p)]
-                               [else c]))]
-                          [else
-                           (error 'tokenize 
-                             "expected line ending inside string")]))])
-                 (unless (and (char? c) (intraline-whitespace? c))
-                   (error 'tokenize 
-                      "expected an intraline whitespace inside a string"))
-                 (tokenize-string ls p))]
-              [else (error 'tokenize "invalid string escape" c)]))]
-         [(memv c '(#\xA #\x85 #\x2028)) 
-          (tokenize-string (cons #\linefeed ls) p)]
-         [(memv c '(#\xD))
-          (let ([c (peek-char p)])
-            (when (memv c '(#\xA #\x85))
-              (read-char p))
-            (tokenize-string (cons #\linefeed ls) p))]
-         [else
-          (tokenize-string (cons c ls) p)]))))
+          [(eof-object? c) 
+           (error 'tokenize "invalid eof after string escape")]
+          [($char= #\a c) (tokenize-string (cons #\x7 ls) p)]
+          [($char= #\b c) (tokenize-string (cons #\x8 ls) p)]
+          [($char= #\t c) (tokenize-string (cons #\x9 ls) p)]
+          [($char= #\n c) (tokenize-string (cons #\xA ls) p)]
+          [($char= #\v c) (tokenize-string (cons #\xB ls) p)]
+          [($char= #\f c) (tokenize-string (cons #\xC ls) p)]
+          [($char= #\r c) (tokenize-string (cons #\xD ls) p)]
+          [($char= #\" c) (tokenize-string (cons #\x22 ls) p)]
+          [($char= #\\ c) (tokenize-string (cons #\x5C ls) p)]
+          [($char= #\x c) ;;; unicode escape \xXXX;
+           (let ([c (read-char p)])
+             (cond
+               [(eof-object? c) 
+                (error 'tokenize "invalid eof inside string")]
+               [(hex c) =>
+                (lambda (n)
+                  (let f ([n n])
+                    (let ([c (read-char p)])
+                      (cond
+                        [(eof-object? n) 
+                         (error 'tokenize "invalid eof inside string")]
+                        [(hex c) =>
+                         (lambda (v) (f (+ (* n 16) v)))]
+                        [($char= c #\;) 
+                         (tokenize-string
+                           (cons (integer->char n) ls) p)]
+                        [else
+                         (error 'tokenize
+                           "invalid char in escape sequence"
+                           c)]))))]
+               [else 
+                (error 'tokenize
+                  "invalid char in escape sequence" c)]))]
+          [(intraline-whitespace? c)
+           (let f ()
+             (let ([c (read-char p)])
+               (cond
+                 [(eof-object? c) 
+                  (error 'tokenize "invalid eof inside string")]
+                 [(intraline-whitespace? c) (f)]
+                 [(memv c '(#\xA #\x85 #\x2028)) 
+                  (tokenize-string-continue ls p (read-char p))]
+                 [(memv c '(#\xD)) 
+                  (let ([c (read-char p)])
+                    (cond
+                      [(memv c '(#\xA #\x85))
+                       (tokenize-string-continue ls p (read-char p))]
+                      [else 
+                       (tokenize-string-continue ls p c)]))]
+                 [else
+                  (error 'tokenize 
+                    "non-whitespace character after escape")])))]
+          [(memv c '(#\xA #\x85 #\x2028))
+           (tokenize-string-continue ls p (read-char p))]
+          [(memv c '(#\xD)) 
+           (let ([c (read-char p)])
+             (cond
+               [(memv c '(#\xA #\x85))
+                (tokenize-string-continue ls p (read-char p))]
+               [else 
+                (tokenize-string-continue ls p c)]))]
+          [else (error 'tokenize "invalid string escape" c)]))]
+     [(memv c '(#\xA #\x85 #\x2028))
+      (tokenize-string (cons #\linefeed ls) p)]
+     [(memv c '(#\xD))
+      (let ([c (peek-char p)])
+        (when (memv c '(#\xA #\x85))
+          (read-char p))
+        (tokenize-string (cons #\linefeed ls) p))]
+     [else
+      (tokenize-string (cons c ls) p)]))
   (define skip-comment
     (lambda (p)
       (let ([c (read-char p)])
