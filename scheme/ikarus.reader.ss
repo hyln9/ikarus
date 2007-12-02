@@ -79,12 +79,15 @@
                  (list->string (reverse (cons c ls))))]))))
   (define tokenize-string
     (lambda (ls p)
+      (define (intraline-whitespace? c) 
+        (or (eqv? c #\x9) 
+            (eq? (char-general-category c) 'Zs)))
       (let ([c (read-char p)])
         (cond
-         [(eof-object? c) 
+         [(eof-object? c)
           (error 'tokenize "end-of-file while inside a string")]
          [($char= #\" c) ls]
-         [($char= #\\ c) 
+         [($char= #\\ c)
           (let ([c (read-char p)])
             (cond
               [($char= #\a c) (tokenize-string (cons #\x7 ls) p)]
@@ -120,8 +123,34 @@
                    [else 
                     (error 'tokenize
                       "invalid char in escape sequence" c)]))]
-              ;;; FIXME: handle whitespace
+              [(eof-object? c) 
+               (error 'tokenize "invalid eof after string escape")]
+              [(intraline-whitespace? c)
+               (let ([c 
+                      (let ([c (read-char p)])
+                        (cond
+                          [(memv c '(#\xA #\x85 #\x2028)) (read-char p)]
+                          [(memv c '(#\xD)) 
+                           (let ([c (read-char p)])
+                             (cond
+                               [(memv c '(#\A #\x85)) 
+                                (read-char p)]
+                               [else c]))]
+                          [else
+                           (error 'tokenize 
+                             "expected line ending inside string")]))])
+                 (unless (and (char? c) (intraline-whitespace? c))
+                   (error 'tokenize 
+                      "expected an intraline whitespace inside a string"))
+                 (tokenize-string ls p))]
               [else (error 'tokenize "invalid string escape" c)]))]
+         [(memv c '(#\xA #\x85 #\x2028)) 
+          (tokenize-string (cons #\linefeed ls) p)]
+         [(memv c '(#\xD))
+          (let ([c (peek-char p)])
+            (when (memv c '(#\xA #\x85))
+              (read-char p))
+            (tokenize-string (cons #\linefeed ls) p))]
          [else
           (tokenize-string (cons c ls) p)]))))
   (define skip-comment
