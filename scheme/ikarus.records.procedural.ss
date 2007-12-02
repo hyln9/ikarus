@@ -54,16 +54,14 @@
                 (not (rtd-opaque? rtd))))))
 
   (define (record-rtd x)
-    (define (err x)
-      (error 'record-rtd "not a record" x))
     (if ($struct? x)
         (let ([rtd ($struct-rtd x)])
           (if (rtd? rtd)
               (if (not (rtd-opaque? rtd))
                   rtd
-                  (err x))
-              (err x)))
-        (err x)))
+                  (error 'record-rtd "record is opaque"))
+              (error 'record-rtd "not a record" x)))
+        (error 'record-rtd "not a record" x)))
 
   (define (record-type-name x)
     (if (rtd? x)
@@ -179,7 +177,8 @@
           [(lookup-rtd uid) =>
            (lambda (rtd) 
              (unless
-               (and (eqv? name (rtd-name rtd))
+               (and ; must not check name!
+                    ; (eqv? name (rtd-name rtd)) 
                     (eqv? parent (rtd-parent rtd))
                     (eqv? sealed? (rtd-sealed? rtd))
                     (eqv? opaque? (rtd-opaque? rtd))

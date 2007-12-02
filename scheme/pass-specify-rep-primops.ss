@@ -60,19 +60,20 @@
          (dirty-vector-set addr))]
     [else (dirty-vector-set addr)]))
 
-(define (mem-assign v x i)
+
+(define (slow-mem-assign v x i)
   (with-tmp ([t (prm 'int+ x (K i))])
     (make-seq 
       (prm 'mset t (K 0) (T v))
       (dirty-vector-set t))))
 
-(define (smart-mem-assign what v x i)
-  (struct-case what
+(define (mem-assign v x i)
+  (struct-case v
     [(constant t) 
      (if (or (fixnum? t) (immediate? t))
-         (prm 'mset x (K i) v)
-         (mem-assign v x i))]
-    [else (mem-assign v x i)]))
+         (prm 'mset x (K i) (T v))
+         (slow-mem-assign v x i))]
+    [else (slow-mem-assign v x i)]))
 
 (define (align-code unknown-amt known-amt)
   (prm 'sll 
