@@ -72,6 +72,7 @@
     "ikarus.io.output-files.ss"
     "ikarus.io.input-strings.ss"
     "ikarus.io.output-strings.ss"
+    "ikarus.io.output-bytevectors.ss"
     "ikarus.hash-tables.ss"
     "ikarus.writer.ss"
     "ikarus.reader.ss"
@@ -338,9 +339,12 @@
     [set-port-mode!                              i]
     [with-input-from-string                      i]
     [open-output-string                          i]
+    [open-output-bytevector                      i]
     [open-input-string                           i]
     [get-output-string                           i]
+    [get-output-bytevector                       i]
     [with-output-to-string                       i]
+    [with-output-to-bytevector                   i]
     [console-input-port                          i]
     [console-output-port                         i]
     [reset-input-port!                           i]
@@ -1123,7 +1127,7 @@
     [native-eol-style                            i r ip]
     [native-transcoder                           i r ip]
     [open-bytevector-input-port                  r ip]
-    [open-bytevector-output-port                 r ip]
+    [open-bytevector-output-port                 i r ip]
     [open-file-input-port                        r ip]
     [open-file-input/output-port                 r ip]
     [open-file-output-port                       r ip]
