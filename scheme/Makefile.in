@@ -183,7 +183,7 @@ EXTRA_DIST = ikarus.boot.prebuilt ikarus.enumerations.ss \
 	ikarus/code-objects.ss ikarus/compiler.ss \
 	ikarus/intel-assembler.ss ikarus/fasl/write.ss \
 	unicode/unicode-char-cases.ss unicode/unicode-charinfo.ss
-revno = "$(shell sed 's/ .*//' ../.bzr/branch/last-revision)"
+revno = "$(shell sed 's/ .*//' ../.bzr/branch/last-revision 2>/dev/null)"
 CLEANFILES = $(nodist_pkglib_DATA) ikarus.config.ss
 MAINTAINERCLEANFILES = last-revision
 all: all-am
@@ -371,7 +371,7 @@ uninstall-am: uninstall-nodist_pkglibDATA
 
 
 all: $(nodist_pkglib_DATA)
-last-revision: $(shell ls ../.bzr/branch/last-revision) 
+last-revision: $(shell ls ../.bzr/branch/last-revision 2>/dev/null) 
 	echo $(revno) >$@
 
 ikarus.config.ss: Makefile last-revision

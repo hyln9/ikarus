@@ -93,7 +93,10 @@
         ($make-bytevector (utf8-string-size str))
         str)))
 
-  (define (utf8->string x) (decode-utf8-bytevector x 'replace))
+  (define (utf8->string x) 
+    (unless (bytevector? x) 
+      (error 'utf8->string "not a bytevector" x))
+    (decode-utf8-bytevector x 'replace))
 
   (define decode-utf8-bytevector
     (let ()

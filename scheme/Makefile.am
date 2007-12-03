@@ -4,8 +4,8 @@ EXTRA_DIST=ikarus.boot.prebuilt ikarus.enumerations.ss ikarus.exceptions.ss ikar
 
 all: $(nodist_pkglib_DATA)
 
-revno = "$(shell sed 's/ .*//' ../.bzr/branch/last-revision)"
-last-revision: $(shell ls ../.bzr/branch/last-revision) 
+revno = "$(shell sed 's/ .*//' ../.bzr/branch/last-revision 2>/dev/null)"
+last-revision: $(shell ls ../.bzr/branch/last-revision 2>/dev/null) 
 	echo $(revno) >$@
 
 ikarus.config.ss: Makefile last-revision
