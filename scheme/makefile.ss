@@ -1018,7 +1018,7 @@
     [buffer-mode                                 i r ip]
     [buffer-mode?                                i r ip]
     [bytevector->string                          r ip]
-    [call-with-bytevector-output-port            r ip]
+    [call-with-bytevector-output-port            i r ip]
     [call-with-port                              r ip]
     [call-with-string-output-port                r ip]
     [assoc                                       i r ls se]

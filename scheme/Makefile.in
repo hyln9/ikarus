@@ -167,10 +167,10 @@ EXTRA_DIST = ikarus.boot.prebuilt ikarus.enumerations.ss \
 	ikarus.io-primitives.ss ikarus.io-primitives.unsafe.ss \
 	ikarus.io.input-files.ss ikarus.io.input-strings.ss \
 	ikarus.io.output-files.ss ikarus.io.output-strings.ss \
-	ikarus.lists.ss ikarus.load.ss ikarus.main.ss \
-	ikarus.multiple-values.ss ikarus.numerics.ss ikarus.pairs.ss \
-	ikarus.posix.ss ikarus.predicates.ss ikarus.pretty-print.ss \
-	ikarus.promises.ss ikarus.reader.ss \
+	ikarus.io.output-bytevectors.ss ikarus.lists.ss ikarus.load.ss \
+	ikarus.main.ss ikarus.multiple-values.ss ikarus.numerics.ss \
+	ikarus.pairs.ss ikarus.posix.ss ikarus.predicates.ss \
+	ikarus.pretty-print.ss ikarus.promises.ss ikarus.reader.ss \
 	ikarus.records.procedural.ss ikarus.conditions.ss \
 	ikarus.singular-objects.ss ikarus.sort.ss ikarus.strings.ss \
 	ikarus.structs.ss ikarus.symbols.ss ikarus.timer.ss \

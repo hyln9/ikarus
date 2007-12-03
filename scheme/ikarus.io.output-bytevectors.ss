@@ -16,7 +16,8 @@
 
 (library (ikarus io output-bytevectors)
   (export open-output-bytevector get-output-bytevector
-          with-output-to-bytevector open-bytevector-output-port)
+          with-output-to-bytevector open-bytevector-output-port
+          call-with-bytevector-output-port)
   (import 
     (ikarus system $bytevectors)
     (ikarus system $chars)
@@ -26,7 +27,8 @@
     (ikarus system $io)
     (except (ikarus) 
       open-output-bytevector get-output-bytevector
-      with-output-to-bytevector open-bytevector-output-port))
+      with-output-to-bytevector open-bytevector-output-port
+      call-with-bytevector-output-port))
 
   (define-syntax message-case
     (syntax-rules (else)
@@ -160,14 +162,39 @@
         (parameterize ([current-output-port p]) (f))
         (get-output-bytevector p))))
   
-  (define (open-bytevector-output-port)
-    (let ([p (open-output-bytevector)])
-      ;;; FIXME: should empty string
-      (values p 
-        (lambda ()
-          (let ([x (get-output-bytevector p)])
-            (($port-handler p) 'reset-port p)
-            x)))))
+  (define open-bytevector-output-port
+    (case-lambda
+      [()
+       (let ([p (open-output-bytevector)])
+         ;;; FIXME: should empty string
+         (values p 
+           (lambda ()
+             (let ([x (get-output-bytevector p)])
+               (($port-handler p) 'reset-port p)
+               x))))]
+      [(transcoder) 
+       (if (not transcoder) 
+           (open-bytevector-output-port)
+           (error 'open-bytevector-output-port 
+              (format "BUG: transcoder (~s) is not supported"
+                      transcoder)))]))
 
+  (define call-with-bytevector-output-port
+    (let ([who 'call-with-bytevector-output-port])
+      (case-lambda
+        [(proc) 
+         (unless (procedure? proc) 
+           (error who "not a procedure" proc))
+         (let ([p (open-output-bytevector)])
+           (proc p) ;;; why is this useful again?
+           (let ([bv (get-output-bytevector p)])
+             (close-output-port p)
+             bv))]
+        [(proc transcoder)
+         (if (not transcoder) 
+             (call-with-bytevector-output-port proc)
+             (error who 
+               (format "BUG: transcoder (~s) is not supported"
+                       transcoder)))])))
 
 )
