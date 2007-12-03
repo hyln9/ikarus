@@ -907,7 +907,7 @@
          (lambda (d) 
            (cons 'datum
              (tokenize-integer p (list c) #f 10 d)))]
-        [(initial? c) 
+        [(initial? c)  ;;; HERE
          (let ([ls (reverse (tokenize-identifier (cons c '()) p))])
            (cons 'datum (string->symbol (list->string ls))))]
         [($char= #\" c)
