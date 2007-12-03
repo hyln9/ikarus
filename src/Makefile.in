@@ -52,7 +52,8 @@ am_ikarus_OBJECTS = ikarus-collect.$(OBJEXT) ikarus-exec.$(OBJEXT) \
 	ikarus-print.$(OBJEXT) ikarus-runtime.$(OBJEXT) \
 	ikarus-symbol-table.$(OBJEXT) \
 	ikarus-verify-integrity.$(OBJEXT) ikarus-weak-pairs.$(OBJEXT) \
-	ikarus-winmmap.$(OBJEXT) ikarus-enter.$(OBJEXT)
+	ikarus-winmmap.$(OBJEXT) ikarus-enter.$(OBJEXT) \
+	cpu_has_sse2.$(OBJEXT)
 nodist_ikarus_OBJECTS =
 ikarus_OBJECTS = $(am_ikarus_OBJECTS) $(nodist_ikarus_OBJECTS)
 ikarus_LDADD = $(LDADD)
@@ -173,7 +174,7 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-ikarus_SOURCES = ikarus-collect.c ikarus-exec.c ikarus-fasl.c ikarus-flonums.c ikarus-main.c ikarus-numerics.c ikarus-print.c ikarus-runtime.c ikarus-symbol-table.c ikarus-verify-integrity.c ikarus-weak-pairs.c ikarus-winmmap.c ikarus-data.h ikarus-winmmap.h ikarus-enter.s
+ikarus_SOURCES = ikarus-collect.c ikarus-exec.c ikarus-fasl.c ikarus-flonums.c ikarus-main.c ikarus-numerics.c ikarus-print.c ikarus-runtime.c ikarus-symbol-table.c ikarus-verify-integrity.c ikarus-weak-pairs.c ikarus-winmmap.c ikarus-data.h ikarus-winmmap.h ikarus-enter.s cpu_has_sse2.s
 scheme_script_SOURCES = scheme-script.c
 nodist_ikarus_SOURCES = bootfileloc.h
 BUILT_SOURCES = bootfileloc.h

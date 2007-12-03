@@ -127,7 +127,16 @@ file_exists(char* filename){
   return (s == 0);
 }
 
+extern int cpu_has_sse2();
+
 int main(int argc, char** argv){
+  if(! cpu_has_sse2()){
+    fprintf(stderr, "Ikarus Scheme cannot run on your computer because\n");
+    fprintf(stderr, "your CPU does not support the SSE2 instruction set.\n");
+    fprintf(stderr, "Refer to the Ikarus Scheme User's Guide for the\n");
+    fprintf(stderr, "minimum hardware requirements.\n");
+    exit(-1);
+  }
   if(get_option0("-h", argc, argv)){
     ikarus_usage();
     exit(0);
