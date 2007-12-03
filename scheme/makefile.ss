@@ -55,7 +55,7 @@
     "ikarus.structs.ss"
     "ikarus.records.procedural.ss"
     "ikarus.strings.ss"
-    "ikarus.transcoders.ss"
+    "ikarus.unicode-conversion.ss"
     "ikarus.date-string.ss"
     "ikarus.symbols.ss"
     "ikarus.vectors.ss"
