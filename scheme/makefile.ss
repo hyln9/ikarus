@@ -14,6 +14,7 @@
 ;;; You should have received a copy of the GNU General Public License
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+;;; vim:syntax=scheme
 (import (only (ikarus) import))
 (import (except (ikarus) assembler-output))
 (import (ikarus compiler))
@@ -935,8 +936,8 @@
     [u8-list->bytevector                         i r bv]
     [uint-list->bytevector                       i r bv]
     [utf8->string                                i r bv]
-    [utf16->string                               r bv]
-    [utf32->string                               r bv]
+    [utf16->string                               i r bv]
+    [utf32->string                               i r bv]
     [print-condition                             i]
     [condition?                                  i r co]
     [&assertion                                  i r co]

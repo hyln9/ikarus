@@ -15,7 +15,8 @@
 
 
 (library (ikarus transcoders)
-  (export string->utf8 utf8->string string->utf16 string->utf32)
+  (export string->utf8 utf8->string string->utf16 string->utf32
+          utf16->string utf32->string)
   (import (except (ikarus) string->utf8 utf8->string string->utf16
                   utf16->string string->utf32 utf32->string)
           (ikarus system $strings)
@@ -37,6 +38,15 @@
   ;;; ignore: skips over the offending bytes
   ;;; replace: places a U+FFFD in place of the malformed bytes
   ;;; raise: raises an error
+
+  (define integer->char/invalid
+    (lambda (n)
+      (cond
+        [(not (fixnum? n))  #\xFFFD]
+        [($fx<= n #xD7FF)   ($fixnum->char n)]
+        [($fx< n #xE000)    #\xFFFD]
+        [($fx<= n #x10FFFF) ($fixnum->char n)]
+        [else               #\xFFFD])))
 
   (define string->utf8
     (lambda (str)
@@ -313,6 +323,9 @@
 ;;;   4) Construct a 20-bit unsigned integer U', taking the 10 low-order
 ;;;      bits of W1 as its 10 high-order bits and the 10 low-order bits of
 ;;;      W2 as its 10 low-order bits.
+;;;   5) Add 0x10000 to U' to obtain the character value U.
+;;;      Terminate.
+
 
 
   (module (string->utf16)
@@ -342,7 +355,7 @@
                     (fxlogor (fxsll #b110110 10) (fxsra u^ 10))
                     endianness)
                   (bytevector-u16-set! bv (fx+ j 2) 
-                    (fxlogor (fxsll #b110111 10) (fxlogand u^ #xFFFF))
+                    (fxlogor (fxsll #b110111 10) (fxlogand u^ #x3FF))
                     endianness))
                 (bvfill str bv (fx+ i 1) (fx+ j 4) len endianness)]))]))
       (let ([len ($string-length str)])
@@ -376,7 +389,7 @@
            (cond
              [(or (fx< w1 #xD800) (fx> w1 #xDFFF))
               (count-size bv endianness (+ i 2) len (+ n 1))]
-             [(not (fx<= #xD800 w1 #xDFFF)) ;;; error sequence
+             [(not (fx<= #xD800 w1 #xDBFF)) ;;; error sequence
               (count-size bv endianness (+ i 2) len (+ n 1))]
              [(<= (+ i 4) (bytevector-length bv))
               (let ([w2 (bytevector-u16-ref bv (+ i 2) endianness)])
@@ -401,9 +414,9 @@
          (let ([w1 (bytevector-u16-ref bv i endianness)])
            (cond
              [(or (fx< w1 #xD800) (fx> w1 #xDFFF))
-              (string-set! str n (integer->char w1))
+              (string-set! str n (integer->char/invalid w1))
               (fill bv endianness str (+ i 2) len (+ n 1))]
-             [(not (fx<= #xD800 w1 #xDFFF)) ;;; error sequence
+             [(not (fx<= #xD800 w1 #xDBFF)) ;;; error sequence
               (string-set! str n #\xFFFD)
               (fill bv endianness str (+ i 2) len (+ n 1))]
              [(<= (+ i 4) (bytevector-length bv))
@@ -416,14 +429,15 @@
                    (fill bv endianness str (+ i 2) len (+ n 1))]
                   [else 
                    (string-set! str n 
-                     (integer->char
-                       (fxlogor (fxsll (fxlogand w1 #x3FF) 10) 
-                                (fxlogand w2 #x3FF))))
-                   (count-size bv endianness (+ i 4) len (+ n 1))]))]
+                     (integer->char/invalid
+                       (+ #x10000
+                         (fxlogor (fxsll (fxlogand w1 #x3FF) 10)
+                                  (fxlogand w2 #x3FF)))))
+                   (fill bv endianness str (+ i 4) len (+ n 1))]))]
              [else 
               ;;; error again
               (string-set! str n #\xFFFD)
-              (count-size bv endianness str (+ i 2) len (+ n 1))]))]))
+              (fill bv endianness str (+ i 2) len (+ n 1))]))]))
     (define (decode bv endianness start)
       (let ([len (fxand (bytevector-length bv) -2)])
         (let ([n (count-size bv endianness start len 0)])
@@ -495,8 +509,8 @@
          str]
         [else 
          (string-set! str n 
-           (let ([w (bytevector-u32-ref bv i endianness)])
-             (integer->char w)))
+           (integer->char/invalid 
+             (bytevector-u32-ref bv i endianness)))
          (fill bv endianness str (fx+ i 4) j (fx+ n 1))]))
     (define (decode bv endianness start)
       (let ([bvlen (bytevector-length bv)])
@@ -508,8 +522,8 @@
         (and (fx>= (bytevector-length bv) 4)
              (let ([n (bytevector-u16-ref bv 0 'big)])
                (cond
-                 [(fx= n #x0000FEFF) 'big]
-                 [(fx= n #xFFFE0000) 'little]
+                 [(= n #x0000FEFF) 'big]
+                 [(= n #xFFFE0000) 'little]
                  [else #f]))))
       (unless (bytevector? bv)
         (error who "not a bytevector" bv))
