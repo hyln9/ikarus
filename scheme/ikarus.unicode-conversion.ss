@@ -128,7 +128,12 @@
                       [($fx< i j) 
                        (let ([b1 ($bytevector-u8-ref x i)])
                          (cond
-                           [($fx= ($fxsra b1 6) #b10) 
+                           [(and ($fx= ($fxsra b1 6) #b10)
+                                 ;;; 000080-0007FF
+                                 (let ([n (fxlogor (fxsll (fxlogand b0 #x1F) 6)
+                                                   (fxlogand b1 #x3F))])
+                                   (and (fx>= n #x80) 
+                                        (fx<= n #x7FF))))
                             (f x ($fxadd1 i) j ($fxadd1 n) mode)]
                            [(eq? mode 'ignore) 
                             (f x i j n mode)]
@@ -147,7 +152,12 @@
                      (let ([b1 ($bytevector-u8-ref x ($fx+ i 1))]
                            [b2 ($bytevector-u8-ref x ($fx+ i 2))])
                        (cond
-                         [($fx= ($fxsra ($fxlogor b1 b2) 6) #b10)
+                         [(and ($fx= ($fxsra ($fxlogor b1 b2) 6) #b10)
+                            (let ([n (fx+ (fxsll (fxlogand b0 #xF) 12)
+                                       (fx+ (fxsll (fxlogand b1 #x3F) 6)
+                                            (fxlogand b2 #x3F)))])
+                              ;;; REVIEW LATER ; 000800-00FFFF
+                               (and (fx>= n #x0000800) (fx<= n #x00FFFF))))
                           (f x ($fx+ i 3) j ($fxadd1 n) mode)]
                          [(eq? mode 'ignore) 
                           (f x ($fxadd1 i) j n mode)]
@@ -164,7 +174,14 @@
                            [b2 ($bytevector-u8-ref x ($fx+ i 2))]
                            [b3 ($bytevector-u8-ref x ($fx+ i 3))])
                        (cond
-                         [($fx= ($fxsra ($fxlogor b1 ($fxlogor b2 b3)) 6) #b10)
+                         [(and ($fx= ($fxsra ($fxlogor b1 ($fxlogor b2 b3)) 6) #b10)
+                            (let ([n 
+                                   ($fx+ ($fxlogand b3 #b111111)
+                                    ($fx+ ($fxsll ($fxlogand b2 #b111111) 6)
+                                     ($fx+ ($fxsll ($fxlogand b1 #b111111) 12)
+                                      ($fxsll ($fxlogand b0 #b111) 18))))])
+                              ;;; 010000-10FFFF  
+                              (and (fx>= n #x10000) (fx<= n #x10FFFF))))
                           (f x ($fx+ i 4) j ($fxadd1 n) mode)]
                          [(eq? mode 'ignore) 
                           (f x ($fxadd1 i) j n mode)]
@@ -193,12 +210,16 @@
                       [($fx< i j) 
                        (let ([b1 ($bytevector-u8-ref x i)])
                          (cond
-                           [($fx= ($fxsra b1 6) #b10) 
-                            ($string-set! str n 
-                              ($fixnum->char 
-                                ($fx+ ($fxlogand b1 #b111111)
-                                      ($fxsll ($fxlogand b0 #b11111) 6))))
-                            (f str x ($fxadd1 i) j ($fxadd1 n) mode)]
+                           [(and ($fx= ($fxsra b1 6) #b10)
+                              ;;; 000080-0007FF
+                              (let ([n (fxlogor (fxsll (fxlogand b0 #x1F) 6)
+                                                (fxlogand b1 #x3F))])
+                                (and (fx>= n #x80) 
+                                     (fx<= n #x7FF)
+                                     ($fixnum->char n)))) =>
+                            (lambda (c) 
+                              ($string-set! str n c)
+                              (f str x ($fxadd1 i) j ($fxadd1 n) mode))]
                            [(eq? mode 'ignore) 
                             (f str x i j n mode)]
                            [(eq? mode 'replace)
@@ -216,13 +237,16 @@
                      (let ([b1 ($bytevector-u8-ref x ($fx+ i 1))]
                            [b2 ($bytevector-u8-ref x ($fx+ i 2))])
                        (cond
-                         [($fx= ($fxsra ($fxlogor b1 b2) 6) #b10)
-                          ($string-set! str n 
-                             ($fixnum->char 
-                               ($fx+ ($fxlogand b2 #b111111)
-                                 ($fx+ ($fxsll ($fxlogand b1 #b111111) 6)
-                                   ($fxsll ($fxlogand b0 #b1111) 12)))))
-                          (f str x ($fx+ i 3) j ($fxadd1 n) mode)]
+                         [(and ($fx= ($fxsra ($fxlogor b1 b2) 6) #b10)
+                            (let ([n (fx+ (fxsll (fxlogand b0 #xF) 12)
+                                       (fx+ (fxsll (fxlogand b1 #x3F) 6)
+                                            (fxlogand b2 #x3F)))])
+                              ;;; REVIEW LATER ; 000800-00FFFF
+                              (and (and (fx>= n #x000800) (fx<= n #x00FFFF))
+                                   ($fixnum->char n)))) =>
+                          (lambda (c)
+                            ($string-set! str n c)
+                            (f str x ($fx+ i 3) j ($fxadd1 n) mode))]
                          [(eq? mode 'ignore) 
                           (f str x ($fxadd1 i) j n mode)]
                          [(eq? mode 'replace)
@@ -241,14 +265,19 @@
                            [b2 ($bytevector-u8-ref x ($fx+ i 2))]
                            [b3 ($bytevector-u8-ref x ($fx+ i 3))])
                        (cond
-                         [($fx= ($fxsra ($fxlogor b1 ($fxlogor b2 b3)) 6) #b10)
-                          ($string-set! str n 
-                            ($fixnum->char 
-                              ($fx+ ($fxlogand b3 #b111111)
-                                ($fx+ ($fxsll ($fxlogand b2 #b111111) 6)
-                                  ($fx+ ($fxsll ($fxlogand b1 #b111111) 12)
-                                    ($fxsll ($fxlogand b0 #b111) 18))))))
-                          (f str x ($fx+ i 4) j ($fxadd1 n) mode)]
+                         [(and ($fx= ($fxsra ($fxlogor b1 ($fxlogor b2 b3)) 6) #b10)
+                            (let ([n 
+                                   ($fx+ ($fxlogand b3 #b111111)
+                                    ($fx+ ($fxsll ($fxlogand b2 #b111111) 6)
+                                     ($fx+ ($fxsll ($fxlogand b1 #b111111) 12)
+                                      ($fxsll ($fxlogand b0 #b111) 18))))])
+                              ;;; 010000-10FFFF  
+                              (and (fx>= n #x10000) 
+                                   (fx<= n #x10FFFF)
+                                   ($fixnum->char n)))) =>
+                          (lambda (c)
+                            ($string-set! str n c)
+                            (f str x ($fx+ i 4) j ($fxadd1 n) mode))]
                          [(eq? mode 'ignore)
                           (f str x ($fxadd1 i) j n mode)]
                          [(eq? mode 'replace)
