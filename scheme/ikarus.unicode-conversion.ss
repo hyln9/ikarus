@@ -15,12 +15,13 @@
 
 
 (library (ikarus transcoders)
-  (export string->utf8 utf8->string)
+  (export string->utf8 utf8->string string->utf16 string->utf32)
   (import (except (ikarus) string->utf8 utf8->string)
           (ikarus system $strings)
           (ikarus system $bytevectors)
           (ikarus system $fx)
           (ikarus system $chars)) 
+
   ;;; From http://en.wikipedia.org/wiki/UTF-8
   ;;; hexadecimal      binary scalar value            UTF8
   ;;; 000000-00007F    00000000_00000000_0zzzzzzz     0zzzzzzz
@@ -263,5 +264,110 @@
                   "not a valid handling mode"
                   handling-mode))
          (convert bv handling-mode)])))
+
+
+;;; From: http://tools.ietf.org/html/rfc2781
+;;;
+;;; 2.1 Encoding UTF-16
+;;;
+;;;   Encoding of a single character from an ISO 10646 character value
+;;;   to UTF-16 proceeds as follows. Let U be the character number, no
+;;;   greater than 0x10FFFF.
+;;;
+;;;   1) If U < 0x10000, encode U as a 16-bit unsigned integer and terminate.
+;;;
+;;;   2) Let U' = U - 0x10000. Because U is less than or equal to 0x10FFFF,
+;;;      U' must be less than or equal to 0xFFFFF. That is, U' can be
+;;;      represented in 20 bits.
+;;;
+;;;   3) Initialize two 16-bit unsigned integers, W1 and W2, to 0xD800 and
+;;;      0xDC00, respectively. These integers each have 10 bits free to
+;;;      encode the character value, for a total of 20 bits.
+;;;
+;;;   4) Assign the 10 high-order bits of the 20-bit U' to the 10 low-order
+;;;      bits of W1 and the 10 low-order bits of U' to the 10 low-order
+;;;      bits of W2. Terminate.
+;;;
+;;;   Graphically, steps 2 through 4 look like:
+;;;   U' = yyyyyyyyyyxxxxxxxxxx
+;;;   W1 = 110110yyyyyyyyyy
+;;;   W2 = 110111xxxxxxxxxx
+
+  (module (string->utf16)
+    (define ($string->utf16 str endianness)
+      (define (count-surr* str len i n) 
+        (cond
+          [(fx= i len) n]
+          [else
+           (let ([c (string-ref str i)])
+             (cond
+               [(char<? c #\x10000) 
+                (count-surr* str len (fx+ i 1) n)]
+               [else 
+                (count-surr* str len (fx+ i 1) (fx+ n 1))]))]))
+      (define (bvfill str bv i j len endianness)
+        (cond
+          [(fx= i len) bv]
+          [else
+           (let ([n (char->integer (string-ref str i))])
+             (cond
+               [(fx< n #x10000)
+                (bytevector-u16-set! bv j n endianness)
+                (bvfill str bv (fx+ i 1) (fx+ j 2) len endianness)]
+               [else
+                (let ([u^ (fx- n #x10000)])
+                  (bytevector-u16-set! bv j 
+                    (fxlogor (fxsll #b110110 10) (fxsra u^ 10))
+                    endianness)
+                  (bytevector-u16-set! bv (fx+ j 2) 
+                    (fxlogor (fxsll #b110111 10) (fxlogand u^ #xFFFF))
+                    endianness))
+                (bvfill str bv (fx+ i 1) (fx+ j 4) len endianness)]))]))
+      (let ([len ($string-length str)])
+        (let ([n (count-surr* str len 0 0)])
+          ;;; FIXME: maybe special case for n=0 later
+          (let ([bv (make-bytevector (fxsll (fx+ len n) 1))])
+             (bvfill str bv 0 0 len endianness)))))
+    (define string->utf16
+      (case-lambda
+        [(str) 
+         (unless (string? str)
+           (error 'string->utf16 "not a string" str))
+         ($string->utf16 str 'big)]
+        [(str endianness)
+         (unless (string? str)
+           (error 'string->utf16 "not a string" str))
+         (unless (memv endianness '(big little))
+           (error 'string->utf16 "invalid endianness" endianness))
+         ($string->utf16 str endianness)])))
+
+  (module (string->utf32)
+    (define who 'string->utf32)
+    (define (vfill str bv i len endianness) 
+      (cond
+        [(fx= i len) bv]
+        [else
+         (bytevector-u32-set! bv (fxsll i 2) 
+            (char->integer (string-ref str i))              
+            endianness)
+         (vfill str bv (fx+ i 1) len endianness)]))
+    (define ($string->utf32 str endianness)
+      (let ([len (string-length str)])
+        (vfill str (make-bytevector (fxsll len 2)) 0 len endianness)))
+    (define string->utf32
+      (case-lambda
+        [(str) 
+         (unless (string? str)
+           (error who "not a string" str))
+         ($string->utf32 str 'big)]
+        [(str endianness)
+         (unless (string? str)
+           (error who "not a string" str))
+         (unless (memq endianness '(little big))
+           (error who "invalid endianness" endianness))
+         ($string->utf32 str endianness)])))
+
+
+
 
   )
