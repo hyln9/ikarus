@@ -39,6 +39,8 @@
   ;;; replace: places a U+FFFD in place of the malformed bytes
   ;;; raise: raises an error
 
+  ;;; It appears that utf-8 data can start with a #xEF #xBB #xBF BOM!
+
   (define integer->char/invalid
     (lambda (n)
       (cond
@@ -113,8 +115,8 @@
   (define decode-utf8-bytevector
     (let ()
       (define who 'decode-utf8-bytevector)
-      (define (count bv mode)
-        (let f ([x bv] [i 0] [j ($bytevector-length bv)] [n 0] [mode mode])
+      (define (count bv i mode)
+        (let f ([x bv] [i i] [j ($bytevector-length bv)] [n 0] [mode mode])
           (cond
             [($fx= i j) n]
             [else
@@ -194,8 +196,8 @@
                  [(eq? mode 'ignore) (f x ($fxadd1 i) j n mode)]
                  [(eq? mode 'replace) (f x ($fxadd1 i) j ($fxadd1 n) mode)]
                  [else (error who "invalid byte at index of bytevector" b0 i x)]))])))
-      (define (fill str bv mode)
-        (let f ([str str] [x bv] [i 0] [j ($bytevector-length bv)] [n 0] [mode mode])
+      (define (fill str bv i mode)
+        (let f ([str str] [x bv] [i i] [j ($bytevector-length bv)] [n 0] [mode mode])
           (cond
             [($fx= i j) str]
             [else
@@ -294,8 +296,17 @@
                   ($string-set! str n ($fixnum->char #xFFFD))
                   (f str x ($fxadd1 i) j ($fxadd1 n) mode)]
                  [else (error who "BUG")]))])))
+      (define (has-bom? bv) 
+        (and (fx> (bytevector-length bv) 3) 
+             (fx= (bytevector-u8-ref bv 0) #xEF)
+             (fx= (bytevector-u8-ref bv 1) #xBB)
+             (fx= (bytevector-u8-ref bv 2) #xBF)))
       (define (convert bv mode)
-        (fill ($make-string (count bv mode)) bv mode))
+        (cond
+          [(has-bom? bv) 
+           (fill ($make-string (count bv 3 mode)) bv 3 mode)]
+          [else
+           (fill ($make-string (count bv 0 mode)) bv 0 mode)]))
       (case-lambda
         [(bv) (convert bv 'raise)]
         [(bv handling-mode)
@@ -544,12 +555,13 @@
     (define (decode bv endianness start)
       (let ([bvlen (bytevector-length bv)])
         (let ([strlen (fxsra (fx+ (fx- bvlen start) 3) 2)])
-          (fill bv endianness (make-string strlen) start
-                (fxand bvlen -2) 0))))
+          (fill bv endianness (make-string strlen) 
+                start (fxand bvlen -4)
+                0))))
     (define ($utf32->string bv endianness em?) 
       (define (bom-present bv)
         (and (fx>= (bytevector-length bv) 4)
-             (let ([n (bytevector-u16-ref bv 0 'big)])
+             (let ([n (bytevector-u32-ref bv 0 'big)])
                (cond
                  [(= n #x0000FEFF) 'big]
                  [(= n #xFFFE0000) 'little]
@@ -559,7 +571,7 @@
       (unless (memv endianness '(big little))
         (error who "invalid endianness" endianness))
       (cond
-        [em?  (decode bv endianness 0)]
+        [em? (decode bv endianness 0)]
         [(bom-present bv) =>
          (lambda (endianness)
            (decode bv endianness 4))]
