@@ -2284,6 +2284,7 @@
         (let ([L_values_one_value (gensym)]
               [L_values_many_values (gensym)])
           (list 0 ; no freevars
+              '(name values)
               (label SL_values)
               (cmpl (int (argc-convention 1)) eax)
               (je (label L_values_one_value))
@@ -2315,6 +2316,7 @@
               [L_cwv_call (gensym)])
           (list 
               0 ; no free vars
+              '(name call-with-values)
               (label SL_call_with_values)
               (cmpl (int (argc-convention 2)) eax)
               (jne (label (sl-invalid-args-label)))

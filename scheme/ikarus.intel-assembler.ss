@@ -1067,9 +1067,9 @@
             (cdr ls)))
       (define (code-name ls)
         (let ([a (cadr ls)])
-           (and (pair? a) 
-                (eq? (car a) 'name))
-                (cadr a)))
+           (if (and (pair? a) (eq? (car a) 'name))
+               (cadr a)
+               #f)))
       (let ([closure-size* (map car ls*)]
             [code-name* (map code-name ls*)]
             [ls* (map code-list ls*)])
