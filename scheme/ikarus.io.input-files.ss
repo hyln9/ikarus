@@ -91,9 +91,6 @@
   (define peek-multibyte-char 
     (lambda (p)
       (error 'peek-multibyte-char "not implemented")))
-  (define unread-multibyte-char 
-    (lambda (c p)
-      (error 'unread-multibyte-char "not implemented")))
 
   (define make-input-file-handler
     (lambda (fd port-name)
@@ -188,22 +185,6 @@
                            [else
                             ($bytevector-u8-ref ($port-buffer p) 0)]))
                        (error 'lookahead-u8 "port is closed" p))))]
-            [(unread-char c p)
-             (unless (input-port? p)
-               (error 'unread-char "not an input port" p))
-             (let ([idx ($fxsub1 ($port-index p))]
-                   [b (if (char? c) 
-                          ($char->fixnum c)
-                          (error 'unread-char "not a char" c))])
-               (if (and ($fx>= idx 0)
-                        ($fx< idx ($port-size p)))
-                   (cond
-                     [($fx< b 128)
-                      ($set-port-index! p idx)]
-                     [else (unread-multibyte-char c p)])
-                   (if open?
-                       (error 'unread-char "port is closed" p)
-                       (error 'unread-char "too many unread-chars"))))]
             [(port-name p) port-name]
             [(close-port p)
              (unless (input-port? p)

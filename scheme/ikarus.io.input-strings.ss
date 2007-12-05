@@ -68,14 +68,6 @@
                  (if open?
                      (eof-object)
                      (error 'peek-char "port is closed" p)))]
-            [(unread-char c p)
-             (let ([i ($fxsub1 idx)])
-               (if (and ($fx>= i 0)
-                        ($fx< i n))
-                   (set! idx i)
-                   (if open?
-                       (error 'unread-char "port is closed" p)
-                       (error 'unread-char "too many unread-chars"))))]
             [(port-name p) '*string-port*]
             [(close-port p)
              (when open?

@@ -64,17 +64,17 @@
       (memq c '(#\+ #\- #\. #\@))))
   (define tokenize-identifier
     (lambda (ls p)
-      (let ([c (read-char p)])
+      (let ([c (peek-char p)])
         (cond
          [(eof-object? c) ls]
          [(subsequent? c)
-          (tokenize-identifier (cons c ls) p)]
+          (tokenize-identifier (cons (read-char p) ls) p)]
          [(delimiter? c)
-          (unread-char c p)
           ls]
-         [(char=? c #\\) (tokenize-backslash ls p)]
+         [(char=? c #\\)
+          (read-char p)
+          (tokenize-backslash ls p)]
          [else
-          (unread-char c p)
           (error 'tokenize "invalid identifier syntax" 
                  (list->string (reverse (cons c ls))))]))))
   (define (tokenize-string ls p)
@@ -193,11 +193,12 @@
           [(delimiter? c)  'dot]
           [($char= c #\.)  ; this is second dot
            (read-char p)
-           (let ([c (read-char p)])
+           (let ([c (peek-char p)])
              (cond
                [(eof-object? c) 
                 (error 'tokenize "invalid syntax .. near end of file")]
                [($char= c #\.) ; this is the third
+                (read-char p)
                 (let ([c (peek-char p)])
                   (cond
                     [(eof-object? c) '(datum . ...)]
@@ -206,7 +207,6 @@
                      (error 'tokenize "invalid syntax"
                             (string-append "..." (string c)))]))]
                [else
-                (unread-char c p)
                 (error 'tokenize "invalid syntax"
                        (string-append ".." (string c)))]))]
           [else 
@@ -296,15 +296,15 @@
                 (lambda (v) 
                   (read-char p)
                   (let f ([v v])
-                    (let ([c (read-char p)])
+                    (let ([c (peek-char p)])
                       (cond
                         [(eof-object? c)
                          (cons 'datum (integer->char v))]
                         [(delimiter? c)
-                         (unread-char c p)
                          (cons 'datum (integer->char v))]
                         [(hex c) =>
                          (lambda (v0)
+                           (read-char p)
                            (f (+ (* v 16) v0)))]
                         [else
                          (error 'tokenize "invalid character sequence")]))))]
@@ -539,7 +539,6 @@
          (error 'read "FIXME: fasl read disabled")
          '(cons 'datum ($fasl-read p))]
         [else 
-         (unread-char c p)
          (error 'tokenize 
             (format "invalid syntax #~a" c))])))
   (define (tokenize-exactness-mark p ls exact?)
@@ -636,43 +635,47 @@
              (tokenize-denom p (cons c ls) exact? radix num d))]
           [else (num-error "invalid sequence" (cons c ls))])))
     (define (tokenize-denom p ls exact? radix num ac)
-      (let ([c (read-char p)])
+      (let ([c (peek-char p)])
         (cond
           [(eof-object? c) 
+           (read-char p)
            (if (= ac 0) 
                (num-error "zero denominator" ls)
                (convert/exact exact? (/ num ac)))]
           [(radix-digit c radix) =>
            (lambda (d) 
+             (read-char p)
              (tokenize-denom p (cons c ls) exact? radix num 
                 (+ (* radix ac) d)))]
           [(delimiter? c) 
-           (unread-char c p)
-           (if (= ac 0) 
+           (if (= ac 0)
                (num-error "zero denominator" ls)
                (convert/exact exact? (/ num ac)))]
           [else (num-error "invalid sequence" (cons c ls))])))
-    (let ([c (read-char p)])
+    (let ([c (peek-char p)])
       (cond
         [(eof-object? c) (convert/exact exact? ac)]
         [(radix-digit c radix) =>
          (lambda (d)
+           (read-char p)
            (tokenize-integer p (cons c ls) exact? radix 
              (+ (* ac radix) d)))]
         [(char=? c #\.)
          (unless (= radix 10)
            (num-error "invalid decimal" (cons c ls)))
+         (read-char p)
          (tokenize-decimal p (cons c ls) exact? ac 0)]
         [(char=? c #\/)
+         (read-char p)
          (tokenize-denom-start p (cons #\/ ls) exact? radix ac)]
         [(memv c '(#\e #\E)) ; exponent
+         (read-char p)
          (unless (= radix 10)
            (num-error "invalid decimal" (cons c ls)))
          (let ([ex (tokenize-exponent-start p (cons c ls))])
            (convert/exact (or exact? 'i)
              (* ac (expt radix ex))))]
         [(delimiter? c)
-         (unread-char c p)
          (convert/exact exact? ac)]
         [else (num-error "invalid sequence" (cons c ls))])))
   (define (tokenize-exponent-start p ls)
@@ -685,16 +688,15 @@
              (tokenize-exponent p (cons c ls) d))]
           [else (num-error "invalid sequence" (cons c ls))])))
     (define (tokenize-exponent p ls ac)
-      (let ([c (read-char p)])
+      (let ([c (peek-char p)])
         (cond
           [(eof-object? c) ac]
           [(radix-digit c 10) =>
            (lambda (d) 
+             (read-char p)
              (tokenize-exponent p (cons c ls) 
                (+ (* ac 10) d)))]
-          [(delimiter? c)
-           (unread-char c p)
-           ac]
+          [(delimiter? c) ac]
           [else (num-error "invalid sequence" (cons c ls))])))
     (let ([c (read-char p)])
       (cond
@@ -708,21 +710,22 @@
          (tokenize-exponent-no-digits p (cons c ls))]
         [else (num-error "invalid sequence" (cons c ls))])))
   (define (tokenize-decimal p ls exact? ac exp)
-    (let ([c (read-char p)])
+    (let ([c (peek-char p)])
       (cond
         [(eof-object? c) 
          (let ([ac (* ac (expt 10 exp))])
            (convert/exact (or exact? 'i) ac))]
         [(radix-digit c 10) =>
          (lambda (d) 
+           (read-char p)
            (tokenize-decimal p (cons c ls) exact? 
              (+ (* ac 10) d) (- exp 1)))]
         [(memv c '(#\e #\E)) 
+         (read-char p)
          (let ([ex (tokenize-exponent-start p (cons c ls))])
            (let ([ac (* ac (expt 10 (+ exp ex)))])
              (convert/exact (or exact? 'i) ac)))]
         [(delimiter? c) 
-         (unread-char c p)
          (let ([ac (* ac (expt 10 exp))])
            (convert/exact (or exact? 'i) ac))]
         [else (num-error "invalid sequence" (cons c ls))])))
@@ -778,19 +781,16 @@
         [else
          (let ([c (read-char p)])
            (cond
-             [else
-              (cond
-                [(eof-object? c) 
-                 (error 'tokenize
-                   (format "invalid eof inside ~a" who))]
-                [(or (and (not ci?) (char=? c (string-ref str i)))
-                     (and ci? (char=? (char-downcase c) (string-ref str i))))
-                 (f (add1 i) (cons c ls))]
-                [else 
-                 (unread-char c p)
-                 (error 'tokenize 
-                   (format "invalid ~a: ~s" who
-                     (list->string (reverse (cons c ls)))))])]))])))
+             [(eof-object? c) 
+              (error 'tokenize
+                (format "invalid eof inside ~a" who))]
+             [(or (and (not ci?) (char=? c (string-ref str i)))
+                  (and ci? (char=? (char-downcase c) (string-ref str i))))
+              (f (add1 i) (cons c ls))]
+             [else 
+              (error 'tokenize 
+                (format "invalid ~a: ~s" who
+                  (list->string (reverse (cons c ls)))))]))])))
   (define (tokenize-integer/nan/inf-no-digits p ls)
     (let ([c (read-char p)])
       (cond
@@ -832,7 +832,6 @@
         [(digit? c)
          (tokenize-hashnum p (fx+ (fx* n 10) (char->num c)))]
         [else
-         (unread-char c p)
          (error 'tokenize "invalid char while inside a #n mark/ref" c)])))
   (define tokenize-bar
     (lambda (p ac)
@@ -876,11 +875,9 @@
                        (error 'tokenize "invalid sequence"
                          (list->string (cons c (reverse ac))))]))))]
              [else
-              (unread-char c p) 
               (error 'tokenize 
                  (format "invalid sequence \\x~a" c))]))]
         [else 
-         (unread-char c p) 
          (error 'tokenize
            (format "invalid sequence \\~a" c))])))
   (define tokenize/c
@@ -950,7 +947,6 @@
               (list->string
                 (reverse (tokenize-backslash '() p)))))]
         [else
-         (unread-char c p) 
          (error 'tokenize "invalid syntax" c)])))
 
   (define tokenize

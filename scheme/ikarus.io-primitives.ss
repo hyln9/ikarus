@@ -15,7 +15,7 @@
 
 
 (library (ikarus io-primitives)
-  (export read-char unread-char peek-char write-char write-byte
+  (export read-char peek-char write-char write-byte
           put-u8 put-char put-string put-bytevector 
           get-char get-u8 lookahead-u8
           get-string-n get-string-n! 
@@ -27,7 +27,7 @@
     (ikarus system $io)
     (ikarus system $fx)
     (ikarus system $ports)
-    (except (ikarus) read-char unread-char peek-char write-char write-byte 
+    (except (ikarus) read-char peek-char write-char write-byte 
             put-u8 put-char put-string put-bytevector
             get-char get-u8 lookahead-u8
             get-string-n get-string-n! 
@@ -133,18 +133,6 @@
        (if (input-port? p)
            ($read-char p)
            (error 'read-char "not an input-port" p))]))
-  ;;;
-  (define unread-char
-    (case-lambda
-      [(c) (if (char? c)
-               ($unread-char c (current-input-port))
-               (error 'unread-char "not a character" c))]
-      [(c p)
-       (if (input-port? p)
-           (if (char? c)
-               ($unread-char c p)
-               (error 'unread-char "not a character" c))
-           (error 'unread-char "not an input-port" p))]))
   ;;;
   (define peek-char
     (case-lambda

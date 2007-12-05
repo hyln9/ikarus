@@ -16,7 +16,7 @@
 
 (library (ikarus io-primitives unsafe)
   (export $write-char $write-byte $read-char $get-u8 $lookahead-u8
-          $unread-char $peek-char
+          $peek-char
           $reset-input-port! $flush-output-port 
           $close-input-port $close-output-port)
   (import
@@ -102,18 +102,6 @@
                    ($fixnum->char b)]
                   [else (($port-handler p) 'peek-char p)]))
             (($port-handler p) 'peek-char p)))))
-
-  (define $unread-char
-    (lambda (c p)
-      (let ([idx ($fxsub1 ($port-index p))]
-            [b ($char->fixnum c)])
-        (if (and ($fx<= b 127)
-                 ($fx>= idx 0)
-                 ($fx< idx ($port-size p)))
-            (begin
-              ($set-port-index! p idx)
-              ($bytevector-set! ($port-buffer p) idx b))
-            (($port-handler p) 'unread-char c p)))))
 
   (define $reset-input-port!
     (lambda (p)
