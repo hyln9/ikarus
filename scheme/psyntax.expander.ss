@@ -1275,21 +1275,34 @@
                   ((e e* ...) `(if ,e (begin . ,e*) ,(f (car cls*) (cdr cls*))))
                   (_ (stx-error stx "invalid last clause")))))))))))
   
-  (define include-macro
-    (lambda (e)
-      (syntax-match e ()
-        ((id filename)
-         (let ((filename (stx->datum filename)))
-           (unless (string? filename) (stx-error e))
-           (with-input-from-file filename
-             (lambda ()
-               (let f ((ls '()))
-                 (let ((x (read)))
-                   (cond
-                     ((eof-object? x)
-                      (cons (bless 'begin)
-                        (datum->stx id (reverse ls))))
-                     (else (f (cons x ls)))))))))))))
+  (begin ; module (include-macro include-into-macro)
+         ; no module to keep portable! 
+         ; dump everything in top-level, sure.
+    (define (do-include stx id filename)
+      (let ((filename (stx->datum filename)))
+        (unless (and (string? filename) (id? id))
+          (stx-error stx))
+        (cons 
+          (bless 'begin)
+          (with-input-from-file filename
+            (lambda ()
+              (let f ((ls '()))
+                (let ((x (read)))
+                  (cond
+                    ((eof-object? x) (reverse ls))
+                    (else
+                     (f (cons (datum->stx id x) ls)))))))))))
+    (define include-macro
+      (lambda (e)
+        (syntax-match e ()
+          ((id filename)
+           (do-include e id filename)))))
+    (define include-into-macro
+      (lambda (e)
+        (syntax-match e ()
+          ((_ id filename)
+           (do-include e id filename))))))
+
   
   (define syntax-rules-macro
     (lambda (e)
@@ -2298,6 +2311,7 @@
            ((trace-lambda)          trace-lambda-macro)
            ((trace-define)          trace-define-macro)
            ((define-condition-type) define-condition-type-macro)
+           ((include-into)          include-into-macro)
            ((eol-style)
             (lambda (x) 
               (symbol-macro x '(none lf cr crlf nel crnel ls))))
