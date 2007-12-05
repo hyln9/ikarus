@@ -2,5 +2,5 @@
 
 (import 
   (except (ikarus))
-  (io-prims))
+  (io-spec))
 
