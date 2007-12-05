@@ -94,6 +94,7 @@
     "ikarus.cafe.ss"
     "ikarus.posix.ss"
     "ikarus.timer.ss"
+    "ikarus.time-and-date.ss"
     "ikarus.bytevectors.ss"
     "ikarus.sort.ss"
     "ikarus.promises.ss"
@@ -370,6 +371,9 @@
     [expand                                      i]
     [environment?                                i]
     [time-it                                     i]
+    [current-time                                i]
+    [time?                                       i]
+    [time-seconds                                i]
     [command-line-arguments                      i]
     [set-rtd-printer!                            i]
     [make-record-type                            i]

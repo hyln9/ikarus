@@ -78,37 +78,6 @@
                 (stats-gc-sys-usecs t1) (stats-gc-sys-usecs t0))))
     (printf "    ~a bytes allocated\n" bytes))
 
-  (define (print-stats-old message bytes t1 t0)
-    (define (print-time msg secs usecs)
-      (if (fx< usecs 0)
-          (print-time msg (fx- secs 1) (fx+ usecs 1000000))
-          (printf "    ~a.~a~a~as ~a"
-                  secs
-                  (fxremainder (fxquotient usecs 100000) 10)
-                  (fxremainder (fxquotient usecs 10000) 10)
-                  (fxremainder (fxquotient usecs 1000) 10)
-                  msg)))
-    (if message
-        (printf "running stats for ~a:\n" message)
-        (printf "running stats:\n"))
-    (let ([collections 
-           (fx- (stats-collection-id t1) (stats-collection-id t0))])
-      (case collections
-        [(0) (display "    no collections\n")]
-        [(1) (display "    1 collection\n")]
-        [else (printf "    ~a collections\n" collections)]))
-
-    (print-time "real" 
-        (fx- (stats-real-secs t1) (stats-real-secs t0))
-        (fx- (stats-real-usecs t1) (stats-real-usecs t0)))
-    (print-time "user" 
-        (fx- (stats-user-secs t1) (stats-user-secs t0))
-        (fx- (stats-user-usecs t1) (stats-user-usecs t0)))
-    (print-time "sys\n" 
-        (fx- (stats-sys-secs t1) (stats-sys-secs t0))
-        (fx- (stats-sys-usecs t1) (stats-sys-usecs t0)))
-    (printf "    ~a bytes allocated\n" bytes))
-
   (define time-it
     (case-lambda
       [(proc) 

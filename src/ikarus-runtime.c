@@ -1007,6 +1007,19 @@ ikrt_stats_now(ikp t, ikpcb* pcb){
   return void_object;
 }
 
+ikp 
+ikrt_current_time(ikp t){
+  struct timeval s;
+  gettimeofday(&s, 0);
+  /* this will break in 8,727,224 years if we stay in 32-bit ptrs */
+  ref(t, off_record_data + 0*wordsize) = fix(s.tv_sec / 1000000);
+  ref(t, off_record_data + 1*wordsize) = fix(s.tv_sec % 1000000);
+  ref(t, off_record_data + 2*wordsize) = fix(s.tv_usec);
+  return t;
+}
+
+
+
 ikp
 ikrt_bytes_allocated(ikpcb* pcb){
   int bytes_in_heap = ((int) pcb->allocation_pointer) -
