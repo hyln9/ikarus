@@ -855,7 +855,7 @@
   (define (print-ids ls)
     (unless (null? ls) 
       (let-values ([(ls rest) 
-                    (split ls 80)])
+                    (split ls 72)])
         (for-each display ls)
         (newline)
         (print-ids rest))))

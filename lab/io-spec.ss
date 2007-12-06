@@ -4,13 +4,15 @@
     input-port? textual-port? port-eof?
     open-bytevector-input-port
     make-custom-binary-input-port 
-    get-char lookahead-char get-u8 lookahead-u8 close-port)
+    get-char lookahead-char get-u8 lookahead-u8 close-port
+    transcoded-port)
   (import 
     (except (ikarus)
       input-port? textual-port? port-eof?
       open-bytevector-input-port
       make-custom-binary-input-port
-      get-char lookahead-char get-u8 lookahead-u8 close-port))
+      get-char lookahead-char get-u8 lookahead-u8 close-port
+      transcoded-port))
 
   (define-struct $port 
     (index size buffer base-index codec closed? attrs 
@@ -72,31 +74,31 @@
     ($make-custom-binary-input-port id read! get-position
       set-position! close 256))
 
-  (define (transcoder-attrs x)
-    (import (ikarus system $transcoders))
+  (define (input-transcoder-attrs x)
     (cond
-      [(not x) ;;; binary
+      [(not x) ;;; binary input port
        (fxior fast-get-tag fast-get-byte-tag)]
-      [else 
-       (error 'transcoder-attrs "not handled" x)]))
+      [(and (eq? 'latin-1-codec (transcoder-codec x))
+            (eq? 'none (transcoder-eol-style x)))
+       (fxior fast-get-tag fast-get-latin-tag)]
+      [else 0]))
 
 
   (define open-bytevector-input-port
     (case-lambda
       [(bv) (open-bytevector-input-port bv #f)]
       [(bv maybe-transcoder) 
-       (import (ikarus system $transcoders))
        (unless (bytevector? bv) 
          (error 'open-bytevector-input-port 
                 "not a bytevector" bv))
        (when (and maybe-transcoder
-                  (not ($transcoder? maybe-transcoder)))
+                  (not (transcoder? maybe-transcoder)))
          (error 'open-bytevector-input-port 
                 "not a transcoder" maybe-transcoder))
        ($make-port 0 (bytevector-length bv) bv 0 
           maybe-transcoder 
           #f ;;; closed?
-          (transcoder-attrs maybe-transcoder)
+          (input-transcoder-attrs maybe-transcoder)
           "*bytevector-input-port*" 
           (lambda (bv i c) 0) ;;; read!
           #f ;;; write!
@@ -104,6 +106,32 @@
           #f ;;; FIXME: set-position!
           #f ;;; close
           )]))
+
+  (define (transcoded-port p transcoder)
+    (define who 'transcoded-port)
+    (unless (transcoder? transcoder)
+      (error who "not a transcoder" transcoder))
+    (unless ($port? p) (error who "not a port" p))
+    (when ($port-codec p) (error who "not a binary port" p))
+    (let ([read! ($port-read! p)]
+          [closed? ($port-closed? p)])
+      ($set-port-closed?! p #t)
+      ($make-port 
+        ($port-index p)
+        ($port-size p)
+        ($port-buffer p)
+        ($port-base-index p)
+        transcoder
+        closed? 
+        (if read! (input-transcoder-attrs transcoder) 0)
+        ($port-id p)
+        read!
+        ($port-write! p)
+        ($port-get-position p)
+        ($port-set-position! p)
+        ($port-close p))))
+
+
 
   (define (input-port? p) 
     (and ($port? p) 
@@ -136,11 +164,66 @@
 
   ;;; ----------------------------------------------------------
   (module (get-char lookahead-char)
+    (define (refill-bv-start p who)
+      (when ($port-closed? p) (error who "port is closed" p))
+      (let* ([bv ($port-buffer p)]
+             [n (bytevector-length bv)])
+        (let ([j (($port-read! p) bv 0 n)])
+          (unless (fixnum? j)
+            (error who "invalid return value from read! procedure" j))
+          (cond
+            [(fx>= j 0)
+             (unless (fx<= j n)
+               (error who "read! returned a value out of range" j))
+             ($set-port-index! p 0)
+             ($set-port-size! p j)
+             j]
+            [else 
+             (error who "read! returned a value out of range" j)]))))
+    (define (get-char-latin-mode p who idx)
+      (let ([n (refill-bv-start p who)])
+        (cond
+          [(fx= n 0) (eof-object)]
+          [else 
+           ($set-port-index! p idx)
+           (integer->char (bytevector-u8-ref ($port-buffer p) 0))])))
     (define-rrr get-char-utf8-mode)
-    (define-rrr get-char-latin-mode)
     (define-rrr get-char-char-mode)
     (define-rrr slow-get-char)
-    (define-rrr lookahead-char)
+    (define-rrr slow-lookahead-char)
+    (define-rrr lookahead-char-utf8-mode)
+    (define-rrr lookahead-char-char-mode)
+    ;;;
+    (define (lookahead-char p)
+      (define who 'lookahead-char)
+      (let ([m ($port-get-mode p)])
+        (cond
+          [(eq? m fast-get-utf8-tag)
+           (let ([i ($port-index p)])
+             (cond
+               [(fx< i ($port-size p))
+                (let ([b (bytevector-u8-ref ($port-buffer p) i)])
+                  (cond
+                    [(fx< b 128) (integer->char b)]
+                    [else (lookahead-char-utf8-mode p)]))]
+               [else
+                (lookahead-char-utf8-mode p who)]))]
+          [(eq? m fast-get-char-tag)
+           (let ([i ($port-index p)])
+             (cond
+               [(fx< i ($port-size p))
+                (string-ref ($port-buffer p) i)]
+               [else
+                (lookahead-char-char-mode p who)]))]
+          [(eq? m fast-get-latin-tag)
+           (let ([i ($port-index p)])
+             (cond
+               [(fx< i ($port-size p))
+                (integer->char 
+                  (bytevector-u8-ref ($port-buffer p) i))]
+               [else
+                (get-char-latin-mode p who 0)]))]
+          [else (slow-lookahead-char p who)])))
     ;;;
     (define (get-char p)
       (define who 'get-char)
@@ -174,7 +257,7 @@
                 (integer->char 
                   (bytevector-u8-ref ($port-buffer p) i))]
                [else
-                (get-char-latin-mode p who)]))]
+                (get-char-latin-mode p who 1)]))]
           [else (slow-get-char p who)]))))
 
   ;;; ----------------------------------------------------------
