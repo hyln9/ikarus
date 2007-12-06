@@ -91,7 +91,7 @@
 
   (define (transcoder-codec x) 
     (define who 'transcoder-codec)
-    (if ($transcoder? x) 
+    (if (transcoder? x) 
         (let ([tag (fxlogand ($transcoder->data x) codec-mask)])
           (or (rev-lookup tag codec-alist)
               (error who "transcoder has no codec" x)))
@@ -99,7 +99,7 @@
 
   (define (transcoder-eol-style x) 
     (define who 'transcoder-eol-style)
-    (if ($transcoder? x) 
+    (if (transcoder? x) 
         (let ([tag (fxlogand ($transcoder->data x) eol-style-mask)])
           (or (rev-lookup tag eol-style-alist)
               (error who "transcoder has no eol-style" x)))
@@ -107,7 +107,7 @@
 
   (define (transcoder-error-handling-mode x) 
     (define who 'transcoder-error-handling-mode)
-    (if ($transcoder? x) 
+    (if (transcoder? x) 
         (let ([tag (fxlogand ($transcoder->data x) error-handling-mode-mask)])
           (or (rev-lookup tag error-handling-mode-alist)
               (error who "transcoder has no error-handling mode" x)))

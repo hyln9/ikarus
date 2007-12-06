@@ -22,14 +22,14 @@
           symbol? code? not weak-pair? eq? eqv? equal? boolean=?
           symbol=? finite? infinite? nan? real-valued?
           rational-valued? integer-valued? 
-          output-port? input-port? port?)
+          output-port? input-port? port? transcoder?)
 
   (import 
     (except (ikarus) fixnum? flonum? bignum? ratnum? number? complex? real?
             rational? integer? exact? inexact? eof-object? bwp-object?
             immediate? boolean? char? vector? bytevector? string? procedure?
             null? pair? weak-pair? symbol? code? not eq? eqv? equal?
-            port? input-port? output-port? boolean=? symbol=?
+            transcoder? port? input-port? output-port? boolean=? symbol=?
             finite? infinite? nan? real-valued? rational-valued? 
             integer-valued?)
     (ikarus system $fx)
@@ -41,6 +41,7 @@
     (rename (only (ikarus) fixnum? flonum? bignum? ratnum? eof-object?
                   bwp-object? immediate? boolean? char? vector? string?
                   bytevector? procedure? null? pair? symbol? code? eq?
+                  transcoder?
                   port? input-port? output-port?)
             (fixnum? sys:fixnum?)
             (flonum? sys:flonum?)
@@ -60,6 +61,7 @@
             (symbol? sys:symbol?)
             (code? sys:code?)
             (eq? sys:eq?)
+            (transcoder? sys:transcoder?)
             (port? sys:port?)
             (input-port? sys:input-port?)
             (output-port? sys:output-port?)
@@ -173,6 +175,7 @@
 
   (define eof-object? (lambda (x) (sys:eof-object? x)))
   (define bwp-object? (lambda (x) (sys:bwp-object? x)))
+  (define transcoder? (lambda (x) (sys:transcoder? x)))
   (define immediate? (lambda (x) (sys:immediate? x)))
   (define boolean? (lambda (x) (sys:boolean? x)))
   (define char? (lambda (x) (sys:char? x)))

@@ -1,28 +1,41 @@
 
 (library (io-spec) 
-  (export )
+  (export 
+    input-port? textual-port? port-eof?
+    open-bytevector-input-port
+    make-custom-binary-input-port 
+    get-char lookahead-char get-u8 lookahead-u8 close-port)
   (import 
-    (except (ikarus) get-char get-u8 put-char put-u8))
+    (except (ikarus)
+      input-port? textual-port? port-eof?
+      open-bytevector-input-port
+      make-custom-binary-input-port
+      get-char lookahead-char get-u8 lookahead-u8 close-port))
 
   (define-struct $port 
-    (index size buffer base-index codec closed? handlers attrs))
+    (index size buffer base-index codec closed? attrs 
+     id read! write! get-position set-position! close))
   (define $set-port-index! set-$port-index!)
+  (define $set-port-size! set-$port-size!)
+  (define $set-port-attrs! set-$port-attrs!)
+  (define $set-port-closed?! set-$port-closed?!)
+  (define $make-port make-$port)
 
-  (define fast-get-tag          #x0001)
-  (define fast-put-tag         #x0002)
+  (define fast-get-tag           #x0001)
+  (define fast-put-tag           #x0002)
   (define fast-get-position-tag  #x0004)
 
-  (define fast-get-mask         #x00F0)
-  (define fast-get-utf8-tag     #x0010)
-  (define fast-get-latin-tag    #x0030)
-  (define fast-get-byte-tag     #x0040)
-  (define fast-get-char-tag     #x0080)
+  (define fast-get-mask          #x00F0)
+  (define fast-get-utf8-tag      #x0010)
+  (define fast-get-latin-tag     #x0030)
+  (define fast-get-byte-tag      #x0040)
+  (define fast-get-char-tag      #x0080)
 
-  (define fast-put-mask        #x0F00)
-  (define fast-put-utf8-tag    #x0100)
-  (define fast-put-latin-tag   #x0300)
-  (define fast-put-byte-tag    #x0400)
-  (define fast-put-char-tag    #x0800)
+  (define fast-put-mask          #x0F00)
+  (define fast-put-utf8-tag      #x0100)
+  (define fast-put-latin-tag     #x0300)
+  (define fast-put-byte-tag      #x0400)
+  (define fast-put-char-tag      #x0800)
   
   (define r6rs-mode-tag          #x1000)
 
@@ -38,8 +51,82 @@
   ;;; everything above this line will turn into primitive
   ;;; ----------------------------------------------------------
   
-  (define-struct handler
-    (data id read! write! get-position set-position! close))
+
+
+  (define ($make-custom-binary-input-port id 
+            read! get-position set-position! close buffer-size)
+    (let ([bv (make-bytevector buffer-size)])
+      ($make-port 0 0 bv 0 #f #f 0 id read! #f get-position
+                  set-position! close)))
+
+  (define (make-custom-binary-input-port id 
+            read! get-position set-position! close)
+    ;;; FIXME: get-position and set-position! are ignored for now
+    (define who 'make-custom-binary-input-port)
+    (unless (string? id)
+      (error who "id is not a string" id))
+    (unless (procedure? read!)
+      (error who "read! is not a procedure" read!))
+    (unless (or (procedure? close) (not close))
+      (error who "close should be either a procedure or #f" close))
+    ($make-custom-binary-input-port id read! get-position
+      set-position! close 256))
+
+  (define (transcoder-attrs x)
+    (import (ikarus system $transcoders))
+    (cond
+      [(not x) ;;; binary
+       (fxior fast-get-tag fast-get-byte-tag)]
+      [else 
+       (error 'transcoder-attrs "not handled" x)]))
+
+
+  (define open-bytevector-input-port
+    (case-lambda
+      [(bv) (open-bytevector-input-port bv #f)]
+      [(bv maybe-transcoder) 
+       (import (ikarus system $transcoders))
+       (unless (bytevector? bv) 
+         (error 'open-bytevector-input-port 
+                "not a bytevector" bv))
+       (when (and maybe-transcoder
+                  (not ($transcoder? maybe-transcoder)))
+         (error 'open-bytevector-input-port 
+                "not a transcoder" maybe-transcoder))
+       ($make-port 0 (bytevector-length bv) bv 0 
+          maybe-transcoder 
+          #f ;;; closed?
+          (transcoder-attrs maybe-transcoder)
+          "*bytevector-input-port*" 
+          (lambda (bv i c) 0) ;;; read!
+          #f ;;; write!
+          #f ;;; FIXME: get-position
+          #f ;;; FIXME: set-position!
+          #f ;;; close
+          )]))
+
+  (define (input-port? p) 
+    (and ($port? p) 
+         ($port-read! p) 
+         #t))
+
+  (define (textual-port? p) 
+    (and ($port? p) 
+         ($port-codec p) 
+         #t))
+
+  (define (close-port p)
+    (cond
+      [(not ($port? p)) 
+       (error 'close-port "not a port" p)]
+      [($port-closed? p) (void)]
+      [else
+       (when ($port-write! p)
+         (flush-output-port p))
+       ($set-port-closed?! p #t)
+       (let ([close ($port-close p)])
+         (when (procedure? close)
+           (close)))]))
 
   (define-syntax define-rrr
     (syntax-rules ()
@@ -48,11 +135,12 @@
          (error 'name "not implemented" args))]))
 
   ;;; ----------------------------------------------------------
-  (module (get-char)
+  (module (get-char lookahead-char)
     (define-rrr get-char-utf8-mode)
     (define-rrr get-char-latin-mode)
     (define-rrr get-char-char-mode)
     (define-rrr slow-get-char)
+    (define-rrr lookahead-char)
     ;;;
     (define (get-char p)
       (define who 'get-char)
@@ -90,9 +178,35 @@
           [else (slow-get-char p who)]))))
 
   ;;; ----------------------------------------------------------
-  (module (get-u8)
-    (define-rrr get-u8-byte-mode)
-    (define-rrr slow-get-u8)
+  (define (assert-binary-input-port p who)
+    (unless ($port? p) (error who "not a port" p))
+    (when ($port-closed? p) (error who "port is closed" p))
+    (when ($port-codec p) (error who "port is not binary" p))
+    (unless ($port-read! p)
+      (error who "port is not an input port" p)))
+
+  (module (get-u8 lookahead-u8)
+    (define (get-u8-byte-mode p who start) 
+      (when ($port-closed? p) (error who "port is closed" p))
+      (let* ([bv ($port-buffer p)]
+             [n (bytevector-length bv)])
+        (let ([j (($port-read! p) bv 0 n)])
+          (unless (fixnum? j)
+            (error who "invalid return value from read! procedure" j))
+          (cond
+            [(fx> j 0) 
+             (unless (fx<= j n)
+               (error who "read! returned a value out of range" j))
+             ($set-port-index! p start) 
+             ($set-port-size! p j)
+             (bytevector-u8-ref bv 0)]
+            [(fx= j 0) (eof-object)]
+            [else 
+             (error who "read! returned a value out of range" j)]))))
+    (define (slow-get-u8 p who start) 
+      (assert-binary-input-port p who)
+      ($set-port-attrs! p (fxior fast-get-tag fast-get-byte-tag))
+      (get-u8-byte-mode p who start))
     ;;;
     (define (get-u8 p)
       (define who 'get-u8)
@@ -104,9 +218,49 @@
                [(fx< i ($port-size p))
                 ($set-port-index! p (fx+ i 1))
                 (bytevector-u8-ref ($port-buffer p) i)]
-               [else (get-u8-byte-mode p who)]))]
-          [else (slow-get-u8 p who)]))))
+               [else (get-u8-byte-mode p who 1)]))]
+          [else (slow-get-u8 p who 1)])))
+    (define (lookahead-u8 p)
+      (define who 'lookahead-u8)
+      (let ([m ($port-get-mode p)])
+        (cond
+          [(eq? m fast-get-byte-tag)
+           (let ([i ($port-index p)])
+             (cond
+               [(fx< i ($port-size p))
+                (bytevector-u8-ref ($port-buffer p) i)]
+               [else (get-u8-byte-mode p who 0)]))]
+          [else (slow-get-u8 p who 0)]))))
 
+  (define (port-eof? p)
+    (define who 'port-eof?)
+    (let ([m ($port-get-mode p)])
+      (cond
+        [(not (eq? m 0))
+         (if (fx< ($port-index p) ($port-size p))
+             #f
+             (if ($port-codec p) 
+                 (eof-object? (lookahead-char p))
+                 (eof-object? (lookahead-u8 p))))]
+        [(input-port? p)
+         (when ($port-closed? p) 
+           (error 'port-eof? "port is closed" p))
+         (if (textual-port? p) 
+             (eof-object? (lookahead-char p))
+             (eof-object? (lookahead-u8 p)))]
+        [else (error 'port-eof? "not an input port" p)])))
+
+
+
+  )
+
+
+
+#!eof
+ 
+  ;;; ----------------------------------------------------------
+  ;;; do input ports first.
+  
   ;;; ----------------------------------------------------------
   (module (put-char)
     (define-rrr put-char-utf8-mode)
@@ -147,7 +301,6 @@
                   (put-char-latin-mode p b who)])))]
           [else (slow-put-char p c who)]))))
 
-  ;;; ----------------------------------------------------------
   (module (put-u8)
     (define-rrr put-u8-byte-mode)
     (define-rrr slow-put-u8)
@@ -166,7 +319,3 @@
                [else
                 (put-u8-byte-mode p b who)]))]
           [else (slow-put-u8 p b who)]))))
-
-  ;;; that's it for today.  see you tomorrow .
-
-  )

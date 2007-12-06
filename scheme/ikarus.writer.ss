@@ -589,7 +589,7 @@
         [(number? x)
          (write-char* (number->string x) p)
          i]
-        [($transcoder? x) 
+        [(transcoder? x)
          (write-char* "#<transcoder " p)
          (let ([n ($transcoder->data x)])
            (write-char* (number->string n) p))

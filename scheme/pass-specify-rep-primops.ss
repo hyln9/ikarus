@@ -1964,8 +1964,10 @@
 /section)
 
 (section ; transcoders
-(define-primop $transcoder? unsafe
+
+(define-primop transcoder? unsafe
   [(P x) (tag-test (T x) transcoder-mask transcoder-tag)])
+
 (define-primop $data->transcoder unsafe
   [(V x) (prm 'logor
               (prm 'sll (T x) (K (- transcoder-payload-shift fixnum-shift)))
