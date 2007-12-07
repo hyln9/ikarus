@@ -28,7 +28,7 @@
 
   (define (time-second x)
     (if (time? x) 
-        (+ (* (time-msecs x) #e10e6)
+        (+ (* (time-msecs x) #e10e5)
            (time-secs x))
         (error 'time-second "not a time" x)))
   
