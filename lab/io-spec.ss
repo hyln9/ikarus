@@ -15,7 +15,7 @@
       transcoded-port))
 
   (define-struct $port 
-    (index size buffer base-index codec closed? attrs 
+    (index size buffer base-index transcoder closed? attrs 
      id read! write! get-position set-position! close))
   (define $set-port-index! set-$port-index!)
   (define $set-port-size! set-$port-size!)
@@ -112,7 +112,7 @@
     (unless (transcoder? transcoder)
       (error who "not a transcoder" transcoder))
     (unless ($port? p) (error who "not a port" p))
-    (when ($port-codec p) (error who "not a binary port" p))
+    (when ($port-transcoder p) (error who "not a binary port" p))
     (let ([read! ($port-read! p)]
           [closed? ($port-closed? p)])
       ($set-port-closed?! p #t)
@@ -140,7 +140,7 @@
 
   (define (textual-port? p) 
     (and ($port? p) 
-         ($port-codec p) 
+         ($port-transcoder p) 
          #t))
 
   (define (close-port p)
@@ -180,6 +180,24 @@
              j]
             [else 
              (error who "read! returned a value out of range" j)]))))
+    (define (refill-bv-buffer p who)
+      (when ($port-closed? p) (error who "port is closed" p))
+      (let ([bv ($port-buffer p)] [i ($port-index p)] [j ($port-size p)])
+        (let ([c0 (fx- j i)])
+          (bytevector-copy! bv i bv 0 c0)
+          (let* ([max (fx- (bytevector-length bv) c0)]
+                 [c1 (($port-read! p) bv c0 max)])
+            (unless (fixnum? c1)
+              (error who "invalid return value from read! procedure" c1))
+            (cond
+              [(fx>= j 0)
+               (unless (fx<= j max)
+                 (error who "read! returned a value out of range" j))
+               ($set-port-index! p c0)
+               ($set-port-size! p (fx+ c1 c0))
+               c1]
+              [else 
+               (error who "read! returned a value out of range" c1)])))))
     (define (get-char-latin-mode p who idx)
       (let ([n (refill-bv-start p who)])
         (cond
@@ -187,11 +205,135 @@
           [else 
            ($set-port-index! p idx)
            (integer->char (bytevector-u8-ref ($port-buffer p) 0))])))
-    (define-rrr get-char-utf8-mode)
+    
+    (define (get-char-utf8-mode p who)
+      (define (do-error p who)
+        (case (transcoder-error-handling-mode ($port-transcoder p))
+          [(ignore)  (get-char p)]
+          [(replace) #\xFFFD]
+          [(raise)
+           (raise (make-i/o-decoding-error p))]
+          [else (error who "cannot happen")]))
+      (let ([i ($port-index p)] 
+            [j ($port-size p)]
+            [buf ($port-buffer p)])
+        (cond
+          [(fx= i j) ;;; exhausted
+           (let ([n (($port-read! p) buf 0 (bytevector-length buf))])
+             (if (fx= n 0) 
+                 (eof-object) 
+                 (begin
+                   ($set-port-index! p 0)
+                   ($set-port-size! p n)
+                   (get-char p))))]
+          [else
+           (let ([b0 (bytevector-u8-ref p i)])
+             (cond
+               [(fx= (fxsra b0 5) #b110) ;;; two-byte-encoding
+                (let ([i (fx+ i 1)])
+                  (cond
+                    [(fx< i j) 
+                     (let ([b1 (bytevector-u8-ref p i)])
+                       (cond
+                         [(fx= (fxsra b1 6) #b10)
+                          ($set-port-index! p (fx+ i 1))
+                          (integer->char
+                            (fxior (fxand b1 #b111111)
+                                   (fxsll (fxand b0 #b11111) 6)))]
+                         [else
+                          ($set-port-index! p (fx+ i 1))
+                          (do-error p who)]))]
+                    [else
+                     (let ([bytes (refill-bv-buffer p who)])
+                       (cond
+                         [(fx= bytes 0) 
+                          ($set-port-index! p (fx+ ($port-index p) 1))
+                          (do-error p who)]
+                         [else (get-char-utf8-mode p who)]))]))]
+               [else (error who 
+                        "BUG: 3-byte encoding not implemented")]))])))
+    
+    (define (lookahead-char-utf8-mode p who)
+      (define (do-error p who)
+        (case (transcoder-error-handling-mode ($port-transcoder p))
+          [(ignore)  (get-char p)]
+          [(replace) #\xFFFD]
+          [(raise)
+           (raise (make-i/o-decoding-error p))]
+          [else (error who "cannot happen")]))
+      (let ([i ($port-index p)] 
+            [j ($port-size p)]
+            [buf ($port-buffer p)])
+        (cond
+          [(fx= i j) ;;; exhausted
+           (let ([n (($port-read! p) buf 0 (bytevector-length buf))])
+             (if (fx= n 0) 
+                 (eof-object) 
+                 (begin
+                   ($set-port-index! p 0)
+                   ($set-port-size! p n)
+                   (lookahead-char p))))]
+          [else
+           (let ([b0 (bytevector-u8-ref p i)])
+             (cond
+               [(fx= (fxsra b0 5) #b110) ;;; two-byte-encoding
+                (let ([i (fx+ i 1)])
+                  (cond
+                    [(fx< i j) 
+                     (let ([b1 (bytevector-u8-ref p i)])
+                       (cond
+                         [(fx= (fxsra b1 6) #b10)
+                          (integer->char
+                            (fxior (fxand b1 #b111111)
+                                   (fxsll (fxand b0 #b11111) 6)))]
+                         [else
+                          (do-error p who)]))]
+                    [else
+                     (let ([bytes (refill-bv-buffer p who)])
+                       (cond
+                         [(fx= bytes 0) (do-error p who)]
+                         [else (lookahead-char-utf8-mode p who)]))]))]
+               [else
+                (error who 
+                 "BUG: 3-byte encoding not implemented")]))])))
     (define-rrr get-char-char-mode)
-    (define-rrr slow-get-char)
+
+    (define (advance-utf8-bom p who)
+      (let ([i ($port-index p)]
+            [j ($port-size p)]
+            [buf ($port-buffer p)])
+        (cond
+          [(fx< (fx+ i 3) j) 
+           (when (and (fx=? (bytevector-u8-ref buf i) #xEF)
+                      (fx=? (bytevector-u8-ref buf i) #xBB) 
+                      (fx=? (bytevector-u8-ref buf i) #xBF))
+             ($set-port-index! p (fx+ i 3)))]
+          [else 
+           (let ([c (fx- j i)])
+             (bytevector-copy! buf i buf 0 c)
+             (let ([read! ($port-read! p)])
+               (let ([c1 (read! buf c (fx- (bytevector-length buf) c))])
+                 ($set-port-index! p c)
+                 ($set-port-size! p (fx+ c c1))
+                 (unless (fx= c1 0) 
+                   (advance-utf8-bom p who)))))])))
+
+    (define (speedup-input-port p who)
+      (unless (input-port? p) 
+        (error who "not an input port" p))
+      (let ([tr ($port-transcoder p)])
+        (unless tr 
+          (error who "not a textual port" p))
+        (case (transcoder-codec tr)
+          [(utf-8-codec) 
+           ;;;
+           (advance-utf8-bom p who)
+           ($set-port-attrs! p 
+             (fxior fast-get-tag fast-get-utf8-tag))]
+          [else (error 'slow-get-char "codec not handled")])))
+
+
     (define-rrr slow-lookahead-char)
-    (define-rrr lookahead-char-utf8-mode)
     (define-rrr lookahead-char-char-mode)
     ;;;
     (define (lookahead-char p)
@@ -223,7 +365,9 @@
                   (bytevector-u8-ref ($port-buffer p) i))]
                [else
                 (get-char-latin-mode p who 0)]))]
-          [else (slow-lookahead-char p who)])))
+          [else 
+           (speedup-input-port p who)
+           (lookahead-char p)])))
     ;;;
     (define (get-char p)
       (define who 'get-char)
@@ -238,7 +382,7 @@
                     [(fx< b 128) 
                      ($set-port-index! p (fx+ i 1))
                      (integer->char b)]
-                    [else (get-char-utf8-mode p)]))]
+                    [else (get-char-utf8-mode p who)]))]
                [else
                 (get-char-utf8-mode p who)]))]
           [(eq? m fast-get-char-tag)
@@ -258,13 +402,15 @@
                   (bytevector-u8-ref ($port-buffer p) i))]
                [else
                 (get-char-latin-mode p who 1)]))]
-          [else (slow-get-char p who)]))))
+          [else 
+           (speedup-input-port p who)
+           (get-char p)]))))
 
   ;;; ----------------------------------------------------------
   (define (assert-binary-input-port p who)
     (unless ($port? p) (error who "not a port" p))
     (when ($port-closed? p) (error who "port is closed" p))
-    (when ($port-codec p) (error who "port is not binary" p))
+    (when ($port-transcoder p) (error who "port is not binary" p))
     (unless ($port-read! p)
       (error who "port is not an input port" p)))
 
@@ -322,7 +468,7 @@
         [(not (eq? m 0))
          (if (fx< ($port-index p) ($port-size p))
              #f
-             (if ($port-codec p) 
+             (if ($port-transcoder p) 
                  (eof-object? (lookahead-char p))
                  (eof-object? (lookahead-u8 p))))]
         [(input-port? p)
