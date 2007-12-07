@@ -633,7 +633,23 @@
            [(hashtable-ref h x #f) =>
             (lambda (n)
               (hashtable-set! h x (fxadd1 n)))])]
-        ;;; FIXME: recursive records/structs
+        [(struct? x) 
+         (cond
+           [(hashtable-ref h x #f) =>
+            (lambda (n) 
+              (hashtable-set! h x (fxadd1 n)))]
+           [else
+            (hashtable-set! h x 0)
+            (let ([rtd (struct-type-descriptor x)])
+              (unless 
+                (and (record-type-descriptor? rtd) 
+                     (record-type-opaque? rtd))
+                (graph (struct-name x) h)
+                (let ([n (struct-length x)])
+                  (let f ([idx 0])
+                    (unless (fx= idx n)
+                      (graph (struct-ref x idx) h)
+                      (f (fxadd1 idx)))))))])]
         ))
     (define (dynamic x h)
       (cond
@@ -657,6 +673,26 @@
            [else
             (hashtable-set! h x 0)
             (vec-dynamic x 0 (vector-length x) h)
+            (when (and (hashtable-ref h x #f)
+                       (fxzero? (hashtable-ref h x #f)))
+              (hashtable-set! h x #f))])]
+        [(struct? x) 
+         (cond
+           [(hashtable-ref h x #f) =>
+            (lambda (n) 
+              (hashtable-set! h x (fxadd1 n)))]
+           [else
+            (hashtable-set! h x 0)
+            (let ([rtd (struct-type-descriptor x)])
+              (unless 
+                (and (record-type-descriptor? rtd) 
+                     (record-type-opaque? rtd))
+                (dynamic (struct-name x) h)
+                (let ([n (struct-length x)])
+                  (let f ([idx 0])
+                    (unless (fx= idx n)
+                      (dynamic (struct-ref x idx) h)
+                      (f (fxadd1 idx)))))))
             (when (and (hashtable-ref h x #f)
                        (fxzero? (hashtable-ref h x #f)))
               (hashtable-set! h x #f))])]

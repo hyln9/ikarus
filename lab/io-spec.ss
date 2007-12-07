@@ -160,7 +160,7 @@
     (syntax-rules ()
       [(_ name)
        (define (name . args) 
-         (error 'name "not implemented" args))]))
+         (apply error 'name "not implemented" args))]))
 
   ;;; ----------------------------------------------------------
   (module (get-char lookahead-char)

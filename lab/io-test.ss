@@ -8,9 +8,9 @@
   (syntax-rules ()
     [(_ name body) 
      (begin
-       (printf "running ~s ..." 'name)
+       (printf "running ~s ... " 'name)
        body
-       (printf " ok\n"))]))
+       (printf "ok\n"))]))
 
 (define (make-n-byte-custom-binary-input-port n)
   (assert (<= 0 n 256))
