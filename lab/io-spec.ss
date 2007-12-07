@@ -109,6 +109,22 @@
           #f ;;; close
           )]))
 
+  (define (open-string-input-port str)
+    (unless (string? str) 
+      (error 'open-string-input-port str))
+    ($make-port 0 (string-length str) str 0 
+       #t 
+       #f ;;; closed?
+       (fxior fast-get-tag fast-get-char-tag)
+       "*string-input-port*" 
+       (lambda (str i c) 0) ;;; read!
+       #f ;;; write!
+       #f ;;; FIXME: get-position
+       #f ;;; FIXME: set-position!
+       #f ;;; close
+       ))
+    
+
   (define (transcoded-port p transcoder)
     (define who 'transcoded-port)
     (unless (transcoder? transcoder)
@@ -396,7 +412,6 @@
                        [else (get-char-utf8-mode p who)]))])]
                [else (do-error p who)]))])))
 
-    (define-rrr get-char-char-mode)
 
     (define (advance-utf8-bom p who)
       (let ([i ($port-index p)]
@@ -434,7 +449,21 @@
 
 
     (define-rrr slow-lookahead-char)
-    (define-rrr lookahead-char-char-mode)
+    (define (lookahead-char-char-mode p who)
+      (let ([str ($port-buffer p)]
+            [read! ($port-read! p)])
+        (let ([n (read! str 0 (string-length str))])
+          (unless (fixnum? n) 
+            (error who "invalid return value from read!" n))
+          (unless (<= 0 n (fxsub1 (string-length str)))
+            (error who "return value from read! is out of range" n))
+          ($set-port-index! p 0) 
+          ($set-port-size! p n)
+          (cond
+            [(fx= n 0)
+             (eof-object)]
+            [else
+             (string-ref str 0)]))))
     ;;;
     (define (lookahead-char p)
       (define who 'lookahead-char)
@@ -469,6 +498,23 @@
            (speedup-input-port p who)
            (lookahead-char p)])))
     ;;;
+    (define (get-char-char-mode p who)
+      (let ([str ($port-buffer p)]
+            [read! ($port-read! p)])
+        (let ([n (read! str 0 (string-length str))])
+          (unless (fixnum? n) 
+            (error who "invalid return value from read!" n))
+          (unless (<= 0 n (fxsub1 (string-length str)))
+            (error who "return value from read! is out of range" n))
+          ($set-port-size! p n)
+          (cond
+            [(fx= n 0)
+             ($set-port-index! p 0)
+             (eof-object)]
+            [else
+             ($set-port-index! p 1) 
+             (string-ref str 0)]))))
+
     (define (get-char p)
       (define who 'get-char)
       (let ([m ($port-get-mode p)])
@@ -491,8 +537,7 @@
                [(fx< i ($port-size p))
                 ($set-port-index! p (fx+ i 1))
                 (string-ref ($port-buffer p) i)]
-               [else
-                (get-char-char-mode p who)]))]
+               [else (get-char-char-mode p who)]))]
           [(eq? m fast-get-latin-tag)
            (let ([i ($port-index p)])
              (cond

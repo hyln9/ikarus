@@ -1,7 +1,8 @@
 #!/usr/bin/env scheme-script
 
 (import 
-  (except (ikarus) get-char get-u8 lookahead-u8 close-port input-port?)
+  (except (ikarus) get-char get-u8 lookahead-u8 close-port input-port?
+          open-string-input-port)
   (io-spec))
 
 (define-syntax test
@@ -328,6 +329,38 @@
     (open-bytevector-input-port (make-utf8-bytevector-range4)
       (make-transcoder (utf-8-codec) 'none 'raise))
     (make-utf8-string-range4)))
+
+(test "utf8 range 2 string"
+  (test-port-string-output
+    (open-string-input-port (make-utf8-string-range2))
+    (make-utf8-string-range2)))
+
+(test "utf8 range 3 string"
+  (test-port-string-output
+    (open-string-input-port (make-utf8-string-range3))
+    (make-utf8-string-range3)))
+
+(test "utf8 range 4 string"
+  (test-port-string-output
+    (open-string-input-port (make-utf8-string-range4))
+    (make-utf8-string-range4)))
+
+(test "utf8 peek range 2 string"
+  (test-port-string-peeking-output
+    (open-string-input-port (make-utf8-string-range2))
+    (make-utf8-string-range2)))
+
+(test "utf8 peek range 3 string"
+  (test-port-string-peeking-output
+    (open-string-input-port (make-utf8-string-range3))
+    (make-utf8-string-range3)))
+
+(test "utf8 peek range 4 string"
+  (test-port-string-peeking-output
+    (open-string-input-port (make-utf8-string-range4))
+    (make-utf8-string-range4)))
+
+
 
 
 
