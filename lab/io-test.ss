@@ -201,4 +201,134 @@
       (make-transcoder (utf-8-codec) 'none 'raise))
     128))
 
+(define (make-utf8-bytevector-range2) 
+  (u8-list->bytevector
+    (let f ([i #x80] [j #x7FF])
+      (cond
+        [(> i j) '()]
+        [else 
+         (cons* (fxior #b11000000 (fxsra i 6))
+                (fxior #b10000000 (fxand i #b111111))
+                (f (+ i 1) j))]))))
+
+(define (make-utf8-bytevector-range3) 
+  (u8-list->bytevector
+    (let f ([i #x800] [j #xFFFF])
+      (cond
+        [(> i j) '()]
+        [(fx= i #xD800) (f #xE000 j)]
+        [else 
+         (cons* (fxior #b11100000 (fxsra i 12))
+                (fxior #b10000000 (fxand (fxsra i 6) #b111111))
+                (fxior #b10000000 (fxand i #b111111))
+                (f (+ i 1) j))]))))
+
+(define (make-utf8-bytevector-range4) 
+  (u8-list->bytevector
+    (let f ([i #x10000] [j #x10FFFF])
+      (cond
+        [(> i j) '()]
+        [else 
+         (cons* (fxior #b11110000 (fxsra i 18))
+                (fxior #b10000000 (fxand (fxsra i 12) #b111111))
+                (fxior #b10000000 (fxand (fxsra i 6) #b111111))
+                (fxior #b10000000 (fxand i #b111111))
+                (f (+ i 1) j))]))))
+
+(define (make-utf8-string-range2)
+  (list->string
+    (let f ([i #x80] [j #x7FF])
+      (cond
+        [(> i j) '()]
+        [else 
+         (cons (integer->char i)
+               (f (+ i 1) j))]))))
+
+(define (make-utf8-string-range3)
+  (list->string
+    (let f ([i #x800] [j #xFFFF])
+      (cond
+        [(> i j) '()]
+        [(fx= i #xD800) (f #xE000 j)]
+        [else 
+         (cons (integer->char i)
+               (f (+ i 1) j))]))))
+
+(define (make-utf8-string-range4)
+  (list->string
+    (let f ([i #x10000] [j #x10FFFF])
+      (cond
+        [(> i j) '()]
+        [else 
+         (cons (integer->char i)
+               (f (+ i 1) j))]))))
+
+(define (test-port-string-output p str) 
+  (let f ([i 0])
+    (let ([x (get-char p)])
+      (cond
+        [(eof-object? x) 
+         (unless (= i (string-length str))
+           (error #f "premature eof"))]
+        [(= i (string-length str))
+         (error #f "too many chars")]
+        [(char=? x (string-ref str i))
+         (f (+ i 1))]
+        [else 
+         (error #f "mismatch" x (string-ref str i) i)]))))
+
+(define (test-port-string-peeking-output p str) 
+  (let f ([i 0])
+    (let ([x (lookahead-char p)])
+      (cond
+        [(eof-object? x) 
+         (unless (= i (string-length str))
+           (error #f "premature eof"))]
+        [(= i (string-length str))
+         (error #f "too many chars")]
+        [(not (char=? x (get-char p)))
+         (error #f "peek not same as get")]
+        [(char=? x (string-ref str i))
+         (f (+ i 1))]
+        [else 
+         (error #f "mismatch" x (string-ref str i) i)]))))
+
+(test "utf8 range 2"
+  (test-port-string-output
+    (open-bytevector-input-port (make-utf8-bytevector-range2)
+      (make-transcoder (utf-8-codec) 'none 'raise))
+    (make-utf8-string-range2)))
+
+(test "utf8 range 3"
+  (test-port-string-output
+    (open-bytevector-input-port (make-utf8-bytevector-range3)
+      (make-transcoder (utf-8-codec) 'none 'raise))
+    (make-utf8-string-range3)))
+
+(test "utf8 range 4"
+  (test-port-string-output
+    (open-bytevector-input-port (make-utf8-bytevector-range4)
+      (make-transcoder (utf-8-codec) 'none 'raise))
+    (make-utf8-string-range4)))
+
+(test "utf8 peek range 2"
+  (test-port-string-peeking-output
+    (open-bytevector-input-port (make-utf8-bytevector-range2)
+      (make-transcoder (utf-8-codec) 'none 'raise))
+    (make-utf8-string-range2)))
+
+(test "utf8 peek range 3"
+  (test-port-string-peeking-output
+    (open-bytevector-input-port (make-utf8-bytevector-range3)
+      (make-transcoder (utf-8-codec) 'none 'raise))
+    (make-utf8-string-range3)))
+
+(test "utf8 peek range 4"
+  (test-port-string-peeking-output
+    (open-bytevector-input-port (make-utf8-bytevector-range4)
+      (make-transcoder (utf-8-codec) 'none 'raise))
+    (make-utf8-string-range4)))
+
+
+
 

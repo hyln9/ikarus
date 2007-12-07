@@ -3,6 +3,7 @@
   (export 
     input-port? textual-port? port-eof?
     open-bytevector-input-port
+    open-string-input-port
     make-custom-binary-input-port 
     get-char lookahead-char get-u8 lookahead-u8 close-port
     transcoded-port)
@@ -10,6 +11,7 @@
     (except (ikarus)
       input-port? textual-port? port-eof?
       open-bytevector-input-port
+      open-string-input-port
       make-custom-binary-input-port
       get-char lookahead-char get-u8 lookahead-u8 close-port
       transcoded-port))
@@ -219,21 +221,18 @@
             [buf ($port-buffer p)])
         (cond
           [(fx= i j) ;;; exhausted
-           (let ([n (($port-read! p) buf 0 (bytevector-length buf))])
-             (if (fx= n 0) 
-                 (eof-object) 
-                 (begin
-                   ($set-port-index! p 0)
-                   ($set-port-size! p n)
-                   (get-char p))))]
+           (let ([bytes (refill-bv-buffer p who)])
+             (cond
+               [(fx= bytes 0) (eof-object)]
+               [else (get-char p)]))]
           [else
-           (let ([b0 (bytevector-u8-ref p i)])
+           (let ([b0 (bytevector-u8-ref buf i)])
              (cond
                [(fx= (fxsra b0 5) #b110) ;;; two-byte-encoding
                 (let ([i (fx+ i 1)])
                   (cond
                     [(fx< i j) 
-                     (let ([b1 (bytevector-u8-ref p i)])
+                     (let ([b1 (bytevector-u8-ref buf i)])
                        (cond
                          [(fx= (fxsra b1 6) #b10)
                           ($set-port-index! p (fx+ i 1))
@@ -241,7 +240,7 @@
                             (fxior (fxand b1 #b111111)
                                    (fxsll (fxand b0 #b11111) 6)))]
                          [else
-                          ($set-port-index! p (fx+ i 1))
+                          ($set-port-index! p i)
                           (do-error p who)]))]
                     [else
                      (let ([bytes (refill-bv-buffer p who)])
@@ -250,8 +249,67 @@
                           ($set-port-index! p (fx+ ($port-index p) 1))
                           (do-error p who)]
                          [else (get-char-utf8-mode p who)]))]))]
-               [else (error who 
-                        "BUG: 3-byte encoding not implemented")]))])))
+               [(fx= (fxsra b0 4) #b1110) ;;; three-byte-encoding
+                (cond
+                  [(fx< (fx+ i 2) j) 
+                   (let ([b1 (bytevector-u8-ref buf (fx+ i 1))]
+                         [b2 (bytevector-u8-ref buf (fx+ i 2))])
+                     (cond
+                       [(fx= (fxsra (fxlogor b1 b2) 6) #b10) 
+                        (let ([n (fxlogor 
+                                   (fxsll (fxand b0 #b1111) 12)
+                                   (fxsll (fxand b1 #b111111) 6)
+                                   (fxand b2 #b111111))])
+                          (cond
+                            [(fx<= #xD800 n #xDFFF) 
+                             ($set-port-index! p (fx+ i 1))
+                             (do-error p who)]
+                            [else
+                             ($set-port-index! p (fx+ i 3))
+                             (integer->char n)]))]
+                       [else
+                        ($set-port-index! p (fx+ i 1))
+                        (do-error p who)]))]
+                  [else
+                   (let ([bytes (refill-bv-buffer p who)])
+                     (cond
+                       [(fx= bytes 0)
+                        ($set-port-index! p (fx+ ($port-index p) 1))
+                        (do-error p who)]
+                       [else (get-char-utf8-mode p who)]))])]
+               [(fx= (fxsra b0 3) #b11110) ;;; four-byte-encoding
+                (cond
+                  [(fx< (fx+ i 3) j) 
+                   (let ([b1 (bytevector-u8-ref buf (fx+ i 1))]
+                         [b2 (bytevector-u8-ref buf (fx+ i 2))]
+                         [b3 (bytevector-u8-ref buf (fx+ i 3))])
+                     (cond
+                       [(fx= (fxsra (fxlogor b1 b2 b3) 6) #b10)
+                        (let ([n (fxlogor 
+                                   (fxsll (fxand b0 #b111) 18)
+                                   (fxsll (fxand b1 #b111111) 12)
+                                   (fxsll (fxand b2 #b111111) 6)
+                                   (fxand b3 #b111111))])
+                          (cond
+                            [(fx<= #x10000 n #x10FFFF) 
+                             ($set-port-index! p (fx+ i 4))
+                             (integer->char n)]
+                            [else
+                             ($set-port-index! p (fx+ i 1))
+                             (do-error p who)]))]
+                       [else
+                        ($set-port-index! p (fx+ i 1))
+                        (do-error p who)]))]
+                  [else
+                   (let ([bytes (refill-bv-buffer p who)])
+                     (cond
+                       [(fx= bytes 0)
+                        ($set-port-index! p (fx+ ($port-index p) 1))
+                        (do-error p who)]
+                       [else (get-char-utf8-mode p who)]))])]
+               [else 
+                ($set-port-index! p (fx+ i 1))
+                (do-error p who)]))])))
     
     (define (lookahead-char-utf8-mode p who)
       (define (do-error p who)
@@ -266,21 +324,18 @@
             [buf ($port-buffer p)])
         (cond
           [(fx= i j) ;;; exhausted
-           (let ([n (($port-read! p) buf 0 (bytevector-length buf))])
-             (if (fx= n 0) 
-                 (eof-object) 
-                 (begin
-                   ($set-port-index! p 0)
-                   ($set-port-size! p n)
-                   (lookahead-char p))))]
+           (let ([bytes (refill-bv-buffer p who)])
+             (cond
+               [(fx= bytes 0) (eof-object)]
+               [else (lookahead-char p)]))]
           [else
-           (let ([b0 (bytevector-u8-ref p i)])
+           (let ([b0 (bytevector-u8-ref buf i)])
              (cond
                [(fx= (fxsra b0 5) #b110) ;;; two-byte-encoding
                 (let ([i (fx+ i 1)])
                   (cond
                     [(fx< i j) 
-                     (let ([b1 (bytevector-u8-ref p i)])
+                     (let ([b1 (bytevector-u8-ref buf i)])
                        (cond
                          [(fx= (fxsra b1 6) #b10)
                           (integer->char
@@ -293,9 +348,54 @@
                        (cond
                          [(fx= bytes 0) (do-error p who)]
                          [else (lookahead-char-utf8-mode p who)]))]))]
-               [else
-                (error who 
-                 "BUG: 3-byte encoding not implemented")]))])))
+               [(fx= (fxsra b0 4) #b1110) ;;; three-byte-encoding
+                (cond
+                  [(fx< (fx+ i 2) j) 
+                   (let ([b1 (bytevector-u8-ref buf (fx+ i 1))]
+                         [b2 (bytevector-u8-ref buf (fx+ i 2))])
+                     (cond
+                       [(fx= (fxsra (fxlogor b1 b2) 6) #b10) 
+                        (let ([n (fxlogor 
+                                   (fxsll (fxand b0 #b1111) 12)
+                                   (fxsll (fxand b1 #b111111) 6)
+                                   (fxand b2 #b111111))])
+                          (cond
+                            [(fx<= #xD800 n #xDFFF) (do-error p who)]
+                            [else (integer->char n)]))]
+                       [else (do-error p who)]))]
+                  [else
+                   (let ([bytes (refill-bv-buffer p who)])
+                     (cond
+                       [(fx= bytes 0) (do-error p who)]
+                       [else (lookahead-char-utf8-mode p who)]))])]
+               [(fx= (fxsra b0 3) #b11110) ;;; four-byte-encoding
+                (cond
+                  [(fx< (fx+ i 3) j) 
+                   (let ([b1 (bytevector-u8-ref buf (fx+ i 1))]
+                         [b2 (bytevector-u8-ref buf (fx+ i 2))]
+                         [b3 (bytevector-u8-ref buf (fx+ i 3))])
+                     (cond
+                       [(fx= (fxsra (fxlogor b1 b2 b3) 6) #b10)
+                        (let ([n (fxlogor 
+                                   (fxsll (fxand b0 #b111) 18)
+                                   (fxsll (fxand b1 #b111111) 12)
+                                   (fxsll (fxand b2 #b111111) 6)
+                                   (fxand b3 #b111111))])
+                          (cond
+                            [(fx<= #x10000 n #x10FFFF) 
+                             (integer->char n)]
+                            [else
+                             (do-error p who)]))]
+                       [else
+                        (do-error p who)]))]
+                  [else
+                   (let ([bytes (refill-bv-buffer p who)])
+                     (cond
+                       [(fx= bytes 0)
+                        (do-error p who)]
+                       [else (get-char-utf8-mode p who)]))])]
+               [else (do-error p who)]))])))
+
     (define-rrr get-char-char-mode)
 
     (define (advance-utf8-bom p who)
@@ -347,7 +447,7 @@
                 (let ([b (bytevector-u8-ref ($port-buffer p) i)])
                   (cond
                     [(fx< b 128) (integer->char b)]
-                    [else (lookahead-char-utf8-mode p)]))]
+                    [else (lookahead-char-utf8-mode p who)]))]
                [else
                 (lookahead-char-utf8-mode p who)]))]
           [(eq? m fast-get-char-tag)
