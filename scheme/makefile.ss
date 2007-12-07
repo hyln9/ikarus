@@ -1298,7 +1298,7 @@
     [module                                      i cm]
     [library                                     i]
     [syntax-dispatch                             ]
-    [syntax-error                                i r sc]
+    [syntax-error                                i]
     [$transcoder->data                           $transc]
     [$data->transcoder                           $transc]
     [file-options-spec                           i]

@@ -22,6 +22,7 @@
   (export identifier? syntax-dispatch environment environment?
           eval expand generate-temporaries free-identifier=?
           bound-identifier=? datum->syntax syntax-error
+          syntax-violation
           syntax->datum make-variable-transformer
           eval-r6rs-top-level boot-library-expand eval-top-level
           null-environment scheme-report-environment)
@@ -30,7 +31,7 @@
       environment environment? identifier?
       eval generate-temporaries free-identifier=?
       bound-identifier=? datum->syntax syntax-error
-      syntax->datum make-variable-transformer
+      syntax-violation syntax->datum make-variable-transformer
       null-environment scheme-report-environment)
     (rnrs base)
     (rnrs lists)
@@ -3427,7 +3428,6 @@
         (error 'syntax-error "invalid argument" args))
       (raise 
         (condition 
-          ;(make-who-condition 'expander)
           (make-message-condition
             (if (null? args) 
                 "invalid syntax"
@@ -3435,6 +3435,34 @@
           (make-syntax-violation 
             (stx->datum x)
             'none)))))
+
+  (define syntax-violation
+    (case-lambda
+      [(who msg form) 
+       (syntax-violation who msg form #f)]
+      [(who msg form subform) 
+       (unless (string? msg) 
+         (error 'syntax-violation "message is not a string" msg))
+       (let ([who
+              (cond
+                [(or (string? who) (symbol? who)) who]
+                [(not who) 
+                 (syntax-match form ()
+                   [id (id? id) (syntax->datum id)]
+                   [(id . rest) (id? id) (syntax->datum id)]
+                   [_  #f])]
+                [else
+                 (error 'syntax-violation 
+                    "invalid who argument" who)])])
+         (raise 
+           (condition
+             (if who 
+                 (make-who-condition who)
+                 (condition))
+             (make-message-condition msg)
+             (make-syntax-violation 
+               (syntax->datum form)
+               (syntax->datum subform)))))]))
 
   (define identifier? (lambda (x) (id? x)))
   

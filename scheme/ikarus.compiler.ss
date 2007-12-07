@@ -2148,7 +2148,9 @@
                  (or v* (error 'name* "uninitialized label"))) ...
                (define (refresh)
                  (define-syntax name* 
-                   (lambda (stx) (syntax-error stx "cannot use label before it is defined")))
+                   (lambda (stx)
+                     (syntax-error stx 
+                        "cannot use label before it is defined")))
                  ...
                  (let* ([name* (let ([label (let () b* b** ...)])
                                  (set! v* label)
