@@ -1,8 +1,13 @@
 #!/usr/bin/env scheme-script
 
 (import 
-  (except (ikarus) get-char get-u8 lookahead-u8 close-port input-port?
-          open-string-input-port)
+
+  (except (ikarus) get-char get-u8 lookahead-u8 close-port
+          input-port? open-string-input-port output-port?
+          standard-input-port current-input-port
+          get-bytevector-n get-bytevector-n!
+          get-string-n get-string-n! get-line)
+
   (io-spec))
 
 (define-syntax test

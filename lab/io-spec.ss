@@ -1,20 +1,51 @@
 
 (library (io-spec) 
+  
   (export 
-    input-port? textual-port? port-eof?
+    input-port? output-port? textual-port? binary-port?
+    open-file-input-port standard-input-port current-input-port
     open-bytevector-input-port
     open-string-input-port
     make-custom-binary-input-port 
-    get-char lookahead-char get-u8 lookahead-u8 close-port
-    transcoded-port)
+    transcoded-port port-transcoder
+    close-port
+    port-eof?
+    get-char lookahead-char 
+    get-string-n get-string-n! get-string-all get-line
+    get-u8 lookahead-u8 
+    get-bytevector-n get-bytevector-n!
+    get-bytevector-some get-bytevector-all 
+    port-has-port-position? port-position
+    port-has-set-port-position!? set-port-position!
+    call-with-port
+    )
+
+  
   (import 
     (except (ikarus)
-      input-port? textual-port? port-eof?
+      input-port? output-port? textual-port? binary-port? 
+      open-file-input-port standard-input-port current-input-port
       open-bytevector-input-port
       open-string-input-port
       make-custom-binary-input-port
-      get-char lookahead-char get-u8 lookahead-u8 close-port
-      transcoded-port))
+      transcoded-port port-transcoder
+      close-port
+      port-eof?
+      get-char lookahead-char
+      get-string-n get-string-n! get-string-all get-line
+      get-u8 lookahead-u8 
+      get-bytevector-n get-bytevector-n!
+      get-bytevector-some get-bytevector-all 
+      port-has-port-position? port-position
+      port-has-set-port-position!? set-port-position!
+      call-with-port
+      ))
+
+  (define-syntax define-rrr
+    (syntax-rules ()
+      [(_ name)
+       (define (name . args) 
+         (apply error 'name "not implemented" args))]))
 
   (define-struct $port 
     (index size buffer base-index transcoder closed? attrs 
@@ -150,6 +181,10 @@
         ($port-close p))))
 
 
+  (define (output-port? p) 
+    (and ($port? p) 
+         ($port-write! p)
+         #t))
 
   (define (input-port? p) 
     (and ($port? p) 
@@ -161,6 +196,16 @@
          ($port-transcoder p) 
          #t))
 
+  (define (binary-port? p) 
+    (and ($port? p)
+         (not ($port-transcoder p))))
+
+  (define (port-transcoder p)
+    (if ($port? p)
+        (let ([tr ($port-transcoder p)])
+          (and (transcoder? tr) tr))
+        (error 'port-transcoder "not a port" p)))
+              
   (define (close-port p)
     (cond
       [(not ($port? p)) 
@@ -174,11 +219,10 @@
          (when (procedure? close)
            (close)))]))
 
-  (define-syntax define-rrr
-    (syntax-rules ()
-      [(_ name)
-       (define (name . args) 
-         (apply error 'name "not implemented" args))]))
+  (define-rrr port-has-port-position?)
+  (define-rrr port-position)
+  (define-rrr port-has-set-port-position!?)
+  (define-rrr set-port-position!)
 
   ;;; ----------------------------------------------------------
   (module (get-char lookahead-char)
@@ -412,7 +456,6 @@
                        [else (get-char-utf8-mode p who)]))])]
                [else (do-error p who)]))])))
 
-
     (define (advance-utf8-bom p who)
       (let ([i ($port-index p)]
             [j ($port-size p)]
@@ -624,7 +667,29 @@
              (eof-object? (lookahead-u8 p)))]
         [else (error 'port-eof? "not an input port" p)])))
 
+  (define-rrr open-file-input-port)
+  (define-rrr standard-input-port)
+  (define-rrr current-input-port)
 
+  (define (call-with-port p proc)
+    (if ($port? p) 
+        (if (procedure? proc) 
+            (dynamic-wind
+              void
+              (lambda () (proc p))
+              (lambda () (close-port p)))
+            (error 'call-with-port "not a procedure" proc))
+        (error 'call-with-port "not a port" p)))
+
+
+  (define-rrr get-bytevector-n)
+  (define-rrr get-bytevector-n!)
+  (define-rrr get-bytevector-some)
+  (define-rrr get-bytevector-all)
+  (define-rrr get-string-n)
+  (define-rrr get-string-n!)
+  (define-rrr get-string-all)
+  (define-rrr get-line)
 
   )
 

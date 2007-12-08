@@ -30,7 +30,10 @@
     (ikarus system $bignums)
     (except (ikarus code-objects) procedure-annotation)
     (except (ikarus) fasl-write))
-
+  
+  (define (put-tag c p)
+    (write-byte (char->integer c) p))
+  
   (define write-fixnum 
     (lambda (x p)
       (unless (fixnum? x) (error 'write-fixnum "not a fixnum" x))
@@ -48,25 +51,23 @@
   (define fasl-write-immediate
     (lambda (x p)
       (cond
-        [(null? x) (write-char #\N p)]
+        [(null? x) (put-tag #\N p)]
         [(fixnum? x) 
-         (write-char #\I p)
+         (put-tag #\I p)
          (write-fixnum x p)]
         [(char? x)
          (let ([n ($char->fixnum x)])
            (if ($fx<= n 255)
                (begin
-                 (write-char #\c p)
+                 (put-tag #\c p)
                  (write-byte n p))
                (begin
-                 (write-char #\C p)
+                 (put-tag #\C p)
                  (write-int n p))))]
-        ; (write-char #\C p)
-        ; (write-char x p)]
         [(boolean? x)
-         (write-char (if x #\T #\F) p)]
-        [(eof-object? x) (write-char #\E p)]
-        [(eq? x (void)) (write-char #\U p)]
+         (put-tag (if x #\T #\F) p)]
+        [(eof-object? x) (put-tag #\E p)]
+        [(eq? x (void)) (put-tag #\U p)]
         [else (error 'fasl-write "not a fasl-writable immediate" x)])))
   
   (define (ascii-string? s)
@@ -74,13 +75,13 @@
       (or ($fx= i n)
           (and ($char<= ($string-ref s i) ($fixnum->char 127))
                (f s ($fxadd1 i) n)))))
-
+  
   (define (count-unshared-cdrs x h n)
     (cond
       [(and (pair? x) (eq? (hashtable-ref h x #f) 0))
        (count-unshared-cdrs ($cdr x) h ($fxadd1 n))]
       [else n]))
-
+  
   (define (write-pairs x p h m n)
     (cond
       [($fx= n 0) (fasl-write-object x p h m)]
@@ -97,22 +98,22 @@
            (let ([n (count-unshared-cdrs d h 0)])
              (cond
                [($fx= n 0)
-                (write-char #\P p)
+                (put-tag #\P p)
                 (fasl-write-object d p h
                   (fasl-write-object (car x) p h m))]
                [else 
                 (cond
                   [($fx<= n 255) 
-                   (write-char #\l p)
+                   (put-tag #\l p)
                    (write-byte n p)]
                   [else
-                   (write-char #\L p)
+                   (put-tag #\L p)
                    (write-int n p)])
                 (write-pairs d p h 
                   (fasl-write-object (car x) p h m)
                   n)])))]
         [(vector? x)
-         (write-char #\V p)
+         (put-tag #\V p)
          (write-int (vector-length x) p)
          (let f ([x x] [i 0] [n (vector-length x)] [m m])
            (cond
@@ -123,14 +124,14 @@
         [(string? x) 
          (cond
            [(ascii-string? x)
-            (write-char #\s p)
+            (put-tag #\s p)
             (write-int (string-length x) p)
             (let f ([x x] [i 0] [n (string-length x)])
               (unless (fx= i n)
-                (write-char (string-ref x i) p)
+                (write-byte (char->integer (string-ref x i)) p)
                 (f x (fxadd1 i) n)))]
            [else
-            (write-char #\S p)
+            (put-tag #\S p)
             (write-int (string-length x) p)
             (let f ([x x] [i 0] [n (string-length x)])
               (unless (= i n)
@@ -138,14 +139,14 @@
                 (f x (fxadd1 i) n)))])
          m]
         [(gensym? x)
-         (write-char #\G p)
+         (put-tag #\G p)
          (fasl-write-object (gensym->unique-string x) p h
            (fasl-write-object (symbol->string x) p h m))]
         [(symbol? x) 
-         (write-char #\M p)
+         (put-tag #\M p)
          (fasl-write-object (symbol->string x) p h m)]
         [(code? x)
-         (write-char #\x p)
+         (put-tag #\x p)
          (write-int (code-size x) p)
          (write-fixnum (code-freevars x) p)
          (let ([m (fasl-write-object ($code-annotation x) p h m)])
@@ -159,7 +160,7 @@
            (cond
              [(eq? rtd (base-rtd))
               ;;; rtd record
-              (write-char #\R p)
+              (put-tag #\R p)
               (let ([names (struct-type-field-names x)]
                     [m 
                      (fasl-write-object (struct-type-symbol x) p h
@@ -173,7 +174,7 @@
                         (fasl-write-object (car names) p h m))])))]
              [else
               ;;; non-rtd record
-              (write-char #\{ p)
+              (put-tag #\{ p)
               (write-int (length (struct-type-field-names rtd)) p)
               (let f ([names (struct-type-field-names rtd)] 
                       [m (fasl-write-object rtd p h m)])
@@ -185,16 +186,16 @@
                          ((struct-field-accessor rtd (car names)) x)
                          p h m))]))]))]
         [(procedure? x)
-         (write-char #\Q p)
+         (put-tag #\Q p)
          (fasl-write-object ($closure-code x) p h m)]
         [(bytevector? x) 
-         (write-char #\v p)
+         (put-tag #\v p)
          (let ([n ($bytevector-length x)])
            (write-int n p)
            (write-bytevector x 0 n p))
          m]
         [(flonum? x) 
-         (write-char #\f p)
+         (put-tag #\f p)
          (write-byte ($flonum-u8-ref x 7) p)
          (write-byte ($flonum-u8-ref x 6) p)
          (write-byte ($flonum-u8-ref x 5) p)
@@ -205,11 +206,11 @@
          (write-byte ($flonum-u8-ref x 0) p)
          m]
         [(ratnum? x)
-         (write-char #\r p)
+         (put-tag #\r p)
          (fasl-write-object (numerator x) p h
            (fasl-write-object (denominator x) p h m))]
         [(bignum? x) 
-         (write-char #\b p) 
+         (put-tag #\b p) 
          (let ([sz ($bignum-size x)])
            (write-int (if ($bignum-positive? x) sz (- sz)) p)
            (let f ([i 0])
@@ -235,11 +236,11 @@
               (do-write x p h m)]
              [(fx> mark 0) ; marked but not written
               (hashtable-set! h x (fx- 0 m))
-              (write-char #\> p)
+              (put-tag #\> p)
               (write-int m p)
               (do-write x p h (fxadd1 m))]
              [else
-              (write-char #\< p)
+              (put-tag #\< p)
               (write-int (fx- 0 mark) p)
               m]))]
         [else (error 'fasl-write "BUG: not in hash table" x)]))) 
@@ -290,8 +291,9 @@
               (let ([code ($closure-code x)])
                 (unless (fxzero? (code-freevars code))
                   (error 'fasl-write
-                         "Cannot write a non-thunk procedure; the one given has free vars"
-                         (code-freevars code)))
+                    "Cannot write a non-thunk procedure; \
+                     the one given has free vars"
+                    (code-freevars code)))
                 (make-graph code h))]
              [(bytevector? x) (void)]
              [(flonum? x)     (void)]
@@ -304,18 +306,18 @@
     (lambda (x port)
       (let ([h (make-eq-hashtable)])
          (make-graph x h)
-         (write-char #\# port)
-         (write-char #\@ port)
-         (write-char #\I port)
-         (write-char #\K port)
-         (write-char #\0 port)
-         (write-char #\1 port)
+         (put-tag #\# port)
+         (put-tag #\@ port)
+         (put-tag #\I port)
+         (put-tag #\K port)
+         (put-tag #\0 port)
+         (put-tag #\1 port)
          (fasl-write-object x port h 1)
          (void))))
   (define fasl-write
-     (case-lambda 
-       [(x) (fasl-write-to-port x (current-output-port))]
-       [(x port)
-        (unless (output-port? port)
-          (error 'fasl-write "not an output port" port))
-        (fasl-write-to-port x port)])))
+    (case-lambda 
+      [(x) (fasl-write-to-port x (current-output-port))]
+      [(x port)
+       (unless (output-port? port)
+         (error 'fasl-write "not an output port" port))
+       (fasl-write-to-port x port)])))
