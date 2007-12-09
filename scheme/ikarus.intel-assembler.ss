@@ -677,6 +677,10 @@
        (CODE #x31 (ModRM 3 src dst ac))]
       [(and (mem? src) (reg? dst))
        (CODErd #x33 dst src ac)]
+      [(and (reg? src) (mem? dst))
+       ((CODE/digit #x31 src) dst ac)]
+      ;[(and (imm? src) (mem? dst))
+      ; ((CODE/digit #x81 '/6) dst (IMM32 src ac))]
       [else (error who "invalid" instr)])]
    [(leal src dst) 
     (cond

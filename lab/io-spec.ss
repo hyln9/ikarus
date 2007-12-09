@@ -10,7 +10,7 @@
     transcoded-port port-transcoder
     close-port
     port-eof?
-    get-char lookahead-char 
+    get-char lookahead-char read-char peek-char
     get-string-n get-string-n! get-string-all get-line
     get-u8 lookahead-u8 
     get-bytevector-n get-bytevector-n!
@@ -31,7 +31,7 @@
       transcoded-port port-transcoder
       close-port
       port-eof?
-      get-char lookahead-char
+      get-char lookahead-char read-char peek-char
       get-string-n get-string-n! get-string-all get-line
       get-u8 lookahead-u8 
       get-bytevector-n get-bytevector-n!
@@ -703,7 +703,7 @@
        "file already exists"
        "invalid file name"))
 
-  (define (io-error who id err) 
+  (define (io-error who id err)
     (let ([msg
            (let ([err (- err)])
              (cond
@@ -751,7 +751,6 @@
 
   (define (current-input-port) *the-input-port*)
 
-
   (define (call-with-port p proc)
     (if ($port? p) 
         (if (procedure? proc) 
@@ -762,15 +761,245 @@
             (error 'call-with-port "not a procedure" proc))
         (error 'call-with-port "not a port" p)))
 
+  (define read-char
+    (case-lambda
+      [() (get-char *the-input-port*)]
+      [(p)
+       (if (input-port? p)
+           (if (textual-port? p)
+               (get-char p)
+               (error 'read-char "not a textual port" p))
+           (error 'read-char "not an input-port" p))]))
+  ;;;
+  (define peek-char
+    (case-lambda
+      [() (lookahead-char *the-input-port*)]
+      [(p)
+       (if (input-port? p)
+           (if (textual-port? p)
+               (lookahead-char p)
+               (error 'peek-char "not a textual port" p))
+           (error 'peek-char "not an input-port" p))]))
+ 
 
-  (define-rrr get-bytevector-n)
-  (define-rrr get-bytevector-n!)
+  (define (get-bytevector-n p n) 
+    (import (ikarus system $fx) (ikarus system $bytevectors))
+    (define (subbytevector s n)
+      (let ([p ($make-bytevector n)])
+        (let f ([s s] [n n] [p p])
+          (let ([n ($fx- n 1)])
+            ($bytevector-set! p n ($bytevector-u8-ref s n))
+            (if ($fx= n 0) 
+                p
+                (f s n p))))))
+    (unless (input-port? p) 
+      (error 'get-bytevector-n "not an input port" p))
+    (unless (binary-port? p)
+      (error 'get-bytevector-n "not a binary port" p))
+    (unless (fixnum? n) 
+      (error 'get-bytevector-n "count is not a fixnum" n))
+    (cond
+      [($fx> n 0) 
+       (let ([s ($make-bytevector n)])
+         (let f ([p p] [n n] [s s] [i 0])
+           (let ([x (get-u8 p)])
+             (cond
+               [(eof-object? x) 
+                (if ($fx= i 0) 
+                    (eof-object)
+                    (subbytevector s i))]
+               [else
+                ($bytevector-set! s i x)
+                (let ([i ($fxadd1 i)])
+                  (if ($fx= i n) 
+                      s
+                      (f p n s i)))]))))]
+      [($fx= n 0) '#vu8()]
+      [else (error 'get-bytevector-n "count is negative" n)]))
+
+
+  (define (get-bytevector-n! p s i c) 
+    (import (ikarus system $fx) (ikarus system $bytevectors))
+    (unless (input-port? p) 
+      (error 'get-bytevector-n! "not an input port" p))
+    (unless (binary-port? p)
+      (error 'get-bytevector-n! "not a binary port" p))
+    (unless (bytevector? s) 
+      (error 'get-bytevector-n! "not a bytevector" s))
+    (let ([len ($bytevector-length s)])
+      (unless (fixnum? i) 
+        (error 'get-bytevector-n! "starting index is not a fixnum" i))
+      (when (or ($fx< i 0) ($fx> i len))
+        (error 'get-bytevector-n! 
+          (format "starting index is out of range 0..~a" len)
+          i))
+      (unless (fixnum? c)
+        (error 'get-bytevector-n! "count is not a fixnum" c))
+      (cond
+        [($fx> c 0)
+         (let ([j (+ i c)])
+           (when (> j len)
+             (error 'get-bytevector-n! 
+               (format "count is out of range 0..~a" (- len i))
+               c))
+           (let ([x (get-u8 p)])
+             (cond
+               [(eof-object? x) x]
+               [else
+                ($bytevector-set! s i x)
+                (let f ([p p] [s s] [start i] [i 1] [c c])
+                  (let ([x (get-u8 p)])
+                    (cond
+                      [(eof-object? x) i]
+                      [else
+                       ($bytevector-set! s ($fx+ start i) x)
+                       (let ([i ($fxadd1 i)])
+                         (if ($fx= i c)
+                             i
+                             (f p s start i c)))])))])))]
+        [($fx= c 0) 0]
+        [else (error 'get-bytevector-n! "count is negative" c)])))
+
   (define-rrr get-bytevector-some)
-  (define-rrr get-bytevector-all)
-  (define-rrr get-string-n)
-  (define-rrr get-string-n!)
-  (define-rrr get-string-all)
-  (define-rrr get-line)
+
+  (define (get-bytevector-all p)
+    (define (get-it p)
+      (let f ([p p] [n 0] [ac '()])
+        (let ([x (get-u8 p)])
+          (cond
+            [(eof-object? x)
+             (if (null? ac) 
+                 (eof-object)
+                 (make-it n ac))]
+            [else (f p (+ n 1) (cons x ac))]))))
+    (define (make-it n revls)
+      (let f ([s (make-bytevector n)] [i (- n 1)] [ls revls])
+        (cond
+          [(pair? ls)
+           (bytevector-u8-set! s i (car ls))
+           (f s (- i 1) (cdr ls))]
+          [else s])))
+    (if (input-port? p)
+        (if (binary-port? p)
+            (get-it p)
+            (error 'get-bytevector-all "not a binary port" p))
+        (error 'get-bytevector-all "not an input port" p)))
+
+  (define (get-string-n p n) 
+    (import (ikarus system $fx) (ikarus system $strings))
+    (unless (input-port? p) 
+      (error 'get-string-n "not an input port" p))
+    (unless (textual-port? p) 
+      (error 'get-string-n "not a textual port" p))
+    (unless (fixnum? n) 
+      (error 'get-string-n "count is not a fixnum" n))
+    (cond
+      [($fx> n 0) 
+       (let ([s ($make-string n)])
+         (let f ([p p] [n n] [s s] [i 0])
+           (let ([x (get-char p)])
+             (cond
+               [(eof-object? x) 
+                (if ($fx= i 0) 
+                    (eof-object)
+                    (substring s 0 i))]
+               [else
+                ($string-set! s i x) 
+                (let ([i ($fxadd1 i)])
+                  (if ($fx= i n) 
+                      s
+                      (f p n s i)))]))))]
+      [($fx= n 0) ""]
+      [else (error 'get-string-n "count is negative" n)]))
+
+  (define (get-string-n! p s i c) 
+    (import (ikarus system $fx) (ikarus system $strings))
+    (unless (input-port? p) 
+      (error 'get-string-n! "not an input port" p))
+    (unless (textual-port? p) 
+      (error 'get-string-n! "not a textual port" p))
+    (unless (string? s) 
+      (error 'get-string-n! "not a string" s))
+    (let ([len ($string-length s)])
+      (unless (fixnum? i) 
+        (error 'get-string-n! "starting index is not a fixnum" i))
+      (when (or ($fx< i 0) ($fx> i len))
+        (error 'get-string-n! 
+          (format "starting index is out of range 0..~a" len)
+          i))
+      (unless (fixnum? c) 
+        (error 'get-string-n! "count is not a fixnum" c))
+      (cond
+        [($fx> c 0)
+         (let ([j (+ i c)])
+           (when (> j len)
+             (error 'get-string-n! 
+               (format "count is out of range 0..~a" (- len i))
+               c))
+           (let ([x (get-char p)])
+             (cond
+               [(eof-object? x) x]
+               [else
+                ($string-set! s i x)
+                (let f ([p p] [s s] [start i] [i 1] [c c])
+                  (let ([x (get-char p)])
+                    (cond
+                      [(eof-object? x) i]
+                      [else
+                       ($string-set! s ($fx+ start i) x)
+                       (let ([i ($fxadd1 i)])
+                         (if ($fx= i c)
+                             i
+                             (f p s start i c)))])))])))]
+        [($fx= c 0) 0]
+        [else (error 'get-string-n! "count is negative" c)])))
+
+  (define (get-line p)
+    (define (get-it p)
+      (let f ([p p] [n 0] [ac '()])
+        (let ([x (get-char p)])
+          (cond
+            [(eqv? x #\newline) 
+             (make-it n ac)]
+            [(eof-object? x) 
+             (if (null? ac) x (make-it n ac))]
+            [else (f p (+ n 1) (cons x ac))]))))
+    (define (make-it n revls)
+      (let f ([s (make-string n)] [i (- n 1)] [ls revls])
+        (cond
+          [(pair? ls)
+           (string-set! s i (car ls))
+           (f s (- i 1) (cdr ls))]
+          [else s])))
+    (if (input-port? p)
+        (if (textual-port? p)
+            (get-it p)
+            (error 'get-line "not a textual port" p))
+        (error 'get-line "not an input port" p)))
+
+
+  (define (get-string-all p)
+    (define (get-it p)
+      (let f ([p p] [n 0] [ac '()])
+        (let ([x (get-char p)])
+          (cond
+            [(eof-object? x)
+             (if (null? ac) 
+                 (eof-object)
+                 (make-it n ac))]
+            [else (f p (+ n 1) (cons x ac))]))))
+    (define (make-it n revls)
+      (let f ([s (make-string n)] [i (- n 1)] [ls revls])
+        (cond
+          [(pair? ls)
+           (string-set! s i (car ls))
+           (f s (- i 1) (cdr ls))]
+          [else s])))
+    (if (input-port? p)
+        (if (textual-port? p)
+            (get-it p)
+            (error 'get-string-all "not a textual port" p))
+        (error 'get-string-all "not an input port" p)))
 
   )
 

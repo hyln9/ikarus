@@ -2,7 +2,8 @@
 
 (import 
 
-  (except (ikarus) get-char get-u8 lookahead-u8 close-port
+  (except (ikarus) get-char peek-char read-char 
+          get-u8 lookahead-u8 close-port
           input-port? open-string-input-port output-port?
           standard-input-port current-input-port
           get-bytevector-n get-bytevector-n!

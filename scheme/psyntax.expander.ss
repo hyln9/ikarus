@@ -989,8 +989,7 @@
              (invalid-fmls-error stx lhs*)))
         ((_ f ((lhs* rhs*) ...) b b* ...) (id? f)
          (if (valid-bound-ids? lhs*)
-             (bless `(letrec ((,f (lambda ,lhs* ,b . ,b*)))
-                        (,f . ,rhs*)))
+             (bless `((letrec ((,f (lambda ,lhs* ,b . ,b*))) ,f) . ,rhs*))
              (invalid-fmls-error stx lhs*))))))
   
   (define let-values-macro
