@@ -26,14 +26,14 @@
       [else
        (let ([a (f (car ls))])
          (cons a (map1ltr f (cdr ls))))]))
-
+  
   (define pretty-width
     (make-parameter 60
       (lambda (x) 
         (unless (and (exact? x) (integer? x) (> x 0))
           (error 'pretty-width "invalid argument" x))
         x)))
-
+  
   (define (pretty-indent) 1)
   (define-struct cbox (length boxes))
   (define-struct pbox (length ls last))
@@ -463,7 +463,7 @@
     (f x p 0)
     (newline p))
   ;;;
-
+  
   (define (hasher x h)
     (define (vec-graph x i j)
       (unless (fx= i j)
@@ -532,10 +532,10 @@
         (graph x)
         (dynamic x))
     rv)
-
+  
   (define-struct setbox (idx data))
   (define-struct refbox (idx))
-
+  
   (define (rewrite-shared x h)
     (define counter 0)
     (let f ([x x])
@@ -589,7 +589,7 @@
            [else
             (list->vector (map1ltr f (vector->list x)))])]
         [else x])))
-
+  
   (define (unshare x) 
     (let ([h (make-eq-hashtable)])
       (if (hasher x h)
@@ -618,11 +618,12 @@
   (set-fmt! 'quasisyntax '(read-macro . "#`"))
   (set-fmt! 'unsyntax '(read-macro . "#,"))
   (set-fmt! 'unsyntax-splicing '(read-macro . "#,@"))
-  (set-fmt! '|#primitive| '(read-macro . "#%"))
+  ;(set-fmt! '|#primitive| '(read-macro . "#%"))
   (set-fmt! 'let '(alt 
                     (_ (0 [e 0 e] ...) tab e ...)
                     (_ x (0 [e 0 e] ...) tab e ...)))
   (set-fmt! 'letrec '(_ (0 [e 0 e] ...) tab e ...))
+  (set-fmt! 'letrec* '(_ (0 [e 0 e] ...) tab e ...))
   (set-fmt! 'let-syntax '(_ (0 [e 0 e] ...) tab e ...))
   (set-fmt! 'letrec-syntax '(_ (0 [e 0 e] ...) tab e ...))
   (set-fmt! 'let* '(_ (0 [e 0 e] ...) tab e ...))
