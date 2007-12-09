@@ -15,10 +15,11 @@
 
 
 (library (ikarus system time-and-date)
-  (export current-time time? time-second time-nanosecond)
+  (export current-time time? time-second time-nanosecond
+          time-gmt-offset)
   (import 
     (except (ikarus) time current-time time? time-second
-            time-nanosecond))
+            time-nanosecond time-gmt-offset))
 
   (define-struct time (msecs secs usecs))
                   ;;; mega/seconds/micros
@@ -37,5 +38,9 @@
         (* (time-usecs x) 1000)
         (error 'time-nanosecond "not a time" x)))
 
+  (define (time-gmt-offset x)
+    (if (time? x) 
+        (foreign-call "ikrt_gmt_offset" x)
+        (error 'time-gmt-offset "not a time" x)))
   )
 

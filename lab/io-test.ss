@@ -299,74 +299,97 @@
         [else 
          (error #f "mismatch" x (string-ref str i) i)]))))
 
-(test "utf8 range 2"
-  (test-port-string-output
-    (open-bytevector-input-port (make-utf8-bytevector-range2)
-      (make-transcoder (utf-8-codec) 'none 'raise))
-    (make-utf8-string-range2)))
-
-(test "utf8 range 3"
-  (test-port-string-output
-    (open-bytevector-input-port (make-utf8-bytevector-range3)
-      (make-transcoder (utf-8-codec) 'none 'raise))
-    (make-utf8-string-range3)))
-
-(test "utf8 range 4"
-  (test-port-string-output
-    (open-bytevector-input-port (make-utf8-bytevector-range4)
-      (make-transcoder (utf-8-codec) 'none 'raise))
-    (make-utf8-string-range4)))
-
-(test "utf8 peek range 2"
-  (test-port-string-peeking-output
-    (open-bytevector-input-port (make-utf8-bytevector-range2)
-      (make-transcoder (utf-8-codec) 'none 'raise))
-    (make-utf8-string-range2)))
-
-(test "utf8 peek range 3"
-  (test-port-string-peeking-output
-    (open-bytevector-input-port (make-utf8-bytevector-range3)
-      (make-transcoder (utf-8-codec) 'none 'raise))
-    (make-utf8-string-range3)))
-
-(test "utf8 peek range 4"
-  (test-port-string-peeking-output
-    (open-bytevector-input-port (make-utf8-bytevector-range4)
-      (make-transcoder (utf-8-codec) 'none 'raise))
-    (make-utf8-string-range4)))
-
-(test "utf8 range 2 string"
-  (test-port-string-output
-    (open-string-input-port (make-utf8-string-range2))
-    (make-utf8-string-range2)))
-
-(test "utf8 range 3 string"
-  (test-port-string-output
-    (open-string-input-port (make-utf8-string-range3))
-    (make-utf8-string-range3)))
-
-(test "utf8 range 4 string"
-  (test-port-string-output
-    (open-string-input-port (make-utf8-string-range4))
-    (make-utf8-string-range4)))
-
-(test "utf8 peek range 2 string"
-  (test-port-string-peeking-output
-    (open-string-input-port (make-utf8-string-range2))
-    (make-utf8-string-range2)))
-
-(test "utf8 peek range 3 string"
-  (test-port-string-peeking-output
-    (open-string-input-port (make-utf8-string-range3))
-    (make-utf8-string-range3)))
-
-(test "utf8 peek range 4 string"
-  (test-port-string-peeking-output
-    (open-string-input-port (make-utf8-string-range4))
-    (make-utf8-string-range4)))
-
-
-
+(define (run-exhaustive-tests)
+  (test "utf8 range 2"
+    (test-port-string-output
+      (open-bytevector-input-port (make-utf8-bytevector-range2)
+        (make-transcoder (utf-8-codec) 'none 'raise))
+      (make-utf8-string-range2)))
+  
+  (test "utf8 range 3"
+    (test-port-string-output
+      (open-bytevector-input-port (make-utf8-bytevector-range3)
+        (make-transcoder (utf-8-codec) 'none 'raise))
+      (make-utf8-string-range3)))
+  
+  (test "utf8 range 4"
+    (test-port-string-output
+      (open-bytevector-input-port (make-utf8-bytevector-range4)
+        (make-transcoder (utf-8-codec) 'none 'raise))
+      (make-utf8-string-range4)))
+  
+  (test "utf8 peek range 2"
+    (test-port-string-peeking-output
+      (open-bytevector-input-port (make-utf8-bytevector-range2)
+        (make-transcoder (utf-8-codec) 'none 'raise))
+      (make-utf8-string-range2)))
+  
+  (test "utf8 peek range 3"
+    (test-port-string-peeking-output
+      (open-bytevector-input-port (make-utf8-bytevector-range3)
+        (make-transcoder (utf-8-codec) 'none 'raise))
+      (make-utf8-string-range3)))
+  
+  (test "utf8 peek range 4"
+    (test-port-string-peeking-output
+      (open-bytevector-input-port (make-utf8-bytevector-range4)
+        (make-transcoder (utf-8-codec) 'none 'raise))
+      (make-utf8-string-range4)))
+  
+  (test "utf8 range 2 string"
+    (test-port-string-output
+      (open-string-input-port (make-utf8-string-range2))
+      (make-utf8-string-range2)))
+  
+  (test "utf8 range 3 string"
+    (test-port-string-output
+      (open-string-input-port (make-utf8-string-range3))
+      (make-utf8-string-range3)))
+  
+  (test "utf8 range 4 string"
+    (test-port-string-output
+      (open-string-input-port (make-utf8-string-range4))
+      (make-utf8-string-range4)))
+  
+  (test "utf8 peek range 2 string"
+    (test-port-string-peeking-output
+      (open-string-input-port (make-utf8-string-range2))
+      (make-utf8-string-range2)))
+  
+  (test "utf8 peek range 3 string"
+    (test-port-string-peeking-output
+      (open-string-input-port (make-utf8-string-range3))
+      (make-utf8-string-range3)))
+  
+  (test "utf8 peek range 4 string"
+    (test-port-string-peeking-output
+      (open-string-input-port (make-utf8-string-range4))
+      (make-utf8-string-range4))))
 
 
+(display "now write something on the keyboard ...\n")
+(printf "you typed ~s\n"
+  (list->string
+    (let ([p (standard-input-port)])
+      (let f ()
+        (let ([x (get-u8 p)])
+          (if (eof-object? x) 
+              '()
+              (cons (integer->char x) (f))))))))
 
+(display "let's do it again ...\n")
+(printf "you typed ~s\n"
+  (list->string
+    (let ([p (transcoded-port (standard-input-port)
+                (make-transcoder (utf-8-codec)))])
+      (let f ()
+        (let ([x (get-char p)])
+          (if (eof-object? x) 
+              '()
+              (cons x (f))))))))
+
+
+
+
+
+(run-exhaustive-tests)

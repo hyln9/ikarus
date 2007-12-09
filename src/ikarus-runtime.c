@@ -854,7 +854,6 @@ ikrt_bvftime(ikp outbv, ikp fmtbv){
 
 
 
-
 ikp
 ikrt_close_file(ikp fd, ikpcb* pcb){
   int err = close(unfix(fd));
@@ -864,6 +863,8 @@ ikrt_close_file(ikp fd, ikpcb* pcb){
     return true_object;
   }
 }
+
+
 
 ikp ikrt_read(ikp fd, ikp buff, ikpcb* pcb){
   if(tagof(buff) != bytevector_tag){
@@ -1017,6 +1018,17 @@ ikrt_current_time(ikp t){
   ref(t, off_record_data + 2*wordsize) = fix(s.tv_usec);
   return t;
 }
+
+ikp
+ikrt_gmt_offset(ikp t){
+  time_t clock =
+    unfix(ref(t, off_record_data + 0*wordsize)) * 1000000 
+    + unfix(ref(t, off_record_data + 1*wordsize));
+  struct tm* m = localtime(&clock);
+  ikp r = fix(m->tm_gmtoff);
+  return r;
+}
+
 
 
 

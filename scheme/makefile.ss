@@ -377,6 +377,7 @@
     [current-time                                i]
     [time?                                       i]
     [time-second                                 i]
+    [time-gmt-offset                             i]
     [time-nanosecond                             i]
     [command-line-arguments                      i]
     [set-rtd-printer!                            i]

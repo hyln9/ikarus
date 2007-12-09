@@ -453,43 +453,54 @@
                      (cond
                        [(fx= bytes 0)
                         (do-error p who)]
-                       [else (get-char-utf8-mode p who)]))])]
+                       [else (lookahead-char-utf8-mode p who)]))])]
                [else (do-error p who)]))])))
 
-    (define (advance-utf8-bom p who)
-      (let ([i ($port-index p)]
-            [j ($port-size p)]
-            [buf ($port-buffer p)])
-        (cond
-          [(fx< (fx+ i 3) j) 
-           (when (and (fx=? (bytevector-u8-ref buf i) #xEF)
-                      (fx=? (bytevector-u8-ref buf i) #xBB) 
-                      (fx=? (bytevector-u8-ref buf i) #xBF))
-             ($set-port-index! p (fx+ i 3)))]
-          [else 
-           (let ([c (fx- j i)])
-             (bytevector-copy! buf i buf 0 c)
-             (let ([read! ($port-read! p)])
-               (let ([c1 (read! buf c (fx- (bytevector-length buf) c))])
-                 ($set-port-index! p c)
-                 ($set-port-size! p (fx+ c c1))
-                 (unless (fx= c1 0) 
-                   (advance-utf8-bom p who)))))])))
+    (define (advance-bom p who bom-seq)
+      ;;; return eof if port is eof, 
+      ;;; #t if a bom is present, updating the port index to 
+      ;;;    point just past the bom.
+      ;;; #f otherwise. 
+      (cond
+        [(fx< ($port-index p) ($port-size p))
+         (let f ([i 0] [ls bom-seq])
+           (cond
+             [(null? ls)
+              ($set-port-index! p (fx+ ($port-index p) i))
+              #t]
+             [else
+              (let ([idx (fx+ i ($port-index p))])
+                (cond
+                  [(fx< idx ($port-size p))
+                   (if (fx=? (car ls)
+                         (bytevector-u8-ref ($port-buffer p) idx))
+                       (f (fx+ i 1) (cdr ls))
+                       #f)]
+                  [else
+                   (let ([bytes (refill-bv-buffer p who)])
+                     (if (fx= bytes 0)
+                         #f
+                         (f i ls)))]))]))]
+        [else 
+         (let ([bytes (refill-bv-buffer p who)])
+           (if (fx= bytes 0)
+               (eof-object)
+               (advance-bom p who bom-seq)))]))
 
     (define (speedup-input-port p who)
+      ;;; returns #t if port is eof, #f otherwise
       (unless (input-port? p) 
         (error who "not an input port" p))
       (let ([tr ($port-transcoder p)])
         (unless tr 
           (error who "not a textual port" p))
         (case (transcoder-codec tr)
-          [(utf-8-codec) 
+          [(utf-8-codec)
            ;;;
-           (advance-utf8-bom p who)
            ($set-port-attrs! p 
-             (fxior fast-get-tag fast-get-utf8-tag))]
+             (fxior fast-get-tag fast-get-utf8-tag))
+           (eof-object? (advance-bom p who '(#xEF #xBB #xBF)))]
           [else (error 'slow-get-char "codec not handled")])))
-
 
     (define-rrr slow-lookahead-char)
     (define (lookahead-char-char-mode p who)
@@ -538,8 +549,9 @@
                [else
                 (get-char-latin-mode p who 0)]))]
           [else 
-           (speedup-input-port p who)
-           (lookahead-char p)])))
+           (if (speedup-input-port p who)
+               (eof-object)
+               (lookahead-char p))])))
     ;;;
     (define (get-char-char-mode p who)
       (let ([str ($port-buffer p)]
@@ -591,8 +603,9 @@
                [else
                 (get-char-latin-mode p who 1)]))]
           [else 
-           (speedup-input-port p who)
-           (get-char p)]))))
+           (if (speedup-input-port p who)
+               (eof-object)
+               (get-char p))]))))
 
   ;;; ----------------------------------------------------------
   (define (assert-binary-input-port p who)
@@ -667,9 +680,77 @@
              (eof-object? (lookahead-u8 p)))]
         [else (error 'port-eof? "not an input port" p)])))
 
+  (define io-errors-vec
+    '#("unknown error"
+       "bad file name"
+       "operation interrupted"
+       "not a directory"
+       "file name too long"
+       "missing entities"
+       "insufficient access privileges"
+       "circular path"
+       "file is a directory"
+       "file system is read-only"
+       "maximum open files reached"
+       "maximum open files reached"
+       "ENXIO"
+       "operation not supported"
+       "not enough space on device"
+       "quota exceeded"
+       "io error"
+       "device is busy"
+       "access fault"
+       "file already exists"
+       "invalid file name"))
+
+  (define (io-error who id err) 
+    (let ([msg
+           (let ([err (- err)])
+             (cond
+               [(fx< err (vector-length io-errors-vec))
+                "unknown error"]
+               [else (vector-ref io-errors-vec err)]))])
+      (raise 
+        (condition
+          (make-who-condition who)
+          (make-message-condition msg)
+          (make-i/o-filename-error id)))))
+
+  (define read-size 4096)
+  (define file-buffer-size (+ read-size 128))
+
+  (define (fh->input-port fd id size transcoder close?)
+    ($make-port 0 0 (make-bytevector size) 0 
+      transcoder
+      #f ;;; closed?
+      (input-transcoder-attrs transcoder)
+      id
+      (lambda (bv idx cnt) 
+        (let ([bytes
+               (foreign-call "ikrt_read_fd" fd bv idx 
+                  (fxmin read-size cnt))])
+          (when (fx< bytes 0) (io-error 'read id bytes))
+          bytes))
+      #f ;;; write!
+      #f ;;; get-position
+      #f ;;; set-position!
+      (and close?
+        (lambda () 
+          (cond
+            [(foreign-call "ikrt_close_fd" fd) =>
+             (lambda (err) 
+               (io-error 'close id err))])))))
+
   (define-rrr open-file-input-port)
-  (define-rrr standard-input-port)
-  (define-rrr current-input-port)
+  
+  (define (standard-input-port) 
+    (fh->input-port 0 '*stdin* 256 #f #f))
+
+  (define *the-input-port* 
+    (transcoded-port (standard-input-port) (native-transcoder)))
+
+  (define (current-input-port) *the-input-port*)
+
 
   (define (call-with-port p proc)
     (if ($port? p) 

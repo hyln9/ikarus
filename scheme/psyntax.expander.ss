@@ -1076,11 +1076,7 @@
                   [others
                    (syntax-violation #f "malformed bindings"
                       stx others)])])))))))
-                          
-
-
-                     
-
+  
   (define trace-lambda-macro
     (lambda (stx)
       (syntax-match stx ()
