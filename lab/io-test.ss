@@ -7,7 +7,9 @@
           input-port? open-string-input-port output-port?
           standard-input-port current-input-port
           get-bytevector-n get-bytevector-n!
-          get-string-n get-string-n! get-line)
+          get-string-n get-string-n! get-line port?
+          close-input-port close-output-port flush-output-port
+          open-input-file call-with-input-file with-input-from-file)
 
   (io-spec))
 
@@ -368,29 +370,41 @@
       (make-utf8-string-range4))))
 
 
-(display "now write something on the keyboard ...\n")
-(printf "you typed ~s\n"
-  (list->string
-    (let ([p (standard-input-port)])
-      (let f ()
-        (let ([x (get-u8 p)])
-          (if (eof-object? x) 
-              '()
-              (cons (integer->char x) (f))))))))
+(define (run-interactive-tests)
+  (display "now write something on the keyboard ...\n")
+  (printf "you typed ~s\n"
+    (list->string
+      (let ([p (standard-input-port)])
+        (let f ()
+          (let ([x (get-u8 p)])
+            (if (eof-object? x) 
+                '()
+                (cons (integer->char x) (f))))))))
+  
+  (display "let's do it again ...\n")
+  (printf "you typed ~s\n"
+    (list->string
+      (let ([p (transcoded-port (standard-input-port)
+                  (make-transcoder (utf-8-codec)))])
+        (let f ()
+          (let ([x (get-char p)])
+            (if (eof-object? x) 
+                '()
+                (cons x (f)))))))))
+  
+(define (file-size filename)
+  (with-input-from-file filename
+    (lambda ()
+      (let f ([i 0])
+        (let ([x (get-char (current-input-port))])
+          (if (eof-object? x)
+              i
+              (f (+ i 1))))))))
 
-(display "let's do it again ...\n")
-(printf "you typed ~s\n"
-  (list->string
-    (let ([p (transcoded-port (standard-input-port)
-                (make-transcoder (utf-8-codec)))])
-      (let f ()
-        (let ([x (get-char p)])
-          (if (eof-object? x) 
-              '()
-              (cons x (f))))))))
+(assert (= (file-size "SRFI-1.ss") 56573))
 
 
 
+;(run-exhaustive-tests)
+;(run-interactive-tests)
 
-
-(run-exhaustive-tests)

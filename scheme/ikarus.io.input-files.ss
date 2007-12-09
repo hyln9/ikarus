@@ -15,8 +15,13 @@
 
 
 (library (ikarus io input-files)
-  (export open-input-file current-input-port console-input-port
-          standard-input-port with-input-from-file call-with-input-file)
+  (export open-input-file
+          current-input-port   ; ok?
+          console-input-port
+          standard-input-port  ; ok
+          with-input-from-file 
+          call-with-input-file
+          )
   (import
     (ikarus system $ports)
     (ikarus system $io)

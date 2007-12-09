@@ -47,7 +47,7 @@ ikrt_close_fd(ikp fd, ikpcb* pcb){
 
 ikp
 ikrt_open_input_fd(ikp fn, ikpcb* pcb){
-  int fh = open((char*)(fn+off_bytevector_data, O_RDONLY), 0);
+  int fh = open((char*)(fn+off_bytevector_data), O_RDONLY, 0);
   if(fh > 0){
     return fix(fh);
   } else {

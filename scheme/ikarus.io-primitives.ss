@@ -15,14 +15,32 @@
 
 
 (library (ikarus io-primitives)
-  (export read-char peek-char write-char write-byte
-          put-u8 put-char put-string put-bytevector 
-          get-char get-u8 lookahead-u8
-          get-string-n get-string-n! 
-          get-bytevector-n get-bytevector-n!
-          newline port-name input-port-name output-port-name
-          close-input-port reset-input-port! close-port
-          flush-output-port close-output-port get-line)
+  (export read-char           ; ok
+          peek-char           ; ok
+          write-char 
+          write-byte 
+          put-u8 
+          put-char
+          put-string 
+          put-bytevector    
+          get-char            ; ok
+          get-u8              ; ok
+          lookahead-u8        ; ok
+          get-string-n        ; ok
+          get-string-n!       ; ok
+          get-bytevector-n    ; ok
+          get-bytevector-n!   ; ok
+          newline             ; ok
+          port-name 
+          input-port-name 
+          output-port-name
+          close-input-port
+          reset-input-port! 
+          close-port
+          flush-output-port 
+          close-output-port 
+          get-line            ; ok
+          )
   (import 
     (ikarus system $io)
     (ikarus system $fx)

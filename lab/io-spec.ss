@@ -2,43 +2,49 @@
 (library (io-spec) 
   
   (export 
-    input-port? output-port? textual-port? binary-port?
-    open-file-input-port standard-input-port current-input-port
+    port? input-port? output-port? textual-port? binary-port?
+    open-file-input-port open-input-file 
+    call-with-input-file with-input-from-file
+    standard-input-port current-input-port
     open-bytevector-input-port
     open-string-input-port
     make-custom-binary-input-port 
     transcoded-port port-transcoder
-    close-port
+    close-port close-input-port close-output-port
     port-eof?
     get-char lookahead-char read-char peek-char
     get-string-n get-string-n! get-string-all get-line
     get-u8 lookahead-u8 
     get-bytevector-n get-bytevector-n!
     get-bytevector-some get-bytevector-all 
-    port-has-port-position? port-position
-    port-has-set-port-position!? set-port-position!
+    ;port-has-port-position? port-position
+    ;port-has-set-port-position!? set-port-position!
     call-with-port
+    flush-output-port
     )
 
   
   (import 
     (except (ikarus)
-      input-port? output-port? textual-port? binary-port? 
-      open-file-input-port standard-input-port current-input-port
+      port? input-port? output-port? textual-port? binary-port? 
+      open-file-input-port open-input-file 
+      call-with-input-file with-input-from-file
+      standard-input-port current-input-port
       open-bytevector-input-port
       open-string-input-port
       make-custom-binary-input-port
       transcoded-port port-transcoder
-      close-port
+      close-port close-input-port close-output-port
       port-eof?
       get-char lookahead-char read-char peek-char
       get-string-n get-string-n! get-string-all get-line
       get-u8 lookahead-u8 
       get-bytevector-n get-bytevector-n!
       get-bytevector-some get-bytevector-all 
-      port-has-port-position? port-position
-      port-has-set-port-position!? set-port-position!
+      ;port-has-port-position? port-position
+      ;port-has-set-port-position!? set-port-position!
       call-with-port
+      flush-output-port
       ))
 
   (define-syntax define-rrr
@@ -50,6 +56,7 @@
   (define-struct $port 
     (index size buffer base-index transcoder closed? attrs 
      id read! write! get-position set-position! close))
+  (define port? $port?)
   (define $set-port-index! set-$port-index!)
   (define $set-port-size! set-$port-size!)
   (define $set-port-attrs! set-$port-attrs!)
@@ -206,10 +213,25 @@
           (and (transcoder? tr) tr))
         (error 'port-transcoder "not a port" p)))
               
-  (define (close-port p)
+  (define (flush-output-port p)
+    (unless (output-port? p) 
+      (error 'flush-output-port "not an output port" p))
+    (when ($port-closed? p) 
+      (error 'flush-output-port "port is closed" p))
+    (let ([idx ($port-index p)] [size ($port-size p)])
+      (unless (fx= idx size)
+        (let ([cnt (fx- size idx)])
+         (let ([bytes (($port-write! p) ($port-buffer p) idx cnt)])
+           (unless (and (fixnum? bytes) (fx>= bytes 0) (fx<= bytes cnt))
+             (error 'flush-output-port 
+                    "write! returned an invalid value" 
+                    bytes))
+           ($set-port-index! p (fx+ idx bytes))
+           (unless (fx= bytes cnt)
+             (flush-output-port p)))))))
+
+  (define ($close-port p)
     (cond
-      [(not ($port? p)) 
-       (error 'close-port "not a port" p)]
       [($port-closed? p) (void)]
       [else
        (when ($port-write! p)
@@ -219,10 +241,25 @@
          (when (procedure? close)
            (close)))]))
 
-  (define-rrr port-has-port-position?)
-  (define-rrr port-position)
-  (define-rrr port-has-set-port-position!?)
-  (define-rrr set-port-position!)
+  (define (close-port p)
+    (unless ($port? p)
+       (error 'close-port "not a port" p))
+    ($close-port p))
+
+  (define (close-input-port p)
+    (unless (input-port? p)
+       (error 'close-input-port "not an input port" p))
+    ($close-port p))
+
+  (define (close-output-port p)
+    (unless (output-port? p)
+       (error 'close-output-port "not an output port" p))
+    ($close-port p))
+
+  ;(define-rrr port-has-port-position?)
+  ;(define-rrr port-position)
+  ;(define-rrr port-has-set-port-position!?)
+  ;(define-rrr set-port-position!)
 
   ;;; ----------------------------------------------------------
   (module (get-char lookahead-char)
@@ -502,7 +539,6 @@
            (eof-object? (advance-bom p who '(#xEF #xBB #xBF)))]
           [else (error 'slow-get-char "codec not handled")])))
 
-    (define-rrr slow-lookahead-char)
     (define (lookahead-char-char-mode p who)
       (let ([str ($port-buffer p)]
             [read! ($port-read! p)])
@@ -741,15 +777,86 @@
              (lambda (err) 
                (io-error 'close id err))])))))
 
-  (define-rrr open-file-input-port)
+  (define (open-file-handle filename who)
+    (let ([fh (foreign-call "ikrt_open_input_fd"
+                 (string->utf8 filename))])
+      (cond
+        [(fx< fh 0) (io-error who filename fh)]
+        [else fh])))
   
+
+  (define open-file-input-port
+    (case-lambda
+      [(filename) 
+       (open-file-input-port filename (file-options) 'block #f)]
+      [(filename file-options) 
+       (open-file-input-port filename file-options 'block #f)]
+      [(filename file-options buffer-mode) 
+       (open-file-input-port filename file-options buffer-mode #f)]
+      [(filename file-options buffer-mode transcoder)
+       (unless (string? filename)
+         (error 'open-file-input-port "invalid filename" filename))
+       ; FIXME: file-options ignored
+       ; FIXME: buffer-mode ignored
+       (fh->input-port 
+         (open-file-handle filename 'open-file-input-port) 
+         filename
+         file-buffer-size
+         (cond
+           [(or (not transcoder) (transcoder? transcoder)) 
+            transcoder]
+           [else (error 'open-file-input-port
+                        "invalid transcoder" 
+                        transcoder)])
+         #t)]))
+
+  (define (open-input-file filename)
+    (unless (string? filename)
+      (error 'open-input-file "invalid filename" filename))
+    (fh->input-port 
+       (open-file-handle filename 'open-input-file) 
+       filename
+       file-buffer-size
+       (native-transcoder)
+       #t))
+
+  (define (call-with-input-file filename proc)
+    (unless (string? filename)
+      (error 'call-with-input-file "invalid filename" filename))
+    (unless (procedure? proc)
+      (error 'call-with-input-file "not a procedure" proc))
+    (call-with-port
+      (fh->input-port 
+        (open-file-handle filename 'call-with-input-file) 
+        filename
+        file-buffer-size
+        (native-transcoder)
+        #t)
+      proc))
+
+  (define (with-input-from-file filename proc)
+    (unless (string? filename)
+      (error 'with-input-from-file "invalid filename" filename))
+    (unless (procedure? proc)
+      (error 'with-input-from-file "not a procedure" proc))
+    (let ([p
+           (fh->input-port 
+             (open-file-handle filename 'with-input-from-file) 
+             filename
+             file-buffer-size
+             (native-transcoder)
+             #t)])
+      (parameterize ([*the-input-port* p])
+        (proc))))
+
   (define (standard-input-port) 
     (fh->input-port 0 '*stdin* 256 #f #f))
 
   (define *the-input-port* 
-    (transcoded-port (standard-input-port) (native-transcoder)))
+    (make-parameter
+      (transcoded-port (standard-input-port) (native-transcoder))))
 
-  (define (current-input-port) *the-input-port*)
+  (define (current-input-port) (*the-input-port*))
 
   (define (call-with-port p proc)
     (if ($port? p) 
@@ -763,7 +870,7 @@
 
   (define read-char
     (case-lambda
-      [() (get-char *the-input-port*)]
+      [() (get-char (*the-input-port*))]
       [(p)
        (if (input-port? p)
            (if (textual-port? p)
@@ -773,14 +880,13 @@
   ;;;
   (define peek-char
     (case-lambda
-      [() (lookahead-char *the-input-port*)]
+      [() (lookahead-char (*the-input-port*))]
       [(p)
        (if (input-port? p)
            (if (textual-port? p)
                (lookahead-char p)
                (error 'peek-char "not a textual port" p))
            (error 'peek-char "not an input-port" p))]))
- 
 
   (define (get-bytevector-n p n) 
     (import (ikarus system $fx) (ikarus system $bytevectors))
@@ -816,7 +922,6 @@
                       (f p n s i)))]))))]
       [($fx= n 0) '#vu8()]
       [else (error 'get-bytevector-n "count is negative" n)]))
-
 
   (define (get-bytevector-n! p s i c) 
     (import (ikarus system $fx) (ikarus system $bytevectors))

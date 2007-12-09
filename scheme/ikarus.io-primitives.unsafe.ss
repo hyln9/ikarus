@@ -15,10 +15,17 @@
 
 
 (library (ikarus io-primitives unsafe)
-  (export $write-char $write-byte $read-char $get-u8 $lookahead-u8
+  (export $write-char 
+          $write-byte
+          $read-char
+          $get-u8 
+          $lookahead-u8
           $peek-char
-          $reset-input-port! $flush-output-port 
-          $close-input-port $close-output-port)
+          $reset-input-port!
+          $flush-output-port 
+          $close-input-port
+          $close-output-port
+          )
   (import
     (ikarus)
     (ikarus system $ports)
