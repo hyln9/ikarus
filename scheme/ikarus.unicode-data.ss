@@ -33,7 +33,6 @@
     (ikarus system $chars)
     (ikarus system $pairs)
     (ikarus system $strings)
-    (ikarus system $io)
     (except (ikarus) 
       char-downcase char-upcase char-titlecase char-foldcase
       char-ci=? char-ci<? char-ci<=? char-ci>? char-ci>=?

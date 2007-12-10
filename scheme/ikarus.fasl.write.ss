@@ -21,7 +21,6 @@
     (ikarus system $codes)
     (ikarus system $pairs)
     (ikarus system $structs)
-    (ikarus system $io)
     (ikarus system $bytevectors)
     (ikarus system $fx)
     (ikarus system $chars)
