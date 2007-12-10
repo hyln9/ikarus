@@ -8,9 +8,9 @@ EXTRA_DIST=ikarus.boot.prebuilt ikarus.enumerations.ss \
   ikarus.compiler.altcogen.ss ikarus.compiler.ss ikarus.control.ss \
   ikarus.date-string.ss ikarus.fasl.ss ikarus.fasl.write.ss \
   ikarus.fixnums.ss ikarus.guardians.ss ikarus.handlers.ss \
-  ikarus.hash-tables.ss ikarus.intel-assembler.ss  \
-  ikarus.lists.ss ikarus.load.ss \
-  ikarus.main.ss ikarus.multiple-values.ss ikarus.numerics.ss \
+  ikarus.hash-tables.ss ikarus.intel-assembler.ss \
+  ikarus.lists.ss ikarus.load.ss ikarus.main.ss \
+  ikarus.multiple-values.ss ikarus.numerics.ss \
   ikarus.pairs.ss ikarus.posix.ss ikarus.predicates.ss \
   ikarus.pretty-print.ss ikarus.promises.ss ikarus.reader.ss \
   ikarus.records.procedural.ss ikarus.conditions.ss \

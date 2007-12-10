@@ -357,7 +357,6 @@ static void empty_dropped_guardians(gc_t*);
  */
 
 
-ikpcb* ik_collect(int req, ikpcb* pcb);
 ikpcb* ik_collect_vararg(int req, ikpcb* pcb){
   return ik_collect(req, pcb);
 }

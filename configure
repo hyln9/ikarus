@@ -4479,7 +4479,7 @@ fi
 
 
 
-CFLAGS="$CFLAGS -DNDEBUG -O3"
+CFLAGS="$CFLAGS -DNDEBUG -O3 -Wall"
 
 case "$target_os" in
   *linux*)

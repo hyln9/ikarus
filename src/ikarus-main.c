@@ -141,7 +141,6 @@ int main(int argc, char** argv){
     ikarus_usage();
     exit(0);
   }
-  char buff[FILENAME_MAX];
   char* boot_file = get_option("-b", argc, argv);
   if(boot_file){
     argc -= 2;

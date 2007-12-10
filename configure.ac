@@ -13,7 +13,7 @@ AM_PROG_AS
 AC_PROG_CC
 AM_PROG_CC_C_O
 
-CFLAGS="$CFLAGS -DNDEBUG -O3"
+CFLAGS="$CFLAGS -DNDEBUG -O3 -Wall"
 
 case "$target_os" in
   *linux*)

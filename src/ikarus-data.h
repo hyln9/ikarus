@@ -168,6 +168,7 @@ typedef struct ikpcb{
   struct timeval collect_rtime; 
 } ikpcb;
 
+ikpcb* ik_collect(int req, ikpcb* pcb);
 void ikarus_usage_short(void);
 
 void* ik_malloc(int);

@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <string.h>
 #include "bootfileloc.h"
 
 int main(int argc, char** argv){
@@ -35,7 +36,7 @@ int main(int argc, char** argv){
       a[i+1] = argv[i];
     }
     a[argc+1] = 0;
-    int rv = execv(EXEFILE, a);
+    execv(EXEFILE, a);
     fprintf(stderr, "Error executing ikarus from scheme-script: %s\n",
         strerror(errno));
     exit(-1);
