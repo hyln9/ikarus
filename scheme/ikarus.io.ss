@@ -198,7 +198,9 @@
       (error who "read! is not a procedure" read!))
     (unless (or (procedure? close) (not close))
       (error who "close should be either a procedure or #f" close))
-    ($make-custom-binary-port 0 id read! #f get-position
+    ($make-custom-binary-port 
+      (fxior fast-get-tag fast-get-byte-tag)
+      id read! #f get-position
       set-position! close 256))
 
   (define (make-custom-binary-output-port id 
