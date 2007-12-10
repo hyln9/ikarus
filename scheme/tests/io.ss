@@ -1,21 +1,8 @@
-#!/usr/bin/env scheme-script
 
-(import 
+(library (tests io)
+  (export test-io)
+  (import (ikarus))
 
-  (except (ikarus) get-char peek-char read-char 
-          get-u8 lookahead-u8 close-port
-          input-port? open-string-input-port output-port?
-          standard-input-port current-input-port
-          get-bytevector-n get-bytevector-n!
-          get-string-n get-string-n! get-line port?
-          close-input-port close-output-port flush-output-port
-          open-input-file call-with-input-file with-input-from-file
-          put-char put-u8 open-bytevector-output-port
-          call-with-bytevector-output-port open-string-output-port
-          write-char current-output-port current-error-port
-          standard-output-port standard-error-port put-string)
-
-  (io-spec))
 
 (define-syntax test
   (syntax-rules ()
@@ -139,80 +126,81 @@
       [else 
        (error #f "incorrect value returned" i)])))
 
-(test "reading 256 bytes in ascending order"
-  (test-get-u8-1 (make-n-byte-custom-binary-input-port 256) 256))
-
-(test "reading 256 bytes in ascending order 2 at a time"
-  (test-get-u8-1
-    (make-custom-binary-input-port "test0" 
-      (let ([c 0])
-        (lambda (bv i count) 
-          (if (< c 256) 
-              (begin
-                (assert (>= count 2))
-                (bytevector-u8-set! bv i c)
-                (bytevector-u8-set! bv (+ i 1) (+ c 1))
-                (set! c (+ c 2))
-                2)
-              0)))
-      #f #f #f)
-    256))
-
-(test "peeking 256 bytes in ascending order"
-  (test-peek-u8-1 (make-n-byte-custom-binary-input-port 256) 256))
-
-(test "custom-binary-port port-eof?"
-  (test-binary-port-eof?-1 (make-n-byte-custom-binary-input-port 256) 256))
-
-;;;
-(test "reading 256 bytes from bytevector-input-port"
-  (test-get-u8-1 (make-n-byte-bytevector-binary-input-port 256) 256))
-
-(test "peeking 256 bytes from bytevector-input-port"
-  (test-peek-u8-1 (make-n-byte-bytevector-binary-input-port 256) 256))
-
-(test "bytevector-binary-port port-eof?"
-  (test-binary-port-eof?-1 (make-n-byte-bytevector-binary-input-port 256) 256))
-
-;;;
-
-(test "reading 256 latin1 chars from bytevector-input-port"
-  (test-get-char-1 
-    (transcoded-port (make-n-byte-bytevector-binary-input-port 256)
-      (make-transcoder (latin-1-codec) 'none 'raise))
-    256))
-
-(test "peeking 256 bytes from latin1 transcoded port"
-  (test-peek-char-1 
-    (transcoded-port (make-n-byte-bytevector-binary-input-port 256)
-      (make-transcoder (latin-1-codec) 'none 'raise))
-    256))
-
-(test "latin1 transcoded port port-eof?"
-  (test-textual-port-eof?-1 
-    (transcoded-port (make-n-byte-bytevector-binary-input-port 256)
-      (make-transcoder (latin-1-codec) 'none 'raise))
-    256))
-
-;;;
-
-(test "reading 128 utf8 chars from bytevector-input-port"
-  (test-get-char-1 
-    (open-bytevector-input-port (make-ascii-range-bytevector) 
-      (make-transcoder (utf-8-codec) 'none 'raise))
-    128))
-
-(test "peeking 128 chars from utf8 port"
-  (test-peek-char-1 
-    (open-bytevector-input-port (make-ascii-range-bytevector) 
-      (make-transcoder (utf-8-codec) 'none 'raise))
-    128))
-
-(test "utf8 transcoded port port-eof?"
-  (test-textual-port-eof?-1 
-    (open-bytevector-input-port (make-ascii-range-bytevector) 
-      (make-transcoder (utf-8-codec) 'none 'raise))
-    128))
+(define (test-custom-binary-input-ports)
+  (test "reading 256 bytes in ascending order"
+    (test-get-u8-1 (make-n-byte-custom-binary-input-port 256) 256))
+  
+  (test "reading 256 bytes in ascending order 2 at a time"
+    (test-get-u8-1
+      (make-custom-binary-input-port "test0" 
+        (let ([c 0])
+          (lambda (bv i count) 
+            (if (< c 256) 
+                (begin
+                  (assert (>= count 2))
+                  (bytevector-u8-set! bv i c)
+                  (bytevector-u8-set! bv (+ i 1) (+ c 1))
+                  (set! c (+ c 2))
+                  2)
+                0)))
+        #f #f #f)
+      256))
+  
+  (test "peeking 256 bytes in ascending order"
+    (test-peek-u8-1 (make-n-byte-custom-binary-input-port 256) 256))
+  
+  (test "custom-binary-port port-eof?"
+    (test-binary-port-eof?-1 (make-n-byte-custom-binary-input-port 256) 256))
+  
+  ;;;
+  (test "reading 256 bytes from bytevector-input-port"
+    (test-get-u8-1 (make-n-byte-bytevector-binary-input-port 256) 256))
+  
+  (test "peeking 256 bytes from bytevector-input-port"
+    (test-peek-u8-1 (make-n-byte-bytevector-binary-input-port 256) 256))
+  
+  (test "bytevector-binary-port port-eof?"
+    (test-binary-port-eof?-1 (make-n-byte-bytevector-binary-input-port 256) 256))
+  
+  ;;;
+  
+  (test "reading 256 latin1 chars from bytevector-input-port"
+    (test-get-char-1 
+      (transcoded-port (make-n-byte-bytevector-binary-input-port 256)
+        (make-transcoder (latin-1-codec) 'none 'raise))
+      256))
+  
+  (test "peeking 256 bytes from latin1 transcoded port"
+    (test-peek-char-1 
+      (transcoded-port (make-n-byte-bytevector-binary-input-port 256)
+        (make-transcoder (latin-1-codec) 'none 'raise))
+      256))
+  
+  (test "latin1 transcoded port port-eof?"
+    (test-textual-port-eof?-1 
+      (transcoded-port (make-n-byte-bytevector-binary-input-port 256)
+        (make-transcoder (latin-1-codec) 'none 'raise))
+      256))
+  
+  ;;;
+  
+  (test "reading 128 utf8 chars from bytevector-input-port"
+    (test-get-char-1 
+      (open-bytevector-input-port (make-ascii-range-bytevector) 
+        (make-transcoder (utf-8-codec) 'none 'raise))
+      128))
+  
+  (test "peeking 128 chars from utf8 port"
+    (test-peek-char-1 
+      (open-bytevector-input-port (make-ascii-range-bytevector) 
+        (make-transcoder (utf-8-codec) 'none 'raise))
+      128))
+  
+  (test "utf8 transcoded port port-eof?"
+    (test-textual-port-eof?-1 
+      (open-bytevector-input-port (make-ascii-range-bytevector) 
+        (make-transcoder (utf-8-codec) 'none 'raise))
+      128)))
 
 (define (make-utf8-bytevector-range2) 
   (u8-list->bytevector
@@ -405,7 +393,6 @@
               i
               (f (+ i 1))))))))
 
-(assert (= (file-size "SRFI-1.ss") 56573))
 
 (define (file->bytevector filename)
   (let ([p (open-file-input-port filename (file-options) 'block #f)])
@@ -428,54 +415,58 @@
       (put-char p (integer->char (bytevector-u8-ref bv i)))
       (f (fx+ i 1)))))
 
-(let ([bv (file->bytevector "SRFI-1.ss")])
-  (let-values ([(p extract) (open-bytevector-output-port #f)])
-    (bytevector->binary-port bv p)
-    (let ([bv2 (extract)])
-      (assert (bytevector=? bv bv2))
-      (assert (bytevector=? #vu8() (extract))))))
+(define (test-input-files)
+  (assert (= (file-size "tests/SRFI-1.ss") 56573))
+  (let ([bv (file->bytevector "tests/SRFI-1.ss")])
+    (let-values ([(p extract) (open-bytevector-output-port #f)])
+      (bytevector->binary-port bv p)
+      (let ([bv2 (extract)])
+        (assert (bytevector=? bv bv2))
+        (assert (bytevector=? #vu8() (extract))))))
+  
+  (let ([bv (file->bytevector "tests/SRFI-1.ss")])
+    (let-values ([(p extract) (open-bytevector-output-port 
+                                (native-transcoder))])
+      (bytevector->textual-port bv p)
+      (let ([bv2 (extract)])
+        (assert (bytevector=? bv bv2))
+        (assert (bytevector=? #vu8() (extract))))))
+  
+  (let ([bv (file->bytevector "tests/SRFI-1.ss")])
+    (let-values ([(p extract) (open-bytevector-output-port 
+                                (make-transcoder (latin-1-codec)))])
+      (bytevector->textual-port bv p)
+      (let ([bv2 (extract)])
+        (assert (bytevector=? bv bv2))
+        (assert (bytevector=? #vu8() (extract))))))
+  
+  (let ([bv (file->bytevector "tests/SRFI-1.ss")])
+    (let-values ([(p extract) (open-string-output-port)]) 
+      (bytevector->textual-port bv p)
+      (let ([str (extract)])
+        (assert (bytevector=? bv (string->utf8 str)))
+        (assert (string=? "" (extract))))))
+  
+  (let ([p (standard-output-port)])
+    (bytevector->binary-port 
+      (string->utf8 "HELLO THERE\n")
+      p)
+    (flush-output-port p))
+  
+  (let ([p (current-output-port)])
+    (bytevector->textual-port 
+      (string->utf8 "HELLO THERE\n")
+      p)
+    (flush-output-port p))
+  
+  (let ([p (current-output-port)])
+    (put-string p "HELLO THERE\n")
+    (flush-output-port p)))
 
-(let ([bv (file->bytevector "SRFI-1.ss")])
-  (let-values ([(p extract) (open-bytevector-output-port 
-                              (native-transcoder))])
-    (bytevector->textual-port bv p)
-    (let ([bv2 (extract)])
-      (assert (bytevector=? bv bv2))
-      (assert (bytevector=? #vu8() (extract))))))
-
-(let ([bv (file->bytevector "SRFI-1.ss")])
-  (let-values ([(p extract) (open-bytevector-output-port 
-                              (make-transcoder (latin-1-codec)))])
-    (bytevector->textual-port bv p)
-    (let ([bv2 (extract)])
-      (assert (bytevector=? bv bv2))
-      (assert (bytevector=? #vu8() (extract))))))
-
-(let ([bv (file->bytevector "SRFI-1.ss")])
-  (let-values ([(p extract) (open-string-output-port)]) 
-    (bytevector->textual-port bv p)
-    (let ([str (extract)])
-      (assert (bytevector=? bv (string->utf8 str)))
-      (assert (string=? "" (extract))))))
-
-(let ([p (standard-output-port)])
-  (bytevector->binary-port 
-    (string->utf8 "HELLO THERE\n")
-    p)
-  (flush-output-port p))
-
-(let ([p (current-output-port)])
-  (bytevector->textual-port 
-    (string->utf8 "HELLO THERE\n")
-    p)
-  (flush-output-port p))
-
-(let ([p (current-output-port)])
-  (put-string p "HELLO THERE\n")
-  (flush-output-port p))
-
-(open-file-output-port "bar" (file-options no-truncate))
-
-;(run-exhaustive-tests)
+(define (test-io)
+  (test-custom-binary-input-ports)
+  (run-exhaustive-tests)
+  (test-input-files))
+)
 ;(run-interactive-tests)
 

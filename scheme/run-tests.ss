@@ -32,6 +32,7 @@
         (tests input-ports)
         (tests fldiv-and-mod)
         (tests parse-flonums)
+        (tests io)
         )
 
 (define (test-exact-integer-sqrt)
@@ -69,4 +70,5 @@
 (test-fxdiv0-and-mod0)
 (test-fxlength)
 (test-bitwise-bit-count)
+(test-io)
 (printf "Happy Happy Joy Joy\n")
