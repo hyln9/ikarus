@@ -1175,7 +1175,7 @@
     [display                                     i r is se]
     [newline                                     i r is se]
     [open-input-file                             i r is se]
-    ;[open-output-file                            i r is se]
+    [open-output-file                            i r is se]
     [peek-char                                   i r is se]
     [read                                        i r is se]
     [read-char                                   i r is se]

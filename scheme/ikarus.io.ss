@@ -45,7 +45,7 @@
     call-with-string-output-port
     standard-output-port standard-error-port
     current-output-port current-error-port
-    open-file-output-port
+    open-file-output-port open-output-file
     console-output-port
     console-error-port
     console-input-port
@@ -54,6 +54,7 @@
     output-port-name
     port-mode set-port-mode!
     reset-input-port!
+    port-id
     )
 
   
@@ -87,7 +88,7 @@
       call-with-string-output-port
       standard-output-port standard-error-port
       current-output-port current-error-port
-      open-file-output-port
+      open-file-output-port open-output-file
       console-output-port
       console-input-port
       console-error-port
@@ -96,6 +97,7 @@
       output-port-name
       port-mode set-port-mode!
       reset-input-port!
+      port-id
       ))
 
   (define-syntax define-rrr
@@ -114,6 +116,52 @@
   (define $set-port-closed?! set-$port-closed?!)
   (define $make-port make-$port)
 
+  (define ($port-get-mode x)
+    (and ($port? x) (fxand ($port-attrs x) fast-get-mask)))
+
+  (define ($port-put-mode x)
+    (and ($port? x) (fxand ($port-attrs x) fast-put-mask)))
+
+  (define (u8? x)
+    (and (fixnum? x) (fx>= x 0) (fx< x 256)))
+
+  (define (textual-port? p) 
+    (and ($port? p) 
+         ($port-transcoder p) 
+         #t))
+
+  (define (binary-port? p) 
+    (and ($port? p)
+         (not ($port-transcoder p))))
+
+  (define (output-port? p) 
+    (and ($port? p) 
+         ($port-write! p)
+         #t))
+
+  (define (input-port? p) 
+    (and ($port? p) 
+         ($port-read! p) 
+         #t))
+
+  (define (input-port-name p)
+    (if (input-port? p) 
+        ($port-id p)
+        (error 'input-port-name "not an input port" p)))
+
+  (define (output-port-name p)
+    (if (output-port? p) 
+        ($port-id p)
+        (error 'output-port-name "not an output port" p)))
+
+  (define (port-id p)
+    (if (port? p) 
+        ($port-id p)
+        (error 'port-id "not a port" p)))
+
+  ;;; everything above this line will turn into primitive
+  ;;; ----------------------------------------------------------
+  
   (define fast-get-tag           #x0001)
   (define fast-put-tag           #x0002)
   (define fast-get-position-tag  #x0004)
@@ -131,20 +179,6 @@
   (define fast-put-char-tag      #x0800)
   
   (define r6rs-mode-tag          #x1000)
-
-  (define ($port-get-mode x)
-    (and ($port? x) (fxand ($port-attrs x) fast-get-mask)))
-
-  (define ($port-put-mode x)
-    (and ($port? x) (fxand ($port-attrs x) fast-put-mask)))
-
-  (define (u8? x)
-    (and (fixnum? x) (fx>= x 0) (fx< x 256)))
-
-  ;;; everything above this line will turn into primitive
-  ;;; ----------------------------------------------------------
-  
-
 
   (define ($make-custom-binary-input-port id 
             read! get-position set-position! close buffer-size)
@@ -360,39 +394,10 @@
         ($port-set-position! p)
         ($port-close p))))
 
-  (define (output-port? p) 
-    (and ($port? p) 
-         ($port-write! p)
-         #t))
-
-  (define (input-port? p) 
-    (and ($port? p) 
-         ($port-read! p) 
-         #t))
-
   (define (reset-input-port! p)
     (if (input-port? p) 
         ($set-port-index! p ($port-size p))
         (error 'reset-input-port! "not an input port" p)))
-
-  (define (input-port-name p)
-    (if (input-port? p) 
-        ($port-id p)
-        (error 'input-port-name "not an input port" p)))
-
-  (define (output-port-name p)
-    (if (output-port? p) 
-        ($port-id p)
-        (error 'output-port-name "not an output port" p)))
-
-  (define (textual-port? p) 
-    (and ($port? p) 
-         ($port-transcoder p) 
-         #t))
-
-  (define (binary-port? p) 
-    (and ($port? p)
-         (not ($port-transcoder p))))
 
   (define (port-transcoder p)
     (if ($port? p)
@@ -1085,6 +1090,17 @@
          file-buffer-size
          transcoder
          #t)]))
+
+  (define (open-output-file filename)
+    (unless (string? filename)
+      (error 'open-output-file "invalid filename" filename))
+    (fh->output-port 
+       (open-output-file-handle filename (file-options) 
+          'open-input-file)
+       filename
+       file-buffer-size
+       (native-transcoder)
+       #t))
 
   (define (open-input-file filename)
     (unless (string? filename)
