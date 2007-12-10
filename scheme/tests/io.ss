@@ -463,8 +463,33 @@
     (put-string p "HELLO THERE\n")
     (flush-output-port p)))
 
+(define (test-custom-binary-output-ports)
+  (define ls '())
+  (let ([p (make-custom-binary-output-port "foo"
+              (lambda (bv i c) 
+                (let f ([i i] [c c])
+                  (unless (fx= c 0)
+                    (set! ls (cons (bytevector-u8-ref bv i) ls))
+                    (f (fx+ i 1) (fx- c 1))))
+                c)
+              #f
+              #f
+              #f)])
+    (let f ([i 0])
+      (unless (fx= i 10000)
+        (put-u8 p (mod i 256))
+        (f (+ i 1))))
+    (flush-output-port p)
+    (let f ([i 0] [ls (reverse ls)])
+      (unless (null? ls) 
+        (assert (fx= (mod i 256) (car ls)))
+        (f (fx+ i 1) (cdr ls))))))
+
+
+
 (define (test-io)
   (test-custom-binary-input-ports)
+  (test-custom-binary-output-ports)
   (run-exhaustive-tests)
   (test-input-files))
 )

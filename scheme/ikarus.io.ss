@@ -182,10 +182,10 @@
   
   (define r6rs-mode-tag          #x1000)
 
-  (define ($make-custom-binary-input-port id 
+  (define ($make-custom-binary-port attrs id 
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-bytevector buffer-size)])
-      ($make-port 0 0 bv 0 #f #f 0 id read! write! get-position
+      ($make-port 0 0 bv 0 #f #f attrs id read! write! get-position
                   set-position! close)))
 
   (define (make-custom-binary-input-port id 
@@ -198,7 +198,7 @@
       (error who "read! is not a procedure" read!))
     (unless (or (procedure? close) (not close))
       (error who "close should be either a procedure or #f" close))
-    ($make-custom-binary-input-port id read! #f get-position
+    ($make-custom-binary-port 0 id read! #f get-position
       set-position! close 256))
 
   (define (make-custom-binary-output-port id 
@@ -211,7 +211,9 @@
       (error who "read! is not a procedure" write!))
     (unless (or (procedure? close) (not close))
       (error who "close should be either a procedure or #f" close))
-    ($make-custom-binary-input-port id #f write! get-position
+    ($make-custom-binary-port 
+      (fxior fast-put-tag fast-put-byte-tag)
+      id #f write! get-position
       set-position! close 256))
 
   (define (input-transcoder-attrs x)
