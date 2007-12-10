@@ -15,23 +15,23 @@
 
 
 (library (ikarus hash-tables)
-   (export make-eq-hashtable hashtable-ref hashtable-set! hashtable?
-           hashtable-size hashtable-delete! hashtable-contains?
-           hashtable-update! hashtable-keys hashtable-mutable?
-           hashtable-clear! hashtable-entries hashtable-copy
-           string-hash string-ci-hash symbol-hash)
-   (import 
-     (ikarus system $pairs)
-     (ikarus system $vectors)
-     (ikarus system $tcbuckets)
-     (ikarus system $fx)
-     (except (ikarus) make-eq-hashtable hashtable-ref hashtable-set! hashtable?
-             hashtable-size hashtable-delete! hashtable-contains?
-             hashtable-update! hashtable-keys hashtable-mutable?
-             hashtable-clear! hashtable-entries hashtable-copy
-             string-hash string-ci-hash symbol-hash))
+  (export make-eq-hashtable hashtable-ref hashtable-set! hashtable?
+          hashtable-size hashtable-delete! hashtable-contains?
+          hashtable-update! hashtable-keys hashtable-mutable?
+          hashtable-clear! hashtable-entries hashtable-copy
+          string-hash string-ci-hash symbol-hash)
+  (import 
+    (ikarus system $pairs)
+    (ikarus system $vectors)
+    (ikarus system $tcbuckets)
+    (ikarus system $fx)
+    (except (ikarus) make-eq-hashtable hashtable-ref hashtable-set! hashtable?
+            hashtable-size hashtable-delete! hashtable-contains?
+            hashtable-update! hashtable-keys hashtable-mutable?
+            hashtable-clear! hashtable-entries hashtable-copy
+            string-hash string-ci-hash symbol-hash))
 
-   (define-struct hasht (vec count tc mutable?))
+  (define-struct hasht (vec count tc mutable?))
 
   ;;; directly from Dybvig's paper
   (define tc-pop
@@ -44,10 +44,6 @@
               ($set-car! x #f)
               ($set-cdr! x #f)
               v)))))
-
-  (define-syntax inthash
-    (syntax-rules ()
-      [(_ x) x]))
 
   ;;; assq-like lookup
   (define direct-lookup 
@@ -108,19 +104,17 @@
         ($set-tcbucket-tconc! b (hasht-tc h))
         ;;; then add it to the new place
         (let ([k ($tcbucket-key b)])
-          (let ([ih (inthash (pointer-value k))])
+          (let ([ih (pointer-value k)])
             (let ([idx ($fxlogand ih ($fx- ($vector-length vec) 1))])
               (let ([n ($vector-ref vec idx)])
                 ($set-tcbucket-next! b n)
                 ($vector-set! vec idx b)
                 (void))))))))
 
-
-
   (define (get-bucket h x)
     (let ([pv (pointer-value x)]
           [vec (hasht-vec h)])
-      (let ([ih (inthash pv)])
+      (let ([ih pv])
         (let ([idx ($fxlogand ih ($fx- ($vector-length vec) 1))])
           (let ([b ($vector-ref vec idx)])
             (or (direct-lookup x b)
@@ -132,7 +126,7 @@
        (lambda (b) ($tcbucket-val b))]
       [else v]))
 
-  (define (in-hash? h x) 
+  (define (in-hash? h x)
     (and (get-bucket h x) #t))
 
   (define (del-hash h x)
@@ -164,7 +158,7 @@
     (lambda (h x v)
       (let ([pv (pointer-value x)]
             [vec (hasht-vec h)])
-        (let ([ih (inthash pv)])
+        (let ([ih pv])
           (let ([idx ($fxlogand ih ($fx- ($vector-length vec) 1))])
             (let ([b ($vector-ref vec idx)])
               (cond
@@ -178,7 +172,7 @@
                         ($make-tcbucket (hasht-tc h) x v ($vector-ref vec idx))])
                    (if ($fx= (pointer-value x) pv)
                        ($vector-set! vec idx bucket)
-                       (let* ([ih (inthash (pointer-value x))]
+                       (let* ([ih (pointer-value x)]
                               [idx 
                                ($fxlogand ih ($fx- ($vector-length vec) 1))])
                          ($set-tcbucket-next! bucket ($vector-ref vec idx))
@@ -187,8 +181,6 @@
                    (set-hasht-count! h ($fxadd1 ct))
                    (when ($fx> ct ($vector-length vec))
                      (enlarge-table h)))])))))))
-
-
           
   (define (update-hash! h x proc default)
     (cond
@@ -196,13 +188,11 @@
        (lambda (b) ($set-tcbucket-val! b (proc ($tcbucket-val b))))]
       [else (put-hash! h x (proc default))]))
 
-
-
   (define insert-b
     (lambda (b vec mask)
       (let* ([x ($tcbucket-key b)]
              [pv (pointer-value x)]
-             [ih (inthash pv)]
+             [ih pv]
              [idx ($fxlogand ih mask)]
              [next ($tcbucket-next b)])
         ($set-tcbucket-next! b ($vector-ref vec idx))
@@ -330,7 +320,6 @@
           (get-hash h x v)
           (error 'hashtable-ref "not a hash table" h))))
 
-
   (define hashtable-contains?
     (lambda (h x)
       (if (hasht? h)
@@ -345,7 +334,6 @@
               (error 'hashtable-set! "hashtable is immutable" h))
           (error 'hashtable-set! "not a hash table" h))))
 
-
   (define hashtable-update!
     (lambda (h x proc default)
       (if (hasht? h)
@@ -355,7 +343,6 @@
                   (error 'hashtable-update! "not a procedure" proc))
               (error 'hashtable-update! "hashtable is immutable" h))
           (error 'hashtable-update! "not a hash table" h))))
-
 
   (define hashtable-size
     (lambda (h)
@@ -398,13 +385,13 @@
   (define hashtable-copy 
     (case-lambda
       [(h) 
-       (if (hasht? h) 
+       (if (hasht? h)
            (if (hasht-mutable? h) 
                (hasht-copy h #f)
                h)
            (error 'hashtable-copy "not a hash table" h))]
       [(h mutable?)
-       (if (hasht? h) 
+       (if (hasht? h)
            (if (or mutable? (hasht-mutable? h))
                (hasht-copy h (and mutable? #t))
                h)
