@@ -7,7 +7,7 @@
       (define (test1 x prefix radix)
         (let ([s (string-append prefix 
                    (number->string x radix))])
-          (assert (equal? x (read (open-input-string s))))))
+          (assert (equal? x (read (open-string-input-port s))))))
       (test1 x "#x" 16)
       (test1 x "#o" 8)
       (test1 x "#b" 2))

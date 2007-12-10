@@ -6,7 +6,7 @@
     (lambda (str)
       (lambda (n?)
         (and (number? n?)
-             (= (with-input-from-string str read) n?)))))
+             (= (read (open-string-input-port str)) n?)))))
 
   (define-syntax reader-tests
     (syntax-rules ()
@@ -75,29 +75,29 @@
   
   (define-tests test-char-syntax
     [(lambda (x) (= (char->integer x) #x0)) 
-     (read (open-input-string "#\\nul"))]
+     (read (open-string-input-port "#\\nul"))]
     [(lambda (x) (= (char->integer x) #x7)) 
-     (read (open-input-string "#\\alarm"))]
+     (read (open-string-input-port "#\\alarm"))]
     [(lambda (x) (= (char->integer x) #x8)) 
-     (read (open-input-string "#\\backspace"))]
+     (read (open-string-input-port "#\\backspace"))]
     [(lambda (x) (= (char->integer x) #x9)) 
-     (read (open-input-string "#\\tab"))]
+     (read (open-string-input-port "#\\tab"))]
     [(lambda (x) (= (char->integer x) #xA)) 
-     (read (open-input-string "#\\linefeed"))]
+     (read (open-string-input-port "#\\linefeed"))]
     [(lambda (x) (= (char->integer x) #xA)) 
-     (read (open-input-string "#\\newline"))]
+     (read (open-string-input-port "#\\newline"))]
     [(lambda (x) (= (char->integer x) #xB)) 
-     (read (open-input-string "#\\vtab"))]
+     (read (open-string-input-port "#\\vtab"))]
     [(lambda (x) (= (char->integer x) #xC)) 
-     (read (open-input-string "#\\page"))]
+     (read (open-string-input-port "#\\page"))]
     [(lambda (x) (= (char->integer x) #xD)) 
-     (read (open-input-string "#\\return"))]
+     (read (open-string-input-port "#\\return"))]
     [(lambda (x) (= (char->integer x) #x1B)) 
-     (read (open-input-string "#\\esc"))]
+     (read (open-string-input-port "#\\esc"))]
     [(lambda (x) (= (char->integer x) #x20)) 
-     (read (open-input-string "#\\space"))]
+     (read (open-string-input-port "#\\space"))]
     [(lambda (x) (= (char->integer x) #x7F)) 
-     (read (open-input-string "#\\delete"))])
+     (read (open-string-input-port "#\\delete"))])
 
   )
 

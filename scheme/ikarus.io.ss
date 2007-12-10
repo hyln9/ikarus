@@ -761,7 +761,7 @@
         (let ([n (read! str 0 (string-length str))])
           (unless (fixnum? n) 
             (error who "invalid return value from read!" n))
-          (unless (<= 0 n (fxsub1 (string-length str)))
+          (unless (<= 0 n (string-length str))
             (error who "return value from read! is out of range" n))
           ($set-port-index! p 0) 
           ($set-port-size! p n)
@@ -811,7 +811,7 @@
         (let ([n (read! str 0 (string-length str))])
           (unless (fixnum? n) 
             (error who "invalid return value from read!" n))
-          (unless (<= 0 n (fxsub1 (string-length str)))
+          (unless (<= 0 n (string-length str))
             (error who "return value from read! is out of range" n))
           ($set-port-size! p n)
           (cond

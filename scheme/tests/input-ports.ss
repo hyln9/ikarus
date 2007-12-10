@@ -6,11 +6,11 @@
 
   (define-tests test-input-ports
     [eof-object?
-     (get-line (open-input-string ""))]
+     (get-line (open-string-input-port ""))]
     [(lambda (x) (equal? x "abcd"))
-     (get-line (open-input-string "abcd"))]
+     (get-line (open-string-input-port "abcd"))]
     [(lambda (x) (equal? x ""))
-     (get-line (open-input-string "\nabcd"))]
+     (get-line (open-string-input-port "\nabcd"))]
     [(lambda (x) (equal? x "abcd"))
-     (get-line (open-input-string "abcd\nefg"))]))
+     (get-line (open-string-input-port "abcd\nefg"))]))
 
