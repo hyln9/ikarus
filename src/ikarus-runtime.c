@@ -542,68 +542,7 @@ ikp ik_uuid(ikp str){
   return str;
 }
 
-#if 0
-ikp ik_write(ikp fdptr, ikp idx, ikp str){
-  fprintf(stderr, "IK_WRITE\n");
-  int fd = unfix(fdptr);
-  int len = unfix(idx);
-  char* buf = (char*)(str+disp_string_data-string_tag);
-  int bytes = write(fd, buf, len);
-  if(bytes != len){
-    perror("S_write");
-    exit(-10);
-  }
-  return true_object;
-}
-#endif
 
-
-/* 
- * From the manpages:
- *
- * int open(const char *pathname, int flags);                 
- * int open(const char *pathname, int flags, mode_t mode);    
- * flags = (O_RDONLY | O_WRONLY | O_RDWR) ? O_CREAT ? O_TRUNC ? O_APPEND
- * return -1 on failure
- * 
- * int unlink(const char *pathname);  
- */
-
-#if 0
-ikp ik_open_file(ikp str, ikp flagptr){
-  int flags;
-  int f = unfix(flagptr);
-  char* path = (char*)(str + disp_string_data - string_tag);
-  if(f == 0){
-    flags = O_WRONLY | O_CREAT;
-  } else if(f == 1){
-    flags = O_WRONLY | O_APPEND;
-  } else if(f == 2){
-    unlink(path);
-    flags = O_WRONLY | O_CREAT;
-  } else if(f == 3){
-    flags = O_WRONLY | O_TRUNC;
-  } else if(f == 4){
-    flags = O_RDONLY;
-  } else {
-    fprintf(stderr, "Error in S_open_file: invalid mode 0x%08x\n", 
-                  (int)flagptr);
-    exit(-10);
-  }
-  int fd = open(path, flags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-  if(fd == -1){
-     fprintf(stderr, "Cannot open %s\n", path);
-     perror("S_open_file");
-     exit(-10);
-  }
-  if(fd != unfix(fix(fd))){
-     fprintf(stderr, "fd %d too big\n", fd);
-     exit(-10);
-  }
-  return fix(fd);
-}
-#endif
- 
 
 /*
      #include <sys/types.h>
@@ -725,14 +664,7 @@ ikrt_delete_file(ikp filename){
 }
 
 
-ikp ik_close(ikp fd){
-  int err = close(unfix(fd));
-  if(err != 0){
-    perror("S_close");
-    exit(-10);
-  }
-  return true_object;
-}
+
 
 ikp 
 ik_system(ikp str){
@@ -851,113 +783,6 @@ ikrt_bvftime(ikp outbv, ikp fmtbv){
   }
   return fix(rv);
 }
-
-
-
-ikp
-ikrt_close_file(ikp fd, ikpcb* pcb){
-  int err = close(unfix(fd));
-  if(err == -1){
-    return false_object;
-  } else {
-    return true_object;
-  }
-}
-
-
-
-ikp ikrt_read(ikp fd, ikp buff, ikpcb* pcb){
-  if(tagof(buff) != bytevector_tag){
-    fprintf(stderr, "%p is not a bytevector", buff);
-    exit(-1);
-  }
-  int bytes =
-    read(unfix(fd), buff+off_bytevector_data, unfix(ref(buff, off_bytevector_length)));
-  ikp fbytes = fix(bytes);
-  if (bytes == unfix(fbytes)){
-    return fbytes;
-  } else {
-    fprintf(stderr, "ERR: ikrt_read: too big\n");
-    exit(-1);
-  }
-}
-
-
-ikp
-ikrt_open_input_file(ikp fname, ikpcb* pcb){
-  char* name;
-  if(tagof(fname) == bytevector_tag){
-    name = (char*) fname + off_bytevector_data;
-  } else {
-    fprintf(stderr, "bug in ikrt_open_input_file\n");
-    exit(-1);
-  }
-  int fd = open(name, O_RDONLY);
-  if(fd == -1){
-    return false_object;
-  } else {
-    return fix(fd);
-  }
-}
-
-ikp
-ikrt_open_output_file(ikp fname, ikp flagptr, ikpcb* pcb){
-  /* [(error)    0] */ 
-  /* [(replace)  1] */
-  /* [(truncate) 2] */
-  /* [(append)   3] */
-  char* name;
-  if(tagof(fname) == bytevector_tag){
-    name = (char*) fname + off_bytevector_data;
-  } else {
-    fprintf(stderr, "bug in ikrt_open_output_file\n");
-    exit(-1);
-  }
-  int flags;
-  int f = unfix(flagptr);
-  if(f == 0){
-    flags = O_WRONLY | O_CREAT;
-  } else if(f == 1){
-    unlink(name);
-    flags = O_WRONLY | O_CREAT;
-  } else if(f == 2){
-    flags = O_WRONLY | O_TRUNC | O_CREAT;
-  } else if(f == 3){
-    flags = O_WRONLY | O_APPEND;
-  } else {
-    fprintf(stderr, "Error in S_open_file: invalid mode 0x%08x\n", 
-                  (int)flagptr);
-    exit(-10);
-  }
-  int fd = open(name, flags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-  if(fd == -1){
-    fprintf(stderr, "openfile failed: %s\n", strerror(errno));
-    return false_object;
-  } else {
-    return fix(fd);
-  }
-}
-
-
-ikp
-ikrt_write_file(ikp fd, ikp buff, ikp idx, ikpcb* pcb){
-  int bytes;
-  if(tagof(buff) == bytevector_tag){
-    bytes = write(unfix(fd), buff+off_bytevector_data, unfix(idx));
-  } else {
-    fprintf(stderr, "bug in ikrt_write_file\n");
-    exit(-1);
-  }
-  return fix(bytes);
-}
-
-ikp 
-ikrt_write_char(){
-  fprintf(stderr, "ikrt_write_char\n");
-  return void_object;
-}
-
-
 
 ikp
 ikrt_register_guardian_pair(ikp p0, ikpcb* pcb){
@@ -1100,7 +925,6 @@ ikrt_make_vector2(ikp len, ikp obj, ikpcb* pcb){
     ikp s = ik_safe_alloc(pcb, align(((int)len) + disp_vector_data));
     pcb->root0 = 0;
     ref(s, 0) = len;
-
     memset(s+disp_vector_data, 0, (int)len);
     return s+vector_tag;
   } else {
