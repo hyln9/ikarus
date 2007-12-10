@@ -25,6 +25,8 @@
     open-string-input-port
     make-custom-binary-input-port 
     make-custom-binary-output-port 
+    make-custom-textual-input-port 
+    make-custom-textual-output-port 
     transcoded-port port-transcoder
     close-port close-input-port close-output-port
     port-eof?
@@ -69,6 +71,8 @@
       open-string-input-port
       make-custom-binary-input-port
       make-custom-binary-output-port 
+      make-custom-textual-input-port 
+      make-custom-textual-output-port 
       transcoded-port port-transcoder
       close-port close-input-port close-output-port
       port-eof?
@@ -188,6 +192,12 @@
       ($make-port 0 0 bv 0 #f #f attrs id read! write! get-position
                   set-position! close)))
 
+  (define ($make-custom-textual-port attrs id 
+            read! write! get-position set-position! close buffer-size)
+    (let ([bv (make-string buffer-size)])
+      ($make-port 0 0 bv 0 #f #f attrs id read! write! get-position
+                  set-position! close)))
+
   (define (make-custom-binary-input-port id 
             read! get-position set-position! close)
     ;;; FIXME: get-position and set-position! are ignored for now
@@ -217,6 +227,38 @@
       (fxior fast-put-tag fast-put-byte-tag)
       id #f write! get-position
       set-position! close 256))
+
+  (define (make-custom-textual-input-port id 
+            read! get-position set-position! close)
+    ;;; FIXME: get-position and set-position! are ignored for now
+    (define who 'make-custom-textual-input-port)
+    (unless (string? id)
+      (error who "id is not a string" id))
+    (unless (procedure? read!)
+      (error who "read! is not a procedure" read!))
+    (unless (or (procedure? close) (not close))
+      (error who "close should be either a procedure or #f" close))
+    ($make-custom-textual-port 
+      (fxior fast-get-tag fast-get-char-tag)
+      id read! #f get-position
+      set-position! close 256))
+
+  (define (make-custom-textual-output-port id 
+            write! get-position set-position! close)
+    ;;; FIXME: get-position and set-position! are ignored for now
+    (define who 'make-custom-textual-output-port)
+    (unless (string? id)
+      (error who "id is not a string" id))
+    (unless (procedure? write!)
+      (error who "read! is not a procedure" write!))
+    (unless (or (procedure? close) (not close))
+      (error who "close should be either a procedure or #f" close))
+    ($make-custom-textual-port 
+      (fxior fast-put-tag fast-put-char-tag)
+      id #f write! get-position
+      set-position! close 256))
+
+
 
   (define (input-transcoder-attrs x)
     (cond

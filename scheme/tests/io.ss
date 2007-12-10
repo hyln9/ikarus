@@ -477,12 +477,12 @@
               #f)])
     (let f ([i 0])
       (unless (fx= i 10000)
-        (put-u8 p (mod i 256))
+        (put-u8 p (mod i 37))
         (f (+ i 1))))
     (flush-output-port p)
     (let f ([i 0] [ls (reverse ls)])
       (unless (null? ls) 
-        (assert (fx= (mod i 256) (car ls)))
+        (assert (fx= (mod i 37) (car ls)))
         (f (fx+ i 1) (cdr ls))))))
 
 
