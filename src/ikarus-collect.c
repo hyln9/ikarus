@@ -24,6 +24,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <assert.h>
 #include <errno.h>
 
