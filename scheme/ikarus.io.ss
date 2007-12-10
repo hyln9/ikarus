@@ -32,6 +32,7 @@
     current-output-port current-error-port
     open-file-output-port
     console-output-port
+    console-error-port
     console-input-port
     newline
     input-port-name
@@ -74,6 +75,7 @@
       open-file-output-port
       console-output-port
       console-input-port
+      console-error-port
       newline
       input-port-name
       output-port-name
@@ -1131,6 +1133,10 @@
 
   (define console-output-port
     (let ([p (*the-output-port*)])
+      (lambda () p)))
+
+  (define console-error-port
+    (let ([p (*the-error-port*)])
       (lambda () p)))
 
   (define console-input-port

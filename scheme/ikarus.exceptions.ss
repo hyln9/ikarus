@@ -29,8 +29,8 @@
     (make-parameter
       (list 
         (lambda (x) 
-          (display "Unhandled exception:\n" (standard-error-port))
-          (print-condition x)
+          (display "Unhandled exception:\n" (console-error-port))
+          (print-condition x (console-error-port))
           (exit -1)))))
   
   (define (with-exception-handler handler proc2)

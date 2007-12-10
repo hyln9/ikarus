@@ -321,8 +321,7 @@
          (void))))
   (define fasl-write
     (case-lambda 
-      [(x) (fasl-write-to-port x (current-output-port))]
       [(x port)
-       (unless (output-port? port)
+       (unless (and (output-port? port) (binary-port? port))
          (error 'fasl-write "not an output port" port))
        (fasl-write-to-port x port)])))
