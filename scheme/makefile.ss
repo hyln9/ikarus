@@ -1098,7 +1098,7 @@
     [make-bytevector                             i r bv]
     [make-custom-binary-input-port               i r ip]
     [make-custom-binary-input/output-port        r ip]
-    [make-custom-binary-output-port              r ip]
+    [make-custom-binary-output-port              i r ip]
     [make-custom-textual-input-port              r ip]
     [make-custom-textual-input/output-port       r ip]
     [make-custom-textual-output-port             r ip]

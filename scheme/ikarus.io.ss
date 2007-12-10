@@ -24,6 +24,7 @@
     open-bytevector-input-port
     open-string-input-port
     make-custom-binary-input-port 
+    make-custom-binary-output-port 
     transcoded-port port-transcoder
     close-port close-input-port close-output-port
     port-eof?
@@ -67,6 +68,7 @@
       open-bytevector-input-port
       open-string-input-port
       make-custom-binary-input-port
+      make-custom-binary-output-port 
       transcoded-port port-transcoder
       close-port close-input-port close-output-port
       port-eof?
@@ -181,9 +183,9 @@
   (define r6rs-mode-tag          #x1000)
 
   (define ($make-custom-binary-input-port id 
-            read! get-position set-position! close buffer-size)
+            read! write! get-position set-position! close buffer-size)
     (let ([bv (make-bytevector buffer-size)])
-      ($make-port 0 0 bv 0 #f #f 0 id read! #f get-position
+      ($make-port 0 0 bv 0 #f #f 0 id read! write! get-position
                   set-position! close)))
 
   (define (make-custom-binary-input-port id 
@@ -196,7 +198,20 @@
       (error who "read! is not a procedure" read!))
     (unless (or (procedure? close) (not close))
       (error who "close should be either a procedure or #f" close))
-    ($make-custom-binary-input-port id read! get-position
+    ($make-custom-binary-input-port id read! #f get-position
+      set-position! close 256))
+
+  (define (make-custom-binary-output-port id 
+            write! get-position set-position! close)
+    ;;; FIXME: get-position and set-position! are ignored for now
+    (define who 'make-custom-binary-output-port)
+    (unless (string? id)
+      (error who "id is not a string" id))
+    (unless (procedure? write!)
+      (error who "read! is not a procedure" write!))
+    (unless (or (procedure? close) (not close))
+      (error who "close should be either a procedure or #f" close))
+    ($make-custom-binary-input-port id #f write! get-position
       set-position! close 256))
 
   (define (input-transcoder-attrs x)
