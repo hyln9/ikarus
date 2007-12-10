@@ -790,9 +790,9 @@
     (lambda (fmt . args)
       (unless (string? fmt)
         (error 'format "not a string" fmt))
-      (let ([p (open-output-string)])
+      (let-values ([(p e) (open-string-output-port)])
         (formatter 'format p fmt args)
-        (get-output-string p))))
+        (e))))
    
   (define printf 
     (lambda (fmt . args)

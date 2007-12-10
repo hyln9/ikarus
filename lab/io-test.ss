@@ -9,7 +9,11 @@
           get-bytevector-n get-bytevector-n!
           get-string-n get-string-n! get-line port?
           close-input-port close-output-port flush-output-port
-          open-input-file call-with-input-file with-input-from-file)
+          open-input-file call-with-input-file with-input-from-file
+          put-char put-u8 open-bytevector-output-port
+          call-with-bytevector-output-port open-string-output-port
+          write-char current-output-port current-error-port
+          standard-output-port standard-error-port put-string)
 
   (io-spec))
 
@@ -403,7 +407,74 @@
 
 (assert (= (file-size "SRFI-1.ss") 56573))
 
+(define (file->bytevector filename)
+  (let ([p (open-file-input-port filename (file-options) 'block #f)])
+    (u8-list->bytevector
+      (let f ()
+        (let ([x (get-u8 p)])
+          (if (eof-object? x) 
+              (begin (close-input-port p) '())
+              (cons x (f))))))))
 
+(define (bytevector->binary-port bv p)
+  (let f ([i 0])
+    (unless (fx= i (bytevector-length bv))
+      (put-u8 p (bytevector-u8-ref bv i))
+      (f (fx+ i 1)))))
+
+(define (bytevector->textual-port bv p)
+  (let f ([i 0])
+    (unless (fx= i (bytevector-length bv))
+      (put-char p (integer->char (bytevector-u8-ref bv i)))
+      (f (fx+ i 1)))))
+
+(let ([bv (file->bytevector "SRFI-1.ss")])
+  (let-values ([(p extract) (open-bytevector-output-port #f)])
+    (bytevector->binary-port bv p)
+    (let ([bv2 (extract)])
+      (assert (bytevector=? bv bv2))
+      (assert (bytevector=? #vu8() (extract))))))
+
+(let ([bv (file->bytevector "SRFI-1.ss")])
+  (let-values ([(p extract) (open-bytevector-output-port 
+                              (native-transcoder))])
+    (bytevector->textual-port bv p)
+    (let ([bv2 (extract)])
+      (assert (bytevector=? bv bv2))
+      (assert (bytevector=? #vu8() (extract))))))
+
+(let ([bv (file->bytevector "SRFI-1.ss")])
+  (let-values ([(p extract) (open-bytevector-output-port 
+                              (make-transcoder (latin-1-codec)))])
+    (bytevector->textual-port bv p)
+    (let ([bv2 (extract)])
+      (assert (bytevector=? bv bv2))
+      (assert (bytevector=? #vu8() (extract))))))
+
+(let ([bv (file->bytevector "SRFI-1.ss")])
+  (let-values ([(p extract) (open-string-output-port)]) 
+    (bytevector->textual-port bv p)
+    (let ([str (extract)])
+      (assert (bytevector=? bv (string->utf8 str)))
+      (assert (string=? "" (extract))))))
+
+(let ([p (standard-output-port)])
+  (bytevector->binary-port 
+    (string->utf8 "HELLO THERE\n")
+    p)
+  (flush-output-port p))
+
+(let ([p (current-output-port)])
+  (bytevector->textual-port 
+    (string->utf8 "HELLO THERE\n")
+    p)
+  (flush-output-port p))
+
+(let ([p (current-output-port)])
+  (put-string p "HELLO THERE\n")
+  (flush-output-port p))
+
+(open-file-output-port "bar" (file-options no-truncate))
 
 ;(run-exhaustive-tests)
 ;(run-interactive-tests)

@@ -377,7 +377,7 @@
            (newline p)]))
       (case-lambda
         [(x) 
-         (print-condition x (standard-error-port))]
+         (print-condition x (console-output-port))]
         [(x port)
          (if (output-port? port) 
              (print-condition x port)

@@ -1151,3 +1151,9 @@ ikrt_exit(ikp status, ikpcb* pcb){
   assert(total_allocated_pages == 0);
   exit((int)status);
 }
+
+ikp
+ikrt_debug(ikp x){
+  fprintf(stderr, "DEBUG 0x%08x\n", (int)x);
+  return 0;
+};

@@ -56,11 +56,54 @@ ikrt_open_input_fd(ikp fn, ikpcb* pcb){
 }
 
 ikp
+ikrt_open_output_fd(ikp fn, ikp ikopts, ikpcb* pcb){
+  int opts = unfix(ikopts);
+  int mode = 0;
+  switch (opts){
+    /* mode 0: error if exists, create if does not exist */
+    case 0: mode = O_WRONLY | O_CREAT | O_EXCL; break;
+    /* mode 1: truncate if exists, error if not exists */
+    case 1: mode = O_WRONLY | O_TRUNC; break;
+    /* mode 2: truncate if exists, create if not exist */
+    case 2: mode = O_WRONLY | O_TRUNC | O_CREAT ; break;
+    /* mode 3: truncate if exists, error if not exists */
+    case 3: mode = O_WRONLY | O_TRUNC ; break;
+    case 4: mode = O_WRONLY | O_CREAT | O_EXCL ; break;
+    case 5: mode = O_WRONLY | O_CREAT ; break;
+    case 6: mode = O_WRONLY | O_CREAT ; break;
+    case 7: mode = O_WRONLY ; break;
+  }
+  int fh = open((char*)(fn+off_bytevector_data), 
+                mode,
+                S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+  if(fh > 0){
+    return fix(fh);
+  } else {
+    return ikrt_io_error();
+  }
+}
+
+
+
+ikp
 ikrt_read_fd(ikp fd, ikp bv, ikp off, ikp cnt, ikpcb* pcb){
   ssize_t bytes = 
    read(unfix(fd),
         (char*)(bv+off_bytevector_data+unfix(off)), 
         unfix(cnt));
+  if(bytes >= 0){
+    return fix(bytes);
+  } else {
+    return ikrt_io_error();
+  }
+}
+
+ikp
+ikrt_write_fd(ikp fd, ikp bv, ikp off, ikp cnt, ikpcb* pcb){
+  ssize_t bytes = 
+   write(unfix(fd),
+         (char*)(bv+off_bytevector_data+unfix(off)), 
+         unfix(cnt));
   if(bytes >= 0){
     return fix(bytes);
   } else {

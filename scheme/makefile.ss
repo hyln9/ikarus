@@ -66,14 +66,8 @@
     "ikarus.guardians.ss"
     "ikarus.command-line.ss"
     "ikarus.codecs.ss"
-    "ikarus.io-ports.ss"
-    "ikarus.io-primitives.unsafe.ss"
-    "ikarus.io-primitives.ss"
-    "ikarus.io.input-files.ss"
-    "ikarus.io.output-files.ss"
-    "ikarus.io.input-strings.ss"
-    "ikarus.io.output-strings.ss"
-    "ikarus.io.output-bytevectors.ss"
+    "ikarus.bytevectors.ss"
+    "ikarus.io.ss"
     "ikarus.hash-tables.ss"
     "ikarus.writer.ss"
     "ikarus.reader.ss"
@@ -95,11 +89,11 @@
     "ikarus.posix.ss"
     "ikarus.timer.ss"
     "ikarus.time-and-date.ss"
-    "ikarus.bytevectors.ss"
     "ikarus.sort.ss"
     "ikarus.promises.ss"
     "ikarus.enumerations.ss"
-    "ikarus.main.ss"))
+    "ikarus.main.ss"
+    ))
 
 (define ikarus-system-macros
   '([define              (define)]
@@ -890,6 +884,7 @@
     [bytevector->u8-list                         i r bv]
     [bytevector->uint-list                       i r bv]
     [bytevector-copy                             i r bv]
+    [string-copy!                                i]
     [bytevector-copy!                            i r bv]
     [bytevector-fill!                            i r bv]
     [bytevector-ieee-double-native-ref           i r bv]
@@ -1140,7 +1135,7 @@
     [open-bytevector-output-port                 i r ip]
     [open-file-input-port                        r ip]
     [open-file-input/output-port                 r ip]
-    [open-file-output-port                       r ip]
+    [open-file-output-port                       i r ip]
     [open-string-input-port                      i r ip]
     [open-string-output-port                     i r ip]
     [output-port-buffer-mode                     r ip]
@@ -1179,7 +1174,7 @@
     [display                                     i r is se]
     [newline                                     i r is se]
     [open-input-file                             i r is se]
-    [open-output-file                            i r is se]
+    ;[open-output-file                            i r is se]
     [peek-char                                   i r is se]
     [read                                        i r is se]
     [read-char                                   i r is se]
@@ -1404,6 +1399,7 @@
       (case-lambda
         [() set]
         [(x) (set! set (cons x set))]))))
+
 (import (ikarus makefile collections))
 
 (define (assq1 x ls)
@@ -1581,11 +1577,12 @@
           (reverse (cons* (car code*) code (cdr code*)))
           export-locs)))))
 
+
 (verify-map)
 
 (time-it "the entire bootstrap process"
   (lambda ()
-    (let-values ([(core* locs) 
+    (let-values ([(core* locs)
                   (time-it "macro expansion"
                     (lambda () 
                       (parameterize ([current-library-collection
@@ -1597,7 +1594,9 @@
               [(assq x locs) => cdr]
               [else 
                (error 'bootstrap "no location for primitive" x)])))
-        (let ([p (open-output-file "ikarus.boot" 'replace)])
+        
+        (let ([p (open-file-output-port "ikarus.boot" 
+                    (file-options no-fail))])
           (time-it "code generation and serialization"
             (lambda ()
               (for-each 
@@ -1605,6 +1604,7 @@
                   (compile-core-expr-to-port x p))
                 core*)))
           (close-output-port p)))))
+
 
 (printf "Happy Happy Joy Joy\n")
 

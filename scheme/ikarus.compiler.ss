@@ -1967,20 +1967,20 @@
   (define transcoder-codec:utf-8          #b010)
   (define transcoder-codec:utf-16         #b011)
 
-  (define port-tag              #x3F) ;;; 0011_F
-  (define output-port-tag       #x7F) ;;; 0011_F
-  (define input-port-tag        #xBF) ;;; 1011_F
-  (define port-mask             #x3F) ;;; 0011_F
-  (define port-type-mask        #xFF) ;;; 1111_F
+  ;(define port-tag              #x3F) ;;; 0011_F
+  ;(define output-port-tag       #x7F) ;;; 0011_F
+  ;(define input-port-tag        #xBF) ;;; 1011_F
+  ;(define port-mask             #x3F) ;;; 0011_F
+  ;(define port-type-mask        #xFF) ;;; 1111_F
 
-  (define disp-port-buffer         4)
-  (define disp-port-index          8)
-  (define disp-port-size          12)
-  (define disp-port-handler       16)
-  (define disp-port-attributes    20)
-  (define disp-port-unused1   24)
-  (define disp-port-unused2   28)
-  (define port-size               32)
+  ;(define disp-port-buffer         4)
+  ;(define disp-port-index          8)
+  ;(define disp-port-size          12)
+  ;(define disp-port-handler       16)
+  ;(define disp-port-attributes    20)
+  ;(define disp-port-unused1   24)
+  ;(define disp-port-unused2   28)
+  ;(define port-size               32)
 
 
 

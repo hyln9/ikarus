@@ -1740,6 +1740,7 @@
 
 /section)
 
+#;
 (section ;;; ports
 
 (define-primop port? safe

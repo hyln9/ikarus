@@ -46,7 +46,8 @@
     (make-parameter
       (lambda ()
         (import (ikarus system interrupts))
-        (set-port-output-index! (console-output-port) 0)
+        ; FIXME
+        ;(set-port-output-index! (console-output-port) 0)
         (raise-continuable
           (condition
             (make-interrupted-condition)

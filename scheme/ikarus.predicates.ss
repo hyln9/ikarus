@@ -21,15 +21,13 @@
           boolean? char? vector? bytevector? string? procedure? null? pair?
           symbol? code? not weak-pair? eq? eqv? equal? boolean=?
           symbol=? finite? infinite? nan? real-valued?
-          rational-valued? integer-valued? 
-          output-port? input-port? port? transcoder?)
-
+          rational-valued? integer-valued? transcoder?)
   (import 
     (except (ikarus) fixnum? flonum? bignum? ratnum? number? complex? real?
             rational? integer? exact? inexact? eof-object? bwp-object?
             immediate? boolean? char? vector? bytevector? string? procedure?
             null? pair? weak-pair? symbol? code? not eq? eqv? equal?
-            transcoder? port? input-port? output-port? boolean=? symbol=?
+            transcoder? boolean=? symbol=?
             finite? infinite? nan? real-valued? rational-valued? 
             integer-valued?)
     (ikarus system $fx)
@@ -41,8 +39,7 @@
     (rename (only (ikarus) fixnum? flonum? bignum? ratnum? eof-object?
                   bwp-object? immediate? boolean? char? vector? string?
                   bytevector? procedure? null? pair? symbol? code? eq?
-                  transcoder?
-                  port? input-port? output-port?)
+                  transcoder?)
             (fixnum? sys:fixnum?)
             (flonum? sys:flonum?)
             (bignum? sys:bignum?)
@@ -62,9 +59,6 @@
             (code? sys:code?)
             (eq? sys:eq?)
             (transcoder? sys:transcoder?)
-            (port? sys:port?)
-            (input-port? sys:input-port?)
-            (output-port? sys:output-port?)
             ))
 
   (define fixnum?
@@ -258,12 +252,5 @@
            (and (sys:bytevector? y) (bytevector=? x y))]
           [else #f]))))
 
-  (define port?
-    (lambda (x) (sys:port? x)))
-  (define input-port?
-    (lambda (x) (sys:input-port? x)))
-  (define output-port?
-    (lambda (x) (sys:output-port? x)))
- 
 
   )

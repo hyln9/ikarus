@@ -29,8 +29,13 @@
     (ikarus system $flonums)
     (ikarus system $bignums)
     (except (ikarus code-objects) procedure-annotation)
-    (except (ikarus) fasl-write))
+    (except (ikarus) fasl-write write-byte))
   
+  (define-syntax write-byte
+    (syntax-rules ()
+      [(_ byte port)
+       (put-u8 port byte)]))
+
   (define (put-tag c p)
     (write-byte (char->integer c) p))
   
@@ -221,7 +226,7 @@
         [else (error 'fasl-write "not fasl-writable" x)])))
   (define (write-bytevector x i j p)
     (unless ($fx= i j)
-      ($write-byte ($bytevector-u8-ref x i) p)
+      (write-byte ($bytevector-u8-ref x i) p)
       (write-bytevector x ($fxadd1 i) j p)))
   (define fasl-write-object 
     (lambda (x p h m)

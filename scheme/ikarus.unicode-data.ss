@@ -230,23 +230,24 @@
            (error 'char-ci>=? "not a char" x))]))
                
   (define ($string-foldcase str)
-    (let f ([str str] [i 0] [n (string-length str)] [p (open-output-string)])
-      (cond
-        [($fx= i n) (get-output-string p)]
-        [else
-         (let* ([n ($char->fixnum ($string-ref str i))])
-           (let ([n/ls
-                  (vector-ref string-foldcase-adjustment-vector
-                    (binary-search n charcase-search-vector))])
-             (if (fixnum? n/ls)
-                 ($write-char ($fixnum->char ($fx+ n n/ls)) p)
-                 (let f ([ls n/ls])
-                   ($write-char ($car ls) p)
-                   (let ([ls ($cdr ls)])
-                     (if (pair? ls) 
-                         (f ls)
-                         ($write-char ls p)))))))
-         (f str ($fxadd1 i) n p)])))
+    (let-values ([(p e) (open-string-output-port)])
+      (let f ([str str] [i 0] [n (string-length str)])
+        (cond
+          [($fx= i n) (e)]
+          [else
+           (let* ([n ($char->fixnum ($string-ref str i))])
+             (let ([n/ls
+                    (vector-ref string-foldcase-adjustment-vector
+                      (binary-search n charcase-search-vector))])
+               (if (fixnum? n/ls)
+                   (write-char ($fixnum->char ($fx+ n n/ls)) p)
+                   (let f ([ls n/ls])
+                     (write-char ($car ls) p)
+                     (let ([ls ($cdr ls)])
+                       (if (pair? ls) 
+                           (f ls)
+                           (write-char ls p)))))))
+           (f str ($fxadd1 i) n)]))))
 
   (define (string-foldcase str)
     (if (string? str)

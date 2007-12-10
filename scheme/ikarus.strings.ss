@@ -18,7 +18,8 @@
   (export string-length string-ref string-set! make-string string->list
           string-append substring string list->string uuid
           string-copy string-for-each string-fill! 
-          string=? string<? string<=? string>? string>=?)
+          string=? string<? string<=? string>? string>=?
+          string-copy!)
   (import 
     (ikarus system $strings)
     (ikarus system $fx)
@@ -29,7 +30,7 @@
             string->list string-append substring string
             list->string uuid string-copy string-for-each
             string=? string<? string<=? string>? string>=?
-            string-fill!))
+            string-fill! string-copy!))
 
 
   (define string-length
@@ -452,6 +453,46 @@
       (unless ($fx= i n) 
         ($string-set! v i fill)
         (f v ($fxadd1 i) n fill))))
+
+
+  (define string-copy!
+    (lambda (src src-start dst dst-start k) 
+      (cond
+        [(or (not (fixnum? src-start)) ($fx< src-start 0))
+         (error 'string-copy! "not a valid starting index" src-start)]
+        [(or (not (fixnum? dst-start)) ($fx< dst-start 0))
+         (error 'string-copy! "not a valid starting index" dst-start)]
+        [(or (not (fixnum? k)) ($fx< k 0))
+         (error 'string-copy! "not a valid length" k)]
+        [(not (string? src)) 
+         (error 'string-copy! "not a string" src)]
+        [(not (string? dst)) 
+         (error 'string-copy! "not a string" dst)]
+        [(let ([n ($fx+ src-start k)])
+           (or ($fx< n 0) ($fx> n ($string-length src))))
+         (error 'string-copy! "out of range" src-start k)]
+        [(let ([n ($fx+ dst-start k)])
+           (or ($fx< n 0) ($fx> n ($string-length dst))))
+         (error 'string-copy! "out of range" dst-start k)]
+        [(eq? src dst)
+         (cond
+           [($fx< dst-start src-start)
+            (let f ([src src] [si src-start] [di dst-start] [sj ($fx+ src-start k)])
+              (unless ($fx= si sj)
+                ($string-set! src di ($string-ref src si))
+                (f src ($fxadd1 si) ($fxadd1 di) sj)))]
+           [($fx< src-start dst-start)
+            (let f ([src src] [si ($fx+ src-start k)] [di ($fx+ dst-start k)] [sj src-start])
+              (unless ($fx= si sj)
+                (let ([si ($fxsub1 si)] [di ($fxsub1 di)])
+                  ($string-set! src di ($string-ref src si))
+                  (f src si di sj))))]
+           [else (void)])]
+        [else
+         (let f ([src src] [si src-start] [dst dst] [di dst-start] [sj ($fx+ src-start k)])
+           (unless ($fx= si sj)
+             ($string-set! dst di ($string-ref src si))
+             (f src ($fxadd1 si) dst ($fxadd1 di) sj)))])))
 
   (define uuid
     (lambda ()
