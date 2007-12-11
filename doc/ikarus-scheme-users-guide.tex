@@ -132,43 +132,19 @@
 \vspace{3in}
 
 \newcommand{\fstpagefont}[0]
-%{\fontspec{Korner Deli NF}}
-%{\fontspec{Teen Light Italic}}
-%{\fontspec{Venus Rising}}
-%{\fontspec{Vibrocentric}}
-%{\fontspec{Electroharmonix}}
-{\fontspec{Hoefler Text Italic}}
+{\fontspec{Charis SIL}}
 
-{
-\fontsize{66}{66}
-\fstpagefont{}
-\begin{center}
-Ikarus Scheme User's Guide
-\end{center} 
-}
-\noindent
-\rule{\textwidth}{6pt} 
-{\fontsize{18}{18}
-\fstpagefont{}
-\hfill{}
-% Quick Start\\
-% \rnrs{6} Crash Course\\
-% Ikarus
-(Preliminary Document)
-\hfill Version~0.0.2
-}
+{ \fontsize{66}{66} \fstpagefont{}
+  \noindent Ikarus Scheme\\ User's Guide\\ }
+  \noindent \rule{\textwidth}{6pt}
+{\fontsize{18}{18} \fstpagefont{}
+  \hfill{} (Preliminary Document) \hfill Version~0.0.2+ }
 \vfill
-{
-\fontsize{24}{24}
-\fstpagefont{}
-\hfill{} Abdulaziz Ghuloum
-}
+{ \fontsize{24}{24} \fstpagefont{}
+  \hfill{} Abdulaziz Ghuloum}
 
-{
-\fontsize{18}{18}
-\fstpagefont{}
-\hfill{} \today
-}
+{ \fontsize{18}{18} \fstpagefont{}
+  \hfill{} \today \\}
 
 \newpage
 \mbox{}
@@ -628,7 +604,7 @@ Files, which also contain definitions and expressions, can be loaded
 and reloaded by calling the \texttt{load} procedure.  The
 environment in which the interactive session starts often contains
 implementation-specific bindings that are not found \rnrs{5} and
-users may redefine any of the initial bindings.  The semantics of a
+users may redefine any of the initial bindings.  The semantics of 
 loading a file depends on the state of the environment at the time
 the file contents are evaluated.
 
@@ -661,7 +637,7 @@ script is listed below.
 
 The first line imports the \texttt{(rnrs)} library.  All the
 bindings exported from the \texttt{(rnrs)} library are made
-available to be used within the body of the library.  
+available to be used within the body of the script.  
 The exports of the \texttt{(rnrs)} library include variables
 (e.g. \texttt{cons}, \texttt{car}, \texttt{display}, etc.) and
 keywords (e.g.  \texttt{define}, \texttt{lambda}, \texttt{quote},
@@ -730,9 +706,9 @@ The library name can be any non-empty list of identifiers.
 
 The library exports are a set of identifiers that are made available
 to importing libraries.  Every exported identifier must be bound: it
-may either be defined in the libraries or imported from another
-library.  Library exports include variables, keywords, record names,
-condition names.
+may either be defined in the library or imported using the
+\texttt{import} form.  Library exports include variables, keywords,
+record names, and condition names.
 
 Library imports are similar to script imports: they specify the set
 of libraries whose exports are made visible within the body of the
@@ -879,7 +855,7 @@ returns a new record type with the values of the fields initialized
 to the arguments' values.  It is sometimes necessary or convenient
 to provide a constructor that performs more than the default
 constructor.  For example, we can modify the definition of our
-\texttt{point} record in such way that the constructor takes either
+\texttt{point} record so that the constructor takes either
 no arguments, in which case it would return a point located at the
 origin, or two arguments specifying the $x$ and $y$ coordinates.  We
 use the \texttt{protocol} keyword for specifying such constructor as
@@ -965,7 +941,7 @@ The procedure \texttt{with-exception-handler} allows the programmer
 to specify how to handle exceptional situations.  It takes two
 procedures as arguments: 
 \begin{itemize}
-\item An exception handler which is a procedure that take a
+\item An exception handler which is a procedure that takes a
 single argument, the object that was raised.
 \item A body thunk which is a procedure with no arguments whose body
 is evaluated with the exception handler installed.
@@ -973,8 +949,8 @@ is evaluated with the exception handler installed.
 
 In addition to installing exception handlers, \rnrs{6} provides two
 ways of raising exceptions: \texttt{raise} and
-\texttt{raise-continuable}.  We describe the procedure
-\texttt{raise-continuable} 
+\texttt{raise-continuable}.  We describe the 
+\texttt{raise-continuable} procedure
 first since it's the simpler of the two.  
 For the code below, assume that \texttt{print} is defined as:
 \begin{CodeInline}
@@ -990,7 +966,7 @@ installed.  Here, the exception handler prints the object it
 receives and returns the symbol \texttt{there}.  The call to
 \texttt{raise-continuable} calls the exception handler, passing it
 the symbol \texttt{here}.  When the handler returns, the returned
-value becomes the value of the calls to \texttt{raise-continuable}.
+value becomes the value of the call to \texttt{raise-continuable}.
 
 \begin{CodeInline}
 (with-exception-handler
@@ -1214,8 +1190,8 @@ writing:
 \begin{verbatim}
    (define *screen-width* 72)
 \end{verbatim}
-and then mutate the variable \texttt{*screen-width*} with
-\texttt{set!}, we could wrap \texttt{*screen-width*} with a 
+and then mutating the variable \texttt{*screen-width*} with
+\texttt{set!}, we could wrap the variable \texttt{*screen-width*} with a 
 \texttt{screen-width} parameter as follows:
 \begin{verbatim}
    (define *screen-width* 72)
@@ -1235,8 +1211,8 @@ returned as a value, and exported from libraries.
 }
 
 As parameters are common in Ikarus, the procedure
-\texttt{make-parameter} is defined to model common usage pattern of
-parameter construction. 
+\texttt{make-parameter} is defined to model the common usage pattern
+of parameter construction. 
 
 \paragraph{\texttt{(make-parameter x)}} constructs a parameter
 with \texttt{x} as the initial value.  For example, the code above
@@ -1248,7 +1224,7 @@ could be written succinctly as:
 \paragraph{\texttt{(make-parameter x f)}} constructs a parameter
 which filters the assigned values through the procedure \texttt{f}.
 The initial value of the parameter is the result of calling
-\texttt{(f~x)}.  Typical used of the filter procedure include
+\texttt{(f~x)}.  Typical uses of the filter procedure include
 checking some constraints on the passed argument or converting it to
 a different data type.  The \texttt{screen-width} parameter may be
 constructed more robustly as:
@@ -1326,7 +1302,7 @@ imported identifiers are immutable.
 Local \texttt{import} forms are useful for two reasons: (1) they
 minimize the namespace clutter that usually occurs when many
 libraries are imported at the top level, and (2) they limit the
-scope of the import thus easily help modularize a library's
+scope of the import and thus help modularize a library's
 dependencies.
 
 Suppose you are constructing a large library and at some point you
@@ -1384,7 +1360,7 @@ looked up in the global symbol table.
 A gensym's name is composed of two parts: a \emph{pretty} string and
 a \emph{unique} string.  The Scheme procedure
 \texttt{symbol->string} returns the pretty string of the gensym and
-not its unique string.  Gensyms are printed by default as 
+not its unique string.  Gensyms are printed by default as \\
 \verb|#{pretty-string unique-string}|.
 
 \defun{gensym}{procedure}
@@ -1395,7 +1371,10 @@ not its unique string.  Gensyms are printed by default as
 The procedure \texttt{gensym} constructs a new gensym.  If passed no
 arguments, it constructs a gensym with no pretty name.  The pretty
 name is constructed when and if the pretty name of the resulting
-gensym is needed.
+gensym is needed.  If \texttt{gensym} is passed a string, that
+string is used as the pretty name.  If \texttt{gensym} is passed a
+symbol, the pretty name of the symbol is used as the pretty name of
+the returned gensym.
 See \defref{gensym-prefix} and \defref{gensym-count} for details. 
 
 \begin{verbatim}
@@ -1460,7 +1439,7 @@ associated with the gensym argument.
 \texttt{\#:pretty-name}
 \index{\#:pretty@\texttt{\#:pretty} reader syntax}
 
-Ikarus's \texttt{read} and \texttt{write} procedures extends the
+Ikarus's \texttt{read} and \texttt{write} procedures extend the
 lexical syntax of Scheme by the ability to read and write gensyms
 using one of the three forms listed above.
 
@@ -1603,8 +1582,8 @@ force the printer to go beyond the value of \texttt{pretty-width}.
 \texttt{(format fmt-string args ...)}
 
 The procedure \texttt{format} produces a string formatted according
-to the value of \texttt{fmt-string} and the supplied arguments.  The
-format string contains markers in which the string
+to \texttt{fmt-string} and the supplied
+arguments.  The format string contains markers in which the string
 representation of each argument is placed.  The markers include:
 
 
@@ -1636,7 +1615,7 @@ the number is printed in hexadecimal (base 16).
 
 \hangpara{2em}{1}
 \verb|"~d"|  outputs the next argument, which can be an
-exact or inexact number in its decimal (base 10) representation.
+exact or inexact number, in its decimal (base 10) representation.
 
 \hangpara{2em}{1}
 \verb|"~~"|  instructs the formatter to place a tilde
@@ -1830,8 +1809,8 @@ output in the first example with the output of the examples below:
 
 The parameter \texttt{gensym-count} determines the number 
 which is attached to the \texttt{gensym-prefix} when gensyms'
-pretty names are generated.  The value of \texttt{gensym-count}
-starts at 0 when the system starts and  is incremented every time a
+pretty names are generated.  The initial value of \texttt{gensym-count}
+is 0 and is incremented every time a
 pretty name is generated.  It might be set to any non-negative
 integer value. 
 
@@ -2037,7 +2016,7 @@ for Ikarus, or they may be portable libraries that can be used in
 Ikarus.   SRFIs or other libraries contributed by members of the
 Scheme community belong to this section.
 
-Using constributed libraries is no different from using any of the
+Using contributed libraries is no different from using any of the
 built-in libraries---all one has to do is add the library name to
 the \texttt{import} clause and the rest is done by the system.
 
@@ -2058,10 +2037,10 @@ on Ikarus if you believe that Ikarus is at fault.}
 
 The contributed libraries are installed in your system when Ikarus
 was installed.   By default, running the \texttt{configure} script
-installs the libraries into the \verb|/usr/local/lib/ikarus|
-directory.  If a \verb|--prefix DIR| argument was supplied to
-\texttt{configure}, then the libraries are installed in the
-\verb|DIR/ikarus/lib| directory.  
+installs the contributed libraries into the
+\verb|/usr/local/lib/ikarus| directory.  If a \verb|--prefix DIR|
+argument was supplied to \texttt{configure}, then the libraries are
+installed in the \verb|DIR/ikarus/lib| directory.  
 
 You may install additional libraries into the Ikarus library
 directory.  Doing so makes them available for \texttt{import} into
@@ -2086,7 +2065,7 @@ For example, suppose your script imports the
 library name to the file path \verb|streams/derived.ss|.  Suppose
 that Ikarus was installed using the \verb|--prefix /usr/local|
 configuration option, and suppose further that the value of
-\verb|IKARUS_LIBRARY_PATH| is set to
+\verb|IKARUS_LIBRARY_PATH| is set by the user to be 
 \verb|/home/john/ikarus-libraries:/home/john/srfis|.  Ikarus will
 search in the following locations in sequence until it finds the
 file it is looking for.
@@ -2186,7 +2165,7 @@ The following procedures are missing from \texttt{(rnrs base)}:
 angle magnitude make-polar make-rectangular
 \end{Verbatim}
 
-The following procedures are missing form \texttt{(rnrs bytevectors)}:
+The following procedures are missing from \texttt{(rnrs bytevectors)}:
 \begin{Verbatim}
 string->utf16     string->utf32    utf16->string     utf32->string
 \end{Verbatim}
