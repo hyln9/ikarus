@@ -195,7 +195,7 @@
   (define ($make-custom-textual-port attrs init-size id 
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-string buffer-size)])
-      ($make-port 0 init-size bv 0 #f #f attrs id read! write! get-position
+      ($make-port 0 init-size bv 0 #t #f attrs id read! write! get-position
                   set-position! close)))
 
   (define (make-custom-binary-input-port id 
