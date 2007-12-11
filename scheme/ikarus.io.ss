@@ -220,7 +220,7 @@
     (unless (string? id)
       (error who "id is not a string" id))
     (unless (procedure? write!)
-      (error who "read! is not a procedure" write!))
+      (error who "write! is not a procedure" write!))
     (unless (or (procedure? close) (not close))
       (error who "close should be either a procedure or #f" close))
     ($make-custom-binary-port 
@@ -250,7 +250,7 @@
     (unless (string? id)
       (error who "id is not a string" id))
     (unless (procedure? write!)
-      (error who "read! is not a procedure" write!))
+      (error who "write! is not a procedure" write!))
     (unless (or (procedure? close) (not close))
       (error who "close should be either a procedure or #f" close))
     ($make-custom-textual-port 
