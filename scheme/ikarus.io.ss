@@ -186,16 +186,16 @@
   
   (define r6rs-mode-tag          #x1000)
 
-  (define ($make-custom-binary-port attrs id 
+  (define ($make-custom-binary-port attrs init-size id 
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-bytevector buffer-size)])
-      ($make-port 0 0 bv 0 #f #f attrs id read! write! get-position
+      ($make-port 0 init-size bv 0 #f #f attrs id read! write! get-position
                   set-position! close)))
 
-  (define ($make-custom-textual-port attrs id 
+  (define ($make-custom-textual-port attrs init-size id 
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-string buffer-size)])
-      ($make-port 0 0 bv 0 #f #f attrs id read! write! get-position
+      ($make-port 0 init-size bv 0 #f #f attrs id read! write! get-position
                   set-position! close)))
 
   (define (make-custom-binary-input-port id 
@@ -210,6 +210,7 @@
       (error who "close should be either a procedure or #f" close))
     ($make-custom-binary-port 
       (fxior fast-get-tag fast-get-byte-tag)
+      0
       id read! #f get-position
       set-position! close 256))
 
@@ -225,6 +226,7 @@
       (error who "close should be either a procedure or #f" close))
     ($make-custom-binary-port 
       (fxior fast-put-tag fast-put-byte-tag)
+      256
       id #f write! get-position
       set-position! close 256))
 
@@ -240,6 +242,7 @@
       (error who "close should be either a procedure or #f" close))
     ($make-custom-textual-port 
       (fxior fast-get-tag fast-get-char-tag)
+      0
       id read! #f get-position
       set-position! close 256))
 
@@ -255,6 +258,7 @@
       (error who "close should be either a procedure or #f" close))
     ($make-custom-textual-port 
       (fxior fast-put-tag fast-put-char-tag)
+      256
       id #f write! get-position
       set-position! close 256))
 
