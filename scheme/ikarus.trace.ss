@@ -33,40 +33,43 @@
       (newline)))
 
   (define make-traced-procedure
-    (lambda (name proc)
-      (lambda args
-        (call/cf
-          (lambda (f)
-            (cond
-              [(memq f k*) => 
-               (lambda (ls)
-                 (display-trace ls (cons name args))
-                 (apply proc args))]
-              [else
-               (display-trace (cons 1 k*) (cons name args))
-               (dynamic-wind
-                 (lambda () (set! k* (cons f k*)))
-                 (lambda () 
-                   (call-with-values
-                     (lambda ()
-                       (call/cf
-                         (lambda (nf)
-                           (set! f nf)
-                           (set-car! k* nf)
-                           (apply proc args))))
-                     (lambda v*
-                       (display-prefix k* #t)
-                       (unless (null? v*)
-                         (write (car v*))
-                         (let f ([v* (cdr v*)])
-                           (cond
-                             [(null? v*) (newline)]
-                             [else
-                              (write-char #\space)
-                              (write (car v*))
-                              (f (cdr v*))])))
-                       (apply values v*))))
-                 (lambda () (set! k* (cdr k*))))])))))))
+    (case-lambda
+      [(name proc) (make-traced-procedure name proc (lambda (x) x))]
+      [(name proc filter)
+       (lambda args
+         (call/cf
+           (lambda (f)
+             (cond
+               [(memq f k*) => 
+                (lambda (ls)
+                  (display-trace ls (filter (cons name args)))
+                  (apply proc args))]
+               [else
+                (display-trace (cons 1 k*) (filter (cons name args)))
+                (dynamic-wind
+                  (lambda () (set! k* (cons f k*)))
+                  (lambda () 
+                    (call-with-values
+                      (lambda ()
+                        (call/cf
+                          (lambda (nf)
+                            (set! f nf)
+                            (set-car! k* nf)
+                            (apply proc args))))
+                      (lambda v*
+                        (display-prefix k* #t)
+                        (unless (null? v*)
+                          (let ([v* (filter v*)])
+                            (write (car v*))
+                            (let f ([v* (cdr v*)])
+                              (cond
+                                [(null? v*) (newline)]
+                                [else
+                                 (write-char #\space)
+                                 (write (car v*))
+                                 (f (cdr v*))]))))
+                        (apply values v*))))
+                  (lambda () (set! k* (cdr k*))))]))))])))
 
 
 #!eof

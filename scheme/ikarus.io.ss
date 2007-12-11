@@ -417,7 +417,7 @@
     (unless (string? str) 
       (error 'open-string-input-port str))
     ($make-port 0 (string-length str) str 0 
-       #t 
+       #t ;;; transcoder
        #f ;;; closed?
        (fxior fast-get-tag fast-get-char-tag)
        "*string-input-port*" 

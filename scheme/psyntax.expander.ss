@@ -1115,6 +1115,19 @@
                                 "not a procedure" v)))))
              (stx-error stx "invalid name"))))))
   
+  (define trace-define-syntax-macro
+    (lambda (stx)
+      (syntax-match stx ()
+        ((_ who expr)
+         (if (id? who)
+             (bless `(define-syntax ,who
+                       (let ((v ,expr))
+                         (if (procedure? v)
+                             (make-traced-procedure ',who v syntax->datum)
+                             (error 'trace-define-syntax
+                                "not a procedure" v)))))
+             (stx-error stx "invalid name"))))))
+
   (define guard-macro
     (lambda (x)
       (define (gen-clauses con outerk clause*) 
@@ -2367,6 +2380,7 @@
            ((define-enumeration)    define-enumeration-macro)
            ((trace-lambda)          trace-lambda-macro)
            ((trace-define)          trace-define-macro)
+           ((trace-define-syntax)   trace-define-syntax-macro)
            ((define-condition-type) define-condition-type-macro)
            ((include-into)          include-into-macro)
            ((eol-style)
