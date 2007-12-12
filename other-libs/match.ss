@@ -105,7 +105,7 @@
     equal?
     (lambda (x)
       (unless (procedure? x)
-        (error 'match-equality-test "~s is not a procedure" x))
+        (error 'match-equality-test "not a procedure" x))
       x)))
 
 (define-syntax match+
@@ -128,7 +128,7 @@
       ((ctxt (ThreadedId ...) Name Exp Clause ...)
        #'(letrec ((f (trace-lambda Name (ThreadedId ... x)
                        (match-help ctxt f x (ThreadedId ...) Clause ...))))
-           (f ThreadedId ... x))))))
+           (f ThreadedId ... Exp))))))
 
 (define-syntax trace-match
   (lambda (x)
@@ -499,7 +499,7 @@
                                          (if (and (null? ExpVar) ...)
                                              TailExp
                                              (error 'unquote
-                                               "Mismatched lists in ~s"
+                                               "Mismatched lists"
                                                Orig))))
                                  (append #'(ExpVar ...) #'RestVars)
                                  (append #'(ExpExp ...) #'RestExps)))))))))
@@ -774,7 +774,7 @@
 ;;         (match x
 ;;           ((program ,(Stmt -> s*) ... ,(Expr -> e))
 ;;            `(begin ,s* ... ,e))
-;;           (,other (error 'parse "invalid program ~s" other)))))
+;;           (,other (error 'parse "invalid program" other)))))
 ;;     (define Stmt
 ;;       (lambda (x)
 ;;         (match x
@@ -783,7 +783,7 @@
 ;;           ((set! ,v ,(Expr -> e))
 ;;            (guard (symbol? v))
 ;;            `(set! ,v ,e))
-;;           (,other (error 'parse "invalid statement ~s" other)))))
+;;           (,other (error 'parse "invalid statement" other)))))
 ;;     (define Expr
 ;;       (lambda (x)
 ;;         (match x
@@ -792,7 +792,7 @@
 ;;           ((if ,(e1) ,(e2) ,(e3))
 ;;            `(if ,e1 ,e2 ,e3))
 ;;           ((,(rator) ,(rand*) ...) `(,rator ,rand* ...))
-;;           (,other (error 'parse "invalid expression ~s" other)))))
+;;           (,other (error 'parse "invalid expression" other)))))
 ;;     (Prog x)))
 ;;; (parse '(program (set! x 3) (+ x 4)))) => (begin (set! x 3) (+ x 4))
 
