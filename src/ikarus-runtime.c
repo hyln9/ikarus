@@ -849,9 +849,14 @@ ikrt_gmt_offset(ikp t){
   time_t clock =
     unfix(ref(t, off_record_data + 0*wordsize)) * 1000000 
     + unfix(ref(t, off_record_data + 1*wordsize));
+  struct tm* m = gmtime(&clock);
+  time_t gmtclock = mktime(m);
+  return fix(clock - gmtclock);
+  /*
   struct tm* m = localtime(&clock);
   ikp r = fix(m->tm_gmtoff);
   return r;
+  */
 }
 
 
