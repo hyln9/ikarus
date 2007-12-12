@@ -114,7 +114,7 @@
 
   (define-struct $port 
     (index size buffer base-index transcoder closed? attrs 
-     id read! write! get-position set-position! close))
+     id read! write! get-position set-position! close cookie))
   (define port? $port?)
   (define $set-port-index! set-$port-index!)
   (define $set-port-size! set-$port-size!)
@@ -186,17 +186,31 @@
   
   (define r6rs-mode-tag          #x1000)
 
+  (define guarded-port
+    (let ([G (make-guardian)])
+      (define (clean-up)
+        (cond
+          [(G) =>
+           (lambda (p)
+             (close-port p)
+             (clean-up))]))
+      (lambda (p)
+        (clean-up)
+        (when (fixnum? ($port-cookie p)) 
+          (G p))
+        p)))
+
   (define ($make-custom-binary-port attrs init-size id 
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-bytevector buffer-size)])
       ($make-port 0 init-size bv 0 #f #f attrs id read! write! get-position
-                  set-position! close)))
+                  set-position! close #f)))
 
   (define ($make-custom-textual-port attrs init-size id 
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-string buffer-size)])
       ($make-port 0 init-size bv 0 #t #f attrs id read! write! get-position
-                  set-position! close)))
+                  set-position! close #f)))
 
   (define (make-custom-binary-input-port id 
             read! get-position set-position! close)
@@ -306,7 +320,7 @@
           #f ;;; FIXME: get-position
           #f ;;; FIXME: set-position!
           #f ;;; close
-          )]))
+          #f)]))
 
   (define open-bytevector-output-port
     (case-lambda
@@ -331,6 +345,7 @@
                      c)
                    #f  ;;; FIXME: get-position
                    #f  ;;; FIXME: set-position!
+                   #f
                    #f)])
            (values
              p
@@ -392,6 +407,7 @@
                   c)
                 #f  ;;; FIXME: get-position
                 #f  ;;; FIXME: set-position!
+                #f
                 #f)])
         (values
           p
@@ -426,7 +442,7 @@
        #f ;;; FIXME: get-position
        #f ;;; FIXME: set-position!
        #f ;;; close
-       ))
+       #f))
     
 
   (define (transcoded-port p transcoder)
@@ -439,25 +455,27 @@
           [write! ($port-write! p)]
           [closed? ($port-closed? p)])
       ($set-port-closed?! p #t)
-      ($make-port 
-        ($port-index p)
-        ($port-size p)
-        ($port-buffer p)
-        ($port-base-index p)
-        transcoder
-        closed? 
-        (cond
-          [read! (input-transcoder-attrs transcoder)]
-          [write! (output-transcoder-attrs transcoder)]
-          [else
-           (error 'transcoded-port 
-             "port is neither input nor output!")])
-        ($port-id p)
-        read!
-        write!
-        ($port-get-position p)
-        ($port-set-position! p)
-        ($port-close p))))
+      (guarded-port
+        ($make-port 
+          ($port-index p)
+          ($port-size p)
+          ($port-buffer p)
+          ($port-base-index p)
+          transcoder
+          closed? 
+          (cond
+            [read! (input-transcoder-attrs transcoder)]
+            [write! (output-transcoder-attrs transcoder)]
+            [else
+             (error 'transcoded-port 
+               "port is neither input nor output!")])
+          ($port-id p)
+          read!
+          write!
+          ($port-get-position p)
+          ($port-set-position! p)
+          ($port-close p)
+          ($port-cookie p)))))
 
   (define (reset-input-port! p)
     (if (input-port? p) 
@@ -1042,48 +1060,52 @@
   (define file-buffer-size (+ read-size 128))
 
   (define (fh->input-port fd id size transcoder close?)
-    ($make-port 0 0 (make-bytevector size) 0 
-      transcoder
-      #f ;;; closed?
-      (input-transcoder-attrs transcoder)
-      id
-      (lambda (bv idx cnt) 
-        (let ([bytes
-               (foreign-call "ikrt_read_fd" fd bv idx 
-                  (fxmin read-size cnt))])
-          (when (fx< bytes 0) (io-error 'read id bytes))
-          bytes))
-      #f ;;; write!
-      #f ;;; get-position
-      #f ;;; set-position!
-      (and close?
-        (lambda () 
-          (cond
-            [(foreign-call "ikrt_close_fd" fd) =>
-             (lambda (err) 
-               (io-error 'close id err))])))))
+    (guarded-port
+      ($make-port 0 0 (make-bytevector size) 0 
+        transcoder
+        #f ;;; closed?
+        (input-transcoder-attrs transcoder)
+        id
+        (lambda (bv idx cnt) 
+          (let ([bytes
+                 (foreign-call "ikrt_read_fd" fd bv idx 
+                    (fxmin read-size cnt))])
+            (when (fx< bytes 0) (io-error 'read id bytes))
+            bytes))
+        #f ;;; write!
+        #f ;;; get-position
+        #f ;;; set-position!
+        (and close?
+          (lambda () 
+            (cond
+              [(foreign-call "ikrt_close_fd" fd) =>
+               (lambda (err) 
+                 (io-error 'close id err))])))
+        fd)))
 
   (define (fh->output-port fd id size transcoder close?)
-    ($make-port 0 size (make-bytevector size) 0 
-      transcoder
-      #f ;;; closed?
-      (output-transcoder-attrs transcoder)
-      id
-      #f
-      (lambda (bv idx cnt) 
-        (let ([bytes
-               (foreign-call "ikrt_write_fd" fd bv idx
-                 (fxmin read-size cnt))])
-          (when (fx< bytes 0) (io-error 'write id bytes))
-          bytes))
-      #f ;;; get-position
-      #f ;;; set-position!
-      (and close?
-        (lambda () 
-          (cond
-            [(foreign-call "ikrt_close_fd" fd) =>
-             (lambda (err) 
-               (io-error 'close id err))])))))
+    (guarded-port
+      ($make-port 0 size (make-bytevector size) 0 
+        transcoder
+        #f ;;; closed?
+        (output-transcoder-attrs transcoder)
+        id
+        #f
+        (lambda (bv idx cnt) 
+          (let ([bytes
+                 (foreign-call "ikrt_write_fd" fd bv idx
+                   (fxmin read-size cnt))])
+            (when (fx< bytes 0) (io-error 'write id bytes))
+            bytes))
+        #f ;;; get-position
+        #f ;;; set-position!
+        (and close?
+          (lambda () 
+            (cond
+              [(foreign-call "ikrt_close_fd" fd) =>
+               (lambda (err) 
+                 (io-error 'close id err))])))
+        fd)))
 
   (define (open-input-file-handle filename who)
     (let ([fh (foreign-call "ikrt_open_input_fd"
