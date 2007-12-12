@@ -121,34 +121,52 @@
   (define $set-port-attrs! set-$port-attrs!)
   (define $set-port-closed?! set-$port-closed?!)
   (define $make-port make-$port)
+  
+  (define ($port-tag x) (if ($port? x) ($port-attrs x) 0))
+  
+  (define ($port-fast-attrs x) (fxand ($port-tag x) fast-attrs-mask))
+  
+  (define (u8? x) (and (fixnum? x) (fx>= x 0) (fx< x 256)))
+  
+  (define (textual-port? x) 
+    (fx= (fxand ($port-tag x) textual-port-tag) textual-port-tag))
 
-  (define ($port-get-mode x)
-    (and ($port? x) (fxand ($port-attrs x) fast-get-mask)))
+  (define (binary-port? x) 
+    (fx= (fxand ($port-tag x) binary-port-tag) binary-port-tag))
 
-  (define ($port-put-mode x)
-    (and ($port? x) (fxand ($port-attrs x) fast-put-mask)))
+  (define (output-port? x) 
+    (fx= (fxand ($port-tag x) output-port-tag) output-port-tag))
 
-  (define (u8? x)
-    (and (fixnum? x) (fx>= x 0) (fx< x 256)))
+  (define (input-port? x)
+    (fx= (fxand ($port-tag x) input-port-tag) input-port-tag))
 
-  (define (textual-port? p) 
-    (and ($port? p) 
-         ($port-transcoder p) 
-         #t))
+  ;;; everything above this line will turn into primitive
+  ;;; ----------------------------------------------------------
+  
+  (define input-port-tag           #b00000001)
+  (define output-port-tag          #b00000010)
+  (define textual-port-tag         #b00000100)
+  (define binary-port-tag          #b00001000)
+  (define fast-char-text-tag       #b00010000)
+  (define fast-u7-text-tag         #b00100000)
+  (define fast-u8-text-tag         #b01100000)
+  (define r6rs-mode-tag            #b10000000)
 
-  (define (binary-port? p) 
-    (and ($port? p)
-         (not ($port-transcoder p))))
+  (define fast-attrs-mask          #b01111111)
+  (define binary-input-port-bits   #b00001001)
+  (define binary-output-port-bits  #b00001010)
+  (define textual-input-port-bits  #b00000101)
+  (define textual-output-port-bits #b00000110)
 
-  (define (output-port? p) 
-    (and ($port? p) 
-         ($port-write! p)
-         #t))
+  (define fast-get-byte-tag        #b00001001)
+  (define fast-get-char-tag        #b00010101)
+  (define fast-get-utf8-tag        #b00100101)
+  (define fast-get-latin-tag       #b01100101)
 
-  (define (input-port? p) 
-    (and ($port? p) 
-         ($port-read! p) 
-         #t))
+  (define fast-put-byte-tag        #b00001010)
+  (define fast-put-char-tag        #b00010110)
+  (define fast-put-utf8-tag        #b00100110)
+  (define fast-put-latin-tag       #b01100110)
 
   (define (input-port-name p)
     (if (input-port? p) 
@@ -164,27 +182,6 @@
     (if (port? p) 
         ($port-id p)
         (error 'port-id "not a port" p)))
-
-  ;;; everything above this line will turn into primitive
-  ;;; ----------------------------------------------------------
-  
-  (define fast-get-tag           #x0001)
-  (define fast-put-tag           #x0002)
-  (define fast-get-position-tag  #x0004)
-
-  (define fast-get-mask          #x00F0)
-  (define fast-get-utf8-tag      #x0010)
-  (define fast-get-latin-tag     #x0030)
-  (define fast-get-byte-tag      #x0040)
-  (define fast-get-char-tag      #x0080)
-
-  (define fast-put-mask          #x0F00)
-  (define fast-put-utf8-tag      #x0100)
-  (define fast-put-latin-tag     #x0300)
-  (define fast-put-byte-tag      #x0400)
-  (define fast-put-char-tag      #x0800)
-  
-  (define r6rs-mode-tag          #x1000)
 
   (define guarded-port
     (let ([G (make-guardian)])
@@ -223,7 +220,7 @@
     (unless (or (procedure? close) (not close))
       (error who "close should be either a procedure or #f" close))
     ($make-custom-binary-port 
-      (fxior fast-get-tag fast-get-byte-tag)
+      binary-input-port-bits
       0
       id read! #f get-position
       set-position! close 256))
@@ -239,7 +236,7 @@
     (unless (or (procedure? close) (not close))
       (error who "close should be either a procedure or #f" close))
     ($make-custom-binary-port 
-      (fxior fast-put-tag fast-put-byte-tag)
+      binary-output-port-bits
       256
       id #f write! get-position
       set-position! close 256))
@@ -255,7 +252,7 @@
     (unless (or (procedure? close) (not close))
       (error who "close should be either a procedure or #f" close))
     ($make-custom-textual-port 
-      (fxior fast-get-tag fast-get-char-tag)
+      textual-input-port-bits
       0
       id read! #f get-position
       set-position! close 256))
@@ -271,7 +268,7 @@
     (unless (or (procedure? close) (not close))
       (error who "close should be either a procedure or #f" close))
     ($make-custom-textual-port 
-      (fxior fast-put-tag fast-put-char-tag)
+      textual-output-port-bits
       256
       id #f write! get-position
       set-position! close 256))
@@ -281,23 +278,23 @@
   (define (input-transcoder-attrs x)
     (cond
       [(not x) ;;; binary input port
-       (fxior fast-get-tag fast-get-byte-tag)]
+       binary-input-port-bits]
       [(and (eq? 'latin-1-codec (transcoder-codec x))
             (eq? 'none (transcoder-eol-style x)))
-       (fxior fast-get-tag fast-get-latin-tag)]
-      [else 0]))
+       (fxior textual-input-port-bits fast-u8-text-tag)]
+      [else textual-input-port-bits]))
 
   (define (output-transcoder-attrs x)
     (cond
       [(not x) ;;; binary input port
-       (fxior fast-put-tag fast-put-byte-tag)]
+       binary-output-port-bits]
       [(and (eq? 'latin-1-codec (transcoder-codec x))
             (eq? 'none (transcoder-eol-style x)))
-       (fxior fast-put-tag fast-put-latin-tag)]
+       (fxior textual-output-port-bits fast-u8-text-tag)]
       [(and (eq? 'utf-8-codec (transcoder-codec x))
             (eq? 'none (transcoder-eol-style x)))
-       (fxior fast-put-tag fast-put-utf8-tag)]
-      [else 0]))
+       (fxior textual-output-port-bits fast-u7-text-tag)]
+      [else textual-output-port-bits]))
 
   (define open-bytevector-input-port
     (case-lambda
@@ -396,7 +393,7 @@
              ($make-port 0 buffer-size (make-string buffer-size) 0
                 #t ;;; transcoder
                 #f
-                (fxior fast-put-tag fast-put-char-tag)
+                (fxior textual-output-port-bits fast-char-text-tag)
                 "*string-output-port*"
                 #f
                 (lambda (str i c) 
@@ -435,7 +432,7 @@
     ($make-port 0 (string-length str) str 0 
        #t ;;; transcoder
        #f ;;; closed?
-       (fxior fast-get-tag fast-get-char-tag)
+       (fxior textual-input-port-bits fast-char-text-tag)
        "*string-input-port*" 
        (lambda (str i c) 0) ;;; read!
        #f ;;; write!
@@ -839,7 +836,7 @@
           [(utf-8-codec)
            ;;;
            ($set-port-attrs! p 
-             (fxior fast-get-tag fast-get-utf8-tag))
+             (fxior textual-input-port-bits fast-u7-text-tag))
            (eof-object? (advance-bom p who '(#xEF #xBB #xBF)))]
           [else (error 'slow-get-char "codec not handled")])))
 
@@ -861,7 +858,7 @@
     ;;;
     (define (lookahead-char p)
       (define who 'lookahead-char)
-      (let ([m ($port-get-mode p)])
+      (let ([m ($port-fast-attrs p)])
         (cond
           [(eq? m fast-get-utf8-tag)
            (let ([i ($port-index p)])
@@ -912,7 +909,7 @@
 
     (define (get-char p)
       (define who 'get-char)
-      (let ([m ($port-get-mode p)])
+      (let ([m ($port-fast-attrs p)])
         (cond
           [(eq? m fast-get-utf8-tag)
            (let ([i ($port-index p)])
@@ -975,12 +972,12 @@
              (error who "read! returned a value out of range" j)]))))
     (define (slow-get-u8 p who start) 
       (assert-binary-input-port p who)
-      ($set-port-attrs! p (fxior fast-get-tag fast-get-byte-tag))
+      ($set-port-attrs! p fast-get-byte-tag)
       (get-u8-byte-mode p who start))
     ;;;
     (define (get-u8 p)
       (define who 'get-u8)
-      (let ([m ($port-get-mode p)])
+      (let ([m ($port-fast-attrs p)])
         (cond
           [(eq? m fast-get-byte-tag)
            (let ([i ($port-index p)])
@@ -992,7 +989,7 @@
           [else (slow-get-u8 p who 1)])))
     (define (lookahead-u8 p)
       (define who 'lookahead-u8)
-      (let ([m ($port-get-mode p)])
+      (let ([m ($port-fast-attrs p)])
         (cond
           [(eq? m fast-get-byte-tag)
            (let ([i ($port-index p)])
@@ -1004,7 +1001,7 @@
 
   (define (port-eof? p)
     (define who 'port-eof?)
-    (let ([m ($port-get-mode p)])
+    (let ([m ($port-fast-attrs p)])
       (cond
         [(not (eq? m 0))
          (if (fx< ($port-index p) ($port-size p))
@@ -1623,7 +1620,7 @@
           (f (fx+ i 1) n))))
     (define (do-put-char p c who)
       (unless (char? c) (error who "not a char" c))
-      (let ([m ($port-put-mode p)])
+      (let ([m ($port-fast-attrs p)])
         (cond
           [(eq? m fast-put-utf8-tag)
            (let ([i ($port-index p)])
@@ -1698,7 +1695,7 @@
     (define (put-u8 p b)
       (define who 'put-u8)
       (unless (u8? b) (error who "not a u8" b))
-      (let ([m ($port-put-mode p)])
+      (let ([m ($port-fast-attrs p)])
         (cond
           [(eq? m fast-put-byte-tag)
            (let ([i ($port-index p)])
