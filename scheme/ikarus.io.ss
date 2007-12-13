@@ -1251,15 +1251,21 @@
 
   (define *the-input-port* 
     (make-parameter
-      (transcoded-port (standard-input-port) (native-transcoder))))
+      (transcoded-port 
+        (fh->input-port 0 '*stdin* file-buffer-size #f #f)
+        (native-transcoder))))
 
   (define *the-output-port* 
     (make-parameter
-      (transcoded-port (standard-output-port) (native-transcoder))))
+      (transcoded-port
+        (fh->output-port 1 '*stdout* file-buffer-size #f #f)
+        (native-transcoder))))
   
   (define *the-error-port* 
     (make-parameter
-      (transcoded-port (standard-error-port) (native-transcoder))))
+      (transcoded-port 
+        (fh->output-port 2 '*stderr* file-buffer-size #f #f)
+        (native-transcoder))))
 
   (define console-output-port
     (let ([p (*the-output-port*)])
