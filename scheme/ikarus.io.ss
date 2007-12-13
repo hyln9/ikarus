@@ -16,13 +16,13 @@
 (library (ikarus system $io)
   (export $make-port $port-tag $port-id $port-cookie
           port? $port-transcoder 
-          $port-index $port-size $port-buffer $port-base-index
+          $port-index $port-size $port-buffer 
           $port-get-position $port-set-position! $port-close
           $port-read! $port-write! $set-port-index! $set-port-size!
           $port-attrs $set-port-attrs! $port-fast-attrs)
   (import (except (ikarus) port?))
   (define-struct $port 
-    (attrs index size buffer base-index transcoder 
+    (attrs index size buffer transcoder 
      id read! write! get-position set-position! close cookie))
   (define port? $port?)
   (define $set-port-index! set-$port-index!)
@@ -208,13 +208,13 @@
   (define ($make-custom-binary-port attrs init-size id 
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-bytevector buffer-size)])
-      ($make-port attrs 0 init-size bv 0 #f id read! write! get-position
+      ($make-port attrs 0 init-size bv #f id read! write! get-position
                   set-position! close #f)))
 
   (define ($make-custom-textual-port attrs init-size id 
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-string buffer-size)])
-      ($make-port attrs 0 init-size bv 0 #t id read! write! get-position
+      ($make-port attrs 0 init-size bv #t id read! write! get-position
                   set-position! close #f)))
 
   (define (make-custom-binary-input-port id 
@@ -317,7 +317,7 @@
                 "not a transcoder" maybe-transcoder))
        ($make-port 
           (input-transcoder-attrs maybe-transcoder)
-          0 (bytevector-length bv) bv 0 
+          0 (bytevector-length bv) bv 
           maybe-transcoder 
           "*bytevector-input-port*" 
           (lambda (bv i c) 0) ;;; read!
@@ -338,7 +338,7 @@
          (let ([p 
                 ($make-port 
                    (output-transcoder-attrs transcoder)
-                   0 buffer-size (make-bytevector buffer-size) 0
+                   0 buffer-size (make-bytevector buffer-size)
                    transcoder
                    "*bytevector-output-port*"
                    #f
@@ -400,7 +400,7 @@
       (let ([p 
              ($make-port
                 (fxior textual-output-port-bits fast-char-text-tag)
-                0 buffer-size (make-string buffer-size) 0
+                0 buffer-size (make-string buffer-size)
                 #t ;;; transcoder
                 "*string-output-port*"
                 #f
@@ -439,7 +439,7 @@
       (error 'open-string-input-port str))
     ($make-port 
        (fxior textual-input-port-bits fast-char-text-tag)
-       0 (string-length str) str 0 
+       0 (string-length str) str
        #t ;;; transcoder
        "*string-input-port*" 
        (lambda (str i c) 0) ;;; read!
@@ -471,7 +471,6 @@
           ($port-index p)
           ($port-size p)
           ($port-buffer p)
-          ($port-base-index p)
           transcoder
           ($port-id p)
           read!
@@ -1075,7 +1074,7 @@
     (guarded-port
       ($make-port 
         (input-transcoder-attrs transcoder)
-        0 0 (make-bytevector size) 0 
+        0 0 (make-bytevector size)
         transcoder
         id
         (lambda (bv idx cnt) 
@@ -1099,7 +1098,7 @@
     (guarded-port
       ($make-port 
         (output-transcoder-attrs transcoder)
-        0 size (make-bytevector size) 0 
+        0 size (make-bytevector size)
         transcoder
         id
         #f
