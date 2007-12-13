@@ -15,7 +15,7 @@
 
 
 (library (ikarus timers)
-  (export time-it)
+  (export time-it verbose-timer)
   (import (except (ikarus) time-it))
 
   (define-struct stats 
@@ -38,19 +38,21 @@
 
   (define (print-stats message bytes t1 t0)
     (define (print-time msg msecs gc-msecs)
-      (printf "    ~a ms elapsed ~a time, including ~a ms collecting\n" msecs msg
+      (fprintf
+        (console-error-port)
+        "    ~a ms elapsed ~a time, including ~a ms collecting\n" msecs msg
               gc-msecs))
     (define (msecs s1 s0 u1 u0)
       (+ (* (- s1 s0) 1000) (quotient (- u1 u0) 1000)))
     (if message
-        (printf "running stats for ~a:\n" message)
-        (printf "running stats:\n"))
+        (fprintf (console-error-port) "running stats for ~a:\n" message)
+        (fprintf (console-error-port) "running stats:\n"))
     (let ([collections 
            (fx- (stats-collection-id t1) (stats-collection-id t0))])
       (case collections
-        [(0) (display "    no collections\n")]
-        [(1) (display "    1 collection\n")]
-        [else (printf "    ~a collections\n" collections)]))
+        [(0) (display "    no collections\n" (console-error-port))]
+        [(1) (display "    1 collection\n" (console-error-port))]
+        [else (fprintf (console-error-port) "    ~a collections\n" collections)]))
     (print-time "cpu"  
        (+ (msecs (stats-user-secs t1)  (stats-user-secs t0)
                  (stats-user-usecs t1) (stats-user-usecs t0))
@@ -76,7 +78,7 @@
                 (stats-sys-usecs t1) (stats-sys-usecs t0))
          (msecs (stats-gc-sys-secs t1)  (stats-gc-sys-secs t0)
                 (stats-gc-sys-usecs t1) (stats-gc-sys-usecs t0))))
-    (printf "    ~a bytes allocated\n" bytes))
+    (fprintf (console-error-port) "    ~a bytes allocated\n" bytes))
 
   (define time-it
     (case-lambda

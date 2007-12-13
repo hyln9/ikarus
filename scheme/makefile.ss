@@ -369,6 +369,7 @@
     [expand                                      i]
     [environment?                                i]
     [time-it                                     i]
+    [verbose-timer                               i]
     [current-time                                i]
     [time?                                       i]
     [time-second                                 i]
