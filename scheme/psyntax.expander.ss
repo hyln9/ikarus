@@ -2775,25 +2775,27 @@
                              (($module)
                               (let ((iface value))
                                 (let ((id* (car iface)) (lab* (cdr iface)))
-                                  (values id* lab*))))
+                                  (values (list->vector id*)
+                                          (list->vector lab*)))))
                              (else (stx-error e "invalid import")))))))
                     (define (library-import e) 
                       (syntax-match e ()
                         [(ctxt imp* ...)
-                         (let ((subst (parse-import-spec* 
+                         (let-values (((subst-names subst-labels)
+                                       (parse-import-spec* 
                                         (syntax->datum imp*))))
                            (values 
-                             (map (lambda (x) 
-                                    (let ([name (car x)])
-                                      (datum->stx ctxt name)))
-                               subst)
-                             (map cdr subst)))]
+                             (vector-map 
+                               (lambda (name) 
+                                 (datum->stx ctxt name))
+                               subst-names)
+                             subst-labels))]
                         [_ (stx-error e "invalid import form")]))
                     (let-values (((id* lab*) 
                                   (if (module-import? e) 
                                       (module-import e r)
                                       (library-import e))))
-                      (for-each
+                      (vector-for-each
                         (lambda (id lab) (extend-rib! rib id lab))
                         id* lab*)))
                   (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* rib top?))
@@ -2878,23 +2880,23 @@
                 (begin
                   (syntax-match e ()
                     [(ctxt imp* ...)
-                     (let ((subst (parse-import-spec* (syntax->datum imp*))))
+                     (let-values (((subst-names subst-labels)
+                                   (parse-import-spec* (syntax->datum imp*))))
                        (cond
                          ((interaction-library) =>
                           (lambda (lib)
-                            (for-each 
-                              (lambda (x) 
-                                (let ([sym (car x)] [label (cdr x)])
-                                  (cond
-                                    ((assq sym (library-subst lib)) =>
-                                     (lambda (p) 
-                                       (unless (eq? (cdr p) label)
-                                         (stx-error e 
-                                           "identifier conflict"
-                                           sym))))
-                                    (else 
-                                     (extend-library-subst! lib sym label)))))
-                              subst)))
+                            (vector-for-each 
+                              (lambda (sym label) 
+                                (cond
+                                  ((assq sym (library-subst lib)) =>
+                                   (lambda (p) 
+                                     (unless (eq? (cdr p) label)
+                                       (stx-error e 
+                                         "identifier conflict"
+                                         sym))))
+                                  (else 
+                                   (extend-library-subst! lib sym label))))
+                              subst-names subst-labels)))
                          (else (error 'import "BUG: cannot happen"))))])
                   (chi-top* (cdr e*) init*)))
                (else
@@ -3139,7 +3141,10 @@
         (spec (error 'import "invalid import spec" spec))))
     (let f ((imp* imp*) (subst '()))
       (cond
-        ((null? imp*) subst)
+        ((null? imp*) 
+         (values
+           (list->vector (map car subst))
+           (list->vector (map cdr subst))))
         (else
          (f (cdr imp*) (merge-substs (get-import (car imp*)) subst))))))
 
@@ -3151,13 +3156,12 @@
   ;;;  - label* as the rib-label*
   ;;; so, a name in a top rib maps to its label if and only if
   ;;; its set of marks is top-mark*.
-  (define (make-top-rib subst)
+  (define (make-top-rib names labels)
     (let ((rib (make-empty-rib)))
-      (for-each
-        (lambda (x)
-          (let ((name (car x)) (label (cdr x)))
-            (extend-rib! rib (mkstx name top-mark* '()) label)))
-        subst)
+      (vector-for-each
+        (lambda (name label)
+          (extend-rib! rib (mkstx name top-mark* '()) label))
+        names labels)
       rib))
 
   (define (make-collector)
@@ -3206,8 +3210,9 @@
       (define itc (make-collector))
       (parameterize ((imp-collector itc))
         (let-values (((exp-int* exp-ext*) (parse-exports exp*)))
-          (let ((subst (parse-import-spec* imp*)))
-            (let ((rib (make-top-rib subst)))
+          (let-values (((subst-names subst-labels)
+                        (parse-import-spec* imp*)))
+            (let ((rib (make-top-rib subst-names subst-labels)))
               (let ((b* (map (lambda (x) (mkstx x top-mark* (list rib))) b*))
                     (rtc (make-collector))
                     (vtc (make-collector)))
@@ -3286,7 +3291,7 @@
 
   ;;; An env record encapsulates a substitution and a set of
   ;;; libraries.
-  (define-record env (subst itc)
+  (define-record env (names labels itc)
     (lambda (x p)
       (unless (env? x)
         (error 'record-type-printer "not an environment"))
@@ -3302,8 +3307,9 @@
     (lambda imp*
       (let ([itc (make-collector)])
         (parameterize ([imp-collector itc])
-          (let ((subst (parse-import-spec* imp*)))
-            (make-env subst itc))))))
+          (let-values (((subst-names subst-labels)
+                        (parse-import-spec* imp*)))
+            (make-env subst-names subst-labels itc))))))
   
   ;;; R6RS's null-environment and scheme-report-environment are
   ;;; constructed simply using the corresponding libraries.
@@ -3324,19 +3330,18 @@
     (lambda (x env)
       (unless (env? env)
         (error 'expand "not an environment" env))
-      (let ((subst (env-subst env)))
-        (let ((rib (make-top-rib subst)))
-          (let ((x (mkstx x top-mark* (list rib)))
-                (itc (env-itc env))
-                (rtc (make-collector))
-                (vtc (make-collector)))
-              (let ((x
-                     (parameterize ((inv-collector rtc)
-                                    (vis-collector vtc)
-                                    (imp-collector itc))
-                        (chi-expr x '() '()))))
-                (seal-rib! rib)
-                (values x (rtc))))))))
+      (let ((rib (make-top-rib (env-names env) (env-labels env))))
+        (let ((x (mkstx x top-mark* (list rib)))
+              (itc (env-itc env))
+              (rtc (make-collector))
+              (vtc (make-collector)))
+            (let ((x
+                   (parameterize ((inv-collector rtc)
+                                  (vis-collector vtc)
+                                  (imp-collector itc))
+                      (chi-expr x '() '()))))
+              (seal-rib! rib)
+              (values x (rtc)))))))
 
   ;;; This is R6RS's eval.  It takes an expression and an environment,
   ;;; expands the expression, invokes its invoke-required libraries and

@@ -79,7 +79,7 @@
             (map (lambda (x) x) x)
             (error 'library-path "not a list of strings" x)))))
   
-  (define (library-name->file-name x) 
+  (define (library-name->file-name x)
     (let-values (((p extract) (open-string-output-port)))
       (define (display-hex n)
         (cond

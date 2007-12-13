@@ -22,7 +22,11 @@
     (ikarus system $pairs)
     (ikarus system $bytevectors)
     (only (ikarus unicode-data) unicode-printable-char?) 
-    (except (ikarus) read read-token comment-handler get-datum))
+    (except (ikarus) read-char read read-token comment-handler get-datum))
+
+  (define-syntax read-char 
+    (syntax-rules ()
+      [(_ p) (get-char p)]))
 
   (define delimiter?
     (lambda (c)
