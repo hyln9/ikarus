@@ -13,6 +13,26 @@
 ;;; You should have received a copy of the GNU General Public License
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+(library (ikarus system $io)
+  (export $make-port $port-tag $port-id $port-cookie
+          port? $port-closed? $port-transcoder $set-port-closed?! 
+          $port-index $port-size $port-buffer $port-base-index
+          $port-get-position $port-set-position! $port-close
+          $port-read! $port-write! $set-port-index! $set-port-size!
+          $port-attrs $set-port-attrs! $port-fast-attrs)
+  (import (except (ikarus) port?))
+  (define-struct $port 
+    (attrs index size buffer base-index transcoder closed? 
+     id read! write! get-position set-position! close cookie))
+  (define port? $port?)
+  (define $set-port-index! set-$port-index!)
+  (define $set-port-size! set-$port-size!)
+  (define $set-port-attrs! set-$port-attrs!)
+  (define $set-port-closed?! set-$port-closed?!)
+  (define $make-port make-$port)
+  (define fast-attrs-mask          #b01111111)
+  (define ($port-tag x) (if ($port? x) ($port-attrs x) 0))
+  (define ($port-fast-attrs x) (fxand ($port-tag x) fast-attrs-mask)))
 
 (library (io-spec) 
   
@@ -62,6 +82,7 @@
 
   
   (import 
+    (ikarus system $io)
     (except (ikarus)
       port? input-port? output-port? textual-port? binary-port? 
       open-file-input-port open-input-file 
@@ -112,20 +133,7 @@
        (define (name . args) 
          (apply error 'name "not implemented" args))]))
 
-  (define-struct $port 
-    (index size buffer base-index transcoder closed? attrs 
-     id read! write! get-position set-position! close cookie))
-  (define port? $port?)
-  (define $set-port-index! set-$port-index!)
-  (define $set-port-size! set-$port-size!)
-  (define $set-port-attrs! set-$port-attrs!)
-  (define $set-port-closed?! set-$port-closed?!)
-  (define $make-port make-$port)
-  
-  (define ($port-tag x) (if ($port? x) ($port-attrs x) 0))
-  
-  (define ($port-fast-attrs x) (fxand ($port-tag x) fast-attrs-mask))
-  
+ 
   (define (u8? x) (and (fixnum? x) (fx>= x 0) (fx< x 256)))
   
   (define (textual-port? x) 
@@ -152,7 +160,6 @@
   (define fast-u8-text-tag         #b01100000)
   (define r6rs-mode-tag            #b10000000)
 
-  (define fast-attrs-mask          #b01111111)
   (define binary-input-port-bits   #b00001001)
   (define binary-output-port-bits  #b00001010)
   (define textual-input-port-bits  #b00000101)
@@ -200,13 +207,13 @@
   (define ($make-custom-binary-port attrs init-size id 
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-bytevector buffer-size)])
-      ($make-port 0 init-size bv 0 #f #f attrs id read! write! get-position
+      ($make-port attrs 0 init-size bv 0 #f #f id read! write! get-position
                   set-position! close #f)))
 
   (define ($make-custom-textual-port attrs init-size id 
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-string buffer-size)])
-      ($make-port 0 init-size bv 0 #t #f attrs id read! write! get-position
+      ($make-port attrs 0 init-size bv 0 #t #f id read! write! get-position
                   set-position! close #f)))
 
   (define (make-custom-binary-input-port id 
@@ -307,10 +314,11 @@
                   (not (transcoder? maybe-transcoder)))
          (error 'open-bytevector-input-port 
                 "not a transcoder" maybe-transcoder))
-       ($make-port 0 (bytevector-length bv) bv 0 
+       ($make-port 
+          (input-transcoder-attrs maybe-transcoder)
+          0 (bytevector-length bv) bv 0 
           maybe-transcoder 
           #f ;;; closed?
-          (input-transcoder-attrs maybe-transcoder)
           "*bytevector-input-port*" 
           (lambda (bv i c) 0) ;;; read!
           #f ;;; write!
@@ -328,10 +336,11 @@
          (error who "invalid transcoder value" transcoder))
        (let ([buf* '()] [buffer-size 256])
          (let ([p 
-                ($make-port 0 buffer-size (make-bytevector buffer-size) 0
+                ($make-port 
+                   (output-transcoder-attrs transcoder)
+                   0 buffer-size (make-bytevector buffer-size) 0
                    transcoder
                    #f
-                   (output-transcoder-attrs transcoder)
                    "*bytevector-output-port*"
                    #f
                    (lambda (bv i c) 
@@ -390,10 +399,11 @@
     (define who 'open-string-output-port)
     (let ([buf* '()] [buffer-size 256])
       (let ([p 
-             ($make-port 0 buffer-size (make-string buffer-size) 0
+             ($make-port
+                (fxior textual-output-port-bits fast-char-text-tag)
+                0 buffer-size (make-string buffer-size) 0
                 #t ;;; transcoder
                 #f
-                (fxior textual-output-port-bits fast-char-text-tag)
                 "*string-output-port*"
                 #f
                 (lambda (str i c) 
@@ -429,10 +439,11 @@
   (define (open-string-input-port str)
     (unless (string? str) 
       (error 'open-string-input-port str))
-    ($make-port 0 (string-length str) str 0 
+    ($make-port 
+       (fxior textual-input-port-bits fast-char-text-tag)
+       0 (string-length str) str 0 
        #t ;;; transcoder
        #f ;;; closed?
-       (fxior textual-input-port-bits fast-char-text-tag)
        "*string-input-port*" 
        (lambda (str i c) 0) ;;; read!
        #f ;;; write!
@@ -446,7 +457,7 @@
     (define who 'transcoded-port)
     (unless (transcoder? transcoder)
       (error who "not a transcoder" transcoder))
-    (unless ($port? p) (error who "not a port" p))
+    (unless (port? p) (error who "not a port" p))
     (when ($port-transcoder p) (error who "not a binary port" p))
     (let ([read! ($port-read! p)]
           [write! ($port-write! p)]
@@ -454,18 +465,18 @@
       ($set-port-closed?! p #t)
       (guarded-port
         ($make-port 
-          ($port-index p)
-          ($port-size p)
-          ($port-buffer p)
-          ($port-base-index p)
-          transcoder
-          closed? 
           (cond
             [read! (input-transcoder-attrs transcoder)]
             [write! (output-transcoder-attrs transcoder)]
             [else
              (error 'transcoded-port 
                "port is neither input nor output!")])
+          ($port-index p)
+          ($port-size p)
+          ($port-buffer p)
+          ($port-base-index p)
+          transcoder
+          closed? 
           ($port-id p)
           read!
           write!
@@ -480,20 +491,20 @@
         (error 'reset-input-port! "not an input port" p)))
 
   (define (port-transcoder p)
-    (if ($port? p)
+    (if (port? p)
         (let ([tr ($port-transcoder p)])
           (and (transcoder? tr) tr))
         (error 'port-transcoder "not a port" p)))
               
   (define (port-mode p)
-    (if ($port? p) 
+    (if (port? p) 
         (if (fxzero? (fxand ($port-attrs p) r6rs-mode-tag))
             'ikarus-mode
             'r6rs-mode)
         (error 'port-mode "not a port" p)))
 
   (define (set-port-mode! p mode)
-    (if ($port? p) 
+    (if (port? p) 
         (case mode
           [(r6rs-mode) 
            ($set-port-attrs! p
@@ -543,7 +554,7 @@
            (close)))]))
 
   (define (close-port p)
-    (unless ($port? p)
+    (unless (port? p)
        (error 'close-port "not a port" p))
     ($close-port p))
 
@@ -946,7 +957,7 @@
 
   ;;; ----------------------------------------------------------
   (define (assert-binary-input-port p who)
-    (unless ($port? p) (error who "not a port" p))
+    (unless (port? p) (error who "not a port" p))
     (when ($port-closed? p) (error who "port is closed" p))
     (when ($port-transcoder p) (error who "port is not binary" p))
     (unless ($port-read! p)
@@ -1058,10 +1069,11 @@
 
   (define (fh->input-port fd id size transcoder close?)
     (guarded-port
-      ($make-port 0 0 (make-bytevector size) 0 
+      ($make-port 
+        (input-transcoder-attrs transcoder)
+        0 0 (make-bytevector size) 0 
         transcoder
         #f ;;; closed?
-        (input-transcoder-attrs transcoder)
         id
         (lambda (bv idx cnt) 
           (let ([bytes
@@ -1082,10 +1094,11 @@
 
   (define (fh->output-port fd id size transcoder close?)
     (guarded-port
-      ($make-port 0 size (make-bytevector size) 0 
+      ($make-port 
+        (output-transcoder-attrs transcoder)
+        0 size (make-bytevector size) 0 
         transcoder
         #f ;;; closed?
-        (output-transcoder-attrs transcoder)
         id
         #f
         (lambda (bv idx cnt) 
@@ -1263,7 +1276,7 @@
   (define (current-error-port) (*the-error-port*))
 
   (define (call-with-port p proc)
-    (if ($port? p) 
+    (if (port? p) 
         (if (procedure? proc) 
             (dynamic-wind
               void
