@@ -1113,8 +1113,9 @@
           (make-message-condition msg)
           (make-i/o-filename-error id)))))
 
-  (define read-size 4096)
-  (define file-buffer-size (+ read-size 128))
+  (define block-size 4096)
+  (define input-file-buffer-size (+ block-size 128))
+  (define output-file-buffer-size block-size)
 
   (define (fh->input-port fd id size transcoder close?)
     (guarded-port
@@ -1126,7 +1127,7 @@
         (lambda (bv idx cnt) 
           (let ([bytes
                  (foreign-call "ikrt_read_fd" fd bv idx 
-                    (fxmin read-size cnt))])
+                    (fxmin block-size cnt))])
             (when (fx< bytes 0) (io-error 'read id bytes))
             bytes))
         #f ;;; write!
@@ -1151,7 +1152,7 @@
         (lambda (bv idx cnt) 
           (let ([bytes
                  (foreign-call "ikrt_write_fd" fd bv idx
-                   (fxmin read-size cnt))])
+                   (fxmin block-size cnt))])
             (when (fx< bytes 0) (io-error 'write id bytes))
             bytes))
         #f ;;; get-position
@@ -1207,7 +1208,7 @@
        (fh->input-port 
          (open-input-file-handle filename 'open-file-input-port)
          filename
-         file-buffer-size
+         input-file-buffer-size
          transcoder
          #t)]))
 
@@ -1231,7 +1232,7 @@
          (open-output-file-handle filename file-options 
             'open-file-output-port)
          filename
-         file-buffer-size
+         output-file-buffer-size
          transcoder
          #t)]))
 
@@ -1242,7 +1243,7 @@
        (open-output-file-handle filename (file-options) 
           'open-input-file)
        filename
-       file-buffer-size
+       output-file-buffer-size
        (native-transcoder)
        #t))
 
@@ -1252,7 +1253,7 @@
     (fh->input-port 
        (open-input-file-handle filename 'open-input-file) 
        filename
-       file-buffer-size
+       input-file-buffer-size
        (native-transcoder)
        #t))
 
@@ -1265,7 +1266,7 @@
       (fh->input-port 
         (open-input-file-handle filename 'call-with-input-file) 
         filename
-        file-buffer-size
+        input-file-buffer-size
         (native-transcoder)
         #t)
       proc))
@@ -1279,7 +1280,7 @@
            (fh->input-port 
              (open-input-file-handle filename 'with-input-from-file)
              filename
-             file-buffer-size
+             input-file-buffer-size
              (native-transcoder)
              #t)])
       (parameterize ([*the-input-port* p])
@@ -1297,19 +1298,19 @@
   (define *the-input-port* 
     (make-parameter
       (transcoded-port 
-        (fh->input-port 0 '*stdin* file-buffer-size #f #f)
+        (fh->input-port 0 '*stdin* input-file-buffer-size #f #f)
         (native-transcoder))))
 
   (define *the-output-port* 
     (make-parameter
       (transcoded-port
-        (fh->output-port 1 '*stdout* file-buffer-size #f #f)
+        (fh->output-port 1 '*stdout* output-file-buffer-size #f #f)
         (native-transcoder))))
   
   (define *the-error-port* 
     (make-parameter
       (transcoded-port 
-        (fh->output-port 2 '*stderr* file-buffer-size #f #f)
+        (fh->output-port 2 '*stderr* output-file-buffer-size #f #f)
         (native-transcoder))))
 
   (define console-output-port
@@ -1530,6 +1531,7 @@
         [else (error 'get-string-n! "count is negative" c)])))
 
   (define (get-line p)
+    (import UNSAFE)
     (define (get-it p)
       (let f ([p p] [n 0] [ac '()])
         (let ([x (get-char p)])
@@ -1538,13 +1540,13 @@
              (make-it n ac)]
             [(eof-object? x) 
              (if (null? ac) x (make-it n ac))]
-            [else (f p (+ n 1) (cons x ac))]))))
+            [else (f p (fx+ n 1) (cons x ac))]))))
     (define (make-it n revls)
-      (let f ([s (make-string n)] [i (- n 1)] [ls revls])
+      (let f ([s (make-string n)] [i (fx- n 1)] [ls revls])
         (cond
           [(pair? ls)
            (string-set! s i (car ls))
-           (f s (- i 1) (cdr ls))]
+           (f s (fx- i 1) (cdr ls))]
           [else s])))
     (if (input-port? p)
         (if (textual-port? p)
