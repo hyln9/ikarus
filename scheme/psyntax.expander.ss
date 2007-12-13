@@ -2976,6 +2976,8 @@
   ;;; returns: ((z . z$label) (y . x$label) (q . q$label))
   ;;;     and  (#<library (foo)> #<library (bar)>)
   (define (parse-import-spec* imp*)
+    (define (dup-error name)
+      (error 'import "two imports with different bindings" name))
     (define (merge-substs s subst)
       (define (insert-to-subst a subst)
         (let ((name (car a)) (label (cdr a)))
@@ -2984,10 +2986,7 @@
              (lambda (x)
                (cond
                  ((eq? (cdr x) label) subst)
-                 (else
-                  (error 'import
-                     "two imports with different bindings"
-                     name)))))
+                 (else (dup-error name)))))
             (else
              (cons a subst)))))
       (cond
@@ -3090,8 +3089,11 @@
     (define (get-import spec)
       (syntax-match spec ()
         ((rename isp (old* new*) ...) 
-         (and (eq? rename 'rename) (for-all symbol? old*) (for-all symbol? new*))
+         (and (eq? rename 'rename) 
+              (for-all symbol? old*) 
+              (for-all symbol? new*))
          (let ((subst (get-import isp)))
+           ;;; rewrite this to eliminate find* and rem* and merge
            (let ((old-label* (find* old* subst)))
              (let ((subst (rem* old* subst)))
                ;;; FIXME: make sure map is valid
@@ -3139,14 +3141,26 @@
          (not (memq x '(rename except only prefix library)))
          (get-import `(library (,x . ,x*))))
         (spec (error 'import "invalid import spec" spec))))
-    (let f ((imp* imp*) (subst '()))
+    (define (add-imports! imp h)
+      (let ([subst (get-import imp)])
+        (for-each
+          (lambda (x) 
+            (let ([name (car x)] [label (cdr x)])
+              (cond
+                [(hashtable-ref h name #f) =>
+                 (lambda (l)
+                   (unless (eq? l label) 
+                     (dup-error name)))]
+                [else 
+                 (hashtable-set! h name label)])))
+          subst)))
+    (let f ((imp* imp*) (h (make-eq-hashtable)))
       (cond
         ((null? imp*) 
-         (values
-           (list->vector (map car subst))
-           (list->vector (map cdr subst))))
+         (hashtable-entries h))
         (else
-         (f (cdr imp*) (merge-substs (get-import (car imp*)) subst))))))
+         (add-imports! (car imp*) h)
+         (f (cdr imp*) h)))))
 
   ;;; a top rib is constructed as follows:
   ;;; given a subst: name* -> label*,
