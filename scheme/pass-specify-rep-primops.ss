@@ -1740,60 +1740,83 @@
 
 /section)
 
-#;
 (section ;;; ports
 
 (define-primop port? safe
   [(P x) (sec-tag-test (T x) vector-mask vector-tag port-mask port-tag)]
   [(E x) (nop)])
 
-(define-primop input-port? safe
-  [(P x) (sec-tag-test (T x) vector-mask vector-tag #f input-port-tag)]
-  [(E x) (nop)])
+;(define-primop input-port? safe
+;  [(P x) (sec-tag-test (T x) vector-mask vector-tag #f input-port-tag)]
+;  [(E x) (nop)])
+;
+;(define-primop output-port? safe
+;  [(P x) (sec-tag-test (T x) vector-mask vector-tag #f output-port-tag)]
+;  [(E x) (nop)])
+(define port-attrs-shift 6)
 
-(define-primop output-port? safe
-  [(P x) (sec-tag-test (T x) vector-mask vector-tag #f output-port-tag)]
-  [(E x) (nop)])
+(define-primop $make-port unsafe
+  [(V attrs idx sz buf tr id read write getp setp cl cookie)
+   (with-tmp ([p (prm 'alloc (K (align port-size)) (K vector-tag))])
+     (prm 'mset p (K (- vector-tag))
+          (prm 'logor (prm 'sll (T attrs) (K port-attrs-shift)) (K port-tag)))
+     (prm 'mset p (K (- disp-port-index vector-tag)) (T idx))
+     (prm 'mset p (K (- disp-port-size vector-tag)) (T sz))
+     (prm 'mset p (K (- disp-port-buffer vector-tag)) (T buf))
+     (prm 'mset p (K (- disp-port-transcoder vector-tag)) (T tr))
+     (prm 'mset p (K (- disp-port-id vector-tag)) (T id))
+     (prm 'mset p (K (- disp-port-read! vector-tag)) (T read))
+     (prm 'mset p (K (- disp-port-write! vector-tag)) (T write))
+     (prm 'mset p (K (- disp-port-get-position vector-tag)) (T getp))
+     (prm 'mset p (K (- disp-port-set-position! vector-tag)) (T setp))
+     (prm 'mset p (K (- disp-port-close vector-tag)) (T cl))
+     (prm 'mset p (K (- disp-port-cookie vector-tag)) (T cookie))
+     p)])
 
-(define (make-port handler buf/i idx/i sz/i tag)
-  (with-tmp ([p (prm 'alloc (K (align port-size)) (K vector-tag))])
-    (prm 'mset p (K (- vector-tag)) (K tag))
-    (prm 'mset p (K (- disp-port-buffer vector-tag)) (T buf/i))
-    (prm 'mset p (K (- disp-port-index vector-tag)) (T idx/i))
-    (prm 'mset p (K (- disp-port-size vector-tag)) (T sz/i))
-    (prm 'mset p (K (- disp-port-handler vector-tag)) (T handler))
-    (prm 'mset p (K (- disp-port-attributes vector-tag)) (K 0))
-    (prm 'mset p (K (- disp-port-unused1 vector-tag)) (K 0))
-    (prm 'mset p (K (- disp-port-unused2 vector-tag)) (K 0))
-    p))
-
-(define-primop $make-port/input unsafe
-  [(V handler buf/i idx/i sz/i) 
-   (make-port handler buf/i idx/i sz/i input-port-tag)])
-
-(define-primop $make-port/output unsafe
-  [(V handler buf/o idx/o sz/o) 
-   (make-port handler buf/o idx/o sz/o output-port-tag)])
-
-(define-primop $port-handler unsafe
-  [(V x) (prm 'mref (T x) (K (- disp-port-handler vector-tag)))])
-(define-primop $port-buffer unsafe
-  [(V x) (prm 'mref (T x) (K (- disp-port-buffer vector-tag)))])
 (define-primop $port-index unsafe
   [(V x) (prm 'mref (T x) (K (- disp-port-index vector-tag)))])
 (define-primop $port-size unsafe
   [(V x) (prm 'mref (T x) (K (- disp-port-size vector-tag)))])
+(define-primop $port-buffer unsafe
+  [(V x) (prm 'mref (T x) (K (- disp-port-buffer vector-tag)))])
+(define-primop $port-transcoder unsafe
+  [(V x) (prm 'mref (T x) (K (- disp-port-transcoder vector-tag)))])
+(define-primop $port-id unsafe
+  [(V x) (prm 'mref (T x) (K (- disp-port-id vector-tag)))])
+(define-primop $port-read! unsafe
+  [(V x) (prm 'mref (T x) (K (- disp-port-read! vector-tag)))])
+(define-primop $port-write! unsafe
+  [(V x) (prm 'mref (T x) (K (- disp-port-write! vector-tag)))])
+(define-primop $port-get-position unsafe
+  [(V x) (prm 'mref (T x) (K (- disp-port-get-position vector-tag)))])
+(define-primop $port-set-position! unsafe
+  [(V x) (prm 'mref (T x) (K (- disp-port-set-position! vector-tag)))])
+(define-primop $port-close unsafe
+  [(V x) (prm 'mref (T x) (K (- disp-port-close vector-tag)))])
+(define-primop $port-cookie unsafe
+  [(V x) (prm 'mref (T x) (K (- disp-port-cookie vector-tag)))])
+(define-primop $port-attrs unsafe
+  [(V x) 
+   (prm 'sra
+     (prm 'mref (T x) (K (- disp-port-attrs vector-tag)))
+     (K port-attrs-shift))])
+(define-primop $port-tag unsafe
+  [(V x)
+   (make-conditional 
+     (tag-test (T x) vector-mask vector-tag)
+     (cogen-value-$port-attrs x)
+     (K 0))])
+
 (define-primop $set-port-index! unsafe
   [(E x i) (prm 'mset (T x) (K (- disp-port-index vector-tag)) (T i))])
 (define-primop $set-port-size! unsafe
+  [(E x i) (prm 'mset (T x) (K (- disp-port-size vector-tag)) (T i))])
+(define-primop $set-port-attrs! unsafe
   [(E x i) 
-   (seq*
-     (prm 'mset (T x) (K (- disp-port-index vector-tag)) (K 0))
-     (prm 'mset (T x) (K (- disp-port-size vector-tag)) (T i)))])
-(define-primop $port-attributes unsafe
-  [(V x) (prm 'mref (T x) (K (- disp-port-attributes vector-tag)))])
-(define-primop $set-port-attributes! unsafe
-  [(E x i) (prm 'mset (T x) (K (- disp-port-attributes vector-tag)) (T i))])
+   (prm 'mset (T x)
+     (K (- disp-port-attrs vector-tag)) 
+     (prm 'logor (prm 'sll (T i) (K port-attrs-shift)) (K port-tag)))])
+
 
 /section)
 

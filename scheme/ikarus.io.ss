@@ -13,13 +13,14 @@
 ;;; You should have received a copy of the GNU General Public License
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-(library (ikarus system $io)
+#;
+(library (ikarus system $io tmp)
   (export $make-port $port-tag $port-id $port-cookie
           port? $port-transcoder 
           $port-index $port-size $port-buffer 
           $port-get-position $port-set-position! $port-close
           $port-read! $port-write! $set-port-index! $set-port-size!
-          $port-attrs $set-port-attrs! $port-fast-attrs)
+          $port-attrs $set-port-attrs!)
   (import (except (ikarus) port?))
   (define-struct $port 
     (attrs index size buffer transcoder 
@@ -29,9 +30,7 @@
   (define $set-port-size! set-$port-size!)
   (define $set-port-attrs! set-$port-attrs!)
   (define $make-port make-$port)
-  (define fast-attrs-mask          #xFFF)
-  (define ($port-tag x) (if ($port? x) ($port-attrs x) 0))
-  (define ($port-fast-attrs x) (fxand ($port-tag x) fast-attrs-mask)))
+  (define ($port-tag x) (if ($port? x) ($port-attrs x) 0)))
 
 (library (io-spec) 
   
@@ -126,6 +125,39 @@
       port-id
       ))
 
+  (module UNSAFE (fx< fx<= fx> fx>= fx= fx+ fx-
+                  fxior fxand fxsra fxsll
+                  integer->char char->integer
+                  string-ref string-set! string-length
+                  bytevector-u8-ref bytevector-u8-set!)
+    (import 
+      (rename (ikarus system $strings)
+        ($string-length string-length)
+        ($string-ref    string-ref)
+        ($string-set!   string-set!))
+      (rename (ikarus system $chars)
+        ($char->fixnum char->integer)
+        ($fixnum->char integer->char))
+      (rename (ikarus system $bytevectors)
+        ($bytevector-set!   bytevector-u8-set!)
+        ($bytevector-u8-ref bytevector-u8-ref))
+      (rename (ikarus system $fx) 
+        ($fxsra    fxsra)
+        ($fxsll    fxsll)
+        ($fxlogor  fxior)
+        ($fxlogand fxand)
+        ($fx+      fx+)
+        ($fx-      fx-)
+        ($fx<      fx<)
+        ($fx>      fx>)
+        ($fx>=     fx>=)
+        ($fx<=     fx<=)
+        ($fx=      fx=))))
+
+  (define (port? x)
+    (import (only (ikarus) port?))
+    (port? x))
+
   (define-syntax define-rrr
     (syntax-rules ()
       [(_ name)
@@ -133,7 +165,14 @@
          (apply error 'name "not implemented" args))]))
 
  
-  (define (u8? x) (and (fixnum? x) (fx>= x 0) (fx< x 256)))
+  (define-syntax u8?
+    (let ()
+      (import (ikarus system $fx))
+      (syntax-rules ()
+        [(_ x) 
+         ($fxzero? ($fxlogand x -256))])))
+
+  ;(define (u8? x) (and (fixnum? x) (fx>= x 0) (fx< x 256)))
   
   (define (textual-port? x) 
     (fx= (fxand ($port-tag x) textual-port-tag) textual-port-tag))
@@ -175,6 +214,9 @@
   (define fast-put-char-tag        #b00000000010110)
   (define fast-put-utf8-tag        #b00000000100110)
   (define fast-put-latin-tag       #b00000001100110)
+
+  (define fast-attrs-mask          #xFFF)
+  (define ($port-fast-attrs x) (fxand ($port-tag x) fast-attrs-mask))
 
   (define (input-port-name p)
     (if (input-port? p) 
@@ -578,6 +620,7 @@
 
   ;;; ----------------------------------------------------------
   (module (get-char lookahead-char)
+    (import UNSAFE)
     (define (refill-bv-start p who)
       (when ($port-closed? p) (error who "port is closed" p))
       (let* ([bv ($port-buffer p)]
@@ -673,7 +716,7 @@
                                    (fxsll (fxand b1 #b111111) 6)
                                    (fxand b2 #b111111))])
                           (cond
-                            [(fx<= #xD800 n #xDFFF) 
+                            [(and (fx<= #xD800 n) (fx<= n #xDFFF))
                              ($set-port-index! p (fx+ i 1))
                              (do-error p who)]
                             [else
@@ -703,7 +746,7 @@
                                    (fxsll (fxand b2 #b111111) 6)
                                    (fxand b3 #b111111))])
                           (cond
-                            [(fx<= #x10000 n #x10FFFF) 
+                            [(and (fx<= #x10000 n) (fx<= n #x10FFFF))
                              ($set-port-index! p (fx+ i 4))
                              (integer->char n)]
                             [else
@@ -772,7 +815,8 @@
                                    (fxsll (fxand b1 #b111111) 6)
                                    (fxand b2 #b111111))])
                           (cond
-                            [(fx<= #xD800 n #xDFFF) (do-error p who)]
+                            [(and (fx<= #xD800 n) (fx<= n #xDFFF))
+                             (do-error p who)]
                             [else (integer->char n)]))]
                        [else (do-error p who)]))]
                   [else
@@ -794,7 +838,7 @@
                                    (fxsll (fxand b2 #b111111) 6)
                                    (fxand b3 #b111111))])
                           (cond
-                            [(fx<= #x10000 n #x10FFFF) 
+                            [(and (fx<= #x10000 n) (fx<= n #x10FFFF))
                              (integer->char n)]
                             [else
                              (do-error p who)]))]
@@ -967,6 +1011,7 @@
       (error who "port is not an input port" p)))
 
   (module (get-u8 lookahead-u8)
+    (import UNSAFE)
     (define (get-u8-byte-mode p who start) 
       (when ($port-closed? p) (error who "port is closed" p))
       (let* ([bv ($port-buffer p)]
@@ -1014,6 +1059,7 @@
           [else (slow-get-u8 p who 0)]))))
 
   (define (port-eof? p)
+    (import UNSAFE)
     (define who 'port-eof?)
     (let ([m ($port-fast-attrs p)])
       (cond
@@ -1535,6 +1581,7 @@
   ;;; ----------------------------------------------------------
   
   (module (put-char write-char put-string)
+    (import UNSAFE)
     (define (put-char-utf8-mode p b who) 
       (cond
         [(fx< b 128) 
@@ -1691,6 +1738,7 @@
 
        
   (module (put-u8)
+    (import UNSAFE)
     (define (put-u8-byte-mode p b who)
       (let ([write! ($port-write! p)])
         (let ([i ($port-index p)] 

@@ -1967,22 +1967,21 @@
   (define transcoder-codec:utf-8          #b010)
   (define transcoder-codec:utf-16         #b011)
 
-  ;(define port-tag              #x3F) ;;; 0011_F
-  ;(define output-port-tag       #x7F) ;;; 0011_F
-  ;(define input-port-tag        #xBF) ;;; 1011_F
-  ;(define port-mask             #x3F) ;;; 0011_F
-  ;(define port-type-mask        #xFF) ;;; 1111_F
-
-  ;(define disp-port-buffer         4)
-  ;(define disp-port-index          8)
-  ;(define disp-port-size          12)
-  ;(define disp-port-handler       16)
-  ;(define disp-port-attributes    20)
-  ;(define disp-port-unused1   24)
-  ;(define disp-port-unused2   28)
-  ;(define port-size               32)
-
-
+  (define port-tag               #x3F)
+  (define port-mask              #x3F)
+  (define disp-port-attrs           0)
+  (define disp-port-index           4)
+  (define disp-port-size            8)
+  (define disp-port-buffer         12)
+  (define disp-port-transcoder     16)
+  (define disp-port-id             20)
+  (define disp-port-read!          24)
+  (define disp-port-write!         28)
+  (define disp-port-get-position   32)
+  (define disp-port-set-position!  36)
+  (define disp-port-close          40)
+  (define disp-port-cookie         44)
+  (define port-size                48)
 
   (define disp-tcbucket-tconc 0)
   (define disp-tcbucket-key   4)
