@@ -139,7 +139,7 @@
   (module (vector-map)
     (define who 'vector-map)
     (define (ls->vec ls n) 
-      (let f ([v ($make-vector n)]
+      (let f ([v (make-vector n)]
               [n n]
               [ls ls])
         (cond

@@ -2649,14 +2649,14 @@
          (begin
            (unless (for-all id? export*)
              (stx-error e "module exports must be identifiers"))
-           (values #f export* b*)))
+           (values #f (list->vector export*) b*)))
         ((_ name (export* ...) b* ...)
          (begin
            (unless (id? name)
              (stx-error e "module name must be an identifier"))
            (unless (for-all id? export*)
              (stx-error e "module exports must be identifiers"))
-           (values name export* b*))))))
+           (values name (list->vector export*) b*))))))
 
   (define chi-internal-module
     (lambda (e r mr lex* rhs* mod** kwd*)
@@ -2666,20 +2666,21 @@
           (let-values (((e* r mr lex* rhs* mod** kwd*)
                         (chi-body* e* r mr lex* rhs* mod** kwd* rib #f)))
               (let ((exp-lab*
-                     (map (lambda (x)
-                             (or (id->label 
-                                   (mkstx (id->sym x) (stx-mark* x)
-                                     (list rib)))
-                                 (stx-error x "cannot find module export")))
-                          exp-id*))
+                     (vector-map
+                       (lambda (x)
+                         (or (id->label 
+                               (mkstx (id->sym x) (stx-mark* x)
+                                 (list rib)))
+                             (stx-error x "cannot find module export")))
+                      exp-id*))
                     (mod** (cons e* mod**)))
                 (if (not name) ;;; explicit export
                     (values lex* rhs* exp-id* exp-lab* r mr mod** kwd*)
                     (let ((lab (gen-label 'module))
                           (iface (cons exp-id* exp-lab*)))
                       (values lex* rhs*
-                              (list name) ;;; FIXME: module cannot
-                              (list lab)  ;;;  export itself yet
+                              (vector name) ;;; FIXME: module cannot
+                              (vector lab)  ;;;  export itself yet
                               (cons (cons lab (cons '$module iface)) r)
                               (cons (cons lab (cons '$module iface)) mr)
                               mod** kwd*)))))))))
@@ -2753,7 +2754,7 @@
                  ((module)
                   (let-values (((lex* rhs* m-exp-id* m-exp-lab* r mr mod** kwd*)
                                 (chi-internal-module e r mr lex* rhs* mod** kwd*)))
-                    (for-each
+                    (vector-for-each
                       (lambda (id lab) (extend-rib! rib id lab))
                       m-exp-id* m-exp-lab*)
                     (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* rib top?)))
@@ -2775,8 +2776,7 @@
                              (($module)
                               (let ((iface value))
                                 (let ((id* (car iface)) (lab* (cdr iface)))
-                                  (values (list->vector id*)
-                                          (list->vector lab*)))))
+                                  (values id* lab*))))
                              (else (stx-error e "invalid import")))))))
                     (define (library-import e) 
                       (syntax-match e ()
