@@ -852,7 +852,7 @@
                                             (values (cons* a0 a1 a*) b*)
                                             (values (cons a0 a*) (cons a1 b*)))
                                         (if (p a1) 
-                                            (values (cons a0 a*) (cons a1 b*))
+                                            (values (cons a1 a*) (cons a0 b*))
                                             (values a* (cons* a0 a1 b*)))))))
                             (if (null? h)
                                 (if (p a0)

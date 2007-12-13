@@ -16,7 +16,7 @@
 
 (library (ikarus timers)
   (export time-it verbose-timer)
-  (import (except (ikarus) time-it))
+  (import (except (ikarus) time-it verbose-timer))
 
   (define-struct stats 
     (user-secs user-usecs 
