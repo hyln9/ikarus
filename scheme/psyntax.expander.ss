@@ -2808,9 +2808,21 @@
                       (values e* r mr lex* rhs* mod** kwd*)))))))))))
 
   (define set-global-macro-binding!
-    (lambda (sym loc b)
-      (extend-library-subst! (interaction-library) sym loc)
-      (extend-library-env! (interaction-library) loc b)))
+    (lambda (id loc b)
+      (let ([type
+             (case (binding-type b)
+               [(local-macro) 'global-macro]
+               [(local-macro!) 'global-macro!]
+               [else
+                (error 'set-global-macro-binding!
+                  "BUG: invalid type" b)])]
+            [transformer (cadr b)]
+            [label (id->label id)]
+            [sym (id->sym id)])
+        (set-symbol-value! loc transformer)
+        (extend-library-subst! (interaction-library) sym label)
+        (extend-library-env! (interaction-library) label 
+          (cons* type (interaction-library) loc)))))
   
   (define gen-global-macro-binding
     (lambda (id ctxt) (gen-global-var-binding id ctxt)))
@@ -2820,7 +2832,7 @@
       (let ((label (id->label id)))
         (let ((b (imported-label->binding label)))
           (case (binding-type b)
-            ((global)
+            ((global global-macro global-macro!)
              (let ((x (binding-value b)))
                (let ((lib (car x)) (loc (cdr x)))
                  (cond
@@ -2840,7 +2852,12 @@
              (case type
                ((define)
                 (let-values (((id rhs) (parse-define e)))
+                  (extend-library-subst! (interaction-library) 
+                     (id->sym id) (id->label id))
                   (let ((loc (gen-global-var-binding id e)))
+                    (extend-library-env! (interaction-library)
+                      (id->label id) 
+                      (cons* 'global (interaction-library) loc))
                     (let ((rhs (chi-rhs rhs '() '())))
                       (chi-top* (cdr e*) (cons (cons loc rhs) init*))))))
                ((define-syntax)
@@ -2848,7 +2865,7 @@
                   (let ((loc (gen-global-macro-binding id e)))
                     (let ((expanded-rhs (expand-transformer rhs '())))
                       (let ((b (make-eval-transformer expanded-rhs)))
-                        (set-global-macro-binding! (id->sym id) loc b)
+                        (set-global-macro-binding! id loc b)
                         (chi-top* (cdr e*) init*))))))
                ((let-syntax letrec-syntax) 
                 (error 'chi-top* "not supported yet at top level" type))
