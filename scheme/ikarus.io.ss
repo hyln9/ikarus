@@ -125,11 +125,13 @@
       port-id
       ))
 
-  (module UNSAFE (fx< fx<= fx> fx>= fx= fx+ fx-
-                  fxior fxand fxsra fxsll
-                  integer->char char->integer
-                  string-ref string-set! string-length
-                  bytevector-u8-ref bytevector-u8-set!)
+  (module UNSAFE  
+    (fx< fx<= fx> fx>= fx= fx+ fx-
+     fxior fxand fxsra fxsll
+     integer->char char->integer
+     string-ref string-set! string-length
+     bytevector-u8-ref bytevector-u8-set!)
+
     (import 
       (rename (ikarus system $strings)
         ($string-length string-length)

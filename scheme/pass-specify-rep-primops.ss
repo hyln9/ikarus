@@ -1804,7 +1804,12 @@
   [(V x)
    (make-conditional 
      (tag-test (T x) vector-mask vector-tag)
-     (cogen-value-$port-attrs x)
+     (with-tmp ([tag 
+                 (prm 'mref (T x) (K (- disp-port-attrs vector-tag)))])
+       (make-conditional 
+         (tag-test tag port-mask port-tag)
+         (prm 'sra tag (K port-attrs-shift))
+         (K 0)))
      (K 0))])
 
 (define-primop $set-port-index! unsafe

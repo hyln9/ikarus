@@ -2830,14 +2830,6 @@
                     (stx-error ctxt "cannot modify imported binding"))))))
             (else (stx-error ctxt "cannot modify binding in")))))))
   
-  (define chi-top-set!
-    (lambda (e)
-      (syntax-match e ()
-        ((_ id rhs) (id? id)
-         (let ((loc (gen-global-var-binding id e)))
-           (let ((rhs (chi-expr rhs '() '())))
-             (values loc rhs)))))))
-  
   (define chi-top*
     (lambda (e* init*)
       (cond
@@ -2851,9 +2843,6 @@
                   (let ((loc (gen-global-var-binding id e)))
                     (let ((rhs (chi-rhs rhs '() '())))
                       (chi-top* (cdr e*) (cons (cons loc rhs) init*))))))
-               ((set!)
-                (let-values (((loc rhs) (chi-top-set! e)))
-                  (chi-top* (cdr e*) (cons (cons loc rhs) init*))))
                ((define-syntax)
                 (let-values (((id rhs) (parse-define-syntax e)))
                   (let ((loc (gen-global-macro-binding id e)))
