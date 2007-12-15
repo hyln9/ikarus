@@ -334,6 +334,8 @@
       [(and (eq? 'latin-1-codec (transcoder-codec x))
             (eq? 'none (transcoder-eol-style x)))
        (fxior textual-input-port-bits fast-u8-text-tag)]
+      ;;; attrs for utf-8-codec are set as part of the 
+      ;;; bom-reading dance when the first char is read.
       [else textual-input-port-bits]))
 
   (define (output-transcoder-attrs x)
