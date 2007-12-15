@@ -183,7 +183,8 @@
                     (eqv? sealed? (rtd-sealed? rtd))
                     (eqv? opaque? (rtd-opaque? rtd))
                     (same-fields-as-rtd? fields rtd))
-               (die who "invalid arguments"))
+               (die who "arguments not equivalent to those in an existing rtd"
+                    parent sealed? opaque? fields))
              rtd)]
           [else
            (let ([rtd (generate-rtd name parent uid sealed? opaque? fields)])
