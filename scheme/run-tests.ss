@@ -33,6 +33,7 @@
         (tests fldiv-and-mod)
         (tests parse-flonums)
         (tests io)
+        (tests case-folding)
         )
 
 (define (test-exact-integer-sqrt)
@@ -48,8 +49,9 @@
   (f 0 536870911000 536870911)
   (printf "[exact-integer-sqrt] Happy Happy Joy Joy\n"))
 
-(test-parse-flonums)
 
+(test-case-folding)
+(test-parse-flonums)
 (test-reader)
 (test-char-syntax)
 (test-bytevectors)
