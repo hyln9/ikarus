@@ -623,7 +623,7 @@
   ;(define-rrr set-port-position!)
 
   ;;; ----------------------------------------------------------
-  (module (get-char lookahead-char)
+  (module (read-char get-char lookahead-char)
     (import UNSAFE)
     (define (refill-bv-start p who)
       (when ($port-closed? p) (die who "port is closed" p))
@@ -855,7 +855,7 @@
                         (do-error p who)]
                        [else (lookahead-char-utf8-mode p who)]))])]
                [else (do-error p who)]))])))
-
+    ;;;
     (define (advance-bom p who bom-seq)
       ;;; return eof if port is eof, 
       ;;; #t if a bom is present, updating the port index to 
@@ -886,7 +886,7 @@
            (if (fx= bytes 0)
                (eof-object)
                (advance-bom p who bom-seq)))]))
-
+    ;;;
     (define (speedup-input-port p who)
       ;;; returns #t if port is eof, #f otherwise
       (unless (input-port? p) 
@@ -901,7 +901,7 @@
              (fxior textual-input-port-bits fast-u7-text-tag))
            (eof-object? (advance-bom p who '(#xEF #xBB #xBF)))]
           [else (die 'slow-get-char "codec not handled")])))
-
+    ;;;
     (define (lookahead-char-char-mode p who)
       (let ([str ($port-buffer p)]
             [read! ($port-read! p)])
@@ -968,7 +968,45 @@
             [else
              ($set-port-index! p 1) 
              (string-ref str 0)]))))
-
+    (define read-char
+      (case-lambda
+        [(p) 
+         (define who 'read-char)
+         (let ([m ($port-fast-attrs p)])
+           (cond
+             [(eq? m fast-get-utf8-tag)
+              (let ([i ($port-index p)])
+                (cond
+                  [(fx< i ($port-size p))
+                   (let ([b (bytevector-u8-ref ($port-buffer p) i)])
+                     (cond
+                       [(fx< b 128) 
+                        ($set-port-index! p (fx+ i 1))
+                        (integer->char b)]
+                       [else (get-char-utf8-mode p who)]))]
+                  [else
+                   (get-char-utf8-mode p who)]))]
+             [(eq? m fast-get-char-tag)
+              (let ([i ($port-index p)])
+                (cond
+                  [(fx< i ($port-size p))
+                   ($set-port-index! p (fx+ i 1))
+                   (string-ref ($port-buffer p) i)]
+                  [else (get-char-char-mode p who)]))]
+             [(eq? m fast-get-latin-tag)
+              (let ([i ($port-index p)])
+                (cond
+                  [(fx< i ($port-size p))
+                   ($set-port-index! p (fx+ i 1))
+                   (integer->char 
+                     (bytevector-u8-ref ($port-buffer p) i))]
+                  [else
+                   (get-char-latin-mode p who 1)]))]
+             [else 
+              (if (speedup-input-port p who)
+                  (eof-object)
+                  (get-char p))]))]
+        [() (read-char (current-input-port))]))
     (define (get-char p)
       (define who 'get-char)
       (let ([m ($port-fast-attrs p)])
@@ -1344,15 +1382,6 @@
             (die 'call-with-port "not a procedure" proc))
         (die 'call-with-port "not a port" p)))
 
-  (define read-char
-    (case-lambda
-      [() (get-char (*the-input-port*))]
-      [(p)
-       (if (input-port? p)
-           (if (textual-port? p)
-               (get-char p)
-               (die 'read-char "not a textual port" p))
-           (die 'read-char "not an input-port" p))]))
   ;;;
   (define peek-char
     (case-lambda
