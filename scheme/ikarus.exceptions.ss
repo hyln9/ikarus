@@ -16,14 +16,14 @@
 
 (library (ikarus exceptions)
   (export with-exception-handler raise raise-continuable 
-    error assertion-violation)
+    error assertion-violation die)
   (import 
     (only (rnrs) condition make-non-continuable-violation
           make-message-condition make-error make-who-condition
           make-irritants-condition make-assertion-violation)
     (except (ikarus)
       with-exception-handler raise raise-continuable 
-      error assertion-violation))
+      error assertion-violation die))
 
   (define handlers
     (make-parameter
@@ -35,10 +35,10 @@
   
   (define (with-exception-handler handler proc2)
     (unless (procedure? handler)
-      (error 'with-exception-handler
+      (assertion-violation 'with-exception-handler
         "handler is not a procedure" handler))
     (unless (procedure? proc2)
-      (error 'with-exception-handler "not a procedure" proc2))
+      (assertion-violation 'with-exception-handler "not a procedure" proc2))
     (parameterize ([handlers (cons handler (handlers))])
       (proc2)))
   
@@ -60,7 +60,7 @@
 
   (define (error who msg . irritants) 
     (unless (string? msg) 
-      (error 'error "message is not a string" msg))
+      (assertion-violation 'error "message is not a string" msg))
     (raise
        (condition
          (make-error)
@@ -81,6 +81,9 @@
          (if (null? irritants) 
              (condition)
              (make-irritants-condition irritants)))))
+
+  (define die assertion-violation)
+  
 
 )
 

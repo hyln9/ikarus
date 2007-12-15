@@ -31,16 +31,16 @@
     (if (time? x) 
         (+ (* (time-msecs x) #e10e5)
            (time-secs x))
-        (error 'time-second "not a time" x)))
+        (die 'time-second "not a time" x)))
   
   (define (time-nanosecond x)
     (if (time? x) 
         (* (time-usecs x) 1000)
-        (error 'time-nanosecond "not a time" x)))
+        (die 'time-nanosecond "not a time" x)))
 
   (define (time-gmt-offset x)
     (if (time? x) 
         (foreign-call "ikrt_gmt_offset" x)
-        (error 'time-gmt-offset "not a time" x)))
+        (die 'time-gmt-offset "not a time" x)))
   )
 

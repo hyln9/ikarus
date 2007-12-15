@@ -88,18 +88,18 @@
       [(k) 
        (if (and (fixnum? k) ($fx>= k 0))
            ($make-bytevector k)
-           (error 'make-bytevector "not a valid size" k))]
+           (die 'make-bytevector "not a valid size" k))]
       [(k fill)
        (if (and (fixnum? fill) ($fx<= -128 fill) ($fx<= fill 255))
            ($bytevector-fill (make-bytevector k) 0 k fill)
-           (error 'make-bytevector "not a valid fill" fill))]))
+           (die 'make-bytevector "not a valid fill" fill))]))
 
   (define bytevector-fill!
     (lambda (x fill)
       (unless (bytevector? x)
-        (error 'bytevector-fill! "not a bytevector" x))
+        (die 'bytevector-fill! "not a bytevector" x))
       (unless (and (fixnum? fill) ($fx<= -128 fill) ($fx<= fill 255))
-        (error 'bytevector-fill! "not a valid fill" fill))
+        (die 'bytevector-fill! "not a valid fill" fill))
       ($bytevector-fill x 0 ($bytevector-length x) fill)))
 
 
@@ -107,23 +107,23 @@
     (lambda (x)
       (if (bytevector? x)
           ($bytevector-length x)
-          (error 'bytevector-length "not a bytevector" x))))
+          (die 'bytevector-length "not a bytevector" x))))
 
   (define bytevector-s8-ref
     (lambda (x i)
       (if (bytevector? x)
           (if (and (fixnum? i) ($fx<= 0 i) ($fx< i ($bytevector-length x)))
               ($bytevector-s8-ref x i)
-              (error 'bytevector-s8-ref "invalid index" i x))
-          (error 'bytevector-s8-ref "not a bytevector" x))))
+              (die 'bytevector-s8-ref "invalid index" i x))
+          (die 'bytevector-s8-ref "not a bytevector" x))))
 
   (define bytevector-u8-ref
     (lambda (x i)
       (if (bytevector? x)
           (if (and (fixnum? i) ($fx<= 0 i) ($fx< i ($bytevector-length x)))
               ($bytevector-u8-ref x i)
-              (error 'bytevector-u8-ref "invalid index" i x))
-          (error 'bytevector-u8-ref "not a bytevector" x))))
+              (die 'bytevector-u8-ref "invalid index" i x))
+          (die 'bytevector-u8-ref "not a bytevector" x))))
 
 
   (define bytevector-s8-set!
@@ -132,9 +132,9 @@
           (if (and (fixnum? i) ($fx<= 0 i) ($fx< i ($bytevector-length x)))
               (if (and (fixnum? v) ($fx<= -128 v) ($fx<= v 127)) 
                   ($bytevector-set! x i v)
-                  (error 'bytevector-s8-set! "not a byte" v))
-              (error 'bytevector-s8-set! "invalid index" i x))
-          (error 'bytevector-s8-set! "not a bytevector" x))))
+                  (die 'bytevector-s8-set! "not a byte" v))
+              (die 'bytevector-s8-set! "invalid index" i x))
+          (die 'bytevector-s8-set! "not a bytevector" x))))
   
   (define bytevector-u8-set!
     (lambda (x i v)
@@ -142,9 +142,9 @@
           (if (and (fixnum? i) ($fx<= 0 i) ($fx< i ($bytevector-length x)))
               (if (and (fixnum? v) ($fx<= 0 v) ($fx<= v 255))
                   ($bytevector-set! x i v)
-                  (error 'bytevector-u8-set! "not an octet" v))
-              (error 'bytevector-u8-set! "invalid index" i x))
-          (error 'bytevector-u8-set! "not a bytevector" x))))
+                  (die 'bytevector-u8-set! "not an octet" v))
+              (die 'bytevector-u8-set! "invalid index" i x))
+          (die 'bytevector-u8-set! "not a bytevector" x))))
 
   (define bytevector-u16-native-ref ;;; HARDCODED
     (lambda (x i) 
@@ -156,8 +156,8 @@
               ($fxlogor
                 ($fxsll ($bytevector-u8-ref x i) 8)
                 ($bytevector-u8-ref x ($fxadd1 i)))
-              (error 'bytevector-u16-native-ref "invalid index" i))
-          (error 'bytevector-u16-native-ref "not a bytevector" x))))
+              (die 'bytevector-u16-native-ref "invalid index" i))
+          (die 'bytevector-u16-native-ref "not a bytevector" x))))
 
   
   (define bytevector-u16-native-set! ;;; HARDCODED
@@ -173,9 +173,9 @@
                   (begin
                     ($bytevector-set! x i ($fxsra n 8)) 
                     ($bytevector-set! x ($fxadd1 i) n))
-                  (error 'bytevector-u16-native-set! "invalid index" i))
-              (error 'bytevector-u16-native-set! "invalid value" n))
-          (error 'bytevector-u16-native-set! "not a bytevector" x))))
+                  (die 'bytevector-u16-native-set! "invalid index" i))
+              (die 'bytevector-u16-native-set! "invalid value" n))
+          (die 'bytevector-u16-native-set! "not a bytevector" x))))
 
   (define bytevector-s16-native-set! ;;; HARDCODED
     (lambda (x i n) 
@@ -190,9 +190,9 @@
                   (begin
                     ($bytevector-set! x i ($fxsra n 8)) 
                     ($bytevector-set! x ($fxadd1 i) n))
-                  (error 'bytevector-s16-native-set! "invalid index" i))
-              (error 'bytevector-s16-native-set! "invalid value" n))
-          (error 'bytevector-s16-native-set! "not a bytevector" x))))
+                  (die 'bytevector-s16-native-set! "invalid index" i))
+              (die 'bytevector-s16-native-set! "invalid value" n))
+          (die 'bytevector-s16-native-set! "not a bytevector" x))))
 
   (define bytevector-s16-native-ref ;;; HARDCODED
     (lambda (x i) 
@@ -204,8 +204,8 @@
               ($fxlogor
                 ($fxsll ($bytevector-s8-ref x i) 8)
                 ($bytevector-u8-ref x ($fxadd1 i)))
-              (error 'bytevector-s16-native-ref "invalid index" i))
-          (error 'bytevector-s16-native-ref "not a bytevector" x))))
+              (die 'bytevector-s16-native-ref "invalid index" i))
+          (die 'bytevector-s16-native-ref "not a bytevector" x))))
 
   (define bytevector-u16-ref
     (lambda (x i end) 
@@ -222,9 +222,9 @@
                  ($fxlogor
                    ($fxsll ($bytevector-u8-ref x (fxadd1 i)) 8)
                    ($bytevector-u8-ref x i))]
-                [else (error 'bytevector-u16-ref "invalid endianness" end)])
-              (error 'bytevector-u16-ref "invalid index" i))
-          (error 'bytevector-u16-ref "not a bytevector" x))))
+                [else (die 'bytevector-u16-ref "invalid endianness" end)])
+              (die 'bytevector-u16-ref "invalid index" i))
+          (die 'bytevector-u16-ref "not a bytevector" x))))
 
   (define bytevector-u32-ref
     (lambda (x i end) 
@@ -247,9 +247,9 @@
                       ($fxlogor
                         ($fxsll ($bytevector-u8-ref x ($fx+ i 1)) 8)
                         ($bytevector-u8-ref x i))))]
-                [else (error 'bytevector-u32-ref "invalid endianness" end)])
-              (error 'bytevector-u32-ref "invalid index" i))
-          (error 'bytevector-u32-ref "not a bytevector" x))))
+                [else (die 'bytevector-u32-ref "invalid endianness" end)])
+              (die 'bytevector-u32-ref "invalid index" i))
+          (die 'bytevector-u32-ref "not a bytevector" x))))
 
   (define bytevector-u32-native-ref
     (lambda (x i) 
@@ -264,8 +264,8 @@
                    ($fxlogor 
                      ($fxsll ($bytevector-u8-ref x ($fx+ i 2)) 8)
                      ($bytevector-u8-ref x ($fx+ i 3)))))
-              (error 'bytevector-u32-native-ref "invalid index" i))
-          (error 'bytevector-u32-native-ref "not a bytevector" x))))
+              (die 'bytevector-u32-native-ref "invalid index" i))
+          (die 'bytevector-u32-native-ref "not a bytevector" x))))
 
   (define bytevector-s32-ref
     (lambda (x i end) 
@@ -288,9 +288,9 @@
                       ($fxlogor
                         ($fxsll ($bytevector-u8-ref x ($fx+ i 1)) 8)
                         ($bytevector-u8-ref x i))))]
-                [else (error 'bytevector-s32-ref "invalid endianness" end)])
-              (error 'bytevector-s32-ref "invalid index" i))
-          (error 'bytevector-s32-ref "not a bytevector" x))))
+                [else (die 'bytevector-s32-ref "invalid endianness" end)])
+              (die 'bytevector-s32-ref "invalid index" i))
+          (die 'bytevector-s32-ref "not a bytevector" x))))
 
   (define bytevector-s32-native-ref
     (lambda (x i) 
@@ -305,8 +305,8 @@
                    ($fxlogor 
                      ($fxsll ($bytevector-u8-ref x ($fx+ i 2)) 8)
                      ($bytevector-u8-ref x ($fx+ i 3)))))
-              (error 'bytevector-s32-native-ref "invalid index" i))
-          (error 'bytevector-s32-native-ref "not a bytevector" x))))
+              (die 'bytevector-s32-native-ref "invalid index" i))
+          (die 'bytevector-s32-native-ref "not a bytevector" x))))
 
   (define bytevector-u16-set!
     (lambda (x i n end) 
@@ -324,10 +324,10 @@
                     [(little) 
                      ($bytevector-set! x i n)
                      ($bytevector-set! x ($fxadd1 i) (fxsra n 8))]
-                    [else (error 'bytevector-u16-ref "invalid endianness" end)])
-                  (error 'bytevector-u16-set! "invalid index" i))
-              (error 'bytevector-u16-set! "invalid value" n))
-          (error 'bytevector-u16-set! "not a bytevector" x))))
+                    [else (die 'bytevector-u16-ref "invalid endianness" end)])
+                  (die 'bytevector-u16-set! "invalid index" i))
+              (die 'bytevector-u16-set! "invalid value" n))
+          (die 'bytevector-u16-set! "not a bytevector" x))))
 
 
   (define bytevector-u32-set!
@@ -356,10 +356,10 @@
                      (let ([b (bitwise-and n #xFFFF)])
                        ($bytevector-set! x ($fx+ i 1) ($fxsra b 8))
                        ($bytevector-set! x i b))]
-                    [else (error 'bytevector-u32-ref "invalid endianness" end)])
-                  (error 'bytevector-u32-set! "invalid index" i))
-              (error 'bytevector-u32-set! "invalid value" n))
-          (error 'bytevector-u32-set! "not a bytevector" x))))
+                    [else (die 'bytevector-u32-ref "invalid endianness" end)])
+                  (die 'bytevector-u32-set! "invalid index" i))
+              (die 'bytevector-u32-set! "invalid value" n))
+          (die 'bytevector-u32-set! "not a bytevector" x))))
 
   (define bytevector-u32-native-set!
     (lambda (x i n) 
@@ -380,9 +380,9 @@
                     (let ([b (bitwise-and n #xFFFF)])
                       ($bytevector-set! x ($fx+ i 2) ($fxsra b 8))
                       ($bytevector-set! x ($fx+ i 3) b)))
-                  (error 'bytevector-u32-native-set! "invalid index" i))
-              (error 'bytevector-u32-native-set! "invalid value" n))
-          (error 'bytevector-u32-native-set! "not a bytevector" x))))
+                  (die 'bytevector-u32-native-set! "invalid index" i))
+              (die 'bytevector-u32-native-set! "invalid value" n))
+          (die 'bytevector-u32-native-set! "not a bytevector" x))))
 
 
   (define bytevector-s32-native-set!
@@ -404,9 +404,9 @@
                     (let ([b (bitwise-and n #xFFFF)])
                       ($bytevector-set! x ($fx+ i 2) ($fxsra b 8))
                       ($bytevector-set! x ($fx+ i 3) b)))
-                  (error 'bytevector-s32-native-set! "invalid index" i))
-              (error 'bytevector-s32-native-set! "invalid value" n))
-          (error 'bytevector-s32-native-set! "not a bytevector" x))))
+                  (die 'bytevector-s32-native-set! "invalid index" i))
+              (die 'bytevector-s32-native-set! "invalid value" n))
+          (die 'bytevector-s32-native-set! "not a bytevector" x))))
 
   (define bytevector-s32-set!
     (lambda (x i n end) 
@@ -434,10 +434,10 @@
                      (let ([b (bitwise-and n #xFFFF)])
                        ($bytevector-set! x ($fx+ i 1) ($fxsra b 8))
                        ($bytevector-set! x i b))]
-                    [else (error 'bytevector-s32-ref "invalid endianness" end)])
-                  (error 'bytevector-s32-set! "invalid index" i))
-              (error 'bytevector-s32-set! "invalid value" n))
-          (error 'bytevector-s32-set! "not a bytevector" x))))
+                    [else (die 'bytevector-s32-ref "invalid endianness" end)])
+                  (die 'bytevector-s32-set! "invalid index" i))
+              (die 'bytevector-s32-set! "invalid value" n))
+          (die 'bytevector-s32-set! "not a bytevector" x))))
 
   (define bytevector-s16-ref
     (lambda (x i end) 
@@ -454,9 +454,9 @@
                  ($fxlogor
                    ($fxsll ($bytevector-s8-ref x (fxadd1 i)) 8)
                    ($bytevector-u8-ref x i))]
-                [else (error 'bytevector-s16-ref "invalid endianness" end)])
-              (error 'bytevector-s16-ref "invalid index" i))
-          (error 'bytevector-s16-ref "not a bytevector" x))))
+                [else (die 'bytevector-s16-ref "invalid endianness" end)])
+              (die 'bytevector-s16-ref "invalid index" i))
+          (die 'bytevector-s16-ref "not a bytevector" x))))
 
   (define bytevector-s16-set!
     (lambda (x i n end) 
@@ -474,15 +474,15 @@
                     [(little) 
                      ($bytevector-set! x i n)
                      ($bytevector-set! x ($fxadd1 i) (fxsra n 8))]
-                    [else (error 'bytevector-s16-ref "invalid endianness" end)])
-                  (error 'bytevector-s16-set! "invalid index" i))
-              (error 'bytevector-s16-set! "invalid value" n))
-          (error 'bytevector-s16-set! "not a bytevector" x))))
+                    [else (die 'bytevector-s16-ref "invalid endianness" end)])
+                  (die 'bytevector-s16-set! "invalid index" i))
+              (die 'bytevector-s16-set! "invalid value" n))
+          (die 'bytevector-s16-set! "not a bytevector" x))))
 
   (define bytevector->u8-list
     (lambda (x)
       (unless (bytevector? x)
-        (error 'bytevector->u8-list "not a bytevector" x))
+        (die 'bytevector->u8-list "not a bytevector" x))
       (let f ([x x] [i ($bytevector-length x)] [ac '()])
         (cond
           [($fx= i 0) ac]
@@ -498,13 +498,13 @@
                       (if (pair? h)
                           (if (not (eq? h t))
                               (race ($cdr h) ($cdr t) ls ($fx+ n 2))
-                              (error 'u8-list->bytevector "circular list" ls))
+                              (die 'u8-list->bytevector "circular list" ls))
                           (if (null? h)
                               ($fx+ n 1)
-                              (error 'u8-list->bytevector "not a proper list" ls))))
+                              (die 'u8-list->bytevector "not a proper list" ls))))
                    (if (null? h)
                        n
-                       (error 'u8-list->bytevector "not a proper list" ls))))]
+                       (die 'u8-list->bytevector "not a proper list" ls))))]
               [fill
                (lambda (s i ls)
                  (cond
@@ -512,7 +512,7 @@
                    [else
                     (let ([c ($car ls)])
                       (unless (and (fixnum? c) ($fx<= 0 c) ($fx<= c 255))
-                        (error 'u8-list->bytevector "not an octet" c))
+                        (die 'u8-list->bytevector "not an octet" c))
                       ($bytevector-set! s i c)
                       (fill s ($fxadd1 i) (cdr ls)))]))])
        (lambda (ls)
@@ -523,7 +523,7 @@
   (define bytevector-copy
     (lambda (src)
       (unless (bytevector? src)
-        (error 'bytevector-copy "not a bytevector" src))
+        (die 'bytevector-copy "not a bytevector" src))
       (let ([n ($bytevector-length src)])
         (let f ([src src] [dst ($make-bytevector n)] [i 0] [n n])
           (cond
@@ -535,9 +535,9 @@
   (define bytevector=? 
     (lambda (x y)
       (unless (bytevector? x)
-        (error 'bytevector=? "not a bytevector" x))
+        (die 'bytevector=? "not a bytevector" x))
       (unless (bytevector? y)
-        (error 'bytevector=? "not a bytevector" y))
+        (die 'bytevector=? "not a bytevector" y))
       (let ([n ($bytevector-length x)])
         (and ($fx= n ($bytevector-length y))
              (let f ([x x] [y y] [i 0] [n n])
@@ -550,21 +550,21 @@
     (lambda (src src-start dst dst-start k) 
       (cond
         [(or (not (fixnum? src-start)) ($fx< src-start 0))
-         (error 'bytevector-copy! "not a valid starting index" src-start)]
+         (die 'bytevector-copy! "not a valid starting index" src-start)]
         [(or (not (fixnum? dst-start)) ($fx< dst-start 0))
-         (error 'bytevector-copy! "not a valid starting index" dst-start)]
+         (die 'bytevector-copy! "not a valid starting index" dst-start)]
         [(or (not (fixnum? k)) ($fx< k 0))
-         (error 'bytevector-copy! "not a valid length" k)]
+         (die 'bytevector-copy! "not a valid length" k)]
         [(not (bytevector? src)) 
-         (error 'bytevector-copy! "not a bytevector" src)]
+         (die 'bytevector-copy! "not a bytevector" src)]
         [(not (bytevector? dst)) 
-         (error 'bytevector-copy! "not a bytevector" dst)]
+         (die 'bytevector-copy! "not a bytevector" dst)]
         [(let ([n ($fx+ src-start k)])
            (or ($fx< n 0) ($fx> n ($bytevector-length src))))
-         (error 'bytevector-copy! "out of range" src-start k)]
+         (die 'bytevector-copy! "out of range" src-start k)]
         [(let ([n ($fx+ dst-start k)])
            (or ($fx< n 0) ($fx> n ($bytevector-length dst))))
-         (error 'bytevector-copy! "out of range" dst-start k)]
+         (die 'bytevector-copy! "out of range" dst-start k)]
         [(eq? src dst)
          (cond
            [($fx< dst-start src-start)
@@ -672,33 +672,33 @@
     (define bytevector-sint-ref
       (lambda (x k endianness size)
         (define who 'bytevector-sint-ref)
-        (unless (bytevector? x) (error who "not a bytevector" x))
-        (unless (and (fixnum? k) ($fx>= k 0)) (error who "invalid index" k))
-        (unless (and (fixnum? size) ($fx>= size 1)) (error who "invalid size" size))
+        (unless (bytevector? x) (die who "not a bytevector" x))
+        (unless (and (fixnum? k) ($fx>= k 0)) (die who "invalid index" k))
+        (unless (and (fixnum? size) ($fx>= size 1)) (die who "invalid size" size))
         (let ([n ($bytevector-length x)])
-          (unless ($fx< k n) (error who "index is out of range" k))
+          (unless ($fx< k n) (die who "index is out of range" k))
           (let ([end ($fx+ k size)])
             (unless (and ($fx>= end 0) ($fx<= end n))
-              (error who "out of range" k size))
+              (die who "out of range" k size))
             (case endianness
               [(little) (sref-little x k end)]
               [(big)    (sref-big x k end)]
-              [else (error who "invalid endianness" endianness)])))))
+              [else (die who "invalid endianness" endianness)])))))
     (define bytevector-uint-ref
       (lambda (x k endianness size)
         (define who 'bytevector-uint-ref)
-        (unless (bytevector? x) (error who "not a bytevector" x))
-        (unless (and (fixnum? k) ($fx>= k 0)) (error who "invalid index" k))
-        (unless (and (fixnum? size) ($fx>= size 1)) (error who "invalid size" size))
+        (unless (bytevector? x) (die who "not a bytevector" x))
+        (unless (and (fixnum? k) ($fx>= k 0)) (die who "invalid index" k))
+        (unless (and (fixnum? size) ($fx>= size 1)) (die who "invalid size" size))
         (let ([n ($bytevector-length x)])
-          (unless ($fx< k n) (error who "index is out of range" k))
+          (unless ($fx< k n) (die who "index is out of range" k))
           (let ([end ($fx+ k size)])
             (unless (and ($fx>= end 0) ($fx<= end n))
-              (error who "out of range" k size))
+              (die who "out of range" k size))
             (case endianness
               [(little) (uref-little x k end)]
               [(big)    (uref-big x k end)]
-              [else (error who "invalid endianness" endianness)])))))
+              [else (die who "invalid endianness" endianness)])))))
     (define (bytevector->some-list x k n ls proc who)
       (cond
         [($fx= n 0) ls]
@@ -708,36 +708,36 @@
              [($fx>= i 0)
               (bytevector->some-list x k i (cons (proc x i n) ls) proc who)]
              [else
-              (error who "invalid size" k)]))]))
+              (die who "invalid size" k)]))]))
     (define bytevector->uint-list
       (lambda (x endianness size)
         (define who 'bytevector->uint-list)
-        (unless (bytevector? x) (error who "not a bytevector" x))
-        (unless (and (fixnum? size) ($fx>= size 1)) (error who "invalid size" size))
+        (unless (bytevector? x) (die who "not a bytevector" x))
+        (unless (and (fixnum? size) ($fx>= size 1)) (die who "invalid size" size))
         (case endianness
           [(little) (bytevector->some-list x size ($bytevector-length x)
                       '() uref-little 'bytevector->uint-list)]
           [(big)    (bytevector->some-list x size ($bytevector-length x) 
                       '() uref-big 'bytevector->uint-list)]
-          [else (error who "invalid endianness" endianness)])))
+          [else (die who "invalid endianness" endianness)])))
     (define bytevector->sint-list
       (lambda (x endianness size)
         (define who 'bytevector->sint-list)
-        (unless (bytevector? x) (error who "not a bytevector" x))
-        (unless (and (fixnum? size) ($fx>= size 1)) (error who "invalid size" size))
+        (unless (bytevector? x) (die who "not a bytevector" x))
+        (unless (and (fixnum? size) ($fx>= size 1)) (die who "invalid size" size))
         (case endianness
           [(little) (bytevector->some-list x size ($bytevector-length x)
                       '() sref-little 'bytevector->sint-list)]
           [(big)    (bytevector->some-list x size ($bytevector-length x) 
                       '() sref-big 'bytevector->sint-list)]
-          [else (error who "invalid endianness" endianness)]))))
+          [else (die who "invalid endianness" endianness)]))))
 
   (module (bytevector-uint-set! bytevector-sint-set!)
     (define (lufx-set! x k1 n k2 who no)
       (cond
         [($fx= k1 k2) 
          (unless ($fxzero? n)
-           (error who "number does not fit" no))]
+           (die who "number does not fit" no))]
         [else
          (lufx-set! x ($fxadd1 k1) ($fxsra n 8) k2 who no)
          ($bytevector-set! x k1 ($fxlogand n 255))]))
@@ -745,7 +745,7 @@
       (cond
         [($fx= k1 k2) 
          (unless ($fx= n -1) ;;; BUG: does not catch all errors
-           (error who "number does not fit" no))]
+           (die who "number does not fit" no))]
         [else
          (lsfx-set! x ($fxadd1 k1) ($fxsra n 8) k2 who no)
          ($bytevector-set! x k1 ($fxlogand n 255))]))
@@ -753,7 +753,7 @@
       (cond
         [($fx= k1 k2) 
          (unless ($fxzero? n)
-           (error who "number does not fit" no))]
+           (die who "number does not fit" no))]
         [else
          (let ([k2 ($fxsub1 k2)])
            (bufx-set! x k1 ($fxsra n 8) k2 who no)
@@ -762,7 +762,7 @@
       (cond
         [($fx= k1 k2) 
          (unless ($fx= n -1)
-           (error who "number does not fit" no))]
+           (die who "number does not fit" no))]
         [else
          (let ([k2 ($fxsub1 k2)])
            (bsfx-set! x k1 ($fxsra n 8) k2 who no)
@@ -790,8 +790,8 @@
              [(#x00) ;;; borrow is 0, last byte was positive
               (if ($fx< xi xj)
                   (bv-neg-zero! x xi xj)
-                  (error who "number does not fit" n))]
-             [else (error 'lbn-neg-copy! "BUG: not handled" c)])]
+                  (die who "number does not fit" n))]
+             [else (die 'lbn-neg-copy! "BUG: not handled" c)])]
           [else
            (let ([c ($fx- ($fx+ 255 ($fxsra c 8)) ($bignum-byte-ref n ni))])
              (lbn-neg-copy! x ($fxadd1 xi) n ($fxadd1 ni) xj nj c)
@@ -807,8 +807,8 @@
              [(#x00) ;;; borrow is 0, last byte was positive
               (if ($fx< xi xj)
                   (bv-neg-zero! x xi xj)
-                  (error who "number does not fit" n))]
-             [else (error 'bbn-neg-copy! "BUG: not handled" c)])]
+                  (die who "number does not fit" n))]
+             [else (die 'bbn-neg-copy! "BUG: not handled" c)])]
           [else
            (let ([c ($fx- ($fx+ 255 ($fxsra c 8)) ($bignum-byte-ref n ni))]
                  [xj ($fxsub1 xj)])
@@ -824,7 +824,7 @@
               ;;; last byte was positive
               (bv-zero! x xi xj)]
              [else 
-              (error who "number does not fit" n)])]
+              (die who "number does not fit" n)])]
           [else
            (let ([c ($bignum-byte-ref n ni)])
              (lbn-pos-copy! x ($fxadd1 xi) n ($fxadd1 ni) nj xj c)
@@ -839,7 +839,7 @@
               ;;; last byte was positive
               (bv-zero! x xi xj)]
              [else 
-              (error who "number does not fit" n)])]
+              (die who "number does not fit" n)])]
           [else
            (let ([c ($bignum-byte-ref n ni)]
                  [xj ($fxsub1 xj)])
@@ -860,16 +860,16 @@
                       (if ($fxzero? ($bignum-byte-ref n i-3))
                           (let ([i-4 ($fxsub1 i-3)])
                             (if ($fxzero? ($bignum-byte-ref n i-4))
-                                (error 'bignum-bytes "BUG: malformed bignum")
+                                (die 'bignum-bytes "BUG: malformed bignum")
                                 i-3))
                           i-2))
                     i-1))
               i))))
     (define (make-bytevector-uint-set! who)
       (lambda (x k n endianness size)
-        (unless (bytevector? x) (error who "not a bytevector" x))
-        (unless (and (fixnum? k) ($fx>= k 0)) (error who "invalid index" k))
-        (unless (and (fixnum? size) ($fx>= size 1)) (error who "invalid size" size))
+        (unless (bytevector? x) (die who "not a bytevector" x))
+        (unless (and (fixnum? k) ($fx>= k 0)) (die who "invalid index" k))
+        (unless (and (fixnum? size) ($fx>= size 1)) (die who "invalid size" size))
         (case endianness
           [(little)
            (cond
@@ -883,9 +883,9 @@
                       [($fx< sz size)
                        (lbn-copy! x k n 0 sz)
                        (bv-zero! x ($fx+ k sz) ($fx+ k size))]
-                      [else (error who "number does not fit" n)]))
-                  (error who "value must be positive" n))]
-             [else (error who "invalid value argument" n)])]
+                      [else (die who "number does not fit" n)]))
+                  (die who "value must be positive" n))]
+             [else (die who "invalid value argument" n)])]
           [(big)
            (cond
              [(fixnum? n) (bufx-set! x k n ($fx+ k size) who n)]
@@ -898,10 +898,10 @@
                       [($fx< sz size)
                        (bbn-copy! x ($fx+ k size) n 0 sz)
                        (bv-zero! x k ($fx+ k ($fx- size sz)))]
-                      [else (error who "number does not fit" n)]))
-                  (error who "value must be positive" n))]
-             [else (error who "invalid value argument" n)])]
-          [else (error who "invalid endianness" endianness)])))
+                      [else (die who "number does not fit" n)]))
+                  (die who "value must be positive" n))]
+             [else (die who "invalid value argument" n)])]
+          [else (die who "invalid endianness" endianness)])))
     (define bytevector-uint-set! (make-bytevector-uint-set! 'bytevector-uint-set!))
     (define (make-bytevector-sint-set! who)
       (define bbn-neg-copy! (make-bbn-neg-copy! who))
@@ -909,9 +909,9 @@
       (define lbn-neg-copy! (make-lbn-neg-copy! who))
       (define lbn-pos-copy! (make-lbn-pos-copy! who))
       (lambda (x k n endianness size)
-        (unless (bytevector? x) (error who "not a bytevector" x))
-        (unless (and (fixnum? k) ($fx>= k 0)) (error who "invalid index" k))
-        (unless (and (fixnum? size) ($fx>= size 1)) (error who "invalid size" size))
+        (unless (bytevector? x) (die who "not a bytevector" x))
+        (unless (and (fixnum? k) ($fx>= k 0)) (die who "invalid index" k))
+        (unless (and (fixnum? size) ($fx>= size 1)) (die who "invalid size" size))
         (case endianness
           [(little)
            (cond
@@ -922,13 +922,13 @@
                     (cond
                       [($fx<= sz size) 
                        (lbn-pos-copy! x k n 0 size sz 255)]
-                      [else (error who "number does not fit" n)]))
+                      [else (die who "number does not fit" n)]))
                   (let ([sz (bignum-bytes n)])
                     (cond
                       [($fx<= sz size) 
                        (lbn-neg-copy! x k n 0 size sz 256)]
-                      [else (error who "number does not fit" n)])))]
-             [else (error who "invalid value argument" n)])]
+                      [else (die who "number does not fit" n)])))]
+             [else (die who "invalid value argument" n)])]
           [(big)
            (cond
              [(fixnum? n) (bsfx-set! x k n ($fx+ k size) who n)]
@@ -938,14 +938,14 @@
                     (cond
                       [($fx<= sz size) 
                        (bbn-pos-copy! x k n 0 size sz 255)]
-                      [else (error who "number does not fit" n)]))
+                      [else (die who "number does not fit" n)]))
                   (let ([sz (bignum-bytes n)])
                     (cond
                       [($fx<= sz size) 
                        (bbn-neg-copy! x k n 0 size sz 256)]
-                      [else (error who "number does not fit" n)])))] 
-             [else (error who "invalid value argument" n)])]
-          [else (error who "invalid endianness" endianness)])))
+                      [else (die who "number does not fit" n)])))] 
+             [else (die who "invalid value argument" n)])]
+          [else (die who "invalid endianness" endianness)])))
     (define bytevector-sint-set! (make-bytevector-sint-set! 'bytevector-sint-set!)))
 
   (module (uint-list->bytevector sint-list->bytevector)
@@ -961,15 +961,15 @@
                          (bv-set! bv idx a endianness size)
                          (bv-set! bv ($fx+ idx size) ($car h) endianness size)
                          bv)
-                       (error who "circular list" ls))
+                       (die who "circular list" ls))
                    (if (null? h)
                        (let ([bv (make-bytevector ($fx+ idx size))])
                          (bv-set! bv idx a endianness size)
                          bv)
-                       (error who "not a proper list" ls))))
+                       (die who "not a proper list" ls))))
             (if (null? h)
                 (make-bytevector idx)
-                (error who "not a proper list" ls))))
+                (die who "not a proper list" ls))))
       (lambda (ls endianness size)
         (race ls ls ls 0 endianness size)))
     (define uint-list->bytevector 
@@ -986,8 +986,8 @@
                  ($fxzero? ($fxlogand i 7))
                  ($fx< i ($bytevector-length bv)))
             ($bytevector-ieee-double-native-ref bv i)
-            (error 'bytevector-ieee-double-native-ref "invalid index" i))
-        (error 'bytevector-ieee-double-native-ref "not a bytevector" bv)))
+            (die 'bytevector-ieee-double-native-ref "invalid index" i))
+        (die 'bytevector-ieee-double-native-ref "not a bytevector" bv)))
 
   (define (bytevector-ieee-single-native-ref bv i)
     (if (bytevector? bv) 
@@ -996,8 +996,8 @@
                  ($fxzero? ($fxlogand i 3))
                  ($fx< i ($bytevector-length bv)))
             ($bytevector-ieee-single-native-ref bv i)
-            (error 'bytevector-ieee-single-native-ref "invalid index" i))
-        (error 'bytevector-ieee-single-native-ref "not a bytevector" bv)))
+            (die 'bytevector-ieee-single-native-ref "invalid index" i))
+        (die 'bytevector-ieee-single-native-ref "not a bytevector" bv)))
 
   (define (bytevector-ieee-double-native-set! bv i x) 
     (if (bytevector? bv) 
@@ -1007,9 +1007,9 @@
                  ($fx< i ($bytevector-length bv)))
             (if (flonum? x) 
                 ($bytevector-ieee-double-native-set! bv i x)
-                (error 'bytevector-ieee-double-native-set! "not a flonum" x))
-            (error 'bytevector-ieee-double-native-set! "invalid index" i))
-        (error 'bytevector-ieee-double-native-set! "not a bytevector" bv)))
+                (die 'bytevector-ieee-double-native-set! "not a flonum" x))
+            (die 'bytevector-ieee-double-native-set! "invalid index" i))
+        (die 'bytevector-ieee-double-native-set! "not a bytevector" bv)))
    
   (define (bytevector-ieee-single-native-set! bv i x) 
     (if (bytevector? bv) 
@@ -1019,9 +1019,9 @@
                  ($fx< i ($bytevector-length bv)))
             (if (flonum? x) 
                 ($bytevector-ieee-single-native-set! bv i x)
-                (error 'bytevector-ieee-single-native-set! "not a flonum" x))
-            (error 'bytevector-ieee-single-native-set! "invalid index" i))
-        (error 'bytevector-ieee-single-native-set! "not a bytevector" bv)))
+                (die 'bytevector-ieee-single-native-set! "not a flonum" x))
+            (die 'bytevector-ieee-single-native-set! "invalid index" i))
+        (die 'bytevector-ieee-single-native-set! "not a bytevector" bv)))
 
   (define (bytevector-ieee-double-ref bv i endianness) 
     (if (bytevector? bv) 
@@ -1032,10 +1032,10 @@
             (case endianness
               [(little) ($bytevector-ieee-double-native-ref bv i)]
               [(big) ($bytevector-ieee-double-nonnative-ref bv i)]
-              [else (error 'bytevector-ieee-double-ref 
+              [else (die 'bytevector-ieee-double-ref 
                       "invalid endianness" endianness)])
-            (error 'bytevector-ieee-double-ref "invalid index" i))
-        (error 'bytevector-ieee-double-ref "not a bytevector" bv)))
+            (die 'bytevector-ieee-double-ref "invalid index" i))
+        (die 'bytevector-ieee-double-ref "not a bytevector" bv)))
 
   (define (bytevector-ieee-single-ref bv i endianness) 
     (if (bytevector? bv) 
@@ -1046,10 +1046,10 @@
             (case endianness
               [(little) ($bytevector-ieee-single-native-ref bv i)]
               [(big) ($bytevector-ieee-single-nonnative-ref bv i)]
-              [else (error 'bytevector-ieee-single-ref 
+              [else (die 'bytevector-ieee-single-ref 
                       "invalid endianness" endianness)])
-            (error 'bytevector-ieee-single-ref "invalid index" i))
-        (error 'bytevector-ieee-single-ref "not a bytevector" bv)))
+            (die 'bytevector-ieee-single-ref "invalid index" i))
+        (die 'bytevector-ieee-single-ref "not a bytevector" bv)))
 
   (define (bytevector-ieee-double-set! bv i x endianness) 
     (if (bytevector? bv) 
@@ -1061,11 +1061,11 @@
                 (case endianness
                   [(little) ($bytevector-ieee-double-native-set! bv i x)]
                   [(big) ($bytevector-ieee-double-nonnative-set! bv i x)]
-                  [else (error 'bytevector-ieee-double-set! 
+                  [else (die 'bytevector-ieee-double-set! 
                           "invalid endianness" endianness)])
-                (error 'bytevector-ieee-double-set! "not a flonum" x))
-            (error 'bytevector-ieee-double-set! "invalid index" i))
-        (error 'bytevector-ieee-double-set! "not a bytevector" bv)))
+                (die 'bytevector-ieee-double-set! "not a flonum" x))
+            (die 'bytevector-ieee-double-set! "invalid index" i))
+        (die 'bytevector-ieee-double-set! "not a bytevector" bv)))
 
   (define (bytevector-ieee-single-set! bv i x endianness) 
     (if (bytevector? bv) 
@@ -1077,11 +1077,11 @@
                 (case endianness
                   [(little) ($bytevector-ieee-single-native-set! bv i x)]
                   [(big) ($bytevector-ieee-single-nonnative-set! bv i x)]
-                  [else (error 'bytevector-ieee-single-set! 
+                  [else (die 'bytevector-ieee-single-set! 
                           "invalid endianness" endianness)])
-                (error 'bytevector-ieee-single-set! "not a flonum" x))
-            (error 'bytevector-ieee-single-set! "invalid index" i))
-        (error 'bytevector-ieee-single-set! "not a bytevector" bv)))
+                (die 'bytevector-ieee-single-set! "not a flonum" x))
+            (die 'bytevector-ieee-single-set! "invalid index" i))
+        (die 'bytevector-ieee-single-set! "not a bytevector" bv)))
 
 
   (define ($bytevector-ref/64 bv i who decoder endianness)
@@ -1093,9 +1093,9 @@
             (case endianness
               [(little big) 
                (decoder bv i endianness 8)]
-              [else (error who "invalid endianness" endianness)])
-            (error who "invalid index" i))
-        (error who "not a bytevector" bv)))
+              [else (die who "invalid endianness" endianness)])
+            (die who "invalid index" i))
+        (die who "not a bytevector" bv)))
 
   (define (bytevector-u64-native-ref bv i) 
     ($bytevector-ref/64 bv i 'bytevector-u64-native-ref 
@@ -1119,17 +1119,17 @@
             (case endianness
               [(little big) 
                (unless (or (fixnum? n) (bignum? n))
-                 (error who 
+                 (die who 
                    (if (number? n) 
                        "number is not exact" 
                        "not a number")
                    n))
                (unless (and (<= lo n) (< n hi))
-                 (error who "number out of range" n))
+                 (die who "number out of range" n))
                (setter bv i n endianness 8)]
-              [else (error who "invalid endianness" endianness)])
-            (error who "invalid index" i))
-        (error who "not a bytevector" bv)))
+              [else (die who "invalid endianness" endianness)])
+            (die who "invalid index" i))
+        (die who "not a bytevector" bv)))
 
   (define (bytevector-u64-native-set! bv i n) 
     ($bytevector-set/64 bv i n 0 (expt 2 64)

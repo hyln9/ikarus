@@ -32,7 +32,7 @@
     (lambda (f)
       (if (procedure? f)
           (primitive-call/cf f)
-          (error 'call/cf "not a procedure" f))))
+          (die 'call/cf "not a procedure" f))))
 
   (define primitive-call/cc
     (lambda (f)
@@ -92,7 +92,7 @@
   (define call/cc
     (lambda (f)
       (unless (procedure? f) 
-        (error 'call/cc "not a procedure" f))
+        (die 'call/cc "not a procedure" f))
       (primitive-call/cc
         (lambda (k)
           (let ([save winders])
@@ -106,18 +106,18 @@
   (define call-with-current-continuation
     (lambda (f)
       (unless (procedure? f) 
-        (error 'call-with-current-continuation
+        (die 'call-with-current-continuation
             "not a procedure" f))
       (call/cc f)))
 
   (define dynamic-wind
     (lambda (in body out)
       (unless (procedure? in)
-        (error 'dynamic-wind "not a procedure" in))
+        (die 'dynamic-wind "not a procedure" in))
       (unless (procedure? body)
-        (error 'dynamic-wind "not a procedure" body))
+        (die 'dynamic-wind "not a procedure" body))
       (unless (procedure? out)
-        (error 'dynamic-wind "not a procedure" out))
+        (die 'dynamic-wind "not a procedure" out))
       (in)
       (set! winders (cons (cons in out) winders))
       (call-with-values

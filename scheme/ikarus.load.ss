@@ -35,9 +35,9 @@
       [(x) (load x load-handler)]
       [(x eval-proc)
        (unless (string? x)
-         (error 'load "not a string" x))
+         (die 'load "not a string" x))
        (unless (procedure? eval-proc)
-         (error 'load "not a procedure" eval-proc))
+         (die 'load "not a procedure" eval-proc))
        (let ([p (open-input-file x)])
          (let ([x (read-initial p)])
            (unless (eof-object? x)

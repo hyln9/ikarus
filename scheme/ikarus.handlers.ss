@@ -25,7 +25,7 @@
          [(v) (set! x v)])]
       [(x guard)
        (unless (procedure? guard)
-         (error 'make-parameter "not a procedure" guard))
+         (die 'make-parameter "not a procedure" guard))
        (set! x (guard x))
        (case-lambda
          [() x]
@@ -55,19 +55,19 @@
       (lambda (x)
         (if (procedure? x)
             x
-            (error 'interrupt-handler "not a procedure" x)))))
+            (die 'interrupt-handler "not a procedure" x)))))
 
   (define $apply-nonprocedure-error-handler
     (lambda (x)
-      (error 'apply "not a procedure" x)))
+      (die 'apply "not a procedure" x)))
   
   (define $incorrect-args-error-handler
     (lambda (p n)
-      (error 'apply "incorrect number of arguments" n p)))
+      (die 'apply "incorrect number of arguments" n p)))
   
   (define $multiple-values-error
     (lambda args
-      (error 'apply 
+      (die 'apply 
              "incorrect number of values returned to single value context" 
              args)))
   
@@ -84,47 +84,47 @@
       (cond
         [(symbol? x)
          (if (symbol-bound? x)
-             (error 'top-level-value-error "BUG: should not happen" x)
-             (error #f "unbound" (string->symbol (symbol->string x))))]
+             (die 'top-level-value-error "BUG: should not happen" x)
+             (die #f "unbound" (string->symbol (symbol->string x))))]
         [else
-         (error 'top-level-value "not a symbol" x)])))
+         (die 'top-level-value "not a symbol" x)])))
   
   (define car-error
     (lambda (x)
-      (error 'car "not a pair" x)))
+      (die 'car "not a pair" x)))
   
   (define cdr-error
     (lambda (x)
-      (error 'cdr "not a pair" x)))
+      (die 'cdr "not a pair" x)))
   
   (define fxadd1-error
     (lambda (x)
       (if (fixnum? x)
-          (error 'fxadd1 "overflow")
-          (error 'fxadd1 "not a fixnum" x))))
+          (die 'fxadd1 "overflow")
+          (die 'fxadd1 "not a fixnum" x))))
   
   (define fxsub1-error
     (lambda (x)
       (if (fixnum? x)
-          (error 'fxsub1 "underflow")
-          (error 'fxsub1 "not a fixnum" x))))
+          (die 'fxsub1 "underflow")
+          (die 'fxsub1 "not a fixnum" x))))
   
   (define cadr-error
     (lambda (x)
-      (error 'cadr "invalid list structure" x)))
+      (die 'cadr "invalid list structure" x)))
   
   (define fx+-type-error
     (lambda (x)
-      (error 'fx+ "not a fixnum" x)))
+      (die 'fx+ "not a fixnum" x)))
   
   (define fx+-types-error
     (lambda (x y)
-      (error 'fx+ "not a fixnum"
+      (die 'fx+ "not a fixnum"
              (if (fixnum? x) y x))))
   
   (define fx+-overflow-error
     (lambda (x y)
-      (error 'fx+ "overflow")))
+      (die 'fx+ "overflow")))
   
   (define $do-event
     (lambda ()

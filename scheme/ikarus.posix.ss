@@ -33,55 +33,55 @@
         (cond
           [(fx= pid 0) (child-proc)]
           [(fx= pid -1) 
-           (error 'fork "failed")]
+           (die 'fork "failed")]
           [else (parent-proc pid)]))))
 
   (define waitpid
     (lambda (pid)
       (unless (fixnum? pid)
-        (error 'waitpid "not a fixnum" pid))
+        (die 'waitpid "not a fixnum" pid))
       (foreign-call "ikrt_waitpid" pid)))
 
   (define system
     (lambda (x)
       (unless (string? x)
-        (error 'system "not a string" x))
+        (die 'system "not a string" x))
       (let ([rv (foreign-call "ik_system"
                   (string->utf8 x))])
         (if (fx= rv -1)
-            (error 'system "failed")
+            (die 'system "failed")
             rv))))
 
   (define file-exists?
     (lambda (x)
       (unless (string? x)
-        (error 'file-exists? "filename is not a string" x))
+        (die 'file-exists? "filename is not a string" x))
       (let ([v (foreign-call "ikrt_file_exists" 
                   (string->utf8 x))])
         (cond
           [(boolean? v) v]
           [else
-           (error 'file-exists?
+           (die 'file-exists?
                   (case v
                     [(1) "the path contains a non-directory"]
                     [(2) "the path is too long"]
                     [(3) "the path is not accessible"]
                     [(4) "the path contains too many symbolic links"]
-                    [(5) "internal access error while accessing"]
-                    [(6) "IO error encountered while accessing"]
-                    [else "Unknown error"])
+                    [(5) "internal access die while accessing"]
+                    [(6) "IO die encountered while accessing"]
+                    [else "Unknown die"])
                   x)]))))
 
   (define delete-file
     (lambda (x)
       (unless (string? x)
-        (error 'delete-file "filename is not a string" x))
+        (die 'delete-file "filename is not a string" x))
       (let ([v (foreign-call "ikrt_delete_file"
                  (string->utf8 x))])
         (case v
           [(0) (void)]
           [else
-           (error 'delete-file
+           (die 'delete-file
                   (case v
                     [(1) "the path contains a non-directory"]
                     [(2) "the path is too long"]
@@ -90,10 +90,10 @@
                     [(5) "the path contains too many symbolic links"]
                     [(6) "you do not have permissions to delete file"]
                     [(7) "device is busy"]
-                    [(8) "IO error encountered while deleting"]
+                    [(8) "IO die encountered while deleting"]
                     [(9) "is in a read-only file system"]
-                    [(10) "internal access error while deleting"]
-                    [else "Unknown error while deleting"])
+                    [(10) "internal access die while deleting"]
+                    [else "Unknown die while deleting"])
                   x)]))))
 
   (define ($getenv-bv key)
@@ -104,7 +104,7 @@
   (define (getenv key)
     (if (string? key)
         ($getenv-str key)
-        (error 'getenv "the key is not a string" key)))
+        (die 'getenv "the key is not a string" key)))
 
   (define env
     (let ()
@@ -113,20 +113,20 @@
           [(key) 
            (if (string? key)
                (foreign-call "ikrt_getenv" key)
-               (error 'env "the key is not a string" key))]
+               (die 'env "the key is not a string" key))]
           [(key val) (env key val #t)]
           [(key val overwrite?)
            (if (string? key)
                (if (string? val)
                    (unless (foreign-call "ikrt_setenv" key val overwrite?)
-                     (error 'env "failed" key val))
-                   (error 'env "the value is not a string" val))
-               (error 'env "the key is not a string" key))]))
-      (define busted (lambda args (error 'env "BUG: busted!")))
+                     (die 'env "failed" key val))
+                   (die 'env "the value is not a string" val))
+               (die 'env "the key is not a string" key))]))
+      (define busted (lambda args (die 'env "BUG: busted!")))
       busted))
 
 
-  (define environ (lambda args (error 'environ "busted!")))
+  (define environ (lambda args (die 'environ "busted!")))
   (define environ^
     (lambda ()
       (map 

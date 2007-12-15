@@ -39,13 +39,13 @@
   (define set-car!
     (lambda (x y) 
       (unless (pair? x)
-        (error 'set-car! "not a pair" x))
+        (die 'set-car! "not a pair" x))
       ($set-car! x y)))
   
   (define set-cdr! 
     (lambda (x y)
       (unless (pair? x)
-        (error 'set-cdr! "not a pair" x))
+        (die 'set-cdr! "not a pair" x))
       ($set-cdr! x y)))
 
   (define-syntax cxr
@@ -65,7 +65,7 @@
        (begin
          (define name*
            (lambda (x) 
-             ((cxr (error 'name* "invalid list structure" x) ops** ...)
+             ((cxr (die 'name* "invalid list structure" x) ops** ...)
               x)))
          ...)]))
 

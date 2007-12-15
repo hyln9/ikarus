@@ -59,39 +59,39 @@
           (if (rtd? rtd)
               (if (not (rtd-opaque? rtd))
                   rtd
-                  (error 'record-rtd "record is opaque"))
-              (error 'record-rtd "not a record" x)))
-        (error 'record-rtd "not a record" x)))
+                  (die 'record-rtd "record is opaque"))
+              (die 'record-rtd "not a record" x)))
+        (die 'record-rtd "not a record" x)))
 
   (define (record-type-name x)
     (if (rtd? x)
         (rtd-name x)
-        (error 'record-type-name "not an rtd" x)))
+        (die 'record-type-name "not an rtd" x)))
 
   (define (record-type-parent x)
     (if (rtd? x)
         (rtd-parent x)
-        (error 'record-type-parent "not an rtd" x)))
+        (die 'record-type-parent "not an rtd" x)))
 
   (define (record-type-uid x)
     (if (rtd? x)
         (rtd-uid x)
-        (error 'record-type-uid "not an rtd" x)))
+        (die 'record-type-uid "not an rtd" x)))
 
   (define (record-type-sealed? x)
     (if (rtd? x)
         (rtd-sealed? x)
-        (error 'record-type-sealed? "not an rtd" x)))
+        (die 'record-type-sealed? "not an rtd" x)))
 
   (define (record-type-opaque? x)
     (if (rtd? x)
         (rtd-opaque? x)
-        (error 'record-type-opaque? "not an rtd" x)))
+        (die 'record-type-opaque? "not an rtd" x)))
 
   (define (record-type-generative? x)
     (if (rtd? x)
         (not (rtd-sealed? x))
-        (error 'record-type-generative? "not an rtd" x)))
+        (die 'record-type-generative? "not an rtd" x)))
 
   (define (record-type-field-names x)
     (if (rtd? x)
@@ -103,7 +103,7 @@
                   (begin
                     (vector-set! x i (cdr (vector-ref v i)))
                     (f x v n (fxadd1 i)))))))
-        (error 'record-type-field-names "not an rtd" x)))
+        (die 'record-type-field-names "not an rtd" x)))
 
 
   (module (make-record-type-descriptor)
@@ -114,7 +114,7 @@
           #f #f #f parent sealed? opaque? uid fields))
     (define (convert-fields sv)
       (unless (vector? sv) 
-        (error who "invalid fields argument" sv))
+        (die who "invalid fields argument" sv))
       (let ([n2 (vector-length sv)])
         (let ([v (make-vector n2)])
           (let f ([i 0])
@@ -125,16 +125,16 @@
                       (if (pair? x) 
                           (let ([name (car x)])
                             (unless (and (null? (cdr x)) (symbol? name))
-                              (error who "invalid fields argument" sv))
+                              (die who "invalid fields argument" sv))
                             (vector-set! v i
                               (cons (case m/u
                                       [(mutable)   #t]
                                       [(immutable) #f]
                                       [else 
-                                       (error who "invalid fields argument" sv)]) 
+                                       (die who "invalid fields argument" sv)]) 
                                     name)))
-                          (error who "invalid fields argument" sv)))
-                    (error who "invalid fields argument" sv)))
+                          (die who "invalid fields argument" sv)))
+                    (die who "invalid fields argument" sv)))
               (f (add1 i))))
           v)))
     (define generate-rtd
@@ -142,7 +142,7 @@
         (cond
           [(rtd? parent)
            (when (rtd-sealed? parent) 
-             (error who "cannot extend sealed parent" parent))
+             (die who "cannot extend sealed parent" parent))
            (make-rtd-aux name parent uid sealed? 
              (or opaque? (rtd-opaque? parent))
              (rtd-size parent)
@@ -150,7 +150,7 @@
           [(eqv? parent #f) 
            (make-rtd-aux name parent uid sealed? opaque? 0
              (convert-fields fields))]
-          [else (error who "not a valid parent" parent)])))
+          [else (die who "not a valid parent" parent)])))
     (define (same-fields-as-rtd? fields rtd)
       (let* ([fv (rtd-fields rtd)]
              [n (vector-length fv)])
@@ -183,7 +183,7 @@
                     (eqv? sealed? (rtd-sealed? rtd))
                     (eqv? opaque? (rtd-opaque? rtd))
                     (same-fields-as-rtd? fields rtd))
-               (error who "invalid arguments"))
+               (die who "invalid arguments"))
              rtd)]
           [else
            (let ([rtd (generate-rtd name parent uid sealed? opaque? fields)])
@@ -192,17 +192,17 @@
     (define make-record-type-descriptor
       (lambda (name parent uid sealed? opaque? fields)
         (unless (symbol? name)
-          (error who "not a valid record type name" name))
+          (die who "not a valid record type name" name))
         (unless (boolean? sealed?)
-          (error who "not a valid sealed? argument" sealed?))
+          (die who "not a valid sealed? argument" sealed?))
         (unless (boolean? opaque?)
-          (error who "not a valid opaque? argument" opaque?))
+          (die who "not a valid opaque? argument" opaque?))
         (cond
           [(symbol? uid) 
            (make-nongenerative-rtd name parent uid sealed? opaque? fields)]
           [(eqv? uid #f) 
            (generate-rtd name parent uid sealed? opaque? fields)]
-          [else (error who "not a valid uid" uid)]))))
+          [else (die who "not a valid uid" uid)]))))
 
   (define-struct rcd (rtd prcd proc))
 
@@ -215,9 +215,9 @@
 
   (define (rtd-subtype? rtd parent-rtd) 
     (unless (rtd? rtd) 
-      (error 'rtd-subtype? "not an rtd" rtd))
+      (die 'rtd-subtype? "not an rtd" rtd))
     (unless (rtd? parent-rtd) 
-      (error 'rtd-substype? "not an rtd" parent-rtd))
+      (die 'rtd-substype? "not an rtd" parent-rtd))
     (or (eq? rtd parent-rtd)
         (is-parent-of? parent-rtd rtd)))
         
@@ -225,20 +225,20 @@
     (lambda (rtd prcd protocol)
       (define who 'make-record-constructor-descriptor)
       (unless (rtd? rtd)
-        (error who "not a record type descriptor" rtd))
+        (die who "not a record type descriptor" rtd))
       (unless (or (not protocol) (procedure? protocol))
-        (error who "invalid protocol" protocol))
+        (die who "invalid protocol" protocol))
       (let ([prtd (rtd-parent rtd)])
         (cond
           [(not prcd) 
            (make-rcd rtd #f protocol)]
           [(rcd? prcd) 
            (unless (is-parent-of? (rcd-rtd prcd) rtd)
-             (error who "descriptor does not apply" 
+             (die who "descriptor does not apply" 
                     prcd rtd))
            (make-rcd rtd prcd protocol)]
           [else
-           (error who "not a valid record constructor descriptor" prcd)]))))
+           (die who "not a valid record constructor descriptor" prcd)]))))
 
   (define (record-constructor rcd)
     (define who 'record-constructor)
@@ -250,7 +250,7 @@
             (if (pair? ls) 
                 (let-values ([(m p) (f (cdr ls) (- n 1))]) 
                   (values (cons (car ls) m) p))
-                (error 'record-condtructor "insufficient arguments"
+                (die 'record-condtructor "insufficient arguments"
                        all-fields)))))
 
     (define (constructor main-rtd size prcd proto)
@@ -260,7 +260,7 @@
                    (lambda flds
                       (let ([n (rtd-size main-rtd)])
                         (unless (= (length flds) size)
-                          (apply error
+                          (apply die
                              'a-record-constructor
                              (format 
                                "expected ~a args, got ~a instead" 
@@ -301,7 +301,7 @@
                   (lambda fmls
                     (lambda flds
                       (unless (= (length flds) n) 
-                        (apply error
+                        (apply die
                            'a-record-constructor
                            (format 
                              "expected ~a args, got ~a instead" 
@@ -309,7 +309,7 @@
                            flds))
                       (apply (p (cons flds f*)) fmls)))))))))
     (unless (rcd? rcd)
-      (error who "not a record constructor descriptor" rcd))
+      (die who "not a record constructor descriptor" rcd))
     (let ([rtd (rcd-rtd rcd)]
           [prcd (rcd-prcd rcd)]
           [proto (rcd-proc rcd)])
@@ -319,14 +319,14 @@
   (define (record-accessor rtd k) 
     (define who 'record-accessor)
     (unless (rtd? rtd)
-      (error who "not an rtd" rtd))
+      (die who "not an rtd" rtd))
     (unless (and (fixnum? k) (fx>= k 0)) 
-      (error who "not a valid index" k))
+      (die who "not a valid index" k))
     (let ([sz (rtd-size rtd)]
           [p (rtd-parent rtd)])
       (let ([i (if p (+ k (rtd-size p)) k)])
         (unless (fx< i sz) 
-          (error who "not a valid index" k))
+          (die who "not a valid index" k))
         (let ([a-record-accessor
                (lambda (x) 
                  (cond
@@ -334,29 +334,29 @@
                    [($struct? x)
                     (let ([xrtd ($struct-rtd x)])
                       (unless (rtd? xrtd) 
-                        (error who "invalid type" x rtd))
+                        (die who "invalid type" x rtd))
                       (let f ([prtd (rtd-parent xrtd)] [rtd rtd] [x x] [i i])
                         (cond
                           [(eq? prtd rtd) ($struct-ref x i)]
                           [(not prtd) 
-                           (error who "invalid type" x rtd)]
+                           (die who "invalid type" x rtd)]
                           [else (f (rtd-parent prtd) rtd x i)])))]
-                   [else (error who "invalid type" x rtd)]))])
+                   [else (die who "invalid type" x rtd)]))])
           a-record-accessor))))
 
   (define (record-mutator rtd k) 
     (define who 'record-mutator)
     (unless (rtd? rtd)
-      (error who "not an rtd" rtd))
+      (die who "not an rtd" rtd))
     (unless (and (fixnum? k) (fx>= k 0)) 
-      (error who "not a valid index" k))
+      (die who "not a valid index" k))
     (let ([sz (rtd-size rtd)]
           [p (rtd-parent rtd)])
       (let ([i (if p (+ k (rtd-size p)) k)])
         (unless (fx< i sz) 
-          (error who "not a valid index" k))
+          (die who "not a valid index" k))
         (unless (car (vector-ref (rtd-fields rtd) k))
-          (error who "field is not mutable" k rtd))
+          (die who "field is not mutable" k rtd))
         (let ([a-record-mutator
                (lambda (x v) 
                  (cond
@@ -364,20 +364,20 @@
                    [($struct? x)
                     (let ([xrtd ($struct-rtd x)])
                       (unless (rtd? xrtd) 
-                        (error who "invalid type" x rtd))
+                        (die who "invalid type" x rtd))
                       (let f ([prtd (rtd-parent xrtd)] [rtd rtd] [x x] [i i] [v v])
                         (cond
                           [(eq? prtd rtd) ($struct-set! x i v)]
                           [(not prtd) 
-                           (error who "invalid type" x rtd)]
+                           (die who "invalid type" x rtd)]
                           [else (f (rtd-parent prtd) rtd x i v)])))]
-                   [else (error who "invalid type" x rtd)]))])
+                   [else (die who "invalid type" x rtd)]))])
           a-record-mutator))))
 
   (define (record-predicate rtd) 
     (define who 'record-predicate)
     (unless (rtd? rtd)
-      (error who "not an rtd" rtd))
+      (die who "not an rtd" rtd))
     (let ([sz (rtd-size rtd)]
           [p (rtd-parent rtd)])
       (let ([a-record-predicate
@@ -399,14 +399,14 @@
   (define (record-field-mutable? rtd k) 
     (define who 'record-field-mutable?)
     (unless (rtd? rtd)
-      (error who "not an rtd" rtd))
+      (die who "not an rtd" rtd))
     (unless (and (fixnum? k) (fx>= k 0)) 
-      (error who "not a valid index" k))
+      (die who "not a valid index" k))
     (let ([sz (rtd-size rtd)]
           [p (rtd-parent rtd)])
       (let ([i (if p (+ k (rtd-size p)) k)])
         (unless (fx< i sz) 
-          (error who "not a valid index" k))
+          (die who "not a valid index" k))
         (car (vector-ref (rtd-fields rtd) k)))))
 
   (set-rtd-printer! (type-descriptor rtd)

@@ -311,28 +311,28 @@
        (if (and (or (fixnum? k) (bignum? k))
                 (>= k 0))
            (make-eq-hashtable)
-           (error 'make-eq-hashtable
+           (die 'make-eq-hashtable
              "invalid initial capacity" k))]))
 
   (define hashtable-ref
     (lambda (h x v)
       (if (hasht? h)
           (get-hash h x v)
-          (error 'hashtable-ref "not a hash table" h))))
+          (die 'hashtable-ref "not a hash table" h))))
 
   (define hashtable-contains?
     (lambda (h x)
       (if (hasht? h)
           (in-hash? h x)
-          (error 'hashtable-contains? "not a hash table" h))))
+          (die 'hashtable-contains? "not a hash table" h))))
 
   (define hashtable-set!
     (lambda (h x v)
       (if (hasht? h)
           (if (hasht-mutable? h) 
               (put-hash! h x v)
-              (error 'hashtable-set! "hashtable is immutable" h))
-          (error 'hashtable-set! "not a hash table" h))))
+              (die 'hashtable-set! "hashtable is immutable" h))
+          (die 'hashtable-set! "not a hash table" h))))
 
   (define hashtable-update!
     (lambda (h x proc default)
@@ -340,15 +340,15 @@
           (if (hasht-mutable? h)
               (if (procedure? proc)
                   (update-hash! h x proc default)
-                  (error 'hashtable-update! "not a procedure" proc))
-              (error 'hashtable-update! "hashtable is immutable" h))
-          (error 'hashtable-update! "not a hash table" h))))
+                  (die 'hashtable-update! "not a procedure" proc))
+              (die 'hashtable-update! "hashtable is immutable" h))
+          (die 'hashtable-update! "not a hash table" h))))
 
   (define hashtable-size
     (lambda (h)
       (if (hasht? h) 
           (hasht-count h)
-          (error 'hashtable-size "not a hash table" h))))
+          (die 'hashtable-size "not a hash table" h))))
 
   (define hashtable-delete!
     (lambda (h x) 
@@ -357,30 +357,30 @@
       (if (hasht? h)
           (if (hasht-mutable? h)
               (del-hash h x)
-              (error 'hashtable-delete! "hashtable is immutable" h))
-          (error 'hashtable-delete! "not a hash table" h))))
+              (die 'hashtable-delete! "hashtable is immutable" h))
+          (die 'hashtable-delete! "not a hash table" h))))
 
   (define (hashtable-entries h)
     (if (hasht? h) 
         (get-entries h)
-        (error 'hashtable-entries "not a hash table" h)))
+        (die 'hashtable-entries "not a hash table" h)))
 
   (define (hashtable-keys h)
     (if (hasht? h) 
         (get-keys h)
-        (error 'hashtable-keys "not a hash table" h)))
+        (die 'hashtable-keys "not a hash table" h)))
 
   (define (hashtable-mutable? h)
     (if (hasht? h) 
         (hasht-mutable? h)
-        (error 'hashtable-mutable? "not a hash table" h)))
+        (die 'hashtable-mutable? "not a hash table" h)))
 
   (define (hashtable-clear! h)
     (if (hasht? h) 
         (if (hasht-mutable? h)
             (clear-hash! h)
-            (error 'hashtable-clear! "hashtable is immutable" h))
-        (error 'hashtable-clear! "not a hash table" h)))
+            (die 'hashtable-clear! "hashtable is immutable" h))
+        (die 'hashtable-clear! "not a hash table" h)))
 
   (define hashtable-copy 
     (case-lambda
@@ -389,28 +389,28 @@
            (if (hasht-mutable? h) 
                (hasht-copy h #f)
                h)
-           (error 'hashtable-copy "not a hash table" h))]
+           (die 'hashtable-copy "not a hash table" h))]
       [(h mutable?)
        (if (hasht? h)
            (if (or mutable? (hasht-mutable? h))
                (hasht-copy h (and mutable? #t))
                h)
-           (error 'hashtable-copy "not a hash table" h))]))
+           (die 'hashtable-copy "not a hash table" h))]))
 
   (define (string-hash s)
     (if (string? s) 
         (foreign-call "ikrt_string_hash" s)
-        (error 'string-hash "not a string" s)))
+        (die 'string-hash "not a string" s)))
 
   (define (string-ci-hash s)
     (if (string? s) 
         (foreign-call "ikrt_string_hash" 
           (string-foldcase s))
-        (error 'string-ci-hash "not a string" s)))
+        (die 'string-ci-hash "not a string" s)))
 
   (define (symbol-hash s)
     (if (symbol? s) 
         (foreign-call "ikrt_string_hash" (symbol->string s))
-        (error 'symbol-hash "not a symbol" s)))
+        (die 'symbol-hash "not a symbol" s)))
 
 )

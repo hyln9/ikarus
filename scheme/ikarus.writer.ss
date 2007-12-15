@@ -334,7 +334,7 @@
          (write-char #\. p)
          (write-char #\. p)
          (write-char #\. p)]
-        [else (error 'write-peculiear "BUG")])))
+        [else (die 'write-peculiear "BUG")])))
 
   (define write-symbol
     (lambda (x p m)
@@ -721,7 +721,7 @@
         (cond
           [(fx= i (string-length fmt))
            (unless (null? args) 
-             (error who 
+             (die who 
                (format 
                  "extra arguments given for format string \x2036;~a\x2033;"
                  fmt)))]
@@ -731,30 +731,30 @@
                [(eqv? c #\~)
                 (let ([i (fxadd1 i)])
                   (when (fx= i (string-length fmt))
-                    (error who "invalid ~ at end of format string" fmt))
+                    (die who "invalid ~ at end of format string" fmt))
                   (let ([c (string-ref fmt i)])
                    (cond
                      [(memv c '(#\~ #\%)) (f (fxadd1 i) args)]
                      [(memv c '(#\a #\s))
                       (when (null? args)
-                        (error who "insufficient arguments"))
+                        (die who "insufficient arguments"))
                       (f (fxadd1 i) (cdr args))]
                      [(memv c '(#\b #\o #\x #\d))
                       (when (null? args)
-                        (error who "insufficient arguments"))
+                        (die who "insufficient arguments"))
                       (let ([a (car args)])
                         (cond
                           [(or (fixnum? a) (bignum? a) (ratnum?  a)) 
                            (void)]
                           [(flonum? a)
                            (unless (eqv? c #\d) 
-                             (error who 
+                             (die who 
                                (format "flonums cannot be printed with ~~~a" c)))]
                           [else 
-                           (error who "not a number" a)]))
+                           (die who "not a number" a)]))
                       (f (fxadd1 i) (cdr args))]
                      [else
-                      (error who "invalid sequence character after ~" c)])))]
+                      (die who "invalid sequence character after ~" c)])))]
                [else (f (fxadd1 i) args)]))]))
       ;;; then format
       (let f ([i 0] [args args])
@@ -787,9 +787,9 @@
                            [(flonum? a)
                             (display-to-port (number->string a) p)]
                            [else 
-                            (error who "BUG: not a number" a)]))
+                            (die who "BUG: not a number" a)]))
                        (f (fxadd1 i) (cdr args)))]
-                    [else (error who "BUG" c)])))]
+                    [else (die who "BUG" c)])))]
               [else 
                (write-char c p)
                (f (fxadd1 i) args)]))))
@@ -799,15 +799,15 @@
   (define fprintf
     (lambda (port fmt . args)
       (unless (output-port? port) 
-        (error 'fprintf "not an output port" port))
+        (die 'fprintf "not an output port" port))
       (unless (string? fmt)
-        (error 'fprintf "not a string" fmt))
+        (die 'fprintf "not a string" fmt))
       (formatter 'fprintf port fmt args)))
 
   (define display-error
     (lambda (errname who fmt args)
       (unless (string? fmt)
-        (error 'print-error "not a string" fmt))
+        (die 'print-error "not a string" fmt))
       (let ([p (standard-error-port)])
         (if who
             (fprintf p "~a in ~a: " errname who)
@@ -819,7 +819,7 @@
   (define format
     (lambda (fmt . args)
       (unless (string? fmt)
-        (error 'format "not a string" fmt))
+        (die 'format "not a string" fmt))
       (let-values ([(p e) (open-string-output-port)])
         (formatter 'format p fmt args)
         (e))))
@@ -827,7 +827,7 @@
   (define printf 
     (lambda (fmt . args)
       (unless (string? fmt)
-        (error 'printf "not a string" fmt))
+        (die 'printf "not a string" fmt))
       (formatter 'printf (current-output-port) fmt args)))
   
   (define write 
@@ -835,12 +835,12 @@
       [(x) (write-to-port x (current-output-port))]
       [(x p)
        (unless (output-port? p) 
-         (error 'write "not an output port" p))
+         (die 'write "not an output port" p))
        (write-to-port x p)]))
 
   (define (put-datum p x)
     (unless (output-port? p) 
-      (error 'put-datum "not an output port" p))
+      (die 'put-datum "not an output port" p))
     (write-to-port x p))
 
   (define display 
@@ -848,7 +848,7 @@
       [(x) (display-to-port x (current-output-port))]
       [(x p)
        (unless (output-port? p) 
-         (error 'display "not an output port" p))
+         (die 'display "not an output port" p))
        (display-to-port x p)]))
 
   (define print-error 

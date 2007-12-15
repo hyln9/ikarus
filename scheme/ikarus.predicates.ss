@@ -121,7 +121,7 @@
         [(sys:ratnum? x) #t]
         [(sys:flonum? x) #f]
         [else 
-         (error 'exact? "not a number" x)])))
+         (die 'exact? "not a number" x)])))
   
 
   (define inexact?
@@ -132,7 +132,7 @@
         [(sys:bignum? x) #f]
         [(sys:ratnum? x) #f]
         [else 
-         (error 'inexact? "not a number" x)])))
+         (die 'inexact? "not a number" x)])))
 
   (define finite?
     (lambda (x)
@@ -142,7 +142,7 @@
         [(sys:bignum? x) #t]
         [(sys:ratnum? x) #t]
         [else 
-         (error 'finite? "not a number" x)])))
+         (die 'finite? "not a number" x)])))
 
   (define infinite?
     (lambda (x)
@@ -152,7 +152,7 @@
         [(sys:bignum? x) #f]
         [(sys:ratnum? x) #f]
         [else 
-         (error 'infinite? "not a number" x)])))
+         (die 'infinite? "not a number" x)])))
 
   (define nan?
     (lambda (x)
@@ -162,7 +162,7 @@
         [(sys:bignum? x) #f]
         [(sys:ratnum? x) #f]
         [else 
-         (error 'nan? "not a number" x)])))
+         (die 'nan? "not a number" x)])))
 
 
 
@@ -204,8 +204,8 @@
               #t
               (if (sys:boolean? y) 
                   #f
-                  (error 'boolean=? "not a boolean" y)))
-          (error 'boolean=? "not a boolean" x))))
+                  (die 'boolean=? "not a boolean" y)))
+          (die 'boolean=? "not a boolean" x))))
 
 
   (define symbol=?
@@ -215,8 +215,8 @@
               #t
               (if (sys:symbol? y) 
                   #f
-                  (error 'symbol=? "not a symbol" y)))
-          (error 'symbol=? "not a symbol" x))))
+                  (die 'symbol=? "not a symbol" y)))
+          (die 'symbol=? "not a symbol" x))))
 
   (module (equal?)
     (define vector-loop

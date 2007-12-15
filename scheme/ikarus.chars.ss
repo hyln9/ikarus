@@ -26,26 +26,26 @@
   (define integer->char
     (lambda (n)
       (cond
-        [(not (fixnum? n)) (error 'integer->char "invalid argument" n)]
-        [($fx< n 0) (error 'integer->char "negative" n)]
+        [(not (fixnum? n)) (die 'integer->char "invalid argument" n)]
+        [($fx< n 0) (die 'integer->char "negative" n)]
         [($fx<= n #xD7FF) ($fixnum->char n)]
         [($fx< n #xE000)
-         (error 'integer->char "integer does not have a unicode representation" n)]
+         (die 'integer->char "integer does not have a unicode representation" n)]
         [($fx<= n #x10FFFF) ($fixnum->char n)]
-        [else (error 'integer->char 
+        [else (die 'integer->char 
                 "integer does not have a unicode representation" n)])))
   
   (define char->integer 
     (lambda (x) 
       (unless (char? x)
-        (error 'char->integer "not a character" x))
+        (die 'char->integer "not a character" x))
       ($char->fixnum x)))
 
   ;;; FIXME: this file is embarrasing
   (define char=?
     (let ()
       (define (err x)
-        (error 'char=? "not a character" x))
+        (die 'char=? "not a character" x))
       (case-lambda
         [(c1 c2)
          (if (char? c1)
@@ -82,7 +82,7 @@
   (define char<?
     (let ()
       (define (err x)
-        (error 'char<? "not a character" x))
+        (die 'char<? "not a character" x))
       (case-lambda
         [(c1 c2)
          (if (char? c1)
@@ -119,7 +119,7 @@
   (define char<=?
     (let ()
       (define (err x)
-        (error 'char<=? "not a character" x))
+        (die 'char<=? "not a character" x))
       (case-lambda
         [(c1 c2)
          (if (char? c1)
@@ -156,7 +156,7 @@
   (define char>?
     (let ()
       (define (err x)
-        (error 'char>? "not a character" x))
+        (die 'char>? "not a character" x))
       (case-lambda
         [(c1 c2)
          (if (char? c1)
@@ -193,7 +193,7 @@
   (define char>=?
     (let ()
       (define (err x)
-        (error 'char>=? "not a character" x))
+        (die 'char>=? "not a character" x))
       (case-lambda
         [(c1 c2)
          (if (char? c1)

@@ -63,12 +63,12 @@
   (define who 'fasl-read)
   (define (assert-eq? x y)
     (unless (eq? x y)
-      (error who 
+      (die who 
         (format "Expected ~s, got ~s\n" y x))))
   (define (char->int x)
     (if (char? x)
         (char->integer x)
-        (error who "unexpected eof inside a fasl object")))
+        (die who "unexpected eof inside a fasl object")))
   (define (read-fixnum p)
     (let ([c0 (char->int (read-char p))]
           [c1 (char->int (read-char p))]
@@ -115,7 +115,7 @@
       (cond
         [(fx< m (vector-length marks))
          (when (vector-ref marks m)
-           (error 'fasl-read "mark set twice" m))
+           (die 'fasl-read "mark set twice" m))
          (vector-set! marks m obj)]
         [else
          (let ([n (vector-length marks)])
@@ -158,7 +158,7 @@
           [(#\<) 
            (let ([cm (read-int p)])
              (unless (fx< cm (vector-length marks))
-               (error who "invalid mark" m))
+               (die who "invalid mark" m))
              (let ([code (vector-ref marks cm)])
                (let ([proc ($code->closure code)])
                  (when m (put-mark m proc))
@@ -168,10 +168,10 @@
              (assert-eq? (read-char p) #\x)
              (let ([code (read-code cm m)])
                (if m (vector-ref marks m) ($code->closure code))))]
-          [else (error who "invalid code header" c)])))
+          [else (die who "invalid code header" c)])))
     (define (read/mark m)
       (define (nom)
-        (when m (error who "unhandled mark")))
+        (when m (die who "unhandled mark")))
       (let ([h (read-char p)])
         (case h
           [(#\I) 
@@ -253,17 +253,17 @@
              (cond
                [(char? c) c]
                [else
-                (error who "invalid eof inside a fasl object")]))]
+                (die who "invalid eof inside a fasl object")]))]
           [(#\>)
            (let ([m (read-int p)])
              (read/mark m))]
           [(#\<)
            (let ([m (read-int p)])
              (unless (fx< m (vector-length marks))
-               (error who "invalid mark" m))
+               (die who "invalid mark" m))
              (vector-ref marks m))]
           [else
-           (error who "Unexpected char as a fasl object header" h)])))
+           (die who "Unexpected char as a fasl object header" h)])))
     (read))
   (define $fasl-read
     (lambda (p)
@@ -279,7 +279,7 @@
       [(p) 
        (if (input-port? p) 
            ($fasl-read p)
-           (error 'fasl-read "not an input port" p))]))
+           (die 'fasl-read "not an input port" p))]))
 
   )
 

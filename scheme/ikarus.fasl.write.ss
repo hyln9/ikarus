@@ -40,14 +40,14 @@
   
   (define write-fixnum 
     (lambda (x p)
-      (unless (fixnum? x) (error 'write-fixnum "not a fixnum" x))
+      (unless (fixnum? x) (die 'write-fixnum "not a fixnum" x))
       (write-byte (fxsll (fxlogand x #x3F) 2) p)
       (write-byte (fxlogand (fxsra x 6) #xFF) p)
       (write-byte (fxlogand (fxsra x 14) #xFF) p)
       (write-byte (fxlogand (fxsra x 22) #xFF) p)))
   (define write-int 
     (lambda (x p)
-      (unless (fixnum? x) (error 'write-int "not a fixnum" x))
+      (unless (fixnum? x) (die 'write-int "not a fixnum" x))
       (write-byte (fxlogand x #xFF) p)
       (write-byte (fxlogand (fxsra x 8) #xFF) p)
       (write-byte (fxlogand (fxsra x 16) #xFF) p)
@@ -72,7 +72,7 @@
          (put-tag (if x #\T #\F) p)]
         [(eof-object? x) (put-tag #\E p)]
         [(eq? x (void)) (put-tag #\U p)]
-        [else (error 'fasl-write "not a fasl-writable immediate" x)])))
+        [else (die 'fasl-write "not a fasl-writable immediate" x)])))
   
   (define (ascii-string? s)
     (let f ([s s] [i 0] [n (string-length s)])
@@ -222,7 +222,7 @@
                (write-byte ($bignum-byte-ref x i) p)
                (f (fxadd1 i)))))
          m]
-        [else (error 'fasl-write "not fasl-writable" x)])))
+        [else (die 'fasl-write "not fasl-writable" x)])))
   (define (write-bytevector x i j p)
     (unless ($fx= i j)
       (write-byte ($bytevector-u8-ref x i) p)
@@ -234,7 +234,7 @@
         [(hashtable-ref h x #f) =>
          (lambda (mark)
            (unless (fixnum? mark)
-             (error 'fasl-write "BUG: invalid mark" mark))
+             (die 'fasl-write "BUG: invalid mark" mark))
            (cond
              [(fx= mark 0) ; singly referenced
               (do-write x p h m)]
@@ -247,7 +247,7 @@
               (put-tag #\< p)
               (write-int (fx- 0 mark) p)
               m]))]
-        [else (error 'fasl-write "BUG: not in hash table" x)]))) 
+        [else (die 'fasl-write "BUG: not in hash table" x)]))) 
   (define make-graph
     (lambda (x h)
       (unless (immediate? x)
@@ -275,7 +275,7 @@
               (make-graph (code-reloc-vector x) h)]
              [(struct? x)
               (when (eq? x (base-rtd))
-                (error 'fasl-write "base-rtd is not writable"))
+                (die 'fasl-write "base-rtd is not writable"))
               (let ([rtd (struct-type-descriptor x)])
                 (cond
                   [(eq? rtd (base-rtd))
@@ -294,7 +294,7 @@
              [(procedure? x)
               (let ([code ($closure-code x)])
                 (unless (fxzero? (code-freevars code))
-                  (error 'fasl-write
+                  (die 'fasl-write
                     "Cannot write a non-thunk procedure; \
                      the one given has free vars"
                     (code-freevars code)))
@@ -305,7 +305,7 @@
              [(ratnum? x) 
               (make-graph (numerator x) h)
               (make-graph (denominator x) h)]
-             [else (error 'fasl-write "not fasl-writable" x)])]))))
+             [else (die 'fasl-write "not fasl-writable" x)])]))))
   (define fasl-write-to-port
     (lambda (x port)
       (let ([h (make-eq-hashtable)])
@@ -322,5 +322,5 @@
     (case-lambda 
       [(x port)
        (unless (and (output-port? port) (binary-port? port))
-         (error 'fasl-write "not an output port" port))
+         (die 'fasl-write "not an output port" port))
        (fasl-write-to-port x port)])))

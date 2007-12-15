@@ -659,6 +659,7 @@
     [equal?                                      i r ba se]
     [eqv?                                        i r ba se]
     [error                                       i r ba]
+    [die                                         i]
     [even?                                       i r ba se]
     [exact                                       i r ba]
     [exact-integer-sqrt                          i r ba]

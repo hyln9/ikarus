@@ -50,39 +50,39 @@
       (cond
         [(eq? x 0) #t]
         [(fixnum? x) #f]
-        [else (error 'fxzero? "not a fixnum" x)])))
+        [else (die 'fxzero? "not a fixnum" x)])))
   
   (define fxadd1
     (lambda (n)
       (if (fixnum? n)
           ($fxadd1 n)
-          (error 'fxadd1 "not a fixnum" n))))
+          (die 'fxadd1 "not a fixnum" n))))
   
   (define fxsub1 
     (lambda (n) 
       (if (fixnum? n)
           ($fxsub1 n)
-          (error 'fxsub1 "not a fixnum" n))))
+          (die 'fxsub1 "not a fixnum" n))))
 
   (define fxlognot 
     (lambda (x)
       (unless (fixnum? x) 
-        (error 'fxlognot "not a fixnum" x))
+        (die 'fxlognot "not a fixnum" x))
       ($fxlognot x)))
 
   (define fxnot 
     (lambda (x)
       (unless (fixnum? x) 
-        (error 'fxnot "not a fixnum" x))
+        (die 'fxnot "not a fixnum" x))
       ($fxlognot x)))
   
   (define error@fx+
     (lambda (x y) 
       (if (fixnum? x) 
           (if (fixnum? y) 
-              (error 'fx+ "overflow when adding numbers" x y)
-              (error 'fx+ "not a fixnum" y))
-          (error 'fx+ "not a fixnum" x))))
+              (die 'fx+ "overflow when adding numbers" x y)
+              (die 'fx+ "not a fixnum" y))
+          (die 'fx+ "not a fixnum" x))))
 
   (define fx+ 
     (lambda (x y) 
@@ -91,17 +91,17 @@
   (define fx-
     (lambda (x y) 
       (unless (fixnum? x)
-        (error 'fx- "not a fixnum" x))
+        (die 'fx- "not a fixnum" x))
       (unless (fixnum? y)
-        (error 'fx- "not a fixnum" y))
+        (die 'fx- "not a fixnum" y))
       ($fx- x y)))
 
   (define fx*
     (lambda (x y) 
       (unless (fixnum? x)
-        (error 'fx* "not a fixnum" x))
+        (die 'fx* "not a fixnum" x))
       (unless (fixnum? y)
-        (error 'fx* "not a fixnum" y))
+        (die 'fx* "not a fixnum" y))
       ($fx* x y)))
   
 
@@ -110,7 +110,7 @@
       (if (pair? ls) 
           (if (fixnum? ($car ls)) 
               (false-loop who ($cdr ls))
-              (error who "not a fixnum" ($car ls)))
+              (die who "not a fixnum" ($car ls)))
           #f)))
 
   (define-syntax fxcmp 
@@ -119,9 +119,9 @@
        (case-lambda
          [(x y) 
           (unless (fixnum? x)
-            (error 'who "not a fixnum" x))
+            (die 'who "not a fixnum" x))
           (unless (fixnum? y)
-            (error 'who "not a fixnum" y))
+            (die 'who "not a fixnum" y))
           ($op x y)]
          [(x y . ls)
           (if (fixnum? x)
@@ -134,13 +134,13 @@
                                   (if ($op x y) 
                                       (f y ls)
                                       (false-loop 'who ls))
-                                  (error 'who "not a fixnum" y)))
+                                  (die 'who "not a fixnum" y)))
                             #t))
                       (false-loop 'who ls))
-                  (error 'who "not a fixnum" y))
-              (error 'who "not a fixnum" x))]
+                  (die 'who "not a fixnum" y))
+              (die 'who "not a fixnum" x))]
          [(x) 
-          (if (fixnum? x) #t (error 'who "not a fixnum" x))])]))
+          (if (fixnum? x) #t (die 'who "not a fixnum" x))])]))
   
   (define fx=   (fxcmp fx= $fx=))
   (define fx<   (fxcmp fx< $fx<))
@@ -157,32 +157,32 @@
   (define fxquotient
     (lambda (x y) 
       (unless (fixnum? x)
-        (error 'fxquotient "not a fixnum" x))
+        (die 'fxquotient "not a fixnum" x))
       (unless (fixnum? y)
-        (error 'fxquotient "not a fixnum" y))
+        (die 'fxquotient "not a fixnum" y))
       (when ($fxzero? y)
-        (error 'fxquotient "zero dividend" y))
+        (die 'fxquotient "zero dividend" y))
       ($fxquotient x y))) 
   
   (define fxremainder
     (lambda (x y) 
       (unless (fixnum? x)
-        (error 'fxremainder "not a fixnum" x))
+        (die 'fxremainder "not a fixnum" x))
       (unless (fixnum? y)
-        (error 'fxremainder "not a fixnum" y))
+        (die 'fxremainder "not a fixnum" y))
       (when ($fxzero? y)
-        (error 'fxremainder "zero dividend" y))
+        (die 'fxremainder "zero dividend" y))
       (let ([q ($fxquotient x y)])
         ($fx- x ($fx* q y)))))
    
   (define fxmodulo
     (lambda (x y) 
       (unless (fixnum? x)
-        (error 'fxmodulo "not a fixnum" x))
+        (die 'fxmodulo "not a fixnum" x))
       (unless (fixnum? y)
-        (error 'fxmodulo "not a fixnum" y))
+        (die 'fxmodulo "not a fixnum" y))
       (when ($fxzero? y)
-        (error 'fxmodulo "zero dividend" y))
+        (die 'fxmodulo "zero dividend" y))
       ($fxmodulo x y)))
 
   (define-syntax fxbitop
@@ -193,8 +193,8 @@
           (if (fixnum? x) 
               (if (fixnum? y) 
                   ($op x y)
-                  (error 'who "not a fixnum" y))
-              (error 'who "not a fixnum" x))]
+                  (die 'who "not a fixnum" y))
+              (die 'who "not a fixnum" x))]
          [(x y . ls) 
           (if (fixnum? x)
               (if (fixnum? y) 
@@ -204,11 +204,11 @@
                        (let ([b ($car ls)])
                          (if (fixnum? b) 
                              (f ($op a b) ($cdr ls))
-                             (error 'who "not a fixnum" b)))]
+                             (die 'who "not a fixnum" b)))]
                       [else a]))
-                  (error 'who "not a fixnum" y))
-              (error 'who "not a fixnum" x))]
-         [(x) (if (fixnum? x) x (error 'who "not a fixnum" x))]
+                  (die 'who "not a fixnum" y))
+              (die 'who "not a fixnum" x))]
+         [(x) (if (fixnum? x) x (die 'who "not a fixnum" x))]
          [()   identity])]))
 
   (define fxlogor (fxbitop fxlogor $fxlogor 0))
@@ -225,58 +225,58 @@
                 ($fxlogor 
                   ($fxlogand x y) 
                   ($fxlogand ($fxlognot x) z))
-                (error 'fxif "not a fixnum" z))
-            (error 'fxif "not a fixnum" y))
-        (error 'fxif "not a fixnum" x)))
+                (die 'fxif "not a fixnum" z))
+            (die 'fxif "not a fixnum" y))
+        (die 'fxif "not a fixnum" x)))
 
   (define fxsra
     (lambda (x y) 
       (unless (fixnum? x)
-        (error 'fxsra "not a fixnum" x))
+        (die 'fxsra "not a fixnum" x))
       (unless (fixnum? y)
-        (error 'fxsra "not a fixnum" y))
+        (die 'fxsra "not a fixnum" y))
       (unless ($fx>= y 0)
-        (error 'fxsra "negative shift not allowed" y))
+        (die 'fxsra "negative shift not allowed" y))
       ($fxsra x y)))
    
 
   (define fxarithmetic-shift-right
     (lambda (x y) 
       (unless (fixnum? x)
-        (error 'fxarithmetic-shift-right "not a fixnum" x))
+        (die 'fxarithmetic-shift-right "not a fixnum" x))
       (unless (fixnum? y)
-        (error 'fxarithmetic-shift-right "not a fixnum" y))
+        (die 'fxarithmetic-shift-right "not a fixnum" y))
       (unless ($fx>= y 0)
-        (error 'fxarithmetic-shift-right "negative shift not allowed" y))
+        (die 'fxarithmetic-shift-right "negative shift not allowed" y))
       ($fxsra x y)))
 
   (define fxsll
     (lambda (x y) 
       (unless (fixnum? x)
-        (error 'fxsll "not a fixnum" x))
+        (die 'fxsll "not a fixnum" x))
       (unless (fixnum? y)
-        (error 'fxsll "not a fixnum" y))
+        (die 'fxsll "not a fixnum" y))
       (unless ($fx>= y 0)
-        (error 'fxsll "negative shift not allowed" y))
+        (die 'fxsll "negative shift not allowed" y))
       ($fxsll x y))) 
 
 
   (define fxarithmetic-shift-left
     (lambda (x y) 
       (unless (fixnum? x)
-        (error 'fxarithmetic-shift-left "not a fixnum" x))
+        (die 'fxarithmetic-shift-left "not a fixnum" x))
       (unless (fixnum? y)
-        (error 'fxarithmetic-shift-left "not a fixnum" y))
+        (die 'fxarithmetic-shift-left "not a fixnum" y))
       (unless ($fx>= y 0)
-        (error 'fxarithmetic-shift-left "negative shift not allowed" y))
+        (die 'fxarithmetic-shift-left "negative shift not allowed" y))
       ($fxsll x y)))
 
   (define fxarithmetic-shift
     (lambda (x y) 
       (unless (fixnum? x)
-        (error 'fxarithmetic-shift "not a fixnum" x))
+        (die 'fxarithmetic-shift "not a fixnum" x))
       (unless (fixnum? y)
-        (error 'fxarithmetic-shift "not a fixnum" y))
+        (die 'fxarithmetic-shift "not a fixnum" y))
       (if ($fx>= y 0)
           ($fxsll x y)
           (if ($fx< x -100) ;;; arbitrary number < (fixnum-width)
@@ -286,22 +286,22 @@
   (define (fxpositive? x)
     (if (fixnum? x) 
         ($fx> x 0)
-        (error 'fxpositive? "not a fixnum" x)))
+        (die 'fxpositive? "not a fixnum" x)))
 
   (define (fxnegative? x)
     (if (fixnum? x) 
         ($fx< x 0)
-        (error 'fxnegative? "not a fixnum" x)))
+        (die 'fxnegative? "not a fixnum" x)))
   
   (define (fxeven? x)
     (if (fixnum? x) 
         ($fxzero? ($fxlogand x 1))
-        (error 'fxeven? "not a fixnum" x)))
+        (die 'fxeven? "not a fixnum" x)))
 
   (define (fxodd? x)
     (if (fixnum? x) 
         (not ($fxzero? ($fxlogand x 1)))
-        (error 'fxodd? "not a fixnum" x)))
+        (die 'fxodd? "not a fixnum" x)))
 
   (define fxmin
     (case-lambda 
@@ -309,8 +309,8 @@
        (if (fixnum? x) 
            (if (fixnum? y) 
                (if ($fx< x y) x y)
-               (error 'fxmin "not a fixnum" y))
-           (error 'fxmin "not a fixnum" x))]
+               (die 'fxmin "not a fixnum" y))
+           (die 'fxmin "not a fixnum" x))]
       [(x y z . ls)
        (fxmin (fxmin x y) 
          (if (fixnum? z) 
@@ -322,9 +322,9 @@
                          (if ($fx< a z) 
                              (f a ($cdr ls))
                              (f z ($cdr ls)))
-                         (error 'fxmin "not a fixnum" a)))))
-             (error 'fxmin "not a fixnum" z)))]
-      [(x) (if (fixnum? x) x (error 'fxmin "not a fixnum" x))]))
+                         (die 'fxmin "not a fixnum" a)))))
+             (die 'fxmin "not a fixnum" z)))]
+      [(x) (if (fixnum? x) x (die 'fxmin "not a fixnum" x))]))
 
   (define fxmax
     (case-lambda 
@@ -332,8 +332,8 @@
        (if (fixnum? x) 
            (if (fixnum? y) 
                (if ($fx> x y) x y)
-               (error 'fxmax "not a fixnum" y))
-           (error 'fxmax "not a fixnum" x))]
+               (die 'fxmax "not a fixnum" y))
+           (die 'fxmax "not a fixnum" x))]
       [(x y z . ls)
        (fxmax (fxmax x y) 
          (if (fixnum? z) 
@@ -345,9 +345,9 @@
                          (if ($fx> a z)
                              (f a ($cdr ls))
                              (f z ($cdr ls)))
-                         (error 'fxmax "not a fixnum" a)))))
-             (error 'fxmax "not a fixnum" z)))]
-      [(x) (if (fixnum? x) x (error 'fxmax "not a fixnum" x))]))
+                         (die 'fxmax "not a fixnum" a)))))
+             (die 'fxmax "not a fixnum" z)))]
+      [(x) (if (fixnum? x) x (die 'fxmax "not a fixnum" x))]))
 
   (define (fx*/carry fx1 fx2 fx3)
     (let ([s0 ($fx+ ($fx* fx1 fx2) fx3)])
@@ -404,16 +404,16 @@
     (define fixnum->string
       (case-lambda
         [(x) 
-         (unless (fixnum? x) (error 'fixnum->string "not a fixnum" x))
+         (unless (fixnum? x) (die 'fixnum->string "not a fixnum" x))
          ($fixnum->string x 10)]
         [(x r) 
-         (unless (fixnum? x) (error 'fixnum->string "not a fixnum" x))
+         (unless (fixnum? x) (die 'fixnum->string "not a fixnum" x))
          (case r
            [(2)  ($fixnum->string x 2)]
            [(8)  ($fixnum->string x 8)]
            [(10) ($fixnum->string x 10)]
            [(16) ($fixnum->string x 16)]
-           [else (error 'fixnum->string "invalid radix" r)])])))
+           [else (die 'fixnum->string "invalid radix" r)])])))
 
 
   )
@@ -454,28 +454,28 @@
     (if (fixnum? x) 
         (if (fixnum? y) 
             (if ($fx= y 0) 
-                (error 'fxdiv-and-mod "division by 0")
+                (die 'fxdiv-and-mod "division by 0")
                 ($fxdiv-and-mod x y))
-            (error 'fxdiv-and-mod "not a fixnum" y))
-        (error 'fxdiv-and-mod "not a fixnum" x)))
+            (die 'fxdiv-and-mod "not a fixnum" y))
+        (die 'fxdiv-and-mod "not a fixnum" x)))
 
   (define (fxdiv x y)
     (if (fixnum? x) 
         (if (fixnum? y) 
             (if ($fx= y 0) 
-                (error 'fxdiv "division by 0")
+                (die 'fxdiv "division by 0")
                 ($fxdiv x y))
-            (error 'fxdiv "not a fixnum" y))
-        (error 'fxdiv "not a fixnum" x)))
+            (die 'fxdiv "not a fixnum" y))
+        (die 'fxdiv "not a fixnum" x)))
 
   (define (fxmod x y)
     (if (fixnum? x) 
         (if (fixnum? y) 
             (if ($fx= y 0) 
-                (error 'fxmod "modision by 0")
+                (die 'fxmod "modision by 0")
                 ($fxmod x y))
-            (error 'fxmod "not a fixnum" y))
-        (error 'fxmod "not a fixnum" x)))
+            (die 'fxmod "not a fixnum" y))
+        (die 'fxmod "not a fixnum" x)))
 
   (define ($fxdiv0-and-mod0 n m)
     (let ([d0 (quotient n m)])
@@ -526,43 +526,43 @@
     (if (fixnum? x)
         (if (fixnum? y)
             (if ($fx= y 0)
-                (error 'fxdiv0-and-mod0 "division by 0")
+                (die 'fxdiv0-and-mod0 "division by 0")
                 (let-values ([(d m) ($fxdiv0-and-mod0 x y)])
                   (if (and (fixnum? d) (fixnum? m))
                       (values d m)
-                      (error 'fxdiv0-and-mod0 
+                      (die 'fxdiv0-and-mod0 
                         "results not representable as fixnums"
                         x y))))
-            (error 'fxdiv0-and-mod0 "not a fixnum" y))
-        (error 'fxdiv0-and-mod0 "not a fixnum" x)))
+            (die 'fxdiv0-and-mod0 "not a fixnum" y))
+        (die 'fxdiv0-and-mod0 "not a fixnum" x)))
 
   (define (fxdiv0 x y)
     (if (fixnum? x)
         (if (fixnum? y)
             (if ($fx= y 0)
-                (error 'fxdiv0 "division by 0")
+                (die 'fxdiv0 "division by 0")
                 (let ([d ($fxdiv0 x y)])
                   (if (fixnum? d)
                       d
-                      (error 'fxdiv0 
+                      (die 'fxdiv0 
                         "result not representable as fixnum"
                         x y))))
-            (error 'fxdiv0 "not a fixnum" y))
-        (error 'fxdiv0 "not a fixnum" x)))
+            (die 'fxdiv0 "not a fixnum" y))
+        (die 'fxdiv0 "not a fixnum" x)))
 
   (define (fxmod0 x y)
     (if (fixnum? x)
         (if (fixnum? y)
             (if ($fx= y 0)
-                (error 'fxmod0 "division by 0")
+                (die 'fxmod0 "division by 0")
                 (let ([d ($fxmod0 x y)])
                   (if (fixnum? d)
                       d
-                      (error 'fxmod0 
+                      (die 'fxmod0 
                         "result not representable as fixnum"
                         x y))))
-            (error 'fxmod0 "not a fixnum" y))
-        (error 'fxmod0 "not a fixnum" x)))
+            (die 'fxmod0 "not a fixnum" y))
+        (die 'fxmod0 "not a fixnum" x)))
   )
 
 

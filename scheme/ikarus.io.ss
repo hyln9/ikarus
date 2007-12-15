@@ -164,7 +164,7 @@
     (syntax-rules ()
       [(_ name)
        (define (name . args) 
-         (apply error 'name "not implemented" args))]))
+         (apply die 'name "not implemented" args))]))
 
  
   (define-syntax u8?
@@ -223,17 +223,17 @@
   (define (input-port-name p)
     (if (input-port? p) 
         ($port-id p)
-        (error 'input-port-name "not an input port" p)))
+        (die 'input-port-name "not an input port" p)))
 
   (define (output-port-name p)
     (if (output-port? p) 
         ($port-id p)
-        (error 'output-port-name "not an output port" p)))
+        (die 'output-port-name "not an output port" p)))
 
   (define (port-id p)
     (if (port? p) 
         ($port-id p)
-        (error 'port-id "not a port" p)))
+        (die 'port-id "not a port" p)))
 
   (define guarded-port
     (let ([G (make-guardian)])
@@ -266,11 +266,11 @@
     ;;; FIXME: get-position and set-position! are ignored for now
     (define who 'make-custom-binary-input-port)
     (unless (string? id)
-      (error who "id is not a string" id))
+      (die who "id is not a string" id))
     (unless (procedure? read!)
-      (error who "read! is not a procedure" read!))
+      (die who "read! is not a procedure" read!))
     (unless (or (procedure? close) (not close))
-      (error who "close should be either a procedure or #f" close))
+      (die who "close should be either a procedure or #f" close))
     ($make-custom-binary-port 
       binary-input-port-bits
       0
@@ -282,11 +282,11 @@
     ;;; FIXME: get-position and set-position! are ignored for now
     (define who 'make-custom-binary-output-port)
     (unless (string? id)
-      (error who "id is not a string" id))
+      (die who "id is not a string" id))
     (unless (procedure? write!)
-      (error who "write! is not a procedure" write!))
+      (die who "write! is not a procedure" write!))
     (unless (or (procedure? close) (not close))
-      (error who "close should be either a procedure or #f" close))
+      (die who "close should be either a procedure or #f" close))
     ($make-custom-binary-port 
       binary-output-port-bits
       256
@@ -298,11 +298,11 @@
     ;;; FIXME: get-position and set-position! are ignored for now
     (define who 'make-custom-textual-input-port)
     (unless (string? id)
-      (error who "id is not a string" id))
+      (die who "id is not a string" id))
     (unless (procedure? read!)
-      (error who "read! is not a procedure" read!))
+      (die who "read! is not a procedure" read!))
     (unless (or (procedure? close) (not close))
-      (error who "close should be either a procedure or #f" close))
+      (die who "close should be either a procedure or #f" close))
     ($make-custom-textual-port 
       (fxior textual-input-port-bits fast-char-text-tag)
       0
@@ -314,11 +314,11 @@
     ;;; FIXME: get-position and set-position! are ignored for now
     (define who 'make-custom-textual-output-port)
     (unless (string? id)
-      (error who "id is not a string" id))
+      (die who "id is not a string" id))
     (unless (procedure? write!)
-      (error who "write! is not a procedure" write!))
+      (die who "write! is not a procedure" write!))
     (unless (or (procedure? close) (not close))
-      (error who "close should be either a procedure or #f" close))
+      (die who "close should be either a procedure or #f" close))
     ($make-custom-textual-port 
       (fxior textual-output-port-bits fast-char-text-tag)
       256
@@ -355,11 +355,11 @@
       [(bv) (open-bytevector-input-port bv #f)]
       [(bv maybe-transcoder) 
        (unless (bytevector? bv) 
-         (error 'open-bytevector-input-port 
+         (die 'open-bytevector-input-port 
                 "not a bytevector" bv))
        (when (and maybe-transcoder
                   (not (transcoder? maybe-transcoder)))
-         (error 'open-bytevector-input-port 
+         (die 'open-bytevector-input-port 
                 "not a transcoder" maybe-transcoder))
        ($make-port 
           (input-transcoder-attrs maybe-transcoder)
@@ -379,7 +379,7 @@
       [(transcoder) 
        (define who 'open-bytevector-output-port)
        (unless (or (not transcoder) (transcoder? transcoder))
-         (error who "invalid transcoder value" transcoder))
+         (die who "invalid transcoder value" transcoder))
        (let ([buf* '()] [buffer-size 256])
          (let ([p 
                 ($make-port 
@@ -424,9 +424,9 @@
       [(proc transcoder) 
        (define who 'call-with-bytevector-output-port)
        (unless (procedure? proc) 
-         (error who "not a procedure" proc))
+         (die who "not a procedure" proc))
        (unless (or (not transcoder) (transcoder? transcoder))
-         (error who "invalid transcoder argument" transcoder))
+         (die who "invalid transcoder argument" transcoder))
        (let-values ([(p extract) 
                      (open-bytevector-output-port transcoder)])
          (proc p)
@@ -435,7 +435,7 @@
   (define (call-with-string-output-port proc)
     (define who 'call-with-string-output-port)
     (unless (procedure? proc) 
-      (error who "not a procedure" proc))
+      (die who "not a procedure" proc))
     (let-values ([(p extract) (open-string-output-port)])
       (proc p)
       (extract)))
@@ -482,7 +482,7 @@
 
   (define (open-string-input-port str)
     (unless (string? str) 
-      (error 'open-string-input-port str))
+      (die 'open-string-input-port str))
     ($make-port 
        (fxior textual-input-port-bits fast-char-text-tag)
        0 (string-length str) str
@@ -499,10 +499,10 @@
   (define (transcoded-port p transcoder)
     (define who 'transcoded-port)
     (unless (transcoder? transcoder)
-      (error who "not a transcoder" transcoder))
-    (unless (port? p) (error who "not a port" p))
-    (when ($port-transcoder p) (error who "not a binary port" p))
-    (when ($port-closed? p) (error who "cannot transcode closed port" p))
+      (die who "not a transcoder" transcoder))
+    (unless (port? p) (die who "not a port" p))
+    (when ($port-transcoder p) (die who "not a binary port" p))
+    (when ($port-closed? p) (die who "cannot transcode closed port" p))
     (let ([read! ($port-read! p)]
           [write! ($port-write! p)])
       ($mark-port-closed! p)
@@ -512,7 +512,7 @@
             [read! (input-transcoder-attrs transcoder)]
             [write! (output-transcoder-attrs transcoder)]
             [else
-             (error 'transcoded-port 
+             (die 'transcoded-port 
                "port is neither input nor output!")])
           ($port-index p)
           ($port-size p)
@@ -529,13 +529,13 @@
   (define (reset-input-port! p)
     (if (input-port? p) 
         ($set-port-index! p ($port-size p))
-        (error 'reset-input-port! "not an input port" p)))
+        (die 'reset-input-port! "not an input port" p)))
 
   (define (port-transcoder p)
     (if (port? p)
         (let ([tr ($port-transcoder p)])
           (and (transcoder? tr) tr))
-        (error 'port-transcoder "not a port" p)))
+        (die 'port-transcoder "not a port" p)))
               
   (define ($port-closed? p) 
     (not (fxzero? (fxand ($port-attrs p) closed-port-tag))))
@@ -550,7 +550,7 @@
         (if (fxzero? (fxand ($port-attrs p) r6rs-mode-tag))
             'ikarus-mode
             'r6rs-mode)
-        (error 'port-mode "not a port" p)))
+        (die 'port-mode "not a port" p)))
 
   (define (set-port-mode! p mode)
     (if (port? p) 
@@ -561,8 +561,8 @@
           [(ikarus-mode)
            ($set-port-attrs! p
              (fxand ($port-attrs p) (fxnot r6rs-mode-tag)))]
-          [else (error 'set-port-mode! "invalid mode" mode)])
-        (error 'set-port-mode! "not a port" p)))
+          [else (die 'set-port-mode! "invalid mode" mode)])
+        (die 'set-port-mode! "not a port" p)))
 
 
   (define flush-output-port
@@ -570,22 +570,22 @@
       [() (flush-output-port (*the-output-port*))] 
       [(p)
        (unless (output-port? p) 
-         (error 'flush-output-port "not an output port" p))
+         (die 'flush-output-port "not an output port" p))
        (when ($port-closed? p) 
-         (error 'flush-output-port "port is closed" p))
+         (die 'flush-output-port "port is closed" p))
        (let ([idx ($port-index p)]
              [buf ($port-buffer p)])
          (unless (fx= idx 0)
            (let ([bytes (($port-write! p) buf 0 idx)])
              (unless (and (fixnum? bytes) (fx>= bytes 0) (fx<= bytes idx))
-               (error 'flush-output-port 
+               (die 'flush-output-port 
                       "write! returned an invalid value" 
                       bytes))
              (cond
                [(fx= bytes idx) 
                 ($set-port-index! p 0)]
                [(fx= bytes 0) 
-                (error 'flush-output-port "could not write bytes to sink")]
+                (die 'flush-output-port "could not write bytes to sink")]
                [else
                 (bytevector-copy! buf bytes buf 0 (fx- idx bytes))
                 ($set-port-index! p (fx- idx bytes))
@@ -604,17 +604,17 @@
 
   (define (close-port p)
     (unless (port? p)
-       (error 'close-port "not a port" p))
+       (die 'close-port "not a port" p))
     ($close-port p))
 
   (define (close-input-port p)
     (unless (input-port? p)
-       (error 'close-input-port "not an input port" p))
+       (die 'close-input-port "not an input port" p))
     ($close-port p))
 
   (define (close-output-port p)
     (unless (output-port? p)
-       (error 'close-output-port "not an output port" p))
+       (die 'close-output-port "not an output port" p))
     ($close-port p))
 
   ;(define-rrr port-has-port-position?)
@@ -626,39 +626,39 @@
   (module (get-char lookahead-char)
     (import UNSAFE)
     (define (refill-bv-start p who)
-      (when ($port-closed? p) (error who "port is closed" p))
+      (when ($port-closed? p) (die who "port is closed" p))
       (let* ([bv ($port-buffer p)]
              [n (bytevector-length bv)])
         (let ([j (($port-read! p) bv 0 n)])
           (unless (fixnum? j)
-            (error who "invalid return value from read! procedure" j))
+            (die who "invalid return value from read! procedure" j))
           (cond
             [(fx>= j 0)
              (unless (fx<= j n)
-               (error who "read! returned a value out of range" j))
+               (die who "read! returned a value out of range" j))
              ($set-port-index! p 0)
              ($set-port-size! p j)
              j]
             [else 
-             (error who "read! returned a value out of range" j)]))))
+             (die who "read! returned a value out of range" j)]))))
     (define (refill-bv-buffer p who)
-      (when ($port-closed? p) (error who "port is closed" p))
+      (when ($port-closed? p) (die who "port is closed" p))
       (let ([bv ($port-buffer p)] [i ($port-index p)] [j ($port-size p)])
         (let ([c0 (fx- j i)])
           (bytevector-copy! bv i bv 0 c0)
           (let* ([max (fx- (bytevector-length bv) c0)]
                  [c1 (($port-read! p) bv c0 max)])
             (unless (fixnum? c1)
-              (error who "invalid return value from read! procedure" c1))
+              (die who "invalid return value from read! procedure" c1))
             (cond
               [(fx>= j 0)
                (unless (fx<= j max)
-                 (error who "read! returned a value out of range" j))
+                 (die who "read! returned a value out of range" j))
                ($set-port-index! p c0)
                ($set-port-size! p (fx+ c1 c0))
                c1]
               [else 
-               (error who "read! returned a value out of range" c1)])))))
+               (die who "read! returned a value out of range" c1)])))))
     (define (get-char-latin-mode p who idx)
       (let ([n (refill-bv-start p who)])
         (cond
@@ -674,7 +674,7 @@
           [(replace) #\xFFFD]
           [(raise)
            (raise (make-i/o-decoding-error p))]
-          [else (error who "cannot happen")]))
+          [else (die who "cannot happen")]))
       (let ([i ($port-index p)] 
             [j ($port-size p)]
             [buf ($port-buffer p)])
@@ -777,7 +777,7 @@
           [(replace) #\xFFFD]
           [(raise)
            (raise (make-i/o-decoding-error p))]
-          [else (error who "cannot happen")]))
+          [else (die who "cannot happen")]))
       (let ([i ($port-index p)] 
             [j ($port-size p)]
             [buf ($port-buffer p)])
@@ -890,26 +890,26 @@
     (define (speedup-input-port p who)
       ;;; returns #t if port is eof, #f otherwise
       (unless (input-port? p) 
-        (error who "not an input port" p))
+        (die who "not an input port" p))
       (let ([tr ($port-transcoder p)])
         (unless tr 
-          (error who "not a textual port" p))
+          (die who "not a textual port" p))
         (case (transcoder-codec tr)
           [(utf-8-codec)
            ;;;
            ($set-port-attrs! p 
              (fxior textual-input-port-bits fast-u7-text-tag))
            (eof-object? (advance-bom p who '(#xEF #xBB #xBF)))]
-          [else (error 'slow-get-char "codec not handled")])))
+          [else (die 'slow-get-char "codec not handled")])))
 
     (define (lookahead-char-char-mode p who)
       (let ([str ($port-buffer p)]
             [read! ($port-read! p)])
         (let ([n (read! str 0 (string-length str))])
           (unless (fixnum? n) 
-            (error who "invalid return value from read!" n))
+            (die who "invalid return value from read!" n))
           (unless (<= 0 n (string-length str))
-            (error who "return value from read! is out of range" n))
+            (die who "return value from read! is out of range" n))
           ($set-port-index! p 0) 
           ($set-port-size! p n)
           (cond
@@ -957,9 +957,9 @@
             [read! ($port-read! p)])
         (let ([n (read! str 0 (string-length str))])
           (unless (fixnum? n) 
-            (error who "invalid return value from read!" n))
+            (die who "invalid return value from read!" n))
           (unless (<= 0 n (string-length str))
-            (error who "return value from read! is out of range" n))
+            (die who "return value from read! is out of range" n))
           ($set-port-size! p n)
           (cond
             [(fx= n 0)
@@ -1008,31 +1008,31 @@
 
   ;;; ----------------------------------------------------------
   (define (assert-binary-input-port p who)
-    (unless (port? p) (error who "not a port" p))
-    (when ($port-closed? p) (error who "port is closed" p))
-    (when ($port-transcoder p) (error who "port is not binary" p))
+    (unless (port? p) (die who "not a port" p))
+    (when ($port-closed? p) (die who "port is closed" p))
+    (when ($port-transcoder p) (die who "port is not binary" p))
     (unless ($port-read! p)
-      (error who "port is not an input port" p)))
+      (die who "port is not an input port" p)))
 
   (module (get-u8 lookahead-u8)
     (import UNSAFE)
     (define (get-u8-byte-mode p who start) 
-      (when ($port-closed? p) (error who "port is closed" p))
+      (when ($port-closed? p) (die who "port is closed" p))
       (let* ([bv ($port-buffer p)]
              [n (bytevector-length bv)])
         (let ([j (($port-read! p) bv 0 n)])
           (unless (fixnum? j)
-            (error who "invalid return value from read! procedure" j))
+            (die who "invalid return value from read! procedure" j))
           (cond
             [(fx> j 0) 
              (unless (fx<= j n)
-               (error who "read! returned a value out of range" j))
+               (die who "read! returned a value out of range" j))
              ($set-port-index! p start) 
              ($set-port-size! p j)
              (bytevector-u8-ref bv 0)]
             [(fx= j 0) (eof-object)]
             [else 
-             (error who "read! returned a value out of range" j)]))))
+             (die who "read! returned a value out of range" j)]))))
     (define (slow-get-u8 p who start) 
       (assert-binary-input-port p who)
       ($set-port-attrs! p fast-get-byte-tag)
@@ -1075,14 +1075,14 @@
                  (eof-object? (lookahead-u8 p))))]
         [(input-port? p)
          (when ($port-closed? p) 
-           (error 'port-eof? "port is closed" p))
+           (die 'port-eof? "port is closed" p))
          (if (textual-port? p) 
              (eof-object? (lookahead-char p))
              (eof-object? (lookahead-u8 p)))]
-        [else (error 'port-eof? "not an input port" p)])))
+        [else (die 'port-eof? "not an input port" p)])))
 
   (define io-errors-vec
-    '#("unknown error"
+    '#("unknown die"
        "bad file name"
        "operation interrupted"
        "not a directory"
@@ -1098,7 +1098,7 @@
        "operation not supported"
        "not enough space on device"
        "quota exceeded"
-       "io error"
+       "io die"
        "device is busy"
        "access fault"
        "file already exists"
@@ -1110,9 +1110,10 @@
              (cond
                [(fx< err (vector-length io-errors-vec))
                 (vector-ref io-errors-vec err)]
-               [else "unknown error"]))])
+               [else "unknown die"]))])
       (raise 
         (condition
+          (make-error)
           (make-who-condition who)
           (make-message-condition msg)
           (make-i/o-filename-error id)))))
@@ -1186,7 +1187,7 @@
                  [(fo:no-truncate/no-create)         5]
                  [(fo:no-truncate/no-fail)           6]
                  [(fo:no-truncate/no-fail/no-create) 7]
-                 [else (error who "invalid file option" file-options)])])
+                 [else (die who "invalid file option" file-options)])])
       (let ([fh (foreign-call "ikrt_open_output_fd"
                    (string->utf8 filename)
                    opt)])
@@ -1204,9 +1205,9 @@
        (open-file-input-port filename file-options buffer-mode #f)]
       [(filename file-options buffer-mode transcoder)
        (unless (string? filename)
-         (error 'open-file-input-port "invalid filename" filename))
+         (die 'open-file-input-port "invalid filename" filename))
        (unless (or (not transcoder) (transcoder? transcoder)) 
-         (error 'open-file-input-port "invalid transcoder" transcoder))
+         (die 'open-file-input-port "invalid transcoder" transcoder))
        ; FIXME: file-options ignored
        ; FIXME: buffer-mode ignored
        (fh->input-port 
@@ -1227,11 +1228,11 @@
        (open-file-output-port filename file-options buffer-mode #f)]
       [(filename file-options buffer-mode transcoder)
        (unless (string? filename)
-         (error 'open-file-output-port "invalid filename" filename))
+         (die 'open-file-output-port "invalid filename" filename))
        ; FIXME: file-options ignored
        ; FIXME: buffer-mode ignored
        (unless (or (not transcoder) (transcoder? transcoder)) 
-         (error 'open-file-output-port "invalid transcoder" transcoder))
+         (die 'open-file-output-port "invalid transcoder" transcoder))
        (fh->output-port
          (open-output-file-handle filename file-options 
             'open-file-output-port)
@@ -1242,7 +1243,7 @@
 
   (define (open-output-file filename)
     (unless (string? filename)
-      (error 'open-output-file "invalid filename" filename))
+      (die 'open-output-file "invalid filename" filename))
     (fh->output-port 
        (open-output-file-handle filename (file-options) 
           'open-input-file)
@@ -1253,7 +1254,7 @@
 
   (define (open-input-file filename)
     (unless (string? filename)
-      (error 'open-input-file "invalid filename" filename))
+      (die 'open-input-file "invalid filename" filename))
     (fh->input-port 
        (open-input-file-handle filename 'open-input-file) 
        filename
@@ -1263,9 +1264,9 @@
 
   (define (call-with-input-file filename proc)
     (unless (string? filename)
-      (error 'call-with-input-file "invalid filename" filename))
+      (die 'call-with-input-file "invalid filename" filename))
     (unless (procedure? proc)
-      (error 'call-with-input-file "not a procedure" proc))
+      (die 'call-with-input-file "not a procedure" proc))
     (call-with-port
       (fh->input-port 
         (open-input-file-handle filename 'call-with-input-file) 
@@ -1277,9 +1278,9 @@
 
   (define (with-input-from-file filename proc)
     (unless (string? filename)
-      (error 'with-input-from-file "invalid filename" filename))
+      (die 'with-input-from-file "invalid filename" filename))
     (unless (procedure? proc)
-      (error 'with-input-from-file "not a procedure" proc))
+      (die 'with-input-from-file "not a procedure" proc))
     (let ([p
            (fh->input-port 
              (open-input-file-handle filename 'with-input-from-file)
@@ -1340,8 +1341,8 @@
               void
               (lambda () (proc p))
               (lambda () (close-port p)))
-            (error 'call-with-port "not a procedure" proc))
-        (error 'call-with-port "not a port" p)))
+            (die 'call-with-port "not a procedure" proc))
+        (die 'call-with-port "not a port" p)))
 
   (define read-char
     (case-lambda
@@ -1350,8 +1351,8 @@
        (if (input-port? p)
            (if (textual-port? p)
                (get-char p)
-               (error 'read-char "not a textual port" p))
-           (error 'read-char "not an input-port" p))]))
+               (die 'read-char "not a textual port" p))
+           (die 'read-char "not an input-port" p))]))
   ;;;
   (define peek-char
     (case-lambda
@@ -1360,8 +1361,8 @@
        (if (input-port? p)
            (if (textual-port? p)
                (lookahead-char p)
-               (error 'peek-char "not a textual port" p))
-           (error 'peek-char "not an input-port" p))]))
+               (die 'peek-char "not a textual port" p))
+           (die 'peek-char "not an input-port" p))]))
 
   (define (get-bytevector-n p n) 
     (import (ikarus system $fx) (ikarus system $bytevectors))
@@ -1374,11 +1375,11 @@
                 p
                 (f s n p))))))
     (unless (input-port? p) 
-      (error 'get-bytevector-n "not an input port" p))
+      (die 'get-bytevector-n "not an input port" p))
     (unless (binary-port? p)
-      (error 'get-bytevector-n "not a binary port" p))
+      (die 'get-bytevector-n "not a binary port" p))
     (unless (fixnum? n) 
-      (error 'get-bytevector-n "count is not a fixnum" n))
+      (die 'get-bytevector-n "count is not a fixnum" n))
     (cond
       [($fx> n 0) 
        (let ([s ($make-bytevector n)])
@@ -1396,30 +1397,30 @@
                       s
                       (f p n s i)))]))))]
       [($fx= n 0) '#vu8()]
-      [else (error 'get-bytevector-n "count is negative" n)]))
+      [else (die 'get-bytevector-n "count is negative" n)]))
 
   (define (get-bytevector-n! p s i c) 
     (import (ikarus system $fx) (ikarus system $bytevectors))
     (unless (input-port? p) 
-      (error 'get-bytevector-n! "not an input port" p))
+      (die 'get-bytevector-n! "not an input port" p))
     (unless (binary-port? p)
-      (error 'get-bytevector-n! "not a binary port" p))
+      (die 'get-bytevector-n! "not a binary port" p))
     (unless (bytevector? s) 
-      (error 'get-bytevector-n! "not a bytevector" s))
+      (die 'get-bytevector-n! "not a bytevector" s))
     (let ([len ($bytevector-length s)])
       (unless (fixnum? i) 
-        (error 'get-bytevector-n! "starting index is not a fixnum" i))
+        (die 'get-bytevector-n! "starting index is not a fixnum" i))
       (when (or ($fx< i 0) ($fx> i len))
-        (error 'get-bytevector-n! 
+        (die 'get-bytevector-n! 
           (format "starting index is out of range 0..~a" len)
           i))
       (unless (fixnum? c)
-        (error 'get-bytevector-n! "count is not a fixnum" c))
+        (die 'get-bytevector-n! "count is not a fixnum" c))
       (cond
         [($fx> c 0)
          (let ([j (+ i c)])
            (when (> j len)
-             (error 'get-bytevector-n! 
+             (die 'get-bytevector-n! 
                (format "count is out of range 0..~a" (- len i))
                c))
            (let ([x (get-u8 p)])
@@ -1438,7 +1439,7 @@
                              i
                              (f p s start i c)))])))])))]
         [($fx= c 0) 0]
-        [else (error 'get-bytevector-n! "count is negative" c)])))
+        [else (die 'get-bytevector-n! "count is negative" c)])))
 
   (define-rrr get-bytevector-some)
 
@@ -1462,17 +1463,17 @@
     (if (input-port? p)
         (if (binary-port? p)
             (get-it p)
-            (error 'get-bytevector-all "not a binary port" p))
-        (error 'get-bytevector-all "not an input port" p)))
+            (die 'get-bytevector-all "not a binary port" p))
+        (die 'get-bytevector-all "not an input port" p)))
 
   (define (get-string-n p n) 
     (import (ikarus system $fx) (ikarus system $strings))
     (unless (input-port? p) 
-      (error 'get-string-n "not an input port" p))
+      (die 'get-string-n "not an input port" p))
     (unless (textual-port? p) 
-      (error 'get-string-n "not a textual port" p))
+      (die 'get-string-n "not a textual port" p))
     (unless (fixnum? n) 
-      (error 'get-string-n "count is not a fixnum" n))
+      (die 'get-string-n "count is not a fixnum" n))
     (cond
       [($fx> n 0) 
        (let ([s ($make-string n)])
@@ -1490,30 +1491,30 @@
                       s
                       (f p n s i)))]))))]
       [($fx= n 0) ""]
-      [else (error 'get-string-n "count is negative" n)]))
+      [else (die 'get-string-n "count is negative" n)]))
 
   (define (get-string-n! p s i c) 
     (import (ikarus system $fx) (ikarus system $strings))
     (unless (input-port? p) 
-      (error 'get-string-n! "not an input port" p))
+      (die 'get-string-n! "not an input port" p))
     (unless (textual-port? p) 
-      (error 'get-string-n! "not a textual port" p))
+      (die 'get-string-n! "not a textual port" p))
     (unless (string? s) 
-      (error 'get-string-n! "not a string" s))
+      (die 'get-string-n! "not a string" s))
     (let ([len ($string-length s)])
       (unless (fixnum? i) 
-        (error 'get-string-n! "starting index is not a fixnum" i))
+        (die 'get-string-n! "starting index is not a fixnum" i))
       (when (or ($fx< i 0) ($fx> i len))
-        (error 'get-string-n! 
+        (die 'get-string-n! 
           (format "starting index is out of range 0..~a" len)
           i))
       (unless (fixnum? c) 
-        (error 'get-string-n! "count is not a fixnum" c))
+        (die 'get-string-n! "count is not a fixnum" c))
       (cond
         [($fx> c 0)
          (let ([j (+ i c)])
            (when (> j len)
-             (error 'get-string-n! 
+             (die 'get-string-n! 
                (format "count is out of range 0..~a" (- len i))
                c))
            (let ([x (get-char p)])
@@ -1532,7 +1533,7 @@
                              i
                              (f p s start i c)))])))])))]
         [($fx= c 0) 0]
-        [else (error 'get-string-n! "count is negative" c)])))
+        [else (die 'get-string-n! "count is negative" c)])))
 
   (define (get-line p)
     (import UNSAFE)
@@ -1555,8 +1556,8 @@
     (if (input-port? p)
         (if (textual-port? p)
             (get-it p)
-            (error 'get-line "not a textual port" p))
-        (error 'get-line "not an input port" p)))
+            (die 'get-line "not a textual port" p))
+        (die 'get-line "not an input port" p)))
 
 
   (define (get-string-all p)
@@ -1579,8 +1580,8 @@
     (if (input-port? p)
         (if (textual-port? p)
             (get-it p)
-            (error 'get-string-all "not a textual port" p))
-        (error 'get-string-all "not an input port" p)))
+            (die 'get-string-all "not a textual port" p))
+        (die 'get-string-all "not an input port" p)))
 
 
 
@@ -1598,7 +1599,7 @@
               (bytevector-u8-set! ($port-buffer p) i b) 
               ($set-port-index! p (fx+ i 1))]
              [else
-              (error who "insufficient space on port" p)]))]
+              (die who "insufficient space on port" p)]))]
         [(fx<= b #x7FF) 
          (let ([i ($port-index p)] 
                [j ($port-size p)]
@@ -1657,14 +1658,14 @@
               (bytevector-u8-set! ($port-buffer p) i b)
               ($set-port-index! p (fx+ i 1))]
              [else 
-              (error who "insufficient space in port" p)]))]
+              (die who "insufficient space in port" p)]))]
         [else
          (case (transcoder-error-handling-mode (port-transcoder p))
            [(ignore) (void)]
            [(replace) (put-char p #\?)]
            [(raise) 
             (raise (make-i/o-encoding-error p))]
-           [else (error who "BUG: invalid error handling mode" p)])]))
+           [else (die who "BUG: invalid die handling mode" p)])]))
     (define (put-char-char-mode p c who)
       (flush-output-port p)
       (let ([i ($port-index p)] [j ($port-size p)])
@@ -1673,7 +1674,7 @@
            (string-set! ($port-buffer p) i c)
            ($set-port-index! p (fx+ i 1))]
           [else 
-           (error who "insufficient space in port" p)])))
+           (die who "insufficient space in port" p)])))
     ;;;
     (define write-char
       (case-lambda
@@ -1682,17 +1683,17 @@
     (define (put-char p c) 
       (do-put-char p c 'put-char))
     (define (put-string p str)
-      (unless (string? str) (error 'put-string "not a string" str))
+      (unless (string? str) (die 'put-string "not a string" str))
       (unless (output-port? p)
-        (error 'put-string "not an output port" p))
+        (die 'put-string "not an output port" p))
       (unless (textual-port? p)
-        (error 'put-string "not a textual port" p))
+        (die 'put-string "not a textual port" p))
       (let f ([i 0] [n (string-length str)])
         (unless (fx= i n)
           (do-put-char p (string-ref str i) 'put-string)
           (f (fx+ i 1) n))))
     (define (do-put-char p c who)
-      (unless (char? c) (error who "not a char" c))
+      (unless (char? c) (die who "not a char" c))
       (let ([m ($port-fast-attrs p)])
         (cond
           [(eq? m fast-put-utf8-tag)
@@ -1723,8 +1724,8 @@
                   (put-char-latin-mode p b who)])))]
           [else 
            (if (output-port? p)
-               (error who "not a textual port" p)
-               (error who "not an output port" p))]))))
+               (die who "not a textual port" p)
+               (die who "not an output port" p))]))))
 
   (define newline
     (case-lambda
@@ -1733,11 +1734,11 @@
        (flush-output-port (*the-output-port*))]
       [(p)
        (unless (output-port? p) 
-         (error 'newline "not an output port" p))
+         (die 'newline "not an output port" p))
        (unless (textual-port? p) 
-         (error 'newline "not a textual port" p))
+         (die 'newline "not a textual port" p))
        (when ($port-closed? p) 
-         (error 'newline "port is closed" p))
+         (die 'newline "port is closed" p))
        (put-char p #\newline)
        (flush-output-port p)]))
        
@@ -1753,13 +1754,13 @@
             (when (or (not (fixnum? bytes))
                       (fx< bytes 0)
                       (fx> bytes i))
-              (error who "write! returned an invalid value" bytes))
+              (die who "write! returned an invalid value" bytes))
             (cond
               [(fx= bytes i) 
                (bytevector-u8-set! buf 0 b)
                ($set-port-index! p 1)]
               [(fx= bytes 0) 
-               (error who "could not write bytes to sink")]
+               (die who "could not write bytes to sink")]
               [else
                (let ([i (fx- i bytes)])
                  (bytevector-copy! buf bytes buf 0 i)
@@ -1768,7 +1769,7 @@
     ;;;
     (define (put-u8 p b)
       (define who 'put-u8)
-      (unless (u8? b) (error who "not a u8" b))
+      (unless (u8? b) (die who "not a u8" b))
       (let ([m ($port-fast-attrs p)])
         (cond
           [(eq? m fast-put-byte-tag)
@@ -1781,8 +1782,8 @@
                 (put-u8-byte-mode p b who)]))]
           [else 
            (if (output-port? p)
-               (error who "not a binary port" p)
-               (error who "not an output port" p))]))))
+               (die who "not a binary port" p)
+               (die who "not an output port" p))]))))
 
 
   )

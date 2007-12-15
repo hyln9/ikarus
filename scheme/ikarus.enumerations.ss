@@ -33,20 +33,20 @@
   
   (define (make-enumeration ls) 
     (unless (and (list? ls) (for-all symbol? ls))
-      (error 'make-enumeration "~s is not a list of symbols" ls))
+      (die 'make-enumeration "~s is not a list of symbols" ls))
     (make-enum (gensym) ls ls))
   
   (define (enum-set-universe x)
     (unless (enum? x) 
-      (error 'enum-set-universe "~s is not an enumeration" x))
+      (die 'enum-set-universe "~s is not an enumeration" x))
     (enum-univ x))
   
   (define (enum-set-indexer x)
     (unless (enum? x) 
-      (error 'enum-set-indexer "~s is not an enumeration" x))
+      (die 'enum-set-indexer "~s is not an enumeration" x))
     (lambda (s)
       (unless (symbol? s) 
-        (error 'enum-set-indexer "~s is not a symbol" s))
+        (die 'enum-set-indexer "~s is not a symbol" s))
       (let f ([s s] [i 0] [ls (enum-univ x)])
         (cond
           [(pair? ls) 
@@ -57,15 +57,15 @@
   
   (define (enum-set-constructor x)
     (unless (enum? x) 
-      (error 'enum-set-constructor "~s is not an enumeration" x))
+      (die 'enum-set-constructor "~s is not an enumeration" x))
     (let ([idx (enum-set-indexer x)])
       (lambda (ls) 
         (unless (and (list? ls) (for-all symbol? ls))
-          (error 'enum-set-constructor "~s is not a list of symbols" ls))
+          (die 'enum-set-constructor "~s is not a list of symbols" ls))
         (for-each 
           (lambda (s) 
             (unless (memq s (enum-univ x))
-              (error 'enum-set-constructor "~s is not in the universe of ~s" s x)))
+              (die 'enum-set-constructor "~s is not in the universe of ~s" s x)))
           ls)
         (make-enum (enum-g x) (enum-univ x) 
           (map car
@@ -75,7 +75,7 @@
     
   (define (enum-set->list x)
     (unless (enum? x) 
-      (error 'enum-set->list "~s is not an enumeration" x))
+      (die 'enum-set->list "~s is not an enumeration" x))
     (map values (enum-values x)))
   
   (define (enum-set-member? s x) 
@@ -84,8 +84,8 @@
             #t
             (if (symbol? s) 
                 #f 
-                (error 'enum-set-member? "not a symbol" s)))
-        (error 'enum-set-member? "not an enumeration" x)))
+                (die 'enum-set-member? "not a symbol" s)))
+        (die 'enum-set-member? "not an enumeration" x)))
   
   (define (enum-set-subset? x1 x2) 
     (define (subset? s1 s2) 
@@ -97,8 +97,8 @@
             (and (subset? (enum-values x1) (enum-values x2))
                  (or (eq? (enum-g x1) (enum-g x2))
                      (subset? (enum-univ x1) (enum-univ x2))))
-            (error 'enum-set-subset? "not an enumeration" x2))
-        (error 'enum-set-subset? "not an enumeration" x1)))
+            (die 'enum-set-subset? "not an enumeration" x2))
+        (die 'enum-set-subset? "not an enumeration" x1)))
   
   (define (enum-set=? x1 x2) 
     (define (subset? s1 s2) 
@@ -112,8 +112,8 @@
                  (or (eq? (enum-g x1) (enum-g x2))
                      (and (subset? (enum-univ x1) (enum-univ x2))
                           (subset? (enum-univ x2) (enum-univ x1)))))
-            (error 'enum-set=? "not an enumeration" x2))
-        (error 'enum-set=? "not an enumeration" x1)))
+            (die 'enum-set=? "not an enumeration" x2))
+        (die 'enum-set=? "not an enumeration" x1)))
   
   (define (enum-set-op x1 x2 who combine)
     (if (enum? x1) 
@@ -121,10 +121,10 @@
             (let ([g (enum-g x1)] [u (enum-univ x1)])
               (if (eq? g (enum-g x2))
                   (make-enum g u (combine u (enum-values x1) (enum-values x2)))
-                  (error who 
+                  (die who 
                     "enum sets have different enumeration types" x1 x2)))
-            (error who "not an enumeration" x2))
-        (error who "not an enumeration" x1)))
+            (die who "not an enumeration" x2))
+        (die who "not an enumeration" x1)))
   
   (define (enum-set-union x1 x2)
     (define (union u s1 s2) 
@@ -183,7 +183,7 @@
     (if (enum? x) 
         (let ([g (enum-g x)] [u (enum-univ x)])
            (make-enum g u (complement u (enum-values x))))
-        (error 'enum-set-complement "not an enumeration" x)))
+        (die 'enum-set-complement "not an enumeration" x)))
   
   (define (enum-set-projection x1 x2)
     (define (combine u s) 
@@ -202,8 +202,8 @@
                     (if (null? s) 
                         (make-enum g u '())
                         (make-enum g u (combine u s))))))
-            (error 'enum-set-projection "not an enumeration" x2))
-        (error 'enum-set-projection "not an enumeration" x1)))
+            (die 'enum-set-projection "not an enumeration" x2))
+        (die 'enum-set-projection "not an enumeration" x1)))
 )
 
 #!eof

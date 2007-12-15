@@ -26,6 +26,6 @@
       (lambda (x)
         (if (and (list? x) (andmap string? x))
             x
-            (error 'command-list 
+            (die 'command-list 
               "invalid command-line-arguments ~s\n" x))))))
 

@@ -31,8 +31,8 @@ description:
   Input and output performed by the cafe can be changed by the
   console-input-port and console-output-port parameters.
   
-  If an error occurs during reading, evaluating, or printing an
-  expression, then the error is printed to the error-port and the
+  If an die occurs during reading, evaluating, or printing an
+  expression, then the die is printed to the error-port and the
   operations of the cafe resume as normal.|#
 #|FIXME:new-cafe
   Be specific about what the error-port is |#
@@ -112,7 +112,7 @@ description:
       [() (do-new-cafe default-cafe-eval)]
       [(p)
        (unless (procedure? p)
-         (error 'new-cafe "not a procedure" p))
+         (die 'new-cafe "not a procedure" p))
        (do-new-cafe p)]))
   )
 

@@ -37,7 +37,7 @@
   ;;; handling-modes: ignore, replace, raise
   ;;; ignore: skips over the offending bytes
   ;;; replace: places a U+FFFD in place of the malformed bytes
-  ;;; raise: raises an error
+  ;;; raise: raises an die
 
   ;;; It appears that utf-8 data can start with a #xEF #xBB #xBF BOM!
 
@@ -102,14 +102,14 @@
                      ($fxlogor #b10000000 ($fxlogand b #b111111)))
                    (f bv str ($fxadd1 i) ($fx+ j 4) n)])))])))
       (unless (string? str) 
-        (error 'string->utf8 "not a string" str))
+        (die 'string->utf8 "not a string" str))
       (fill-utf8-bytevector
         ($make-bytevector (utf8-string-size str))
         str)))
 
   (define (utf8->string x) 
     (unless (bytevector? x) 
-      (error 'utf8->string "not a bytevector" x))
+      (die 'utf8->string "not a bytevector" x))
     (decode-utf8-bytevector x 'replace))
 
   (define decode-utf8-bytevector
@@ -142,12 +142,12 @@
                            [(eq? mode 'replace) 
                             (f x i j ($fxadd1 n) mode)]
                            [else
-                            (error who "invalid byte sequence at idx of bytevector"
+                            (die who "invalid byte sequence at idx of bytevector"
                                    b0 b1 i bv)]))]
                       [(eq? mode 'ignore) n]
                       [(eq? mode 'replace) ($fxadd1 n)]
                       [else
-                       (error who "invalid byte near end of bytevector" b0)]))]
+                       (die who "invalid byte near end of bytevector" b0)]))]
                  [($fx= ($fxsra b0 4) #b1110)
                   (cond
                     [($fx< ($fx+ i 2) j) 
@@ -165,10 +165,10 @@
                           (f x ($fxadd1 i) j n mode)]
                          [(eq? mode 'replace)
                           (f x ($fxadd1 i) j ($fxadd1 n) mode)]
-                         [else (error who "invalid sequence" b0 b1 b2)]))]
+                         [else (die who "invalid sequence" b0 b1 b2)]))]
                     [(eq? mode 'ignore) (f x ($fxadd1 i) j n mode)]
                     [(eq? mode 'replace) (f x ($fxadd1 i) j ($fxadd1 n) mode)]
-                    [else (error who "incomplete char sequence")])]
+                    [else (die who "incomplete char sequence")])]
                  [($fx= ($fxsra b0 3) #b11110)
                   (cond
                     [($fx< ($fx+ i 3) j) 
@@ -189,13 +189,13 @@
                           (f x ($fxadd1 i) j n mode)]
                          [(eq? mode 'replace)
                           (f x ($fxadd1 i) j ($fxadd1 n) mode)]
-                         [else (error who "invalid sequence" b0 b1 b2 b3)]))]
+                         [else (die who "invalid sequence" b0 b1 b2 b3)]))]
                     [(eq? mode 'ignore) (f x ($fxadd1 i) j n mode)]
                     [(eq? mode 'replace) (f x ($fxadd1 i) j ($fxadd1 n) mode)]
-                    [else (error who "incomplete char sequence")])]
+                    [else (die who "incomplete char sequence")])]
                  [(eq? mode 'ignore) (f x ($fxadd1 i) j n mode)]
                  [(eq? mode 'replace) (f x ($fxadd1 i) j ($fxadd1 n) mode)]
-                 [else (error who "invalid byte at index of bytevector" b0 i x)]))])))
+                 [else (die who "invalid byte at index of bytevector" b0 i x)]))])))
       (define (fill str bv i mode)
         (let f ([str str] [x bv] [i i] [j ($bytevector-length bv)] [n 0] [mode mode])
           (cond
@@ -227,12 +227,12 @@
                            [(eq? mode 'replace)
                             ($string-set! str n ($fixnum->char #xFFFD))
                             (f str x i j ($fxadd1 n) mode)]
-                           [else (error who "BUG")]))]
+                           [else (die who "BUG")]))]
                       [(eq? mode 'ignore) str]
                       [(eq? mode 'replace) 
                        ($string-set! str n ($fixnum->char #xFFFD))
                        str]
-                      [else (error who "BUG")]))]
+                      [else (die who "BUG")]))]
                  [($fx= ($fxsra b0 4) #b1110)
                   (cond
                     [($fx< ($fx+ i 2) j) 
@@ -254,12 +254,12 @@
                          [(eq? mode 'replace)
                           ($string-set! str n ($fixnum->char #xFFFD))
                           (f str x ($fxadd1 i) j ($fxadd1 n) mode)]
-                         [else (error who "BUG")]))]
+                         [else (die who "BUG")]))]
                     [(eq? mode 'ignore) (f str x ($fxadd1 i) j n mode)]
                     [(eq? mode 'replace) 
                      ($string-set! str n ($fixnum->char #xFFFD))
                      (f str x ($fxadd1 i) j ($fxadd1 n) mode)]
-                    [else (error who "BUG")])]
+                    [else (die who "BUG")])]
                  [($fx= ($fxsra b0 3) #b11110)
                   (cond
                     [($fx< ($fx+ i 3) j) 
@@ -285,17 +285,17 @@
                          [(eq? mode 'replace)
                           ($string-set! str n ($fixnum->char #xFFFD))
                           (f str x ($fxadd1 i) j ($fxadd1 n) mode)]
-                         [else (error who "BUG")]))]
+                         [else (die who "BUG")]))]
                     [(eq? mode 'ignore) (f str x ($fxadd1 i) j n mode)]
                     [(eq? mode 'replace) 
                      ($string-set! str n ($fixnum->char #xFFFD))
                      (f str x ($fxadd1 i) j ($fxadd1 n) mode)]
-                    [else (error who "BUG")])]
+                    [else (die who "BUG")])]
                  [(eq? mode 'ignore) (f str x ($fxadd1 i) j n mode)]
                  [(eq? mode 'replace)
                   ($string-set! str n ($fixnum->char #xFFFD))
                   (f str x ($fxadd1 i) j ($fxadd1 n) mode)]
-                 [else (error who "BUG")]))])))
+                 [else (die who "BUG")]))])))
       (define (has-bom? bv) 
         (and (fx> (bytevector-length bv) 3) 
              (fx= (bytevector-u8-ref bv 0) #xEF)
@@ -311,7 +311,7 @@
         [(bv) (convert bv 'raise)]
         [(bv handling-mode)
          (unless (memq handling-mode '(ignore replace raise)) 
-           (error 'decode-utf8-bytevector
+           (die 'decode-utf8-bytevector
                   "not a valid handling mode"
                   handling-mode))
          (convert bv handling-mode)])))
@@ -353,7 +353,7 @@
 ;;;      of W1. Terminate.
 ;;;
 ;;;   2) Determine if W1 is between 0xD800 and 0xDBFF. If not, the sequence
-;;;      is in error and no valid character can be obtained using W1.
+;;;      is in die and no valid character can be obtained using W1.
 ;;;      Terminate.
 ;;;
 ;;;   3) If there is no W2 (that is, the sequence ends with W1), or if W2
@@ -407,13 +407,13 @@
       (case-lambda
         [(str) 
          (unless (string? str)
-           (error 'string->utf16 "not a string" str))
+           (die 'string->utf16 "not a string" str))
          ($string->utf16 str 'big)]
         [(str endianness)
          (unless (string? str)
-           (error 'string->utf16 "not a string" str))
+           (die 'string->utf16 "not a string" str))
          (unless (memv endianness '(big little))
-           (error 'string->utf16 "invalid endianness" endianness))
+           (die 'string->utf16 "invalid endianness" endianness))
          ($string->utf16 str endianness)])))
 
   (module (utf16->string)
@@ -429,20 +429,20 @@
            (cond
              [(or (fx< w1 #xD800) (fx> w1 #xDFFF))
               (count-size bv endianness (+ i 2) len (+ n 1))]
-             [(not (fx<= #xD800 w1 #xDBFF)) ;;; error sequence
+             [(not (fx<= #xD800 w1 #xDBFF)) ;;; die sequence
               (count-size bv endianness (+ i 2) len (+ n 1))]
              [(<= (+ i 4) (bytevector-length bv))
               (let ([w2 (bytevector-u16-ref bv (+ i 2) endianness)])
                 (cond
                   [(not (<= #xDC00 w2 #xDFFF)) 
                    ;;; do we skip w2 also?
-                   ;;; I won't.  Just w1 is an error
+                   ;;; I won't.  Just w1 is an die
                    (count-size bv endianness (+ i 2) len (+ n 1))]
                   [else 
                    ;;; 4-byte sequence is ok
                    (count-size bv endianness (+ i 4) len (+ n 1))]))]
              [else 
-              ;;; error again
+              ;;; die again
               (count-size bv endianness (+ i 2) len (+ n 1))]))]))
     (define (fill bv endianness str i len n)
       (cond
@@ -456,7 +456,7 @@
              [(or (fx< w1 #xD800) (fx> w1 #xDFFF))
               (string-set! str n (integer->char/invalid w1))
               (fill bv endianness str (+ i 2) len (+ n 1))]
-             [(not (fx<= #xD800 w1 #xDBFF)) ;;; error sequence
+             [(not (fx<= #xD800 w1 #xDBFF)) ;;; die sequence
               (string-set! str n #\xFFFD)
               (fill bv endianness str (+ i 2) len (+ n 1))]
              [(<= (+ i 4) (bytevector-length bv))
@@ -464,7 +464,7 @@
                 (cond
                   [(not (<= #xDC00 w2 #xDFFF)) 
                    ;;; do we skip w2 also?
-                   ;;; I won't.  Just w1 is an error
+                   ;;; I won't.  Just w1 is an die
                    (string-set! str n #\xFFFD)
                    (fill bv endianness str (+ i 2) len (+ n 1))]
                   [else 
@@ -475,7 +475,7 @@
                                   (fxlogand w2 #x3FF)))))
                    (fill bv endianness str (+ i 4) len (+ n 1))]))]
              [else 
-              ;;; error again
+              ;;; die again
               (string-set! str n #\xFFFD)
               (fill bv endianness str (+ i 2) len (+ n 1))]))]))
     (define (decode bv endianness start)
@@ -492,9 +492,9 @@
                  [(fx= n #xFFFE) 'little]
                  [else #f]))))
       (unless (bytevector? bv)
-        (error who "not a bytevector" bv))
+        (die who "not a bytevector" bv))
       (unless (memv endianness '(big little))
-        (error who "invalid endianness" endianness))
+        (die who "invalid endianness" endianness))
       (cond
         [em?  (decode bv endianness 0)]
         [(bom-present bv) =>
@@ -528,13 +528,13 @@
       (case-lambda
         [(str) 
          (unless (string? str)
-           (error who "not a string" str))
+           (die who "not a string" str))
          ($string->utf32 str 'big)]
         [(str endianness)
          (unless (string? str)
-           (error who "not a string" str))
+           (die who "not a string" str))
          (unless (memq endianness '(little big))
-           (error who "invalid endianness" endianness))
+           (die who "invalid endianness" endianness))
          ($string->utf32 str endianness)])))
 
 
@@ -567,9 +567,9 @@
                  [(= n #xFFFE0000) 'little]
                  [else #f]))))
       (unless (bytevector? bv)
-        (error who "not a bytevector" bv))
+        (die who "not a bytevector" bv))
       (unless (memv endianness '(big little))
-        (error who "invalid endianness" endianness))
+        (die who "invalid endianness" endianness))
       (cond
         [em? (decode bv endianness 0)]
         [(bom-present bv) =>
