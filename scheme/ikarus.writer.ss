@@ -716,54 +716,84 @@
   
   (define formatter
     (lambda (who p fmt args)
+      ;;; first check
+      (let f ([i 0] [args args])
+        (cond
+          [(fx= i (string-length fmt))
+           (unless (null? args) 
+             (error who 
+               (format 
+                 "extra arguments given for format string \x2036;~a\x2033;"
+                 fmt)))]
+          [else
+           (let ([c (string-ref fmt i)])
+             (cond
+               [(eqv? c #\~)
+                (let ([i (fxadd1 i)])
+                  (when (fx= i (string-length fmt))
+                    (error who "invalid ~ at end of format string" fmt))
+                  (let ([c (string-ref fmt i)])
+                   (cond
+                     [(memv c '(#\~ #\%)) (f (fxadd1 i) args)]
+                     [(memv c '(#\a #\s))
+                      (when (null? args)
+                        (error who "insufficient arguments"))
+                      (f (fxadd1 i) (cdr args))]
+                     [(memv c '(#\b #\o #\x #\d))
+                      (when (null? args)
+                        (error who "insufficient arguments"))
+                      (let ([a (car args)])
+                        (cond
+                          [(or (fixnum? a) (bignum? a) (ratnum?  a)) 
+                           (void)]
+                          [(flonum? a)
+                           (unless (eqv? c #\d) 
+                             (error who 
+                               (format "flonums cannot be printed with ~~~a" c)))]
+                          [else 
+                           (error who "not a number" a)]))
+                      (f (fxadd1 i) (cdr args))]
+                     [else
+                      (error who "invalid sequence character after ~" c)])))]
+               [else (f (fxadd1 i) args)]))]))
+      ;;; then format
       (let f ([i 0] [args args])
         (unless (fx= i (string-length fmt))
           (let ([c (string-ref fmt i)])
             (cond
-              [($char= c #\~)
+              [(eqv? c #\~)
                (let ([i (fxadd1 i)])
-                 (when (fx= i (string-length fmt))
-                   (error who "invalid ~ at end of format string" fmt))
                  (let ([c (string-ref fmt i)])
                   (cond
-                    [($char= c #\~) 
+                    [(eqv? c #\~) 
                      (write-char #\~ p)
                      (f (fxadd1 i) args)]
-                    [($char= c #\%) 
+                    [(eqv? c #\%) 
                      (write-char #\newline p)
                      (f (fxadd1 i) args)] 
-                    [($char= c #\a)
-                     (when (null? args)
-                       (error who "insufficient arguments"))
+                    [(eqv? c #\a)
                      (display-to-port (car args) p)
                      (f (fxadd1 i) (cdr args))]
-                    [($char= c #\s)
-                     (when (null? args)
-                       (error who "insufficient arguments"))
+                    [(eqv? c #\s)
                      (write-to-port (car args) p)
                      (f (fxadd1 i) (cdr args))]
                     [(assv c '([#\b . 2] [#\o . 8] [#\x . 16] [#\d . 10]))
                      =>
                      (lambda (x)
-                       (when (null? args)
-                         (error who "insufficient arguments"))
                        (let ([a (car args)])
                          (cond
                            [(or (fixnum? a) (bignum? a) (ratnum? a))
                             (display-to-port (number->string a (cdr x)) p)]
                            [(flonum? a)
-                            (unless (eqv? c #\d) 
-                              (error who 
-                                (format "flonums cannot be printed with ~~~a" c)))
                             (display-to-port (number->string a) p)]
                            [else 
-                            (error who "not a number" a)]))
+                            (error who "BUG: not a number" a)]))
                        (f (fxadd1 i) (cdr args)))]
-                    [else
-                     (error who "invalid sequence character after ~" c)])))]
+                    [else (error who "BUG" c)])))]
               [else 
                (write-char c p)
                (f (fxadd1 i) args)]))))
+      ;;; then flush
       (flush-output-port p)))
   
   (define fprintf
