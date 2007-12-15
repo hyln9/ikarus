@@ -304,7 +304,7 @@
     (unless (or (procedure? close) (not close))
       (error who "close should be either a procedure or #f" close))
     ($make-custom-textual-port 
-      textual-input-port-bits
+      (fxior textual-input-port-bits fast-char-text-tag)
       0
       id read! #f get-position
       set-position! close 256))
@@ -320,7 +320,7 @@
     (unless (or (procedure? close) (not close))
       (error who "close should be either a procedure or #f" close))
     ($make-custom-textual-port 
-      textual-output-port-bits
+      (fxior textual-output-port-bits fast-char-text-tag)
       256
       id #f write! get-position
       set-position! close 256))
