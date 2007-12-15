@@ -145,18 +145,20 @@
             (if (null? h)
                 ac 
                 (die 'append "not a proper list" ls)))))
-    (define revcons
+    (define rev!
       (lambda (ls ac)
         (cond
           [(null? ls) ac]
           [else
-           (revcons ($cdr ls) (cons ($car ls) ac))])))
+           (let ([ls^ ($cdr ls)])
+             ($set-cdr! ls ac)
+             (rev! ls^ ls))])))
     (define append1
       (lambda (ls ls*)
         (cond
           [(null? ls*) ls]
           [else 
-           (revcons (reverse ls ls ls '())
+           (rev! (reverse ls ls ls '())
               (append1 ($car ls*) ($cdr ls*)))])))
     (define append
       (case-lambda
