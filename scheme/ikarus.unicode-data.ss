@@ -229,24 +229,55 @@
            (error 'char-ci>=? "not a char" x))]))
                
   (define ($string-foldcase str)
-    (let-values ([(p e) (open-string-output-port)])
-      (let f ([str str] [i 0] [n (string-length str)])
+    (define (extend-length str ac) 
+      (define (chars ac n)
         (cond
-          [($fx= i n) (e)]
+          [(null? ac) n]
+          [else 
+           (chars (cdr ac)
+             (let f ([p (cdar ac)] [n n])
+               (cond
+                 [(pair? p) (f (cdr p) (+ n 1))]
+                 [else n])))]))
+      (let ([dst-len (chars ac (string-length str))])
+        (let f ([str str] [dst (make-string dst-len)] [i 0] [j 0] [ac (reverse ac)])
+          (cond
+            [(null? ac) 
+             (string-copy! str i dst j (fx- (string-length str) i))
+             dst]
+            [else
+             (let ([idx (caar ac)] [c* (cdar ac)] [ac (cdr ac)])
+               (let ([cnt (fx- idx i)])
+                 (string-copy! str i dst j cnt)
+                 (let g ([str str]       [dst dst] 
+                         [i (fx+ i cnt)] [j (fx+ j cnt)] 
+                         [ac ac]         [c* c*]) 
+                   (cond
+                     [(pair? c*) 
+                      (string-set! dst j (car c*))
+                      (g str dst i (fx+ j 1) ac (cdr c*))]
+                     [else
+                      (string-set! dst j c*)
+                      (f str dst (fx+ i 1) (fx+ j 1) ac)]))))]))))
+    (let ([n (string-length str)])
+      (let f ([str str] [dst (make-string n)] [i 0] [n n] [ac '()])
+        (cond
+          [($fx= i n) 
+           (if (null? ac) 
+               dst 
+               (extend-length dst ac))]
           [else
-           (let* ([n ($char->fixnum ($string-ref str i))])
+           (let* ([cn ($char->fixnum ($string-ref str i))])
              (let ([n/ls
                     (vector-ref string-foldcase-adjustment-vector
-                      (binary-search n charcase-search-vector))])
-               (if (fixnum? n/ls)
-                   (write-char ($fixnum->char ($fx+ n n/ls)) p)
-                   (let f ([ls n/ls])
-                     (write-char ($car ls) p)
-                     (let ([ls ($cdr ls)])
-                       (if (pair? ls) 
-                           (f ls)
-                           (write-char ls p)))))))
-           (f str ($fxadd1 i) n)]))))
+                      (binary-search cn charcase-search-vector))])
+               (cond
+                 [(fixnum? n/ls)
+                  (string-set! dst i ($fixnum->char ($fx+ cn n/ls)))
+                  (f str dst ($fxadd1 i) n ac)]
+                 [else
+                  (f str dst (fxadd1 i) n 
+                     (cons (cons i n/ls) ac))])))]))))
 
   (define (string-foldcase str)
     (if (string? str)

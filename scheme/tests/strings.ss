@@ -15,6 +15,8 @@
     ; (string-downcase "STRASSE")]
     [values (string-ci=? "Stra\xDF;e" "Strasse")]
     [values (string-ci=? "Stra\xDF;e" "STRASSE")]
+    [values (string-ci=? "\xDF;" "SS")]
+    [values (string-ci=? "\xDF;\xDF;" "SSSS")]
     ))
 
 
