@@ -521,9 +521,13 @@
       (cond
         ((imported-label->binding x) =>
          (lambda (b) 
-           (if (and (pair? b) (eq? (car b) '$core-rtd)) 
-               (cons '$rtd (map bless (cdr b)))
-               b)))
+           (cond
+             [(and (pair? b) (eq? (car b) '$core-rtd))
+              (cons '$rtd (map bless (cdr b)))]
+             [(and (pair? b) (eq? (car b) 'global-rtd))
+              (let ([lib (cadr b)] [loc (cddr b)])
+                (cons '$rtd (symbol-value loc)))]
+             [else b])))
         ((assq x r) => cdr)
         (else '(displaced-lexical . #f)))))
 
@@ -816,7 +820,7 @@
                 (type (binding-type b)))
            (unless lab (stx-error e "unbound identifier"))
            (unless (and (eq? type '$rtd) (not (list? (binding-value b))))
-             (stx-error e "invalid type"))
+             (stx-error e "invalid type" b))
            (build-data no-source (binding-value b)))))))
 
   (define record-type-descriptor-transformer
@@ -828,7 +832,7 @@
                 (type (binding-type b)))
            (unless lab (stx-error e "unbound identifier"))
            (unless (and (eq? type '$rtd) (list? (binding-value b)))
-             (stx-error e "invalid type"))
+             (stx-error e "invalid type" b))
            (chi-expr (car (binding-value b)) r mr))))))
 
   (define record-constructor-descriptor-transformer
@@ -2809,21 +2813,28 @@
 
   (define set-global-macro-binding!
     (lambda (id loc b)
-      (let ([type
-             (case (binding-type b)
-               [(local-macro) 'global-macro]
-               [(local-macro!) 'global-macro!]
-               [else
-                (assertion-violation 'set-global-macro-binding!
-                  "BUG: invalid type" b)])]
-            [transformer (cadr b)]
-            [label (id->label id)]
-            [sym (id->sym id)])
-        (set-symbol-value! loc transformer)
-        (extend-library-subst! (interaction-library) sym label)
-        (extend-library-env! (interaction-library) label 
-          (cons* type (interaction-library) loc)))))
-  
+      (define (extend-macro! id loc type transformer)
+        (let ([sym (id->sym id)]
+              [label (id->label id)])
+          (set-symbol-value! loc transformer)
+          (extend-library-subst! (interaction-library) sym label)
+          (extend-library-env! (interaction-library) label 
+            (cons* type (interaction-library) loc))))
+      (case (binding-type b)
+        [(local-macro) 
+         (extend-macro! id loc 'global-macro (cadr b))]
+        [(local-macro!)
+         (extend-macro! id loc 'global-macro! (cadr b))]
+        [($rtd) 
+         (extend-macro! id loc 'global-rtd (cdr b))]
+        ; (extend-library-subst! (interaction-library) 
+        ;    (id->sym id) (id->label id))
+        ; (extend-library-env! (interaction-library) 
+        ;    (id->label id) b)]
+        [else
+         (assertion-violation 'set-global-macro-binding!
+           "BUG: invalid type" b)])))
+
   (define gen-global-macro-binding
     (lambda (id ctxt) (gen-global-var-binding id ctxt)))
   
@@ -2832,7 +2843,7 @@
       (let ((label (id->label id)))
         (let ((b (imported-label->binding label)))
           (case (binding-type b)
-            ((global global-macro global-macro!)
+            ((global global-macro global-macro! global-rtd)
              (let ((x (binding-value b)))
                (let ((lib (car x)) (loc (cdr x)))
                  (cond
