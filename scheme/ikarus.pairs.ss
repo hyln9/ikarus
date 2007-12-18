@@ -65,7 +65,9 @@
        (begin
          (define name*
            (lambda (x) 
-             ((cxr (die 'name* "invalid list structure" x) ops** ...)
+             ((cxr (die 'name* 
+                     "argument does not have required pair structure" x) 
+                   ops** ...)
               x)))
          ...)]))
 
