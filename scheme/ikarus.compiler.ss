@@ -1981,7 +1981,9 @@
   (define disp-port-set-position!  36)
   (define disp-port-close          40)
   (define disp-port-cookie         44)
-  (define port-size                48)
+  (define disp-port-position       48)
+  (define disp-port-unused         52)
+  (define port-size                56)
 
   (define disp-tcbucket-tconc 0)
   (define disp-tcbucket-key   4)

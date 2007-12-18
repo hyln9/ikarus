@@ -413,7 +413,7 @@ ikp ik_safe_alloc(ikpcb* pcb, int size);
 
 #define port_tag      0x3F
 #define port_mask     0x3F
-#define port_size       48
+#define port_size       56
 
 #define disp_tcbucket_tconc        0
 #define disp_tcbucket_key          4

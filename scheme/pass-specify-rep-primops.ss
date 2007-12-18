@@ -1771,6 +1771,8 @@
      (prm 'mset p (K (- disp-port-set-position! vector-tag)) (T setp))
      (prm 'mset p (K (- disp-port-close vector-tag)) (T cl))
      (prm 'mset p (K (- disp-port-cookie vector-tag)) (T cookie))
+     (prm 'mset p (K (- disp-port-position vector-tag)) (K 0))
+     (prm 'mset p (K (- disp-port-unused vector-tag)) (K 0))
      p)])
 
 (define-primop $port-index unsafe

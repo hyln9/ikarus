@@ -13,24 +13,6 @@
 ;;; You should have received a copy of the GNU General Public License
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#;
-(library (ikarus system $io tmp)
-  (export $make-port $port-tag $port-id $port-cookie
-          port? $port-transcoder 
-          $port-index $port-size $port-buffer 
-          $port-get-position $port-set-position! $port-close
-          $port-read! $port-write! $set-port-index! $set-port-size!
-          $port-attrs $set-port-attrs!)
-  (import (except (ikarus) port?))
-  (define-struct $port 
-    (attrs index size buffer transcoder 
-     id read! write! get-position set-position! close cookie))
-  (define port? $port?)
-  (define $set-port-index! set-$port-index!)
-  (define $set-port-size! set-$port-size!)
-  (define $set-port-attrs! set-$port-attrs!)
-  (define $make-port make-$port)
-  (define ($port-tag x) (if ($port? x) ($port-attrs x) 0)))
 
 (library (io-spec) 
   
@@ -131,7 +113,6 @@
      integer->char char->integer
      string-ref string-set! string-length
      bytevector-u8-ref bytevector-u8-set!)
-
     (import 
       (rename (ikarus system $strings)
         ($string-length string-length)
@@ -165,7 +146,6 @@
       [(_ name)
        (define (name . args) 
          (apply die 'name "not implemented" args))]))
-
  
   (define-syntax u8?
     (let ()
