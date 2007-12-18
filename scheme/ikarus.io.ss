@@ -58,6 +58,7 @@
     port-mode set-port-mode!
     reset-input-port!
     port-id
+    input-port-byte-position
     )
 
   
@@ -105,6 +106,7 @@
       port-mode set-port-mode!
       reset-input-port!
       port-id
+      input-port-byte-position
       ))
 
   (module UNSAFE  
@@ -214,6 +216,12 @@
     (if (port? p) 
         ($port-id p)
         (die 'port-id "not a port" p)))
+
+  (define (input-port-byte-position p)
+    (if (input-port? p) 
+        (let ([pos ($port-position p)])
+          (and pos (fx+ pos ($port-index p))))
+        (error 'input-port-byte-position "not an input port" p)))
 
   (define guarded-port
     (let ([G (make-guardian)])
@@ -605,27 +613,14 @@
   ;;; ----------------------------------------------------------
   (module (read-char get-char lookahead-char)
     (import UNSAFE)
-    (define (refill-bv-start p who)
-      (when ($port-closed? p) (die who "port is closed" p))
-      (let* ([bv ($port-buffer p)]
-             [n (bytevector-length bv)])
-        (let ([j (($port-read! p) bv 0 n)])
-          (unless (fixnum? j)
-            (die who "invalid return value from read! procedure" j))
-          (cond
-            [(fx>= j 0)
-             (unless (fx<= j n)
-               (die who "read! returned a value out of range" j))
-             ($set-port-index! p 0)
-             ($set-port-size! p j)
-             j]
-            [else 
-             (die who "read! returned a value out of range" j)]))))
     (define (refill-bv-buffer p who)
       (when ($port-closed? p) (die who "port is closed" p))
       (let ([bv ($port-buffer p)] [i ($port-index p)] [j ($port-size p)])
         (let ([c0 (fx- j i)])
           (bytevector-copy! bv i bv 0 c0)
+          (let ([pos ($port-position p)])
+            (when pos
+              ($set-port-position! p (fx+ pos i))))
           (let* ([max (fx- (bytevector-length bv) c0)]
                  [c1 (($port-read! p) bv c0 max)])
             (unless (fixnum? c1)
@@ -639,14 +634,14 @@
                c1]
               [else 
                (die who "read! returned a value out of range" c1)])))))
-    (define (get-char-latin-mode p who idx)
-      (let ([n (refill-bv-start p who)])
+    (define (get-char-latin-mode p who inc)
+      (let ([n (refill-bv-buffer p who)])
         (cond
           [(fx= n 0) (eof-object)]
           [else 
-           ($set-port-index! p idx)
-           (integer->char (bytevector-u8-ref ($port-buffer p) 0))])))
-    
+           (let ([idx ($port-index p)])
+             ($set-port-index! p (fx+ idx inc))
+             (integer->char (bytevector-u8-ref ($port-buffer p) idx)))])))
     (define (get-char-utf8-mode p who)
       (define (do-error p who)
         (case (transcoder-error-handling-mode ($port-transcoder p))

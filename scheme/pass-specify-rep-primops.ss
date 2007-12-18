@@ -1797,6 +1797,8 @@
   [(V x) (prm 'mref (T x) (K (- disp-port-close vector-tag)))])
 (define-primop $port-cookie unsafe
   [(V x) (prm 'mref (T x) (K (- disp-port-cookie vector-tag)))])
+(define-primop $port-position unsafe
+  [(V x) (prm 'mref (T x) (K (- disp-port-position vector-tag)))])
 (define-primop $port-attrs unsafe
   [(V x) 
    (prm 'sra
@@ -1818,6 +1820,8 @@
   [(E x i) (prm 'mset (T x) (K (- disp-port-index vector-tag)) (T i))])
 (define-primop $set-port-size! unsafe
   [(E x i) (prm 'mset (T x) (K (- disp-port-size vector-tag)) (T i))])
+(define-primop $set-port-position! unsafe
+  [(E x i) (prm 'mset (T x) (K (- disp-port-position vector-tag)) (T i))])
 (define-primop $set-port-attrs! unsafe
   [(E x i) 
    (prm 'mset (T x)
