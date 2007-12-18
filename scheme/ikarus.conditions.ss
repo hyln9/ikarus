@@ -336,7 +336,7 @@
   (define print-condition 
     (let ()
       (define (print-simple-condition x p)
-        (let ([rtd (record-rtd x)])
+        (let f ([rtd (record-rtd x)])
           (let ([name (record-type-name rtd)])
             (display name p))
           (let ([v (record-type-field-names rtd)])
@@ -356,6 +356,8 @@
                    (write ((record-accessor rtd i) x) p)
                    (newline)
                    (f (+ i 1))))]))))
+          ;; (let ([parent (record-type-parent rtd)])
+          ;;   (when parent (f parent)))))
       (define (print-condition x p)
         (cond
           [(condition? x) 

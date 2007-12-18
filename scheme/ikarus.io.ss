@@ -1120,41 +1120,45 @@
         [else (die 'port-eof? "not an input port" p)])))
 
   (define io-errors-vec
-    '#("unknown die"
-       "bad file name"
-       "operation interrupted"
-       "not a directory"
-       "file name too long"
-       "missing entities"
-       "insufficient access privileges"
-       "circular path"
-       "file is a directory"
-       "file system is read-only"
-       "maximum open files reached"
-       "maximum open files reached"
-       "ENXIO"
-       "operation not supported"
-       "not enough space on device"
-       "quota exceeded"
-       "io die"
-       "device is busy"
-       "access fault"
-       "file already exists"
-       "invalid file name"))
+    '#(#|  0 |# "unknown error"
+       #|  1 |# "bad file name"
+       #|  2 |# "operation interrupted"
+       #|  3 |# "not a directory"
+       #|  4 |# "file name too long"
+       #|  5 |# "missing entities"
+       #|  6 |# "insufficient access privileges"
+       #|  7 |# "circular path"
+       #|  8 |# "file is a directory"
+       #|  9 |# "file system is read-only"
+       #| 10 |# "maximum open files reached"
+       #| 11 |# "maximum open files reached"
+       #| 12 |# "ENXIO"
+       #| 13 |# "operation not supported"
+       #| 14 |# "not enough space on device"
+       #| 15 |# "quota exceeded"
+       #| 16 |# "io error"
+       #| 17 |# "device is busy"
+       #| 18 |# "access fault"
+       #| 19 |# "file already exists"
+       #| 20 |# "invalid file name"))
 
   (define (io-error who id err)
-    (let ([msg
-           (let ([err (fxnot err)])
+    (let ([err (fxnot err)])
+      (let ([msg 
              (cond
                [(fx< err (vector-length io-errors-vec))
                 (vector-ref io-errors-vec err)]
-               [else "unknown die"]))])
-      (raise 
-        (condition
-          (make-error)
-          (make-who-condition who)
-          (make-message-condition msg)
-          (make-i/o-filename-error id)))))
+               [else "unknown error"])])
+        (raise 
+          (condition
+            (make-who-condition who)
+            (case err
+              [(6 9 18) (make-i/o-file-protection-error)]
+              [(19)     (make-i/o-file-already-exists-error id)]
+              [else     (condition)])
+            (make-message-condition msg)
+            (make-i/o-filename-error id))))))
+
 
   (define block-size 4096)
   (define input-file-buffer-size (+ block-size 128))
