@@ -1284,7 +1284,7 @@
       (die 'open-output-file "invalid filename" filename))
     (fh->output-port 
        (open-output-file-handle filename (file-options) 
-          'open-input-file)
+          'open-output-file)
        filename
        output-file-buffer-size
        (native-transcoder)
