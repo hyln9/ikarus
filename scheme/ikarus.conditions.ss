@@ -28,7 +28,7 @@
           make-who-condition who-condition? condition-who
           make-non-continuable-violation non-continuable-violation?
           make-implementation-restriction-violation
-          implementation-restriction-voilation?
+          implementation-restriction-violation?
           make-lexical-violation lexical-violation?
           make-syntax-violation syntax-violation?
           syntax-violation-form syntax-violation-subform
@@ -102,7 +102,7 @@
           make-who-condition who-condition? condition-who
           make-non-continuable-violation non-continuable-violation?
           make-implementation-restriction-violation
-          implementation-restriction-voilation?
+          implementation-restriction-violation?
           make-lexical-violation lexical-violation?
           make-syntax-violation syntax-violation?
           syntax-violation-form syntax-violation-subform
@@ -270,7 +270,7 @@
 
   (define-condition-type &implementation-restriction &violation
     make-implementation-restriction-violation
-    implementation-restriction-voilation?)
+    implementation-restriction-violation?)
 
   (define-condition-type &lexical &violation
     make-lexical-violation lexical-violation?)
