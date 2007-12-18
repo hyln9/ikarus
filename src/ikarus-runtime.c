@@ -978,7 +978,11 @@ ikp
 ikrt_exit(ikp status, ikpcb* pcb){
   ik_delete_pcb(pcb);
   assert(total_allocated_pages == 0);
-  exit((int)status);
+  if(is_fixnum(status)){
+    exit(unfix(status));
+  } else {
+    exit(EXIT_FAILURE);
+  }
 }
 
 ikp
