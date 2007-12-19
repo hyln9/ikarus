@@ -906,8 +906,9 @@
   (define tokenize/c
     (lambda (c p)
       (cond
-        [(eof-object? c) (eof-object)]
-        [(char-whitespace? c) (tokenize/1 p)]
+        [(eof-object? c)
+         (error 'tokenize/c "hmmmm eof")
+         (eof-object)]
         [($char= #\( c)   'lparen]
         [($char= #\) c)   'rparen]
         [($char= #\[ c)   'lbrack]
@@ -933,9 +934,6 @@
         [($char= #\" c)
          (let ([ls (tokenize-string '() p)])
            (cons 'datum (list->string (reverse ls))))]
-        [($char= #\; c)
-         (skip-comment p)
-         (tokenize/1 p)]
         [(memq c '(#\+))
          (let ([c (peek-char p)])
            (cond
@@ -977,7 +975,7 @@
       (let ([c (read-char p)])
         (cond
           [(eof-object? c) (eof-object)]
-          [(eqv? c '#\;)
+          [(eqv? c #\;)
            (skip-comment p)
            (tokenize/1 p)]
           [(eqv? c #\#)
@@ -993,24 +991,34 @@
                 (tokenize/1 p)]
                [else
                 (tokenize-hash/c c p)]))]
+          [(char-whitespace? c) (tokenize/1 p)]
           [else (tokenize/c c p)]))))
-
 
   (define tokenize-script-initial
     (lambda (p)
       (let ([c (read-char p)])
         (cond
           [(eof-object? c) c]
-          [($char= #\# c) 
+          [(eqv? c #\;)
+           (skip-comment p)
+           (tokenize/1 p)]
+          [(eqv? c #\#) 
            (let ([c (read-char p)])
              (cond
                [(eof-object? c)
                 (die/p p 'tokenize "invalid eof after #")]
-               [($char= #\! c)
+               [(eqv? c #\!)
                 (skip-comment p)
+                (tokenize/1 p)]
+               [(eqv? c #\;)
+                (my-read p)   ; skip s-expr
+                (tokenize/1 p)]
+               [(eqv? c #\|) 
+                (multiline-comment p)
                 (tokenize/1 p)]
                [else
                 (tokenize-hash/c c p)]))]
+          [(char-whitespace? c) (tokenize/1 p)]
           [else (tokenize/c c p)]))))
 
   (define-struct loc (value set?))
