@@ -15,14 +15,19 @@
 
 
 (library (ikarus reader)
-  (export read read-initial read-token comment-handler get-datum)
+  (export read read-initial read-token comment-handler get-datum
+          read-annotated read-script-annotated annotation?
+          annotation-expression annotation-source
+          annotation-stripped)
   (import
     (ikarus system $chars)
     (ikarus system $fx)
     (ikarus system $pairs)
     (ikarus system $bytevectors)
     (only (ikarus unicode-data) unicode-printable-char?) 
-    (except (ikarus) read-char read read-token comment-handler get-datum))
+    (except (ikarus) read-char read read-token comment-handler get-datum
+      read-annotated read-script-annotated annotation?
+      annotation-expression annotation-source annotation-stripped))
 
   (define (die/pos p off who msg arg*) 
     (define-condition-type &lexical-position &condition
@@ -984,7 +989,7 @@
                [(eof-object? c) 
                 (die/p p 'tokenize "invalid eof after #")]
                [(eqv? c #\;)
-                (my-read p)   ; skip s-expr
+                (read-as-comment p) 
                 (tokenize/1 p)]
                [(eqv? c #\|) 
                 (multiline-comment p)
@@ -999,7 +1004,7 @@
       (let ([pos (input-port-byte-position p)])
         (let ([c (read-char p)])
           (cond
-            [(eof-object? c) (values pos (eof-object))]
+            [(eof-object? c) (values (eof-object) pos)]
             [(eqv? c #\;)
              (skip-comment p)
              (tokenize/1+pos p)]
@@ -1010,7 +1015,7 @@
                    [(eof-object? c) 
                     (die/p p 'tokenize "invalid eof after #")]
                    [(eqv? c #\;)
-                    (my-read p)   ; skip s-expr
+                    (read-as-comment p)
                     (tokenize/1+pos p)]
                    [(eqv? c #\|) 
                     (multiline-comment p)
@@ -1038,7 +1043,7 @@
                 (skip-comment p)
                 (tokenize/1 p)]
                [(eqv? c #\;)
-                (my-read p)   ; skip s-expr
+                (read-as-comment p)
                 (tokenize/1 p)]
                [(eqv? c #\|) 
                 (multiline-comment p)
@@ -1053,7 +1058,7 @@
       (let ([pos (input-port-byte-position p)])
         (let ([c (read-char p)])
           (cond
-            [(eof-object? c) (values (eof-object) p)]
+            [(eof-object? c) (values (eof-object) pos)]
             [(eqv? c #\;)
              (skip-comment p)
              (tokenize/1+pos p)]
@@ -1067,7 +1072,7 @@
                     (skip-comment p)
                     (tokenize/1+pos p)]
                    [(eqv? c #\;)
-                    (my-read p)   ; skip s-expr
+                    (read-as-comment p)
                     (tokenize/1+pos p)]
                    [(eqv? c #\|) 
                     (multiline-comment p)
@@ -1077,172 +1082,7 @@
             [(char-whitespace? c) (tokenize/1+pos p)]
             [else (values (tokenize/c c p) pos)])))))
 
-  (define-struct loc (value set?))
-  (module (read-expr read-expr-script-initial)
-    (define read-list
-      (lambda (p locs k end mis init?)
-        (let ([t (tokenize/1 p)])
-          (cond
-           [(eof-object? t)
-            (die/p p 'read "end of file encountered while reading list")]
-           [(eq? t end) (values '() locs k)]
-           [(eq? t mis)
-            (die/p-1 p 'read "paren mismatch")]
-           [(eq? t 'dot)
-            (when init?
-              (die/p-1 p 'read "invalid dot while reading list"))
-            (let-values ([(d locs k) (read-expr p locs k)])
-              (let ([t (tokenize/1 p)])
-                (cond
-                 [(eq? t end) (values d locs k)]
-                 [(eq? t mis)
-                  (die/p-1 p 'read "paren mismatch")]
-                 [(eq? t 'dot)
-                  (die/p-1 p 'read "cannot have two dots in a list")]
-                 [else
-                  (die/p-1 p 'read 
-                    (format "expecting ~a, got ~a" end t))])))]
-           [else
-            (let-values ([(a locs k) (parse-token p locs k t)])
-              (let-values ([(d locs k) (read-list p locs k end mis #f)])
-                 (let ([x (cons a d)])
-                   (values x locs 
-                           (if (or (loc? a) (loc? d))
-                               (extend-k-pair x k)
-                               k)))))]))))
-    (define extend-k-pair
-      (lambda (x k)
-        (lambda ()
-          (let ([a (car x)])
-            (when (loc? a)
-              (set-car! x (loc-value a))))
-          (let ([d (cdr x)])
-            (when (loc? d)
-              (set-cdr! x (loc-value d))))
-          (k))))
-    (define vector-put
-      (lambda (v k i ls)
-        (cond
-          [(null? ls) k]
-          [else
-           (let ([a (car ls)])
-             (vector-set! v i a)
-             (vector-put v  
-                (if (loc? a)
-                    (lambda ()
-                      (vector-set! v i (loc-value (vector-ref v i)))
-                      (k))
-                    k)
-                (fxsub1 i) (cdr ls)))])))
-    (define bytevector-put
-      (lambda (v k i ls)
-        (cond
-          [(null? ls) k]
-          [else
-           (let ([a (car ls)])
-             (cond
-               [(fixnum? a)
-                (unless (and (fx<= 0 a) (fx<= a 255))
-                  (die 'read ;;; FIXME: pos
-                    (format "invalid value ~s in a bytevector" a)))
-                ($bytevector-set! v i a)
-                (bytevector-put v k ($fxsub1 i) ($cdr ls))]
-               [else (die 'read "invalid value inside a bytevector" a)]))])))
-    (define read-vector
-      (lambda (p locs k count ls)
-        (let ([t (tokenize/1 p)])
-          (cond
-            [(eof-object? t) 
-             (die/p p 'read "end of file encountered while reading a vector")]
-            [(eq? t 'rparen) 
-             (let ([v (make-vector count)])
-               (let ([k (vector-put v k (fxsub1 count) ls)])
-                 (values v locs k)))]
-            [(eq? t 'rbrack)
-             (die/p-1 p 'read "unexpected ] while reading a vector")]
-            [(eq? t 'dot)
-             (die/p-1 p 'read "unexpected . while reading a vector")]
-            [else
-             (let-values ([(a locs k) (parse-token p locs k t)])
-                (read-vector p locs k (fxadd1 count) (cons a ls)))]))))
-    (define read-bytevector
-      (lambda (p locs k count ls)
-        (let ([t (tokenize/1 p)])
-          (cond
-            [(eof-object? t) 
-             (die/p p 'read "end of file encountered while reading a bytevector")]
-            [(eq? t 'rparen) 
-             (let ([v ($make-bytevector count)])
-               (let ([k (bytevector-put v k (fxsub1 count) ls)])
-                 (values v locs k)))]
-            [(eq? t 'rbrack)
-             (die/p-1 p 'read "unexpected ] while reading a bytevector")]
-            [(eq? t 'dot)
-             (die/p-1 p 'read "unexpected . while reading a bytevector")]
-            [else
-             (let-values ([(a locs k) (parse-token p locs k t)])
-                (read-bytevector p locs k (fxadd1 count) (cons a ls)))]))))
-    (define parse-token
-      (lambda (p locs k t)
-        (cond
-          [(eof-object? t) (values (eof-object) locs k)]
-          [(eq? t 'lparen) (read-list p locs k 'rparen 'rbrack #t)]
-          [(eq? t 'lbrack) (read-list p locs k 'rbrack 'rparen #t)]
-          [(eq? t 'vparen) (read-vector p locs k 0 '())]
-          [(eq? t 'vu8) (read-bytevector p locs k 0 '())]
-          [(pair? t)
-           (cond
-             [(eq? (car t) 'datum) (values (cdr t) locs k)]
-             [(eq? (car t) 'macro)
-              (let-values ([(expr locs k) (read-expr p locs k)])
-                (when (eof-object? expr) 
-                  (die/p p 'read 
-                    (format "invalid eof after ~a read macro"
-                            (cdr t))))
-                (let ([x (list expr)])
-                  (values (cons (cdr t) x) locs
-                          (if (loc? expr)
-                              (lambda ()
-                                (set-car! x (loc-value expr))
-                                (k))
-                              k))))]
-             [(eq? (car t) 'mark) 
-              (let ([n (cdr t)])
-                (let-values ([(expr locs k) (read-expr p locs k)])
-                  (cond
-                    [(assq n locs) =>
-                     (lambda (x)
-                       (let ([loc (cdr x)])
-                         (when (loc-set? loc) ;;; FIXME: pos
-                           (die 'read "duplicate mark" n))
-                         (set-loc-value! loc expr)
-                         (set-loc-set?! loc #t)
-                         (values expr locs k)))]
-                    [else
-                     (let ([loc (make-loc expr #t)])
-                       (let ([locs (cons (cons n loc) locs)])
-                         (values expr locs k)))])))]
-             [(eq? (car t) 'ref)
-              (let ([n (cdr t)])
-                (cond
-                  [(assq n locs) =>
-                   (lambda (x)
-                     (values (cdr x) locs k))]
-                  [else
-                   (let ([loc (make-loc #f #f)])
-                     (let ([locs (cons (cons n loc) locs)])
-                       (values loc locs k)))]))]
-             [else (die 'read "invalid token" t)])]
-          [else
-           (die/p-1 p 'read 
-             (format "unexpected ~s found" t))])))
-    (define read-expr
-      (lambda (p locs k)
-        (parse-token p locs k (tokenize/1 p))))
-    (define read-expr-script-initial
-      (lambda (p locs k)
-        (parse-token p locs k (tokenize-script-initial p)))))
-
+  (define-struct loc (value value^ set?))
 
   ;;; this is reverse engineered from psyntax.ss
   (define-struct annotation (expression source stripped))
@@ -1252,6 +1092,202 @@
   ;;;   may contain further annotations.
 
 
+  (module (read-expr read-expr-script-initial)
+    (define-syntax tokenize/1 syntax-error)
+    (define (annotate-simple datum pos p)
+      (make-annotation datum (cons (port-id p) pos) datum))
+    (define (annotate stripped expression pos p) 
+      (make-annotation expression (cons (port-id p) pos) stripped))
+    (define read-list
+      (lambda (p locs k end mis init?)
+        (let-values ([(t pos) (tokenize/1+pos p)])
+          (cond
+            [(eof-object? t)
+             (die/p p 'read "end of file encountered while reading list")]
+            [(eq? t end) (values '() '() locs k)]
+            [(eq? t mis)
+             (die/p-1 p 'read "paren mismatch")]
+            [(eq? t 'dot)
+             (when init?
+               (die/p-1 p 'read "invalid dot while reading list"))
+             (let-values ([(d d^ locs k) (read-expr p locs k)])
+               (let-values ([(t pos^) (tokenize/1+pos p)])
+                 (cond
+                  [(eq? t end) (values d d^ locs k)]
+                  [(eq? t mis)
+                   (die/p-1 p 'read "paren mismatch")]
+                  [(eq? t 'dot)
+                   (die/p-1 p 'read "cannot have two dots in a list")]
+                  [else
+                   (die/p-1 p 'read 
+                     (format "expecting ~a, got ~a" end t))])))]
+            [else
+             (let-values ([(a a^ locs k) (parse-token p locs k t pos)])
+               (let-values ([(d d^ locs k) (read-list p locs k end mis #f)])
+                 (let ([x (cons a d)] [x^ (cons a^ d^)])
+                   (values x x^ locs (extend-k-pair x x^ a d k)))))]))))
+    (define extend-k-pair
+      (lambda (x x^ a d k) 
+        (cond 
+          [(or (loc? a) (loc? d))
+           (lambda ()
+             (let ([a (car x)])
+               (when (loc? a)
+                 (set-car! x (loc-value a))
+                 (set-car! x^ (loc-value^ a))))
+             (let ([d (cdr x)])
+               (when (loc? d)
+                 (set-cdr! x (loc-value d)) 
+                 (set-cdr! x^ (loc-value^ d))))
+             (k))]
+          [else k])))
+    (define vector-put
+      (lambda (v v^ k i ls ls^)
+        (cond
+          [(null? ls) k]
+          [else
+           (let ([a (car ls)])
+             (vector-set! v i a)
+             (vector-set! v^ i (car ls^))
+             (vector-put v v^ 
+                (if (loc? a)
+                    (lambda ()
+                      (vector-set! v i (loc-value a))
+                      (vector-set! v^ i (loc-value^ a))
+                      (k))
+                    k)
+                (fxsub1 i) 
+                (cdr ls)
+                (cdr ls^)))])))
+    (define bytevector-put
+      (lambda (v k i ls ls^)
+        (cond
+          [(null? ls) k]
+          [else
+           (let ([a (car ls)])
+             (cond
+               [(fixnum? a)
+                (unless (and (fx<= 0 a) (fx<= a 255))
+                  (die 'read ;;; FIXME: pos
+                    (format "invalid value ~s in a bytevector" a)))
+                (bytevector-u8-set! v i a)
+                (bytevector-put v k (fxsub1 i) (cdr ls) (cdr ls^))]
+               [else (die 'read "invalid value inside a bytevector" a)]))])))
+    (define read-vector
+      (lambda (p locs k count ls ls^)
+        (let-values ([(t pos) (tokenize/1+pos p)])
+          (cond
+            [(eof-object? t) 
+             (die/p p 'read "end of file encountered while reading a vector")]
+            [(eq? t 'rparen) 
+             (let ([v (make-vector count)] [v^ (make-vector count)])
+               (let ([k (vector-put v v^ k (fxsub1 count) ls ls^)])
+                 (values v v^ locs k)))]
+            [(eq? t 'rbrack)
+             (die/p-1 p 'read "unexpected ] while reading a vector")]
+            [(eq? t 'dot)
+             (die/p-1 p 'read "unexpected . while reading a vector")]
+            [else
+             (let-values ([(a a^ locs k) (parse-token p locs k t pos)])
+                (read-vector p locs k (fxadd1 count) 
+                  (cons a ls) (cons a^ ls^)))]))))
+    (define read-bytevector
+      (lambda (p locs k count ls ls^)
+        (let-values ([(t pos) (tokenize/1+pos p)])
+          (cond
+            [(eof-object? t) 
+             (die/p p 'read "end of file encountered while reading a bytevector")]
+            [(eq? t 'rparen) 
+             (let ([v ($make-bytevector count)])
+               (let ([k (bytevector-put v k (fxsub1 count) ls ls^)])
+                 (values v v locs k)))]
+            [(eq? t 'rbrack)
+             (die/p-1 p 'read "unexpected ] while reading a bytevector")]
+            [(eq? t 'dot)
+             (die/p-1 p 'read "unexpected . while reading a bytevector")]
+            [else
+             (let-values ([(a a^ locs k) (parse-token p locs k t pos)])
+                (read-bytevector p locs k (fxadd1 count) 
+                  (cons a ls) (cons a^ ls^)))]))))
+    (define parse-token
+      (lambda (p locs k t pos)
+        (cond
+          [(eof-object? t)
+           (values (eof-object) 
+             (annotate-simple (eof-object) pos p) locs k)]
+          [(eq? t 'lparen)
+           (let-values ([(ls ls^ locs k) 
+                         (read-list p locs k 'rparen 'rbrack #t)])
+             (values ls (annotate ls ls^ pos p) locs k))]
+          [(eq? t 'lbrack) 
+           (let-values ([(ls ls^ locs k) 
+                         (read-list p locs k 'rbrack 'rparen #t)])
+             (values ls (annotate ls ls^ pos p) locs k))]
+          [(eq? t 'vparen) 
+           (let-values ([(v v^ locs k) 
+                         (read-vector p locs k 0 '() '())])
+             (values v (annotate v v^ pos p) locs k))]
+          [(eq? t 'vu8)
+           (let-values ([(v v^ locs k) 
+                         (read-bytevector p locs k 0 '() '())])
+             (values v (annotate v v^ pos p) locs k))]
+          [(pair? t)
+           (cond
+             [(eq? (car t) 'datum) 
+              (values (cdr t) 
+                (annotate-simple (cdr t) pos p) locs k)]
+             [(eq? (car t) 'macro)
+              (let-values ([(expr expr^ locs k)
+                            (read-expr p locs k)])
+                (when (eof-object? expr) 
+                  (die/p p 'read 
+                    (format "invalid eof after ~a read macro"
+                            (cdr t))))
+                (let ([x (list expr)] [x^ (list expr^)])
+                  (values (cons (cdr t) x)
+                          (cons (annotate-simple (cdr t) pos p) x^)
+                          locs
+                     (extend-k-pair x x^ expr '() k))))]
+             [(eq? (car t) 'mark) 
+              (let ([n (cdr t)])
+                (let-values ([(expr expr^ locs k) 
+                              (read-expr p locs k)])
+                  (cond
+                    [(assq n locs) =>
+                     (lambda (x)
+                       (let ([loc (cdr x)])
+                         (when (loc-set? loc) ;;; FIXME: pos
+                           (die 'read "duplicate mark" n))
+                         (set-loc-value! loc expr)
+                         (set-loc-value^! loc expr^)
+                         (set-loc-set?! loc #t)
+                         (values expr expr^ locs k)))]
+                    [else
+                     (let ([loc (make-loc expr 'unused #t)])
+                       (let ([locs (cons (cons n loc) locs)])
+                         (values expr expr^ locs k)))])))]
+             [(eq? (car t) 'ref)
+              (let ([n (cdr t)])
+                (cond
+                  [(assq n locs) =>
+                   (lambda (x)
+                     (values (cdr x) 'unused locs k))]
+                  [else
+                   (let ([loc (make-loc #f 'unused #f)])
+                     (let ([locs (cons (cons n loc) locs)])
+                       (values loc 'unused locs k)))]))]
+             [else (die 'read "invalid token" t)])]
+          [else
+           (die/p-1 p 'read 
+             (format "unexpected ~s found" t))])))
+    (define read-expr
+      (lambda (p locs k)
+        (let-values ([(t pos) (tokenize/1+pos p)])
+          (parse-token p locs k t pos))))
+    (define read-expr-script-initial
+      (lambda (p locs k)
+        (let-values ([(t pos) (tokenize-script-initial+pos p)])
+          (parse-token p locs k t pos)))))
 
 
   (define reduce-loc!
@@ -1275,10 +1311,13 @@
                          (set-loc-value! h h1)
                          h1)))
                  h))))))
-       
+  
+  (define (read-as-comment p)
+    (begin (read-expr p '() void) (void)))
+
   (define my-read
     (lambda (p)
-      (let-values ([(expr locs k) (read-expr p '() void)])
+      (let-values ([(expr expr^ locs k) (read-expr p '() void)])
         (cond
           [(null? locs) expr]
           [else
@@ -1290,7 +1329,7 @@
 
   (define read-initial
     (lambda (p)
-      (let-values ([(expr locs k) (read-expr-script-initial p '() void)])
+      (let-values ([(expr expr^ locs k) (read-expr-script-initial p '() void)])
         (cond
           [(null? locs) expr]
           [else
@@ -1299,6 +1338,30 @@
            (if (loc? expr)
                (loc-value expr)
                expr)]))))
+
+  (define read-annotated
+    (lambda (p)
+      (let-values ([(expr expr^ locs k) (read-expr p '() void)])
+        (cond
+          [(null? locs) expr^]
+          [else
+           (for-each reduce-loc! locs)
+           (k)
+           (if (loc? expr)
+               (loc-value^ expr)
+               expr^)]))))
+
+  (define read-script-annotated
+    (lambda (p)
+      (let-values ([(expr expr^ locs k) (read-expr-script-initial p '() void)])
+        (cond
+          [(null? locs) expr^]
+          [else
+           (for-each reduce-loc! locs)
+           (k)
+           (if (loc? expr)
+               (loc-value^ expr)
+               expr^)]))))
 
   (define read-token
     (case-lambda

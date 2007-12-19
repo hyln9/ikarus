@@ -1285,6 +1285,12 @@
     [file-options-spec                           i]
     ;;;
     [port-id               i]
+    [read-annotated        i]
+    [read-script-annotated i]
+    [annotation?           i]
+    [annotation-expression i]
+    [annotation-source     i]
+    [annotation-stripped   i]
     [$make-port           $io]
     [$port-tag            $io]
     [$port-id             $io]
