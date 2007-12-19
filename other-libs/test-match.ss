@@ -13,8 +13,6 @@
        (cond
          ((assq x env) => cdr)
          (else (error 'ee "unbound variable" x)))]
-      ;[(let ([,x* ,v*] ...) ,b)
-      ; (ee b (append (map cons x* (map (lambda (x) (ee x env)) v*)) env))]
       [(let ([,x* ,[v*]] ...) ,b)
        (ee b (append (map cons x* v*) env))]
       [(+ ,[x] ,[y]) (+ x y)]
