@@ -434,8 +434,6 @@
              [(eqv? c #\@) (read-char p)
               '(macro . unsyntax-splicing)]
              [else '(macro . unsyntax)]))]
-        [($char= #\; c) 'hash-semi]
-        [($char= #\| c) (multiline-comment p) (tokenize p)]
         [($char= #\! c) 
          (let ([e (read-char p)])
            (when (eof-object? e)
@@ -449,11 +447,11 @@
              [(#\r) 
               (read-char* p '(#\r) "6rs" "#!r6rs comment" #f #f)
               (set-port-mode! p 'r6rs-mode)
-              (tokenize p)]
+              (tokenize/1 p)]
              [(#\i) 
               (read-char* p '(#\i) "karus" "#!ikarus comment" #f #f)
               (set-port-mode! p 'ikarus-mode)
-              (tokenize p)]
+              (tokenize/1 p)]
              [else
               (die/p-1 p 'tokenize
                 (format "invalid syntax near #!~a" e))]))]
@@ -909,7 +907,7 @@
     (lambda (c p)
       (cond
         [(eof-object? c) (eof-object)]
-        [(char-whitespace? c) (tokenize p)]
+        [(char-whitespace? c) (tokenize/1 p)]
         [($char= #\( c)   'lparen]
         [($char= #\) c)   'rparen]
         [($char= #\[ c)   'lbrack]
@@ -937,7 +935,7 @@
            (cons 'datum (list->string (reverse ls))))]
         [($char= #\; c)
          (skip-comment p)
-         (tokenize p)]
+         (tokenize/1 p)]
         [(memq c '(#\+))
          (let ([c (peek-char p)])
            (cond
@@ -974,11 +972,31 @@
         [else
          (die/p-1 p 'tokenize "invalid syntax" c)])))
 
-  (define tokenize
+  (define tokenize/1
     (lambda (p)
-      (tokenize/c (read-char p) p)))
+      (let ([c (read-char p)])
+        (cond
+          [(eof-object? c) (eof-object)]
+          [(eqv? c '#\;)
+           (skip-comment p)
+           (tokenize/1 p)]
+          [(eqv? c #\#)
+           (let ([c (read-char p)])
+             (cond
+               [(eof-object? c) 
+                (die/p p 'tokenize "invalid eof after #")]
+               [(eqv? c #\;)
+                (my-read p)   ; skip s-expr
+                (tokenize/1 p)]
+               [(eqv? c #\|) 
+                (multiline-comment p)
+                (tokenize/1 p)]
+               [else
+                (tokenize-hash/c c p)]))]
+          [else (tokenize/c c p)]))))
 
-  (define tokenize-initial
+
+  (define tokenize-script-initial
     (lambda (p)
       (let ([c (read-char p)])
         (cond
@@ -990,16 +1008,16 @@
                 (die/p p 'tokenize "invalid eof after #")]
                [($char= #\! c)
                 (skip-comment p)
-                (tokenize p)]
+                (tokenize/1 p)]
                [else
                 (tokenize-hash/c c p)]))]
           [else (tokenize/c c p)]))))
 
   (define-struct loc (value set?))
-  (module (read-expr read-expr-initial)
+  (module (read-expr read-expr-script-initial)
     (define read-list-rest
       (lambda (p locs k end mis)
-        (let ([t (tokenize p)])
+        (let ([t (tokenize/1 p)])
           (cond
            [(eof-object? t)
             (die/p p 'read "end of file encountered while reading list")]
@@ -1008,7 +1026,7 @@
             (die/p-1 p 'read "paren mismatch")]
            [(eq? t 'dot)
             (let-values ([(d locs k) (read-expr p locs k)])
-              (let ([t (tokenize p)])
+              (let ([t (tokenize/1 p)])
                 (cond
                  [(eq? t end) (values d locs k)]
                  [(eq? t mis)
@@ -1018,9 +1036,6 @@
                  [else
                   (die/p-1 p 'read 
                     (format "expecting ~a, got ~a" end t))])))]
-           [(eq? t 'hash-semi)
-            (let-values ([(ignored locs k) (read-expr p locs k)])
-              (read-list-rest p locs k end mis))]
            [else
             (let-values ([(a locs k) (parse-token p locs k t)])
               (let-values ([(d locs k) (read-list-rest p locs k end mis)])
@@ -1031,7 +1046,7 @@
                                k)))))]))))
     (define read-list-init
       (lambda (p locs k end mis)
-        (let ([t (tokenize p)])
+        (let ([t (tokenize/1 p)])
          (cond
            [(eof-object? t)
             (die/p p 'read "end of file encountered while reading list")]
@@ -1040,9 +1055,6 @@
             (die/p-1 p 'read "paren mismatch")]
            [(eq? t 'dot)
             (die/p-1 p 'read "invalid dot while reading list")]
-           [(eq? t 'hash-semi)
-            (let-values ([(ignored locs k) (read-expr p locs k)])
-              (read-list-init p locs k end mis))]
            [else
             (let-values ([(a locs k) (parse-token p locs k t)])
               (let-values ([(d locs k) (read-list-rest p locs k end mis)])
@@ -1091,7 +1103,7 @@
                [else (die 'read "invalid value inside a bytevector" a)]))])))
     (define read-vector
       (lambda (p locs k count ls)
-        (let ([t (tokenize p)])
+        (let ([t (tokenize/1 p)])
           (cond
             [(eof-object? t) 
              (die/p p 'read "end of file encountered while reading a vector")]
@@ -1103,15 +1115,12 @@
              (die/p-1 p 'read "unexpected ] while reading a vector")]
             [(eq? t 'dot)
              (die/p-1 p 'read "unexpected . while reading a vector")]
-            [(eq? t 'hash-semi)
-             (let-values ([(ignored locs k) (read-expr p locs k)])
-               (read-vector p locs k count ls))]
             [else
              (let-values ([(a locs k) (parse-token p locs k t)])
                 (read-vector p locs k (fxadd1 count) (cons a ls)))]))))
     (define read-bytevector
       (lambda (p locs k count ls)
-        (let ([t (tokenize p)])
+        (let ([t (tokenize/1 p)])
           (cond
             [(eof-object? t) 
              (die/p p 'read "end of file encountered while reading a bytevector")]
@@ -1123,9 +1132,6 @@
              (die/p-1 p 'read "unexpected ] while reading a bytevector")]
             [(eq? t 'dot)
              (die/p-1 p 'read "unexpected . while reading a bytevector")]
-            [(eq? t 'hash-semi)
-             (let-values ([(ignored locs k) (read-expr p locs k)])
-               (read-bytevector p locs k count ls))]
             [else
              (let-values ([(a locs k) (parse-token p locs k t)])
                 (read-bytevector p locs k (fxadd1 count) (cons a ls)))]))))
@@ -1136,9 +1142,6 @@
           [(eq? t 'lparen) (read-list-init p locs k 'rparen 'rbrack)]
           [(eq? t 'lbrack) (read-list-init p locs k 'rbrack 'rparen)]
           [(eq? t 'vparen) (read-vector p locs k 0 '())]
-          [(eq? t 'hash-semi)
-           (let-values ([(ignored locs k) (read-expr p locs k)])
-             (read-expr p locs k))]
           [(eq? t 'vu8) (read-bytevector p locs k 0 '())]
           [(pair? t)
            (cond
@@ -1186,14 +1189,12 @@
           [else
            (die/p-1 p 'read 
              (format "unexpected ~s found" t))])))
-  
     (define read-expr
       (lambda (p locs k)
-        (parse-token p locs k (tokenize p))))
-    
-    (define read-expr-initial
+        (parse-token p locs k (tokenize/1 p))))
+    (define read-expr-script-initial
       (lambda (p locs k)
-        (parse-token p locs k (tokenize-initial p)))))
+        (parse-token p locs k (tokenize-script-initial p)))))
 
 
   ;;; this is reverse engineered from psyntax.ss
@@ -1239,7 +1240,7 @@
 
   (define read-initial
     (lambda (p)
-      (let-values ([(expr locs k) (read-expr-initial p '() void)])
+      (let-values ([(expr locs k) (read-expr-script-initial p '() void)])
         (cond
           [(null? locs) expr]
           [else
@@ -1251,10 +1252,10 @@
 
   (define read-token
     (case-lambda
-      [() (tokenize (current-input-port))]
+      [() (tokenize/1 (current-input-port))]
       [(p)
        (if (input-port? p)
-           (tokenize p)
+           (tokenize/1 p)
            (die 'read-token "not an input port" p))]))
 
   (define read
