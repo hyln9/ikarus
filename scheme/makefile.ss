@@ -1284,6 +1284,7 @@
     [$data->transcoder                           $transc]
     [file-options-spec                           i]
     ;;;
+    [port-id               i]
     [$make-port           $io]
     [$port-tag            $io]
     [$port-id             $io]
