@@ -994,6 +994,33 @@
           [(char-whitespace? c) (tokenize/1 p)]
           [else (tokenize/c c p)]))))
 
+  (define tokenize/1+pos
+    (lambda (p)
+      (let ([pos (input-port-byte-position p)])
+        (let ([c (read-char p)])
+          (cond
+            [(eof-object? c) (values pos (eof-object))]
+            [(eqv? c #\;)
+             (skip-comment p)
+             (tokenize/1+pos p)]
+            [(eqv? c #\#)
+             (let ([pos (input-port-byte-position p)])
+               (let ([c (read-char p)])
+                 (cond
+                   [(eof-object? c) 
+                    (die/p p 'tokenize "invalid eof after #")]
+                   [(eqv? c #\;)
+                    (my-read p)   ; skip s-expr
+                    (tokenize/1+pos p)]
+                   [(eqv? c #\|) 
+                    (multiline-comment p)
+                    (tokenize/1+pos p)]
+                   [else
+                    (values (tokenize-hash/c c p) pos)])))]
+            [(char-whitespace? c) (tokenize/1+pos p)]
+            [else 
+             (values (tokenize/c c p) pos)])))))
+
   (define tokenize-script-initial
     (lambda (p)
       (let ([c (read-char p)])
@@ -1021,18 +1048,49 @@
           [(char-whitespace? c) (tokenize/1 p)]
           [else (tokenize/c c p)]))))
 
+  (define tokenize-script-initial+pos
+    (lambda (p)
+      (let ([pos (input-port-byte-position p)])
+        (let ([c (read-char p)])
+          (cond
+            [(eof-object? c) (values (eof-object) p)]
+            [(eqv? c #\;)
+             (skip-comment p)
+             (tokenize/1+pos p)]
+            [(eqv? c #\#) 
+             (let ([pos (input-port-byte-position p)])
+               (let ([c (read-char p)])
+                 (cond
+                   [(eof-object? c)
+                    (die/p p 'tokenize "invalid eof after #")]
+                   [(eqv? c #\!)
+                    (skip-comment p)
+                    (tokenize/1+pos p)]
+                   [(eqv? c #\;)
+                    (my-read p)   ; skip s-expr
+                    (tokenize/1+pos p)]
+                   [(eqv? c #\|) 
+                    (multiline-comment p)
+                    (tokenize/1+pos p)]
+                   [else
+                    (values (tokenize-hash/c c p) pos)])))]
+            [(char-whitespace? c) (tokenize/1+pos p)]
+            [else (values (tokenize/c c p) pos)])))))
+
   (define-struct loc (value set?))
   (module (read-expr read-expr-script-initial)
-    (define read-list-rest
-      (lambda (p locs k end mis)
+    (define read-list
+      (lambda (p locs k end mis init?)
         (let ([t (tokenize/1 p)])
           (cond
            [(eof-object? t)
             (die/p p 'read "end of file encountered while reading list")]
            [(eq? t end) (values '() locs k)]
-           [(eq? t mis) 
+           [(eq? t mis)
             (die/p-1 p 'read "paren mismatch")]
            [(eq? t 'dot)
+            (when init?
+              (die/p-1 p 'read "invalid dot while reading list"))
             (let-values ([(d locs k) (read-expr p locs k)])
               (let ([t (tokenize/1 p)])
                 (cond
@@ -1046,31 +1104,12 @@
                     (format "expecting ~a, got ~a" end t))])))]
            [else
             (let-values ([(a locs k) (parse-token p locs k t)])
-              (let-values ([(d locs k) (read-list-rest p locs k end mis)])
+              (let-values ([(d locs k) (read-list p locs k end mis #f)])
                  (let ([x (cons a d)])
                    (values x locs 
                            (if (or (loc? a) (loc? d))
                                (extend-k-pair x k)
                                k)))))]))))
-    (define read-list-init
-      (lambda (p locs k end mis)
-        (let ([t (tokenize/1 p)])
-         (cond
-           [(eof-object? t)
-            (die/p p 'read "end of file encountered while reading list")]
-           [(eq? t end) (values '() locs k)]
-           [(eq? t mis) 
-            (die/p-1 p 'read "paren mismatch")]
-           [(eq? t 'dot)
-            (die/p-1 p 'read "invalid dot while reading list")]
-           [else
-            (let-values ([(a locs k) (parse-token p locs k t)])
-              (let-values ([(d locs k) (read-list-rest p locs k end mis)])
-                (let ([x (cons a d)])
-                   (values x locs 
-                      (if (or (loc? a) (loc? d))
-                          (extend-k-pair x k)
-                          k)))))]))))
     (define extend-k-pair
       (lambda (x k)
         (lambda ()
@@ -1147,8 +1186,8 @@
       (lambda (p locs k t)
         (cond
           [(eof-object? t) (values (eof-object) locs k)]
-          [(eq? t 'lparen) (read-list-init p locs k 'rparen 'rbrack)]
-          [(eq? t 'lbrack) (read-list-init p locs k 'rbrack 'rparen)]
+          [(eq? t 'lparen) (read-list p locs k 'rparen 'rbrack #t)]
+          [(eq? t 'lbrack) (read-list p locs k 'rbrack 'rparen #t)]
           [(eq? t 'vparen) (read-vector p locs k 0 '())]
           [(eq? t 'vu8) (read-bytevector p locs k 0 '())]
           [(pair? t)
@@ -1211,6 +1250,9 @@
   ;;; - stripped is an s-expression with no annotations
   ;;; - expression is a list/vector/id/whathaveyou that 
   ;;;   may contain further annotations.
+
+
+
 
   (define reduce-loc!
     (lambda (x)
