@@ -1414,7 +1414,13 @@
            (bless `(lambda (x)
                      (syntax-case x ,lits
                        ,@(map (lambda (pat tmp)
-                                `(,pat (syntax ,tmp)))
+                                (syntax-match pat ()
+                                  [(_ . rest) 
+                                   `((g . ,rest) (syntax ,tmp))]
+                                  [_ 
+                                   (syntax-violation #f
+                                      "invalid syntax-rules pattern" 
+                                      e pat)]))
                               pat* tmp*)))))))))
   
   (define quasiquote-macro
