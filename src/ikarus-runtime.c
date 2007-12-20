@@ -279,13 +279,12 @@ ikpcb* ik_make_pcb(){
   ikpcb* pcb = ik_malloc(sizeof(ikpcb));
   bzero(pcb, sizeof(ikpcb));
   pcb->collect_key = false_object;
-  #define HEAPSIZE (1024 * 4096)
   #define STAKSIZE (1024 * 4096)
   //#define STAKSIZE (256 * 4096)
-  pcb->heap_base = ik_mmap(HEAPSIZE);
-  pcb->heap_size = HEAPSIZE;
+  pcb->heap_base = ik_mmap(IK_HEAPSIZE);
+  pcb->heap_size = IK_HEAPSIZE;
   pcb->allocation_pointer = pcb->heap_base;
-  pcb->allocation_redline = pcb->heap_base + HEAPSIZE - 2 * 4096;
+  pcb->allocation_redline = pcb->heap_base + IK_HEAPSIZE - 2 * 4096;
 
   pcb->stack_base = ik_mmap(STAKSIZE);
   pcb->stack_size = STAKSIZE;

@@ -294,6 +294,7 @@ ikp ik_safe_alloc(ikpcb* pcb, int size);
 #define IK_OFF_CAR    (IK_DISP_CAR - IK_PAIR_TAG)
 #define IK_OFF_CDR    (IK_DISP_CDR - IK_PAIR_TAG)
 #define IK_HEAP_EXT_SIZE  (32 * 4096)
+#define IK_HEAPSIZE (1024 * 4096) /* 4 MB */
 #define IK_PAIRP(x)   (IK_PTAG(x) == IK_PAIR_TAG)
 #define IK_CHARP(x)   (IK_MASK(x,IK_CHAR_MASK) == IK_CHAR_TAG)
 #define IK_STRING_TAG     6

@@ -505,12 +505,11 @@ ik_collect(int mem_req, ikpcb* pcb){
   int free_space = 
     ((unsigned int)pcb->allocation_redline) - 
     ((unsigned int)pcb->allocation_pointer);
-  #define HEAPSIZE (1024 * 4096)
-  if((free_space <= mem_req) || (pcb->heap_size < HEAPSIZE)){
+  if((free_space <= mem_req) || (pcb->heap_size < IK_HEAPSIZE)){
 #ifndef NDEBUG
     fprintf(stderr, "REQ=%d, got %d\n", mem_req, free_space);
 #endif
-    int memsize = (mem_req>HEAPSIZE) ? mem_req : HEAPSIZE;
+    int memsize = (mem_req > IK_HEAPSIZE) ? mem_req : IK_HEAPSIZE;
     memsize = align_to_next_page(memsize);
     ik_munmap_from_segment(
         pcb->heap_base,
