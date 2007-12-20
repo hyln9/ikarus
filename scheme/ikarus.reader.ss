@@ -47,9 +47,9 @@
             (and pos (+ pos off)))))))
         
   (define (die/p p who msg . arg*)
-    (die/pos p 1 who msg arg*))
-  (define (die/p-1 p who msg . arg*)
     (die/pos p 0 who msg arg*))
+  (define (die/p-1 p who msg . arg*)
+    (die/pos p -1 who msg arg*))
 
 
   (define-syntax read-char 

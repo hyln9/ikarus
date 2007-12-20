@@ -220,7 +220,7 @@
   (define (input-port-byte-position p)
     (if (input-port? p) 
         (let ([pos ($port-position p)])
-          (and pos (fx+ pos ($port-index p))))
+          (and pos (fx+ pos (fx+ ($port-index p) 1))))
         (error 'input-port-byte-position "not an input port" p)))
 
   (define guarded-port
