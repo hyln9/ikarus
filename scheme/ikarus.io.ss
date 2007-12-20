@@ -59,7 +59,7 @@
     reset-input-port!
     port-id
     input-port-byte-position
-    )
+    process )
 
   
   (import 
@@ -107,7 +107,7 @@
       reset-input-port!
       port-id
       input-port-byte-position
-      ))
+      process))
 
   (module UNSAFE  
     (fx< fx<= fx> fx>= fx= fx+ fx-
@@ -1792,6 +1792,29 @@
            (if (output-port? p)
                (die who "not a binary port" p)
                (die who "not an output port" p))]))))
+
+
+
+  (define (process cmd . args)
+    (define who 'process)
+    (unless (string? cmd)
+      (die who "command is not a string" cmd))
+    (unless (andmap string? args) 
+      (die who "all arguments must be strings"))
+    (let ([r (foreign-call "ikrt_process" 
+                (make-vector 4)
+                (string->utf8 cmd)
+                (map string->utf8 (cons cmd args)))])
+      (if (fixnum? r) 
+          (io-error who cmd r)
+          (values
+            (vector-ref r 0) ; pid
+            (fh->output-port (vector-ref r 1) 
+                cmd output-file-buffer-size #f #t)
+            (fh->input-port (vector-ref r 2) 
+                cmd input-file-buffer-size #f #t)
+            (fh->input-port (vector-ref r 3) 
+                cmd input-file-buffer-size #f #t)))))
 
 
   )

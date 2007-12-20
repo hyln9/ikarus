@@ -883,12 +883,7 @@ ikrt_fork(){
   return fix(pid);
 }
 
-ikp 
-ikrt_waitpid(ikp pid){
-  int status;
-  /*pid_t t = */ waitpid(unfix(pid), &status, 0);
-  return fix(status);
-}
+
 
 ikp 
 ikrt_getenv(ikp bv, ikpcb* pcb){

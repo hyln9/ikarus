@@ -393,6 +393,8 @@
     [immediate?                                  i]
     [pointer-value                               i]
     [system                                      i]
+    [process                                     i]
+    [waitpid                                     i]
     [installed-libraries                         i]
     [library-path                                i]
     [current-primitive-locations                 $boot]
