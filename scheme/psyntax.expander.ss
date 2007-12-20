@@ -200,17 +200,17 @@
   ;;; Now to syntax objects which are records defined like:
   (define-record stx (expr mark* subst*)
     (lambda (x p)
-      (display "#<syntax" p)
+      (display "#<syntax " p)
+      (write (stx->datum x) p)
       (let ([expr (stx-expr x)])
         (when (annotation? expr) 
           (let ([src (annotation-source expr)])
             (when (pair? src)
-              (display "@char " p)
+              (display " [byte " p)
               (display (cdr src) p)
-              (display " of file " p)
-              (display (car src) p)))))
-      (display " " p)
-      (write (stx->datum x) p)
+              (display " of " p)
+              (display (car src) p)
+              (display "]" p)))))
       (display ">" p)))
 
   ;;; First, let's look at identifiers, since they're the real 
