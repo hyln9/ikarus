@@ -48,12 +48,12 @@
     (lambda (x)
       (define (read-file)
         (let ([p (open-input-file x)])
-          (let ([x (read-initial p)])
+          (let ([x (read-script-annotated p)])
             (if (eof-object? x)
                 (begin (close-input-port p) '())
                 (cons x 
                   (let f ()
-                    (let ([x (read p)])
+                    (let ([x (read-annotated p)])
                       (cond
                         [(eof-object? x) 
                          (close-input-port p)

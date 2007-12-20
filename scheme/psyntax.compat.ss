@@ -17,7 +17,9 @@
 (library (psyntax compat)
   (export define-record make-parameter parameterize format gensym
           eval-core symbol-value set-symbol-value!
-          file-options-spec make-struct-type)
+          file-options-spec make-struct-type read-annotated
+          annotation? annotation-expression annotation-source
+          annotation-stripped)
   (import 
     (only (ikarus compiler) eval-core)
     (ikarus))

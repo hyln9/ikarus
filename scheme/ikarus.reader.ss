@@ -1315,6 +1315,12 @@
   (define (read-as-comment p)
     (begin (read-expr p '() void) (void)))
 
+  (define (return-annotated x)
+    (cond
+      [(and (annotation? x) (eof-object? (annotation-expression x)))
+       (eof-object)]
+      [else x]))
+
   (define my-read
     (lambda (p)
       (let-values ([(expr expr^ locs k) (read-expr p '() void)])
@@ -1340,28 +1346,32 @@
                expr)]))))
 
   (define read-annotated
-    (lambda (p)
-      (let-values ([(expr expr^ locs k) (read-expr p '() void)])
-        (cond
-          [(null? locs) expr^]
-          [else
-           (for-each reduce-loc! locs)
-           (k)
-           (if (loc? expr)
-               (loc-value^ expr)
-               expr^)]))))
+    (case-lambda
+      [(p)
+       (unless (input-port? p) 
+         (error 'read-annotated "not an input port" p))
+       (let-values ([(expr expr^ locs k) (read-expr p '() void)])
+         (cond
+           [(null? locs) (return-annotated expr^)]
+           [else
+            (for-each reduce-loc! locs)
+            (k)
+            (if (loc? expr)
+                (loc-value^ expr)
+                (return-annotated expr^))]))]
+      [() (read-annotated (current-input-port))]))
 
   (define read-script-annotated
     (lambda (p)
       (let-values ([(expr expr^ locs k) (read-expr-script-initial p '() void)])
         (cond
-          [(null? locs) expr^]
+          [(null? locs) (return-annotated expr^)]
           [else
            (for-each reduce-loc! locs)
            (k)
            (if (loc? expr)
                (loc-value^ expr)
-               expr^)]))))
+               (return-annotated expr^))]))))
 
   (define read-token
     (case-lambda

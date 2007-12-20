@@ -148,7 +148,8 @@
       (lambda (x)
         (let ((file-name ((file-locator) x)))
           (and (string? file-name)
-               (with-input-from-file file-name read))))
+               (with-input-from-file file-name 
+                 read-annotated))))
       (lambda (f)
         (if (procedure? f)
             f
