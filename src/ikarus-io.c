@@ -8,7 +8,7 @@
 
 #include "ikarus-data.h"
 
-ikp 
+ikptr 
 ikrt_io_error(){
   switch(errno){
     case EBADF           : return fix(-2);
@@ -36,8 +36,8 @@ ikrt_io_error(){
 }
 
 
-ikp
-ikrt_close_fd(ikp fd, ikpcb* pcb){
+ikptr
+ikrt_close_fd(ikptr fd, ikpcb* pcb){
   int err = close(unfix(fd));
   if(err == -1){
     return ikrt_io_error();
@@ -46,8 +46,8 @@ ikrt_close_fd(ikp fd, ikpcb* pcb){
   }
 }
 
-ikp
-ikrt_open_input_fd(ikp fn, ikpcb* pcb){
+ikptr
+ikrt_open_input_fd(ikptr fn, ikpcb* pcb){
   int fh = open((char*)(fn+off_bytevector_data), O_RDONLY, 0);
   if(fh > 0){
     return fix(fh);
@@ -56,8 +56,8 @@ ikrt_open_input_fd(ikp fn, ikpcb* pcb){
   }
 }
 
-ikp
-ikrt_open_output_fd(ikp fn, ikp ikopts, ikpcb* pcb){
+ikptr
+ikrt_open_output_fd(ikptr fn, ikptr ikopts, ikpcb* pcb){
   int opts = unfix(ikopts);
   int mode = 0;
   switch (opts){
@@ -86,8 +86,8 @@ ikrt_open_output_fd(ikp fn, ikp ikopts, ikpcb* pcb){
 
 
 
-ikp
-ikrt_read_fd(ikp fd, ikp bv, ikp off, ikp cnt, ikpcb* pcb){
+ikptr
+ikrt_read_fd(ikptr fd, ikptr bv, ikptr off, ikptr cnt, ikpcb* pcb){
   ssize_t bytes = 
    read(unfix(fd),
         (char*)(bv+off_bytevector_data+unfix(off)), 
@@ -99,8 +99,8 @@ ikrt_read_fd(ikp fd, ikp bv, ikp off, ikp cnt, ikpcb* pcb){
   }
 }
 
-ikp
-ikrt_write_fd(ikp fd, ikp bv, ikp off, ikp cnt, ikpcb* pcb){
+ikptr
+ikrt_write_fd(ikptr fd, ikptr bv, ikptr off, ikptr cnt, ikpcb* pcb){
   ssize_t bytes = 
    write(unfix(fd),
          (char*)(bv+off_bytevector_data+unfix(off)), 

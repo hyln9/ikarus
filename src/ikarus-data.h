@@ -90,16 +90,17 @@ inthash(int key) {
 #define pagesize 4096
 #define generation_count 5  /* generations 0 (nursery), 1, 2, 3, 4 */
 
-typedef unsigned char* ikp;
-void ik_error(ikp args);
+typedef char* ikptr;
+
+void ik_error(ikptr args);
 
 typedef struct ikpage{
-  ikp base;
+  ikptr base;
   struct ikpage* next;
 } ikpage;
 
 typedef struct ikpages{
-  ikp base;
+  ikptr base;
   int size;
   struct ikpages* next;
 } ikpages;
@@ -111,55 +112,55 @@ typedef struct ikdl{ /* double-link */
 
 
 #define ik_ptr_page_size \
-  ((pagesize - sizeof(int) - sizeof(struct ik_ptr_page*))/sizeof(ikp))
+  ((pagesize - sizeof(int) - sizeof(struct ik_ptr_page*))/sizeof(ikptr))
 
 typedef struct ik_ptr_page{
   int count;
   struct ik_ptr_page* next;
-  ikp ptr[ik_ptr_page_size];
+  ikptr ptr[ik_ptr_page_size];
 } ik_ptr_page;
  
 
 typedef struct ikpcb{
   /* the first locations may be accessed by some     */
   /* compiled code to perform overflow/underflow ops */
-  ikp   allocation_pointer;           /* offset =  0 */
-  ikp   allocation_redline;           /* offset =  4 */
-  ikp   frame_pointer;                /* offset =  8 */
-  ikp   frame_base;                   /* offset = 12 */
-  ikp   frame_redline;                /* offset = 16 */
-  ikp   next_k;                       /* offset = 20 */
+  ikptr   allocation_pointer;           /* offset =  0 */
+  ikptr   allocation_redline;           /* offset =  4 */
+  ikptr   frame_pointer;                /* offset =  8 */
+  ikptr   frame_base;                   /* offset = 12 */
+  ikptr   frame_redline;                /* offset = 16 */
+  ikptr   next_k;                       /* offset = 20 */
   void* system_stack;                 /* offset = 24 */
   unsigned int* dirty_vector;         /* offset = 28 */
-  ikp   arg_list;                     /* offset = 32 */
+  ikptr   arg_list;                     /* offset = 32 */
   int   engine_counter;               /* offset = 36 */
   int   interrupted;                  /* offset = 40 */
-  ikp   base_rtd;                     /* offset = 44 */
-  ikp   collect_key;                  /* offset = 48 */
+  ikptr   base_rtd;                     /* offset = 44 */
+  ikptr   collect_key;                  /* offset = 48 */
   /* the rest are not used by any scheme code        */
   /* they only support the runtime system (gc, etc.) */
-  ikp* root0;
-  ikp* root1;
+  ikptr* root0;
+  ikptr* root1;
   unsigned int* segment_vector; 
-  ikp weak_pairs_ap;
-  ikp weak_pairs_ep;
-  ikp   heap_base; 
+  ikptr weak_pairs_ap;
+  ikptr weak_pairs_ep;
+  ikptr   heap_base; 
   int   heap_size;
   ikpages* heap_pages;
   ikpage* cached_pages; /* pages cached so that we don't map/unmap */
   ikpage* uncached_pages; /* ikpages cached so that we don't malloc/free */
-  ikp cached_pages_base;
+  ikptr cached_pages_base;
   int cached_pages_size;
-  ikp   stack_base;
+  ikptr   stack_base;
   int   stack_size;
-  ikp   symbol_table;
-  ikp   gensym_table;
+  ikptr   symbol_table;
+  ikptr   gensym_table;
   ik_ptr_page* guardians[generation_count];
   ik_ptr_page* guardians_dropped[generation_count];
   unsigned int* dirty_vector_base;
   unsigned int* segment_vector_base;
-  unsigned char* memory_base;
-  unsigned char* memory_end;
+  char* memory_base;
+  char* memory_end;
   int collection_id;
   int allocation_count_minor;
   int allocation_count_major;
@@ -181,28 +182,28 @@ void* ik_mmap_data(int size, int gen, ikpcb*);
 void* ik_mmap_code(int size, int gen, ikpcb*);
 void* ik_mmap_mixed(int size, ikpcb*);
 void ik_munmap(void*, int);
-void ik_munmap_from_segment(unsigned char*, int, ikpcb*);
+void ik_munmap_from_segment(char*, int, ikpcb*);
 ikpcb* ik_make_pcb();
 void ik_delete_pcb(ikpcb*);
 void ik_free_symbol_table(ikpcb* pcb);
 
 void ik_fasl_load(ikpcb* pcb, char* filename);
-void ik_relocate_code(ikp);
+void ik_relocate_code(ikptr);
 
-ikp ik_exec_code(ikpcb* pcb, ikp code_ptr);
-void ik_print(ikp x);
-void ik_fprint(FILE*, ikp x);
+ikptr ik_exec_code(ikpcb* pcb, ikptr code_ptr);
+void ik_print(ikptr x);
+void ik_fprint(FILE*, ikptr x);
 
-ikp ikrt_string_to_symbol(ikp, ikpcb*);
-ikp ikrt_strings_to_gensym(ikp, ikp,  ikpcb*);
+ikptr ikrt_string_to_symbol(ikptr, ikpcb*);
+ikptr ikrt_strings_to_gensym(ikptr, ikptr,  ikpcb*);
 
-ikp ik_cstring_to_symbol(char*, ikpcb*);
+ikptr ik_cstring_to_symbol(char*, ikpcb*);
 
-ikp ik_asm_enter(ikpcb*, ikp code_object, ikp arg);
-ikp ik_asm_reenter(ikpcb*, ikp code_object, ikp val);
-ikp ik_underflow_handler(ikpcb*);
-ikp ik_unsafe_alloc(ikpcb* pcb, int size);
-ikp ik_safe_alloc(ikpcb* pcb, int size);
+ikptr ik_asm_enter(ikpcb*, ikptr code_object, ikptr arg);
+ikptr ik_asm_reenter(ikpcb*, ikptr code_object, ikptr val);
+ikptr ik_underflow_handler(ikpcb*);
+ikptr ik_unsafe_alloc(ikpcb* pcb, int size);
+ikptr ik_safe_alloc(ikpcb* pcb, int size);
 
 
 #define IK_FASL_HEADER "#@IK01"
@@ -210,7 +211,7 @@ ikp ik_safe_alloc(ikpcb* pcb, int size);
 #define IK_FASL_CODE_HEADER_SIZE 12
 
 #define code_pri_tag vector_tag
-#define code_tag                  ((ikp)0x2F)
+#define code_tag                  ((ikptr)0x2F)
 #define disp_code_code_size 4
 #define disp_code_reloc_vector 8
 #define disp_code_freevars 12
@@ -237,17 +238,17 @@ ikp ik_safe_alloc(ikpcb* pcb, int size);
 #define fx_shift 2
 #define fx_mask 3
 #define unfix(x) (((int)(x)) >> fx_shift)
-#define fix(x)   ((ikp)((x) << fx_shift))
+#define fix(x)   ((ikptr)((x) << fx_shift))
 #define is_fixnum(x) ((((int)(x)) & fx_mask) == 0)
 
 #define IK_FIXNUMP(x) \
   ((((int)(x)) & IK_FX_MASK) == 0)
 
 #define REF(x,n) \
-  (((ikp*)(((char*)(x)) + ((int)(n))))[0])
+  (((ikptr*)(((char*)(x)) + ((int)(n))))[0])
 
 #define ref(x,n) \
-  (((ikp*)(((char*)(x)) + ((int)(n))))[0])
+  (((ikptr*)(((char*)(x)) + ((int)(n))))[0])
 
 #define IK_MASK(x,m) (((int)(x)) & ((int)(m)))
 #define IK_PTAG(x) (((int)(x)) & 7)
@@ -257,30 +258,30 @@ ikp ik_safe_alloc(ikpcb* pcb, int size);
 #define immediate_tag 7
  
 #define IK_UNFIX(x) (((int)(x)) >> IK_FX_SHIFT)
-#define IK_FIX(x)   ((ikp)((x) << IK_FX_SHIFT))
-#define fix(x)   ((ikp)((x) << fx_shift))
+#define IK_FIX(x)   ((ikptr)((x) << IK_FX_SHIFT))
+#define fix(x)   ((ikptr)((x) << fx_shift))
 
 #define IK_CODE_P(x) \
   ((IK_PTAG(x) == IK_CODE_PRI_TAG) && (IK_STAG(x) == IK_CODE_SEC_TAG))
 
-#define IK_FALSE_OBJECT   ((ikp)0x2F)
-#define IK_TRUE_OBJECT    ((ikp)0x3F)
+#define IK_FALSE_OBJECT   ((ikptr)0x2F)
+#define IK_TRUE_OBJECT    ((ikptr)0x3F)
 
-#define false_object      ((ikp)0x2F)
-#define true_object       ((ikp)0x3F)
+#define false_object      ((ikptr)0x2F)
+#define true_object       ((ikptr)0x3F)
 
-#define IK_NULL_OBJECT    ((ikp)0x4F)
+#define IK_NULL_OBJECT    ((ikptr)0x4F)
 
-#define null_object       ((ikp)0x4F)
-#define void_object       ((ikp)0x7F)
-#define bwp_object        ((ikp)0x8F)
+#define null_object       ((ikptr)0x4F)
+#define void_object       ((ikptr)0x7F)
+#define bwp_object        ((ikptr)0x8F)
 
-#define unbound_object    ((ikp)0x6F)
+#define unbound_object    ((ikptr)0x6F)
 #define IK_CHAR_TAG       0x0F
 #define IK_CHAR_MASK      0xFF
 #define IK_CHAR_SHIFT        8
 #define IK_CHAR_VAL(x)    (((int)(x)) >> IK_CHAR_SHIFT)
-#define int_to_scheme_char(x) ((ikp)(((x) << IK_CHAR_SHIFT) | IK_CHAR_TAG))
+#define int_to_scheme_char(x) ((ikptr)(((x) << IK_CHAR_SHIFT) | IK_CHAR_TAG))
 #define IK_PAIR_SIZE     8
 #define pair_size 8
 #define pair_tag 1
@@ -309,8 +310,8 @@ ikp ik_safe_alloc(ikpcb* pcb, int size);
 //  ((((unsigned char*)(x)) + off_string_data + (int)(i))[0] = 
 //   (((int)(c)) >> IK_CHAR_SHIFT))
 #define string_set(x,i,c) \
-  (((ikp*)(((ikp)(x)) + off_string_data))[i] = ((ikp)(c)))
-#define integer_to_char(x) ((ikp)((((int)(x)) << IK_CHAR_SHIFT) + IK_CHAR_TAG))
+  (((ikptr*)(((ikptr)(x)) + off_string_data))[i] = ((ikptr)(c)))
+#define integer_to_char(x) ((ikptr)((((int)(x)) << IK_CHAR_SHIFT) + IK_CHAR_TAG))
 #define string_char_size 4
 
 #define vector_tag 5
@@ -347,7 +348,7 @@ ikp ik_safe_alloc(ikpcb* pcb, int size);
 #define off_bytevector_length (disp_bytevector_length - bytevector_tag)
 #define off_bytevector_data (disp_bytevector_data - bytevector_tag)
 
-#define symbol_record_tag ((ikp) 0x5F)
+#define symbol_record_tag ((ikptr) 0x5F)
 #define disp_symbol_record_string   4
 #define disp_symbol_record_ustring  8
 #define disp_symbol_record_value   12
@@ -393,7 +394,7 @@ ikp ik_safe_alloc(ikpcb* pcb, int size);
 #define off_rtd_printer (disp_rtd_printer - rtd_tag) 
 #define off_rtd_symbol  (disp_rtd_symbol  - rtd_tag) 
 
-#define continuation_tag      ((ikp)0x1F)
+#define continuation_tag      ((ikptr)0x1F)
 #define disp_continuation_top   4
 #define disp_continuation_size  8
 #define disp_continuation_next 12
@@ -435,13 +436,13 @@ ikp ik_safe_alloc(ikpcb* pcb, int size);
 #define disp_bignum_data wordsize
 #define off_bignum_data (disp_bignum_data - vector_tag)
 
-#define flonum_tag  ((ikp)0x17)
+#define flonum_tag  ((ikptr)0x17)
 #define flonum_size         16
 #define disp_flonum_data     8
 #define off_flonum_data (disp_flonum_data - vector_tag)
-#define flonum_data(x) (*((double*)(((ikp)(x))+off_flonum_data)))
+#define flonum_data(x) (*((double*)(((ikptr)(x))+off_flonum_data)))
 
-#define ratnum_tag  ((ikp) 0x27)
+#define ratnum_tag  ((ikptr) 0x27)
 #define ratnum_size        16
 #define disp_ratnum_num     4
 #define disp_ratnum_den     8

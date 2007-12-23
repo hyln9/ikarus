@@ -19,13 +19,13 @@
 
 #include "ikarus-data.h"
 
-ikp
-ikrt_weak_cons(ikp a, ikp d, ikpcb* pcb){
-  ikp ap = pcb->weak_pairs_ap;
-  ikp nap = ap + pair_size;
-  ikp p;
+ikptr
+ikrt_weak_cons(ikptr a, ikptr d, ikpcb* pcb){
+  ikptr ap = pcb->weak_pairs_ap;
+  ikptr nap = ap + pair_size;
+  ikptr p;
   if(nap > pcb->weak_pairs_ep){
-    ikp mem = ik_mmap_typed(pagesize, weak_pairs_mt, pcb);
+    ikptr mem = ik_mmap_typed(pagesize, weak_pairs_mt, pcb);
     pcb->weak_pairs_ap = mem + pair_size;
     pcb->weak_pairs_ep = mem + pagesize;
     p = mem + pair_tag;
@@ -39,8 +39,8 @@ ikrt_weak_cons(ikp a, ikp d, ikpcb* pcb){
   return p;
 }
 
-ikp
-ikrt_is_weak_pair(ikp x, ikpcb* pcb){
+ikptr
+ikrt_is_weak_pair(ikptr x, ikpcb* pcb){
   if(tagof(x) != pair_tag){
     return false_object;
   }

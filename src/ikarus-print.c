@@ -22,13 +22,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static void print(FILE* fh, ikp x);
+static void print(FILE* fh, ikptr x);
 
-void ik_fprint(FILE* fh, ikp x){
+void ik_fprint(FILE* fh, ikptr x){
   print(fh, x);
 }
 
-void ik_print(ikp x){
+void ik_print(ikptr x){
   print(stdout, x);
   fprintf(stdout, "\n");
 }
@@ -56,7 +56,7 @@ static char* char_string[128] = {
 
 
 static void
-print(FILE* fh, ikp x){
+print(FILE* fh, ikptr x){
   if(IK_FIXNUMP(x)){
     fprintf(fh, "%d", IK_UNFIX(x));
   }
@@ -74,19 +74,19 @@ print(FILE* fh, ikp x){
   }
 #if 0
   else if(tagof(x) == symbol_tag){
-    ikp str = ref(x, off_symbol_string);
+    ikptr str = ref(x, off_symbol_string);
     fprintf(fh, "%s", str+off_string_data);
   }
 #endif
   else if(tagof(x) == vector_tag){
-    ikp len = ref(x, off_vector_length);
+    ikptr len = ref(x, off_vector_length);
     if(len == 0){
       fprintf(fh, "#()");
     } else {
       fprintf(fh, "#(");
-      ikp data = x + off_vector_data;
+      ikptr data = x + off_vector_data;
       print(fh, ref(data, 0));
-      ikp i = (ikp)wordsize;
+      ikptr i = (ikptr)wordsize;
       while(i<len){
         fprintf(fh, " ");
         print(fh, ref(data,i));
@@ -101,7 +101,7 @@ print(FILE* fh, ikp x){
   else if(IK_PAIRP(x)){
     fprintf(fh, "(");
     print(fh, REF(x, IK_OFF_CAR));
-    ikp d = REF(x, IK_OFF_CDR);
+    ikptr d = REF(x, IK_OFF_CDR);
     fprintf(stderr, "d=0x%08x\n", (int)d);
     while(1){
       if(IK_PAIRP(d)){
@@ -122,7 +122,7 @@ print(FILE* fh, ikp x){
     }
   }
   else if(tagof(x) == string_tag){
-    ikp fxlen = ref(x, off_string_length);
+    ikptr fxlen = ref(x, off_string_length);
     int len = unfix(fxlen);
     fprintf(stderr, "bug: printer busted!\n");
     exit(-1);

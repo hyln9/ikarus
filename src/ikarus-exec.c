@@ -23,20 +23,20 @@
 #include <string.h>
 
 typedef struct {
-  ikp tag;
-  ikp top;
+  ikptr tag;
+  ikptr top;
   int size;
-  ikp next;
+  ikptr next;
 } cont;
 
 
-ikp ik_exec_code(ikpcb* pcb, ikp code_ptr){
-  ikp argc = ik_asm_enter(pcb, code_ptr+off_code_data,0);
-  ikp next_k =  pcb->next_k;
+ikptr ik_exec_code(ikpcb* pcb, ikptr code_ptr){
+  ikptr argc = ik_asm_enter(pcb, code_ptr+off_code_data,0);
+  ikptr next_k =  pcb->next_k;
   while(next_k){
     cont* k = (cont*)(next_k - vector_tag);
-    ikp top = k->top;
-    ikp rp = ref(top, 0);
+    ikptr top = k->top;
+    ikptr rp = ref(top, 0);
     int framesize = (int) ref(rp, disp_frame_size);
     if(framesize <= 0){
       fprintf(stderr, "invalid framesize %d\n", framesize);
@@ -49,14 +49,14 @@ ikp ik_exec_code(ikpcb* pcb, ikp code_ptr){
       nk->top = top + framesize;
       nk->size = k->size - framesize;
       k->size = framesize;
-      k->next = vector_tag + (ikp)nk;
+      k->next = vector_tag + (ikptr)nk;
       /* record side effect */
       unsigned int idx = ((unsigned int)(&k->next)) >> pageshift;
       pcb->dirty_vector[idx] = -1;
     }
     pcb->next_k = k->next;
-    ikp fbase = pcb->frame_base - wordsize;
-    ikp new_fbase = fbase - framesize;
+    ikptr fbase = pcb->frame_base - wordsize;
+    ikptr new_fbase = fbase - framesize;
     memmove(new_fbase + (int)argc,
             fbase  + (int)argc,
             -(int)argc);

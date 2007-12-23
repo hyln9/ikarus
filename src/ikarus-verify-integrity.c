@@ -22,7 +22,7 @@
 #include <assert.h>
 
 static int
-page_idx(unsigned char* x){
+page_idx(char* x){
   unsigned int xi = (unsigned int) x;
   return xi >> pageshift;
 }
@@ -32,11 +32,11 @@ page_idx(unsigned char* x){
 
 
 #ifndef NDEBUG
-static int isa_fixnum(ikp x){
+static int isa_fixnum(ikptr x){
   return ((fixnum_mask & (int)x) == 0);
 }
 
-static int isa_vector(ikp x){
+static int isa_vector(ikptr x){
   return ( (tagof(x) == vector_tag) &&
            isa_fixnum(ref(x, -vector_tag)));
 }
@@ -46,15 +46,15 @@ static int isa_vector(ikp x){
 
 
 static void 
-verify_code(unsigned char* x, unsigned char* base, unsigned int* svec, unsigned int* dvec){
+verify_code(char* x, char* base, unsigned int* svec, unsigned int* dvec){
   assert(ref(x, 0) == code_tag);
-  ikp rvec = ref(x, disp_code_reloc_vector);
+  ikptr rvec = ref(x, disp_code_reloc_vector);
   assert(isa_vector(rvec));
-  ikp codesize = ref(x, disp_code_code_size);
+  ikptr codesize = ref(x, disp_code_code_size);
   codesize += 0;
   assert(unfix(codesize) >= 0);
   assert(isa_fixnum(codesize));
-  ikp freevars = ref(x, disp_code_freevars);
+  ikptr freevars = ref(x, disp_code_freevars);
   freevars += 0;
   assert(isa_fixnum(freevars));
   assert(unfix(freevars) >= 0);
@@ -73,17 +73,17 @@ verify_code(unsigned char* x, unsigned char* base, unsigned int* svec, unsigned 
 }
 
 static void 
-verify_object(ikp x, unsigned char* base, unsigned int* svec, unsigned int* dvec){
+verify_object(ikptr x, char* base, unsigned int* svec, unsigned int* dvec){
   
 }
 
 
-static unsigned char*
-verify_code_small(unsigned char* p, unsigned int s, unsigned int d, 
-    unsigned char* base, unsigned int* svec, unsigned int* dvec){
-  ikp q = p + pagesize;
+static char*
+verify_code_small(char* p, int s, unsigned int d, 
+    char* base, unsigned int* svec, unsigned int* dvec){
+  ikptr q = p + pagesize;
   while(p < q){
-    ikp fst = ref(p, 0);
+    ikptr fst = ref(p, 0);
     if(fst == code_tag){
       assert(is_fixnum(ref(p, disp_code_code_size)));
       int code_size = unfix(ref(p, disp_code_code_size));
@@ -101,24 +101,24 @@ verify_code_small(unsigned char* p, unsigned int s, unsigned int d,
   return q;
 }
 
-static unsigned char*
-verify_code_large(unsigned char* p, unsigned int s, unsigned int d, 
-    unsigned char* base, unsigned int* svec, unsigned int* dvec){
-  ikp fst = ref(p, 0);
+static char*
+verify_code_large(char* p, unsigned int s, unsigned int d, 
+    char* base, unsigned int* svec, unsigned int* dvec){
+  ikptr fst = ref(p, 0);
   fst += 0;
   assert(fst == code_tag);
   int code_size = unfix(ref(p, disp_code_code_size));
   assert(code_size >= 0);
   verify_code(p, base, svec, dvec);
   assert(align(code_size+disp_code_data) >= pagesize);
-  ikp end = p + code_size + disp_code_data;
-  return((unsigned char*)align_to_next_page(end));
+  ikptr end = p + code_size + disp_code_data;
+  return((char*)align_to_next_page(end));
 }
 
-static unsigned char*
-verify_code_page(unsigned char* p, unsigned int s, unsigned int d, 
-    unsigned char* base, unsigned int* svec, unsigned int* dvec){
-  ikp fst = ref(p, 0);
+static char*
+verify_code_page(char* p, unsigned int s, unsigned int d, 
+    char* base, unsigned int* svec, unsigned int* dvec){
+  ikptr fst = ref(p, 0);
   fst += 0;
   if(fst != code_tag){
     fprintf(stderr, "non code object with tag %p found\n", fst);
@@ -127,7 +127,7 @@ verify_code_page(unsigned char* p, unsigned int s, unsigned int d,
   int code_size = unfix(ref(p, disp_code_code_size));
   assert(code_size >= 0);
   int obj_size = align(code_size + disp_code_data);
-  unsigned char* result;
+  char* result;
   if(obj_size <= pagesize){
     result = verify_code_small(p,s,d,base,svec,dvec);
   } else {
@@ -140,9 +140,9 @@ verify_code_page(unsigned char* p, unsigned int s, unsigned int d,
 
       
 
-static unsigned char*
-verify_pointers_page(unsigned char* p, unsigned int s, unsigned int d, 
-    unsigned char* base, unsigned int* svec, unsigned int* dvec){
+static char*
+verify_pointers_page(char* p, unsigned int s, unsigned int d, 
+    char* base, unsigned int* svec, unsigned int* dvec){
   {
     int i = 0;
     while(i < pagesize){
@@ -154,8 +154,8 @@ verify_pointers_page(unsigned char* p, unsigned int s, unsigned int d,
   return p+pagesize; 
 }
 
-static unsigned char*
-verify_page(unsigned char* p, unsigned char* base, unsigned int* svec, unsigned int* dvec){
+static char*
+verify_page(char* p, char* base, unsigned int* svec, unsigned int* dvec){
   int idx = page_idx(p) - page_idx(base);
   unsigned int s = svec[idx];
   unsigned int d = dvec[idx];
@@ -198,11 +198,11 @@ verify_page(unsigned char* p, unsigned char* base, unsigned int* svec, unsigned 
 void
 verify_integrity(ikpcb* pcb, char* where){
   fprintf(stderr, "verifying in %s...\n", where);
-  unsigned char* mem_base = pcb->memory_base;
-  unsigned char* mem_end = pcb->memory_end;
+  char* mem_base = pcb->memory_base;
+  char* mem_end = pcb->memory_end;
   unsigned int* seg_vec = pcb->segment_vector_base;
   unsigned int* dir_vec = pcb->dirty_vector_base;
-  unsigned char* mem = mem_base;
+  char* mem = mem_base;
   while(mem < mem_end){
     mem = verify_page(mem, mem_base, seg_vec, dir_vec);
   }

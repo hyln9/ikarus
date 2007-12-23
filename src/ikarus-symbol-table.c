@@ -22,18 +22,18 @@
 #include <string.h>
 #include <stdlib.h>
 
-static ikp
+static ikptr
 make_symbol_table(ikpcb* pcb){
   #define NUM_OF_BUCKETS 4096 /* power of 2 */
   int size = align_to_next_page(disp_vector_data + NUM_OF_BUCKETS * wordsize);
-  ikp st = ik_mmap_ptr(size, 0, pcb) + vector_tag;
+  ikptr st = ik_mmap_ptr(size, 0, pcb) + vector_tag;
   bzero(st-vector_tag, size);
   ref(st, off_vector_length) = fix(NUM_OF_BUCKETS);
   return st;
 }
 
 static int 
-compute_hash(ikp str){
+compute_hash(ikptr str){
   int len = unfix(ref(str, off_string_length));
   char* data = (char*) str + off_string_data;
   int h = len;
@@ -51,13 +51,13 @@ compute_hash(ikp str){
   return h;
 }
 
-ikp 
-ikrt_string_hash(ikp str){
-  return (ikp)(compute_hash(str) & (~ fx_mask));
+ikptr 
+ikrt_string_hash(ikptr str){
+  return (ikptr)(compute_hash(str) & (~ fx_mask));
 }
 
-static int strings_eqp(ikp str1, ikp str2){
-  ikp len = ref(str1, off_string_length);
+static int strings_eqp(ikptr str1, ikptr str2){
+  ikptr len = ref(str1, off_string_length);
   if(len == ref(str2, off_string_length)){
     return
       (memcmp(str1+off_string_data, 
@@ -69,9 +69,9 @@ static int strings_eqp(ikp str1, ikp str2){
 }
 
 #if 0
-static ikp 
-ik_make_symbol(ikp str, ikp ustr, ikpcb* pcb){
-  ikp sym = ik_unsafe_alloc(pcb, symbol_size) + symbol_tag;
+static ikptr 
+ik_make_symbol(ikptr str, ikptr ustr, ikpcb* pcb){
+  ikptr sym = ik_unsafe_alloc(pcb, symbol_size) + symbol_tag;
   ref(sym, off_symbol_string)  = str;
   ref(sym, off_symbol_ustring) = ustr;
   ref(sym, off_symbol_value)   = unbound_object;
@@ -84,9 +84,9 @@ ik_make_symbol(ikp str, ikp ustr, ikpcb* pcb){
 }
 #endif
 
-static ikp 
-ik_make_symbol(ikp str, ikp ustr, ikpcb* pcb){
-  ikp sym = ik_unsafe_alloc(pcb, symbol_record_size) + record_tag;
+static ikptr 
+ik_make_symbol(ikptr str, ikptr ustr, ikpcb* pcb){
+  ikptr sym = ik_unsafe_alloc(pcb, symbol_record_size) + record_tag;
   ref(sym, -record_tag) = symbol_record_tag;
   ref(sym, off_symbol_record_string)  = str;
   ref(sym, off_symbol_record_ustring) = ustr;
@@ -98,21 +98,21 @@ ik_make_symbol(ikp str, ikp ustr, ikpcb* pcb){
 
 
 
-static ikp
-intern_string(ikp str, ikp st, ikpcb* pcb){
+static ikptr
+intern_string(ikptr str, ikptr st, ikpcb* pcb){
   int h = compute_hash(str);
   int idx = h & (unfix(ref(st, off_vector_length)) - 1);
-  ikp bckt = ref(st, off_vector_data + idx*wordsize);
-  ikp b = bckt;
+  ikptr bckt = ref(st, off_vector_data + idx*wordsize);
+  ikptr b = bckt;
   while(b){
-    ikp sym = ref(b, off_car);
-    ikp sym_str = ref(sym, off_symbol_record_string);
+    ikptr sym = ref(b, off_car);
+    ikptr sym_str = ref(sym, off_symbol_record_string);
     if(strings_eqp(sym_str, str)){
       return sym;
     }
     b = ref(b, off_cdr);
   }
-  ikp sym = ik_make_symbol(str, false_object,  pcb);
+  ikptr sym = ik_make_symbol(str, false_object,  pcb);
   b = ik_unsafe_alloc(pcb, pair_size) + pair_tag;
   ref(b, off_car) = sym;
   ref(b, off_cdr) = bckt;
@@ -121,21 +121,21 @@ intern_string(ikp str, ikp st, ikpcb* pcb){
   return sym;
 }
 
-static ikp
-intern_unique_string(ikp str, ikp ustr, ikp st, ikpcb* pcb){
+static ikptr
+intern_unique_string(ikptr str, ikptr ustr, ikptr st, ikpcb* pcb){
   int h = compute_hash(ustr);
   int idx = h & (unfix(ref(st, off_vector_length)) - 1);
-  ikp bckt = ref(st, off_vector_data + idx*wordsize);
-  ikp b = bckt;
+  ikptr bckt = ref(st, off_vector_data + idx*wordsize);
+  ikptr b = bckt;
   while(b){
-    ikp sym = ref(b, off_car);
-    ikp sym_ustr = ref(sym, off_symbol_record_ustring);
+    ikptr sym = ref(b, off_car);
+    ikptr sym_ustr = ref(sym, off_symbol_record_ustring);
     if(strings_eqp(sym_ustr, ustr)){
       return sym;
     }
     b = ref(b, off_cdr);
   }
-  ikp sym = ik_make_symbol(str, ustr, pcb);
+  ikptr sym = ik_make_symbol(str, ustr, pcb);
   b = ik_unsafe_alloc(pcb, pair_size) + pair_tag;
   ref(b, off_car) = sym;
   ref(b, off_cdr) = bckt;
@@ -144,21 +144,21 @@ intern_unique_string(ikp str, ikp ustr, ikp st, ikpcb* pcb){
   return sym;
 }
 
-ikp
-ikrt_intern_gensym(ikp sym, ikpcb* pcb){
-  ikp st = pcb->gensym_table;
+ikptr
+ikrt_intern_gensym(ikptr sym, ikpcb* pcb){
+  ikptr st = pcb->gensym_table;
   if(st == 0){
     st = make_symbol_table(pcb);
     pcb->gensym_table = st;
   }
-  ikp ustr = ref(sym, off_symbol_record_ustring);
+  ikptr ustr = ref(sym, off_symbol_record_ustring);
   int h = compute_hash(ustr);
   int idx = h & (unfix(ref(st, off_vector_length)) - 1);
-  ikp bckt = ref(st, off_vector_data + idx*wordsize);
-  ikp b = bckt;
+  ikptr bckt = ref(st, off_vector_data + idx*wordsize);
+  ikptr b = bckt;
   while(b){
-    ikp sym = ref(b, off_car);
-    ikp sym_ustr = ref(sym, off_symbol_record_ustring);
+    ikptr sym = ref(b, off_car);
+    ikptr sym_ustr = ref(sym, off_symbol_record_ustring);
     if(strings_eqp(sym_ustr, ustr)){
       return false_object;
     }
@@ -175,9 +175,9 @@ ikrt_intern_gensym(ikp sym, ikpcb* pcb){
 
 
 
-ikp 
-ikrt_string_to_symbol(ikp str, ikpcb* pcb){
-  ikp st = pcb->symbol_table;
+ikptr 
+ikrt_string_to_symbol(ikptr str, ikpcb* pcb){
+  ikptr st = pcb->symbol_table;
   if(st == 0){
     st = make_symbol_table(pcb);
     pcb->symbol_table = st;
@@ -185,14 +185,14 @@ ikrt_string_to_symbol(ikp str, ikpcb* pcb){
   return intern_string(str, st, pcb);
 }
 
-ikp 
-ik_intern_string(ikp str, ikpcb* pcb){
+ikptr 
+ik_intern_string(ikptr str, ikpcb* pcb){
   return ikrt_string_to_symbol(str, pcb);
 }
 
-ikp 
-ikrt_strings_to_gensym(ikp str, ikp ustr, ikpcb* pcb){
-  ikp st = pcb->gensym_table;
+ikptr 
+ikrt_strings_to_gensym(ikptr str, ikptr ustr, ikpcb* pcb){
+  ikptr st = pcb->gensym_table;
   if(st == 0){
     st = make_symbol_table(pcb);
     pcb->gensym_table = st;
@@ -202,14 +202,14 @@ ikrt_strings_to_gensym(ikp str, ikp ustr, ikpcb* pcb){
 
 
 #if 0
-ikp
+ikptr
 ik_cstring_to_symbol(char* str, ikpcb* pcb){
   int n = strlen(str);
   int size = n + disp_string_data + 1;
-  ikp s = ik_unsafe_alloc(pcb, align(size)) + string_tag;
+  ikptr s = ik_unsafe_alloc(pcb, align(size)) + string_tag;
   ref(s, off_string_length) = fix(n);
   memcpy(s+off_string_data, str, n+1);
-  ikp sym = ikrt_string_to_symbol(s, pcb);
+  ikptr sym = ikrt_string_to_symbol(s, pcb);
   return sym;
 }
 #endif

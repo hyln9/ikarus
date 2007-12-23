@@ -6,10 +6,10 @@
 #include "ikarus-data.h"
 #include <errno.h>
 
-extern ikp ikrt_io_error();
+extern ikptr ikrt_io_error();
 
 static int 
-list_length(ikp x){
+list_length(ikptr x){
   int n = 0;
   while(tagof(x) == pair_tag){
     n++;
@@ -19,7 +19,7 @@ list_length(ikp x){
 }
 
 static char**
-list_to_vec(ikp x){
+list_to_vec(ikptr x){
   int n = list_length(x);
   char** vec = malloc((n+1) * sizeof(char*));
   if (vec == NULL) exit(-1);
@@ -32,8 +32,8 @@ list_to_vec(ikp x){
   return vec;
 }
 
-ikp 
-ikrt_process(ikp rvec, ikp cmd, ikp argv, ikpcb* pcb){
+ikptr 
+ikrt_process(ikptr rvec, ikptr cmd, ikptr argv, ikpcb* pcb){
   int infds[2];
   int outfds[2];
   int errfds[2];
@@ -72,8 +72,8 @@ ikrt_process(ikp rvec, ikp cmd, ikp argv, ikpcb* pcb){
   }
 }
 
-ikp 
-ikrt_waitpid(ikp pid, ikpcb* pcb){
+ikptr 
+ikrt_waitpid(ikptr pid, ikpcb* pcb){
   int status;
   waitpid(unfix(pid), &status, 0);
   return fix(status);

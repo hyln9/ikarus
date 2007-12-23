@@ -158,12 +158,12 @@ int main(int argc, char** argv){
   ikpcb* pcb = ik_make_pcb();
   the_pcb = pcb;
   { /* set up arg_list */
-    ikp arg_list = null_object;
+    ikptr arg_list = null_object;
     int i = argc-1;
     while(i > 0){
       char* s = argv[i];
       int n = strlen(s);
-      ikp str = ik_unsafe_alloc(pcb, align(n*string_char_size+disp_string_data+1))
+      ikptr str = ik_unsafe_alloc(pcb, align(n*string_char_size+disp_string_data+1))
                 + string_tag;
       ref(str, off_string_length) = fix(n);
       {
@@ -172,7 +172,7 @@ int main(int argc, char** argv){
           string_set(str, i, integer_to_char(s[i]));
         }
       }
-      ikp p = ik_unsafe_alloc(pcb, pair_size);
+      ikptr p = ik_unsafe_alloc(pcb, pair_size);
       ref(p, disp_car) = str;
       ref(p, disp_cdr) = arg_list;
       arg_list = p+pair_tag;
