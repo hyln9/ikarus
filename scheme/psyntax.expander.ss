@@ -460,11 +460,23 @@
   ;;; strip is used to remove the wrap of a syntax object.
   ;;; It takes an stx's expr and marks.  If the marks contain
   ;;; a top-mark, then the expr is returned.  
+
+  (define (strip-annotations x)
+    (cond
+      [(pair? x) 
+       (cons (strip-annotations (car x))
+             (strip-annotations (cdr x)))]
+      [(annotation? x) (annotation-stripped x)]
+      [else x]))
+
   (define strip
     (lambda (x m*)
       (if (top-marked? m*)
-          (if (annotation? x)
-              (annotation-stripped x)
+          (if (or (annotation? x)
+                  (and (pair? x)
+                       (annotation? (car x))))
+              ;;; TODO: Ask Kent why this is a sufficient test
+              (strip-annotations x)
               x)
           (let f ((x x))
             (cond
