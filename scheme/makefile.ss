@@ -767,7 +767,7 @@
     [bitwise-copy-bit-field                      r bw]
     [bitwise-first-bit-set                       i r bw]
     [bitwise-if                                  r bw]
-    [bitwise-length                              r bw]
+    [bitwise-length                              i r bw]
     [bitwise-reverse-bit-field                   r bw]
     [bitwise-rotate-bit-field                    r bw]
     [fixnum?                                     i r fx]

@@ -397,7 +397,9 @@
           modulo even? odd? bitwise-and bitwise-not
           bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left 
           bitwise-arithmetic-shift 
-          positive? negative? expt gcd lcm numerator denominator exact-integer-sqrt
+          bitwise-length
+          positive? negative? expt gcd lcm numerator denominator
+          exact-integer-sqrt
           quotient+remainder number->string string->number min max
           abs truncate fltruncate sra sll real->flonum
           exact->inexact inexact floor ceiling round log fl=? fl<? fl<=? fl>?
@@ -417,6 +419,7 @@
             remainder modulo even? odd? quotient+remainder number->string 
             bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left
             bitwise-arithmetic-shift 
+            bitwise-length
             positive? negative? bitwise-and bitwise-not
             string->number expt gcd lcm numerator denominator
             exact->inexact inexact floor ceiling round log
@@ -2553,6 +2556,11 @@
       [(ratnum? x) (flexp (ratnum->flonum x))]
       [else (die 'exp "not a number" x)]))
 
+  (define (bitwise-length n)
+    (cond
+      [(fixnum? n) (fxlength n)]
+      [(bignum? n) (foreign-call "ikrt_bignum_length" n)]
+      [else (error 'bitwise-length "not an exact integer" n)]))
 
   )
 

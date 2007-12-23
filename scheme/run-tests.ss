@@ -61,6 +61,7 @@
 (test-string-to-number)
 (test-div-and-mod)
 (test-bignums)
+(test-bignum-length)
 (test-fxcarry)
 (test-lists)
 (test-hashtables)

@@ -1611,6 +1611,46 @@ ikrt_bnfx_modulo(ikptr x, ikptr y, ikpcb* pcb){
 }
 
 
+static int
+limb_length(unsigned int n){
+  int i=0;
+  while(n != 0){
+    n = n >> 1;
+    i++;
+  } 
+  return i;
+}
+
+
+ikptr
+ikrt_bignum_length(ikptr x){
+  ikptr fst = ref(x, -vector_tag);
+  mp_limb_t* sp = (mp_limb_t*)(x+off_bignum_data);
+  mp_size_t sn = ((unsigned int) fst) >> bignum_length_shift;
+  mp_limb_t last = sp[sn-1];
+  int n0 = limb_length(last);
+  if(((unsigned int) fst) & bignum_sign_mask){
+    /* negative */
+    if (last == (1<<(n0-1))){
+      /* single bit set in last limb */
+      int i;
+      for(i=0; i<(sn-1); i++){
+        if(sp[i] != 0){
+          /* another bit set */
+          return fix((sn-1)*mp_bits_per_limb + n0);
+        }
+      }
+      /* number is - #b100000000000000000000000000 */
+      /* fxnot(n) =  #b011111111111111111111111111 */
+      /* so, subtract 1. */
+      return fix((sn-1)*mp_bits_per_limb + n0 - 1);
+    } else {
+      return fix((sn-1)*mp_bits_per_limb + n0);
+    }
+  } else {
+    return fix((sn-1)*mp_bits_per_limb + n0);
+  }
+}
 
 
 
