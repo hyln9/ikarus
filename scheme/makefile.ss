@@ -344,7 +344,7 @@
     [get-output-string                           i]
     [get-output-bytevector                       i]
     [with-output-to-string                       i]
-    [with-output-to-bytevector                   i]
+;    [with-output-to-bytevector                   i]
     [console-input-port                          i]
     [console-error-port                          i]
     [console-output-port                         i]

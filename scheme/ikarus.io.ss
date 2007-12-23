@@ -48,7 +48,7 @@
     call-with-string-output-port
     standard-output-port standard-error-port
     current-output-port current-error-port
-    open-file-output-port open-output-file
+    open-file-output-port open-output-file with-output-to-file
     console-output-port
     console-error-port
     console-input-port
@@ -96,7 +96,7 @@
       call-with-string-output-port
       standard-output-port standard-error-port
       current-output-port current-error-port
-      open-file-output-port open-output-file
+      open-file-output-port open-output-file with-output-to-file
       console-output-port
       console-input-port
       console-error-port
@@ -1279,6 +1279,23 @@
        (native-transcoder)
        #t))
 
+
+  (define (with-output-to-file filename proc)
+    (unless (string? filename)
+      (die 'with-output-to-file "invalid filename" filename))
+    (unless (procedure? proc)
+      (die 'with-output-to-file "not a procedure" proc))
+    (call-with-port
+      (fh->output-port
+        (open-input-file-handle filename 'with-output-to-file)
+        filename
+        output-file-buffer-size
+        (native-transcoder)
+        #t)
+      (lambda (p)
+        (parameterize ([*the-output-port* p])
+          (proc)))))
+
   (define (call-with-input-file filename proc)
     (unless (string? filename)
       (die 'call-with-input-file "invalid filename" filename))
@@ -1298,15 +1315,16 @@
       (die 'with-input-from-file "invalid filename" filename))
     (unless (procedure? proc)
       (die 'with-input-from-file "not a procedure" proc))
-    (let ([p
-           (fh->input-port 
-             (open-input-file-handle filename 'with-input-from-file)
-             filename
-             input-file-buffer-size
-             (native-transcoder)
-             #t)])
-      (parameterize ([*the-input-port* p])
-        (proc))))
+    (call-with-port
+      (fh->input-port 
+        (open-input-file-handle filename 'with-input-from-file)
+        filename
+        input-file-buffer-size
+        (native-transcoder)
+        #t)
+      (lambda (p)
+        (parameterize ([*the-input-port* p])
+          (proc)))))
 
   (define (with-input-from-string string proc)
     (unless (string? string)
