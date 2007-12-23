@@ -44,7 +44,7 @@
     put-string
     open-bytevector-output-port
     call-with-bytevector-output-port
-    open-string-output-port
+    open-string-output-port with-output-to-string
     call-with-string-output-port
     standard-output-port standard-error-port
     current-output-port current-error-port
@@ -92,7 +92,7 @@
       put-string
       open-bytevector-output-port
       call-with-bytevector-output-port
-      open-string-output-port
+      open-string-output-port with-output-to-string
       call-with-string-output-port
       standard-output-port standard-error-port
       current-output-port current-error-port
@@ -426,6 +426,15 @@
       (die who "not a procedure" proc))
     (let-values ([(p extract) (open-string-output-port)])
       (proc p)
+      (extract)))
+
+  (define (with-output-to-string proc) 
+    (define who 'with-output-to-string)
+    (unless (procedure? proc) 
+      (die who "not a procedure" proc))
+    (let-values ([(p extract) (open-string-output-port)])
+      (parameterize ([*the-output-port* p])
+        (proc))
       (extract)))
   
   (define (open-string-output-port)
