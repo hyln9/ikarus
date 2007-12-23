@@ -48,7 +48,8 @@
     call-with-string-output-port
     standard-output-port standard-error-port
     current-output-port current-error-port
-    open-file-output-port open-output-file with-output-to-file
+    open-file-output-port open-output-file 
+    call-with-output-file with-output-to-file
     console-output-port
     console-error-port
     console-input-port
@@ -96,7 +97,8 @@
       call-with-string-output-port
       standard-output-port standard-error-port
       current-output-port current-error-port
-      open-file-output-port open-output-file with-output-to-file
+      open-file-output-port open-output-file 
+      call-with-output-file with-output-to-file
       console-output-port
       console-input-port
       console-error-port
@@ -1296,7 +1298,8 @@
       (die 'with-output-to-file "not a procedure" proc))
     (call-with-port
       (fh->output-port
-        (open-input-file-handle filename 'with-output-to-file)
+        (open-output-file-handle filename (file-options) 
+          'with-output-to-file)
         filename
         output-file-buffer-size
         (native-transcoder)
@@ -1304,6 +1307,21 @@
       (lambda (p)
         (parameterize ([*the-output-port* p])
           (proc)))))
+
+  (define (call-with-output-file filename proc)
+    (unless (string? filename)
+      (die 'call-with-output-file "invalid filename" filename))
+    (unless (procedure? proc)
+      (die 'call-with-output-file "not a procedure" proc))
+    (call-with-port
+      (fh->output-port
+        (open-output-file-handle filename (file-options) 
+          'call-with-output-file)
+        filename
+        output-file-buffer-size
+        (native-transcoder)
+        #t)
+      proc))
 
   (define (call-with-input-file filename proc)
     (unless (string? filename)
