@@ -22,7 +22,7 @@
     call-with-input-file with-input-from-file
     standard-input-port current-input-port
     open-bytevector-input-port
-    open-string-input-port
+    open-string-input-port with-input-from-string
     make-custom-binary-input-port 
     make-custom-binary-output-port 
     make-custom-textual-input-port 
@@ -70,7 +70,7 @@
       call-with-input-file with-input-from-file
       standard-input-port current-input-port
       open-bytevector-input-port
-      open-string-input-port
+      open-string-input-port with-input-from-string
       make-custom-binary-input-port
       make-custom-binary-output-port 
       make-custom-textual-input-port 
@@ -1307,6 +1307,15 @@
              #t)])
       (parameterize ([*the-input-port* p])
         (proc))))
+
+  (define (with-input-from-string string proc)
+    (unless (string? string)
+      (die 'with-input-from-string "not a string" string))
+    (unless (procedure? proc)
+      (die 'with-input-from-string "not a procedure" proc))
+    (parameterize ([*the-input-port*
+                    (open-string-input-port string)])
+      (proc)))
 
   (define (standard-input-port) 
     (fh->input-port 0 '*stdin* 256 #f #f))
