@@ -28,7 +28,7 @@
     make-custom-textual-input-port 
     make-custom-textual-output-port 
     transcoded-port port-transcoder
-    close-port close-input-port close-output-port
+    close-port port-closed? close-input-port close-output-port
     port-eof?
     get-char lookahead-char read-char peek-char
     get-string-n get-string-n! get-string-all get-line
@@ -77,7 +77,7 @@
       make-custom-textual-input-port 
       make-custom-textual-output-port 
       transcoded-port port-transcoder
-      close-port close-input-port close-output-port
+      close-port port-closed? close-input-port close-output-port
       port-eof?
       get-char lookahead-char read-char peek-char
       get-string-n get-string-n! get-string-all get-line
@@ -538,6 +538,12 @@
               
   (define ($port-closed? p) 
     (not (fxzero? (fxand ($port-attrs p) closed-port-tag))))
+
+  (define (port-closed? p) 
+    (if (port? p) 
+        ($port-closed? p) 
+        (error 'port-closed? "not a port" p)))
+
   (define ($mark-port-closed! p) 
     ($set-port-attrs! p 
       (fxior closed-port-tag 
@@ -1786,7 +1792,9 @@
                   (put-char-latin-mode p b who)])))]
           [else 
            (if (output-port? p)
-               (die who "not a textual port" p)
+               (if (textual-port? p) 
+                   (die who "port is closed" p)
+                   (die who "not a textual port" p))
                (die who "not an output port" p))]))))
 
   (define newline

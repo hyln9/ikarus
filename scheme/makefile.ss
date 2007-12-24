@@ -1293,6 +1293,7 @@
     [annotation-expression i]
     [annotation-source     i]
     [annotation-stripped   i]
+    [port-closed?          i]
     [$make-port           $io]
     [$port-tag            $io]
     [$port-id             $io]

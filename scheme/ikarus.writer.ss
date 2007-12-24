@@ -797,12 +797,11 @@
       (flush-output-port p)))
   
   (define fprintf
-    (lambda (port fmt . args)
-      (unless (output-port? port) 
-        (die 'fprintf "not an output port" port))
+    (lambda (p fmt . args)
+      (assert-open-textual-output-port p 'fprintf)
       (unless (string? fmt)
         (die 'fprintf "not a string" fmt))
-      (formatter 'fprintf port fmt args)))
+      (formatter 'fprintf p fmt args)))
 
   (define display-error
     (lambda (errname who fmt args)
@@ -834,21 +833,18 @@
     (case-lambda
       [(x) (write-to-port x (current-output-port))]
       [(x p)
-       (unless (output-port? p) 
-         (die 'write "not an output port" p))
+       (assert-open-textual-output-port p 'write)
        (write-to-port x p)]))
 
   (define (put-datum p x)
-    (unless (output-port? p) 
-      (die 'put-datum "not an output port" p))
+    (assert-open-textual-output-port p 'put-datum)
     (write-to-port x p))
 
   (define display 
     (case-lambda
       [(x) (display-to-port x (current-output-port))]
       [(x p)
-       (unless (output-port? p) 
-         (die 'display "not an output port" p))
+       (assert-open-textual-output-port p 'display)
        (display-to-port x p)]))
 
   (define print-error 
@@ -858,6 +854,14 @@
   (define warning 
     (lambda (who fmt . args)
       (display-error "Warning" who fmt args)))
+
+  (define (assert-open-textual-output-port p who)
+    (unless (output-port? p) 
+      (die who "not an output port" p))
+    (unless (textual-port? p) 
+      (die who "not a textual port" p))
+    (when (port-closed? p) 
+      (die who "port is closed" p)))
 
   )
 
