@@ -265,7 +265,7 @@
     [bitwise-copy-bit-field                     S bw]
     [bitwise-first-bit-set                      C bw]
     [bitwise-if                                 S bw]
-    [bitwise-length                             S bw]
+    [bitwise-length                             C bw]
     [bitwise-reverse-bit-field                  S bw]
     [bitwise-rotate-bit-field                   S bw]
     ;;;
