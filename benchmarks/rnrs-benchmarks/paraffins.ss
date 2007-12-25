@@ -2,7 +2,7 @@
   
 (library (rnrs-benchmarks paraffins)
   (export main)
-  (import (rnrs) (rnrs-benchmarks))
+  (import (rnrs) (rnrs r5rs) (rnrs-benchmarks))
 
   (define (gen n)
     (let* ((n/2 (quotient n 2))

@@ -29,7 +29,11 @@
   
   (define (go)
     (set! inport (open-input-file "bib"))
-    (set! outport (open-output-file "foo"))
+    (set! outport 
+      (open-file-output-port "foo" 
+        (file-options no-fail)
+        'block
+        (native-transcoder)))
     (tail-r inport)
     (close-input-port inport))
   

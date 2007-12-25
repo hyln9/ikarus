@@ -17,11 +17,11 @@
 
 (for-each 
   (lambda (x) 
-    (fprintf (standard-error-port) "running ~s\n" x)
+    (fprintf (current-error-port) "running ~s\n" x)
     (for-each 
       (lambda (_)
         (unless (zero? (system (format cmd x)))
-          (fprintf (standard-error-port) "ERROR: ~s failed\n" x)))
+          (fprintf (current-error-port) "ERROR: ~s failed\n" x)))
       (make-list 5)))
   all-benchmarks)
 

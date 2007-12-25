@@ -3,7 +3,7 @@
 
 (library (rnrs-benchmarks ray)
   (export main)
-  (import (rnrs) (rnrs arithmetic flonums) (rnrs-benchmarks))
+  (import (rnrs) (rnrs r5rs) (rnrs arithmetic flonums) (rnrs-benchmarks))
   
   (define (make-point x y z)
     (vector x y z))

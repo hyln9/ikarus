@@ -2,7 +2,7 @@
   
 (library (rnrs-benchmarks mbrot)
   (export main)
-  (import (rnrs) (rnrs arithmetic flonums) (rnrs-benchmarks))
+  (import (rnrs) (rnrs r5rs) (rnrs arithmetic flonums) (rnrs-benchmarks))
 
   (define (count r i step x y)
   

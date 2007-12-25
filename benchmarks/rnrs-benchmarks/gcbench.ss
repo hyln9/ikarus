@@ -35,7 +35,7 @@
 
 (library (rnrs-benchmarks gcbench)
   (export main)
-  (import (rnrs) (rnrs arithmetic flonums) (rnrs-benchmarks))
+  (import (rnrs) (rnrs r5rs) (rnrs arithmetic flonums) (rnrs-benchmarks))
   
   (define (run-benchmark2 name thunk)
     (display name)

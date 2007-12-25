@@ -12,7 +12,7 @@
   
 (library (rnrs-benchmarks maze)
   (export main)
-  (import (rnrs) (rnrs mutable-pairs) (rnrs-benchmarks))
+  (import (rnrs) (rnrs r5rs) (rnrs mutable-pairs) (rnrs-benchmarks))
 
   (define (random-state n)
     (cons n #f))

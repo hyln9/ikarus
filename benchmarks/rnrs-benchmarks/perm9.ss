@@ -35,7 +35,7 @@
  
 (library (rnrs-benchmarks perm9)
   (export main)
-  (import (rnrs) (rnrs-benchmarks))
+  (import (rnrs) (rnrs r5rs) (rnrs-benchmarks))
   
   ; Procedure P_n generates a grey code of all perms of n elements
   ; on top of stack ending with reversal of starting sequence

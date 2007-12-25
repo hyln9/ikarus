@@ -36589,120 +36589,379 @@ running stats for wc (15):
     2036 ms elapsed cpu time, including 0 ms collecting
     2036 ms elapsed real time, including 0 ms collecting
     194208 bytes allocated
-NOW: 2007-11-23 20:24:27
-running stats for compile-ack:
-    1 collection
-    51 ms elapsed cpu time, including 33 ms collecting
-    81 ms elapsed real time, including 33 ms collecting
-    1370184 bytes allocated
-running stats for ack (20):
-    no collections
-    1346 ms elapsed cpu time, including 0 ms collecting
-    1348 ms elapsed real time, including 0 ms collecting
-    24 bytes allocated
-running stats for compile-ack:
-    1 collection
-    47 ms elapsed cpu time, including 34 ms collecting
-    48 ms elapsed real time, including 34 ms collecting
-    1370184 bytes allocated
-running stats for ack (20):
-    no collections
-    1346 ms elapsed cpu time, including 0 ms collecting
-    1348 ms elapsed real time, including 0 ms collecting
-    24 bytes allocated
-running stats for compile-ack:
-    1 collection
-    46 ms elapsed cpu time, including 33 ms collecting
-    47 ms elapsed real time, including 33 ms collecting
-    1370184 bytes allocated
-running stats for ack (20):
-    no collections
-    1345 ms elapsed cpu time, including 0 ms collecting
-    1346 ms elapsed real time, including 0 ms collecting
-    24 bytes allocated
-running stats for compile-ack:
-    1 collection
-    46 ms elapsed cpu time, including 33 ms collecting
-    47 ms elapsed real time, including 33 ms collecting
-    1370184 bytes allocated
-running stats for compile-ack:
-    1 collection
-    48 ms elapsed cpu time, including 34 ms collecting
-    50 ms elapsed real time, including 35 ms collecting
-    1370184 bytes allocated
-running stats for ack (20):
-    no collections
-    1348 ms elapsed cpu time, including 0 ms collecting
-    1351 ms elapsed real time, including 0 ms collecting
-    24 bytes allocated
-running stats for compile-array1:
-    1 collection
-    52 ms elapsed cpu time, including 33 ms collecting
-    87 ms elapsed real time, including 34 ms collecting
-    1722224 bytes allocated
-running stats for array1 (2):
-    80 collections
-    1739 ms elapsed cpu time, including 479 ms collecting
-    1749 ms elapsed real time, including 482 ms collecting
-    320011240 bytes allocated
-running stats for compile-array1:
-    1 collection
-    48 ms elapsed cpu time, including 32 ms collecting
-    48 ms elapsed real time, including 33 ms collecting
-    1722224 bytes allocated
-running stats for array1 (2):
-    80 collections
-    1737 ms elapsed cpu time, including 476 ms collecting
-    1747 ms elapsed real time, including 480 ms collecting
-    320011240 bytes allocated
-running stats for compile-array1:
-    1 collection
-    48 ms elapsed cpu time, including 31 ms collecting
-    48 ms elapsed real time, including 32 ms collecting
-    1722224 bytes allocated
-NOW: 2007-11-28 22:35:27
-running stats for compile-ack:
-    1 collection
-    55 ms elapsed cpu time, including 35 ms collecting
-    91 ms elapsed real time, including 41 ms collecting
-    1370184 bytes allocated
-running stats for ack (20):
-    no collections
-    1609 ms elapsed cpu time, including 0 ms collecting
-    1612 ms elapsed real time, including 0 ms collecting
-    24 bytes allocated
-running stats for compile-ack:
-    1 collection
-    53 ms elapsed cpu time, including 37 ms collecting
-    53 ms elapsed real time, including 37 ms collecting
-    1370184 bytes allocated
-running stats for ack (20):
-    no collections
-    1614 ms elapsed cpu time, including 0 ms collecting
-    1621 ms elapsed real time, including 0 ms collecting
-    24 bytes allocated
-running stats for compile-ack:
-    1 collection
-    53 ms elapsed cpu time, including 37 ms collecting
-    54 ms elapsed real time, including 37 ms collecting
-    1370184 bytes allocated
-running stats for ack (20):
-    no collections
-    1615 ms elapsed cpu time, including 0 ms collecting
-    1621 ms elapsed real time, including 0 ms collecting
-    24 bytes allocated
-running stats for compile-ack:
-    1 collection
-    54 ms elapsed cpu time, including 37 ms collecting
-    55 ms elapsed real time, including 38 ms collecting
-    1370184 bytes allocated
-running stats for ack (20):
-    no collections
-    1615 ms elapsed cpu time, including 0 ms collecting
-    1622 ms elapsed real time, including 0 ms collecting
-    24 bytes allocated
-running stats for compile-ack:
-    1 collection
-    53 ms elapsed cpu time, including 37 ms collecting
-    54 ms elapsed real time, including 38 ms collecting
-    1370184 bytes allocated
+NOW: 2007-12-25 04:45:50
+The garbage collector should touch about 32 megabytes of heap storage.
+The use of more or less memory will skew the results.
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+The garbage collector should touch about 32 megabytes of heap storage.
+The use of more or less memory will skew the results.
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+The garbage collector should touch about 32 megabytes of heap storage.
+The use of more or less memory will skew the results.
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+The garbage collector should touch about 32 megabytes of heap storage.
+The use of more or less memory will skew the results.
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+The garbage collector should touch about 32 megabytes of heap storage.
+The use of more or less memory will skew the results.
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Garbage Collector Test
+ Stretching memory with a binary tree of depth 18
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+GCBench: Main
+ Creating a long-lived binary tree of depth 16
+ Creating a long-lived array of 524284 inexact reals
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+Creating 33824 trees of depth 4
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8256 trees of depth 6
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 2052 trees of depth 8
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 512 trees of depth 10
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 128 trees of depth 12
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 32 trees of depth 14
+GCBench: Top down construction
+GCBench: Bottom up construction
+Creating 8 trees of depth 16
+GCBench: Top down construction
+GCBench: Bottom up construction
+ Total memory available= ???????? bytes  Free memory= ???????? bytes
+25 megabytes
+0 work units per step.
+promotion ratio is 1:10
+pointer mutation rate is 10
+600 steps
+Allocating 76 trees.
+  (24902160 bytes)
+  (1245108 nodes)
+Initialization complete...
+Allocated 600 Mb of young gen garbage
+    (actually allocated 6e2 megabytes)
+Promoted 6e1 Mb
+    (actually promoted 59.86 megabytes)
+Mutated 6000 pointers
+25 megabytes
+0 work units per step.
+promotion ratio is 1:10
+pointer mutation rate is 10
+600 steps
+Allocating 76 trees.
+  (24902160 bytes)
+  (1245108 nodes)
+Initialization complete...
+Allocated 600 Mb of young gen garbage
+    (actually allocated 6e2 megabytes)
+Promoted 6e1 Mb
+    (actually promoted 59.86 megabytes)
+Mutated 6000 pointers
+25 megabytes
+0 work units per step.
+promotion ratio is 1:10
+pointer mutation rate is 10
+600 steps
+Allocating 76 trees.
+  (24902160 bytes)
+  (1245108 nodes)
+Initialization complete...
+Allocated 600 Mb of young gen garbage
+    (actually allocated 6e2 megabytes)
+Promoted 6e1 Mb
+    (actually promoted 59.86 megabytes)
+Mutated 6000 pointers
+25 megabytes
+0 work units per step.
+promotion ratio is 1:10
+pointer mutation rate is 10
+600 steps
+Allocating 76 trees.
+  (24902160 bytes)
+  (1245108 nodes)
+Initialization complete...
+Allocated 600 Mb of young gen garbage
+    (actually allocated 6e2 megabytes)
+Promoted 6e1 Mb
+    (actually promoted 59.86 megabytes)
+Mutated 6000 pointers
+25 megabytes
+0 work units per step.
+promotion ratio is 1:10
+pointer mutation rate is 10
+600 steps
+Allocating 76 trees.
+  (24902160 bytes)
+  (1245108 nodes)
+Initialization complete...
+Allocated 600 Mb of young gen garbage
+    (actually allocated 6e2 megabytes)
+Promoted 6e1 Mb
+    (actually promoted 59.86 megabytes)
+Mutated 6000 pointers
+15794.97500000012
+15794.97500000012
+15794.97500000012
+15794.97500000012
+15794.97500000012

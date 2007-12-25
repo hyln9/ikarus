@@ -10,7 +10,7 @@
 
 (library (rnrs-benchmarks gcold)
   (export main)
-  (import (rnrs) (rnrs-benchmarks))
+  (import (rnrs) (rnrs r5rs) (rnrs-benchmarks))
 
   (define (newRandom)
     (letrec ((random14

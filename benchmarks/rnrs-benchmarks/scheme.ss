@@ -4,7 +4,10 @@
 
 (library (rnrs-benchmarks scheme)
   (export main)
-  (import (rnrs) (rnrs mutable-pairs) (rnrs-benchmarks))
+  (import (rnrs) (rnrs r5rs)
+    (rnrs mutable-pairs)
+    (rnrs mutable-strings) 
+    (rnrs-benchmarks))
   
   (define (scheme-eval expr)
     (let ((code (scheme-comp expr scheme-global-environment)))

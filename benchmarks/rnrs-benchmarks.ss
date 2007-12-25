@@ -68,7 +68,12 @@
 
   (define call-with-output-file/truncate
     (lambda (file-name proc)
-      (call-with-output-file file-name proc 'truncate)))
+      (let ([p (open-file-output-port 
+                 file-name 
+                 (file-options no-fail)
+                 'block
+                 (native-transcoder))])
+        (call-with-port p proc))))
 
   (define-syntax include-source
     (lambda (x)

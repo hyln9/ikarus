@@ -3,7 +3,7 @@
   
 (library (rnrs-benchmarks mazefun)
   (export main)
-  (import (rnrs) (rnrs-benchmarks))
+  (import (rnrs) (rnrs r5rs) (rnrs-benchmarks))
 
   (define foldr
     (lambda (f base lst)

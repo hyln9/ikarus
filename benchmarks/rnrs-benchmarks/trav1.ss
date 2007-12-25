@@ -2,7 +2,7 @@
  
 (library (rnrs-benchmarks trav1)
   (export main)
-  (import (rnrs) (rnrs mutable-pairs) (rnrs-benchmarks))
+  (import (rnrs) (rnrs r5rs) (rnrs mutable-pairs) (rnrs-benchmarks))
   
   (define (make-node)
     (vector 'node '() '() (snb) #f #f #f #f #f #f #f))

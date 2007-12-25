@@ -4,6 +4,7 @@
 (library (rnrs-benchmarks browse)
   (export main)
   (import (rnrs) 
+          (rnrs r5rs)
           (rnrs mutable-pairs)
           (rnrs-benchmarks))
   

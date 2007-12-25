@@ -2,7 +2,11 @@
 ;(define char->integer char->ascii)
 (library (rnrs-benchmarks compiler)
   (export main)
-  (import (rnrs) (rnrs mutable-pairs) (rnrs-benchmarks))
+  (import (rnrs) 
+          (rnrs r5rs)
+          (rnrs mutable-pairs) 
+          (rnrs mutable-strings)
+          (rnrs-benchmarks))
   
   (define open-input-file* open-input-file)
   (define (pp-expression expr port) (write expr port) (newline port))

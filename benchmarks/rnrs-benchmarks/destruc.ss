@@ -4,6 +4,7 @@
   (export main)
   (import (rnrs) 
           (rnrs mutable-pairs)
+          (rnrs r5rs)
           (rnrs-benchmarks))
   
   (define (append-to-tail! x y)

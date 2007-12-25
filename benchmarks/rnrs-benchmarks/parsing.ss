@@ -22,7 +22,7 @@
   
 (library (rnrs-benchmarks parsing)
   (export main)
-  (import (rnrs) (rnrs-benchmarks))
+  (import (rnrs) (rnrs mutable-strings) (rnrs-benchmarks))
 
   (define (parsing-benchmark . rest)
     (let* ((n (if (null? rest) 1000 (car rest)))

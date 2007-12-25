@@ -2,7 +2,7 @@
   
 (library (rnrs-benchmarks matrix)
   (export main)
-  (import (rnrs) (rnrs mutable-pairs) (rnrs-benchmarks))
+  (import (rnrs) (rnrs r5rs) (rnrs mutable-pairs) (rnrs-benchmarks))
   ; Chez-Scheme compatibility stuff:
   
   (define (chez-box x) (cons x '()))

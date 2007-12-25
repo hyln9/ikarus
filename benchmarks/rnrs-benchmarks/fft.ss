@@ -2,7 +2,7 @@
   
 (library (rnrs-benchmarks fft)
   (export main)
-  (import (rnrs) (rnrs arithmetic flonums) (rnrs-benchmarks))
+  (import (rnrs) (rnrs r5rs) (rnrs arithmetic flonums) (rnrs-benchmarks))
 
   ;(define flsin sin)
 

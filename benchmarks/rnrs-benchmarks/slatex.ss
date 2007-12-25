@@ -10,6 +10,7 @@
     (rnrs) 
     (rnrs unicode)
     (rnrs mutable-pairs)
+    (rnrs mutable-strings)
     (rnrs io simple)
     (rnrs-benchmarks))
 

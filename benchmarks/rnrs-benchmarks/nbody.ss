@@ -9,6 +9,7 @@
   (import
     (rnrs)
     (rnrs arithmetic flonums) 
+    (rnrs r5rs)
     (rnrs mutable-pairs) 
     (rnrs-benchmarks))
   

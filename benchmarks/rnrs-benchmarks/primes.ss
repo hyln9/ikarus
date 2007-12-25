@@ -2,7 +2,7 @@
 
 (library (rnrs-benchmarks primes)
   (export main)
-  (import (rnrs) (rnrs-benchmarks))
+  (import (rnrs) (rnrs r5rs) (rnrs-benchmarks))
   
   (define  (interval-list m n)
     (if (> m n)
