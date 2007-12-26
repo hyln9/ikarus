@@ -1,10 +1,11 @@
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "ikarus-data.h"
 #include <errno.h>
+#include "ikarus-data.h"
 
 extern ikptr ikrt_io_error();
 
