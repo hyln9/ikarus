@@ -5,6 +5,8 @@
 #include <sys/stat.h>
 #include <sys/uio.h>
 #include <unistd.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 #include "ikarus-data.h"
 
@@ -111,4 +113,62 @@ ikrt_write_fd(ikptr fd, ikptr bv, ikptr off, ikptr cnt, ikpcb* pcb){
     return ikrt_io_error();
   }
 }
+
+char* get_family(int x){
+  if (x == AF_UNIX) return "AF_UNIX";
+  if (x == AF_INET) return "AF_INET";
+  if (x == AF_ISO) return "AF_ISO";
+  if (x == AF_NS) return "AF_NS";
+  if (x == AF_IMPLINK) return "AF_IMPLINK";
+  return "AF_UNKNOWN";
+}
+
+char* get_type(int x){
+  if (x == SOCK_STREAM) return "SOCK_STREAM";
+  if (x == SOCK_DGRAM) return "SOCK_DGRAM";
+  if (x == SOCK_RAW) return "SOCK_RAW";
+  if (x == SOCK_SEQPACKET) return "SOCK_SEQPACKET";
+  if (x == SOCK_RDM) return "SOCK_RDM";
+  return "SOCK_UNKNOWN";
+}
+
+ikptr
+ikrt_tcp_connect(ikptr host, ikptr srvc, ikpcb* pcb){
+  struct addrinfo* info;
+  int err = getaddrinfo(host+off_bytevector_data,
+                        srvc+off_bytevector_data,
+                        0,
+                        &info);
+  if(err){
+    return fix(-1);
+  }
+  struct addrinfo* i = info;
+  int sock = -1;
+  while(i){
+    if(i->ai_socktype != SOCK_STREAM){
+      i = i->ai_next;
+    } else {
+      int s = socket(i->ai_family, i->ai_socktype, i->ai_protocol);
+      if(s < 0){
+        i = i->ai_next;
+      } else {
+        int err = connect(s, i->ai_addr, i->ai_addrlen);
+        if(err < 0){
+          i = i->ai_next;
+        } else {
+          sock = s;
+          i = 0;
+        }
+      }
+    }
+  }
+  freeaddrinfo(info);
+  return fix(sock);
+}
+
+//ikptr
+//ikrt_tcp_connect(ikp host, ikp port, ikpcb* pcb){
+//
+//}
+
 

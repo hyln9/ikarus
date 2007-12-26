@@ -61,7 +61,10 @@
     reset-input-port!
     port-id
     input-port-byte-position
-    process )
+    process 
+    
+    tcp-connect
+    )
 
   
   (import 
@@ -111,7 +114,8 @@
       reset-input-port!
       port-id
       input-port-byte-position
-      process))
+      process
+      tcp-connect))
 
   (module UNSAFE  
     (fx< fx<= fx> fx>= fx= fx+ fx-
@@ -1180,7 +1184,7 @@
   (define input-file-buffer-size (+ block-size 128))
   (define output-file-buffer-size block-size)
 
-  (define (fh->input-port fd id size transcoder close?)
+  (define (fh->input-port fd id size transcoder close)
     (guarded-port
       ($make-port 
         (input-transcoder-attrs transcoder)
@@ -1196,15 +1200,13 @@
         #f ;;; write!
         #f ;;; get-position
         #f ;;; set-position!
-        (and close?
-          (lambda () 
-            (cond
-              [(foreign-call "ikrt_close_fd" fd) =>
-               (lambda (err) 
-                 (io-error 'close id err))])))
+        (cond
+          [(procedure? close) close]
+          [(eqv? close #t) (file-close-proc id fd)]
+          [else #f])
         fd)))
 
-  (define (fh->output-port fd id size transcoder close?)
+  (define (fh->output-port fd id size transcoder close)
     (guarded-port
       ($make-port 
         (output-transcoder-attrs transcoder)
@@ -1220,13 +1222,18 @@
             bytes))
         #f ;;; get-position
         #f ;;; set-position!
-        (and close?
-          (lambda () 
-            (cond
-              [(foreign-call "ikrt_close_fd" fd) =>
-               (lambda (err) 
-                 (io-error 'close id err))])))
+        (cond
+          [(procedure? close) close]
+          [(eqv? close #t) (file-close-proc id fd)]
+          [else #f])
         fd)))
+
+  (define (file-close-proc id fd)
+    (lambda () 
+      (cond
+        [(foreign-call "ikrt_close_fd" fd) =>
+         (lambda (err) 
+           (io-error 'close id err))])))
 
   (define (open-input-file-handle filename who)
     (let ([fh (foreign-call "ikrt_open_input_fd"
@@ -1901,6 +1908,24 @@
                 cmd input-file-buffer-size #f #t)
             (fh->input-port (vector-ref r 3) 
                 cmd input-file-buffer-size #f #t)))))
+
+  (define (tcp-connect host srvc)
+    (let ([socket (foreign-call "ikrt_tcp_connect" 
+                     (string->utf8 host)
+                     (string->utf8 srvc))])
+      (if (< socket 0)
+          (io-error 'tcp-connect host socket)
+          (let ([close
+                 (let ([closed-once? #f])
+                   (lambda () 
+                     (if closed-once?
+                         ((file-close-proc host socket))
+                         (set! closed-once? #t))))])
+            (values 
+              (fh->output-port socket
+                 host output-file-buffer-size #f close)
+              (fh->input-port socket
+                 host input-file-buffer-size #f close))))))
 
 
   )

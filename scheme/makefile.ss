@@ -1373,6 +1373,7 @@
     [&no-nans-rcd]
     [&interrupted-rtd]
     [&interrupted-rcd]
+    [tcp-connect                i]
   ))
 
 (define (macro-identifier? x) 
