@@ -45,7 +45,8 @@
     open-bytevector-output-port
     call-with-bytevector-output-port
     open-string-output-port with-output-to-string
-    call-with-string-output-port
+    call-with-string-output-port 
+    open-output-string get-output-string
     standard-output-port standard-error-port
     current-output-port current-error-port
     open-file-output-port open-output-file 
@@ -95,6 +96,7 @@
       call-with-bytevector-output-port
       open-string-output-port with-output-to-string
       call-with-string-output-port
+      open-output-string get-output-string
       standard-output-port standard-error-port
       current-output-port current-error-port
       open-file-output-port open-output-file 
@@ -439,45 +441,67 @@
         (proc))
       (extract)))
   
+  (define-struct output-string-cookie (strings))
+
+
+  (define (open-output-string)
+    (define who 'open-output-string)
+    (let ([cookie (make-output-string-cookie '())]
+          [buffer-size 256])
+      ($make-port
+         (fxior textual-output-port-bits fast-char-text-tag)
+         0 buffer-size (make-string buffer-size)
+         #t ;;; transcoder
+         "*string-output-port*"
+         #f
+         (lambda (str i c) 
+           (unless (= c 0) 
+             (let ([x (make-string c)])
+               (string-copy! str i x 0 c)
+               (set-output-string-cookie-strings! cookie
+                 (cons x (output-string-cookie-strings cookie)))))
+           c)
+         #f  ;;; FIXME: get-position
+         #f  ;;; FIXME: set-position!
+         #f
+         cookie)))
+
   (define (open-string-output-port)
-    (define who 'open-string-output-port)
-    (let ([buf* '()] [buffer-size 256])
-      (let ([p 
-             ($make-port
-                (fxior textual-output-port-bits fast-char-text-tag)
-                0 buffer-size (make-string buffer-size)
-                #t ;;; transcoder
-                "*string-output-port*"
-                #f
-                (lambda (str i c) 
-                  (unless (= c 0) 
-                    (let ([x (make-string c)])
-                      (string-copy! str i x 0 c)
-                      (set! buf* (cons x buf*))))
-                  c)
-                #f  ;;; FIXME: get-position
-                #f  ;;; FIXME: set-position!
-                #f
-                #f)])
-        (values
-          p
-          (lambda () 
-            (define (append-str-buf* ls) 
-              (let f ([ls ls] [i 0])
-                (cond
-                  [(null? ls) 
-                   (values (make-string i) 0)]
-                  [else 
-                   (let* ([a (car ls)]
-                          [n (string-length a)])
-                     (let-values ([(bv i) (f (cdr ls) (fx+ i n))])
-                       (string-copy! a 0 bv i n)
-                       (values bv (fx+ i n))))])))
-            (unless ($port-closed? p)
-              (flush-output-port p))
-            (let-values ([(bv len) (append-str-buf* buf*)])
-              (set! buf* '())
-              bv))))))
+    (let ([p (open-output-string)])
+      (values
+        p
+        (lambda ()
+          (let ([str (get-output-string p)])
+            (set-output-string-cookie-strings!  ($port-cookie p) '())
+            str)))))
+
+  (define (get-output-string-cookie-data cookie)
+    (define (append-str-buf* ls) 
+      (let f ([ls ls] [i 0])
+        (cond
+          [(null? ls) 
+           (values (make-string i) 0)]
+          [else 
+           (let* ([a (car ls)]
+                  [n (string-length a)])
+             (let-values ([(bv i) (f (cdr ls) (fx+ i n))])
+               (string-copy! a 0 bv i n)
+               (values bv (fx+ i n))))])))
+      (let ([buf* (output-string-cookie-strings cookie)])
+        (let-values ([(bv len) (append-str-buf* buf*)])
+          bv)))
+
+  (define (get-output-string p)
+    (if (port? p) 
+        (let ([cookie ($port-cookie p)])
+          (cond
+            [(output-string-cookie? cookie)
+             (unless ($port-closed? p)
+               (flush-output-port p))
+             (get-output-string-cookie-data cookie)]
+            [else
+             (die 'get-output-string "not an output-string port" p)]))
+        (die 'get-output-string "not a port" p)))
 
   (define (open-string-input-port str)
     (unless (string? str) 
