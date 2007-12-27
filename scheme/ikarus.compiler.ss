@@ -1280,7 +1280,9 @@
       [(constant) x]
       [(var) 
        (let ([r (var-referenced x)])
-         (if (constant? r) r x))]
+         (cond
+           [(boolean? r) x]
+           [else (Pred r)]))]
       [(primref) (make-constant #t)]
       [(bind lhs* rhs* body)
        (do-bind lhs* rhs* body Pred)]
