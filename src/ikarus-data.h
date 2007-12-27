@@ -19,6 +19,7 @@
 
 #ifndef IKARUS_H
 #define IKARUS_H
+#include "ikarus-getaddrinfo.h"
 
 #include <stdio.h>
 #include <sys/resource.h>

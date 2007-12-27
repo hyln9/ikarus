@@ -8787,7 +8787,8 @@ fi
 
 
 
-for ac_func in bzero gettimeofday memmove memset munmap setenv sqrt strerror
+
+for ac_func in bzero gettimeofday memmove memset munmap setenv sqrt strerror getaddrinfo
 do
 as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
 { echo "$as_me:$LINENO: checking for $ac_func" >&5
