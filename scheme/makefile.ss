@@ -397,6 +397,7 @@
     [waitpid                                     i]
     [installed-libraries                         i]
     [library-path                                i]
+    [library-extensions                          i]
     [current-primitive-locations                 $boot]
     [boot-library-expand                         $boot]
     [current-library-collection                  $boot]

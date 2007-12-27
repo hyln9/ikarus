@@ -23,7 +23,7 @@
     visit-library library-name library-version library-exists?
     find-library-by-name install-library library-spec invoke-library 
     extend-library-subst! extend-library-env! current-library-expander
-    current-library-collection library-path)
+    current-library-collection library-path library-extensions)
   (import (rnrs) (psyntax compat) (rnrs r5rs))
 
   (define (make-collection)
@@ -79,6 +79,15 @@
             (map (lambda (x) x) x)
             (assertion-violation 'library-path "not a list of strings" x)))))
   
+  (define library-extensions
+    (make-parameter
+      '(".sls" ".ss" ".scm")
+      (lambda (x)
+        (if (and (list? x) (for-all string? x))
+            (map (lambda (x) x) x)
+            (assertion-violation 'library-extensions
+              "not a list of strings" x)))))
+
   (define (library-name->file-name x)
     (let-values (((p extract) (open-string-output-port)))
       (define (display-hex n)
@@ -90,35 +99,35 @@
                        (- n 10)))
                   p))))
       (let f ((ls x))
-        (cond
-          ((null? ls) (display ".ss" p))
-          (else
-           (display "/" p)
-           (for-each
-             (lambda (c)
-               (cond
-                 ((or (char<=? #\a c #\z)
-                      (char<=? #\A c #\Z)
-                      (char<=? #\0 c #\9)
-                      (memv c '(#\- #\. #\_ #\~)))
-                  (display c p))
-                 (else
-                  (display "%" p)
-                  (let ((n (char->integer c)))
-                    (display-hex (quotient n 16))
-                    (display-hex (remainder n 16))))))
-             (string->list 
-               (symbol->string (car ls))))
-           (f (cdr ls)))))
+        (unless (null? ls)
+          (display "/" p)
+          (for-each
+            (lambda (c)
+              (cond
+                ((or (char<=? #\a c #\z)
+                     (char<=? #\A c #\Z)
+                     (char<=? #\0 c #\9)
+                     (memv c '(#\- #\. #\_ #\~)))
+                 (display c p))
+                (else
+                 (display "%" p)
+                 (let ((n (char->integer c)))
+                   (display-hex (quotient n 16))
+                   (display-hex (remainder n 16))))))
+            (string->list 
+              (symbol->string (car ls))))
+          (f (cdr ls))))
       (extract)))
 
   (define file-locator
     (make-parameter
       (lambda (x)
         (let ((str (library-name->file-name x)))
-          (let f ((ls (library-path)) (failed-list '()))
+          (let f ((ls (library-path)) 
+                  (exts (library-extensions))
+                  (failed-list '()))
             (cond
-              ((null? ls) 
+              ((null? ls)
                (let ()
                  (define-condition-type &library-resolution &condition
                     make-library-resolution-condition
@@ -133,11 +142,13 @@
                        "cannot locate library in library-path")
                      (make-library-resolution-condition 
                        x (reverse failed-list))))))
+              ((null? exts) 
+               (f (cdr ls) (library-extensions) failed-list))
               (else
-               (let ((name (string-append (car ls) str)))
+               (let ((name (string-append (car ls) str (car exts))))
                  (if (file-exists? name)
                      name
-                     (f (cdr ls) (cons name failed-list)))))))))
+                     (f ls (cdr exts) (cons name failed-list)))))))))
       (lambda (f)
         (if (procedure? f)
             f
