@@ -1380,7 +1380,7 @@
     [tcp-connect-nonblocking          i]
     [&i/o-would-block                 i]
     [make-i/o-would-block-condition   i]
-    [i/o-would-block-condition        i]
+    [i/o-would-block-condition?       i]
     [i/o-would-block-port             i]
   ))
 
