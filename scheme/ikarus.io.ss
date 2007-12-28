@@ -1927,33 +1927,33 @@
             (fh->input-port (vector-ref r 3) 
                 cmd input-file-buffer-size #f #t)))))
 
-  (define (socket->ports socket who host)
+  (define (socket->ports socket who id)
     (if (< socket 0)
-        (io-error 'tcp-connect host socket)
+        (io-error 'tcp-connect id socket)
         (let ([close
                (let ([closed-once? #f])
                  (lambda () 
                    (if closed-once?
-                       ((file-close-proc host socket))
+                       ((file-close-proc id socket))
                        (set! closed-once? #t))))])
           (values 
             (fh->output-port socket
-               host output-file-buffer-size #f close)
+               id output-file-buffer-size #f close)
             (fh->input-port socket
-               host input-file-buffer-size #f close)))))
+               id input-file-buffer-size #f close)))))
 
   (define (tcp-connect host srvc)
     (socket->ports 
       (foreign-call "ikrt_tcp_connect" 
         (string->utf8 host) (string->utf8 srvc))
       'tcp-connect
-      host))
+      (string-append host ":" srvc)))
 
   (define (tcp-connect-nonblocking host srvc)
     (socket->ports 
       (foreign-call "ikrt_tcp_connect_nonblocking" 
         (string->utf8 host) (string->utf8 srvc))
       'tcp-connect-nonblocking
-      host))
+      (string-append host ":" srvc)))
   )
 
