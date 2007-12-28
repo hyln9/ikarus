@@ -115,23 +115,7 @@ ikrt_write_fd(ikptr fd, ikptr bv, ikptr off, ikptr cnt, ikpcb* pcb){
   }
 }
 
-char* get_family(int x){
-  if (x == AF_UNIX) return "AF_UNIX";
-  if (x == AF_INET) return "AF_INET";
-  if (x == AF_ISO) return "AF_ISO";
-  if (x == AF_NS) return "AF_NS";
-  if (x == AF_IMPLINK) return "AF_IMPLINK";
-  return "AF_UNKNOWN";
-}
 
-char* get_type(int x){
-  if (x == SOCK_STREAM) return "SOCK_STREAM";
-  if (x == SOCK_DGRAM) return "SOCK_DGRAM";
-  if (x == SOCK_RAW) return "SOCK_RAW";
-  if (x == SOCK_SEQPACKET) return "SOCK_SEQPACKET";
-  if (x == SOCK_RDM) return "SOCK_RDM";
-  return "SOCK_UNKNOWN";
-}
 
 ikptr
 ikrt_tcp_connect(ikptr host, ikptr srvc, ikpcb* pcb){
