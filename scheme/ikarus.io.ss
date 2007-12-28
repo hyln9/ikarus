@@ -63,12 +63,13 @@
     input-port-byte-position
     process 
     
-    tcp-connect
+    tcp-connect tcp-connect-nonblocking
     )
 
   
   (import 
     (ikarus system $io)
+
     (except (ikarus)
       port? input-port? output-port? textual-port? binary-port? 
       open-file-input-port open-input-file 
@@ -115,7 +116,7 @@
       port-id
       input-port-byte-position
       process
-      tcp-connect))
+      tcp-connect tcp-connect-nonblocking))
 
   (module UNSAFE  
     (fx< fx<= fx> fx>= fx= fx+ fx-
@@ -1139,6 +1140,7 @@
              (eof-object? (lookahead-u8 p)))]
         [else (die 'port-eof? "not an input port" p)])))
 
+  (define EAGAIN-error-code -22) ;;; from ikarus-io.c
   (define io-errors-vec
     '#(#|  0 |# "unknown error"
        #|  1 |# "bad file name"
@@ -1160,7 +1162,8 @@
        #| 17 |# "device is busy"
        #| 18 |# "access fault"
        #| 19 |# "file already exists"
-       #| 20 |# "invalid file name"))
+       #| 20 |# "invalid file name"
+       #| 21 |# "non-blocking operation would block"))
 
   (define (io-error who id err)
     (let ([err (fxnot err)])
@@ -1179,54 +1182,69 @@
             (make-message-condition msg)
             (make-i/o-filename-error id))))))
 
-
   (define block-size 4096)
   (define input-file-buffer-size (+ block-size 128))
   (define output-file-buffer-size block-size)
 
   (define (fh->input-port fd id size transcoder close)
-    (guarded-port
-      ($make-port 
-        (input-transcoder-attrs transcoder)
-        0 0 (make-bytevector size)
-        transcoder
-        id
-        (lambda (bv idx cnt) 
-          (let ([bytes
-                 (foreign-call "ikrt_read_fd" fd bv idx 
-                    (fxmin block-size cnt))])
-            (when (fx< bytes 0) (io-error 'read id bytes))
-            bytes))
-        #f ;;; write!
-        #f ;;; get-position
-        #f ;;; set-position!
-        (cond
-          [(procedure? close) close]
-          [(eqv? close #t) (file-close-proc id fd)]
-          [else #f])
-        fd)))
+    (letrec ([port
+              ($make-port 
+                (input-transcoder-attrs transcoder)
+                0 0 (make-bytevector size)
+                transcoder
+                id
+                (letrec ([refill
+                          (lambda (bv idx cnt) 
+                            (let ([bytes
+                                   (foreign-call "ikrt_read_fd" fd bv idx 
+                                      (fxmin block-size cnt))])
+                              (cond
+                                [(fx>= bytes 0) bytes]
+                                [(fx= bytes EAGAIN-error-code)
+                                 (raise-continuable 
+                                   (make-i/o-would-block-condition port))
+                                 (refill bv idx cnt)]
+                                [else (io-error 'read id bytes)])))])
+                  refill)
+                #f ;;; write!
+                #f ;;; get-position
+                #f ;;; set-position!
+                (cond
+                  [(procedure? close) close]
+                  [(eqv? close #t) (file-close-proc id fd)]
+                  [else #f])
+                fd)])
+    (guarded-port port)))
 
   (define (fh->output-port fd id size transcoder close)
-    (guarded-port
-      ($make-port 
-        (output-transcoder-attrs transcoder)
-        0 size (make-bytevector size)
-        transcoder
-        id
-        #f
-        (lambda (bv idx cnt) 
-          (let ([bytes
-                 (foreign-call "ikrt_write_fd" fd bv idx
-                   (fxmin block-size cnt))])
-            (when (fx< bytes 0) (io-error 'write id bytes))
-            bytes))
-        #f ;;; get-position
-        #f ;;; set-position!
-        (cond
-          [(procedure? close) close]
-          [(eqv? close #t) (file-close-proc id fd)]
-          [else #f])
-        fd)))
+    (letrec ([port
+              ($make-port 
+                (output-transcoder-attrs transcoder)
+                0 size (make-bytevector size)
+                transcoder
+                id
+                #f
+                (letrec ([refill
+                          (lambda (bv idx cnt) 
+                            (let ([bytes
+                                   (foreign-call "ikrt_write_fd" fd bv idx
+                                     (fxmin block-size cnt))])
+                              (cond
+                                [(fx>= bytes 0) bytes]
+                                [(fx= bytes EAGAIN-error-code)
+                                 (raise-continuable 
+                                   (make-i/o-would-block-condition port))
+                                 (refill bv idx cnt)]
+                                [else (io-error 'write id bytes)])))])
+                  refill)
+                #f ;;; get-position
+                #f ;;; set-position!
+                (cond
+                  [(procedure? close) close]
+                  [(eqv? close #t) (file-close-proc id fd)]
+                  [else #f])
+                fd)])
+      (guarded-port port)))
 
   (define (file-close-proc id fd)
     (lambda () 
@@ -1909,24 +1927,33 @@
             (fh->input-port (vector-ref r 3) 
                 cmd input-file-buffer-size #f #t)))))
 
+  (define (socket->ports socket who host)
+    (if (< socket 0)
+        (io-error 'tcp-connect host socket)
+        (let ([close
+               (let ([closed-once? #f])
+                 (lambda () 
+                   (if closed-once?
+                       ((file-close-proc host socket))
+                       (set! closed-once? #t))))])
+          (values 
+            (fh->output-port socket
+               host output-file-buffer-size #f close)
+            (fh->input-port socket
+               host input-file-buffer-size #f close)))))
+
   (define (tcp-connect host srvc)
-    (let ([socket (foreign-call "ikrt_tcp_connect" 
-                     (string->utf8 host)
-                     (string->utf8 srvc))])
-      (if (< socket 0)
-          (io-error 'tcp-connect host socket)
-          (let ([close
-                 (let ([closed-once? #f])
-                   (lambda () 
-                     (if closed-once?
-                         ((file-close-proc host socket))
-                         (set! closed-once? #t))))])
-            (values 
-              (fh->output-port socket
-                 host output-file-buffer-size #f close)
-              (fh->input-port socket
-                 host input-file-buffer-size #f close))))))
+    (socket->ports 
+      (foreign-call "ikrt_tcp_connect" 
+        (string->utf8 host) (string->utf8 srvc))
+      'tcp-connect
+      host))
 
-
+  (define (tcp-connect-nonblocking host srvc)
+    (socket->ports 
+      (foreign-call "ikrt_tcp_connect_nonblocking" 
+        (string->utf8 host) (string->utf8 srvc))
+      'tcp-connect-nonblocking
+      host))
   )
 

@@ -72,6 +72,13 @@
           &i/o-encoding-rcd &no-infinities-rtd &no-infinities-rcd
           &no-nans-rtd &no-nans-rcd
           &interrupted-rtd &interrupted-rcd 
+
+
+          &i/o-would-block-rtd
+          &i/o-would-block-rcd
+          make-i/o-would-block-condition
+          i/o-would-block-condition?
+          i/o-would-block-port
           )
   (import
     (rnrs records inspection)
@@ -125,6 +132,10 @@
           no-infinities-violation? make-no-infinities-violation
           no-nans-violation? make-no-nans-violation
           
+          &i/o-would-block
+          make-i/o-would-block-condition
+          i/o-would-block-condition?
+          i/o-would-block-port
           ))
   
   (define-record-type &condition 
@@ -333,6 +344,10 @@
   (define-condition-type &interrupted &condition
     make-interrupted-condition interrupted-condition?)
 
+  (define-condition-type &i/o-would-block &condition
+    make-i/o-would-block-condition i/o-would-block-condition?
+    (port i/o-would-block-port))
+
   (define print-condition 
     (let ()
       (define (print-simple-condition x p)
@@ -384,11 +399,6 @@
          (if (output-port? port) 
              (print-condition x port)
              (die 'print-condition "not an output port" port))])))
-
-  ;(let ([p 
-  ;       (lambda (x p) 
-  ;         (display "#<condition>" p))])
-  ;  (set-rtd-printer! (record-type-descriptor compound-condition) p))
 
 
   )

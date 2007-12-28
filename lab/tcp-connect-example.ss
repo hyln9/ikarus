@@ -14,6 +14,7 @@
       (close-input-port ip)
       (close-output-port op))))
 
-;(http-cat "www.google.com")
-(http-cat "127.0.0.1")
+(http-cat "www.google.com")
+(newline)
+;(http-cat "127.0.0.1")
 

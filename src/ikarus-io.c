@@ -33,6 +33,7 @@ ikrt_io_error(){
     case EFAULT          : return fix(-19);
     case EEXIST          : return fix(-20);
     case EINVAL          : return fix(-21);
+    case EAGAIN          : return fix(-22); /* hardcoded in ikarus.io.ss */
   }
   return fix(-1);
 }
@@ -166,9 +167,19 @@ ikrt_tcp_connect(ikptr host, ikptr srvc, ikpcb* pcb){
   return fix(sock);
 }
 
-//ikptr
-//ikrt_tcp_connect(ikp host, ikp port, ikpcb* pcb){
-//
-//}
-
+ikptr
+ikrt_tcp_connect_nonblocking(ikptr host, ikptr srvc, ikpcb* pcb){
+  ikptr fdptr = ikrt_tcp_connect(host, srvc, pcb);
+  int fd = unfix(fdptr);
+  if(fd >= 0){
+    /* connected alright */
+    int err = fcntl(fd, F_SETFL, O_NONBLOCK);
+    if(err == -1){
+      ikptr errptr = ikrt_io_error();
+      close(fd);
+      return errptr;
+    }
+  }
+  return fdptr;
+}
 

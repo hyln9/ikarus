@@ -1374,7 +1374,14 @@
     [&no-nans-rcd]
     [&interrupted-rtd]
     [&interrupted-rcd]
-    [tcp-connect                i]
+    [&i/o-would-block-rtd]
+    [&i/o-would-block-rcd]
+    [tcp-connect                      i]
+    [tcp-connect-nonblocking          i]
+    [&i/o-would-block                 i]
+    [make-i/o-would-block-condition   i]
+    [i/o-would-block-condition        i]
+    [i/o-would-block-port             i]
   ))
 
 (define (macro-identifier? x) 
