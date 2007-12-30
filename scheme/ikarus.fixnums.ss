@@ -386,7 +386,7 @@
     (define $fixnum->string
       (lambda (x radix)
         (cond
-          [($fxzero? x) "0"]
+          [($fxzero? x) (string #\0)]
           [($fx> x 0)
            (call-with-values
              (lambda () (f x 0 0 radix))
