@@ -108,11 +108,6 @@
   (lambda (x)
     (assq x register-mapping)))
 
-
-;(define with-args
-;  (lambda (ls f)
-;    (apply f (cdr ls))))
-
 (define-syntax with-args
   (syntax-rules (lambda)
     [(_ x (lambda (a0 a1) b b* ...))
@@ -185,7 +180,6 @@
               (cons (byte #x24) ac)
               ac))))
 
-
 (define IMM32
   (lambda (n ac)
     (cond
@@ -217,6 +211,8 @@
        (cons (cons 'label-addr (label-name n)) ac)]
       [(foreign? n)
        (cons (cons 'foreign-label (label-name n)) ac)]
+      [(label? n) 
+       (cons (cons 'relative (label-name n)) ac)]
       [else (die 'IMM32 "invalid" n)])))
 
 
@@ -234,7 +230,8 @@
         (obj? x)
         (obj+? x) 
         (label-address? x)
-        (foreign? x))))
+        (foreign? x)
+        (label? x))))
 
 (define foreign?
   (lambda (x)
@@ -247,26 +244,11 @@
 
 (define label?
   (lambda (x)
-    (cond
-      [(and (pair? x) (eq? (car x) 'label))
-       (let ([d (cdr x)])
-         (unless (and (null? (cdr d))
-                      (symbol? (car d)))
-           (die 'assemble "invalid label" x)))
-       #t]
-      [else #f])))
+    (and (pair? x) (eq? (car x) 'label))))
 
 (define label-address?
   (lambda (x)
-    (cond
-      [(and (pair? x) (eq? (car x) 'label-address))
-       (let ([d (cdr x)])
-         (unless (and (null? (cdr d))
-                      (or (symbol? (car d))
-                          (string? (car d))))
-           (die 'assemble "invalid label-address" x)))
-       #t]
-      [else #f])))
+    (and (pair? x) (eq? (car x) 'label-address))))
 
 (define label-name
   (lambda (x) (cadr x)))
@@ -294,7 +276,6 @@
   (lambda (c r1 r2 ac)
     (CODE c (ModRM 3 r1 r2 ac))))
 
-
 (define RegReg
   (lambda (r1 r2 r3 ac)
     (cond
@@ -307,7 +288,6 @@
                         (fxsll (register-index r3) 3)))
          ac)])))
 
-
 (define IMM32*2
   (lambda (i1 i2 ac)
     (cond
@@ -315,9 +295,6 @@
        (let ([d i1] [v (cadr i2)])
          (cons (reloc-word+ v d) ac))]
       [(and (int? i2) (obj? i1)) (IMM32*2 i2 i1 ac)]
-      [(and (int? i1) (int? i2)) 
-       ;FIXME
-       (IMM32 i1 (IMM32 i2 ac))]
       [else (die 'assemble "invalid IMM32*2" i1 i2)])))
 
 (define (SIB s i b ac)
@@ -329,27 +306,26 @@
               (fxsll s 6))))
         ac))
 
-(define (CODE/digit c /d)
-  (lambda (dst ac)
-    (cond
-      [(mem? dst) 
-       (with-args dst
-          (lambda (a0 a1)
-            (cond
-              [(and (imm8? a0) (reg32? a1))
-               (CODE c (ModRM 1 /d a1 (IMM8 a0 ac)))]
-              [(and (imm? a0) (reg32? a1))
-               (CODE c (ModRM 2 /d a1 (IMM32 a0 ac)))]
-              [(and (imm8? a1) (reg32? a0))
-               (CODE c (ModRM 1 /d a0 (IMM8 a1 ac)))]
-              [(and (imm? a1) (reg32? a0))
-               (CODE c (ModRM 2 /d a0 (IMM32 a1 ac)))]
-              [(and (reg32? a0) (reg32? a1))
-               (CODE c (RegReg /d a0 a1 ac))]
-              [(and (imm? a0) (imm? a1))
-               (CODE c (ModRM 0 /d '/5 (IMM32*2 a0 a1 ac)))]
-              [else (die 'CODE/digit "unhandled" a0 a1)])))]
-      [else (die 'CODE/digit "unhandled" dst)])))
+(define (CODE/digit c /d dst ac)
+  (cond
+    [(mem? dst) 
+     (with-args dst
+        (lambda (a0 a1)
+          (cond
+            [(and (imm8? a0) (reg32? a1))
+             (CODE c (ModRM 1 /d a1 (IMM8 a0 ac)))]
+            [(and (imm? a0) (reg32? a1))
+             (CODE c (ModRM 2 /d a1 (IMM32 a0 ac)))]
+            [(and (imm8? a1) (reg32? a0))
+             (CODE c (ModRM 1 /d a0 (IMM8 a1 ac)))]
+            [(and (imm? a1) (reg32? a0))
+             (CODE c (ModRM 2 /d a0 (IMM32 a1 ac)))]
+            [(and (reg32? a0) (reg32? a1))
+             (CODE c (RegReg /d a0 a1 ac))]
+            [(and (imm? a0) (imm? a1))
+             (CODE c (ModRM 0 /d '/5 (IMM32*2 a0 a1 ac)))]
+            [else (die 'CODE/digit "unhandled" a0 a1)])))]
+    [else (die 'CODE/digit "unhandled" dst)]))
 
 (define *cogen* (gensym "*cogen*"))
 
@@ -390,65 +366,42 @@
                 (die 'convert-instruction "incorrect args" a))])))]
     [else (die 'convert-instruction "unknown instruction" a)]))
 
-(define (CODEri code r i ac)
-  (CODE+r code r (IMM32 i ac)))
-
-(define (CODEmi code m i ac)
-  ((CODE/digit code '/0) m (IMM32 i ac)))
-
-(define (CODEmi8 code m i8 ac)
-  ((CODE/digit code '/0) m (IMM8 i8 ac)))
-
-(define (CODEi code i ac)
-  (CODE code (IMM32 i ac)))
-
 (module ()
 (define who 'assembler)
 
-(define (conditional-set c dst ac)
-  (cond
-    [(reg8? dst)
-     (CODE #x0F (CODE c (ModRM 3 '/0 dst ac)))]
-    [else (die who "invalid condition-set" dst)]))
+(define (CR c r ac) 
+  (CODE+r c r ac))
+(define (CRM c r d ac)
+  (CODE/digit c r d ac))
 
-(define (conditional-jump c dst ac)
-  (cond
-    [(imm? dst)
-     (CODE #x0F (CODE c (IMM32 dst ac)))]
-    [(label? dst)
-     (CODE #x0F (CODE c (cons (cons 'relative (label-name dst)) ac)))]
-    [else (die who "invalid conditional jump target" dst)]))
-
-(define (CRI32 c r i32 ac)
-  (CODEri c r i32 ac))
-
-(define (CRRI8 c r0 r1 i8 ac)
-  (CODE c (ModRM 3 r0 r1 (IMM8 i8 ac))))
 (define (CI8 c i8 ac)
   (CODE c (IMM8 i8 ac)))
 (define (CI32 c i32 ac)
-  (CODEi c i32 ac))
-(define (CRRI32 c r0 r1 i32 ac)
-  (CODE c (ModRM 3 r0 r1 (IMM32 i32 ac))))
+  (CODE c (IMM32 i32 ac)))
+(define (CRI32 c r i32 ac)
+  (CR c r (IMM32 i32 ac)))
 (define (CRR c r0 r1 ac)
-  (CODErr c r0 r1 ac))
+  (CODE c (ModRM 3 r0 r1 ac)))
+(define (CRRI8 c r0 r1 i8 ac)
+  (CRR c r0 r1 (IMM8 i8 ac)))
+(define (CRRI32 c r0 r1 i32 ac)
+  (CRR c r0 r1 (IMM32 i32 ac)))
 (define (CRMI32 c r d i32 ac)
-  ((CODE/digit c r) d (IMM32 i32 ac)))
+  (CRM c r d (IMM32 i32 ac)))
 (define (CRMI8 c r d i8 ac)
-  ((CODE/digit c r) d (IMM8 i8 ac)))
-(define (CRM c r d ac)
-  ((CODE/digit c r) d ac))
+  (CRM c r d (IMM8 i8 ac)))
 (define (CCRR c0 c1 r0 r1 ac)
   (CODE c0 (CRR c1 r0 r1 ac)))
 (define (CCRM c0 c1 r m ac)
   (CODE c0 (CRM c1 r m ac)))
 (define (CCR c0 c1 r ac)
   (CODE c0 (CR c1 r ac)))
-(define (CR c r ac) 
-  (CODE+r c r ac))
-(define (CL c lab ac)
-  (CODE c (cons (cons 'relative (label-name lab)) ac)))
-
+(define (CCI32 c0 c1 i32 ac)
+  (CODE c0 (CI32 c1 i32 ac)))
+(define (CCCRM c0 c1 c2 r m ac)
+  (CODE c0 (CODE c1 (CRM c2 r m ac))))
+(define (CCCRR c0 c1 c2 r0 r1 ac)
+  (CODE c0 (CODE c1 (CRR c2 r0 r1 ac))))
 
 
 (add-instructions instr ac
@@ -594,112 +547,79 @@
       [else (die who "invalid" instr)])]
    [(jmp dst)
     (cond
-      [(label? dst)                   (CL #xE9 dst ac)]
       [(imm? dst)                     (CI32 #xE9 dst ac)]
       [(mem? dst)                     (CRM  #xFF '/4 dst ac)]
       [else (die who "invalid jmp target" dst)])]
    [(call dst)
     (cond
-      [(label? dst)                   (CL #xE8 dst ac)]
       [(imm? dst)                     (CI32 #xE8 dst ac)]
       [(mem? dst)                     (CRM #xFF '/2 dst ac)]
       [(reg32? dst)                   (CRR #xFF '/2 dst ac)]
       [else (die who "invalid jmp target" dst)])]
    [(movsd src dst)
     (cond
-      [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
-       (CODE #xF2 (CODE #x0F ((CODE/digit #x10 dst) src ac)))]
-      [(and (xmmreg? src) (or (xmmreg? dst) (mem? dst)))
-       (CODE #xF2 (CODE #x0F ((CODE/digit #x11 src) dst ac)))]
+      [(and (xmmreg? dst) (mem? src)) (CCCRM #xF2 #x0F #x10 dst src ac)]
+      [(and (xmmreg? src) (mem? dst)) (CCCRM #xF2 #x0F #x11 src dst ac)]
       [else (die who "invalid" instr)])]
    [(cvtsi2sd src dst)
     (cond
-      [(and (xmmreg? dst) (reg32? src))
-       (CODE #xF2 (CODE #x0F (CODE #x2A (ModRM 3 src dst ac))))]
-      [(and (xmmreg? dst) (mem? src))
-       (CODE #xF2 (CODE #x0F ((CODE/digit #x2A dst) src ac)))]
+      [(and (xmmreg? dst) (reg32? src)) (CCCRR #xF2 #x0F #x2A src dst ac)]
+      [(and (xmmreg? dst) (mem? src))   (CCCRM #xF2 #x0F #x2A dst src ac)]
       [else (die who "invalid" instr)])] 
    [(cvtsd2ss src dst)
     (cond
-      [(and (xmmreg? dst) (xmmreg? src))
-       (CODE #xF2 (CODE #x0F (CODE #x5A (ModRM 3 src dst ac))))]
+      [(and (xmmreg? dst) (xmmreg? src)) (CCCRR #xF2 #x0F #x5A src dst ac)]
       [else (die who "invalid" instr)])]
    [(cvtss2sd src dst)
     (cond
-      [(and (xmmreg? dst) (xmmreg? src))
-       (CODE #xF3 (CODE #x0F (CODE #x5A (ModRM 3 src dst ac))))]
+      [(and (xmmreg? dst) (xmmreg? src)) (CCCRR #xF3 #x0F #x5A src dst ac)]
       [else (die who "invalid" instr)])]
    [(movss src dst)
     (cond
-      [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
-       (CODE #xF3 (CODE #x0F ((CODE/digit #x10 dst) src ac)))]
-      [(and (xmmreg? src) (or (xmmreg? dst) (mem? dst)))
-       (CODE #xF3 (CODE #x0F ((CODE/digit #x11 src) dst ac)))]
+      [(and (xmmreg? dst) (mem? src)) (CCCRM #xF3 #x0F #x10 dst src ac)]
+      [(and (xmmreg? src) (mem? dst)) (CCCRM #xF3 #x0F #x11 src dst ac)]
       [else (die who "invalid" instr)])]
    [(addsd src dst)
     (cond
-      [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
-       (CODE #xF2 (CODE #x0F ((CODE/digit #x58 dst) src ac)))]
+      [(and (xmmreg? dst) (mem? src)) (CCCRM #xF2 #x0F #x58 dst src ac)]
       [else (die who "invalid" instr)])]
    [(subsd src dst)
     (cond
-      [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
-       (CODE #xF2 (CODE #x0F ((CODE/digit #x5C dst) src ac)))]
+      [(and (xmmreg? dst) (mem? src)) (CCCRM #xF2 #x0F #x5C dst src ac)]
       [else (die who "invalid" instr)])]
    [(mulsd src dst)
     (cond
-      [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
-       (CODE #xF2 (CODE #x0F ((CODE/digit #x59 dst) src ac)))]
+      [(and (xmmreg? dst) (mem? src)) (CCCRM #xF2 #x0F #x59 dst src ac)]
       [else (die who "invalid" instr)])] 
    [(divsd src dst)
     (cond
-      [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
-       (CODE #xF2 (CODE #x0F ((CODE/digit #x5E dst) src ac)))]
+      [(and (xmmreg? dst) (mem? src)) (CCCRM #xF2 #x0F #x5E dst src ac)]
       [else (die who "invalid" instr)])] 
    [(ucomisd src dst)
     (cond
-      [(and (xmmreg? dst) (or (xmmreg? src) (mem? src)))
-       (CODE #x66 (CODE #x0F ((CODE/digit #x2E dst) src ac)))]
+      [(and (xmmreg? dst) (mem? src)) (CCCRM #x66 #x0F #x2E dst src ac)]
       [else (die who "invalid" instr)])]
-   [(seta dst)   (conditional-set  #x97 dst ac)]
-   [(setae dst)  (conditional-set  #x93 dst ac)]
-   [(setb dst)   (conditional-set  #x92 dst ac)]
-   [(setbe dst)  (conditional-set  #x96 dst ac)]
-   [(setg dst)   (conditional-set  #x9F dst ac)]
-   [(setge dst)  (conditional-set  #x9D dst ac)]
-   [(setl dst)   (conditional-set  #x9C dst ac)]
-   [(setle dst)  (conditional-set  #x9E dst ac)]
-   [(sete dst)   (conditional-set  #x94 dst ac)]
-   [(setna dst)  (conditional-set  #x96 dst ac)]
-   [(setnae dst) (conditional-set  #x92 dst ac)]
-   [(setnb dst)  (conditional-set  #x93 dst ac)]
-   [(setnbe dst) (conditional-set  #x97 dst ac)]
-   [(setng dst)  (conditional-set  #x9E dst ac)]
-   [(setnge dst) (conditional-set  #x9C dst ac)]
-   [(setnl dst)  (conditional-set  #x9D dst ac)]
-   [(setnle dst) (conditional-set  #x9F dst ac)]
-   [(setne dst)  (conditional-set  #x95 dst ac)]
-   [(ja dst)     (conditional-jump #x87 dst ac)]
-   [(jae dst)    (conditional-jump #x83 dst ac)]
-   [(jb dst)     (conditional-jump #x82 dst ac)]
-   [(jbe dst)    (conditional-jump #x86 dst ac)]
-   [(jg dst)     (conditional-jump #x8F dst ac)]
-   [(jge dst)    (conditional-jump #x8D dst ac)]
-   [(jl dst)     (conditional-jump #x8C dst ac)]
-   [(jle dst)    (conditional-jump #x8E dst ac)]
-   [(je dst)     (conditional-jump #x84 dst ac)]
-   [(jna dst)    (conditional-jump #x86 dst ac)]
-   [(jnae dst)   (conditional-jump #x82 dst ac)]
-   [(jnb dst)    (conditional-jump #x83 dst ac)]
-   [(jnbe dst)   (conditional-jump #x87 dst ac)]
-   [(jng dst)    (conditional-jump #x8E dst ac)]
-   [(jnge dst)   (conditional-jump #x8C dst ac)]
-   [(jnl dst)    (conditional-jump #x8D dst ac)]
-   [(jnle dst)   (conditional-jump #x8F dst ac)]
-   [(jne dst)    (conditional-jump #x85 dst ac)]
-   [(jo dst)     (conditional-jump #x80 dst ac)]
-   [(jp dst)     (conditional-jump #x8A dst ac)]
-   [(jnp dst)    (conditional-jump #x8B dst ac)]
+   [(ja dst)     (CCI32 #x0F #x87 dst ac)]
+   [(jae dst)    (CCI32 #x0F #x83 dst ac)]
+   [(jb dst)     (CCI32 #x0F #x82 dst ac)]
+   [(jbe dst)    (CCI32 #x0F #x86 dst ac)]
+   [(jg dst)     (CCI32 #x0F #x8F dst ac)]
+   [(jge dst)    (CCI32 #x0F #x8D dst ac)]
+   [(jl dst)     (CCI32 #x0F #x8C dst ac)]
+   [(jle dst)    (CCI32 #x0F #x8E dst ac)]
+   [(je dst)     (CCI32 #x0F #x84 dst ac)]
+   [(jna dst)    (CCI32 #x0F #x86 dst ac)]
+   [(jnae dst)   (CCI32 #x0F #x82 dst ac)]
+   [(jnb dst)    (CCI32 #x0F #x83 dst ac)]
+   [(jnbe dst)   (CCI32 #x0F #x87 dst ac)]
+   [(jng dst)    (CCI32 #x0F #x8E dst ac)]
+   [(jnge dst)   (CCI32 #x0F #x8C dst ac)]
+   [(jnl dst)    (CCI32 #x0F #x8D dst ac)]
+   [(jnle dst)   (CCI32 #x0F #x8F dst ac)]
+   [(jne dst)    (CCI32 #x0F #x85 dst ac)]
+   [(jo dst)     (CCI32 #x0F #x80 dst ac)]
+   [(jp dst)     (CCI32 #x0F #x8A dst ac)]
+   [(jnp dst)    (CCI32 #x0F #x8B dst ac)]
    [(byte x)
     (unless (byte? x) (die who "not a byte" x))
     (cons (byte x) ac)]
