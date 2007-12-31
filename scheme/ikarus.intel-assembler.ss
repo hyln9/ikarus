@@ -306,26 +306,6 @@
               (fxsll s 6))))
         ac))
 
-(define (CODE/digit c /d dst ac)
-  (cond
-    [(mem? dst) 
-     (with-args dst
-        (lambda (a0 a1)
-          (cond
-            [(and (imm8? a0) (reg32? a1))
-             (CODE c (ModRM 1 /d a1 (IMM8 a0 ac)))]
-            [(and (imm? a0) (reg32? a1))
-             (CODE c (ModRM 2 /d a1 (IMM32 a0 ac)))]
-            [(and (imm8? a1) (reg32? a0))
-             (CODE c (ModRM 1 /d a0 (IMM8 a1 ac)))]
-            [(and (imm? a1) (reg32? a0))
-             (CODE c (ModRM 2 /d a0 (IMM32 a1 ac)))]
-            [(and (reg32? a0) (reg32? a1))
-             (CODE c (RegReg /d a0 a1 ac))]
-            [(and (imm? a0) (imm? a1))
-             (CODE c (ModRM 0 /d '/5 (IMM32*2 a0 a1 ac)))]
-            [else (die 'CODE/digit "unhandled" a0 a1)])))]
-    [else (die 'CODE/digit "unhandled" dst)]))
 
 (define *cogen* (gensym "*cogen*"))
 
@@ -366,176 +346,176 @@
                 (die 'convert-instruction "incorrect args" a))])))]
     [else (die 'convert-instruction "unknown instruction" a)]))
 
+(define (RM /d dst ac)
+  (cond
+    [(mem? dst)
+     (with-args dst
+        (lambda (a0 a1)
+          (cond
+            [(and (imm8? a0) (reg32? a1))
+             (ModRM 1 /d a1 (IMM8 a0 ac))]
+            [(and (imm? a0) (reg32? a1))
+             (ModRM 2 /d a1 (IMM32 a0 ac))]
+            [(and (imm8? a1) (reg32? a0))
+             (ModRM 1 /d a0 (IMM8 a1 ac))]
+            [(and (imm? a1) (reg32? a0))
+             (ModRM 2 /d a0 (IMM32 a1 ac))]
+            [(and (reg32? a0) (reg32? a1))
+             (RegReg /d a0 a1 ac)]
+            [(and (imm? a0) (imm? a1))
+             (ModRM 0 /d '/5 (IMM32*2 a0 a1 ac))]
+            [else (die 'RM "unhandled" a0 a1)])))]
+    [(reg? dst) (ModRM 3 /d dst ac)]
+    [else (die 'RM "unhandled" dst)]))
+
 (module ()
 (define who 'assembler)
 
 (define (CR c r ac) 
   (CODE+r c r ac))
-(define (CRM c r d ac)
-  (CODE/digit c r d ac))
-
-(define (CI8 c i8 ac)
-  (CODE c (IMM8 i8 ac)))
-(define (CI32 c i32 ac)
-  (CODE c (IMM32 i32 ac)))
-(define (CRI32 c r i32 ac)
-  (CR c r (IMM32 i32 ac)))
-(define (CRR c r0 r1 ac)
-  (CODE c (ModRM 3 r0 r1 ac)))
-(define (CRRI8 c r0 r1 i8 ac)
-  (CRR c r0 r1 (IMM8 i8 ac)))
-(define (CRRI32 c r0 r1 i32 ac)
-  (CRR c r0 r1 (IMM32 i32 ac)))
-(define (CRMI32 c r d i32 ac)
-  (CRM c r d (IMM32 i32 ac)))
-(define (CRMI8 c r d i8 ac)
-  (CRM c r d (IMM8 i8 ac)))
-(define (CCRR c0 c1 r0 r1 ac)
-  (CODE c0 (CRR c1 r0 r1 ac)))
-(define (CCRM c0 c1 r m ac)
-  (CODE c0 (CRM c1 r m ac)))
+(define (CR* c r rm ac)
+  (CODE c (RM r rm ac)))
+(define (CCR* c0 c1 r rm ac)
+  (CODE c0 (CODE c1 (RM r rm ac))))
 (define (CCR c0 c1 r ac)
-  (CODE c0 (CR c1 r ac)))
+  (CODE c0 (CODE+r c1 r ac)))
 (define (CCI32 c0 c1 i32 ac)
-  (CODE c0 (CI32 c1 i32 ac)))
-(define (CCCRM c0 c1 c2 r m ac)
-  (CODE c0 (CODE c1 (CRM c2 r m ac))))
-(define (CCCRR c0 c1 c2 r0 r1 ac)
-  (CODE c0 (CODE c1 (CRR c2 r0 r1 ac))))
-
+  (CODE c0 (CODE c1 (IMM32 i32 ac))))
+(define (CCCR* c0 c1 c2 r rm ac)
+  (CODE c0 (CODE c1 (CODE c2 (RM r rm ac)))))
 
 (add-instructions instr ac
    [(ret)                                 (CODE #xC3 ac)]
    [(cltd)                                (CODE #x99 ac)]
    [(movl src dst)
     (cond
-      [(and (imm? src) (reg32? dst))      (CRI32  #xB8 dst src ac)]
-      [(and (imm? src) (mem? dst))        (CRMI32 #xC7 '/0 dst src ac)]
-      [(and (reg32? src) (reg32? dst))    (CRR    #x89 src dst ac)]
-      [(and (reg32? src) (mem? dst))      (CRM    #x89 src dst ac)]
-      [(and (mem? src) (reg32? dst))      (CRM    #x8B dst src ac)]
+      [(and (imm? src) (reg32? dst))      (CR  #xB8 dst (IMM32 src ac))]
+      [(and (imm? src) (mem? dst))        (CR* #xC7 '/0 dst (IMM32 src ac))]
+      [(and (reg32? src) (reg32? dst))    (CR* #x89 src dst ac)]
+      [(and (reg32? src) (mem? dst))      (CR* #x89 src dst ac)]
+      [(and (mem? src) (reg32? dst))      (CR* #x8B dst src ac)]
       [else (die who "invalid" instr)])]
    [(movb src dst)
     (cond
-      [(and (imm8? src) (mem? dst))       (CRMI8 #xC6 '/0 dst src ac)]
-      [(and (reg8? src) (mem? dst))       (CRM   #x88 src dst ac)]
-      [(and (mem? src) (reg8? dst))       (CRM   #x8A dst src ac)]
+      [(and (imm8? src) (mem? dst))       (CR* #xC6 '/0 dst (IMM8 src ac))]
+      [(and (reg8? src) (mem? dst))       (CR* #x88 src dst ac)]
+      [(and (mem? src) (reg8? dst))       (CR* #x8A dst src ac)]
       [else (die who "invalid" instr)])]
    [(addl src dst)
     (cond   
-      [(and (imm8? src) (reg32? dst))     (CRRI8  #x83 '/0 dst src ac)]
-      [(and (imm? src) (eq? dst '%eax))   (CI32   #x05 src ac)]
-      [(and (imm? src) (reg32? dst))      (CRRI32 #x81 '/0 dst src ac)]
-      [(and (reg32? src) (reg32? dst))    (CRR    #x01 src dst ac)]
-      [(and (mem? src) (reg32? dst))      (CRM    #x03 dst src ac)]
-      [(and (imm? src) (mem? dst))        (CRMI32 #x81 '/0 dst src ac)]
-      [(and (reg32? src) (mem? dst))      (CRM    #x01 src dst ac)]
+      [(and (imm8? src) (reg32? dst))     (CR*  #x83 '/0 dst (IMM8 src ac))]
+      [(and (imm? src) (eq? dst '%eax))   (CODE #x05 (IMM32 src ac))]
+      [(and (imm? src) (reg32? dst))      (CR*  #x81 '/0 dst (IMM32 src ac))]
+      [(and (reg32? src) (reg32? dst))    (CR*  #x01 src dst ac)]
+      [(and (mem? src) (reg32? dst))      (CR*  #x03 dst src ac)]
+      [(and (imm? src) (mem? dst))        (CR*  #x81 '/0 dst (IMM32 src ac))]
+      [(and (reg32? src) (mem? dst))      (CR*  #x01 src dst ac)]
       [else (die who "invalid" instr)])]
    [(subl src dst)
     (cond   
-      [(and (imm8? src) (reg32? dst))     (CRRI8  #x83 '/5 dst src ac)]
-      [(and (imm? src) (eq? dst '%eax))   (CI32   #x2D src ac)]
-      [(and (imm? src) (reg32? dst))      (CRRI32 #x81 '/5 dst src ac)]
-      [(and (reg32? src) (reg32? dst))    (CRR    #x29 src dst ac)]
-      [(and (mem? src) (reg32? dst))      (CRM    #x2B dst src ac)]
-      [(and (imm? src) (mem? dst))        (CRMI32 #x81 '/5 dst src ac)]
-      [(and (reg32? src) (mem? dst))      (CRM    #x29 src dst ac)]
+      [(and (imm8? src) (reg32? dst))     (CR*  #x83 '/5 dst (IMM8 src ac))]
+      [(and (imm? src) (eq? dst '%eax))   (CODE #x2D (IMM32 src ac))]
+      [(and (imm? src) (reg32? dst))      (CR*  #x81 '/5 dst (IMM32 src ac))]
+      [(and (reg32? src) (reg32? dst))    (CR*  #x29 src dst ac)]
+      [(and (mem? src) (reg32? dst))      (CR*  #x2B dst src ac)]
+      [(and (imm? src) (mem? dst))        (CR*  #x81 '/5 dst (IMM32 src ac))]
+      [(and (reg32? src) (mem? dst))      (CR*  #x29 src dst ac)]
       [else (die who "invalid" instr)])]
    [(sall src dst)
     (cond
-      [(and (equal? 1 src) (reg32? dst))  (CRR   #xD1 '/4 dst ac)]
-      [(and (imm8? src) (reg32? dst))     (CRRI8 #xC1 '/4 dst src ac)]
-      [(and (imm8? src) (mem? dst))       (CRMI8 #xC1 '/4 dst src ac)]
-      [(and (eq? src '%cl) (reg32? dst))  (CRR   #xD3 '/4 dst ac)]
-      [(and (eq? src '%cl) (mem? dst))    (CRM   #xD3 '/4 dst ac)]
+      [(and (equal? 1 src) (reg32? dst))  (CR* #xD1 '/4 dst ac)]
+      [(and (imm8? src) (reg32? dst))     (CR* #xC1 '/4 dst (IMM8 src ac))]
+      [(and (imm8? src) (mem? dst))       (CR* #xC1 '/4 dst (IMM8 src ac))]
+      [(and (eq? src '%cl) (reg32? dst))  (CR* #xD3 '/4 dst ac)]
+      [(and (eq? src '%cl) (mem? dst))    (CR* #xD3 '/4 dst ac)]
       [else (die who "invalid" instr)])]
    [(shrl src dst)
     (cond
-      [(and (equal? 1 src) (reg32? dst))  (CRR   #xD1 '/5 dst ac)]
-      [(and (imm8? src) (reg32? dst))     (CRRI8 #xC1 '/5 dst src ac)]
-      [(and (eq? src '%cl) (reg32? dst))  (CRR   #xD3 '/5 dst ac)]
-      [(and (imm8? src) (mem? dst))       (CRMI8 #xC1 '/5 dst src ac)]
-      [(and (eq? src '%cl) (mem? dst))    (CRM   #xD3 '/5 dst ac)]
+      [(and (equal? 1 src) (reg32? dst))  (CR* #xD1 '/5 dst ac)]
+      [(and (imm8? src) (reg32? dst))     (CR* #xC1 '/5 dst (IMM8 src ac))]
+      [(and (eq? src '%cl) (reg32? dst))  (CR* #xD3 '/5 dst ac)]
+      [(and (imm8? src) (mem? dst))       (CR* #xC1 '/5 dst (IMM8 src ac))]
+      [(and (eq? src '%cl) (mem? dst))    (CR* #xD3 '/5 dst ac)]
       [else (die who "invalid" instr)])]
    [(sarl src dst)
     (cond
-      [(and (equal? 1 src) (reg32? dst))  (CRR   #xD1 '/7 dst ac)]
-      [(and (imm8? src) (reg32? dst))     (CRRI8 #xC1 '/7 dst src ac)]
-      [(and (imm8? src) (mem? dst))       (CRMI8 #xC1 '/7 dst src ac)]
-      [(and (eq? src '%cl) (reg32? dst))  (CRR   #xD3 '/7 dst ac)]
-      [(and (eq? src '%cl) (mem? dst))    (CRM   #xD3 '/7 dst ac)]
+      [(and (equal? 1 src) (reg32? dst))  (CR* #xD1 '/7 dst ac)]
+      [(and (imm8? src) (reg32? dst))     (CR* #xC1 '/7 dst (IMM8 src ac))]
+      [(and (imm8? src) (mem? dst))       (CR* #xC1 '/7 dst (IMM8 src ac))]
+      [(and (eq? src '%cl) (reg32? dst))  (CR* #xD3 '/7 dst ac)]
+      [(and (eq? src '%cl) (mem? dst))    (CR* #xD3 '/7 dst ac)]
       [else (die who "invalid" instr)])]
    [(andl src dst)
     (cond
-      [(and (imm? src) (mem? dst))        (CRMI32 #x81 '/4 dst src ac)]
-      [(and (imm8? src) (reg32? dst))     (CRRI8  #x83 '/4 dst src ac)]
-      [(and (imm? src) (eq? dst '%eax))   (CI32   #x25 src ac)]
-      [(and (imm? src) (reg32? dst))      (CRRI32 #x81 '/4 dst src ac)]
-      [(and (reg32? src) (reg32? dst))    (CRR    #x21 src dst ac)]
-      [(and (reg32? src) (mem? dst))      (CRM    #x21 src dst ac)]
-      [(and (mem? src) (reg32? dst))      (CRM    #x23 dst src ac)]
+      [(and (imm? src) (mem? dst))        (CR*  #x81 '/4 dst (IMM32 src ac))]
+      [(and (imm8? src) (reg32? dst))     (CR*  #x83 '/4 dst (IMM8 src ac))]
+      [(and (imm? src) (eq? dst '%eax))   (CODE #x25 (IMM32 src ac))]
+      [(and (imm? src) (reg32? dst))      (CR*  #x81 '/4 dst (IMM32 src ac))]
+      [(and (reg32? src) (reg32? dst))    (CR*  #x21 src dst ac)]
+      [(and (reg32? src) (mem? dst))      (CR*  #x21 src dst ac)]
+      [(and (mem? src) (reg32? dst))      (CR*  #x23 dst src ac)]
       [else (die who "invalid" instr)])]
    [(orl src dst) 
     (cond
-      [(and (imm? src) (mem? dst))        (CRMI32 #x81 '/1 dst src ac)]
-      [(and (reg32? src) (mem? dst))      (CRM    #x09 src dst ac)]
-      [(and (imm8? src) (reg32? dst))     (CRRI8  #x83 '/1 dst src ac)]
-      [(and (imm? src) (eq? dst '%eax))   (CI32   #x0D src ac)]
-      [(and (imm? src) (reg32? dst))      (CRRI32 #x81 '/1 dst src ac)]
-      [(and (reg32? src) (reg32? dst))    (CRR    #x09 src dst ac)]
-      [(and (mem? src) (reg32? dst))      (CRM    #x0B dst src ac)]
+      [(and (imm? src) (mem? dst))        (CR*  #x81 '/1 dst (IMM32 src ac))]
+      [(and (reg32? src) (mem? dst))      (CR*  #x09 src dst ac)]
+      [(and (imm8? src) (reg32? dst))     (CR*  #x83 '/1 dst (IMM8 src ac))]
+      [(and (imm? src) (eq? dst '%eax))   (CODE #x0D (IMM32 src ac))]
+      [(and (imm? src) (reg32? dst))      (CR*  #x81 '/1 dst (IMM32 src ac))]
+      [(and (reg32? src) (reg32? dst))    (CR*  #x09 src dst ac)]
+      [(and (mem? src) (reg32? dst))      (CR*  #x0B dst src ac)]
       [else (die who "invalid" instr)])]
    [(xorl src dst) 
     (cond
-      [(and (imm8? src) (reg32? dst))     (CRRI8 #x83 '/6 dst src ac)]
-      [(and (imm8? src) (mem? dst))       (CRMI8 #x83 '/6 dst src ac)]
-      [(and (imm? src) (eq? dst '%eax))   (CI32  #x35 src ac)]
-      [(and (reg32? src) (reg32? dst))    (CRR   #x31 src dst ac)]
-      [(and (mem? src) (reg32? dst))      (CRM   #x33 dst src ac)]
-      [(and (reg32? src) (mem? dst))      (CRM   #x31 src dst ac)]
+      [(and (imm8? src) (reg32? dst))     (CR*  #x83 '/6 dst (IMM8 src ac))]
+      [(and (imm8? src) (mem? dst))       (CR*  #x83 '/6 dst (IMM8 src ac))]
+      [(and (imm? src) (eq? dst '%eax))   (CODE #x35 (IMM32 src ac))]
+      [(and (reg32? src) (reg32? dst))    (CR*  #x31 src dst ac)]
+      [(and (mem? src) (reg32? dst))      (CR*  #x33 dst src ac)]
+      [(and (reg32? src) (mem? dst))      (CR*  #x31 src dst ac)]
       [else (die who "invalid" instr)])]
    [(leal src dst)
     (cond
-      [(and (mem? src) (reg32? dst))      (CRM #x8D dst src ac)]
+      [(and (mem? src) (reg32? dst))      (CR* #x8D dst src ac)]
       [else (die who "invalid" instr)])]
    [(cmpl src dst)
     (cond
-      [(and (imm8? src) (reg32? dst))     (CRRI8  #x83 '/7 dst src ac)]
-      [(and (imm? src) (eq? dst '%eax))   (CI32   #x3D src ac)]
-      [(and (imm? src) (reg32? dst))      (CRRI32 #x81 '/7 dst src ac)]
-      [(and (reg32? src) (reg32? dst))    (CRR    #x39 src dst ac)]
-      [(and (mem? src) (reg32? dst))      (CRM    #x3B dst src ac)]
-      [(and (imm8? src) (mem? dst))       (CRMI8  #x83 '/7 dst src ac)]
-      [(and (imm? src) (mem? dst))        (CRMI32 #x81 '/8 dst src ac)]
+      [(and (imm8? src) (reg32? dst))     (CR*  #x83 '/7 dst (IMM8 src ac))]
+      [(and (imm? src) (eq? dst '%eax))   (CODE #x3D (IMM32 src ac))]
+      [(and (imm? src) (reg32? dst))      (CR*  #x81 '/7 dst (IMM32 src ac))]
+      [(and (reg32? src) (reg32? dst))    (CR*  #x39 src dst ac)]
+      [(and (mem? src) (reg32? dst))      (CR*  #x3B dst src ac)]
+      [(and (imm8? src) (mem? dst))       (CR*  #x83 '/7 dst (IMM8 src ac))]
+      [(and (imm? src) (mem? dst))        (CR*  #x81 '/8 dst (IMM32 src ac))]
       [else (die who "invalid" instr)])]
    [(imull src dst)
     (cond
-      [(and (imm8? src) (reg32? dst))     (CRRI8 #x6B dst dst src ac)]
-      [(and (imm? src) (reg32? dst))      (CRRI32 #x69 dst dst src ac)]
-      [(and (reg32? src) (reg32? dst))    (CCRR #x0F #xAF dst src ac)]
-      [(and (mem? src) (reg32? dst))      (CCRM #x0F #xAF dst src ac)]
+      [(and (imm8? src) (reg32? dst))     (CR*  #x6B dst dst (IMM8 src ac))]
+      [(and (imm? src) (reg32? dst))      (CR*  #x69 dst dst (IMM32 src ac))]
+      [(and (reg32? src) (reg32? dst))    (CCR* #x0F #xAF dst src ac)]
+      [(and (mem? src) (reg32? dst))      (CCR* #x0F #xAF dst src ac)]
       [else (die who "invalid" instr)])]
    [(idivl dst)
     (cond
-      [(reg32? dst)                       (CRR #xF7 '/7 dst ac)]
-      [(mem? dst)                         (CRM #xF7 '/7 dst ac)]
+      [(reg32? dst)                       (CR* #xF7 '/7 dst ac)]
+      [(mem? dst)                         (CR* #xF7 '/7 dst ac)]
       [else (die who "invalid" instr)])]
    [(pushl dst)
     (cond
-      [(imm8? dst)                        (CI8 #x6A dst ac)]
-      [(imm? dst)                         (CI32 #x68 dst ac)]
-      [(reg32? dst)                       (CR #x50 dst ac)]
-      [(mem? dst)                         (CRM #xFF '/6 dst ac)]
+      [(imm8? dst)                        (CODE #x6A (IMM8 dst ac))]
+      [(imm? dst)                         (CODE #x68 (IMM32 dst ac))]
+      [(reg32? dst)                       (CR   #x50 dst ac)]
+      [(mem? dst)                         (CR*  #xFF '/6 dst ac)]
       [else (die who "invalid" instr)])]
    [(popl dst)
     (cond
-      [(reg32? dst)                      (CR #x58 dst ac)]
-      [(mem? dst)                        (CRM #x8F '/0 dst ac)]
+      [(reg32? dst)                      (CR  #x58 dst ac)]
+      [(mem? dst)                        (CR* #x8F '/0 dst ac)]
       [else (die who "invalid" instr)])] 
    [(notl dst)
     (cond
-      [(reg32? dst)                     (CRR #xF7 '/2 dst ac)]
-      [(mem? dst)                       (CRM #xF7 '/7 dst ac)]
+      [(reg32? dst)                     (CR* #xF7 '/2 dst ac)]
+      [(mem? dst)                       (CR* #xF7 '/7 dst ac)]
       [else (die who "invalid" instr)])]
    [(bswap dst)
     (cond
@@ -543,61 +523,61 @@
       [else (die who "invalid" instr)])]
    [(negl dst)
     (cond
-      [(reg32? dst)                    (CRR #xF7 '/3 dst ac)]
+      [(reg32? dst)                    (CR* #xF7 '/3 dst ac)]
       [else (die who "invalid" instr)])]
    [(jmp dst)
     (cond
-      [(imm? dst)                     (CI32 #xE9 dst ac)]
-      [(mem? dst)                     (CRM  #xFF '/4 dst ac)]
+      [(imm? dst)                     (CODE #xE9 (IMM32 dst ac))]
+      [(mem? dst)                     (CR*  #xFF '/4 dst ac)]
       [else (die who "invalid jmp target" dst)])]
    [(call dst)
     (cond
-      [(imm? dst)                     (CI32 #xE8 dst ac)]
-      [(mem? dst)                     (CRM #xFF '/2 dst ac)]
-      [(reg32? dst)                   (CRR #xFF '/2 dst ac)]
+      [(imm? dst)                     (CODE #xE8 (IMM32 dst ac))]
+      [(mem? dst)                     (CR* #xFF '/2 dst ac)]
+      [(reg32? dst)                   (CR* #xFF '/2 dst ac)]
       [else (die who "invalid jmp target" dst)])]
    [(movsd src dst)
     (cond
-      [(and (xmmreg? dst) (mem? src)) (CCCRM #xF2 #x0F #x10 dst src ac)]
-      [(and (xmmreg? src) (mem? dst)) (CCCRM #xF2 #x0F #x11 src dst ac)]
+      [(and (xmmreg? dst) (mem? src)) (CCCR* #xF2 #x0F #x10 dst src ac)]
+      [(and (xmmreg? src) (mem? dst)) (CCCR* #xF2 #x0F #x11 src dst ac)]
       [else (die who "invalid" instr)])]
    [(cvtsi2sd src dst)
     (cond
-      [(and (xmmreg? dst) (reg32? src)) (CCCRR #xF2 #x0F #x2A src dst ac)]
-      [(and (xmmreg? dst) (mem? src))   (CCCRM #xF2 #x0F #x2A dst src ac)]
+      [(and (xmmreg? dst) (reg32? src)) (CCCR* #xF2 #x0F #x2A src dst ac)]
+      [(and (xmmreg? dst) (mem? src))   (CCCR* #xF2 #x0F #x2A dst src ac)]
       [else (die who "invalid" instr)])] 
    [(cvtsd2ss src dst)
     (cond
-      [(and (xmmreg? dst) (xmmreg? src)) (CCCRR #xF2 #x0F #x5A src dst ac)]
+      [(and (xmmreg? dst) (xmmreg? src)) (CCCR* #xF2 #x0F #x5A src dst ac)]
       [else (die who "invalid" instr)])]
    [(cvtss2sd src dst)
     (cond
-      [(and (xmmreg? dst) (xmmreg? src)) (CCCRR #xF3 #x0F #x5A src dst ac)]
+      [(and (xmmreg? dst) (xmmreg? src)) (CCCR* #xF3 #x0F #x5A src dst ac)]
       [else (die who "invalid" instr)])]
    [(movss src dst)
     (cond
-      [(and (xmmreg? dst) (mem? src)) (CCCRM #xF3 #x0F #x10 dst src ac)]
-      [(and (xmmreg? src) (mem? dst)) (CCCRM #xF3 #x0F #x11 src dst ac)]
+      [(and (xmmreg? dst) (mem? src)) (CCCR* #xF3 #x0F #x10 dst src ac)]
+      [(and (xmmreg? src) (mem? dst)) (CCCR* #xF3 #x0F #x11 src dst ac)]
       [else (die who "invalid" instr)])]
    [(addsd src dst)
     (cond
-      [(and (xmmreg? dst) (mem? src)) (CCCRM #xF2 #x0F #x58 dst src ac)]
+      [(and (xmmreg? dst) (mem? src)) (CCCR* #xF2 #x0F #x58 dst src ac)]
       [else (die who "invalid" instr)])]
    [(subsd src dst)
     (cond
-      [(and (xmmreg? dst) (mem? src)) (CCCRM #xF2 #x0F #x5C dst src ac)]
+      [(and (xmmreg? dst) (mem? src)) (CCCR* #xF2 #x0F #x5C dst src ac)]
       [else (die who "invalid" instr)])]
    [(mulsd src dst)
     (cond
-      [(and (xmmreg? dst) (mem? src)) (CCCRM #xF2 #x0F #x59 dst src ac)]
+      [(and (xmmreg? dst) (mem? src)) (CCCR* #xF2 #x0F #x59 dst src ac)]
       [else (die who "invalid" instr)])] 
    [(divsd src dst)
     (cond
-      [(and (xmmreg? dst) (mem? src)) (CCCRM #xF2 #x0F #x5E dst src ac)]
+      [(and (xmmreg? dst) (mem? src)) (CCCR* #xF2 #x0F #x5E dst src ac)]
       [else (die who "invalid" instr)])] 
    [(ucomisd src dst)
     (cond
-      [(and (xmmreg? dst) (mem? src)) (CCCRM #x66 #x0F #x2E dst src ac)]
+      [(and (xmmreg? dst) (mem? src)) (CCCR* #x66 #x0F #x2E dst src ac)]
       [else (die who "invalid" instr)])]
    [(ja dst)     (CCI32 #x0F #x87 dst ac)]
    [(jae dst)    (CCI32 #x0F #x83 dst ac)]
