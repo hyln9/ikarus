@@ -329,24 +329,6 @@
               (fxsll s 6))))
         ac))
 
-(define CODErd
-  (lambda (c r1 disp ac)
-    (with-args disp
-      (lambda (a1 a2)
-        (cond
-          [(and (reg32? a1) (reg32? a2))
-           (CODE c (RegReg r1 a1 a2 ac))]
-          [(and (imm? a1) (reg32? a2))
-           (CODErri c r1 a2 a1 ac)]
-          [(and (imm? a2) (reg32? a1))
-           (CODErri c r1 a1 a2 ac)]
-          [(and (imm? a1) (imm? a2))
-           (CODE c 
-             (ModRM 0 r1 '/5 
-               (IMM32*2 a1 a2 ac)))]
-          [else (die 'CODErd "unhandled" disp)])))))
-
-;              81 /0 id    ADD r/m32,imm32            Valid Add imm32 to 
 (define (CODE/digit c /d)
   (lambda (dst ac)
     (cond
@@ -363,7 +345,7 @@
               [(and (imm? a1) (reg32? a0))
                (CODE c (ModRM 2 /d a0 (IMM32 a1 ac)))]
               [(and (reg32? a0) (reg32? a1))
-               (CODE c (ModRM 1 /d '/4 (SIB 0 a0 a1 (IMM8 0 ac))))]
+               (CODE c (RegReg /d a0 a1 ac))]
               [(and (imm? a0) (imm? a1))
                (CODE c (ModRM 0 /d '/5 (IMM32*2 a0 a1 ac)))]
               [else (die 'CODE/digit "unhandled" a0 a1)])))]
@@ -439,10 +421,6 @@
 
 (define (CRI32 c r i32 ac)
   (CODEri c r i32 ac))
-(define (CMI32 c d i32 ac)
-  (CODEmi c d i32 ac))
-(define (CMI8 c d i8 ac)
-  (CODEmi8 c d i8 ac))
 
 (define (CRRI8 c r0 r1 i8 ac)
   (CODE c (ModRM 3 r0 r1 (IMM8 i8 ac))))
@@ -472,24 +450,23 @@
   (CODE c (cons (cons 'relative (label-name lab)) ac)))
 
 
+
 (add-instructions instr ac
    [(ret)                                 (CODE #xC3 ac)]
    [(cltd)                                (CODE #x99 ac)]
    [(movl src dst)
     (cond
-      [(and (imm? src) (reg32? dst))      (CRI32 #xB8 dst src ac)]
-      [(and (imm? src) (mem? dst))        (CMI32 #xC7 dst src ac)]
-      [(and (reg32? src) (reg32? dst))    (CRR  #x89 src dst ac)]
-      [(and (reg32? src) (mem? dst))   ;   (CRM  #x89 src dst ac)]
-       (CODErd #x89 src dst ac)]
-      [(and (mem? src) (reg32? dst))   ;   (CRM  #x8B dst src ac)]
-       (CODErd #x8B dst src ac)]
+      [(and (imm? src) (reg32? dst))      (CRI32  #xB8 dst src ac)]
+      [(and (imm? src) (mem? dst))        (CRMI32 #xC7 '/0 dst src ac)]
+      [(and (reg32? src) (reg32? dst))    (CRR    #x89 src dst ac)]
+      [(and (reg32? src) (mem? dst))      (CRM    #x89 src dst ac)]
+      [(and (mem? src) (reg32? dst))      (CRM    #x8B dst src ac)]
       [else (die who "invalid" instr)])]
    [(movb src dst)
     (cond
-      [(and (imm8? src) (mem? dst))       (CMI8 #xC6 dst src ac)]
-      [(and (reg8? src) (mem? dst))       (CRM #x88 src dst ac)]
-      [(and (mem? src) (reg8? dst))       (CRM #x8A dst src ac)]
+      [(and (imm8? src) (mem? dst))       (CRMI8 #xC6 '/0 dst src ac)]
+      [(and (reg8? src) (mem? dst))       (CRM   #x88 src dst ac)]
+      [(and (mem? src) (reg8? dst))       (CRM   #x8A dst src ac)]
       [else (die who "invalid" instr)])]
    [(addl src dst)
     (cond   

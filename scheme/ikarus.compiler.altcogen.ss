@@ -306,7 +306,8 @@
 (define parameter-registers '(%edi)) 
 (define return-value-register '%eax)
 (define cp-register '%edi)
-(define all-registers '(%eax %edi %ebx %edx %ecx)) ; %esi %esp %ebp))
+(define all-registers 
+  '(%eax %edi %ebx %edx %ecx))
 (define argc-register '%eax)
 
 ;;; apr = %ebp
@@ -322,7 +323,8 @@
     [else (error 'register-index "not a register" x)]))
 
 
-(define non-8bit-registers '(%edi))
+(define non-8bit-registers 
+  '(%edi))
 
 (define (impose-calling-convention/evaluation-order x)
   (define who 'impose-calling-convention/evaluation-order)
@@ -1857,7 +1859,7 @@
         [else
          (cond
            [(symbol? x) 
-            (if (memq x all-registers) 
+            (if (memq x all-registers)
                 (set-add x (make-empty-set))
                 (make-empty-set))]
            [else (error who "invalid R" x)])]))
