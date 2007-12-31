@@ -43,6 +43,14 @@
     [%ebp 32 5]
     [%esi 32 6]
     [%edi 32 7]
+    [%r8   64 0]
+    [%r9   64 1]
+    [%r10  64 2]
+    [%r11  64 3]
+    [%r12  64 4]
+    [%r13  64 5]
+    [%r14  64 6]
+    [%r15  64 7]
     [%al   8 0]
     [%cl   8 1]
     [%dl   8 2]
@@ -321,11 +329,11 @@
     (with-args disp
       (lambda (a1 a2)
         (cond
-          [(and (reg? a1) (reg? a2))
+          [(and (reg32? a1) (reg32? a2))
            (CODE c (RegReg r1 a1 a2 ac))]
-          [(and (imm? a1) (reg? a2))
+          [(and (imm? a1) (reg32? a2))
            (CODErri c r1 a2 a1 ac)]
-          [(and (imm? a2) (reg? a1))
+          [(and (imm? a2) (reg32? a1))
            (CODErri c r1 a1 a2 ac)]
           [(and (imm? a1) (imm? a2))
            (CODE c 
@@ -338,11 +346,11 @@
     (with-args disp
       (lambda (a1 a2)
         (cond
-          [(and (reg? a1) (reg? a2)) 
+          [(and (reg32? a1) (reg32? a2)) 
            (die 'CODEdi "unsupported1" disp)]
-          [(and (imm? a1) (reg? a2))
+          [(and (imm? a1) (reg32? a2))
            (CODErri c /? a2 a1 (IMM32 n ac))]
-          [(and (imm? a2) (reg? a1))
+          [(and (imm? a2) (reg32? a1))
            (CODErri c /? a1 a2 (IMM32 n ac))]
           [(and (imm? a1) (imm? a2))
            (die 'CODEdi "unsupported2" disp)]
@@ -364,15 +372,15 @@
        (with-args dst
           (lambda (a0 a1)
             (cond
-              [(and (imm8? a0) (reg? a1))
+              [(and (imm8? a0) (reg32? a1))
                (CODE c (ModRM 1 /d a1 (IMM8 a0 ac)))]
-              [(and (imm? a0) (reg? a1))
+              [(and (imm? a0) (reg32? a1))
                (CODE c (ModRM 2 /d a1 (IMM32 a0 ac)))]
-              [(and (imm8? a1) (reg? a0))
+              [(and (imm8? a1) (reg32? a0))
                (CODE c (ModRM 1 /d a0 (IMM8 a1 ac)))]
-              [(and (imm? a1) (reg? a0))
+              [(and (imm? a1) (reg32? a0))
                (CODE c (ModRM 2 /d a0 (IMM32 a1 ac)))]
-              [(and (reg? a0) (reg? a1)) 
+              [(and (reg? a0) (reg32? a1)) 
                (CODE c (ModRM 1 /d '/4 (SIB 0 a0 a1 (IMM8 0 ac))))]
               [(and (imm? a0) (imm? a1))
                (CODE c (ModRM 0 /d '/5 (IMM32*2 a0 a1 ac)))]
@@ -384,12 +392,12 @@
     (with-args disp
       (lambda (a1 a2)
         (cond
-          [(and (reg? a1) (reg? a2)) 
+          [(and (reg32? a1) (reg32? a2)) 
            (die 'CODEid "unsupported1" disp)]
-          [(and (imm? a1) (reg? a2))
+          [(and (imm? a1) (reg32? a2))
            (die 'CODEid "unsupported2")
            (CODErri c /? a2 a1 (IMM32 n ac))]
-          [(and (imm? a2) (reg? a1))
+          [(and (imm? a2) (reg32? a1))
            (die 'CODEid "unsupported3")
            (CODErri c /? a1 a2 (IMM32 n ac))]
           [(and (imm? a1) (imm? a2))
@@ -447,17 +455,17 @@
   (cond
     [(imm? arg1)
      (cond
-       [(reg? arg2) (CODEri ircode arg2 arg1 ac)]
+       [(reg32? arg2) (CODEri ircode arg2 arg1 ac)]
        [(mem? arg2) (CODEdi imcode '/0 arg2 arg1 ac)]
        [else (die 'instr/2 "invalid args" arg1 arg2)])]
-    [(reg? arg1)
+    [(reg32? arg1)
      (cond
-       [(reg? arg2) (CODErr rrcode arg1 arg2 ac)]
+       [(reg32? arg2) (CODErr rrcode arg1 arg2 ac)]
        [(mem? arg2) (CODErd rmcode arg1 arg2 ac)]
        [else (die 'instr/2 "invalid args" arg1 arg2)])]
     [(mem? arg1)
      (cond
-       [(reg? arg2) (CODErd mrcode arg2 arg1 ac)]
+       [(reg32? arg2) (CODErd mrcode arg2 arg1 ac)]
        [else (die 'instr/2 "invalid args" arg1 arg2)])]
     [else (die 'instr/2 "invalid args" arg1 arg2)]))
 
@@ -499,21 +507,21 @@
       [else (die who "invalid" instr)])]
    [(cvtsi2sd src dst)
     (cond
-      [(and (xmmreg? dst) (reg? src))
+      [(and (xmmreg? dst) (reg32? src))
        (CODE #xF2 (CODE #x0F (CODE #x2A (ModRM 3 src dst ac))))]
       [(and (xmmreg? dst) (mem? src))
        (CODE #xF2 (CODE #x0F ((CODE/digit #x2A dst) src ac)))]
       [else (die who "invalid" instr)])] 
    [(cvtsd2ss src dst)
     (cond
-      [(and (xmmreg? dst) (reg? src))
+      [(and (xmmreg? dst) (xmmreg? src))
        (CODE #xF2 (CODE #x0F (CODE #x5A (ModRM 3 src dst ac))))]
       ;[(and (xmmreg? dst) (mem? src))
       ; (CODE #xF2 (CODE #x0F ((CODE/digit #x5A dst) src ac)))]
       [else (die who "invalid" instr)])]
    [(cvtss2sd src dst)
     (cond
-      [(and (xmmreg? dst) (reg? src))
+      [(and (xmmreg? dst) (xmmreg? src))
        (CODE #xF3 (CODE #x0F (CODE #x5A (ModRM 3 src dst ac))))]
       ;[(and (xmmreg? dst) (mem? src))
       ; (CODE #xF3 (CODE #x0F ((CODE/digit #x5A dst) src ac)))]
@@ -560,58 +568,58 @@
    ;   [else (die who "invalid" instr)])]
    [(addl src dst)
     (cond   
-      [(and (imm8? src) (reg? dst)) 
+      [(and (imm8? src) (reg32? dst)) 
        (CODE #x83 (ModRM 3 '/0 dst (IMM8 src ac)))]
       [(and (imm? src) (eq? dst '%eax))
        (CODE #x05 (IMM32 src ac))]
-      [(and (imm? src) (reg? dst))
+      [(and (imm? src) (reg32? dst))
        (CODE #x81 (ModRM 3 '/0 dst (IMM32 src ac)))]
-      [(and (reg? src) (reg? dst))
+      [(and (reg32? src) (reg32? dst))
        (CODE #x01 (ModRM 3 src dst ac))]
-      [(and (mem? src) (reg? dst))
+      [(and (mem? src) (reg32? dst))
        (CODErd #x03 dst src ac)]
       [(and (imm? src) (mem? dst)) 
        ((CODE/digit #x81 '/0) dst (IMM32 src ac))]
-      [(and (reg? src) (mem? dst))
+      [(and (reg32? src) (mem? dst))
        ((CODE/digit #x01 src) dst ac)]
       [else (die who "invalid" instr)])]
    [(subl src dst)
     (cond   
-      [(and (imm8? src) (reg? dst)) 
+      [(and (imm8? src) (reg32? dst)) 
        (CODE #x83 (ModRM 3 '/5 dst (IMM8 src ac)))]
       [(and (imm? src) (eq? dst '%eax)) 
        (CODE #x2D (IMM32 src ac))]
-      [(and (imm? src) (reg? dst))
+      [(and (imm? src) (reg32? dst))
        (CODE #x81 (ModRM 3 '/5 dst (IMM32 src ac)))]
-      [(and (reg? src) (reg? dst))
+      [(and (reg32? src) (reg32? dst))
        (CODE #x29 (ModRM 3 src dst ac))]
-      [(and (mem? src) (reg? dst))
+      [(and (mem? src) (reg32? dst))
        (CODErd #x2B dst src ac)]
       [(and (imm? src) (mem? dst)) 
        ((CODE/digit #x81 '/5) dst (IMM32 src ac))]
-      [(and (reg? src) (mem? dst))
+      [(and (reg32? src) (mem? dst))
        ((CODE/digit #x29 src) dst ac)]
       [else (die who "invalid" instr)])]
    [(sall src dst)
     (cond
-      [(and (equal? 1 src) (reg? dst))
+      [(and (equal? 1 src) (reg32? dst))
        (CODE #xD1 (ModRM 3 '/4 dst ac))]
-      [(and (imm8? src) (reg? dst))
+      [(and (imm8? src) (reg32? dst))
        (CODE #xC1 (ModRM 3 '/4 dst (IMM8 src ac)))]
       [(and (imm8? src) (mem? dst))
        ((CODE/digit #xC1 '/4) dst (IMM8 src ac))]
-      [(and (eq? src '%cl) (reg? dst))
+      [(and (eq? src '%cl) (reg32? dst))
        (CODE #xD3 (ModRM 3 '/4 dst ac))]
       [(and (eq? src '%cl) (mem? dst))
        ((CODE/digit #xD3 '/4) dst ac)]
       [else (die who "invalid" instr)])]
    [(shrl src dst)
     (cond
-      [(and (equal? 1 src) (reg? dst))
+      [(and (equal? 1 src) (reg32? dst))
        (CODE #xD1 (ModRM 3 '/5 dst ac))]
-      [(and (imm8? src) (reg? dst))
+      [(and (imm8? src) (reg32? dst))
        (CODE #xC1 (ModRM 3 '/5 dst (IMM8 src ac)))]
-      [(and (eq? src '%cl) (reg? dst))
+      [(and (eq? src '%cl) (reg32? dst))
        (CODE #xD3 (ModRM 3 '/5 dst ac))]
       [(and (imm8? src) (mem? dst))
        ((CODE/digit #xC1 '/5) dst (IMM8 src ac))]
@@ -620,13 +628,13 @@
       [else (die who "invalid" instr)])]
    [(sarl src dst)
     (cond
-      [(and (equal? 1 src) (reg? dst))
+      [(and (equal? 1 src) (reg32? dst))
        (CODE #xD1 (ModRM 3 '/7 dst ac))]
-      [(and (imm8? src) (reg? dst))
+      [(and (imm8? src) (reg32? dst))
        (CODE #xC1 (ModRM 3 '/7 dst (IMM8 src ac)))]
       [(and (imm8? src) (mem? dst))
        ((CODE/digit #xC1 '/7) dst (IMM8 src ac))] 
-      [(and (eq? src '%cl) (reg? dst))
+      [(and (eq? src '%cl) (reg32? dst))
        (CODE #xD3 (ModRM 3 '/7 dst ac))]
       [(and (eq? src '%cl) (mem? dst))
        ((CODE/digit #xD3 '/7) dst ac)]
@@ -635,69 +643,69 @@
     (cond
       [(and (imm? src) (mem? dst))
        ((CODE/digit #x81 '/4) dst (IMM32 src ac))]
-      [(and (imm8? src) (reg? dst)) 
+      [(and (imm8? src) (reg32? dst)) 
        (CODE #x83 (ModRM 3 '/4 dst (IMM8 src ac)))]
       [(and (imm? src) (eq? dst '%eax)) 
        (CODE #x25 (IMM32 src ac))]
-      [(and (imm? src) (reg? dst))
+      [(and (imm? src) (reg32? dst))
        (CODE #x81 (ModRM 3 '/4 dst (IMM32 src ac)))]
-      [(and (reg? src) (reg? dst))
+      [(and (reg32? src) (reg32? dst))
        (CODE #x21 (ModRM 3 src dst ac))]
-      [(and (reg? src) (mem? dst))
+      [(and (reg32? src) (mem? dst))
        ((CODE/digit #x21 src) dst ac)]
-      [(and (mem? src) (reg? dst))
+      [(and (mem? src) (reg32? dst))
        (CODErd #x23 dst src ac)]
       [else (die who "invalid" instr)])]
    [(orl src dst) 
     (cond
       [(and (imm? src) (mem? dst))
        ((CODE/digit #x81 '/1) dst (IMM32 src ac))]
-      [(and (reg? src) (mem? dst))
+      [(and (reg32? src) (mem? dst))
        ((CODE/digit #x09 src) dst ac)]
-      [(and (imm8? src) (reg? dst)) 
+      [(and (imm8? src) (reg32? dst)) 
        (CODE #x83 (ModRM 3 '/1 dst (IMM8 src ac)))]
       [(and (imm? src) (eq? dst '%eax)) 
        (CODE #x0D (IMM32 src ac))]
-      [(and (imm? src) (reg? dst))
+      [(and (imm? src) (reg32? dst))
        (CODE #x81 (ModRM 3 '/1 dst (IMM32 src ac)))]
-      [(and (reg? src) (reg? dst))
+      [(and (reg32? src) (reg32? dst))
        (CODE #x09 (ModRM 3 src dst ac))]
-      [(and (mem? src) (reg? dst))
+      [(and (mem? src) (reg32? dst))
        (CODErd #x0B dst src ac)]
       [else (die who "invalid" instr)])]
    [(xorl src dst) 
     (cond
-      [(and (imm8? src) (reg? dst)) 
+      [(and (imm8? src) (reg32? dst)) 
        (CODE #x83 (ModRM 3 '/6 dst (IMM8 src ac)))]
       [(and (imm8? src) (mem? dst))
        ((CODE/digit #x83 '/6) dst (IMM8 src ac))]
       [(and (imm? src) (eq? dst '%eax)) 
        (CODE #x35 (IMM32 src ac))]
-      [(and (reg? src) (reg? dst))
+      [(and (reg32? src) (reg32? dst))
        (CODE #x31 (ModRM 3 src dst ac))]
-      [(and (mem? src) (reg? dst))
+      [(and (mem? src) (reg32? dst))
        (CODErd #x33 dst src ac)]
-      [(and (reg? src) (mem? dst))
+      [(and (reg32? src) (mem? dst))
        ((CODE/digit #x31 src) dst ac)]
       ;[(and (imm? src) (mem? dst))
       ; ((CODE/digit #x81 '/6) dst (IMM32 src ac))]
       [else (die who "invalid" instr)])]
    [(leal src dst) 
     (cond
-      [(and (mem? src) (reg? dst))
+      [(and (mem? src) (reg32? dst))
        (CODErd #x8D dst src ac)]
       [else (die who "invalid" instr)])]
    [(cmpl src dst)
     (cond
-      [(and (imm8? src) (reg? dst)) 
+      [(and (imm8? src) (reg32? dst)) 
        (CODE #x83 (ModRM 3 '/7 dst (IMM8 src ac)))]
       [(and (imm? src) (eq? dst '%eax)) 
        (CODE #x3D (IMM32 src ac))]
-      [(and (imm? src) (reg? dst))
+      [(and (imm? src) (reg32? dst))
        (CODE #x81 (ModRM 3 '/7 dst (IMM32 src ac)))]
-      [(and (reg? src) (reg? dst))
+      [(and (reg32? src) (reg32? dst))
        (CODE #x39 (ModRM 3 src dst ac))]
-      [(and (mem? src) (reg? dst))
+      [(and (mem? src) (reg32? dst))
        (CODErd #x3B dst src ac)]
       [(and (imm8? src) (mem? dst))
        ;;; maybe die 
@@ -708,18 +716,18 @@
       [else (die who "invalid" instr)])]
    [(imull src dst)
     (cond
-      [(and (imm8? src) (reg? dst)) 
+      [(and (imm8? src) (reg32? dst)) 
        (CODE #x6B (ModRM 3 dst dst (IMM8 src ac)))]
-      [(and (imm? src) (reg? dst))
+      [(and (imm? src) (reg32? dst))
        (CODE #x69 (ModRM 3 dst dst (IMM32 src ac)))]
-      [(and (reg? src) (reg? dst))
+      [(and (reg32? src) (reg32? dst))
        (CODE #x0F (CODE #xAF (ModRM 3 dst src ac)))]
-      [(and (mem? src) (reg? dst))
+      [(and (mem? src) (reg32? dst))
        (CODE #x0F (CODErd #xAF dst src ac))]
       [else (die who "invalid" instr)])]
    [(idivl dst)
     (cond
-      [(reg? dst)
+      [(reg32? dst)
        (CODErr #xF7 '/7 dst ac)]
       [(mem? dst)
        ;;; maybe die 
@@ -731,7 +739,7 @@
        (CODE #x6A (IMM8 dst ac))]
       [(imm? dst)
        (CODE #x68 (IMM32 dst ac))]
-      [(reg? dst)
+      [(reg32? dst)
        (CODE+r #x50 dst ac)]
       [(mem? dst)
        ;;; maybe die 
@@ -739,7 +747,7 @@
       [else (die who "invalid" instr)])] 
    [(popl dst)
     (cond
-      [(reg? dst)
+      [(reg32? dst)
        (CODE+r #x58 dst ac)]
       [(mem? dst)
        ;;; maybe die 
@@ -747,7 +755,7 @@
       [else (die who "invalid" instr)])] 
    [(notl dst)
     (cond
-      [(reg? dst)
+      [(reg32? dst)
        (CODE #xF7 (ModRM 3 '/2 dst ac))]
       [(mem? dst)
        ;;; maybe die 
@@ -755,12 +763,12 @@
       [else (die who "invalid" instr)])]
    [(bswap dst)
     (cond
-      [(reg? dst) 
+      [(reg32? dst) 
        (CODE #x0F (CODE+r #xC8 dst ac))]
       [else (die who "invalid" instr)])]
    [(negl dst)
     (cond
-      [(reg? dst)
+      [(reg32? dst)
        (CODE #xF7 (ModRM 3 '/3 dst ac))]
       [else (die who "invalid" instr)])]
    [(jmp dst)
@@ -782,7 +790,7 @@
       [(mem? dst)
        ;;; maybe die 
        (CODErd #xFF '/2 dst ac)]
-      [(reg? dst)
+      [(reg32? dst)
        (CODE #xFF (ModRM 3 '/2 dst ac))]
       [else (die who "invalid jmp target" dst)])]
    [(seta dst)   (conditional-set  #x97 dst ac)]
