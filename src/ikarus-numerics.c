@@ -156,7 +156,7 @@ ikrt_fxbnplus(ikptr x, ikptr y, ikpcb* pcb){
   long int limb_count = bnfst_limb_count(fst);
   long int intx = unfix(x);
   if(intx > 0){
-    if(bnfst_negative(fst)){
+    if(!bnfst_negative(fst)){
       /* positive fx + positive bn = even bigger positive */
       pcb->root0 = &y;
       ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data+(limb_count+1)*wordsize));
@@ -218,7 +218,7 @@ ikrt_fxbnplus(ikptr x, ikptr y, ikpcb* pcb){
     }
   }
   else {
-    if(bnfst_negative(fst)){
+    if(! bnfst_negative(fst)){
       /* negative fx + positive bn = smaller positive */
       pcb->root0 = &y;
       ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data+limb_count*wordsize));
@@ -442,7 +442,7 @@ ikrt_bnnegate(ikptr x, ikpcb* pcb){
   ikptr fst = ref(x, -vector_tag);
   long int limb_count = bnfst_limb_count(fst);
   if(limb_count == 1){
-    if(bnfst_negative(fst)){
+    if(! bnfst_negative(fst)){
       /* positive bignum */
       mp_limb_t limb =
         (mp_limb_t) ref(x, disp_bignum_data - vector_tag);
@@ -600,7 +600,7 @@ ikrt_bnfxminus(ikptr x, ikptr y, ikpcb* pcb){
   long int limb_count = bnfst_limb_count(fst);
   long int inty = unfix(y);
   if(inty < 0){
-    if(bnfst_negative(fst)){
+    if(!bnfst_negative(fst)){
       /* - negative fx + positive bn = positive bn */
       pcb->root0 = &x;
       ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data+(limb_count+1)*wordsize));
