@@ -33,7 +33,7 @@ void ik_print(ikptr x){
   fprintf(stdout, "\n");
 }
 
-static char* char_string[128] = {
+char* char_string[128] = {
   "#\\nul","#\\soh","#\\stx","#\\etx","#\\eot","#\\enq","#\\ack","#\\bel",
   "#\\bs", "#\\tab","#\\newline", "#\\vt", "#\\ff", "#\\return", "#\\so",
   "#\\si",
@@ -57,10 +57,10 @@ static char* char_string[128] = {
 
 static void
 print(FILE* fh, ikptr x){
-  if(IK_FIXNUMP(x)){
-    fprintf(fh, "%d", IK_UNFIX(x));
+  if(is_fixnum(x)){
+    fprintf(fh, "%ld", unfix(x));
   }
-  else if(x == IK_FALSE_OBJECT){
+  else if(x == false_object){
     fprintf(fh, "#f");
   }
   else if(x == IK_TRUE_OBJECT){
@@ -69,8 +69,8 @@ print(FILE* fh, ikptr x){
   else if(x == IK_NULL_OBJECT){
     fprintf(fh, "()");
   }
-  else if(IK_CHARP(x)){
-    fprintf(fh, "%s", char_string[IK_CHAR_VAL(x)]);
+  else if(is_char(x)){
+    fprintf(fh, "X");
   }
 #if 0
   else if(tagof(x) == symbol_tag){
@@ -98,16 +98,16 @@ print(FILE* fh, ikptr x){
   else if(is_closure(x)){
     fprintf(fh, "#<procedure>");
   }
-  else if(IK_PAIRP(x)){
+  else if(is_pair(x)){
     fprintf(fh, "(");
-    print(fh, REF(x, IK_OFF_CAR));
-    ikptr d = REF(x, IK_OFF_CDR);
-    fprintf(stderr, "d=0x%08x\n", (int)d);
+    print(fh, ref(x, IK_OFF_CAR));
+    ikptr d = ref(x, IK_OFF_CDR);
+    fprintf(stderr, "d=0x%016lx\n", (long int)d);
     while(1){
-      if(IK_PAIRP(d)){
+      if(is_pair(d)){
         fprintf(fh, " ");
-        print(fh, REF(d, IK_OFF_CAR));
-        d = REF(d, IK_OFF_CDR);
+        print(fh, ref(d, IK_OFF_CAR));
+        d = ref(d, IK_OFF_CDR);
       } 
       else if(d == IK_NULL_OBJECT){
         fprintf(fh, ")");

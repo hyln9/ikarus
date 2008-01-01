@@ -117,22 +117,25 @@ check_ecx:
   je L_one
   cmpl $0, %ecx
   je L_two
-  pushl $0
+  push $0
 L_two:
-  pushl $0
+  push $0
 L_one:
-  pushl $0
+  push $0
 L_zero:
-  pushl %esi             # (pushl pcr)
+#  push %rsi             # (pushl pcr)
+  push %esi             # (pushl pcr)
   cmpl $0, %eax          # (cmpl (int 0) eax)
   je L_set               # (je (label Lset))
 L_loop:                  # (label Lloop)
   movl (%ebx,%eax), %ecx # (movl (mem ebx eax) ecx)
-  pushl %ecx             # (pushl ecx)
+#  push %rcx             # (pushl ecx)
+  push %ecx             # (pushl ecx)
   addl $4, %eax          # (addl (int 4) eax)
   cmpl $0, %eax          # (cmpl (int 0) eax)
   jne L_loop             # (jne (label Lloop))
 L_set:                   # (label Lset)
+#  call *%rdi             # (call cpr)
   call *%edi             # (call cpr)
   movl 8(%esi), %esp     # (movl (pcb-ref 'frame-pointer) fpr)
   movl 0(%esi), %ebp     # (movl (pcb-ref 'allocation-pointer) apr)

@@ -92,6 +92,7 @@ inthash(int key) {
 #define generation_count 5  /* generations 0 (nursery), 1, 2, 3, 4 */
 
 typedef char* ikptr;
+typedef int ikchar;
 
 void ik_error(ikptr args);
 
@@ -238,29 +239,25 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define IK_FX_MASK  3
 #define fx_shift 2
 #define fx_mask 3
-#define unfix(x) (((int)(x)) >> fx_shift)
-#define fix(x)   ((ikptr)((x) << fx_shift))
-#define is_fixnum(x) ((((int)(x)) & fx_mask) == 0)
+#define unfix(x) (((long int)(x)) >> fx_shift)
+#define fix(x)   ((ikptr)(((long int)(x)) << fx_shift))
+#define is_fixnum(x) ((((long int)(x)) & fx_mask) == 0)
 
 #define IK_FIXNUMP(x) \
   ((((int)(x)) & IK_FX_MASK) == 0)
 
-#define REF(x,n) \
-  (((ikptr*)(((char*)(x)) + ((int)(n))))[0])
-
 #define ref(x,n) \
-  (((ikptr*)(((char*)(x)) + ((int)(n))))[0])
+  (((ikptr*)(((char*)(x)) + ((long int)(n))))[0])
 
-#define IK_MASK(x,m) (((int)(x)) & ((int)(m)))
+#define IK_MASK(x,m) (((long int)(x)) & ((long int)(m)))
 #define IK_PTAG(x) (((int)(x)) & 7)
-#define tagof(x) (((int)(x)) & 7)
+#define tagof(x) (((long int)(x)) & 7)
 #define IK_STAG(x) REF(x, -IK_PTAG(x))
 
 #define immediate_tag 7
  
 #define IK_UNFIX(x) (((int)(x)) >> IK_FX_SHIFT)
 #define IK_FIX(x)   ((ikptr)((x) << IK_FX_SHIFT))
-#define fix(x)   ((ikptr)((x) << fx_shift))
 
 #define IK_CODE_P(x) \
   ((IK_PTAG(x) == IK_CODE_PRI_TAG) && (IK_STAG(x) == IK_CODE_SEC_TAG))
@@ -282,9 +279,11 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define IK_CHAR_MASK      0xFF
 #define IK_CHAR_SHIFT        8
 #define IK_CHAR_VAL(x)    (((int)(x)) >> IK_CHAR_SHIFT)
-#define int_to_scheme_char(x) ((ikptr)(((x) << IK_CHAR_SHIFT) | IK_CHAR_TAG))
+#define int_to_scheme_char(x) \
+  ((ikptr)((((unsigned long int)(x)) << IK_CHAR_SHIFT) | IK_CHAR_TAG))
 #define IK_PAIR_SIZE     8
 #define pair_size 8
+#define pair_mask 7
 #define pair_tag 1
 #define disp_car 0
 #define disp_cdr 4
@@ -299,6 +298,7 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define IK_HEAPSIZE (1024 * 4096) /* 4 MB */
 #define IK_PAIRP(x)   (IK_PTAG(x) == IK_PAIR_TAG)
 #define IK_CHARP(x)   (IK_MASK(x,IK_CHAR_MASK) == IK_CHAR_TAG)
+#define is_char(x)   (IK_MASK(x,IK_CHAR_MASK) == IK_CHAR_TAG)
 #define IK_STRING_TAG     6
 #define string_tag        6
 #define disp_string_length    0
@@ -311,8 +311,9 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 //  ((((unsigned char*)(x)) + off_string_data + (int)(i))[0] = 
 //   (((int)(c)) >> IK_CHAR_SHIFT))
 #define string_set(x,i,c) \
-  (((ikptr*)(((ikptr)(x)) + off_string_data))[i] = ((ikptr)(c)))
-#define integer_to_char(x) ((ikptr)((((int)(x)) << IK_CHAR_SHIFT) + IK_CHAR_TAG))
+  (((ikchar*)(((ikptr)(x)) + off_string_data))[i] = ((ikchar)(c)))
+#define integer_to_char(x) \
+  ((ikchar)((((int)(x)) << IK_CHAR_SHIFT) + IK_CHAR_TAG))
 #define string_char_size 4
 
 #define vector_tag 5
@@ -370,7 +371,8 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define off_closure_code (disp_closure_code - closure_tag)
 #define off_closure_data (disp_closure_data - closure_tag)
 
-#define is_closure(x) ((((int)(x)) & closure_mask) == closure_tag)
+#define is_closure(x) ((((long int)(x)) & closure_mask) == closure_tag)
+#define is_pair(x) ((((long int)(x)) & pair_mask) == pair_tag)
 
 
 #define record_tag vector_tag
@@ -408,9 +410,9 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define pagesize   4096
 #define pageshift    12
 #define align_to_next_page(x) \
-  (((pagesize - 1 + (unsigned int)(x)) >> pageshift) << pageshift)
+  (((pagesize - 1 + (unsigned long int)(x)) >> pageshift) << pageshift)
 #define align_to_prev_page(x) \
-  ((((unsigned int)(x)) >> pageshift) << pageshift)
+  ((((unsigned long int)(x)) >> pageshift) << pageshift)
 
 #define disp_frame_size -17
 
@@ -450,6 +452,6 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define disp_ratnum_unused 12
 
 #define ik_eof_p(x) ((x) == ik_eof_object)
-#define page_index(x) (((unsigned int)(x)) >> pageshift)
+#define page_index(x) (((unsigned long int)(x)) >> pageshift)
 
 #endif

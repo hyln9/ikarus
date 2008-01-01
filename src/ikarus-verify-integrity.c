@@ -21,9 +21,9 @@
 #include <stdlib.h>
 #include <assert.h>
 
-static int
+static long int
 page_idx(char* x){
-  unsigned int xi = (unsigned int) x;
+  unsigned long int xi = (unsigned long int) x;
   return xi >> pageshift;
 }
 

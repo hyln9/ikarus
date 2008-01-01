@@ -126,8 +126,8 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
 }
 
 static ikptr 
-alloc_code(int size, ikpcb* pcb, fasl_port* p){
-  int asize = align(size);
+alloc_code(long int size, ikpcb* pcb, fasl_port* p){
+  long int asize = align(size);
   ikptr ap = p->code_ap;
   ikptr nap = ap + asize;
   if(nap <= p->code_ep){
@@ -135,9 +135,9 @@ alloc_code(int size, ikpcb* pcb, fasl_port* p){
     return ap;
   } else if (asize < pagesize){
     ikptr mem = ik_mmap_code(pagesize, 0, pcb);
-    int bytes_remaining = pagesize - asize;
-    int previous_bytes = 
-      ((unsigned int)p->code_ep) - ((unsigned int)ap);
+    long int bytes_remaining = pagesize - asize;
+    long int previous_bytes = 
+      ((unsigned long int)p->code_ep) - ((unsigned long int)ap);
     if(bytes_remaining <= previous_bytes){
       return mem;
     } else {
@@ -146,7 +146,7 @@ alloc_code(int size, ikpcb* pcb, fasl_port* p){
       return mem;
     }
   } else {
-    int asize = align_to_next_page(size);
+    long int asize = align_to_next_page(size);
     ikptr mem = ik_mmap_code(asize, 0, pcb);
     return mem;
   }
@@ -159,15 +159,15 @@ ik_relocate_code(ikptr code){
   ikptr size = ref(vec, off_vector_length);
   ikptr data = code + disp_code_data;
   ikptr p = vec + off_vector_data;
-  ikptr q = p + (int)size;
+  ikptr q = p + (long int)size;
   while(p < q){
-    int r = unfix(ref(p, 0));
+    long int r = unfix(ref(p, 0));
     if(r == 0){
       fprintf(stderr, "unset reloc!\n");
       exit(-1);
     }
-    int tag = r & 3;
-    int code_off = r >> 2;
+    long int tag = r & 3;
+    long int code_off = r >> 2;
     if(tag == 0){
       /* vanilla object */
       ref(data, code_off) = ref(p, wordsize);
@@ -175,18 +175,18 @@ ik_relocate_code(ikptr code){
     } 
     else if(tag == 2){
       /* displaced object */
-      int obj_off = unfix(ref(p, wordsize));
+      long int obj_off = unfix(ref(p, wordsize));
       ikptr obj = ref(p, 2*wordsize);
       ref(data, code_off) = obj + obj_off;
       p += (3*wordsize);
     }
     else if(tag == 3){
       /* jump label */
-      int obj_off = unfix(ref(p, wordsize));
+      long int obj_off = unfix(ref(p, wordsize));
       ikptr obj = ref(p, 2*wordsize);
       ikptr displaced_object = obj + obj_off;
       ikptr next_word = data + code_off + wordsize;
-      ikptr relative_distance = displaced_object - (int)next_word;
+      ikptr relative_distance = displaced_object - (long int)next_word;
       ref(next_word, -wordsize) = relative_distance;
       p += (3*wordsize);
     }
@@ -211,7 +211,7 @@ ik_relocate_code(ikptr code){
       p += (2*wordsize);
     }
     else {
-      fprintf(stderr, "invalid reloc 0x%08x (tag=%d)\n", r, tag);
+      fprintf(stderr, "invalid reloc 0x%016lx (tag=%ld)\n", r, tag);
       exit(-1);
     }
   }
@@ -325,7 +325,7 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
     fasl_read_buf(p, str+off_string_data, len);
     {
       unsigned char* pi = (unsigned char*) (str+off_string_data);
-      ikptr* pj = (ikptr*) (str+off_string_data);
+      ikchar* pj = (ikchar*) (str+off_string_data);
       int i = len-1;
       for(i=len-1; i >= 0; i--){
         pj[i] = integer_to_char(pi[i]);
@@ -339,15 +339,15 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
   }
   else if(c == 'S'){
     /* string */
-    int len;
-    fasl_read_buf(p, &len, sizeof(int));
+    long int len;
+    fasl_read_buf(p, &len, sizeof(long int));
     int size = align(len*string_char_size + disp_string_data);
     ikptr str = ik_unsafe_alloc(pcb, size) + string_tag;
     ref(str, off_string_length) = fix(len);
-    int i;
+    long int i;
     for(i=0; i<len; i++){
-      int c;
-      fasl_read_buf(p, &c, sizeof(int));
+      ikchar c;
+      fasl_read_buf(p, &c, sizeof(ikchar));
       string_set(str, i, integer_to_char(c));
     }
     //str[off_string_data+len*string_char_size] = 0;
@@ -387,6 +387,7 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
     return IK_NULL_OBJECT;
   }
   else if(c == 'c'){
+    /* FIXME: sounds broken */
     unsigned char x = (unsigned char) fasl_read_byte(p);
     return int_to_scheme_char(x);
   }
@@ -549,7 +550,7 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
       fprintf(stderr, "Error in fasl-read: invalid bignum length %d\n", len);
       exit(-1);
     }
-    unsigned int tag = bignum_tag | (sign << bignum_sign_shift) | 
+    unsigned long int tag = bignum_tag | (sign << bignum_sign_shift) | 
       ((len >> 2) << bignum_length_shift);
     ikptr x = ik_unsafe_alloc(pcb, align(len + disp_bignum_data)) + vector_tag;
     ref(x, -vector_tag) = (ikptr) tag;

@@ -32,11 +32,11 @@ make_symbol_table(ikpcb* pcb){
   return st;
 }
 
-static int 
+static long int 
 compute_hash(ikptr str){
-  int len = unfix(ref(str, off_string_length));
+  long int len = unfix(ref(str, off_string_length));
   char* data = (char*) str + off_string_data;
-  int h = len;
+  long int h = len;
   char* last = data + len * string_char_size;
   while(data < last){
     char c = *data;

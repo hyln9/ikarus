@@ -35,46 +35,47 @@
     (fold convert-instruction '() ls)))
 
 (define register-mapping
-  '([%eax 32 0] 
-    [%ecx 32 1]
-    [%edx 32 2]
-    [%ebx 32 3]
-    [%esp 32 4]
-    [%ebp 32 5]
-    [%esi 32 6]
-    [%edi 32 7]
-    [%r8   64 0]
-    [%r9   64 1]
-    [%r10  64 2]
-    [%r11  64 3]
-    [%r12  64 4]
-    [%r13  64 5]
-    [%r14  64 6]
-    [%r15  64 7]
-    [%al   8 0]
-    [%cl   8 1]
-    [%dl   8 2]
-    [%bl   8 3]
-    [%ah   8 4]
-    [%ch   8 5]
-    [%dh   8 6]
-    [%bh   8 7]
-    [/0    0 0]
-    [/1    0 1]
-    [/2    0 2]
-    [/3    0 3]
-    [/4    0 4]
-    [/5    0 5]
-    [/6    0 6]
-    [/7    0 7]
-    [xmm0 xmm 0]
-    [xmm1 xmm 1]
-    [xmm2 xmm 2]
-    [xmm3 xmm 3]
-    [xmm4 xmm 4]
-    [xmm5 xmm 5]
-    [xmm6 xmm 6]
-    [xmm7 xmm 7]
+  ;;; reg  cls  idx  REX.R
+  '([%eax   32    0  #f]
+    [%ecx   32    1  #f]
+    [%edx   32    2  #f]
+    [%ebx   32    3  #f]
+    [%esp   32    4  #f]
+    [%ebp   32    5  #f]
+    [%esi   32    6  #f]
+    [%edi   32    7  #f]
+    [%r8    32    0  #t]
+    [%r9    32    1  #t]
+    [%r10   32    2  #t]
+    [%r11   32    3  #t]
+    [%r12   32    4  #t]
+    [%r13   32    5  #t]
+    [%r14   32    6  #t]
+    [%r15   32    7  #t]
+    [%al     8    0  #f]
+    [%cl     8    1  #f]
+    [%dl     8    2  #f]
+    [%bl     8    3  #f]
+    [%ah     8    4  #f]
+    [%ch     8    5  #f]
+    [%dh     8    6  #f]
+    [%bh     8    7  #f]
+    [/0      0    0  #f]
+    [/1      0    1  #f]
+    [/2      0    2  #f]
+    [/3      0    3  #f]
+    [/4      0    4  #f]
+    [/5      0    5  #f]
+    [/6      0    6  #f]
+    [/7      0    7  #f]
+    [xmm0  xmm    0  #f]
+    [xmm1  xmm    1  #f]
+    [xmm2  xmm    2  #f]
+    [xmm3  xmm    3  #f]
+    [xmm4  xmm    4  #f]
+    [xmm5  xmm    5  #f]
+    [xmm6  xmm    6  #f]
+    [xmm7  xmm    7  #f]
     ))
   
 (define register-index
@@ -107,6 +108,12 @@
 (define reg?
   (lambda (x)
     (assq x register-mapping)))
+
+(define reg-requires-REX?
+  (lambda (x)
+    (cond
+      [(assq x register-mapping) => cadddr]
+      [else (error 'reg-required-REX? "not a reg" x)])))
 
 (define-syntax with-args
   (syntax-rules (lambda)
@@ -371,18 +378,93 @@
 (module ()
 (define who 'assembler)
 
+(define (REX.R bits ac)
+  (cons (fxlogor #b01000000 bits) ac))
+
+(define (REX+r r ac)
+  (cond
+    [(reg-requires-REX? r) (REX.R #b001 ac)]
+    [else                 ac]))
+
+(define (REX+RM r rm ac) 
+  (define (C n ac) 
+    (printf "CASE ~s\n" n)
+    (let f ([ac ac] [i 30])
+      (unless (or (null? ac) (= i 0))
+        (if (number? (car ac)) 
+            (printf " #x~x" (car ac))
+            (printf " ~s" (car ac)))
+        (f (cdr ac) (- i 1))))
+    (newline)
+    ac)
+  (cond
+    [(mem? rm)
+     (if (reg-requires-REX? r)
+         (with-args rm
+            (lambda (a0 a1)
+              (cond
+                [(and (imm? a0) (reg32? a1))
+                 (if (reg-requires-REX? a1) 
+                     (C 0 (REX.R #b101 ac))
+                     (C 1 (REX.R #b100 ac)))]
+                [(and (imm? a1) (reg32? a0))
+                 (if (reg-requires-REX? a0)
+                     (C 2 (REX.R #b101 ac))
+                     (C 3 (REX.R #b100 ac)))]
+                [(and (reg32? a0) (reg32? a1))
+                 (if (or (reg-requires-REX? a0) (reg-requires-REX? a1))
+                     (error 'REX+RM "unhandled4" a0 a1)
+                     (error 'REX+RM "unhandleda" a1))]
+                [(and (imm? a0) (imm? a1)) 
+                 (error 'REX+RM "unhandledb" a1)]
+                [else (die 'REX+RM "unhandled" a0 a1)])))
+         (with-args rm
+            (lambda (a0 a1)
+              (cond
+                [(and (imm? a0) (reg32? a1))
+                 (if (reg-requires-REX? a1) 
+                     (C 4 (REX.R #b001 ac))
+                     ac)]
+                [(and (imm? a1) (reg32? a0))
+                 (if (reg-requires-REX? a0) 
+                     (C 5 (REX.R #b001 ac))
+                     ac)]
+                [(and (reg32? a0) (reg32? a1))
+                 (if (reg-requires-REX? a0) 
+                     (if (reg-requires-REX? a1)
+                         (error 'REX+RM "unhandled x1" a0 a1)
+                         (C 6 (REX.R #b010 ac)))
+                     (if (reg-requires-REX? a1)
+                         (error 'REX+RM "unhandled x3" a0 a1)
+                         ac))]
+                [(and (imm? a0) (imm? a1)) ac]
+                [else (die 'REX+RM "unhandled" a0 a1)]))))]
+    [(reg? rm) 
+     (if (reg-requires-REX? r) 
+         (if (reg-requires-REX? rm) 
+             (C 7 (REX.R #b101 ac))
+             (C 8 (REX.R #b100 ac)))
+         (if (reg-requires-REX? rm)
+             (C 9 (REX.R #b001 ac))
+             ac))]
+    [else (die 'REX+RM "unhandled" rm)]))
+
+
+
 (define (CR c r ac) 
-  (CODE+r c r ac))
+  (REX+r r (CODE+r c r ac)))
 (define (CR* c r rm ac)
-  (CODE c (RM r rm ac)))
+  (REX+RM r rm (CODE c (RM r rm ac))))
 (define (CCR* c0 c1 r rm ac)
-  (CODE c0 (CODE c1 (RM r rm ac))))
+  (REX+RM r rm (CODE c0 (CODE c1 (RM r rm ac)))))
 (define (CCR c0 c1 r ac)
-  (CODE c0 (CODE+r c1 r ac)))
+  (REX+r r (CODE c0 (CODE+r c1 r ac))))
+(define (CCCR* c0 c1 c2 r rm ac)
+  (REX+RM r rm (CODE c0 (CODE c1 (CODE c2 (RM r rm ac))))))
+
+
 (define (CCI32 c0 c1 i32 ac)
   (CODE c0 (CODE c1 (IMM32 i32 ac))))
-(define (CCCR* c0 c1 c2 r rm ac)
-  (CODE c0 (CODE c1 (CODE c2 (RM r rm ac)))))
 
 (add-instructions instr ac
    [(ret)                                 (CODE #xC3 ac)]
