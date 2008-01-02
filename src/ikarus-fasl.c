@@ -432,7 +432,7 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
       ref(rtd, off_rtd_printer) = false_object;
       ref(rtd, off_rtd_symbol) = symb;
       ref(symb, off_symbol_record_value) = rtd;
-      ((unsigned char*)(long)pcb->dirty_vector)[page_index(symb+off_symbol_record_value)] = -1;
+      ((unsigned int*)(long)pcb->dirty_vector)[page_index(symb+off_symbol_record_value)] = -1;
     } else {
       rtd = gensym_val;
     }
