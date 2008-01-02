@@ -443,7 +443,9 @@
          (make-conditional ;;; PCB ALLOC-REDLINE
            (make-primcall '<= 
              (list (make-primcall 'int+ (list apr size)) 
-                   (make-primcall 'mref (list pcr (make-constant 4)))))
+                   (make-primcall 'mref 
+                     (list pcr 
+                        (make-constant pcb-allocation-redline)))))
            (make-primcall 'nop '())
            (make-primcall 'interrupt '()))
          (make-funcall 
@@ -2733,7 +2735,7 @@
            (movl (int nil) ebx)
            (jmp DONE_LABEL)
            CONS_LABEL
-           (movl (pcb-ref 'allocation-redline) ebx)
+           (movl (mem pcb-allocation-redline pcr) ebx)
            (addl eax ebx)
            (addl eax ebx)
            (cmpl ebx apr)

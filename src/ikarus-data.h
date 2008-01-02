@@ -91,7 +91,7 @@ inthash(int key) {
 #define pagesize 4096
 #define generation_count 5  /* generations 0 (nursery), 1, 2, 3, 4 */
 
-typedef unsigned int ikptr;
+typedef unsigned long int ikptr;
 
 typedef int ikchar;
 
@@ -136,8 +136,8 @@ typedef struct ikpcb{
   ikptr   system_stack;                 /* offset = 24 */
   ikptr   dirty_vector;                 /* offset = 28 */
   ikptr   arg_list;                     /* offset = 32 */
-  int     engine_counter;               /* offset = 36 */
-  int     interrupted;                  /* offset = 40 */
+  ikptr   engine_counter;               /* offset = 36 */
+  ikptr   interrupted;                  /* offset = 40 */
   ikptr   base_rtd;                     /* offset = 44 */
   ikptr   collect_key;                  /* offset = 48 */
   /* the rest are not used by any scheme code        */

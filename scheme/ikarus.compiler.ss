@@ -1839,9 +1839,13 @@
   (CodesExpr x))
 
 (begin ;;; DEFINITIONS
-  (define fx-shift 2)
-  (define fx-mask #x03)
-  (define fx-tag 0)
+  (define wordsize  4)
+  (define wordshift 2)
+  (define object-alignment (* 2 wordsize))
+  (define align-shift (+ wordshift 1))
+  (define fx-shift  wordshift)
+  (define fx-mask   (- wordsize 1))
+  (define fx-tag    0)
   (define bool-f #x2F)
   (define bool-t #x3F)
   (define bool-mask #xEF)
@@ -1858,83 +1862,70 @@
   (define pair-mask 7)
   (define pair-tag  1)
   (define disp-car  0)
-  (define disp-cdr  4)
-  (define pair-size 8)
+  (define disp-cdr  wordsize)
+  (define pair-size (* 2 wordsize))
 
   (define flonum-tag    #x17)
   (define flonum-size     16)
   (define disp-flonum-data 8)
 
   (define ratnum-tag    #x27)
-  (define disp-ratnum-num  4)
-  (define disp-ratnum-den  8)
-  (define ratnum-size     16)
+  (define disp-ratnum-num  (* 1 wordsize))
+  (define disp-ratnum-den  (* 2 wordsize))
+  (define ratnum-size      (* 4 wordsize))
 
   (define bignum-mask        #b111)
   (define bignum-tag         #b011)
   (define bignum-sign-mask  #b1000)
   (define bignum-sign-shift   3)
   (define bignum-length-shift 4) 
-  (define disp-bignum-data    4)
+  (define disp-bignum-data    wordsize)
 
   (define pagesize 4096)
   (define pageshift 12)
-  (define wordsize  4)
-  (define wordshift 2)
   
-  ;(define symbol-mask 7)
-  ;(define symbol-tag 2)
-  ;(define disp-symbol-string          0)
-  ;(define disp-symbol-unique-string   4)
-  ;(define disp-symbol-value           8)
-  ;(define disp-symbol-plist          12)
-  ;(define disp-symbol-system-value   16)
-  ;(define disp-symbol-function       20)
-  ;(define disp-symbol-error-function 24)
-  ;(define disp-symbol-unused         28)
-  ;(define symbol-size                32)
-
   (define bytevector-mask 7)
   (define bytevector-tag 2)
   (define disp-bytevector-length 0)
-  (define disp-bytevector-data 8)
+  (define disp-bytevector-data   8)
 
   (define ptag-mask 7)
   (define symbol-ptag 5)
   (define symbol-record-tag #x5F)
-  (define disp-symbol-record-string  4)
-  (define disp-symbol-record-ustring 8)
-  (define disp-symbol-record-value  12)
-  (define disp-symbol-record-proc   16)
-  (define disp-symbol-record-plist  20)
-  (define symbol-record-size  24)
+  (define disp-symbol-record-string  (* 1 wordsize))
+  (define disp-symbol-record-ustring (* 2 wordsize))
+  (define disp-symbol-record-value   (* 3 wordsize))
+  (define disp-symbol-record-proc    (* 4 wordsize))
+  (define disp-symbol-record-plist   (* 5 wordsize))
+  (define symbol-record-size         (* 6 wordsize))
   
   (define record-tag  5)
   (define record-mask 7)
 
   (define vector-tag 5)
   (define vector-mask 7)
-  (define disp-vector-length 0)
-  (define disp-vector-data 4)
+  (define disp-vector-length          0)
+  (define disp-vector-data            wordsize)
   (define string-mask 7)
   (define string-tag 6)
-  (define disp-string-length 0)
-  (define disp-string-data 4)
+  (define disp-string-length          0)
+  (define disp-string-data            wordsize)
   (define closure-mask 7)
   (define closure-tag 3)
-  (define disp-closure-data 4)
-  (define disp-closure-code 0)
-  (define continuation-size       16)
+  (define disp-closure-code           0)
+  (define disp-closure-data           wordsize)
   (define continuation-tag      #x1F)
-  (define disp-continuation-top    4)
-  (define disp-continuation-size   8)
-  (define disp-continuation-next  12)
+  (define disp-continuation-top       (* 1 wordsize))
+  (define disp-continuation-size      (* 2 wordsize))
+  (define disp-continuation-next      (* 3 wordsize))
+  (define continuation-size           (* 4 wordsize))
   (define code-tag              #x2F)
-  (define disp-code-instrsize      4)
-  (define disp-code-relocsize      8)
-  (define disp-code-freevars      12)
-  (define disp-code-annotation    16)
-  (define disp-code-data          24)
+  (define disp-code-instrsize         (* 1 wordsize))
+  (define disp-code-relocsize         (* 2 wordsize))
+  (define disp-code-freevars          (* 3 wordsize))
+  (define disp-code-annotation        (* 4 wordsize))
+  (define disp-code-unused            (* 5 wordsize))
+  (define disp-code-data              (* 6 wordsize))
   
   (define transcoder-mask                  #xFF) ;;; 0011
   (define transcoder-tag                   #x7F) ;;; 0011
@@ -1972,36 +1963,51 @@
   (define port-tag               #x3F)
   (define port-mask              #x3F)
   (define disp-port-attrs           0)
-  (define disp-port-index           4)
-  (define disp-port-size            8)
-  (define disp-port-buffer         12)
-  (define disp-port-transcoder     16)
-  (define disp-port-id             20)
-  (define disp-port-read!          24)
-  (define disp-port-write!         28)
-  (define disp-port-get-position   32)
-  (define disp-port-set-position!  36)
-  (define disp-port-close          40)
-  (define disp-port-cookie         44)
-  (define disp-port-position       48)
-  (define disp-port-unused         52)
-  (define port-size                56)
+  (define disp-port-index           (* 1 wordsize))
+  (define disp-port-size            (* 2 wordsize))
+  (define disp-port-buffer          (* 3 wordsize))
+  (define disp-port-transcoder      (* 4 wordsize))
+  (define disp-port-id              (* 5 wordsize))
+  (define disp-port-read!           (* 6 wordsize))
+  (define disp-port-write!          (* 7 wordsize))
+  (define disp-port-get-position    (* 8 wordsize))
+  (define disp-port-set-position!   (* 9 wordsize))
+  (define disp-port-close           (* 10 wordsize))
+  (define disp-port-cookie          (* 11 wordsize))
+  (define disp-port-position        (* 12 wordsize))
+  (define disp-port-unused          (* 13 wordsize))
+  (define port-size                 (* 14 wordsize))
 
   (define disp-tcbucket-tconc 0)
-  (define disp-tcbucket-key   4)
-  (define disp-tcbucket-val   8)
-  (define disp-tcbucket-next 12)
-  (define tcbucket-size      16)
+  (define disp-tcbucket-key         (* 1 wordsize))
+  (define disp-tcbucket-val         (* 2 wordsize))
+  (define disp-tcbucket-next        (* 3 wordsize))
+  (define tcbucket-size             (* 4 wordsize))
   (define record-ptag  5)
   (define record-pmask 7)
   (define disp-struct-rtd     0)
-  (define disp-struct-data    4)
-  (define disp-frame-size -17)
-  (define disp-frame-offset -13)
-  (define disp-multivalue-rp -9)
-  (define object-alignment 8)
-  (define align-shift 3)
+  (define disp-struct-data    wordsize)
+  (define disp-frame-size    -17) ;; OUCH
+  (define disp-frame-offset  -13) ;; OUCH
+  (define disp-multivalue-rp  -9) ;; OUCH
   (define dirty-word -1))
+
+;(define pcb-allocation-pointer    (*  0 wordsize)) NOT USED
+(define pcb-allocation-redline     (* 1 wordsize))
+;(define pcb-frame-pointer         (*  2 wordsize)) NOT USED
+(define pcb-frame-base             (* 3 wordsize))
+(define pcb-frame-redline          (* 4 wordsize))
+(define pcb-next-continuation      (* 5 wordsize))
+;(define pcb-system-stack          (*  6 wordsize)) NOT USED
+(define pcb-dirty-vector           (* 7 wordsize))
+(define pcb-arg-list               (* 8 wordsize))
+(define pcb-engine-counter         (* 9 wordsize))
+(define pcb-interrupted            (* 10 wordsize))
+(define pcb-base-rtd               (* 11 wordsize))
+(define pcb-collect-key            (* 12 wordsize))
+
+
+
 
 (module ()
   ;;; initialize the cogen
@@ -2062,9 +2068,6 @@
   (define (ja label) (list 'ja label))
   (define (jo label) (list 'jo label))
   (define (jmp label) (list 'jmp label))
- ; (define edi '%edx) ; closure pointer
- ; (define esi '%esi) ; pcb
- ; (define ebp '%ebp) ; allocation pointer
   (define esp '%esp) ; stack base pointer 
   (define al '%al)
   (define ah '%ah)
@@ -2081,23 +2084,6 @@
   (define register? symbol?)
   (define (argc-convention n)
     (fx- 0 (fxsll n fx-shift))))
-
-(define pcb-ref
-  (lambda (x)
-    (case x
-      [(allocation-pointer) (mem  0 pcr)]
-      [(allocation-redline) (mem  4 pcr)]
-      [(frame-pointer)      (mem  8 pcr)]
-      [(frame-base)         (mem 12 pcr)]
-      [(frame-redline)      (mem 16 pcr)]
-      [(next-continuation)  (mem 20 pcr)]
-      [(system-stack)       (mem 24 pcr)]
-      [(dirty-vector)       (mem 28 pcr)]
-      [(arg-list)           (mem 32 pcr)]
-      [(engine-counter)     (mem 36 pcr)]
-      [(interrupted)        (mem 40 pcr)]
-      [(base-rtd)           (mem 44 pcr)]
-      [else (error 'pcb-ref "invalid arg" x)])))
 
 
 (define (primref->symbol op)
@@ -2217,8 +2203,8 @@
           (list  1 ; freevars
               (label SL_continuation_code)
               (movl (mem (fx- disp-closure-data closure-tag) cpr) ebx) ; captured-k
-              (movl ebx (pcb-ref 'next-continuation)) ; set
-              (movl (pcb-ref 'frame-base) ebx)
+              (movl ebx (mem pcb-next-continuation pcr)) ; set
+              (movl (mem pcb-frame-base pcr) ebx)
               (cmpl (int (argc-convention 1)) eax)
               (jg (label L_cont_zero_args))
               (jl (label L_cont_mult_args))

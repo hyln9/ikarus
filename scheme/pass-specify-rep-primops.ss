@@ -47,7 +47,7 @@
 (define (dirty-vector-set address)
   (prm 'mset 
      (prm 'int+
-          (prm 'mref pcr (K 28)) 
+          (prm 'mref pcr (K pcb-dirty-vector))
           (prm 'sll (prm 'srl address (K pageshift)) (K wordshift)))
      (K 0)
      (K dirty-word)))
@@ -87,7 +87,7 @@
 (section ;;; simple objects section
 
 (define-primop base-rtd safe
-  [(V) (prm 'mref pcr (K 44))]
+  [(V) (prm 'mref pcr (K pcb-base-rtd))]
   [(P) (K #t)]
   [(E) (prm 'nop)])
 
@@ -156,13 +156,13 @@
   [(E x) (nop)])
 
 (define-primop $arg-list unsafe
-  [(V) (prm 'mref pcr (K 32))] ;; PCB ARGS-LIST
+  [(V) (prm 'mref pcr (K pcb-arg-list))]
   [(P) (K #t)]
   [(E) (nop)])
 
 (define-primop $collect-key unsafe
-  [(V) (prm 'mref pcr (K 48))]
-  [(E x) (prm 'mset pcr (K 48) (T x))])
+  [(V) (prm 'mref pcr (K pcb-collect-key))]
+  [(E x) (prm 'mset pcr (K pcb-collect-key) (T x))])
 
 (define-primop $memq safe
   [(P x ls)
@@ -1834,23 +1834,24 @@
 (section ;;; interrupts-and-engines
 
 (define-primop $interrupted? unsafe
-  [(P) (prm '!= (prm 'mref pcr (K 40)) (K 0))])
+  [(P) (prm '!= (prm 'mref pcr (K pcb-interrupted)) (K 0))])
 
 (define-primop $unset-interrupted! unsafe
-  [(E) (prm 'mset pcr (K 40) (K 0))])
+  [(E) (prm 'mset pcr (K pcb-interrupted) (K 0))])
 
 (define-primop $do-event safe
   [(E) 
    (begin
      (interrupt)
-     (prm 'incr/zero? pcr (K 36)))])
+     (prm 'incr/zero? pcr (K pcb-engine-counter)))])
 
 (define-primop $stack-overflow-check unsafe
   [(E) 
    (make-shortcut 
      (make-conditional 
        (make-primcall '< 
-         (list esp (make-primcall 'mref (list pcr (make-constant 16)))))
+         (list esp (make-primcall 'mref
+                     (list pcr (make-constant pcb-frame-redline)))))
        (make-primcall 'interrupt '())
        (make-primcall 'nop '()))
      (make-forcall "ik_stack_overflow" '()))])
@@ -1860,25 +1861,29 @@
 (section ;;; control operations
 
 (define-primop $fp-at-base unsafe
-  [(P) ;;; PCB FRAME-BASE
-   (prm '= (prm 'int+ (prm 'mref pcr (K 12)) (K (- wordsize))) fpr)])
+  [(P)
+   (prm '= (prm 'int+
+                (prm 'mref pcr (K pcb-frame-base)) 
+                (K (- wordsize))) fpr)])
 
 (define-primop $current-frame unsafe
-  [(V) (prm 'mref pcr (K 20))]) ;; PCB NEXT-CONTINUATION
+  [(V) (prm 'mref pcr (K pcb-next-continuation))])
 
 
 (define-primop $seal-frame-and-call unsafe
   [(V x) ;;; PCB NEXT CONT;;; PCB BASE
    (with-tmp ([k (prm 'alloc (K continuation-size) (K vector-tag))])
-     (with-tmp ([base (prm 'int+ (prm 'mref pcr (K 12)) (K (- wordsize)))])
+     (with-tmp ([base (prm 'int+
+                           (prm 'mref pcr (K pcb-frame-base)) 
+                           (K (- wordsize)))])
        (with-tmp ([underflow-handler (prm 'mref base (K 0))])
          (prm 'mset k (K (- vector-tag)) (K continuation-tag))
          (prm 'mset k (K (- disp-continuation-top vector-tag)) fpr)
          (prm 'mset k (K (- disp-continuation-next vector-tag)) 
-              (prm 'mref pcr (K 20))) 
+              (prm 'mref pcr (K pcb-next-continuation))) 
          (prm 'mset k (K (- disp-continuation-size vector-tag)) (prm 'int- base fpr))
-         (prm 'mset pcr (K 20) k)
-         (prm 'mset pcr (K 12) fpr)
+         (prm 'mset pcr (K pcb-next-continuation) k)
+         (prm 'mset pcr (K pcb-frame-base) fpr)
          (prm '$call-with-underflow-handler underflow-handler (T x) k))))]
   [(E . args) (interrupt)]
   [(P . args) (interrupt)])
