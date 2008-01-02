@@ -27,7 +27,7 @@ make_symbol_table(ikpcb* pcb){
   #define NUM_OF_BUCKETS 4096 /* power of 2 */
   int size = align_to_next_page(disp_vector_data + NUM_OF_BUCKETS * wordsize);
   ikptr st = ik_mmap_ptr(size, 0, pcb) + vector_tag;
-  bzero(st-vector_tag, size);
+  bzero((char*)st-vector_tag, size);
   ref(st, off_vector_length) = fix(NUM_OF_BUCKETS);
   return st;
 }
@@ -60,8 +60,8 @@ static int strings_eqp(ikptr str1, ikptr str2){
   ikptr len = ref(str1, off_string_length);
   if(len == ref(str2, off_string_length)){
     return
-      (memcmp(str1+off_string_data, 
-              str2+off_string_data, 
+      (memcmp((char*)str1+off_string_data, 
+              (char*)str2+off_string_data, 
               unfix(len) * string_char_size)
        == 0);
   }
@@ -117,7 +117,7 @@ intern_string(ikptr str, ikptr st, ikpcb* pcb){
   ref(b, off_car) = sym;
   ref(b, off_cdr) = bckt;
   ref(st, off_vector_data + idx*wordsize) = b;
-  pcb->dirty_vector[page_index(st+off_vector_data+idx*wordsize)] = -1;
+  ((int*)(long)pcb->dirty_vector)[page_index(st+off_vector_data+idx*wordsize)] = -1;
   return sym;
 }
 
@@ -140,7 +140,7 @@ intern_unique_string(ikptr str, ikptr ustr, ikptr st, ikpcb* pcb){
   ref(b, off_car) = sym;
   ref(b, off_cdr) = bckt;
   ref(st, off_vector_data + idx*wordsize) = b;
-  pcb->dirty_vector[page_index(st+off_vector_data+idx*wordsize)] = -1;
+  ((int*)(long)pcb->dirty_vector)[page_index(st+off_vector_data+idx*wordsize)] = -1;
   return sym;
 }
 
@@ -168,7 +168,7 @@ ikrt_intern_gensym(ikptr sym, ikpcb* pcb){
   ref(b, off_car) = sym;
   ref(b, off_cdr) = bckt;
   ref(st, off_vector_data + idx*wordsize) = b;
-  pcb->dirty_vector[page_index(st+off_vector_data+idx*wordsize)] = -1;
+  ((int*)(long)pcb->dirty_vector)[page_index(st+off_vector_data+idx*wordsize)] = -1;
   return true_object;
 }
 

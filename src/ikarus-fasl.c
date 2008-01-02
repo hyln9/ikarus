@@ -98,7 +98,7 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
     p.code_ep = 0;
     ikptr v = ik_fasl_read(pcb, &p);
     if(p.marks_size){
-      ik_munmap((unsigned char*) p.marks, p.marks_size*sizeof(ikptr*));
+      ik_munmap((ikptr) p.marks, p.marks_size*sizeof(ikptr*));
       p.marks = 0;
       p.marks_size = 0;
     }
@@ -159,7 +159,7 @@ ik_relocate_code(ikptr code){
   ikptr size = ref(vec, off_vector_length);
   ikptr data = code + disp_code_data;
   ikptr p = vec + off_vector_data;
-  ikptr q = p + (long int)size;
+  ikptr q = p + size;
   while(p < q){
     long int r = unfix(ref(p, 0));
     if(r == 0){
@@ -207,7 +207,7 @@ ik_relocate_code(ikptr code){
         fprintf(stderr, "failed to find foreign name %s: %s\n", name, err);
         exit(-1);
       }
-      ref(data,code_off) = sym;
+      ref(data,code_off) = (ikptr)sym;
       p += (2*wordsize);
     }
     else {
@@ -289,7 +289,7 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
     ref(code, disp_code_code_size) = fix(code_size);
     ref(code, disp_code_freevars) = freevars;
     ref(code, disp_code_annotation) = annotation;
-    fasl_read_buf(p, code+disp_code_data, code_size);
+    fasl_read_buf(p, (void*)code+disp_code_data, code_size);
     if(put_mark_index){
       p->marks[put_mark_index] = code+vector_tag;
     }
@@ -322,10 +322,10 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
     int size = align(len*string_char_size + disp_string_data);
     ikptr str = ik_unsafe_alloc(pcb, size) + string_tag;
     ref(str, off_string_length) = fix(len);
-    fasl_read_buf(p, str+off_string_data, len);
+    fasl_read_buf(p, (char*)str+off_string_data, len);
     {
-      unsigned char* pi = (unsigned char*) (str+off_string_data);
-      ikchar* pj = (ikchar*) (str+off_string_data);
+      unsigned char* pi = (unsigned char*)(long)(str+off_string_data);
+      ikchar* pj = (ikchar*)(long)(str+off_string_data);
       int i = len-1;
       for(i=len-1; i >= 0; i--){
         pj[i] = integer_to_char(pi[i]);
@@ -339,8 +339,8 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
   }
   else if(c == 'S'){
     /* string */
-    long int len;
-    fasl_read_buf(p, &len, sizeof(long int));
+    int len;
+    fasl_read_buf(p, &len, sizeof(int));
     int size = align(len*string_char_size + disp_string_data);
     ikptr str = ik_unsafe_alloc(pcb, size) + string_tag;
     ref(str, off_string_length) = fix(len);
@@ -432,7 +432,7 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
       ref(rtd, off_rtd_printer) = false_object;
       ref(rtd, off_rtd_symbol) = symb;
       ref(symb, off_symbol_record_value) = rtd;
-      pcb->dirty_vector[page_index(symb+off_symbol_record_value)] = -1;
+      ((unsigned char*)(long)pcb->dirty_vector)[page_index(symb+off_symbol_record_value)] = -1;
     } else {
       rtd = gensym_val;
     }
@@ -476,8 +476,8 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
     int size = align(len + disp_bytevector_data + 1);
     ikptr x = ik_unsafe_alloc(pcb, size) + bytevector_tag;
     ref(x, off_bytevector_length) = fix(len);
-    fasl_read_buf(p, x+off_bytevector_data, len);
-    x[off_bytevector_data+len] = 0;
+    fasl_read_buf(p, (void*)(long)(x+off_bytevector_data), len);
+    ((char*)(long)x)[off_bytevector_data+len] = 0;
     if(put_mark_index){
       p->marks[put_mark_index] = x;
     }
@@ -527,7 +527,7 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
   else if(c == 'f'){
     ikptr x = ik_unsafe_alloc(pcb, flonum_size) + vector_tag;
     ref(x, -vector_tag) = flonum_tag;
-    fasl_read_buf(p, x+disp_flonum_data-vector_tag, 8);
+    fasl_read_buf(p, (void*)(long)(x+disp_flonum_data-vector_tag), 8);
     if(put_mark_index){
       p->marks[put_mark_index] = x;
     }
@@ -554,7 +554,7 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
       ((len >> 2) << bignum_length_shift);
     ikptr x = ik_unsafe_alloc(pcb, align(len + disp_bignum_data)) + vector_tag;
     ref(x, -vector_tag) = (ikptr) tag;
-    fasl_read_buf(p, x+off_bignum_data, len);
+    fasl_read_buf(p, (void*)(long)(x+off_bignum_data), len);
     if(put_mark_index){
       p->marks[put_mark_index] = x;
     }

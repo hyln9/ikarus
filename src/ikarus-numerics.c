@@ -44,21 +44,21 @@ verify_bignum(ikptr x, char* caller){
     exit(-1);
   }
   ikptr fst = ref(x, -vector_tag);
-  int limb_count = ((unsigned int) fst) >> bignum_length_shift;
+  long int limb_count = ((unsigned long int) fst) >> bignum_length_shift;
   if(limb_count <= 0){
     fprintf(stderr, 
         "Error in (%s) invalid limb count in fst=0x%08x\n", 
-        caller, (int)fst);
+        caller, (long int)fst);
     exit(-1);
   }
   int pos;
-  if((int)fst & bignum_sign_mask){
+  if((long int)fst & bignum_sign_mask){
     pos = 0;
   } else {
     pos = 1;
   }
-  unsigned int last_limb = 
-    (unsigned int) ref(x, off_bignum_data + (limb_count - 1) * wordsize);
+  mp_limb_t last_limb = 
+    (mp_limb_t) ref(x, off_bignum_data + (limb_count - 1) * wordsize);
   if(last_limb == 0){
     fprintf(stderr, 
         "Error in (%s) invalid last limb = 0x%08x", caller, last_limb);
@@ -454,8 +454,8 @@ ikrt_bnnegate(ikptr x, ikpcb* pcb){
   pcb->root0 = &x;
   ikptr bn = ik_safe_alloc(pcb, align(disp_bignum_data + limb_count * wordsize));
   pcb->root0 = 0;
-  memcpy(bn+disp_bignum_data,
-         x-vector_tag+disp_bignum_data,
+  memcpy((char*)bn+disp_bignum_data,
+         (char*)x-vector_tag+disp_bignum_data,
          limb_count*wordsize);
   ref(bn, 0) = (ikptr)
     (bignum_tag |
@@ -1189,7 +1189,7 @@ ikrt_bnlognot(ikptr x, ikpcb* pcb){
       pcb->root0 = &x;
       ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data + (n+1)*wordsize));
       pcb->root0 = 0;
-      bzero(r+disp_bignum_data, n*wordsize);
+      bzero((char*)r+disp_bignum_data, n*wordsize);
       ((mp_limb_t*)(r+disp_bignum_data))[n] = 1;
       ref(r, 0) = (ikptr)
         (bignum_tag | (1<<bignum_sign_shift) | ((n+1) << bignum_length_shift));
@@ -1376,9 +1376,9 @@ ikrt_bignum_shift_right(ikptr x, ikptr y, ikpcb* pcb){
     ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data + new_limb_count * wordsize));
     pcb->root0 = 0;
     if(bit_shift == 0){
-      memcpy(r+disp_bignum_data,
-              x+off_bignum_data+whole_limb_shift*wordsize,
-              new_limb_count * wordsize);
+      memcpy((char*)r+disp_bignum_data,
+             (char*)x+off_bignum_data+whole_limb_shift*wordsize,
+             new_limb_count * wordsize);
       return normalize_bignum(new_limb_count, 0, r);
     } else {
       copy_bits_shifting_right(
@@ -1430,7 +1430,7 @@ ikrt_bignum_shift_left(ikptr x, ikptr y, ikpcb* pcb){
     pcb->root0 = 0;
     unsigned int* s = (unsigned int*)(r+disp_bignum_data);
     bzero(s, whole_limb_shift*wordsize);
-    memcpy(s+whole_limb_shift, x+off_bignum_data, n*wordsize);
+    memcpy((char*)s+whole_limb_shift, (char*)x+off_bignum_data, n*wordsize);
     return normalize_bignum(limb_count, bnfst_negative(fst), r);
   } else {
     int limb_count = n + whole_limb_shift + 1;
@@ -1693,7 +1693,7 @@ ikrt_bignum_to_bytevector(ikptr x, ikpcb* pcb){
     fprintf(stderr, "Error allocating space for bignum\n");
     exit(-1);
   }
-  memcpy(mem, x - vector_tag + disp_bignum_data, nbsize);
+  memcpy((char*)mem, (char*)x - vector_tag + disp_bignum_data, nbsize);
   mp_size_t bytes = 
     mpn_get_str(mem+nbsize,       /* output string */ 
                 10,               /* base */
@@ -1707,7 +1707,7 @@ ikrt_bignum_to_bytevector(ikptr x, ikpcb* pcb){
   }
   ikptr bv = ik_safe_alloc(pcb, align(bytes + disp_bytevector_data + (sign_bit?1:0)));
   ref(bv, 0) = fix(bytes + (sign_bit?1:0));
-  ikptr dest = bv + disp_bytevector_data;
+  char* dest = (char*)(long)(bv + disp_bytevector_data);
   if(sign_bit){
     *dest = '-';
     dest++;

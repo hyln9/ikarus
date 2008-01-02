@@ -91,7 +91,8 @@ inthash(int key) {
 #define pagesize 4096
 #define generation_count 5  /* generations 0 (nursery), 1, 2, 3, 4 */
 
-typedef char* ikptr;
+typedef unsigned int ikptr;
+
 typedef int ikchar;
 
 void ik_error(ikptr args);
@@ -132,11 +133,11 @@ typedef struct ikpcb{
   ikptr   frame_base;                   /* offset = 12 */
   ikptr   frame_redline;                /* offset = 16 */
   ikptr   next_k;                       /* offset = 20 */
-  void* system_stack;                 /* offset = 24 */
-  unsigned int* dirty_vector;         /* offset = 28 */
+  ikptr   system_stack;                 /* offset = 24 */
+  ikptr   dirty_vector;                 /* offset = 28 */
   ikptr   arg_list;                     /* offset = 32 */
-  int   engine_counter;               /* offset = 36 */
-  int   interrupted;                  /* offset = 40 */
+  int     engine_counter;               /* offset = 36 */
+  int     interrupted;                  /* offset = 40 */
   ikptr   base_rtd;                     /* offset = 44 */
   ikptr   collect_key;                  /* offset = 48 */
   /* the rest are not used by any scheme code        */
@@ -161,8 +162,8 @@ typedef struct ikpcb{
   ik_ptr_page* guardians_dropped[generation_count];
   unsigned int* dirty_vector_base;
   unsigned int* segment_vector_base;
-  char* memory_base;
-  char* memory_end;
+  ikptr memory_base;
+  ikptr memory_end;
   int collection_id;
   int allocation_count_minor;
   int allocation_count_major;
@@ -177,14 +178,14 @@ void ikarus_usage_short(void);
 void* ik_malloc(int);
 void ik_free(void*, int);
 
-void* ik_mmap(int);
-void* ik_mmap_typed(int size, unsigned int type, ikpcb*);
-void* ik_mmap_ptr(int size, int gen, ikpcb*);
-void* ik_mmap_data(int size, int gen, ikpcb*);
-void* ik_mmap_code(int size, int gen, ikpcb*);
-void* ik_mmap_mixed(int size, ikpcb*);
-void ik_munmap(void*, int);
-void ik_munmap_from_segment(char*, int, ikpcb*);
+ikptr ik_mmap(int);
+ikptr ik_mmap_typed(int size, unsigned int type, ikpcb*);
+ikptr ik_mmap_ptr(int size, int gen, ikpcb*);
+ikptr ik_mmap_data(int size, int gen, ikpcb*);
+ikptr ik_mmap_code(int size, int gen, ikpcb*);
+ikptr ik_mmap_mixed(int size, ikpcb*);
+void ik_munmap(ikptr, int);
+void ik_munmap_from_segment(ikptr, int, ikpcb*);
 ikpcb* ik_make_pcb();
 void ik_delete_pcb(ikpcb*);
 void ik_free_symbol_table(ikpcb* pcb);
@@ -241,17 +242,17 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define fx_mask 3
 #define unfix(x) (((long int)(x)) >> fx_shift)
 #define fix(x)   ((ikptr)(((long int)(x)) << fx_shift))
-#define is_fixnum(x) ((((long int)(x)) & fx_mask) == 0)
+#define is_fixnum(x) ((((unsigned long)(x)) & fx_mask) == 0)
 
 #define IK_FIXNUMP(x) \
   ((((int)(x)) & IK_FX_MASK) == 0)
 
 #define ref(x,n) \
-  (((ikptr*)(((char*)(x)) + ((long int)(n))))[0])
+  (((ikptr*)(((char*)(long int)(x)) + ((long int)(n))))[0])
 
 #define IK_MASK(x,m) (((long int)(x)) & ((long int)(m)))
 #define IK_PTAG(x) (((int)(x)) & 7)
-#define tagof(x) (((long int)(x)) & 7)
+#define tagof(x) (((int)(x)) & 7)
 #define IK_STAG(x) REF(x, -IK_PTAG(x))
 
 #define immediate_tag 7
@@ -443,7 +444,7 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define flonum_size         16
 #define disp_flonum_data     8
 #define off_flonum_data (disp_flonum_data - vector_tag)
-#define flonum_data(x) (*((double*)(((ikptr)(x))+off_flonum_data)))
+#define flonum_data(x) (*((double*)(((char*)(long)(x))+off_flonum_data)))
 
 #define ratnum_tag  ((ikptr) 0x27)
 #define ratnum_size        16

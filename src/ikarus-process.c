@@ -26,7 +26,7 @@ list_to_vec(ikptr x){
   if (vec == NULL) exit(-1);
   int i;
   for(i=0; i<n; i++){
-    vec[i] = (char*)ref(x, off_car) + off_bytevector_data;
+    vec[i] = (char*)(long)ref(x, off_car) + off_bytevector_data;
     x = ref(x, off_cdr);
   }
   vec[n] = 0;
@@ -53,9 +53,9 @@ ikrt_process(ikptr rvec, ikptr cmd, ikptr argv, ikpcb* pcb){
     if(dup(outfds[1]) == -1) exit(1);
     if(close(2))         exit(2);
     if(dup(errfds[1]) == -1) exit(1);
-    execvp((char*)cmd+off_bytevector_data, list_to_vec(argv));
+    execvp((char*)(long)(cmd+off_bytevector_data), list_to_vec(argv));
     fprintf(stderr, "failed to exec %s: %s\n", 
-        (char*)cmd+off_bytevector_data,
+        (char*)(long)(cmd+off_bytevector_data),
         strerror(errno));
     exit(-1);
   } else if(pid > 0){

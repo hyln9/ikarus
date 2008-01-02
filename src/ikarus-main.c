@@ -147,11 +147,11 @@ int main(int argc, char** argv){
   } else {
     boot_file = BOOTFILE;
   }
-  if(sizeof(mp_limb_t) != sizeof(int)){
+  if(sizeof(mp_limb_t) != sizeof(long int)){
     fprintf(stderr, "ERROR: limb size does not match\n");
     exit(-1);
   }
-  if(mp_bits_per_limb != (8*sizeof(int))){
+  if(mp_bits_per_limb != (8*sizeof(long int))){
     fprintf(stderr, "ERROR: invalid bits_per_limb=%d\n", mp_bits_per_limb);
     exit(-1);
   }

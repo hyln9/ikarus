@@ -34,7 +34,7 @@ ikptr ik_exec_code(ikpcb* pcb, ikptr code_ptr){
   ikptr argc = ik_asm_enter(pcb, code_ptr+off_code_data,0);
   ikptr next_k =  pcb->next_k;
   while(next_k){
-    cont* k = (cont*)(next_k - vector_tag);
+    cont* k = (cont*)(long)(next_k - vector_tag);
     ikptr top = k->top;
     ikptr rp = ref(top, 0);
     long int framesize = (long int) ref(rp, disp_frame_size);
@@ -43,24 +43,24 @@ ikptr ik_exec_code(ikpcb* pcb, ikptr code_ptr){
       exit(-1);
     }
     if(framesize < k->size){
-      cont* nk = (cont*) ik_unsafe_alloc(pcb, sizeof(cont));
+      cont* nk = (cont*)(long)ik_unsafe_alloc(pcb, sizeof(cont));
       nk->tag = k->tag;
       nk->next = k->next;
       nk->top = top + framesize;
       nk->size = k->size - framesize;
       k->size = framesize;
-      k->next = vector_tag + (ikptr)nk;
+      k->next = vector_tag + (ikptr)(long)nk;
       /* record side effect */
       unsigned long int idx = ((unsigned long int)(&k->next)) >> pageshift;
-      pcb->dirty_vector[idx] = -1;
+      ((unsigned int*)(long)(pcb->dirty_vector))[idx] = -1;
     }
     pcb->next_k = k->next;
     ikptr fbase = pcb->frame_base - wordsize;
     ikptr new_fbase = fbase - framesize;
-    memmove(new_fbase + (long int)argc,
-            fbase  + (long int)argc,
-            -(long int)argc);
-    memcpy(new_fbase, top, framesize);
+    memmove((char*)new_fbase + argc,
+            (char*)fbase + argc,
+            -argc);
+    memcpy((char*)new_fbase, (char*)top, framesize);
     argc = ik_asm_reenter(pcb, new_fbase, argc);
     next_k =  pcb->next_k;
   }

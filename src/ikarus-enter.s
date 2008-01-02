@@ -35,7 +35,7 @@ _ik_asm_enter:
   movl 0(%esi), %ebp     # allocation pointer is at 0(pcb)
   movl %esp, %eax
   subl $16, %esp         # 24 for alignment
-set_stack:
+# set_stack:
   movl %esp, 24(%esi)    # save esp in pcb->system_stack
   movl 8(%esi), %esp     # load scheme stack from pcb->frame_pinter
   jmp L_call
@@ -47,7 +47,11 @@ set_stack:
   .byte 0
   .byte 0
   .byte 0
-  .long L_multivalue_underflow
+#ifdef __x86_64__
+  .long 0 # FIXME
+#else
+  .long  L_multivalue_underflow
+#endif
   .byte 0
   .byte 0
 L_call:
@@ -123,20 +127,29 @@ L_two:
 L_one:
   push $0
 L_zero:
-#  push %rsi             # (pushl pcr)
+#if __x86_64__
+  push %rsi             # (pushl pcr)
+#else 
   push %esi             # (pushl pcr)
+#endif
   cmpl $0, %eax          # (cmpl (int 0) eax)
   je L_set               # (je (label Lset))
 L_loop:                  # (label Lloop)
   movl (%ebx,%eax), %ecx # (movl (mem ebx eax) ecx)
-#  push %rcx             # (pushl ecx)
+#if __x86_64__
+  push %rcx             # (pushl ecx)
+#else
   push %ecx             # (pushl ecx)
+#endif
   addl $4, %eax          # (addl (int 4) eax)
   cmpl $0, %eax          # (cmpl (int 0) eax)
   jne L_loop             # (jne (label Lloop))
 L_set:                   # (label Lset)
-#  call *%rdi             # (call cpr)
+#if __x86_64__
+  call *%rdi             # (call cpr)
+#else
   call *%edi             # (call cpr)
+#endif
   movl 8(%esi), %esp     # (movl (pcb-ref 'frame-pointer) fpr)
   movl 0(%esi), %ebp     # (movl (pcb-ref 'allocation-pointer) apr)
   ret                    # (ret)))

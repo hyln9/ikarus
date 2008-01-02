@@ -25,13 +25,19 @@ _cpu_has_sse2:
   # callee-save registers are $ebx, %esi, %edi, %esp, $ebp
   # cpuid modifies %eax, %ebx, %ecx, %edx
   # only %ebx needs to be saved/restored
-#  push %rbx
+#if __x86_64__
+  push %rbx
+#else
   push %ebx
+#endif
   movl $1, %eax
   cpuid
   movl %edx, %eax
   sarl $26, %eax
   andl $1, %eax
-#  pop %rbx
+#if __x86_64__
+  pop %rbx
+#else
   pop %ebx
+#endif
   ret

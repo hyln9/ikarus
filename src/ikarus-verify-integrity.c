@@ -22,7 +22,7 @@
 #include <assert.h>
 
 static long int
-page_idx(char* x){
+page_idx(void* x){
   unsigned long int xi = (unsigned long int) x;
   return xi >> pageshift;
 }
@@ -59,7 +59,7 @@ verify_code(char* x, char* base, unsigned int* svec, unsigned int* dvec){
   assert(isa_fixnum(freevars));
   assert(unfix(freevars) >= 0);
 
-  unsigned int rs = svec[page_idx(rvec) - page_idx(base)];
+  unsigned int rs = svec[page_idx((void*)rvec) - page_idx(base)];
   unsigned int cs = svec[page_idx(x) - page_idx(base)];
   int cgen = cs&gen_mask;
   int rgen = rs&gen_mask;
@@ -81,7 +81,7 @@ verify_object(ikptr x, char* base, unsigned int* svec, unsigned int* dvec){
 static char*
 verify_code_small(char* p, int s, unsigned int d, 
     char* base, unsigned int* svec, unsigned int* dvec){
-  ikptr q = p + pagesize;
+  char* q = p + pagesize;
   while(p < q){
     ikptr fst = ref(p, 0);
     if(fst == code_tag){
@@ -111,7 +111,7 @@ verify_code_large(char* p, unsigned int s, unsigned int d,
   assert(code_size >= 0);
   verify_code(p, base, svec, dvec);
   assert(align(code_size+disp_code_data) >= pagesize);
-  ikptr end = p + code_size + disp_code_data;
+  char* end = p + code_size + disp_code_data;
   return((char*)align_to_next_page(end));
 }
 
@@ -121,7 +121,8 @@ verify_code_page(char* p, unsigned int s, unsigned int d,
   ikptr fst = ref(p, 0);
   fst += 0;
   if(fst != code_tag){
-    fprintf(stderr, "non code object with tag %p found\n", fst);
+    fprintf(stderr, "non code object with tag %p found\n", 
+        (void*)fst);
     exit(-1);
   }
   int code_size = unfix(ref(p, disp_code_code_size));
@@ -198,8 +199,8 @@ verify_page(char* p, char* base, unsigned int* svec, unsigned int* dvec){
 void
 verify_integrity(ikpcb* pcb, char* where){
   fprintf(stderr, "verifying in %s...\n", where);
-  char* mem_base = pcb->memory_base;
-  char* mem_end = pcb->memory_end;
+  char* mem_base = (char*)pcb->memory_base;
+  char* mem_end = (char*)pcb->memory_end;
   unsigned int* seg_vec = pcb->segment_vector_base;
   unsigned int* dir_vec = pcb->dirty_vector_base;
   char* mem = mem_base;

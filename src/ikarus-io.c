@@ -51,7 +51,7 @@ ikrt_close_fd(ikptr fd, ikpcb* pcb){
 
 ikptr
 ikrt_open_input_fd(ikptr fn, ikpcb* pcb){
-  int fh = open((char*)(fn+off_bytevector_data), O_RDONLY, 0);
+  int fh = open((char*)(long)(fn+off_bytevector_data), O_RDONLY, 0);
   if(fh > 0){
     return fix(fh);
   } else {
@@ -77,7 +77,7 @@ ikrt_open_output_fd(ikptr fn, ikptr ikopts, ikpcb* pcb){
     case 6: mode = O_WRONLY | O_CREAT ; break;
     case 7: mode = O_WRONLY ; break;
   }
-  int fh = open((char*)(fn+off_bytevector_data), 
+  int fh = open((char*)(long)(fn+off_bytevector_data), 
                 mode,
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if(fh > 0){
@@ -93,7 +93,7 @@ ikptr
 ikrt_read_fd(ikptr fd, ikptr bv, ikptr off, ikptr cnt, ikpcb* pcb){
   ssize_t bytes = 
    read(unfix(fd),
-        (char*)(bv+off_bytevector_data+unfix(off)), 
+        (char*)(long)(bv+off_bytevector_data+unfix(off)), 
         unfix(cnt));
   if(bytes >= 0){
     return fix(bytes);
@@ -106,7 +106,7 @@ ikptr
 ikrt_write_fd(ikptr fd, ikptr bv, ikptr off, ikptr cnt, ikpcb* pcb){
   ssize_t bytes = 
    write(unfix(fd),
-         (char*)(bv+off_bytevector_data+unfix(off)), 
+         (char*)(long)(bv+off_bytevector_data+unfix(off)), 
          unfix(cnt));
   if(bytes >= 0){
     return fix(bytes);
@@ -120,8 +120,8 @@ ikrt_write_fd(ikptr fd, ikptr bv, ikptr off, ikptr cnt, ikpcb* pcb){
 ikptr
 ikrt_tcp_connect(ikptr host, ikptr srvc, ikpcb* pcb){
   struct addrinfo* info;
-  int err = getaddrinfo(host+off_bytevector_data,
-                        srvc+off_bytevector_data,
+  int err = getaddrinfo((char*)(long)(host+off_bytevector_data),
+                        (char*)(long)(srvc+off_bytevector_data),
                         0,
                         &info);
   if(err){

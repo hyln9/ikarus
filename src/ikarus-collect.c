@@ -178,7 +178,7 @@ gc_alloc_new_large_ptr(int size, gc_t* gc){
   qupages_t* p = ik_malloc(sizeof(qupages_t));
   p->p = mem;
   p->q = mem+size;
-  bzero(mem+size, memreq-size);
+  bzero((char*)(long)(mem+size), memreq-size);
   p->next = gc->queues[meta_ptrs];
   gc->queues[meta_ptrs] = p;
   return mem;
@@ -259,7 +259,7 @@ gc_alloc_new_code(int size, gc_t* gc){
     qupages_t* p = ik_malloc(sizeof(qupages_t));
     p->p = mem;
     p->q = mem+size;
-    bzero(mem+size, memreq-size);
+    bzero((char*)(long)(mem+size), memreq-size);
     p->next = gc->queues[meta_code];
     gc->queues[meta_code] = p;
     return mem;
@@ -294,7 +294,7 @@ gc_tconc_push_extending(gc_t* gc, ikptr tcbucket){
         gc->pcb);
   add_to_collect_count(gc->pcb, pagesize);
   gc->segment_vector = gc->pcb->segment_vector;
-  bzero(ap, pagesize);
+  bzero((char*)(long)ap, pagesize);
   ikptr nap = ap + 2*wordsize;
   gc->tconc_base = ap;
   gc->tconc_ap = nap;
@@ -605,7 +605,7 @@ move_guardian(ikptr x, ik_ptr_page* dst, ik_ptr_page** cache){
     if(y){
       *cache = y->next;
     } else {
-      y = ik_mmap(sizeof(ik_ptr_page));
+      y = (ik_ptr_page*)(long)ik_mmap(sizeof(ik_ptr_page));
     }
     y->count = 0;
     y->next = dst;
@@ -834,7 +834,7 @@ forward_guardians(gc_t* gc){
   collect_loop(gc);
   while(cache){
     ik_ptr_page* next = cache->next;
-    ik_munmap((unsigned char*)cache, sizeof(ik_ptr_page));
+    ik_munmap((ikptr)cache, sizeof(ik_ptr_page));
     cache = next;
   }
 }
@@ -860,19 +860,19 @@ empty_dropped_guardians(gc_t* gc){
         ref(a, off_car) = false_object;
         ref(a, off_cdr) = false_object;
         ref(tc, off_cdr) = a;
-        pcb->dirty_vector[page_index(tc)] = -1;
+        ((int*)(long)pcb->dirty_vector)[page_index(tc)] = -1;
         //pcb->dirty_vector[page_index(d)] = -1;
         {
           int dgen = pcb->segment_vector[page_index(d)] & gen_mask;
           if( (dgen > (pcb->segment_vector[page_index(obj)] & gen_mask)) 
               ||
               (dgen > (pcb->segment_vector[page_index(a)] & gen_mask))){
-            pcb->dirty_vector[page_index(d)] = -1;
+            ((int*)(long)pcb->dirty_vector)[page_index(d)] = -1;
           }
         }
       }
       ik_ptr_page* next = src->next;
-      ik_munmap((unsigned char*) src, sizeof(ik_ptr_page));
+      ik_munmap((ikptr)(long)src, sizeof(ik_ptr_page));
       src = next;
     }
     pcb->guardians_dropped[gen] = 0;
@@ -927,7 +927,9 @@ add_code_entry(gc_t* gc, ikptr entry){
     ref(y, disp_code_reloc_vector) = reloc_vec;
     ref(y, disp_code_freevars) = freevars;
     ref(y, disp_code_annotation) = annotation;
-    memcpy(y+disp_code_data, x+disp_code_data, code_size);
+    memcpy((char*)(long)(y+disp_code_data),
+           (char*)(long)(x+disp_code_data),
+           code_size);
     ref(x, 0) = forward_ptr;
     ref(x, wordsize) = y + vector_tag;
     return y+disp_code_data;
@@ -940,19 +942,19 @@ add_code_entry(gc_t* gc, ikptr entry){
 static void collect_stack(gc_t* gc, ikptr top, ikptr end){
   if(DEBUG_STACK){
     fprintf(stderr, "collecting stack from 0x%016lx .. 0x%016lx\n", 
-        (long int) top, (long int) end);
+        (long) top, (long) end);
   }
   while(top < end){
     if(DEBUG_STACK){
-      fprintf(stderr, "collecting frame at 0x%016lx: ", (long int) top);
+      fprintf(stderr, "collecting frame at 0x%016lx: ", (long) top);
     }
     ikptr rp = ref(top, 0);
     long int rp_offset = unfix(ref(rp, disp_frame_offset));
     if(DEBUG_STACK){
-      fprintf(stderr, "rp_offset=%ld\n", rp_offset);
+      fprintf(stderr, "rp_offset=%ld\n", (long)rp_offset);
     }
     if(rp_offset <= 0){
-      fprintf(stderr, "invalid rp_offset %ld\n", rp_offset);
+      fprintf(stderr, "invalid rp_offset %ld\n", (long)rp_offset);
       exit(-1);
     }
     /* since the return point is alive, we need to find the code
@@ -999,18 +1001,18 @@ static void collect_stack(gc_t* gc, ikptr top, ikptr end){
      *   there is no live mask in this case, instead all values in the
      *   frame are live.
      */
-    long int framesize = (long int) ref(rp, disp_frame_size);
+    long int framesize =  ref(rp, disp_frame_size);
     if(DEBUG_STACK){
-      fprintf(stderr, "fs=%ld\n", framesize);
+      fprintf(stderr, "fs=%ld\n", (long)framesize);
     }
     if(framesize < 0){
-      fprintf(stderr, "invalid frame size %ld\n", framesize);
+      fprintf(stderr, "invalid frame size %ld\n", (long)framesize);
       exit(-1);
     } 
     else if(framesize == 0){
-      framesize = (long int)ref(top, wordsize);
+      framesize = ref(top, wordsize);
       if(framesize <= 0){
-        fprintf(stderr, "invalid redirected framesize=%ld\n", framesize);
+        fprintf(stderr, "invalid redirected framesize=%ld\n", (long)framesize);
         exit(-1);
       }
       ikptr base = top + framesize - wordsize;
@@ -1022,9 +1024,9 @@ static void collect_stack(gc_t* gc, ikptr top, ikptr end){
     } else {
       long int frame_cells = framesize >> fx_shift;
       long int bytes_in_mask = (frame_cells+7) >> 3;
-      char* mask = rp + disp_frame_size  - bytes_in_mask;
+      char* mask = (char*)(long)(rp+disp_frame_size-bytes_in_mask);
   
-      ikptr* fp = (ikptr*)(top + framesize);
+      ikptr* fp = (ikptr*)(long)(top + framesize);
       long int i;
       for(i=0; i<bytes_in_mask; i++, fp-=8){
         unsigned char m = mask[i];
@@ -1084,7 +1086,7 @@ add_list(gc_t* gc, unsigned int t, ikptr x, ikptr* loc){
           return;
         } else {
           x = snd;
-          loc = (ikptr*)(y + off_cdr);
+          loc = (ikptr*)(long)(y + off_cdr);
           /* don't return */
         }
       }
@@ -1158,15 +1160,18 @@ add_object_proc(gc_t* gc, ikptr x)
   }
 #endif
   else if(tag == closure_tag){
-    long int size = disp_closure_data+
-              (long int) ref(fst, disp_code_freevars - disp_code_data);
+    ikptr size = 
+      disp_closure_data +
+      ref(fst, disp_code_freevars - disp_code_data);
     if(size > 1024){
-      fprintf(stderr, "large closure size=0x%016lx\n", size);
+      fprintf(stderr, "large closure size=0x%016lx\n", (long)size);
     }
-    long int asize = align(size);
+    ikptr asize = align(size);
     ikptr y = gc_alloc_new_ptr(asize, gc) + closure_tag;
     ref(y, asize-closure_tag-wordsize) = 0;
-    memcpy(y-closure_tag, x-closure_tag, size);
+    memcpy((char*)(long)(y-closure_tag), 
+           (char*)(long)(x-closure_tag),
+           size);
     ref(y,-closure_tag) = add_code_entry(gc, ref(y,-closure_tag));
     ref(x,-closure_tag) = forward_ptr;
     ref(x,wordsize-closure_tag) = y;
@@ -1179,9 +1184,9 @@ add_object_proc(gc_t* gc, ikptr x)
     if(is_fixnum(fst)){
       /* real vector */
       //fprintf(stderr, "X=0x%08x, FST=0x%08x\n", (int)x, (int)fst);
-      long int size = (long int)fst;
+      ikptr size = fst;
       assert(size >= 0);
-      long int memreq = align(size + disp_vector_data);
+      ikptr memreq = align(size + disp_vector_data);
       if(memreq >= pagesize){
         if((t & large_object_mask) == large_object_tag){
           enqueue_large_ptr(x-vector_tag, size+disp_vector_data, gc);
@@ -1191,7 +1196,9 @@ add_object_proc(gc_t* gc, ikptr x)
                    + vector_tag;
           ref(y, disp_vector_length-vector_tag) = fst;
           ref(y, memreq-vector_tag-wordsize) = 0;
-          memcpy(y+off_vector_data, x+off_vector_data, size);
+          memcpy((char*)(long)(y+off_vector_data),
+                 (char*)(long)(x+off_vector_data),
+                 size);
           ref(x,-vector_tag) = forward_ptr;
           ref(x,wordsize-vector_tag) = y;
           return y;
@@ -1200,7 +1207,9 @@ add_object_proc(gc_t* gc, ikptr x)
         ikptr y = gc_alloc_new_ptr(memreq, gc) + vector_tag;
         ref(y, disp_vector_length-vector_tag) = fst;
         ref(y, memreq-vector_tag-wordsize) = 0;
-        memcpy(y+off_vector_data, x+off_vector_data, size);
+        memcpy((char*)(long)(y+off_vector_data), 
+               (char*)(long)(x+off_vector_data),
+               size);
         ref(x,-vector_tag) = forward_ptr;
         ref(x,wordsize-vector_tag) = y;
         return y;
@@ -1223,7 +1232,7 @@ add_object_proc(gc_t* gc, ikptr x)
     }
     else if(tagof(fst) == rtd_tag){
       /* struct / record */
-      long int size = (long int) ref(fst, off_rtd_length);
+      ikptr size = ref(fst, off_rtd_length);
       if(size & ((1<<align_shift)-1)) {
         /* size = n * object_alignment + 4 =>
            memreq = n * object_alignment + 8 
@@ -1231,7 +1240,7 @@ add_object_proc(gc_t* gc, ikptr x)
         ikptr y = gc_alloc_new_ptr(size+wordsize, gc) + vector_tag;
         ref(y, -vector_tag) = fst;
         {
-          long int i;
+          ikptr i;
           ikptr p = y+disp_record_data-vector_tag;
           ikptr q = x+disp_record_data-vector_tag;
           ref(p, 0) = ref(q, 0);
@@ -1249,7 +1258,7 @@ add_object_proc(gc_t* gc, ikptr x)
         ikptr y = gc_alloc_new_ptr(size+(2*wordsize), gc) + vector_tag;
         ref(y, -vector_tag) = fst;
         {
-          long int i;
+          ikptr i;
           ikptr p = y+disp_record_data-vector_tag;
           ikptr q = x+disp_record_data-vector_tag;
           for(i=0; i<size; i+=(2*wordsize)){
@@ -1270,7 +1279,7 @@ add_object_proc(gc_t* gc, ikptr x)
     } 
     else if(fst == continuation_tag){
       ikptr top = ref(x, off_continuation_top);
-      long int size = (long int) ref(x, off_continuation_size);
+      ikptr size =  ref(x, off_continuation_size);
 #ifndef NDEBUG
       if(size > 4096){
         fprintf(stderr, "large cont size=0x%08x\n", size);
@@ -1281,7 +1290,9 @@ add_object_proc(gc_t* gc, ikptr x)
       ref(x, -vector_tag) = forward_ptr;
       ref(x, wordsize-vector_tag) = y;
       ikptr new_top = gc_alloc_new_data(align(size), gc);
-      memcpy(new_top, top, size);
+      memcpy((char*)(long)new_top, 
+             (char*)(long)top,
+             size);
       collect_stack(gc, new_top, new_top + size);
       ref(y, -vector_tag) = continuation_tag;
       ref(y, off_continuation_top) = new_top;
@@ -1314,7 +1325,7 @@ add_object_proc(gc_t* gc, ikptr x)
     else if((((long int)fst) & port_mask) == port_tag){
       ikptr y = gc_alloc_new_ptr(port_size, gc) + vector_tag;
       ref(y, -vector_tag) = fst;
-      int i;
+      long int i;
       for(i=wordsize; i<port_size; i+=wordsize){
         ref(y, i-vector_tag) = ref(x, i-vector_tag);
       }
@@ -1330,11 +1341,13 @@ add_object_proc(gc_t* gc, ikptr x)
       ref(x, wordsize-vector_tag) = new;
       return new;
     }
-    else if((((long int)fst) & bignum_mask) == bignum_tag){
+    else if((fst & bignum_mask) == bignum_tag){
       long int len = ((unsigned long int)fst) >> bignum_length_shift;
       long int memreq = align(disp_bignum_data + len*wordsize);
       ikptr new = gc_alloc_new_data(memreq, gc) + vector_tag;
-      memcpy(new-vector_tag, x-vector_tag, memreq);
+      memcpy((char*)(long)(new-vector_tag),
+             (char*)(long)(x-vector_tag),
+             memreq);
       ref(x, -vector_tag) = forward_ptr;
       ref(x, wordsize-vector_tag) = new;
       return new;
@@ -1363,8 +1376,8 @@ add_object_proc(gc_t* gc, ikptr x)
       long int memreq = align(strlen*string_char_size + disp_string_data);
       ikptr new_str = gc_alloc_new_data(memreq, gc) + string_tag;
       ref(new_str, off_string_length) = fst;
-      memcpy(new_str+off_string_data,
-             x + off_string_data,
+      memcpy((char*)(long)(new_str+off_string_data),
+             (char*)(long)(x + off_string_data),
              strlen*string_char_size);
       ref(x, -string_tag) = forward_ptr;
       ref(x, wordsize-string_tag) = new_str;
@@ -1384,8 +1397,8 @@ add_object_proc(gc_t* gc, ikptr x)
     long int memreq = align(len + disp_bytevector_data + 1);
     ikptr new_bv = gc_alloc_new_data(memreq, gc) + bytevector_tag;
     ref(new_bv, off_bytevector_length) = fst;
-    memcpy(new_bv+off_bytevector_data,
-           x + off_bytevector_data,
+    memcpy((char*)(long)(new_bv+off_bytevector_data),
+           (char*)(long)(x + off_bytevector_data),
            len + 1);
     ref(x, -bytevector_tag) = forward_ptr;
     ref(x, wordsize-bytevector_tag) = new_bv;
@@ -1402,7 +1415,7 @@ relocate_new_code(ikptr x, gc_t* gc){
   ref(x, disp_code_reloc_vector) = relocvector;
   ref(x, disp_code_annotation) = 
     add_object(gc, ref(x, disp_code_annotation), "annotation");
-  long int relocsize = (long int)ref(relocvector, off_vector_length);
+  ikptr relocsize = ref(relocvector, off_vector_length);
   ikptr p = relocvector + off_vector_data;
   ikptr q = p + relocsize;
   ikptr code = x + disp_code_data;
@@ -1723,8 +1736,8 @@ static unsigned int cleanup_mask[generation_count] = {
 
 static void 
 scan_dirty_pointers_page(gc_t* gc, long int page_idx, int mask){
-  unsigned int* segment_vec = gc->segment_vector;
-  unsigned int* dirty_vec = gc->pcb->dirty_vector;
+  unsigned int* segment_vec = (unsigned int*)(long)gc->segment_vector;
+  unsigned int* dirty_vec = (unsigned int*)(long)gc->pcb->dirty_vector;
   unsigned int t = segment_vec[page_idx];
   unsigned int d = dirty_vec[page_idx];
   unsigned int masked_d = d & mask;
@@ -1755,7 +1768,7 @@ scan_dirty_pointers_page(gc_t* gc, long int page_idx, int mask){
       new_d = new_d | (d & (0xF << (j*meta_dirty_shift)));
     }
   }
-  dirty_vec = gc->pcb->dirty_vector;
+  dirty_vec = (unsigned int*)(long)gc->pcb->dirty_vector;
   new_d = new_d & cleanup_mask[t & gen_mask];
   dirty_vec[page_idx] = new_d;
 }
@@ -1765,8 +1778,8 @@ scan_dirty_code_page(gc_t* gc, long int page_idx, unsigned int mask){
   ikptr p = (ikptr)(page_idx << pageshift);
   ikptr start = p;
   ikptr q = p + pagesize;
-  unsigned int* segment_vec = gc->segment_vector;
-  unsigned int* dirty_vec = gc->pcb->dirty_vector;
+  unsigned int* segment_vec = (unsigned int*)(long)gc->segment_vector;
+  unsigned int* dirty_vec = (unsigned int*)(long)gc->pcb->dirty_vector;
   //unsigned int d = dirty_vec[page_idx];
   unsigned int t = segment_vec[page_idx];
   //unsigned int masked_d = d & mask;
@@ -1781,7 +1794,7 @@ scan_dirty_code_page(gc_t* gc, long int page_idx, unsigned int mask){
       relocate_new_code(p, gc);
       segment_vec = gc->segment_vector;
       ikptr rvec = ref(p, disp_code_reloc_vector);
-      long int len = (long int)ref(rvec, off_vector_length);
+      ikptr len = ref(rvec, off_vector_length);
       assert(len >= 0);
       long int i;
       unsigned long int code_d = segment_vec[page_index(rvec)];
@@ -1799,7 +1812,7 @@ scan_dirty_code_page(gc_t* gc, long int page_idx, unsigned int mask){
       p += align(code_size + disp_code_data);
     }
   }
-  dirty_vec = gc->pcb->dirty_vector;
+  dirty_vec = (unsigned int*)(long)gc->pcb->dirty_vector;
   new_d = new_d & cleanup_mask[t & gen_mask];
   dirty_vec[page_idx] = new_d;
 }
@@ -1811,13 +1824,13 @@ scan_dirty_code_page(gc_t* gc, long int page_idx, unsigned int mask){
 static void
 scan_dirty_pages(gc_t* gc){
   ikpcb* pcb = gc->pcb;
-  int lo_idx = page_index(pcb->memory_base);
-  int hi_idx = page_index(pcb->memory_end);
-  unsigned int* dirty_vec = pcb->dirty_vector;
-  unsigned int* segment_vec = pcb->segment_vector;
+  long int lo_idx = page_index(pcb->memory_base);
+  long int hi_idx = page_index(pcb->memory_end);
+  unsigned int* dirty_vec = (unsigned int*)(long)pcb->dirty_vector;
+  unsigned int* segment_vec = (unsigned int*)(long)pcb->segment_vector;
   int collect_gen = gc->collect_gen;
   unsigned int mask = dirty_mask[collect_gen];
-  int i = lo_idx;
+  long int i = lo_idx;
   while(i < hi_idx){
     unsigned int d = dirty_vec[i];
     if(d & mask){
@@ -1826,24 +1839,24 @@ scan_dirty_pages(gc_t* gc){
         int type = t & type_mask;
         if(type == pointers_type){
           scan_dirty_pointers_page(gc, i, mask);
-          dirty_vec = pcb->dirty_vector;
-          segment_vec = pcb->segment_vector;
+          dirty_vec = (unsigned int*)(long)pcb->dirty_vector;
+          segment_vec = (unsigned int*)(long)pcb->segment_vector;
         }
         else if(type == symbols_type){
           scan_dirty_pointers_page(gc, i, mask);
-          dirty_vec = pcb->dirty_vector;
-          segment_vec = pcb->segment_vector;
+          dirty_vec = (unsigned int*)(long)pcb->dirty_vector;
+          segment_vec = (unsigned int*)(long)pcb->segment_vector;
         }
         else if (type == weak_pairs_type){
           scan_dirty_pointers_page(gc, i, mask);
-          dirty_vec = pcb->dirty_vector;
-          segment_vec = pcb->segment_vector;
+          dirty_vec = (unsigned int*)(long)pcb->dirty_vector;
+          segment_vec = (unsigned int*)(long)pcb->segment_vector;
         }
         else if (type == code_type){
           if((t & gen_mask) > collect_gen){
             scan_dirty_code_page(gc, i, mask);
-            dirty_vec = pcb->dirty_vector;
-            segment_vec = pcb->segment_vector;
+            dirty_vec = (unsigned int*)(long)pcb->dirty_vector;
+            segment_vec = (unsigned int*)(long)pcb->segment_vector;
           }
         }
         else if (t & scannable_mask) {
@@ -1864,11 +1877,11 @@ deallocate_unused_pages(gc_t* gc){
   ikpcb* pcb = gc->pcb;
   int collect_gen =  gc->collect_gen;
   unsigned int* segment_vec = pcb->segment_vector;
-  char* memory_base = pcb->memory_base;
-  char* memory_end = pcb->memory_end;
-  long int lo_idx = page_index(memory_base);
-  long int hi_idx = page_index(memory_end);
-  long int i = lo_idx;
+  ikptr memory_base = pcb->memory_base;
+  ikptr memory_end = pcb->memory_end;
+  ikptr lo_idx = page_index(memory_base);
+  ikptr hi_idx = page_index(memory_end);
+  ikptr i = lo_idx;
   while(i < hi_idx){
     unsigned int t = segment_vec[i];
     if(t & dealloc_mask){
@@ -1878,7 +1891,7 @@ deallocate_unused_pages(gc_t* gc){
         if(t & new_gen_mask){
           /* do nothing yet */
         } else {
-          ik_munmap_from_segment((char*)(i<<pageshift),pagesize,pcb);
+          ik_munmap_from_segment((ikptr)(i<<pageshift),pagesize,pcb);
         }
       }
     }
@@ -1891,11 +1904,11 @@ static void
 fix_new_pages(gc_t* gc){
   ikpcb* pcb = gc->pcb;
   unsigned int* segment_vec = pcb->segment_vector;
-  char* memory_base = pcb->memory_base;
-  char* memory_end = pcb->memory_end;
-  int lo_idx = page_index(memory_base);
-  int hi_idx = page_index(memory_end);
-  int i = lo_idx;
+  ikptr memory_base = pcb->memory_base;
+  ikptr memory_end = pcb->memory_end;
+  ikptr lo_idx = page_index(memory_base);
+  ikptr hi_idx = page_index(memory_end);
+  ikptr i = lo_idx;
   while(i < hi_idx){
     segment_vec[i] &= ~new_gen_mask;
     /*
@@ -1922,8 +1935,8 @@ add_one_tconc(ikpcb* pcb, ikptr p){
   ref(new_pair, off_cdr) = false_object;
   ref(tc, off_cdr) = new_pair;
   ref(tcbucket, -vector_tag) = (ikptr)(tcbucket_size - wordsize);
-  pcb->dirty_vector[page_index(tc)] = -1;
-  pcb->dirty_vector[page_index(d)] = -1;
+  ((int*)(long)pcb->dirty_vector)[page_index(tc)] = -1;
+  ((int*)(long)pcb->dirty_vector)[page_index(d)] = -1;
 }
 
 static void
