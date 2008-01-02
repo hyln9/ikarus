@@ -16,7 +16,7 @@
 
 
 (library (ikarus intel-assembler)
-  (export assemble-sources code-entry-adjustment)
+  (export instruction-size assemble-sources code-entry-adjustment)
   (import 
     (ikarus)
     (rnrs bytevectors)
@@ -351,6 +351,8 @@
             (if (fx= (length args) n)
                 (apply proc a ac args)
                 (die 'convert-instruction "incorrect args" a))])))]
+    [(eq? (car a) 'seq) 
+     (fold convert-instruction ac (cdr a))]
     [else (die 'convert-instruction "unknown instruction" a)]))
 
 (define (RM /d dst ac)
@@ -908,17 +910,15 @@
           [else (die 'whack-reloc "invalid reloc type" type)]))
       )))
 
+  (define (instruction-size x)
+    (unless (and (pair? x) (getprop (car x) *cogen*))
+      (die 'instruction-size "not an instruction" x))
+    ;;; limitations: does not work if the instruction contains 
+    ;;; a jump to a local label, and the jump is later optimized
+    ;;; to a short jump.
+    (compute-code-size
+      (convert-instruction x '())))
 
-;;; (define list->code
-;;;   (lambda (ls)
-;;;     (let ([ls (convert-instructions ls)])
-;;;       (let ([n (compute-code-size ls)]
-;;;             [m (compute-reloc-size ls)])
-;;;         (let ([x (make-code n m 1)])
-;;;           (let ([reloc* (whack-instructions x ls)])
-;;;             (for-each (whack-reloc x) reloc*))
-;;;           (make-code-executable! x)
-;;;           x)))))
 
   (define assemble-sources
     (lambda (thunk?-label ls*)

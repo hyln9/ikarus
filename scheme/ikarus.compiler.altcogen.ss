@@ -14,7 +14,7 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-(module (alt-cogen)
+(module (alt-cogen compile-call-frame)
 ;;; input to cogen is <Program>:
 ;;;  <Expr> ::= (constant x)
 ;;;           | (var)
@@ -2343,6 +2343,24 @@
 
 
 
+           
+(define (compile-call-frame framesize livemask-vec multiarg-rp call-sequence)
+  (let ([L_CALL (label (gensym))]
+        [padding 
+         (- call-instruction-size
+            (instruction-size call-sequence))])
+    (when (< padding 0) 
+      (error 'compile-call-frame "call sequence too long" call-sequence))
+    (list 'seq
+      (jmp L_CALL) 
+      `(byte-vector ,livemask-vec)
+      `(int ,framesize)
+      '(current-frame-offset)
+      multiarg-rp
+      `(byte-vector ,(make-vector padding 0))
+      L_CALL
+      call-sequence)))
+ 
 
 
 (define (flatten-codes x)
@@ -2448,43 +2466,30 @@
            [(string? target) ;; foreign call
             (cons* `(subl ,(* (fxsub1 size) wordsize) ,fpr)
                    `(movl (foreign-label "ik_foreign_call") %ebx)
-                   `(jmp ,LCALL)
-                   `(byte-vector ,mask)
-                   `(int ,(* size wordsize))
-                   `(current-frame-offset)
-                   (rp-label value)
-                   ;;; FIXME: hardcoded number of bytes
-                   '(byte 0)
-                   '(byte 0)
-                   '(byte 0)
-                   LCALL
-                   `(call %ebx)
+                   (compile-call-frame 
+                      (* size wordsize)
+                      mask
+                      (rp-label value)
+                      `(call %ebx))
                    `(addl ,(* (fxsub1 size) wordsize) ,fpr)
                    ac)]
            [target ;;; known call
             (cons* `(subl ,(* (fxsub1 size) wordsize) ,fpr)
-                   `(jmp ,LCALL)
-                   `(byte-vector ,mask)
-                   `(int ,(* size wordsize))
-                   `(current-frame-offset)
-                   (rp-label value)
-                   ;;; FIXME: hardcoded number of bytes
-                   LCALL
-                   `(call (label ,target))
+                   (compile-call-frame 
+                      (* size wordsize)
+                      mask
+                      (rp-label value)
+                      `(call (label ,target)))
                    `(addl ,(* (fxsub1 size) wordsize) ,fpr)
                    ac)]
            [else
             (cons* `(subl ,(* (fxsub1 size) wordsize) ,fpr)
-                   `(jmp ,LCALL)
-                   `(byte-vector ,mask)
-                   `(int ,(* size wordsize))
-                   `(current-frame-offset)
-                   (rp-label value)
-                   ;;; FIXME: hardcoded number of bytes
-                   '(byte 0)
-                   '(byte 0)
-                   LCALL
-                   `(call (disp ,(fx- disp-closure-code closure-tag) ,cp-register))
+                   (compile-call-frame 
+                      (* size wordsize)
+                      mask
+                      (rp-label value)
+                      `(call (disp ,(fx- disp-closure-code closure-tag)
+                                   ,cp-register)))
                    `(addl ,(* (fxsub1 size) wordsize) ,fpr)
                    ac)]))]
       [(asm-instr op d s)
@@ -2728,7 +2733,6 @@
     (define LOOP_HEAD (unique-label))
     (define L_CALL (unique-label))
     (cons* (cmpl (int (argc-convention (fxsub1 fml-count))) eax)
-           ;(jg (label SL_invalid_args))
            (jl CONS_LABEL)
            (movl (int nil) ebx)
            (jmp DONE_LABEL)
@@ -2749,16 +2753,7 @@
            (movl eax (mem (fx* -2 wordsize) fpr)) ; pass it as first arg
            (movl (int (argc-convention 1)) eax) ; setup argc
            (movl (primref-loc 'do-vararg-overflow) cpr) ; load handler
-           (jmp L_CALL)   ; go to overflow handler
-           ; NEW FRAME
-           '(int 0)        ; if the framesize=0, then the framesize is dynamic
-           '(current-frame-offset)
-           '(int 0)        ; multiarg rp
-           ;;; FIXME: hardcoded number of bytes
-           (byte 0)
-           (byte 0)
-           L_CALL
-           (indirect-cpr-call)
+           (compile-call-frame 0 '#() '(int 0) (indirect-cpr-call))
            (popl eax)     ; pop framesize and drop it
            (popl eax)     ; reload argc
            (popl cpr)     ; reload cp
