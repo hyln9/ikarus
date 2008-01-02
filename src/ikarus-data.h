@@ -312,7 +312,7 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 //  ((((unsigned char*)(x)) + off_string_data + (int)(i))[0] = 
 //   (((int)(c)) >> IK_CHAR_SHIFT))
 #define string_set(x,i,c) \
-  (((ikchar*)(((ikptr)(x)) + off_string_data))[i] = ((ikchar)(c)))
+  (((ikchar*)(((long)(x)) + off_string_data))[i] = ((ikchar)(c)))
 #define integer_to_char(x) \
   ((ikchar)((((int)(x)) << IK_CHAR_SHIFT) + IK_CHAR_TAG))
 #define string_char_size 4

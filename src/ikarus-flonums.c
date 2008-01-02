@@ -47,7 +47,7 @@ ikrt_flfl_expt(ikptr a, ikptr b, ikptr z){
 
 ikptr
 ikrt_bytevector_to_flonum(ikptr x, ikpcb* pcb){
-  double v = strtod((char*)x+off_bytevector_data, NULL);
+  double v = strtod((char*)(long)x+off_bytevector_data, NULL);
   ikptr r = ik_unsafe_alloc(pcb, flonum_size) + vector_tag;
   ref(r, -vector_tag) = (ikptr)flonum_tag;
   flonum_data(r) = v;

@@ -27,7 +27,7 @@ make_symbol_table(ikpcb* pcb){
   #define NUM_OF_BUCKETS 4096 /* power of 2 */
   int size = align_to_next_page(disp_vector_data + NUM_OF_BUCKETS * wordsize);
   ikptr st = ik_mmap_ptr(size, 0, pcb) + vector_tag;
-  bzero((char*)st-vector_tag, size);
+  bzero((char*)(long)st-vector_tag, size);
   ref(st, off_vector_length) = fix(NUM_OF_BUCKETS);
   return st;
 }
@@ -35,7 +35,7 @@ make_symbol_table(ikpcb* pcb){
 static long int 
 compute_hash(ikptr str){
   long int len = unfix(ref(str, off_string_length));
-  char* data = (char*) str + off_string_data;
+  char* data = (char*)(long) str + off_string_data;
   long int h = len;
   char* last = data + len * string_char_size;
   while(data < last){
@@ -60,8 +60,8 @@ static int strings_eqp(ikptr str1, ikptr str2){
   ikptr len = ref(str1, off_string_length);
   if(len == ref(str2, off_string_length)){
     return
-      (memcmp((char*)str1+off_string_data, 
-              (char*)str2+off_string_data, 
+      (memcmp((char*)(long)str1+off_string_data, 
+              (char*)(long)str2+off_string_data, 
               unfix(len) * string_char_size)
        == 0);
   }

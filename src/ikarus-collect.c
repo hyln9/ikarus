@@ -834,7 +834,7 @@ forward_guardians(gc_t* gc){
   collect_loop(gc);
   while(cache){
     ik_ptr_page* next = cache->next;
-    ik_munmap((ikptr)cache, sizeof(ik_ptr_page));
+    ik_munmap((ikptr)(long)cache, sizeof(ik_ptr_page));
     cache = next;
   }
 }

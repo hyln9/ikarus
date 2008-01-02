@@ -64,7 +64,7 @@ extend_table_maybe(ikptr p, int size, ikpcb* pcb){
     memcpy((char*)(long)(v+new_vec_size-old_vec_size),
            (char*)(long)pcb->dirty_vector_base, 
            old_vec_size);
-    ik_munmap((ikptr)pcb->dirty_vector_base, old_vec_size);
+    ik_munmap((ikptr)(long)pcb->dirty_vector_base, old_vec_size);
     pcb->dirty_vector_base = (unsigned int*)(long)v;
     pcb->dirty_vector = (v - new_lo * pagesize);
     ikptr s = ik_mmap(new_vec_size);
@@ -916,7 +916,8 @@ ikrt_getenv(ikptr bv, ikpcb* pcb){
 
 ikptr 
 ikrt_make_vector1(ikptr len, ikpcb* pcb){
-  if(is_fixnum(len) && (((long int)len) >= 0)){
+  int intlen = (int)len;
+  if(is_fixnum(len) && (intlen >= 0)){
     ikptr s = ik_safe_alloc(pcb, align(len + disp_vector_data));
     ref(s, 0) = len;
     memset((char*)(long)(s+disp_vector_data), 0, len);

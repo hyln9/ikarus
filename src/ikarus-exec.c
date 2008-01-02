@@ -57,10 +57,10 @@ ikptr ik_exec_code(ikpcb* pcb, ikptr code_ptr){
     pcb->next_k = k->next;
     ikptr fbase = pcb->frame_base - wordsize;
     ikptr new_fbase = fbase - framesize;
-    memmove((char*)new_fbase + argc,
-            (char*)fbase + argc,
+    memmove((char*)(long)new_fbase + argc,
+            (char*)(long)fbase + argc,
             -argc);
-    memcpy((char*)new_fbase, (char*)top, framesize);
+    memcpy((char*)(long)new_fbase, (char*)(long)top, framesize);
     argc = ik_asm_reenter(pcb, new_fbase, argc);
     next_k =  pcb->next_k;
   }

@@ -98,7 +98,7 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
     p.code_ep = 0;
     ikptr v = ik_fasl_read(pcb, &p);
     if(p.marks_size){
-      ik_munmap((ikptr) p.marks, p.marks_size*sizeof(ikptr*));
+      ik_munmap((ikptr)(long)p.marks, p.marks_size*sizeof(ikptr*));
       p.marks = 0;
       p.marks_size = 0;
     }
@@ -195,7 +195,7 @@ ik_relocate_code(ikptr code){
       ikptr str = ref(p, wordsize);
       char* name;
       if(tagof(str) == bytevector_tag){
-        name = (char*) str + off_bytevector_data;
+        name = (char*)(long) str + off_bytevector_data;
       } else {
         fprintf(stderr, "foreign name is not a bytevector\n");
         exit(-1);
@@ -207,7 +207,7 @@ ik_relocate_code(ikptr code){
         fprintf(stderr, "failed to find foreign name %s: %s\n", name, err);
         exit(-1);
       }
-      ref(data,code_off) = (ikptr)sym;
+      ref(data,code_off) = (ikptr)(long)sym;
       p += (2*wordsize);
     }
     else {
@@ -273,7 +273,7 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
     }
     else {
       /* allocate marks */
-      p->marks = (ikptr*)ik_mmap(pagesize*sizeof(ikptr*));
+      p->marks = (ikptr*)(long)ik_mmap(pagesize*sizeof(ikptr*));
       bzero(p->marks, pagesize*sizeof(ikptr*));
       p->marks_size = pagesize;
     }
@@ -289,7 +289,7 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
     ref(code, disp_code_code_size) = fix(code_size);
     ref(code, disp_code_freevars) = freevars;
     ref(code, disp_code_annotation) = annotation;
-    fasl_read_buf(p, (void*)code+disp_code_data, code_size);
+    fasl_read_buf(p, (void*)(long)code+disp_code_data, code_size);
     if(put_mark_index){
       p->marks[put_mark_index] = code+vector_tag;
     }
@@ -322,7 +322,7 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
     int size = align(len*string_char_size + disp_string_data);
     ikptr str = ik_unsafe_alloc(pcb, size) + string_tag;
     ref(str, off_string_length) = fix(len);
-    fasl_read_buf(p, (char*)str+off_string_data, len);
+    fasl_read_buf(p, (char*)(long)str+off_string_data, len);
     {
       unsigned char* pi = (unsigned char*)(long)(str+off_string_data);
       ikchar* pj = (ikchar*)(long)(str+off_string_data);

@@ -59,7 +59,7 @@ verify_code(char* x, char* base, unsigned int* svec, unsigned int* dvec){
   assert(isa_fixnum(freevars));
   assert(unfix(freevars) >= 0);
 
-  unsigned int rs = svec[page_idx((void*)rvec) - page_idx(base)];
+  unsigned int rs = svec[page_idx((void*)(long)rvec) - page_idx(base)];
   unsigned int cs = svec[page_idx(x) - page_idx(base)];
   int cgen = cs&gen_mask;
   int rgen = rs&gen_mask;
@@ -122,7 +122,7 @@ verify_code_page(char* p, unsigned int s, unsigned int d,
   fst += 0;
   if(fst != code_tag){
     fprintf(stderr, "non code object with tag %p found\n", 
-        (void*)fst);
+        (void*)(long)fst);
     exit(-1);
   }
   int code_size = unfix(ref(p, disp_code_code_size));
@@ -199,8 +199,8 @@ verify_page(char* p, char* base, unsigned int* svec, unsigned int* dvec){
 void
 verify_integrity(ikpcb* pcb, char* where){
   fprintf(stderr, "verifying in %s...\n", where);
-  char* mem_base = (char*)pcb->memory_base;
-  char* mem_end = (char*)pcb->memory_end;
+  char* mem_base = (char*)(long)pcb->memory_base;
+  char* mem_end = (char*)(long)pcb->memory_end;
   unsigned int* seg_vec = pcb->segment_vector_base;
   unsigned int* dir_vec = pcb->dirty_vector_base;
   char* mem = mem_base;
