@@ -2453,6 +2453,7 @@
                    `(int ,(* size wordsize))
                    `(current-frame-offset)
                    (rp-label value)
+                   ;;; FIXME: hardcoded number of bytes
                    '(byte 0)
                    '(byte 0)
                    '(byte 0)
@@ -2467,6 +2468,7 @@
                    `(int ,(* size wordsize))
                    `(current-frame-offset)
                    (rp-label value)
+                   ;;; FIXME: hardcoded number of bytes
                    LCALL
                    `(call (label ,target))
                    `(addl ,(* (fxsub1 size) wordsize) ,fpr)
@@ -2478,6 +2480,7 @@
                    `(int ,(* size wordsize))
                    `(current-frame-offset)
                    (rp-label value)
+                   ;;; FIXME: hardcoded number of bytes
                    '(byte 0)
                    '(byte 0)
                    LCALL
@@ -2577,11 +2580,6 @@
              (set-cdr! tc (append hand (cdr tc)))))
          (parameterize ([exception-label L])
            (E body (cons L2 ac))))]
-      ;[(shortcut body handler) 
-      ; (let ([L (unique-label)] [L2 (unique-label)])
-      ;   (let ([ac (cons L (E handler (cons L2 ac)))])
-      ;     (parameterize ([exception-label L])
-      ;        (E body (cons `(jmp ,L2) ac)))))]
       [else (error who "invalid effect" (unparse x))]))
   ;;;
   (define (unique-interrupt-label)
@@ -2756,6 +2754,7 @@
            '(int 0)        ; if the framesize=0, then the framesize is dynamic
            '(current-frame-offset)
            '(int 0)        ; multiarg rp
+           ;;; FIXME: hardcoded number of bytes
            (byte 0)
            (byte 0)
            L_CALL

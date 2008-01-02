@@ -1987,9 +1987,14 @@
   (define record-pmask 7)
   (define disp-struct-rtd     0)
   (define disp-struct-data    wordsize)
-  (define disp-frame-size    -17) ;; OUCH
-  (define disp-frame-offset  -13) ;; OUCH
-  (define disp-multivalue-rp  -9) ;; OUCH
+
+  ;;; refer to the picture in src/ikarus-collect.c for details
+  ;;; on how call-frames are laid out.  (search for livemask)
+  (define call-instruction-size 5)
+  (define disp-frame-size    (- (+ call-instruction-size (* 3 wordsize))))
+  (define disp-frame-offset  (- (+ call-instruction-size (* 2 wordsize))))
+  (define disp-multivalue-rp (- (+ call-instruction-size (* 1 wordsize))))
+
   (define dirty-word -1))
 
 ;(define pcb-allocation-pointer    (*  0 wordsize)) NOT USED
@@ -2324,6 +2329,7 @@
               `(int ,(fx* wordsize 3))
                '(current-frame-offset)
               (label-address L_cwv_multi_rp)
+              ;;; FIXME: hardcoded number of bytes
               (byte 0)
               (byte 0)
               (label L_cwv_call)
