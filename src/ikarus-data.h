@@ -215,11 +215,12 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 
 #define code_pri_tag vector_tag
 #define code_tag                  ((ikptr)0x2F)
-#define disp_code_code_size 4
-#define disp_code_reloc_vector 8
-#define disp_code_freevars 12
-#define disp_code_annotation 16
-#define disp_code_data 24
+#define disp_code_code_size      (1 * wordsize)
+#define disp_code_reloc_vector   (2 * wordsize)
+#define disp_code_freevars       (3 * wordsize)
+#define disp_code_annotation     (4 * wordsize)
+#define disp_code_unused         (5 * wordsize)
+#define disp_code_data           (6 * wordsize)
 #define off_code_annotation (disp_code_annotation - code_pri_tag)
 #define off_code_data (disp_code_data - code_pri_tag)
 #define off_code_reloc_vector (disp_code_reloc_vector - code_pri_tag)
@@ -296,21 +297,17 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define IK_OFF_CAR    (IK_DISP_CAR - IK_PAIR_TAG)
 #define IK_OFF_CDR    (IK_DISP_CDR - IK_PAIR_TAG)
 #define IK_HEAP_EXT_SIZE  (32 * 4096)
-#define IK_HEAPSIZE (1024 * 4096) /* 4 MB */
+#define IK_HEAPSIZE       (1024 * 4096) /* 4 MB */
 #define IK_PAIRP(x)   (IK_PTAG(x) == IK_PAIR_TAG)
 #define IK_CHARP(x)   (IK_MASK(x,IK_CHAR_MASK) == IK_CHAR_TAG)
 #define is_char(x)   (IK_MASK(x,IK_CHAR_MASK) == IK_CHAR_TAG)
 #define IK_STRING_TAG     6
 #define string_tag        6
 #define disp_string_length    0
-#define disp_string_data      4
+#define disp_string_data      wordsize
 #define off_string_length (disp_string_length - string_tag)
 #define off_string_data (disp_string_data - string_tag)
 
-//#define string_data(x)  ((char*)((x) + off_string_data))
-//#define string_set(x,i,c) 
-//  ((((unsigned char*)(x)) + off_string_data + (int)(i))[0] = 
-//   (((int)(c)) >> IK_CHAR_SHIFT))
 #define string_set(x,i,c) \
   (((ikchar*)(((long)(x)) + off_string_data))[i] = ((ikchar)(c)))
 #define integer_to_char(x) \
@@ -319,31 +316,9 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 
 #define vector_tag 5
 #define disp_vector_length 0
-#define disp_vector_data 4
+#define disp_vector_data   wordsize
 #define off_vector_data (disp_vector_data - vector_tag)
 #define off_vector_length (disp_vector_length - vector_tag)
-
-
-#if 0
-#define symbol_tag    2
-#define disp_symbol_string        0
-#define disp_symbol_ustring       4
-#define disp_symbol_value         8
-#define disp_symbol_plist        12 
-#define disp_symbol_system_value 16
-#define disp_symbol_code 20
-#define disp_symbol_errcode 24
-#define disp_symbol_unused 28
-#define symbol_size  32
-#define off_symbol_string (disp_symbol_string - symbol_tag)
-#define off_symbol_ustring (disp_symbol_ustring - symbol_tag)
-#define off_symbol_value (disp_symbol_value - symbol_tag)
-#define off_symbol_plist (disp_symbol_plist - symbol_tag)
-#define off_symbol_system_value (disp_symbol_system_value - symbol_tag)
-#define off_symbol_code (disp_symbol_code - symbol_tag)
-#define off_symbol_errcode (disp_symbol_errcode - symbol_tag)
-#define off_symbol_unused (disp_symbol_unused - symbol_tag)
-#endif
 
 #define bytevector_tag 2
 #define disp_bytevector_length 0
@@ -352,12 +327,12 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define off_bytevector_data (disp_bytevector_data - bytevector_tag)
 
 #define symbol_record_tag ((ikptr) 0x5F)
-#define disp_symbol_record_string   4
-#define disp_symbol_record_ustring  8
-#define disp_symbol_record_value   12
-#define disp_symbol_record_proc    16
-#define disp_symbol_record_plist   20
-#define symbol_record_size         24
+#define disp_symbol_record_string   (1 * wordsize)
+#define disp_symbol_record_ustring  (2 * wordsize)
+#define disp_symbol_record_value    (3 * wordsize)
+#define disp_symbol_record_proc     (4 * wordsize)
+#define disp_symbol_record_plist    (5 * wordsize)
+#define symbol_record_size          (6 * wordsize)
 #define off_symbol_record_string  (disp_symbol_record_string  - record_tag) 
 #define off_symbol_record_ustring (disp_symbol_record_ustring - record_tag) 
 #define off_symbol_record_value   (disp_symbol_record_value   - record_tag) 
@@ -368,7 +343,7 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define closure_tag  3
 #define closure_mask 7
 #define disp_closure_code 0
-#define disp_closure_data 4
+#define disp_closure_data wordsize
 #define off_closure_code (disp_closure_code - closure_tag)
 #define off_closure_data (disp_closure_data - closure_tag)
 
@@ -378,18 +353,18 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 
 #define record_tag vector_tag
 #define disp_record_rtd 0
-#define disp_record_data 4
+#define disp_record_data wordsize
 #define off_record_rtd  (disp_record_rtd  - record_tag)
 #define off_record_data (disp_record_data - record_tag)
 
 #define rtd_tag record_tag
 #define disp_rtd_rtd      0
-#define disp_rtd_name     4
-#define disp_rtd_length   8
-#define disp_rtd_fields  12
-#define disp_rtd_printer 16
-#define disp_rtd_symbol  20
-#define rtd_size 24
+#define disp_rtd_name     (1 * wordsize)
+#define disp_rtd_length   (2 * wordsize)
+#define disp_rtd_fields   (3 * wordsize)
+#define disp_rtd_printer  (4 * wordsize)
+#define disp_rtd_symbol   (5 * wordsize)
+#define rtd_size          (6 * wordsize)
 
 #define off_rtd_rtd     (disp_rtd_rtd     - rtd_tag) 
 #define off_rtd_name    (disp_rtd_name    - rtd_tag) 
@@ -399,10 +374,10 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define off_rtd_symbol  (disp_rtd_symbol  - rtd_tag) 
 
 #define continuation_tag      ((ikptr)0x1F)
-#define disp_continuation_top   4
-#define disp_continuation_size  8
-#define disp_continuation_next 12
-#define continuation_size 16
+#define disp_continuation_top   (1 * wordsize)
+#define disp_continuation_size  (2 * wordsize)
+#define disp_continuation_next  (3 * wordsize)
+#define continuation_size       (4 * wordsize)
 
 #define off_continuation_top   (disp_continuation_top  - vector_tag) 
 #define off_continuation_size  (disp_continuation_size - vector_tag)
@@ -415,17 +390,17 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define align_to_prev_page(x) \
   ((((unsigned long int)(x)) >> pageshift) << pageshift)
 
-#define disp_frame_size -17
+#define disp_frame_size -17 // FIXME
 
 #define port_tag      0x3F
 #define port_mask     0x3F
-#define port_size       56
+#define port_size       (14 * wordsize)
 
-#define disp_tcbucket_tconc        0
-#define disp_tcbucket_key          4
-#define disp_tcbucket_val          8
-#define disp_tcbucket_next        12
-#define tcbucket_size             16
+#define disp_tcbucket_tconc        (0 * wordsize)
+#define disp_tcbucket_key          (1 * wordsize)
+#define disp_tcbucket_val          (2 * wordsize)
+#define disp_tcbucket_next         (3 * wordsize)
+#define tcbucket_size              (4 * wordsize)
 #define off_tcbucket_tconc       (disp_tcbucket_tconc - vector_tag)
 #define off_tcbucket_key         (disp_tcbucket_key   - vector_tag)
 #define off_tcbucket_val         (disp_tcbucket_val   - vector_tag)
@@ -442,15 +417,15 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 
 #define flonum_tag  ((ikptr)0x17)
 #define flonum_size         16
-#define disp_flonum_data     8
+#define disp_flonum_data     8 /* not wordsize */
 #define off_flonum_data (disp_flonum_data - vector_tag)
 #define flonum_data(x) (*((double*)(((char*)(long)(x))+off_flonum_data)))
 
-#define ratnum_tag  ((ikptr) 0x27)
-#define ratnum_size        16
-#define disp_ratnum_num     4
-#define disp_ratnum_den     8
-#define disp_ratnum_unused 12
+#define ratnum_tag           ((ikptr) 0x27)
+#define disp_ratnum_num     (1 * wordsize)
+#define disp_ratnum_den     (2 * wordsize)
+#define disp_ratnum_unused  (3 * wordsize)
+#define ratnum_size         (4 * wordsize)
 
 #define ik_eof_p(x) ((x) == ik_eof_object)
 #define page_index(x) (((unsigned long int)(x)) >> pageshift)
