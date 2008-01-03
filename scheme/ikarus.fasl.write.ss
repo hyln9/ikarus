@@ -29,7 +29,33 @@
     (ikarus system $bignums)
     (except (ikarus code-objects) procedure-annotation)
     (except (ikarus) fasl-write write-byte))
-  
+ 
+  (module (wordsize)
+    (include "ikarus.config.ss"))
+
+  (define-syntax fxshift 
+    (identifier-syntax
+      (case wordsize
+        [(4) 2]
+        [(8) 3]
+        [else (error 'fxshift "invalid wordsize" wordsize)])))
+
+  (define-syntax intbits (identifier-syntax (* wordsize 8)))
+
+  (define-syntax fxbits (identifier-syntax (- intbits fxshift)))
+
+  (define (fx? x)
+    (and (or (fixnum? x) (bignum? x)) 
+         (<= (- (expt 2 (- fxbits 1)))
+             x
+             (- (expt 2 (- fxbits 1)) 1))))
+ 
+  (define (int? x) 
+    (and (or (fixnum? x) (bignum? x)) 
+         (<= (- (expt 2 (- intbits 1))) 
+             x
+             (- (expt 2 (- intbits 1)) 1))))
+
   (define-syntax write-byte
     (syntax-rules ()
       [(_ byte port)
@@ -38,27 +64,26 @@
   (define (put-tag c p)
     (write-byte (char->integer c) p))
   
-  (define write-fixnum 
-    (lambda (x p)
-      (unless (fixnum? x) (die 'write-fixnum "not a fixnum" x))
-      (write-byte (fxsll (fxlogand x #x3F) 2) p)
-      (write-byte (fxlogand (fxsra x 6) #xFF) p)
-      (write-byte (fxlogand (fxsra x 14) #xFF) p)
-      (write-byte (fxlogand (fxsra x 22) #xFF) p)))
   (define write-int 
     (lambda (x p)
-      (unless (fixnum? x) (die 'write-int "not a fixnum" x))
-      (write-byte (fxlogand x #xFF) p)
-      (write-byte (fxlogand (fxsra x 8) #xFF) p)
-      (write-byte (fxlogand (fxsra x 16) #xFF) p)
-      (write-byte (fxlogand (fxsra x 24) #xFF) p)))
+      (unless (int? x) (die 'write-int "not a int" x))
+      (write-byte (bitwise-and x #xFF) p)
+      (write-byte (bitwise-and (sra x 8) #xFF) p)
+      (write-byte (bitwise-and (sra x 16) #xFF) p)
+      (write-byte (bitwise-and (sra x 24) #xFF) p)
+      (when (eqv? wordsize 8)
+        (write-byte (bitwise-and (sra x 32) #xFF) p)
+        (write-byte (bitwise-and (sra x 40) #xFF) p)
+        (write-byte (bitwise-and (sra x 48) #xFF) p)
+        (write-byte (bitwise-and (sra x 56) #xFF) p))))
+
   (define fasl-write-immediate
     (lambda (x p)
       (cond
         [(null? x) (put-tag #\N p)]
-        [(fixnum? x) 
+        [(fx? x)
          (put-tag #\I p)
-         (write-fixnum x p)]
+         (write-int (bitwise-arithmetic-shift-left x fxshift) p)]
         [(char? x)
          (let ([n ($char->fixnum x)])
            (if ($fx<= n 255)
@@ -152,7 +177,10 @@
         [(code? x)
          (put-tag #\x p)
          (write-int (code-size x) p)
-         (write-fixnum (code-freevars x) p)
+         (write-int (bitwise-arithmetic-shift-left
+                      (code-freevars x)
+                      fxshift)
+                    p)
          (let ([m (fasl-write-object ($code-annotation x) p h m)])
            (let f ([i 0] [n (code-size x)])
              (unless (fx= i n)
@@ -315,7 +343,7 @@
          (put-tag #\I port)
          (put-tag #\K port)
          (put-tag #\0 port)
-         (put-tag #\1 port)
+         (put-tag (if (= wordsize 4) #\1 #\2) port)
          (fasl-write-object x port h 1)
          (void))))
   (define fasl-write

@@ -29,9 +29,9 @@ case "$target_os" in
 
 
 AC_CHECK_SIZEOF(void *)
-if (test $ac_cv_sizeof_void_p != 4); then
-  AC_MSG_ERROR([Ikarus can only run in 32-bit mode.])
-fi
+# if (test $ac_cv_sizeof_void_p != 4); then
+#   AC_MSG_ERROR([Ikarus can only run in 32-bit mode.])
+# fi
 
 # Checks for libraries.
 AC_SEARCH_LIBS(dlsym, dl,, [AC_MSG_ERROR([Cannot find libdl])])

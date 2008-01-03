@@ -25,8 +25,10 @@
     (only (ikarus system $codes) $code->closure)
     (only (ikarus system $structs) $struct-ref $struct/rtd?)
     (except (ikarus)
+        fasl-write
         compile-core-expr-to-port assembler-output
         current-primitive-locations eval-core)
+    (ikarus fasl write)
     (ikarus intel-assembler))
 
 
@@ -807,6 +809,7 @@
   (define (mk-seq e0 e1)  ;;; keep e1 seq-free.
     (cond
       [(and (primcall? e0) (eq? (primcall-op e0) 'void)) e1]
+      [(or (constant? e0) (primref? e0)) e1]
       [(seq? e1)
        (make-seq (make-seq e0 (seq-e0 e1)) (seq-e1 e1))]
       [else
@@ -1083,6 +1086,65 @@
                                (make-funcall (make-primref op)
                                   (list (make-constant v0) a1))))))
                     (make-funcall (make-primref op) rand*))))
+         (giveup))]
+    [(-)
+     (or (and (>= (length rand*) 1)
+              (andmap 
+                (lambda (x) 
+                  (constant-value x number?))
+                rand*)
+              (begin 
+                (let ([r (apply - 
+                           (map (lambda (x)
+                                  (constant-value x 
+                                    (lambda (v) v)))
+                                rand*))])
+                  (let f ([rand* rand*])
+                    (cond
+                      [(null? rand*) (make-constant r)]
+                      [else
+                       (mk-seq (car rand*) (f (cdr rand*)))])))))
+         (giveup))]
+    [(+ *)
+     (or (and (>= (length rand*) 0)
+              (andmap 
+                (lambda (x) 
+                  (constant-value x number?))
+                rand*)
+              (begin 
+                (let ([r (apply 
+                           (case op
+                             [(+) +]
+                             [(*) *]
+                             [else (error 'ikarus "BUG: no prim" op)])
+                           (map (lambda (x)
+                                  (constant-value x 
+                                    (lambda (v) v)))
+                                rand*))])
+                  (let f ([rand* rand*])
+                    (cond
+                      [(null? rand*) (make-constant r)]
+                      [else
+                       (mk-seq (car rand*) (f (cdr rand*)))])))))
+         (giveup))]
+    [(expt)
+     (or (and (= (length rand*) 2)
+              (andmap 
+                (lambda (x) 
+                  (constant-value x 
+                    (lambda (v) (or (fixnum? v) (bignum? v)))))
+                rand*)
+              (begin 
+                (let ([r (apply expt 
+                           (map (lambda (x)
+                                  (constant-value x 
+                                    (lambda (v) v)))
+                                rand*))])
+                  (let f ([rand* rand*])
+                    (cond
+                      [(null? rand*) (make-constant r)]
+                      [else
+                       (mk-seq (car rand*) (f (cdr rand*)))])))))
          (giveup))]
     ;X; [(fx- fx+ fx*)
     ;X;  (or (and (fx= (length rand*) 2)
@@ -1838,9 +1900,16 @@
        (make-codes (map CodeExpr list) (Tail body))]))
   (CodesExpr x))
 
+
 (begin ;;; DEFINITIONS
-  (define wordsize  4)
-  (define wordshift 2)
+  (module (wordsize)
+    (include "ikarus.config.ss"))
+  (define wordshift
+    (case wordsize
+      [(4) 2]
+      [(8) 3]
+      [else 
+       (error 'ikarus "wordsize is neither 4 nor 8" wordsize)])) 
   (define object-alignment (* 2 wordsize))
   (define align-shift (+ wordshift 1))
   (define fx-shift  wordshift)

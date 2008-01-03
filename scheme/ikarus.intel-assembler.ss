@@ -136,7 +136,7 @@
 
 (define-syntax byte
   (syntax-rules ()
-    [(_ x) (fxlogand x 255)]))
+    [(_ x) (bitwise-and x 255)]))
 
 
 (define word
@@ -194,17 +194,17 @@
        (if (fixnum? n)
            (cons* 
              (byte n)
-             (byte (fxsra n 8))
-             (byte (fxsra n 16))
-             (byte (fxsra n 24))
+             (byte (sra n 8))
+             (byte (sra n 16))
+             (byte (sra n 24))
              ac)
            (let* ([lo (remainder n 256)]
                   [hi (quotient (if (< n 0) (- n 255) n) 256)])
              (cons* 
                (byte lo)
                (byte hi)
-               (byte (fxsra hi 8))
-               (byte (fxsra hi 16))
+               (byte (sra hi 8))
+               (byte (sra hi 16))
                ac)))]
       [(obj? n)
        (let ([v (cadr n)])
@@ -218,7 +218,7 @@
        (cons (cons 'label-addr (label-name n)) ac)]
       [(foreign? n)
        (cons (cons 'foreign-label (label-name n)) ac)]
-      [(label? n) 
+      [(label? n)
        (cons (cons 'relative (label-name n)) ac)]
       [else (die 'IMM32 "invalid" n)])))
 
@@ -291,7 +291,7 @@
       [else 
        (cons*
          (byte (fxlogor 4 (fxsll (register-index r1) 3)))
-         (byte (fxlogor (register-index r2) 
+         (byte (fxlogor (register-index r2)
                         (fxsll (register-index r3) 3)))
          ac)])))
 

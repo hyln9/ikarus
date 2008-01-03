@@ -31,10 +31,12 @@ revno = "$(shell sed 's/ .*//' ../.bzr/branch/last-revision 2>/dev/null)"
 last-revision: $(shell ls ../.bzr/branch/last-revision 2>/dev/null) 
 	echo $(revno) >$@
 
-ikarus.config.ss: Makefile last-revision
+ikarus.config.ss: Makefile last-revision ../config.h
 	echo '(define ikarus-version "$(PACKAGE_VERSION)")' >$@
 	echo '(define ikarus-revision "$(shell cat last-revision)")' >>$@
 	echo '(define ikarus-lib-dir "$(pkglibdir)")' >>$@
+	echo '(define wordsize $(shell grep SIZEOF_VOID_P ../config.h | sed "s/.*\(.\)/\1/g"))' >>$@
+
 
 CLEANFILES=$(nodist_pkglib_DATA) ikarus.config.ss
 MAINTAINERCLEANFILES=last-revision

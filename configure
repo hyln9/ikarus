@@ -5536,11 +5536,9 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-if (test $ac_cv_sizeof_void_p != 4); then
-  { { echo "$as_me:$LINENO: error: Ikarus can only run in 32-bit mode." >&5
-echo "$as_me: error: Ikarus can only run in 32-bit mode." >&2;}
-   { (exit 1); exit 1; }; }
-fi
+# if (test $ac_cv_sizeof_void_p != 4); then
+#   AC_MSG_ERROR([Ikarus can only run in 32-bit mode.])
+# fi
 
 # Checks for libraries.
 { echo "$as_me:$LINENO: checking for library containing dlsym" >&5
