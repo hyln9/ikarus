@@ -63,10 +63,10 @@ print(FILE* fh, ikptr x){
   else if(x == false_object){
     fprintf(fh, "#f");
   }
-  else if(x == IK_TRUE_OBJECT){
+  else if(x == true_object){
     fprintf(fh, "#t");
   }
-  else if(x == IK_NULL_OBJECT){
+  else if(x == null_object){
     fprintf(fh, "()");
   }
   else if(is_char(x)){
@@ -100,16 +100,16 @@ print(FILE* fh, ikptr x){
   }
   else if(is_pair(x)){
     fprintf(fh, "(");
-    print(fh, ref(x, IK_OFF_CAR));
-    ikptr d = ref(x, IK_OFF_CDR);
+    print(fh, ref(x, off_car));
+    ikptr d = ref(x, off_cdr);
     fprintf(stderr, "d=0x%016lx\n", (long int)d);
     while(1){
       if(is_pair(d)){
         fprintf(fh, " ");
-        print(fh, ref(d, IK_OFF_CAR));
-        d = ref(d, IK_OFF_CDR);
+        print(fh, ref(d, off_car));
+        d = ref(d, off_cdr);
       } 
-      else if(d == IK_NULL_OBJECT){
+      else if(d == null_object){
         fprintf(fh, ")");
         return;
       }

@@ -880,8 +880,6 @@ empty_dropped_guardians(gc_t* gc){
 }
 
  
-#define disp_frame_offset -13
-#define disp_multivalue_rp -9
 
 
 #define CODE_EXTENSION_SIZE (pagesize)

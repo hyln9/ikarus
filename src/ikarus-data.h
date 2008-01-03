@@ -86,8 +86,6 @@ inthash(int key) {
 
 
 
-#define wordsize 4
-#define wordshift 2
 #define pagesize 4096
 #define generation_count 5  /* generations 0 (nursery), 1, 2, 3, 4 */
 
@@ -115,14 +113,14 @@ typedef struct ikdl{ /* double-link */
 
 
 #define ik_ptr_page_size \
-  ((pagesize - sizeof(int) - sizeof(struct ik_ptr_page*))/sizeof(ikptr))
+  ((pagesize - sizeof(long int) - sizeof(struct ik_ptr_page*))/sizeof(ikptr))
 
 typedef struct ik_ptr_page{
-  int count;
+  long int count;
   struct ik_ptr_page* next;
   ikptr ptr[ik_ptr_page_size];
 } ik_ptr_page;
- 
+
 
 typedef struct ikpcb{
   /* the first locations may be accessed by some     */
@@ -208,13 +206,24 @@ ikptr ik_underflow_handler(ikpcb*);
 ikptr ik_unsafe_alloc(ikpcb* pcb, int size);
 ikptr ik_safe_alloc(ikpcb* pcb, int size);
 
+#define IK_HEAP_EXT_SIZE  (32 * 4096)
+#define IK_HEAPSIZE       (1024 * 4096) /* 4 MB */
+
+#define wordsize (sizeof(ikptr))
+#define wordshift ((wordsize == 4)?2:3)
+#define align_shift (wordshift + 1) 
+#define align_size (2 * wordsize)
+#define fx_shift wordshift
+#define fx_mask (wordsize - 1)
+
+#define align(n) \
+  ((((n) + align_size - 1) >>  align_shift) << align_shift)
 
 #define IK_FASL_HEADER "#@IK01"
 #define IK_FASL_HEADER_LEN (strlen(IK_FASL_HEADER))
-#define IK_FASL_CODE_HEADER_SIZE 12
 
 #define code_pri_tag vector_tag
-#define code_tag                  ((ikptr)0x2F)
+#define code_tag                 ((ikptr)0x2F)
 #define disp_code_code_size      (1 * wordsize)
 #define disp_code_reloc_vector   (2 * wordsize)
 #define disp_code_freevars       (3 * wordsize)
@@ -225,83 +234,37 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define off_code_data (disp_code_data - code_pri_tag)
 #define off_code_reloc_vector (disp_code_reloc_vector - code_pri_tag)
 
-
-#define IK_ALIGN_SHIFT 3
-#define align_shift 3
-#define IK_ALIGN_SIZE  8
-#define align_size 8
-
-#define IK_ALIGN(n) \
-        ((((n) + IK_ALIGN_SIZE - 1) >>  IK_ALIGN_SHIFT) << IK_ALIGN_SHIFT)
-
-#define align(n) \
-        ((((n) + align_size - 1) >>  align_shift) << align_shift)
-
-#define IK_FX_SHIFT 2
-#define IK_FX_MASK  3
-#define fx_shift 2
-#define fx_mask 3
 #define unfix(x) (((long int)(x)) >> fx_shift)
 #define fix(x)   ((ikptr)(((long int)(x)) << fx_shift))
 #define is_fixnum(x) ((((unsigned long)(x)) & fx_mask) == 0)
 
-#define IK_FIXNUMP(x) \
-  ((((int)(x)) & IK_FX_MASK) == 0)
-
 #define ref(x,n) \
   (((ikptr*)(((char*)(long int)(x)) + ((long int)(n))))[0])
 
-#define IK_MASK(x,m) (((long int)(x)) & ((long int)(m)))
-#define IK_PTAG(x) (((int)(x)) & 7)
 #define tagof(x) (((int)(x)) & 7)
-#define IK_STAG(x) REF(x, -IK_PTAG(x))
 
 #define immediate_tag 7
- 
-#define IK_UNFIX(x) (((int)(x)) >> IK_FX_SHIFT)
-#define IK_FIX(x)   ((ikptr)((x) << IK_FX_SHIFT))
-
-#define IK_CODE_P(x) \
-  ((IK_PTAG(x) == IK_CODE_PRI_TAG) && (IK_STAG(x) == IK_CODE_SEC_TAG))
-
-#define IK_FALSE_OBJECT   ((ikptr)0x2F)
-#define IK_TRUE_OBJECT    ((ikptr)0x3F)
 
 #define false_object      ((ikptr)0x2F)
 #define true_object       ((ikptr)0x3F)
-
-#define IK_NULL_OBJECT    ((ikptr)0x4F)
-
 #define null_object       ((ikptr)0x4F)
 #define void_object       ((ikptr)0x7F)
 #define bwp_object        ((ikptr)0x8F)
 
 #define unbound_object    ((ikptr)0x6F)
-#define IK_CHAR_TAG       0x0F
-#define IK_CHAR_MASK      0xFF
-#define IK_CHAR_SHIFT        8
-#define IK_CHAR_VAL(x)    (((int)(x)) >> IK_CHAR_SHIFT)
+#define char_tag       0x0F
+#define char_mask      0xFF
+#define char_shift        8
 #define int_to_scheme_char(x) \
-  ((ikptr)((((unsigned long int)(x)) << IK_CHAR_SHIFT) | IK_CHAR_TAG))
-#define IK_PAIR_SIZE     8
-#define pair_size 8
+  ((ikptr)((((unsigned long int)(x)) << char_shift) | char_tag))
+#define pair_size        (2 * wordsize)
 #define pair_mask 7
 #define pair_tag 1
-#define disp_car 0
-#define disp_cdr 4
+#define disp_car    0
+#define disp_cdr    wordsize
 #define off_car (disp_car - pair_tag)
 #define off_cdr (disp_cdr - pair_tag)
-#define IK_PAIR_TAG      1
-#define IK_DISP_CAR      0
-#define IK_DISP_CDR      4
-#define IK_OFF_CAR    (IK_DISP_CAR - IK_PAIR_TAG)
-#define IK_OFF_CDR    (IK_DISP_CDR - IK_PAIR_TAG)
-#define IK_HEAP_EXT_SIZE  (32 * 4096)
-#define IK_HEAPSIZE       (1024 * 4096) /* 4 MB */
-#define IK_PAIRP(x)   (IK_PTAG(x) == IK_PAIR_TAG)
-#define IK_CHARP(x)   (IK_MASK(x,IK_CHAR_MASK) == IK_CHAR_TAG)
-#define is_char(x)   (IK_MASK(x,IK_CHAR_MASK) == IK_CHAR_TAG)
-#define IK_STRING_TAG     6
+#define is_char(x)   ((char_mask & (int)(x)) == char_tag)
 #define string_tag        6
 #define disp_string_length    0
 #define disp_string_data      wordsize
@@ -311,20 +274,20 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define string_set(x,i,c) \
   (((ikchar*)(((long)(x)) + off_string_data))[i] = ((ikchar)(c)))
 #define integer_to_char(x) \
-  ((ikchar)((((int)(x)) << IK_CHAR_SHIFT) + IK_CHAR_TAG))
+  ((ikchar)((((int)(x)) << char_shift) + char_tag))
 #define string_char_size 4
 
 #define vector_tag 5
 #define disp_vector_length 0
 #define disp_vector_data   wordsize
-#define off_vector_data (disp_vector_data - vector_tag)
+#define off_vector_data   (disp_vector_data - vector_tag)
 #define off_vector_length (disp_vector_length - vector_tag)
 
 #define bytevector_tag 2
 #define disp_bytevector_length 0
-#define disp_bytevector_data   8
+#define disp_bytevector_data   8 /* not f(wordsize) */
 #define off_bytevector_length (disp_bytevector_length - bytevector_tag)
-#define off_bytevector_data (disp_bytevector_data - bytevector_tag)
+#define off_bytevector_data   (disp_bytevector_data - bytevector_tag)
 
 #define symbol_record_tag ((ikptr) 0x5F)
 #define disp_symbol_record_string   (1 * wordsize)
@@ -339,7 +302,6 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define off_symbol_record_proc    (disp_symbol_record_proc    - record_tag) 
 #define off_symbol_record_plist   (disp_symbol_record_plist   - record_tag) 
 
-
 #define closure_tag  3
 #define closure_mask 7
 #define disp_closure_code 0
@@ -349,7 +311,6 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 
 #define is_closure(x) ((((long int)(x)) & closure_mask) == closure_tag)
 #define is_pair(x) ((((long int)(x)) & pair_mask) == pair_tag)
-
 
 #define record_tag vector_tag
 #define disp_record_rtd 0
@@ -390,11 +351,14 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define align_to_prev_page(x) \
   ((((unsigned long int)(x)) >> pageshift) << pageshift)
 
-#define disp_frame_size -17 // FIXME
+#define call_instruction_size 5
+#define disp_frame_size   (- (call_instruction_size + 3 * wordsize))
+#define disp_frame_offset (- (call_instruction_size + 2 * wordsize))
+#define disp_multivale_rp (- (call_instruction_size + 1 * wordsize))
 
 #define port_tag      0x3F
 #define port_mask     0x3F
-#define port_size       (14 * wordsize)
+#define port_size     (14 * wordsize)
 
 #define disp_tcbucket_tconc        (0 * wordsize)
 #define disp_tcbucket_key          (1 * wordsize)
@@ -406,7 +370,6 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define off_tcbucket_val         (disp_tcbucket_val   - vector_tag)
 #define off_tcbucket_next        (disp_tcbucket_next  - vector_tag)
 
-
 #define bignum_mask       0x7
 #define bignum_tag        0x3
 #define bignum_sign_mask  0x8
@@ -417,7 +380,7 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 
 #define flonum_tag  ((ikptr)0x17)
 #define flonum_size         16
-#define disp_flonum_data     8 /* not wordsize */
+#define disp_flonum_data     8 /* not f(wordsize) */
 #define off_flonum_data (disp_flonum_data - vector_tag)
 #define flonum_data(x) (*((double*)(((char*)(long)(x))+off_flonum_data)))
 

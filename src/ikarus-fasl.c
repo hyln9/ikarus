@@ -384,7 +384,7 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
     return true_object;
   }
   else if(c == 'N'){
-    return IK_NULL_OBJECT;
+    return null_object;
   }
   else if(c == 'c'){
     /* FIXME: sounds broken */
