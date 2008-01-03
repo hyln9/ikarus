@@ -110,8 +110,12 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
       }
       close(fd);
     }
-    ikptr val = ik_exec_code(pcb, v);
-    val = void_object;
+    ikptr val = void_object;
+    if(wordsize == 4){
+      ik_exec_code(pcb, v);
+    } else {
+      fprintf(stderr, "NOT EXECING YET\n");
+    }
     if(val != void_object){
       /* this is from revision 1 
          and is no longer needed 
@@ -122,6 +126,10 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
   if(p.memp != p.memq){
     fprintf(stderr, "fasl-read did not reach eof!\n");
     exit(-10);
+  }
+  if(wordsize == 8){
+    fprintf(stderr, "DONE READING FASL, EXITING ...\n");
+    exit(-1);
   }
 }
 
@@ -269,7 +277,7 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
           ik_print(p->marks[idx]);
           exit(-1);
         }
-      } 
+      }
     }
     else {
       /* allocate marks */
@@ -279,9 +287,9 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
     }
   }
   if(c == 'x'){
-    int code_size;
+    long int code_size;
     ikptr freevars;
-    fasl_read_buf(p, &code_size, sizeof(int));
+    fasl_read_buf(p, &code_size, sizeof(long int));
     fasl_read_buf(p, &freevars, sizeof(ikptr));
     ikptr annotation = do_read(pcb, p);
     ikptr code = alloc_code(align(code_size+disp_code_data), pcb, p);
@@ -317,16 +325,16 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
   }
   else if(c == 's'){
     /* ascii string */
-    int len;
-    fasl_read_buf(p, &len, sizeof(int));
-    int size = align(len*string_char_size + disp_string_data);
+    long int len;
+    fasl_read_buf(p, &len, sizeof(long int));
+    long int size = align(len*string_char_size + disp_string_data);
     ikptr str = ik_unsafe_alloc(pcb, size) + string_tag;
     ref(str, off_string_length) = fix(len);
     fasl_read_buf(p, (char*)(long)str+off_string_data, len);
     {
       unsigned char* pi = (unsigned char*)(long)(str+off_string_data);
       ikchar* pj = (ikchar*)(long)(str+off_string_data);
-      int i = len-1;
+      long int i = len-1;
       for(i=len-1; i >= 0; i--){
         pj[i] = integer_to_char(pi[i]);
       }
@@ -339,9 +347,9 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
   }
   else if(c == 'S'){
     /* string */
-    int len;
-    fasl_read_buf(p, &len, sizeof(int));
-    int size = align(len*string_char_size + disp_string_data);
+    long int len;
+    fasl_read_buf(p, &len, sizeof(long int));
+    long int size = align(len*string_char_size + disp_string_data);
     ikptr str = ik_unsafe_alloc(pcb, size) + string_tag;
     ref(str, off_string_length) = fix(len);
     long int i;
@@ -356,17 +364,16 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
     }
     return str;
   }
-
   else if(c == 'V'){
-    int len;
-    fasl_read_buf(p, &len, sizeof(int));
-    int size = align(len * wordsize + disp_vector_data);
+    long int len;
+    fasl_read_buf(p, &len, sizeof(long int));
+    long int size = align(len * wordsize + disp_vector_data);
     ikptr vec = ik_unsafe_alloc(pcb, size) + vector_tag;
     if(put_mark_index){
       p->marks[put_mark_index] = vec;
     }
     ref(vec, off_vector_length) = fix(len);
-    int i;
+    long int i;
     for(i=0; i<len; i++){
       ref(vec, off_vector_data + i*wordsize) = do_read(pcb, p);
     }
@@ -374,7 +381,7 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
   }
   else if(c == 'I'){
     ikptr fixn;
-    fasl_read_buf(p, &fixn, sizeof(int));
+    fasl_read_buf(p, &fixn, sizeof(ikptr));
     return fixn;
   }
   else if(c == 'F'){
@@ -404,8 +411,8 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
   else if(c == 'R'){ /* R is for RTD */
     ikptr name = do_read(pcb, p);
     ikptr symb = do_read(pcb, p);
-    int i, n;
-    fasl_read_buf(p, &n, sizeof(int));
+    long int i, n;
+    fasl_read_buf(p, &n, sizeof(long int));
     ikptr fields;
     if(n == 0){
       fields = null_object;
@@ -471,9 +478,9 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
   }
   else if(c == 'v'){
     /* bytevector */
-    int len;
-    fasl_read_buf(p, &len, sizeof(int));
-    int size = align(len + disp_bytevector_data + 1);
+    long int len;
+    fasl_read_buf(p, &len, sizeof(long int));
+    long int size = align(len + disp_bytevector_data + 1);
     ikptr x = ik_unsafe_alloc(pcb, size) + bytevector_tag;
     ref(x, off_bytevector_length) = fix(len);
     fasl_read_buf(p, (void*)(long)(x+off_bytevector_data), len);
@@ -485,10 +492,6 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
   }
   else if(c == 'l'){
     int len = (unsigned char) fasl_read_byte(p);
-    if(len < 0){
-      fprintf(stderr, "invalid len=%d\n", len);
-      exit(-1);
-    }
     ikptr pair = ik_unsafe_alloc(pcb, pair_size * (len+1)) + pair_tag;
     if(put_mark_index){
       p->marks[put_mark_index] = pair;
@@ -504,17 +507,17 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
     return pair;
   }
   else if(c == 'L'){
-    int len;
-    fasl_read_buf(p, &len, sizeof(int));
+    long int len;
+    fasl_read_buf(p, &len, sizeof(long int));
     if(len < 0){
-      fprintf(stderr, "invalid len=%d\n", len);
+      fprintf(stderr, "invalid len=%ld\n", len);
       exit(-1);
     }
     ikptr pair = ik_unsafe_alloc(pcb, pair_size * (len+1)) + pair_tag;
     if(put_mark_index){
       p->marks[put_mark_index] = pair;
     }
-    int i; ikptr pt = pair;
+    long int i; ikptr pt = pair;
     for(i=0; i<len; i++){
       ref(pt, off_car) = do_read(pcb, p);
       ref(pt, off_cdr) = pt + pair_size;
@@ -539,15 +542,15 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
     return int_to_scheme_char(n);
   }
   else if(c == 'b'){
-    int len;
-    int sign = 0;
-    fasl_read_buf(p, &len, sizeof(int));
+    long int len;
+    long int sign = 0;
+    fasl_read_buf(p, &len, sizeof(long int));
     if(len < 0) {
       sign = 1;
       len = -len;
     }
     if(len & 3){
-      fprintf(stderr, "Error in fasl-read: invalid bignum length %d\n", len);
+      fprintf(stderr, "Error in fasl-read: invalid bignum length %ld\n", len);
       exit(-1);
     }
     unsigned long int tag = bignum_tag | (sign << bignum_sign_shift) | 

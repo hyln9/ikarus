@@ -219,7 +219,8 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define align(n) \
   ((((n) + align_size - 1) >>  align_shift) << align_shift)
 
-#define IK_FASL_HEADER "#@IK01"
+#define IK_FASL_HEADER \
+  ((sizeof(ikptr) == 4) ? "#@IK01" : "#@IK02")
 #define IK_FASL_HEADER_LEN (strlen(IK_FASL_HEADER))
 
 #define code_pri_tag vector_tag
@@ -351,7 +352,8 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define align_to_prev_page(x) \
   ((((unsigned long int)(x)) >> pageshift) << pageshift)
 
-#define call_instruction_size 5
+#define call_instruction_size \
+  ((wordsize == 4) ? 5 : 10)
 #define disp_frame_size   (- (call_instruction_size + 3 * wordsize))
 #define disp_frame_offset (- (call_instruction_size + 2 * wordsize))
 #define disp_multivale_rp (- (call_instruction_size + 1 * wordsize))

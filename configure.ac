@@ -29,6 +29,7 @@ case "$target_os" in
 
 
 AC_CHECK_SIZEOF(void *)
+# remember to enable before release.
 # if (test $ac_cv_sizeof_void_p != 4); then
 #   AC_MSG_ERROR([Ikarus can only run in 32-bit mode.])
 # fi

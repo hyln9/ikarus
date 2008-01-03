@@ -1,4 +1,4 @@
-#!/usr/bin/env ikarus -b ikarus.boot --r6rs-script
+#!../src/ikarus -b ikarus.boot --r6rs-script
 ;;; Ikarus Scheme -- A compiler for R6RS Scheme.
 ;;; Copyright (C) 2006,2007  Abdulaziz Ghuloum
 ;;; 

@@ -2059,7 +2059,11 @@
 
   ;;; refer to the picture in src/ikarus-collect.c for details
   ;;; on how call-frames are laid out.  (search for livemask)
-  (define call-instruction-size 5)
+  (define call-instruction-size 
+    (case wordsize
+      [(4) 5]
+      [(8) 10]
+      [else (die 'call-instruction-size "invalid" wordsize)]))
   (define disp-frame-size    (- (+ call-instruction-size (* 3 wordsize))))
   (define disp-frame-offset  (- (+ call-instruction-size (* 2 wordsize))))
   (define disp-multivalue-rp (- (+ call-instruction-size (* 1 wordsize))))

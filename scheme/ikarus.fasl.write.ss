@@ -64,18 +64,19 @@
   (define (put-tag c p)
     (write-byte (char->integer c) p))
   
-  (define write-int 
+  (define write-int32 
     (lambda (x p)
-      (unless (int? x) (die 'write-int "not a int" x))
       (write-byte (bitwise-and x #xFF) p)
       (write-byte (bitwise-and (sra x 8) #xFF) p)
       (write-byte (bitwise-and (sra x 16) #xFF) p)
-      (write-byte (bitwise-and (sra x 24) #xFF) p)
+      (write-byte (bitwise-and (sra x 24) #xFF) p)))
+ 
+  (define write-int 
+    (lambda (x p)
+      (unless (int? x) (die 'write-int "not a int" x))
+      (write-int32 x p)
       (when (eqv? wordsize 8)
-        (write-byte (bitwise-and (sra x 32) #xFF) p)
-        (write-byte (bitwise-and (sra x 40) #xFF) p)
-        (write-byte (bitwise-and (sra x 48) #xFF) p)
-        (write-byte (bitwise-and (sra x 56) #xFF) p))))
+        (write-int32 (sra x 32) p))))
 
   (define fasl-write-immediate
     (lambda (x p)
@@ -92,7 +93,7 @@
                  (write-byte n p))
                (begin
                  (put-tag #\C p)
-                 (write-int n p))))]
+                 (write-int32 n p))))]
         [(boolean? x)
          (put-tag (if x #\T #\F) p)]
         [(eof-object? x) (put-tag #\E p)]
@@ -164,7 +165,7 @@
             (write-int (string-length x) p)
             (let f ([x x] [i 0] [n (string-length x)])
               (unless (= i n)
-                (write-int (char->integer (string-ref x i)) p)
+                (write-int32 (char->integer (string-ref x i)) p)
                 (f x (fxadd1 i) n)))])
          m]
         [(gensym? x)
@@ -269,11 +270,11 @@
              [(fx> mark 0) ; marked but not written
               (hashtable-set! h x (fx- 0 m))
               (put-tag #\> p)
-              (write-int m p)
+              (write-int32 m p)
               (do-write x p h (fxadd1 m))]
              [else
               (put-tag #\< p)
-              (write-int (fx- 0 mark) p)
+              (write-int32 (fx- 0 mark) p)
               m]))]
         [else (die 'fasl-write "BUG: not in hash table" x)]))) 
   (define make-graph

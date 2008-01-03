@@ -23,6 +23,10 @@
     (except (ikarus code-objects) procedure-annotation)
     (ikarus system $pairs))
 
+
+(module (wordsize)
+  (include "ikarus.config.ss"))
+
 (define fold
   (lambda (f init ls)
     (cond
@@ -710,9 +714,10 @@
                 (case (car x)
                   [(byte) (fx+ ac 1)]
                   [(word reloc-word reloc-word+ label-addr foreign-label 
-                    relative local-relative current-frame-offset)
+                    local-relative)
                    (fx+ ac 4)]
                   [(label) ac]
+                  [(relative current-frame-offset) (+ ac wordsize)]
                   [else (die 'compute-code-size "unknown instr" x)])))
           0 
           ls)))
@@ -784,23 +789,23 @@
                    (f (cdr ls) (fx+ idx 1) reloc)]
                   [(reloc-word reloc-word+)
                    (f (cdr ls) (fx+ idx 4) (cons (cons idx a) reloc))]
-                  [(local-relative relative label-addr foreign-label) 
+                  [(local-relative label-addr foreign-label)
                    (f (cdr ls) (fx+ idx 4) (cons (cons idx a) reloc))]
+                  [(relative)
+                   (f (cdr ls) (fx+ idx wordsize) (cons (cons idx a) reloc))]
                   [(word)
                    (let ([v (cdr a)])
                       (set-code-word! x idx v)
                       (f (cdr ls) (fx+ idx 4) reloc))]
                   [(current-frame-offset)
-                   (set-code-word! x idx idx)
-                   (f (cdr ls) (fx+ idx 4) reloc)]
+                   (set-code-word! x idx idx) ;;; FIXME 64bit
+                   (f (cdr ls) (fx+ idx wordsize) reloc)]
                   [(label)
                    (set-label-loc! (cdr a) (list x idx))
                    (f (cdr ls) idx reloc)]
                   [else
                    (die 'whack-instructions "unknown instr" a)])))])))
     (f ls 0 '())))
-
-(define wordsize 4)
 
 
 (define compute-reloc-size 

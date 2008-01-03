@@ -42,8 +42,8 @@ int total_allocated_pages = 0;
 extern char **environ;
 
 
-#define segment_size  (pagesize*pagesize/wordsize)
-#define segment_shift (pageshift+pageshift-wordshift)
+#define segment_size  (pagesize*pagesize/4)
+#define segment_shift (pageshift+pageshift-2)
 #define segment_index(x) (((unsigned long int)(x)) >> segment_shift)
 
 ikptr ik_mmap(int size);
@@ -328,9 +328,9 @@ ikpcb* ik_make_pcb(){
       hi_mem = pcb->heap_base + pcb->heap_size + pagesize;
     }
 
-    long int lo_seg = segment_index(lo_mem);
-    long int hi_seg = segment_index(hi_mem+segment_size-1);
-    long int vec_size = (hi_seg - lo_seg) * pagesize;
+    unsigned long int lo_seg = segment_index(lo_mem);
+    unsigned long int hi_seg = segment_index(hi_mem+segment_size-1);
+    unsigned long int vec_size = (hi_seg - lo_seg) * pagesize;
     ikptr dvec = ik_mmap(vec_size);
     bzero((char*)(long)dvec, vec_size);
     pcb->dirty_vector_base = (unsigned int*)(long) dvec;

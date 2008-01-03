@@ -5536,6 +5536,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+# remember to enable before release.
 # if (test $ac_cv_sizeof_void_p != 4); then
 #   AC_MSG_ERROR([Ikarus can only run in 32-bit mode.])
 # fi
