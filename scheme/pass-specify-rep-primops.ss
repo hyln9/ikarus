@@ -131,7 +131,7 @@
 (define-primop immediate? safe
   [(P x)
    (make-conditional
-     (tag-test (T x) fixnum-mask fixnum-tag)
+     (tag-test (T x) fx-mask fx-tag)
      (make-constant #t)
      (tag-test (T x) 7 7))]
   [(E x) (nop)])
@@ -151,7 +151,7 @@
 (define-primop pointer-value unsafe
   [(V x) (prm 'logand 
            (prm 'srl (T x) (K 1))
-           (K (* -1 fixnum-scale)))]
+           (K (* -1 fx-scale)))]
   [(P x) (K #t)]
   [(E x) (nop)])
 
@@ -336,7 +336,7 @@
     /section)
 
 (define-primop vector? unsafe
-  [(P x) (sec-tag-test (T x) vector-mask vector-tag fixnum-mask fixnum-tag)]
+  [(P x) (sec-tag-test (T x) vector-mask vector-tag fx-mask fx-tag)]
   [(E x) (nop)])
 
 (define-primop $make-vector unsafe
@@ -349,7 +349,7 @@
                         (K vector-tag))])
           (prm 'mset v 
                (K (- disp-vector-length vector-tag))
-               (K (make-constant (* i fixnum-scale))))
+               (K (make-constant (* i fx-scale))))
           v)]
      [else
       (with-tmp ([alen (align-code (T len) disp-vector-data)])
@@ -566,7 +566,7 @@
 (section ;;; fixnums
 
 (define-primop fixnum? safe
-  [(P x) (tag-test (T x) fixnum-mask fixnum-tag)]
+  [(P x) (tag-test (T x) fx-mask fx-tag)]
   [(E x) (nop)])
 
 
@@ -641,7 +641,7 @@
         (unless (fixnum? b) (interrupt))
         (prm 'int* (T a) (K b))]
        [else
-        (prm 'int* (T a) (prm 'sra (T b) (K fixnum-shift)))])])]
+        (prm 'int* (T a) (prm 'sra (T b) (K fx-shift)))])])]
   [(P x y) (K #t)]
   [(E x y) (nop)])
 
@@ -677,7 +677,7 @@
       (unless (fixnum? i) (interrupt))
       (prm 'sll (T x) (K i))]
      [else 
-      (prm 'sll (T x) (prm 'sra (T i) (K fixnum-shift)))])]
+      (prm 'sll (T x) (prm 'sra (T i) (K fx-shift)))])]
   [(P x i) (K #t)]
   [(E x i) (nop)])
 
@@ -688,23 +688,23 @@
       (unless (fixnum? i) (interrupt))
       (prm 'logand 
            (prm 'sra (T x) (K (if (> i 31) 31 i)))
-           (K (* -1 fixnum-scale)))]
+           (K (* -1 fx-scale)))]
      [else 
-      (with-tmp ([i (prm 'sra (T i) (K fixnum-shift))])
+      (with-tmp ([i (prm 'sra (T i) (K fx-shift))])
         (with-tmp ([i (make-conditional
                         (prm '< i (K 32))
                         i
                         (K 31))])
            (prm 'logand
                 (prm 'sra (T x) i)
-                (K (* -1 fixnum-scale)))))])]
+                (K (* -1 fx-scale)))))])]
   [(P x i) (K #t)]
   [(E x i) (nop)])
 
 (define-primop $fxquotient unsafe
   [(V a b) 
    (with-tmp ([b (T b)]) ;;; FIXME: why is quotient called remainder?
-    (prm 'sll (prm 'remainder (T a) b) (K fixnum-shift)))]
+    (prm 'sll (prm 'remainder (T a) b) (K fx-shift)))]
   [(P a b) (K #t)]
   [(E a b) (nop)])
 
@@ -783,7 +783,7 @@
         (prm 'srl ;;; FIXME: bref
            (prm 'mref (T s)
                 (prm 'int+
-                   (prm 'sra (T i) (K fixnum-shift))
+                   (prm 'sra (T i) (K fx-shift))
                    ;;; ENDIANNESS DEPENDENCY
                    (K (- disp-bignum-data 
                          (- wordsize 1) 
@@ -1004,7 +1004,7 @@
        (prm 'mref (T x)
           (K (- (+ disp-flonum-data 4) vector-tag)))
        (K 20))
-     (K fixnum-shift))])
+     (K fx-shift))])
 
 /section)
 
@@ -1054,7 +1054,7 @@
          (assert-fixnums (car a*) (cdr a*)))]
     [else
      (interrupt-unless 
-       (tag-test (or* (T a) a*) fixnum-mask fixnum-tag))]))
+       (tag-test (or* (T a) a*) fx-mask fx-tag))]))
 
 (define (fixnum-fold-p op a a*)
   (cond
@@ -1309,13 +1309,13 @@
 (define-primop $fixnum->char unsafe
   [(V x) 
    (prm 'logor
-        (prm 'sll (T x) (K (- char-shift fixnum-shift)))
+        (prm 'sll (T x) (K (- char-shift fx-shift)))
         (K char-tag))]
   [(P x) (K #t)]
   [(E x) (nop)])
 
 (define-primop $char->fixnum unsafe
-  [(V x) (prm 'sra (T x) (K (- char-shift fixnum-shift)))]
+  [(V x) (prm 'sra (T x) (K (- char-shift fx-shift)))]
   [(P x) (K #t)]
   [(E x) (nop)])
 
@@ -1403,7 +1403,7 @@
                       (K bytevector-tag))])
          (prm 'mset s
              (K (- disp-bytevector-length bytevector-tag))
-             (K (* n fixnum-scale)))
+             (K (* n fx-scale)))
          (prm 'bset/c s
              (K (+ n (- disp-bytevector-data bytevector-tag)))
              (K 0))
@@ -1411,7 +1411,7 @@
      [else
       (with-tmp ([s (prm 'alloc 
                       (align-code 
-                        (prm 'sra (T n) (K fixnum-shift))
+                        (prm 'sra (T n) (K fx-shift))
                         (+ disp-bytevector-data 1))
                       (K bytevector-tag))])
           (prm 'mset s
@@ -1419,7 +1419,7 @@
             (T n))
           (prm 'bset/c s
                (prm 'int+ 
-                    (prm 'sra (T n) (K fixnum-shift))
+                    (prm 'sra (T n) (K fx-shift))
                     (K (- disp-bytevector-data bytevector-tag)))
                (K 0))
           s)])]
@@ -1447,7 +1447,7 @@
         (prm 'logand
            (prm 'bref (T s)
                 (prm 'int+
-                   (prm 'sra (T i) (K fixnum-shift))
+                   (prm 'sra (T i) (K fx-shift))
                    (K (- disp-bytevector-data bytevector-tag))))
            (K 255))
         (K fx-shift))])]
@@ -1472,7 +1472,7 @@
         (prm 'sll
            (prm 'bref (T s)
                 (prm 'int+
-                   (prm 'sra (T i) (K fixnum-shift))
+                   (prm 'sra (T i) (K fx-shift))
                    (K (- disp-bytevector-data bytevector-tag))))
            (K (- (* wordsize 8) 8)))
         (K (- (* wordsize 8) (+ 8 fx-shift))))])]
@@ -1504,7 +1504,7 @@
          (unless (fixnum? c) (interrupt))
          (prm 'bset/c (T x) 
               (prm 'int+ 
-                   (prm 'sra (T i) (K fixnum-shift))
+                   (prm 'sra (T i) (K fx-shift))
                    (K (- disp-bytevector-data bytevector-tag)))
               (K (cond
                    [(<= -128 c 127) c]
@@ -1513,7 +1513,7 @@
         [else
          (prm 'bset/h (T x)
                (prm 'int+ 
-                    (prm 'sra (T i) (K fixnum-shift))
+                    (prm 'sra (T i) (K fx-shift))
                     (K (- disp-bytevector-data bytevector-tag)))
                (prm 'sll (T c) (K (- 8 fx-shift))))])])])
 
@@ -1522,7 +1522,7 @@
    (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
      (prm 'mset x (K (- vector-tag)) (K flonum-tag))
      (prm 'fl:load 
-       (prm 'int+ (T bv) (prm 'sra (T i) (K fixnum-shift)))
+       (prm 'int+ (T bv) (prm 'sra (T i) (K fx-shift)))
        (K (- disp-bytevector-data bytevector-tag)))
      (prm 'fl:store x (K (- disp-flonum-data vector-tag)))
      x)])
@@ -1534,7 +1534,7 @@
 ;   (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
 ;     (prm 'mset x (K (- vector-tag)) (K flonum-tag))
 ;     (prm 'fl:load 
-;       (prm 'int+ (T bv) (prm 'sra (T i) (K fixnum-shift)))
+;       (prm 'int+ (T bv) (prm 'sra (T i) (K fx-shift)))
 ;       (K (- disp-bytevector-data bytevector-tag)))
 ;     (prm 'fl:shuffle
 ;       (K (make-object '#vu8(7 6 2 3 4 5 1 0)))
@@ -1549,7 +1549,7 @@
      (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
        (prm 'mset x (K (- vector-tag)) (K flonum-tag))
        (with-tmp ([t (prm 'int+ (T bv) 
-                        (prm 'sra (T i) (K fixnum-shift)))])
+                        (prm 'sra (T i) (K fx-shift)))])
          (with-tmp ([x0 (prm 'mref t (K bvoff))])
            (prm 'bswap! x0 x0)
            (prm 'mset x (K (+ floff wordsize)) x0))
@@ -1564,7 +1564,7 @@
    (seq*
      (prm 'fl:load (T x) (K (- disp-flonum-data vector-tag)))
      (prm 'fl:store
-       (prm 'int+ (T bv) (prm 'sra (T i) (K fixnum-shift)))
+       (prm 'int+ (T bv) (prm 'sra (T i) (K fx-shift)))
        (K (- disp-bytevector-data bytevector-tag))))])
 
 
@@ -1573,7 +1573,7 @@
    (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
      (prm 'mset x (K (- vector-tag)) (K flonum-tag))
      (prm 'fl:load-single
-       (prm 'int+ (T bv) (prm 'sra (T i) (K fixnum-shift)))
+       (prm 'int+ (T bv) (prm 'sra (T i) (K fx-shift)))
        (K (- disp-bytevector-data bytevector-tag)))
      (prm 'fl:single->double)
      (prm 'fl:store x (K (- disp-flonum-data vector-tag)))
@@ -1585,7 +1585,7 @@
      (prm 'fl:load (T x) (K (- disp-flonum-data vector-tag)))
      (prm 'fl:double->single)
      (prm 'fl:store-single
-       (prm 'int+ (T bv) (prm 'sra (T i) (K fixnum-shift)))
+       (prm 'int+ (T bv) (prm 'sra (T i) (K fx-shift)))
        (K (- disp-bytevector-data bytevector-tag))))])
 
 (define-primop $bytevector-ieee-single-nonnative-ref unsafe
@@ -1594,7 +1594,7 @@
          [floff (- disp-flonum-data vector-tag)])
      (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
        (prm 'mset x (K (- vector-tag)) (K flonum-tag))
-       (with-tmp ([t (prm 'int+ (T bv) (prm 'sra (T i) (K fixnum-shift)))])
+       (with-tmp ([t (prm 'int+ (T bv) (prm 'sra (T i) (K fx-shift)))])
          (with-tmp ([x0 (prm 'mref t (K bvoff))])
            (prm 'bswap! x0 x0)
            (prm 'mset x (K floff) x0)))
@@ -1613,7 +1613,7 @@
 ;       (K (make-object '#vu8(7 6 2 3 4 5 1 0)))
 ;       (K (- disp-bytevector-data bytevector-tag)))
 ;     (prm 'fl:store
-;       (prm 'int+ (T bv) (prm 'sra (T i) (K fixnum-shift)))
+;       (prm 'int+ (T bv) (prm 'sra (T i) (K fx-shift)))
 ;       (K (- disp-bytevector-data bytevector-tag))))])
 
 (define-primop $bytevector-ieee-double-nonnative-set! unsafe
@@ -1621,7 +1621,7 @@
    (let ([bvoff (- disp-bytevector-data bytevector-tag)]
          [floff (- disp-flonum-data vector-tag)])
      (with-tmp ([t (prm 'int+ (T bv)
-                      (prm 'sra (T i) (K fixnum-shift)))])
+                      (prm 'sra (T i) (K fx-shift)))])
        (with-tmp ([x0 (prm 'mref (T x) (K floff))])
          (prm 'bswap! x0 x0)
          (prm 'mset t (K (+ bvoff wordsize)) x0))
@@ -1637,7 +1637,7 @@
        (prm 'fl:load (T x) (K floff))
        (prm 'fl:double->single)
        (with-tmp ([t (prm 'int+ (T bv)
-                        (prm 'sra (T i) (K fixnum-shift)))])
+                        (prm 'sra (T i) (K fx-shift)))])
          (prm 'fl:store-single t (K bvoff))
          (with-tmp ([x0 (prm 'mref t (K bvoff))])
            (prm 'bswap! x0 x0)
@@ -1660,7 +1660,7 @@
                       (K string-tag))])
          (prm 'mset s
              (K (- disp-string-length string-tag))
-             (K (* n fixnum-scale)))
+             (K (* n fx-scale)))
          s)]
      [else
       (with-tmp ([s (prm 'alloc 
@@ -1685,7 +1685,7 @@
      [(constant i)
       (unless (fixnum? i) (interrupt))
       (prm 'mref (T s)
-        (K (+ (* i fixnum-scale) 
+        (K (+ (* i fx-scale) 
               (- disp-string-data string-tag))))]
      [else
       (prm 'mref (T s)
@@ -1731,7 +1731,7 @@
      [(constant i) 
       (unless (fixnum? i) (interrupt))
       (prm 'mset (T x) 
-         (K (+ (* i fixnum-scale) (- disp-string-data string-tag)))
+         (K (+ (* i fx-scale) (- disp-string-data string-tag)))
          (T c))]
      [else
       (prm 'mset (T x) 
@@ -1985,18 +1985,18 @@
      (prm 'logand
           (prm 'mref (T x)
                (prm 'int+
-                    (prm 'sra (T i) (K fixnum-shift))
+                    (prm 'sra (T i) (K fx-shift))
                     (K (- disp-code-data vector-tag))))
           (K 255))
-     (K fixnum-shift))])
+     (K fx-shift))])
 
 (define-primop $code-set! unsafe
   [(E x i v)
    (prm 'bset/h (T x)
         (prm 'int+ 
-             (prm 'sra (T i) (K fixnum-shift))
+             (prm 'sra (T i) (K fx-shift))
              (K (- disp-code-data vector-tag)))
-        (prm 'sll (T v) (K (- 8 fixnum-shift))))])
+        (prm 'sll (T v) (K (- 8 fx-shift))))])
 
 (define-primop $set-code-annotation! unsafe
   [(E x v) (mem-assign v (T x) (- disp-code-annotation vector-tag))])
@@ -2010,9 +2010,10 @@
 
 (define-primop $data->transcoder unsafe
   [(V x) (prm 'logor
-              (prm 'sll (T x) (K (- transcoder-payload-shift fixnum-shift)))
+              (prm 'sll (T x) (K (- transcoder-payload-shift
+                                    fx-shift)))
               (K transcoder-tag))])
 (define-primop $transcoder->data unsafe
-  [(V x) (prm 'sra (T x) (K (- transcoder-payload-shift fixnum-shift)))])
+  [(V x) (prm 'sra (T x) (K (- transcoder-payload-shift fx-shift)))])
 /section)
 

@@ -20,17 +20,17 @@
 ;
 ;#!eof
 
-(define-syntax export-all-module
-  (syntax-rules (define)
-    [(_ M (define name* v*) ...)
-     (module M (name* ...)
-       (define name* v*) ...)]))
-
-(export-all-module object-representation
-  (define fixnum-scale 4)
-  (define fixnum-shift 2)
-  (define fixnum-tag 0)
-  (define fixnum-mask 3))
+;(define-syntax export-all-module
+;  (syntax-rules (define)
+;    [(_ M (define name* v*) ...)
+;     (module M (name* ...)
+;       (define name* v*) ...)]))
+;
+;(export-all-module object-representation
+;  (define fixnum-scale 4)
+;  (define fixnum-shift 2)
+;  (define fixnum-tag 0)
+;  (define fixnum-mask 3))
 
 (module primops (primop? get-primop set-primop!)
   (define cookie (gensym))
@@ -44,7 +44,7 @@
   )
 
 (module (specify-representation)
-  (import object-representation)
+  ;(import object-representation)
   (import primops)
   (define-struct PH
     (interruptable? p-handler p-handled? v-handler v-handled? e-handler e-handled?))
@@ -325,10 +325,11 @@
            (build-closures clhs* crhs*
              (build-setters clhs* crhs* body)))])))
 
+
   (define (constant-rep x)
     (let ([c (constant-value x)])
       (cond
-        [(fixnum? c) (make-constant (* c fixnum-scale))]
+        [(fx? c) (make-constant (* c fx-scale))]
         [(boolean? c) (make-constant (if c bool-t bool-f))]
         [(eq? c (void)) (make-constant void-object)]
         [(bwp-object? c) (make-constant bwp-object)]
@@ -461,7 +462,7 @@
   (define (interrupt-when x)
     (make-conditional x (interrupt) (prm 'nop))) 
   (define (interrupt-unless-fixnum x)
-    (interrupt-unless (tag-test x fixnum-mask fixnum-tag)))
+    (interrupt-unless (tag-test x fx-mask fx-tag)))
 
 
   (define (T x)

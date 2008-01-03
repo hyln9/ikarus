@@ -64,8 +64,8 @@ ikptr ik_exec_code(ikpcb* pcb, ikptr code_ptr){
     argc = ik_asm_reenter(pcb, new_fbase, argc);
     next_k =  pcb->next_k;
   }
-  return ref(pcb->frame_base, -2*wordsize);
-  return argc;
+  ikptr rv = ref(pcb->frame_base, -2*wordsize);
+  return rv;
 }
 
 

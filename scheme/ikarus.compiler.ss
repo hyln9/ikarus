@@ -1909,7 +1909,8 @@
       [(4) 2]
       [(8) 3]
       [else 
-       (error 'ikarus "wordsize is neither 4 nor 8" wordsize)])) 
+       (error 'ikarus "wordsize is neither 4 nor 8" wordsize)]))
+  (define fx-scale wordsize)
   (define object-alignment (* 2 wordsize))
   (define align-shift (+ wordshift 1))
   (define fx-shift  wordshift)
@@ -2085,6 +2086,13 @@
 (define pcb-collect-key            (* 12 wordsize))
 
 
+(define (fx? x)
+  (let* ([intbits (* wordsize 8)]
+         [fxbits (- intbits fx-shift)])
+    (and (or (fixnum? x) (bignum? x))
+         (<= (- (expt 2 (- fxbits 1)))
+             x
+             (- (expt 2 (- fxbits 1)) 1)))))
 
 
 (module ()

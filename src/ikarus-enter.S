@@ -32,18 +32,31 @@
 .align 8
 ik_asm_enter:
 _ik_asm_enter:
-  # ignored value is the third arg 12(%esp)
-  # code is the second arg  8(%esp)
-  # pcb is the first arg    4(%esp)
-  # return point is at      0(%esp)
-  movl %esi, -4(%esp)    #  preserve
-  movl %ebp, -8(%esp)    #  preserve
-  movl 4(%esp), %esi   
-  movl 0(%esi), %ebp     # allocation pointer is at 0(pcb)
-  movl %esp, %eax
-  subl $16, %esp         # 24 for alignment
-  movl %esp, 24(%esi)    # save esp in pcb->system_stack
-  movl 8(%esi), %esp     # load scheme stack from pcb->frame_pinter
+# c parameters come in registers:
+#     %rdi, %rsi, %rdx, %rcx, %r8 and %r9
+# return value registers are %rax and %rdi
+# callee-save registers:
+#     %rbp, %rbx, %r12, r13, r14, %r15 are callee-save 
+
+
+  # First, save all callee-save registers
+  mov %rbp,  -8(%rsp)      # preserve
+  mov %rbx,  -16(%rsp)     # preserve
+  mov %r12,  -24(%rsp)     # preserve
+  mov %r13,  -32(%rsp)     # preserve
+  mov %r14,  -40(%rsp)     # preserve
+  mov %r15,  -48(%rsp)     # preserve
+
+  # code is the second arg, or  %rsi
+  # pcb is the first arg, or    %rdi
+  # return point is at       0(%rsp)
+
+  mov %rsi, %rax     # move code pointer to %rax
+  mov %rdi, %rsi     # move pcb into pcb-register (%rsi)
+  mov 0(%rsi), %rbp  # allocation pointer is at 0(pcb)
+  sub $64, %rsp         # 64 for alignment
+  mov %rsp, 48(%rsi)    # save esp in pcb->system_stack
+  mov 16(%rsi), %rsp    # load scheme stack from pcb->frame_pinter
   jmp L_call
   .byte 0
   .byte 0
@@ -59,21 +72,27 @@ L_multivalue_label: # FIXME
   .byte 0
   .byte 0
 L_call:
-  call *8(%eax)         # goooooooo
+  call *%rax         # goooooooo
   # now we're back
 ik_underflow_handler:
-  movl %eax, -8(%esp)   # store the return value
-  movl $-4, %eax        # set rvcount = 1
+  mov %rax, -16(%rsp)   # store the return value
+  mov $-8, %rax         # set rvcount = 1
 L_do_underflow:
-  movl %esp, 8(%esi)    # store scheme stack in pcb->frame_pointer
-  movl %ebp, 0(%esi)    # store allocation pointer
-  movl 24(%esi), %esp   # restore system stack
-  addl $16, %esp        # 24 for alignment (>= 16)
-  movl -4(%esp), %esi   # restore callee-save registers
-  movl -8(%esp), %ebp   #
-  ret                   # back to C, which handled the underflow
+  mov %rsp, 16(%rsi)    # store scheme stack in pcb->frame_pointer
+  mov %rbp, 0(%rsi)     # store allocation pointer
+  mov 48(%rsi), %rsp    # restore system stack
+  add $64, %rsp         # 64 for alignment
+
+  # restore callee-save registers
+  mov -8(%rsp) ,  %rbp     # restore
+  mov -16(%rsp),  %rbx     # restore
+  mov -24(%rsp),  %r12     # restore
+  mov -32(%rsp),  %r13     # restore
+  mov -40(%rsp),  %r14     # restore
+  mov -48(%rsp),  %r15     # restore
+  ret      # back to C, which handled the underflow
 L_multivalue_underflow:
-  addl $4, %esp
+  add $8, %rsp
   jmp L_do_underflow
 
 

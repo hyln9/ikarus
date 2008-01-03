@@ -110,26 +110,18 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
       }
       close(fd);
     }
-    ikptr val = void_object;
     if(wordsize == 4){
       ik_exec_code(pcb, v);
     } else {
-      fprintf(stderr, "NOT EXECING YET\n");
-    }
-    if(val != void_object){
-      /* this is from revision 1 
-         and is no longer needed 
-         and should be removed */
+      fprintf(stderr, ";;; EXECING ...\n");
+      ikptr val = ik_exec_code(pcb, v);
+      fprintf(stderr, ";;; RETURNED ...\n");
       ik_print(val);
     }
   }
   if(p.memp != p.memq){
     fprintf(stderr, "fasl-read did not reach eof!\n");
     exit(-10);
-  }
-  if(wordsize == 8){
-    fprintf(stderr, "DONE READING FASL, EXITING ...\n");
-    exit(-1);
   }
 }
 
