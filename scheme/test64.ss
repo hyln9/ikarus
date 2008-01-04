@@ -21,8 +21,6 @@
   (except (ikarus) assembler-output))
 
 (define (compile1 x)
-  (printf "Compiling:\n")
-  (pretty-print x)
   (let ([p (open-file-output-port "test64.fasl" (file-options no-fail))])
     (parameterize ([assembler-output #t])
       (compile-core-expr-to-port x p))
@@ -36,7 +34,9 @@
       (lambda () (get-string-all (current-input-port))))))
 
 (define (compile-test-and-run expr expected)
-  (let ([val (compile-and-run expr)])
+  (printf "Compiling:\n")
+  (pretty-print expr)
+  (let ([val (compile-and-run (fixup expr))])
     (unless (equal? val expected) 
       (error 'compile-test-and-run "failed:got:expected" val expected))))
 
@@ -91,6 +91,7 @@
       [(,rator ,[rand*] ...) 
        (guard (assq rator env)) 
        `(,(Expr rator env) ,rand* ...)]
+      [(quote ,x) `(quote ,x)]
       [(,prim ,[args] ...) 
        (guard (assq prim prims-alist))
        `((primitive ,(cadr (assq prim prims-alist))) ,args ...)]
@@ -110,16 +111,14 @@
     (syntax-case x (=>)
       [(_ name [test => string] ...) 
        #'(set! all-tests
-           (append all-tests
-              (list 
-                (list (fixup 'test) string) 
-                ...)))])))
+           (append all-tests 
+              '([test string] ...)))])))
 
-;(include "tests/tests-1.1-req.scm")
-;(include "tests/tests-1.2-req.scm")
-;(include "tests/tests-1.3-req.scm")
-;(include "tests/tests-1.4-req.scm")
-;(include "tests/tests-1.5-req.scm")
+(include "tests/tests-1.1-req.scm")
+(include "tests/tests-1.2-req.scm")
+(include "tests/tests-1.3-req.scm")
+(include "tests/tests-1.4-req.scm")
+(include "tests/tests-1.5-req.scm")
 (include "tests/tests-1.6-req.scm")
 
 (test-all)
