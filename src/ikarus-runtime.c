@@ -530,7 +530,7 @@ char* ik_uuid(char* str){
 static const char* uuid_chars = 
 "!$%&/0123456789<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 static int uuid_strlen = 1;
-ikptr ik_uuid(ikptr str){
+ikptr ik_uuid(ikptr bv){
   static int fd = -1;
   if(fd == -1){
     fd = open("/dev/urandom", O_RDONLY);
@@ -539,16 +539,16 @@ ikptr ik_uuid(ikptr str){
     }
     uuid_strlen = strlen(uuid_chars);
   }
-  long int n = unfix(ref(str, off_bytevector_length));
-  char* data = (char*)(long)(str+off_bytevector_data);
+  long int n = unfix(ref(bv, off_bytevector_length));
+  unsigned char* data = (unsigned char*)(long)(bv+off_bytevector_data);
   read(fd, data, n);
-  char* p = data;
-  char* q = data + n;
+  unsigned char* p = data;
+  unsigned char* q = data + n;
   while(p < q){
     *p = uuid_chars[*p % uuid_strlen];
     p++;
   }
-  return str;
+  return bv;
 }
 
 

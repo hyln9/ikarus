@@ -21,7 +21,8 @@
   (except (ikarus) assembler-output))
 
 (define (compile1 x)
-  (printf "Compiling ~s\n" x)
+  (printf "Compiling:\n")
+  (pretty-print x)
   (let ([p (open-file-output-port "test64.fasl" (file-options no-fail))])
     (parameterize ([assembler-output #t])
       (compile-core-expr-to-port x p))
@@ -80,14 +81,29 @@
 
 
 (define (fixup x)
-  (match x
-    [,n (guard (self-evaluating? n)) `(quote ,n)]
-    [(,prim ,[args] ...) 
-     (guard (assq prim prims-alist))
-     `((primitive ,(cadr (assq prim prims-alist))) ,args ...)]
-    [(if ,[e0] ,[e1] ,[e2]) 
-     `(if ,e0 ,e1 ,e2)]
-    [,_ (error 'fixup "invalid expression" _)]))
+  (define (Expr x env)
+    (match x
+      [,n (guard (self-evaluating? n)) `(quote ,n)]
+      [,var (guard (symbol? var))
+       (cond
+         [(assq var env) => cdr]
+         [else (error 'fixup "unbound var" var)])]
+      [(,rator ,[rand*] ...) 
+       (guard (assq rator env)) 
+       `(,(Expr rator env) ,rand* ...)]
+      [(,prim ,[args] ...) 
+       (guard (assq prim prims-alist))
+       `((primitive ,(cadr (assq prim prims-alist))) ,args ...)]
+      [(if ,[e0] ,[e1] ,[e2])
+       `(if ,e0 ,e1 ,e2)]
+      [(let ([,lhs* ,[rhs*]] ...) ,body)
+       (let ([nlhs* (map gensym lhs*)])
+         (let ([env (append (map cons lhs* nlhs*) env)])
+           `((case-lambda 
+               [,nlhs* ,(Expr body env)])
+             ,rhs* ...)))]
+      [,_ (error 'fixup "invalid expression" _)]))
+  (Expr x '()))
 
 (define-syntax add-tests-with-string-output 
   (lambda (x)
@@ -103,7 +119,8 @@
 ;(include "tests/tests-1.2-req.scm")
 ;(include "tests/tests-1.3-req.scm")
 ;(include "tests/tests-1.4-req.scm")
-(include "tests/tests-1.5-req.scm")
+;(include "tests/tests-1.5-req.scm")
+(include "tests/tests-1.6-req.scm")
 
 (test-all)
 (printf "Passed ~s tests\n" (length all-tests))
