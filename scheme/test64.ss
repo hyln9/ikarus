@@ -17,6 +17,7 @@
 ;;; vim:syntax=scheme
 (import 
   (ikarus compiler)
+  (match)
   (except (ikarus) assembler-output))
 
 (define (compile1 x)
@@ -30,23 +31,43 @@
   (compile1 x)
   (let ([rs (system "../src/ikarus -b test64.boot > test64.out")])
     (unless (= rs 0) (error 'run1 "died"))
-    (with-input-from-file "test64.out" read)))
+    (with-input-from-file "test64.out"
+      (lambda () (get-string-all (current-input-port))))))
 
 (define (compile-test-and-run expr expected)
   (let ([val (compile-and-run expr)])
     (unless (equal? val expected) 
       (error 'compile-test-and-run "failed:got:expected" val expected))))
 
+(define (test-all)
+  (for-each
+    (lambda (x)
+       (compile-test-and-run (car x) (cadr x)))
+    all-tests))
+
 (define all-tests
-  '([(quote 42)   42]
-    [(quote #f)   #f]
-    [(quote ())  ()]))
+  '([(quote 42)  "42\n"]
+    [(quote #f)  "#f\n"]
+    [(quote ())  "()\n"]))
 
-(for-each
+(define (fixup x)
+  (match x
+    [,n (guard (number? n)) `(quote ,n)]
+    [,_ (error 'fixup "invalid expression" _)]))
+
+(define-syntax add-tests-with-string-output 
   (lambda (x)
-     (compile-test-and-run (car x) (cadr x)))
-  all-tests)
+    (syntax-case x (=>)
+      [(_ name [test => string] ...) 
+       #'(set! all-tests
+           (append all-tests
+              (list 
+                (list (fixup 'test) string) 
+                ...)))])))
 
+(include "tests/tests-1.1-req.scm")
 
+(test-all)
+(printf "Passed ~s tests\n" (length all-tests))
 (printf "Happy Happy Joy Joy\n")
 
