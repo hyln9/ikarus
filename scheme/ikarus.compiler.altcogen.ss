@@ -2143,6 +2143,14 @@
               (S* (cdr ls) 
                   (lambda (d)
                     (k (cons a d))))))]))
+    (define (long-imm? x) 
+      (struct-case x 
+        [(constant n) 
+         (cond
+           [(integer? n) 
+            (not (<= (- (expt 2 31)) n (- (expt 2 31) 1)))]
+           [else #t])]
+        [else #f]))
     (define (mem? x)
       (or (disp? x) (fvar? x)))
     ;;; unspillable effect
@@ -2158,6 +2166,13 @@
             (cond
               [(and (eq? op 'move) (eq? a b)) 
                (make-primcall 'nop '())]
+              [(and (= wordsize 8) 
+                    (not (eq? op 'move)) 
+                    (long-imm? b))
+               (let ([u (mku)])
+                 (make-seq
+                   (E (make-asm-instr 'move u b))
+                   (E (make-asm-instr op a u))))]
               [(and (mem? a) (mem? b)) 
                (let ([u (mku)])
                  (make-seq

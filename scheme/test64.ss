@@ -53,16 +53,38 @@
 (define (self-evaluating? x)
   (or (number? x) (char? x) (boolean? x) (null? x) (string? x)))
 
-(define (primitive? x)
-  (memq x '($fxadd1 $fxsub1 $fixnum->char $char->fixnum fixnum? $fxzero?
-            null? boolean? char? not $fxlognot)))
+(define prims-alist
+  '([$fxadd1 $fxadd1]
+    [$fxsub1 $fxsub1]
+    [$fixnum->char $fixnum->char]
+    [$char->fixnum $char->fixnum]
+    [fixnum? fixnum?]
+    [$fxzero? $fxzero?]
+    [null? null?]
+    [boolean? boolean?]
+    [char? char?]
+    [not not]
+    [$fxlognot $fxlognot]
+    [fx+ $fx+]
+    [fx- $fx-]
+    [fx* $fx*]
+    [fxlogor $fxlogor]
+    [fxlogand $fxlogand]
+    [fxlognot $fxlognot]
+    [fx= $fx=]
+    [fx< $fx<]
+    [fx<= $fx<=]
+    [fx> $fx>]
+    [fx>= $fx>=]
+    ))
+
 
 (define (fixup x)
   (match x
     [,n (guard (self-evaluating? n)) `(quote ,n)]
     [(,prim ,[args] ...) 
-     (guard (primitive? prim))
-     `((primitive ,prim) ,args ...)]
+     (guard (assq prim prims-alist))
+     `((primitive ,(cadr (assq prim prims-alist))) ,args ...)]
     [(if ,[e0] ,[e1] ,[e2]) 
      `(if ,e0 ,e1 ,e2)]
     [,_ (error 'fixup "invalid expression" _)]))
@@ -77,10 +99,11 @@
                 (list (fixup 'test) string) 
                 ...)))])))
 
-(include "tests/tests-1.1-req.scm")
-(include "tests/tests-1.2-req.scm")
-(include "tests/tests-1.3-req.scm")
-(include "tests/tests-1.4-req.scm")
+;(include "tests/tests-1.1-req.scm")
+;(include "tests/tests-1.2-req.scm")
+;(include "tests/tests-1.3-req.scm")
+;(include "tests/tests-1.4-req.scm")
+(include "tests/tests-1.5-req.scm")
 
 (test-all)
 (printf "Passed ~s tests\n" (length all-tests))
