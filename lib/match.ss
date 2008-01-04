@@ -5,6 +5,9 @@
 ;;; some improvements were suggested by Steve Ganz.  Additional
 ;;; modifications were made by Kent Dybvig.
 
+;; (Jan 2008)
+;; Aziz added match/lexical-context trace-match/lexical-context
+
 ;; (Nov 2007)
 ;; Aziz Ghuloum added it to ikarus.
 
@@ -91,8 +94,10 @@
 
 
 (library (match)
-  (export match trace-match guard ... quasiquote unquote
-          unquote-splicing)
+  (export match trace-match 
+          match/lexical-context trace-match/lexical-context
+          match-equality-test
+          guard ... quasiquote unquote unquote-splicing)
   (import (ikarus))
 
 (define-syntax rec
@@ -115,12 +120,19 @@
        #'(let f ((ThreadedId ThreadedId) ... (x Exp))
            (match-help ctxt f x (ThreadedId ...) Clause ...))))))
 
+
+(define-syntax match/lexical-context
+  (lambda (x)
+    (syntax-case x ()
+      ((_ ctxt Exp Clause ...)
+       #'(let f ((x Exp))
+           (match-help ctxt f x () Clause ...))))))
+
 (define-syntax match
   (lambda (x)
     (syntax-case x ()
       ((ctxt Exp Clause ...)
-       #'(let f ((x Exp))
-           (match-help ctxt f x () Clause ...))))))
+       #'(match/lexical-context ctxt Exp Clause ...)))))
 
 (define-syntax trace-match+
   (lambda (x)
@@ -130,13 +142,19 @@
                        (match-help ctxt f x (ThreadedId ...) Clause ...))))
            (f ThreadedId ... Exp))))))
 
+(define-syntax trace-match/lexical-context
+  (lambda (x)
+    (syntax-case x ()
+      ((_ ctxt Name Exp Clause ...)
+       #'(letrec ((f (trace-lambda Name (x)
+                       (match-help ctxt f x () Clause ...))))
+           (f Exp))))))
+
 (define-syntax trace-match
   (lambda (x)
     (syntax-case x ()
       ((ctxt Name Exp Clause ...)
-       #'(letrec ((f (trace-lambda Name (x)
-                       (match-help ctxt f x () Clause ...))))
-           (f Exp))))))
+       #'(trace-match/lexical-context ctxt Name Exp Clause ...)))))
 
 ;;; ------------------------------
 
