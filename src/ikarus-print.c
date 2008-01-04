@@ -70,7 +70,12 @@ print(FILE* fh, ikptr x){
     fprintf(fh, "()");
   }
   else if(is_char(x)){
-    fprintf(fh, "X");
+    unsigned long int i = ((long int)x) >> char_shift;
+    if(i < 128){
+      fprintf(fh, "%s", char_string[i]);
+    } else {
+      fprintf(fh, "#\\x%lx", i);
+    }
   }
 #if 0
   else if(tagof(x) == symbol_tag){

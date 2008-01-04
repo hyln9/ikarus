@@ -53,9 +53,16 @@
 (define (self-evaluating? x)
   (or (number? x) (char? x) (boolean? x) (null? x) (string? x)))
 
+(define (primitive? x)
+  (memq x '($fxadd1 $fixnum->char $char->fixnum fixnum? $fxzero?
+            null? boolean? char? not $fxlognot)))
+
 (define (fixup x)
   (match x
     [,n (guard (self-evaluating? n)) `(quote ,n)]
+    [(,prim ,[args] ...) 
+     (guard (primitive? prim))
+     `((primitive ,prim) ,args ...)]
     [,_ (error 'fixup "invalid expression" _)]))
 
 (define-syntax add-tests-with-string-output 
@@ -70,6 +77,7 @@
 
 (include "tests/tests-1.1-req.scm")
 (include "tests/tests-1.2-req.scm")
+(include "tests/tests-1.3-req.scm")
 
 (test-all)
 (printf "Passed ~s tests\n" (length all-tests))
