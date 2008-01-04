@@ -22,14 +22,14 @@
 
 (define (compile1 x)
   (printf "Compiling ~s\n" x)
-  (let ([p (open-file-output-port "test64.boot" (file-options no-fail))])
+  (let ([p (open-file-output-port "test64.fasl" (file-options no-fail))])
     (parameterize ([assembler-output #t])
       (compile-core-expr-to-port x p))
     (close-output-port p)))
 
 (define (compile-and-run x) 
   (compile1 x)
-  (let ([rs (system "../src/ikarus -b test64.boot > test64.out")])
+  (let ([rs (system "../src/ikarus -b test64.fasl > test64.out")])
     (unless (= rs 0) (error 'run1 "died"))
     (with-input-from-file "test64.out"
       (lambda () (get-string-all (current-input-port))))))
@@ -50,9 +50,12 @@
     [(quote #f)  "#f\n"]
     [(quote ())  "()\n"]))
 
+(define (self-evaluating? x)
+  (or (number? x) (char? x) (boolean? x) (null? x) (string? x)))
+
 (define (fixup x)
   (match x
-    [,n (guard (number? n)) `(quote ,n)]
+    [,n (guard (self-evaluating? n)) `(quote ,n)]
     [,_ (error 'fixup "invalid expression" _)]))
 
 (define-syntax add-tests-with-string-output 
@@ -66,6 +69,7 @@
                 ...)))])))
 
 (include "tests/tests-1.1-req.scm")
+(include "tests/tests-1.2-req.scm")
 
 (test-all)
 (printf "Passed ~s tests\n" (length all-tests))
