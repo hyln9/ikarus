@@ -2065,7 +2065,17 @@
       (cond
         [(flonum? x) (foreign-call "ikrt_fl_sqrt" x)]
         [(fixnum? x) (foreign-call "ikrt_fx_sqrt" x)]
-        [(bignum? x) (die 'sqrt "BUG: bignum sqrt not implemented")]
+        [(bignum? x) 
+         (unless ($bignum-positive? x) 
+           (error 'sqrt "complex results not supported" x))
+         (let-values ([(s r) (exact-integer-sqrt x)])
+           (cond
+             [(eq? r 0) s]
+             [else 
+              (let ([v (sqrt (inexact x))])
+                (cond
+                  [(infinite? v) (inexact s)]
+                  [else v]))]))]
         [(ratnum? x) (/ (sqrt ($ratnum-n x)) (sqrt ($ratnum-d x)))]
         [else (die 'sqrt "BUG: unsupported" x)])))
 
