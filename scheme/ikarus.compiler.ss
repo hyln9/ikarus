@@ -913,17 +913,23 @@
                       [(eq? ctxt 'e) a0]
                       [else (mk-seq a0 (make-constant #t))])))))
          (giveup))] 
-    [(list)
+    [(list vector)
      (case ctxt
-       [(v) (if (null? rand*) (make-constant '()) (giveup))]
+       [(v) 
+        (if (null? rand*) 
+            (make-constant 
+              (case op
+                [(list)    '()]
+                [else     '#()]))
+            (giveup))]
        [else
         (if (null? rand*)
             (make-constant #t)
             (let f ([a (car rand*)] [d (cdr rand*)])
               (cond
-                [(null? d) (make-seq a (make-constant #t))]
+                [(null? d) (mk-seq a (make-constant #t))]
                 [else
-                 (f (make-seq a (car d)) (cdr d))])))])]
+                 (f (mk-seq a (car d)) (cdr d))])))])]
     [(cons*)
      (case ctxt
        [(e) 
