@@ -644,14 +644,36 @@
   ;;;                    (expt 2.0 b))))
   ;;;           (* (->flonum (bitwise-arithmetic-shift-right n b) d)
   ;;;              (expt 2.0 b))))))
-  (define (ratnum->flonum x) 
-    (let f ([n ($ratnum-n x)] [d ($ratnum-d x)])
-      (let-values ([(q r) (quotient+remainder n d)])
-        (if (= q 0) 
-            (/ 1.0 (f d n))
-            (if (= r 0)
-                (inexact q)
-                (+ q (f r d)))))))
+  
+  ;;; (define (ratnum->flonum x) 
+  ;;;   (let f ([n ($ratnum-n x)] [d ($ratnum-d x)])
+  ;;;     (let-values ([(q r) (quotient+remainder n d)])
+  ;;;       (if (= q 0) 
+  ;;;           (/ 1.0 (f d n))
+  ;;;           (if (= r 0)
+  ;;;               (inexact q)
+  ;;;               (+ q (f r d)))))))
+
+  (define (ratnum->flonum num)
+    (define (rat n m)
+      (let-values ([(q r) (quotient+remainder n m)])
+         (if (= r 0) 
+             (inexact q)
+             (fl+ (inexact q) (fl/ 1.0 (rat  m r))))))
+    (define (pos n d)
+      (cond
+        [(> n d) (rat n d)]
+        [(even? n)
+         (* (pos (sra n 1) d) 2.0)]
+        [(even? d) 
+         (/ (pos n (sra d 1)) 2.0)]
+        [else 
+         (/ (rat d n))]))
+    (let ([n ($ratnum-n num)] [d ($ratnum-d num)])
+      (if (> n 0) 
+          (pos n d)
+          (- (pos n d)))))
+
 
   (define binary+
     (lambda (x y)
@@ -1010,7 +1032,8 @@
                      (cond
                        [($fx= g y) (fxquotient x g)]
                        [($fx= g 1) ($make-ratnum x y)]
-                       [else ($make-ratnum (fxquotient x g) (fxquotient y g))])))]
+                       [else 
+                        ($make-ratnum (fxquotient x g) (fxquotient y g))])))]
               [else
                (if ($fx= y -1)
                    (binary- 0 x)
@@ -1066,7 +1089,12 @@
            [(bignum? y) 
             (let ([g (binary-gcd x y)])
               (cond
-                [($fx= g 1) ($make-ratnum x y)]
+                [($fx= g 1)
+                 (if ($bignum-positive? y)
+                     ($make-ratnum x y)
+                     ($make-ratnum 
+                       (binary- 0 x)
+                       (binary- 0 y)))]
                 [($bignum-positive? y)
                  (if (= g y)
                      (quotient x g)
@@ -1075,8 +1103,9 @@
                  (let ([y (binary- 0 y)])
                    (if (= g y)
                        (binary- 0 (quotient x g))
-                       ($make-ratnum (binary- 0 (quotient x g))
-                                     (quotient y g))))]))]
+                       ($make-ratnum
+                         (binary- 0 (quotient x g))
+                         (quotient y g))))]))]
            [(flonum? y) ($fl/ (bignum->flonum x) y)]
            [(ratnum? y) 
             (binary/ (binary* x ($ratnum-n y)) ($ratnum-d y))]
@@ -2064,22 +2093,26 @@
     (lambda (x)
       (cond
         [(flonum? x) (foreign-call "ikrt_fl_sqrt" x)]
-        [(fixnum? x) (foreign-call "ikrt_fx_sqrt" x)]
+        [(fixnum? x)
+         (when ($fx< x 0) 
+           (die 'sqrt "complex results not supported" x))
+         (foreign-call "ikrt_fx_sqrt" x)]
         [(bignum? x) 
          (unless ($bignum-positive? x) 
-           (error 'sqrt "complex results not supported" x))
+           (die 'sqrt "complex results not supported" x))
          (let-values ([(s r) (exact-integer-sqrt x)])
            (cond
              [(eq? r 0) s]
              [else 
               (let ([v (sqrt (inexact x))])
+                ;;; could the [dropped] residual ever affect the answer?
                 (cond
                   [(infinite? v) (inexact s)]
                   [else v]))]))]
-        [(ratnum? x) 
+        [(ratnum? x)
          ;;; FIXME: incorrect as per bug 180170
          (/ (sqrt ($ratnum-n x)) (sqrt ($ratnum-d x)))]
-        [else (die 'sqrt "BUG: unsupported" x)])))
+        [else (die 'sqrt "not a number" x)])))
 
   (define flsqrt
     (lambda (x)
@@ -2255,13 +2288,13 @@
            [(>= x 0) (foreign-call "ikrt_fl_log" x)]
            [else (die 'log "negative argument" x)])]
         [(bignum? x) 
-         ;;; FIXME: incorrect as per bug 180170
          (unless ($bignum-positive? x) 
            (die 'log "negative argument" x))
          (let ([v (log (inexact x))])
            (cond
              [(infinite? v)
               (let-values ([(s r) (exact-integer-sqrt x)])
+                ;;; could the [dropped] residual ever affect the answer?
                 (fl* 2.0 (log s)))]
              [else v]))]
         [(ratnum? x) 

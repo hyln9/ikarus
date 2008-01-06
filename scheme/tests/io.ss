@@ -66,6 +66,7 @@
 
 (define (test-get-char-1 p n)
   (let f ([i 0])
+    (printf "test-getchar1 ~s\n" i)
     (let ([x (get-char p)])
       (cond
         [(eof-object? x)
@@ -164,6 +165,14 @@
   
   ;;;
   
+  (begin
+    (printf "making transcoder ...\n")
+    (make-transcoder (latin-1-codec) 'none 'raise)
+    (printf "making transcoded port ...\n")
+    (transcoded-port (make-n-byte-bytevector-binary-input-port 256)
+      (make-transcoder (latin-1-codec) 'none 'raise))
+    (printf "OK?\n"))
+    
   (test "reading 256 latin1 chars from bytevector-input-port"
     (test-get-char-1 
       (transcoded-port (make-n-byte-bytevector-binary-input-port 256)
