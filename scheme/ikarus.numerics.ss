@@ -2076,7 +2076,9 @@
                 (cond
                   [(infinite? v) (inexact s)]
                   [else v]))]))]
-        [(ratnum? x) (/ (sqrt ($ratnum-n x)) (sqrt ($ratnum-d x)))]
+        [(ratnum? x) 
+         ;;; FIXME: incorrect as per bug 180170
+         (/ (sqrt ($ratnum-n x)) (sqrt ($ratnum-d x)))]
         [else (die 'sqrt "BUG: unsupported" x)])))
 
   (define flsqrt
@@ -2248,12 +2250,23 @@
            [($fx= x 0) (die 'log "undefined around 0")]
            [($fx> x 0) (foreign-call "ikrt_fx_log" x)]
            [else (die 'log "negative argument" x)])]
-        [(flonum? x) 
+        [(flonum? x)
          (cond
            [(>= x 0) (foreign-call "ikrt_fl_log" x)]
            [else (die 'log "negative argument" x)])]
-        [(bignum? x) (log (exact->inexact x))]
-        [(ratnum? x) (- (log (numerator x)) (log (denominator x)))]
+        [(bignum? x) 
+         ;;; FIXME: incorrect as per bug 180170
+         (unless ($bignum-positive? x) 
+           (die 'log "negative argument" x))
+         (let ([v (log (inexact x))])
+           (cond
+             [(infinite? v)
+              (let-values ([(s r) (exact-integer-sqrt x)])
+                (fl* 2.0 (log s)))]
+             [else v]))]
+        [(ratnum? x) 
+         ;;; FIXME: incorrect as per bug 180170
+         (- (log (numerator x)) (log (denominator x)))]
         [else (die 'log "not a number" x)])))
 
   (define string->number
