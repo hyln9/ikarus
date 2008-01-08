@@ -839,6 +839,15 @@ ikrt_stats_now(ikptr t, ikpcb* pcb){
   ref(t, off_record_data + 10 * wordsize) = fix(pcb->collect_stime.tv_usec);
   ref(t, off_record_data + 11 * wordsize) = fix(pcb->collect_rtime.tv_sec);
   ref(t, off_record_data + 12 * wordsize) = fix(pcb->collect_rtime.tv_usec);
+  {
+    /* minor bytes */
+    long int bytes_in_heap = ((long int) pcb->allocation_pointer) -
+                             ((long int) pcb->heap_base);
+    long int bytes = bytes_in_heap + pcb->allocation_count_minor;
+    ref(t, off_record_data + 13 * wordsize) = fix(bytes);
+  }
+  /* major bytes */
+  ref(t, off_record_data + 14 * wordsize) = fix(pcb->allocation_count_major);
   return void_object;
 }
 
@@ -867,24 +876,6 @@ ikrt_gmt_offset(ikptr t){
   return r;
   */
 }
-
-
-
-
-ikptr
-ikrt_bytes_allocated(ikpcb* pcb){
-  int bytes_in_heap = ((long int) pcb->allocation_pointer) -
-                      ((long int) pcb->heap_base);
-  int bytes = bytes_in_heap + pcb->allocation_count_minor;
-  return fix(bytes);
-}
-
-
-ikptr
-ikrt_bytes_allocated_major(ikpcb* pcb){
-  return fix(pcb->allocation_count_major);
-}
-
 
 ikptr 
 ikrt_fork(){

@@ -26,17 +26,18 @@
      gc-user-secs gc-user-usecs
      gc-sys-secs gc-sys-usecs 
      gc-real-secs gc-real-usecs
+     bytes-minor bytes-major
      ))
 
   (define (mk-stats)
-    (make-stats #f #f #f #f #f #f #f #f #f #f #f #f #f))
+    (make-stats #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f))
 
   (define verbose-timer (make-parameter #f))
 
   (define (set-stats! t)
     (foreign-call "ikrt_stats_now" t))
 
-  (define (print-stats message bytes t1 t0)
+  (define (print-stats message t1 t0)
     (define (print-time msg msecs gc-msecs)
       (fprintf
         (console-error-port)
@@ -78,7 +79,12 @@
                 (stats-sys-usecs t1) (stats-sys-usecs t0))
          (msecs (stats-gc-sys-secs t1)  (stats-gc-sys-secs t0)
                 (stats-gc-sys-usecs t1) (stats-gc-sys-usecs t0))))
-    (fprintf (console-error-port) "    ~a bytes allocated\n" bytes))
+    (fprintf (console-error-port) "    ~a bytes allocated\n" 
+        (diff-bytes  
+          (stats-bytes-minor t0) 
+          (stats-bytes-major t0) 
+          (stats-bytes-minor t1) 
+          (stats-bytes-major t1))))
 
   (define time-it
     (case-lambda
@@ -88,31 +94,20 @@
        (unless (procedure? proc)
          (die 'time-it "not a procedure" proc))
        (let* ([t0 (mk-stats)]
-              [t1 (mk-stats)]
-              [bytes-min (bytes-minor)]
-              [bytes-maj (bytes-major)])
-         (set-stats! t0)
-         (call-with-values proc
+              [t1 (mk-stats)])
+         (define k 
            (case-lambda
              [(v)
               (set-stats! t1)
-              (print-stats message 
-                           (diff-bytes bytes-min bytes-maj 
-                              (bytes-minor) (bytes-major))
-                           t1 t0)
+              (print-stats message t1 t0)
               v]
              [v*
               (set-stats! t1)
-              (print-stats message 
-                           (diff-bytes bytes-min bytes-maj 
-                              (bytes-minor) (bytes-major))
-                           t1 t0)
-              (apply values v*)])))]))
-                       
-  (define (bytes-minor)
-    (foreign-call "ikrt_bytes_allocated"))
-  (define (bytes-major)
-    (foreign-call "ikrt_bytes_allocated_major"))
+              (print-stats message t1 t0)
+              (apply values v*)]))
+         (set-stats! t0)
+         (call-with-values proc k))]))
+
   (define (diff-bytes mnr0 mjr0 mnr1 mjr1)
     (+ (fx- mnr1 mnr0) (* (fx- mjr1 mjr0) #x10000000)))
 
