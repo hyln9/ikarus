@@ -49,7 +49,6 @@
   (f 0 536870911000 536870911)
   (printf "[exact-integer-sqrt] Happy Happy Joy Joy\n"))
 
-
 (test-case-folding)
 (test-parse-flonums)
 (test-reader)
@@ -73,5 +72,5 @@
 (test-fxdiv0-and-mod0)
 (test-fxlength)
 (test-bitwise-bit-count)
-;(test-io)
+(test-io)
 (printf "Happy Happy Joy Joy\n")

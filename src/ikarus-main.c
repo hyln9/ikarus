@@ -257,7 +257,7 @@ SYNOPSIS
 
 void
 register_alt_stack(){
-#ifndef __CYGWIN__
+#if HAVE_SIGALTSTACK
   char* stk = mmap(0, SIGSTKSZ, PROT_READ|PROT_WRITE|PROT_EXEC, 
                    MAP_PRIVATE|MAP_ANON, -1, 0);
 //  char* stk = ik_mmap(SIGSTKSZ);

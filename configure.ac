@@ -30,9 +30,9 @@ case "$target_os" in
 
 AC_CHECK_SIZEOF(void *)
 # remember to enable before release.
-# if (test $ac_cv_sizeof_void_p != 4); then
-#   AC_MSG_ERROR([Ikarus can only run in 32-bit mode.])
-# fi
+if (test $ac_cv_sizeof_void_p != 4); then
+  AC_MSG_ERROR([Ikarus can only run in 32-bit mode.])
+fi
 
 # Checks for libraries.
 AC_SEARCH_LIBS(dlsym, dl,, [AC_MSG_ERROR([Cannot find libdl])])
@@ -93,7 +93,7 @@ AC_FUNC_MMAP
 AC_FUNC_STAT
 AC_FUNC_STRFTIME
 AC_FUNC_STRTOD
-AC_CHECK_FUNCS([bzero gettimeofday memmove memset munmap setenv sqrt strerror getaddrinfo])
+AC_CHECK_FUNCS([sigaltstack bzero gettimeofday memmove memset munmap setenv sqrt strerror getaddrinfo])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES(Makefile src/Makefile scheme/Makefile doc/Makefile lib/Makefile benchmarks/Makefile)
 AC_OUTPUT #(Makefile src/Makefile scheme/Makefile doc/Makefile)

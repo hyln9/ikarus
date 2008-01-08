@@ -5537,9 +5537,11 @@ _ACEOF
 
 
 # remember to enable before release.
-# if (test $ac_cv_sizeof_void_p != 4); then
-#   AC_MSG_ERROR([Ikarus can only run in 32-bit mode.])
-# fi
+if (test $ac_cv_sizeof_void_p != 4); then
+  { { echo "$as_me:$LINENO: error: Ikarus can only run in 32-bit mode." >&5
+echo "$as_me: error: Ikarus can only run in 32-bit mode." >&2;}
+   { (exit 1); exit 1; }; }
+fi
 
 # Checks for libraries.
 { echo "$as_me:$LINENO: checking for library containing dlsym" >&5
@@ -8787,7 +8789,8 @@ fi
 
 
 
-for ac_func in bzero gettimeofday memmove memset munmap setenv sqrt strerror getaddrinfo
+
+for ac_func in sigaltstack bzero gettimeofday memmove memset munmap setenv sqrt strerror getaddrinfo
 do
 as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
 { echo "$as_me:$LINENO: checking for $ac_func" >&5
