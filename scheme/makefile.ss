@@ -1382,6 +1382,7 @@
     [make-i/o-would-block-condition   i]
     [i/o-would-block-condition?       i]
     [i/o-would-block-port             i]
+    [ellipsis-map ]
   ))
 
 (define (macro-identifier? x) 
