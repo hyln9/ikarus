@@ -832,7 +832,7 @@
       (syntax-match e ()
         ((_ ((lhs* rhs*) ...) b b* ...)
          (if (not (valid-bound-ids? lhs*))
-             (stx-error e "invalid identifiers")
+             (invalid-fmls-error e lhs*)
              (let ((lex* (map gen-lexical lhs*))
                    (lab* (map gen-label lhs*)))
                (let ((rib (make-full-rib lhs* lab*))
