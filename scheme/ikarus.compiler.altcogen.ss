@@ -2367,14 +2367,20 @@
     (when (< padding 0) 
       (error 'compile-call-frame "call sequence too long" call-sequence))
     (list 'seq
+      (if (or (= framesize 0) (= framesize 1))
+          '(seq) 
+          `(subl ,(* (fxsub1 framesize) wordsize) ,fpr))
       (jmp L_CALL) 
       `(byte-vector ,livemask-vec)
-      `(int ,framesize)
+      `(int ,(* framesize wordsize))
       '(current-frame-offset)
       multiarg-rp
       `(byte-vector ,(make-vector padding 0))
       L_CALL
-      call-sequence)))
+      call-sequence
+      (if (or (= framesize 0) (= framesize 1))
+          '(seq) 
+          `(addl ,(* (fxsub1 framesize) wordsize) ,fpr)))))
  
 
 
@@ -2479,33 +2485,33 @@
                (label-address (sl-mv-ignore-rp-label))))
          (cond
            [(string? target) ;; foreign call
-            (cons* `(subl ,(* (fxsub1 size) wordsize) ,fpr)
+            (cons* ;`(subl ,(* (fxsub1 size) wordsize) ,fpr)
                    `(movl (foreign-label "ik_foreign_call") %ebx)
                    (compile-call-frame 
-                      (* size wordsize)
+                      size
                       mask
                       (rp-label value)
                       `(call %ebx))
-                   `(addl ,(* (fxsub1 size) wordsize) ,fpr)
+                   ;`(addl ,(* (fxsub1 size) wordsize) ,fpr)
                    ac)]
            [target ;;; known call
-            (cons* `(subl ,(* (fxsub1 size) wordsize) ,fpr)
+            (cons* ;`(subl ,(* (fxsub1 size) wordsize) ,fpr)
                    (compile-call-frame 
-                      (* size wordsize)
+                      size
                       mask
                       (rp-label value)
                       `(call (label ,target)))
-                   `(addl ,(* (fxsub1 size) wordsize) ,fpr)
+                   ;`(addl ,(* (fxsub1 size) wordsize) ,fpr)
                    ac)]
            [else
-            (cons* `(subl ,(* (fxsub1 size) wordsize) ,fpr)
+            (cons* ;`(subl ,(* (fxsub1 size) wordsize) ,fpr)
                    (compile-call-frame 
-                      (* size wordsize)
+                      size
                       mask
                       (rp-label value)
                       `(call (disp ,(fx- disp-closure-code closure-tag)
                                    ,cp-register)))
-                   `(addl ,(* (fxsub1 size) wordsize) ,fpr)
+                   ;`(addl ,(* (fxsub1 size) wordsize) ,fpr)
                    ac)]))]
       [(asm-instr op d s)
        (case op

@@ -2409,14 +2409,14 @@
               (cmpl (int closure-tag) ebx)
               (jne (label (sl-nonprocedure-error-label)))
               (movl (int (argc-convention 0)) eax)
-              (subl (int (fx* wordsize 2)) fpr)
+              ;(subl (int (fx* wordsize 2)) fpr)
               (compile-call-frame
-                 (* wordsize 3)
+                 3
                  '#(#b110)
                  (label-address L_cwv_multi_rp)
                  (indirect-cpr-call))
               ;;; one value returned
-              (addl (int (fx* wordsize 2)) fpr)
+              ;(addl (int (fx* wordsize 2)) fpr)
               (movl (mem (fx* -2 wordsize) fpr) ebx) ; consumer
               (movl ebx cpr)
               (movl eax (mem (fx- 0 wordsize) fpr))
@@ -2529,6 +2529,12 @@
           (tail-indirect-cpr-call))))
     SL_fx+_overflow]))
 
+(define (print-instr x)
+  (cond
+    [(and (pair? x) (eq? (car x) 'seq))
+     (for-each print-instr (cdr x))]
+    [else 
+     (printf "    ~s\n" x)]))
 
 (define (compile-core-expr->code p)
   (let* ([p (recordize p)]
@@ -2548,7 +2554,7 @@
           (for-each 
             (lambda (ls)
               (newline)
-              (for-each (lambda (x) (printf "    ~s\n" x)) ls))
+              (for-each print-instr ls))
             ls*)))
       (let ([code* 
              (assemble-sources 
