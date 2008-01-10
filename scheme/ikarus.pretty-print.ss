@@ -468,7 +468,7 @@
     (define (vec-graph x i j)
       (unless (fx= i j)
         (graph (vector-ref x i))
-        (vec-graph x (fxadd1 i) j h)))
+        (vec-graph x (fxadd1 i) j)))
     (define (vec-dynamic x i j)
       (unless (fx= i j)
         (dynamic (vector-ref x i))
