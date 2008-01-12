@@ -98,7 +98,11 @@ typedef struct gc_t{
   ikptr tconc_ep;
   ikptr tconc_base;
   ikpages* tconc_queue;
+  ik_ptr_page* forward_list;
 } gc_t;
+
+static void handle_guardians(gc_t* gc);
+static void gc_finalize_guardians(gc_t* gc);
 
 static unsigned int 
 next_gen_tag[generation_count] = {
@@ -326,10 +330,8 @@ static ikptr add_object_proc(gc_t* gc, ikptr x);
 
 static void collect_stack(gc_t*, ikptr top, ikptr base);
 static void collect_loop(gc_t*);
-static void forward_guardians(gc_t*);
 static void fix_weak_pointers(gc_t*);
 static void gc_add_tconcs(gc_t*);
-static void empty_dropped_guardians(gc_t*);
 
 /* ik_collect is called from scheme under the following conditions:
  * 1. An attempt is made to allocate a small object and the ap is above
@@ -431,16 +433,11 @@ ik_collect(int mem_req, ikpcb* pcb){
   
   /* next we trace all guardian/guarded objects,
      the procedure does a collect_loop at the end */
-#ifndef NDEBUG
-  fprintf(stderr, "forwarding guardians ...\n");
-#endif
-  forward_guardians(&gc);
+  handle_guardians(&gc);
 #ifndef NDEBUG
   fprintf(stderr, "done\n");
 #endif
   collect_loop(&gc);
-
-  //guardians_loop_old(&gc);
 
   /* does not allocate, only bwp's dead pointers */
   fix_weak_pointers(&gc); 
@@ -448,14 +445,12 @@ ik_collect(int mem_req, ikpcb* pcb){
   deallocate_unused_pages(&gc);
 
   fix_new_pages(&gc);
+  gc_finalize_guardians(&gc);
+
   pcb->allocation_pointer = pcb->heap_base;
   /* does not allocate */
   gc_add_tconcs(&gc);
   /* does not allocate */
-#ifndef NDEBUG
-  fprintf(stderr, "emptying guardians ...\n");
-#endif
-  empty_dropped_guardians(&gc);
 #ifndef NDEBUG
   fprintf(stderr, "done\n");
 #endif
@@ -598,291 +593,157 @@ next_gen(int i){
   return ((i == generation_count) ? generation_count : (i+1));
 }
 
-static ik_ptr_page* 
-move_guardian(ikptr x, ik_ptr_page* dst, ik_ptr_page** cache){
-  if((dst == 0) || (dst->count == ik_ptr_page_size)){
-    ik_ptr_page* y = *cache;
-    if(y){
-      *cache = y->next;
-    } else {
-      y = (ik_ptr_page*)(long)ik_mmap(sizeof(ik_ptr_page));
-    }
-    y->count = 0;
-    y->next = dst;
-    dst = y;
+ 
+static ik_ptr_page*
+move_tconc(ikptr tc, ik_ptr_page* ls){
+  if((ls == NULL) || (ls->count == ik_ptr_page_size)){
+    ik_ptr_page* page = (ik_ptr_page*)ik_mmap(pagesize);
+    page->count = 0;
+    page->next = ls;
+    ls = page;
   }
-  dst->ptr[dst->count++] = x;
-  return dst;
-}
-
-
-static int
-forward_guardians_initial(gc_t* gc, 
-    ik_ptr_page** cache,
-    ik_ptr_page** dead_tc_dead_obj_list,
-    ik_ptr_page** live_tc_dead_obj_list,
-    ik_ptr_page** dead_tc_live_obj_list,
-    ik_ptr_page** live_tc_live_obj_list){
-  int gen;
-  int seen_live_tc_dead_obj = 0;
-  ikpcb* pcb = gc->pcb;
-  /* move guardians[0..g] to dead/live lists */
-  for(gen=0; gen<=gc->collect_gen; gen++){
-    ik_ptr_page* src = pcb->guardians[gen];
-    ik_ptr_page* dead_dead = 0;
-    ik_ptr_page* dead_live = 0;
-    ik_ptr_page* live_dead = 0;
-    ik_ptr_page* live_live = 0;
-    while(src){
-      int i;
-      int n = src->count;
-      for(i=0; i<n; i++){
-        ikptr a = src->ptr[i];
-        ikptr tc = ref(a, off_car);
-        ikptr obj = ref(a, off_cdr);
-        if(is_live(tc, gc)){
-          if(is_live(obj, gc)){
-            live_live = move_guardian(a, live_live, cache);
-          } else {
-            live_dead = move_guardian(a, live_dead, cache);
-          }
-        } else {
-          if(is_live(obj, gc)){
-            dead_live = move_guardian(a, dead_live, cache);
-          } else {
-            dead_dead = move_guardian(a, dead_dead, cache);
-          }
-        }
-      }
-      ik_ptr_page* next = src->next;
-      src->next = *cache;
-      *cache = src;
-      src = next;
-    }
-    if(live_dead) {
-      seen_live_tc_dead_obj = 1;
-    }
-    dead_tc_dead_obj_list[gen] = dead_dead;
-    live_tc_dead_obj_list[gen] = live_dead;
-    dead_tc_live_obj_list[gen] = dead_live;
-    live_tc_live_obj_list[gen] = live_live;
-    pcb->guardians[gen] = 0;
-  }
-  return seen_live_tc_dead_obj;
+  ls->ptr[ls->count++] = tc;
+  return ls;
 }
 
 static void
-forward_guardians_revive_dead(gc_t* gc, 
-    ik_ptr_page** live_tc_dead_obj_list){
-  int gen;
-  for(gen=0; gen<=gc->collect_gen; gen++){
-    ik_ptr_page* src = live_tc_dead_obj_list[gen];
-    while(src){
-      int i;
-      int n = src->count;
-      for(i=0; i<n; i++){
-        ikptr a = src->ptr[i];
-        ikptr obj = ref(a, off_cdr);
-        add_object(gc, obj, "guardian1");
-      }
-      src = src->next;
-    }
-  }
-}
-
-static int
-forward_guardians_process_tconcs(gc_t* gc, 
-    ik_ptr_page** cache,
-    ik_ptr_page** dead_tc_dead_obj_list,
-    ik_ptr_page** live_tc_dead_obj_list,
-    ik_ptr_page** dead_tc_live_obj_list,
-    ik_ptr_page** live_tc_live_obj_list){
-  int gen;
-  int some_were_revived = 0;
-  /* objects in dead_tc_live_obj_list whos tconcs have become 
-     alive must move to live_tc_live_obj list */
-  for(gen=0; gen<=gc->collect_gen; gen++){
-    ik_ptr_page* src = dead_tc_live_obj_list[gen];
-    ik_ptr_page* live = live_tc_live_obj_list[gen];
-    ik_ptr_page* dead = 0;
-    while(src){
-      int i;
-      int n = src->count;
-      for(i=0; i<n; i++){
-        ikptr a = src->ptr[i];
-        ikptr tc = ref(a, off_car);
-        if(is_live(tc, gc)){
-          live = move_guardian(a, live, cache);
-        } else {
-          dead = move_guardian(a, dead, cache);
-        }
-      }
-      ik_ptr_page* next = src->next;
-      src->next = *cache;
-      *cache = src;
-      src = next;
-    }
-    live_tc_live_obj_list[gen] = live;
-    dead_tc_live_obj_list[gen] = dead;
-  }
-  /* objects in dead_tc_dead_obj_list whos tconcs have become
-     alive must move to live_tc_dead_obj list
-     obj must be resurrected */
-  for(gen=0; gen<=gc->collect_gen; gen++){
-    ik_ptr_page* src = dead_tc_dead_obj_list[gen];
-    ik_ptr_page* dead = 0;
-    ik_ptr_page* live = live_tc_dead_obj_list[gen];
-    while(src){
-      int i;
-      int n = src->count;
-      for(i=0; i<n; i++){
-        ikptr a = src->ptr[i];
-        ikptr tc = ref(a, off_car);
-        if(is_live(tc, gc)){
-          some_were_revived = 1;
-          add_object(gc, ref(a, off_cdr), "guardian2");
-          live = move_guardian(a, live, cache);
-        } else {
-          dead = move_guardian(a, dead, cache);
-        }
-      }
-      ik_ptr_page* next = src->next;
-      src->next = *cache;
-      *cache = src;
-      src = next;
-    }
-    live_tc_dead_obj_list[gen] = live;
-    dead_tc_dead_obj_list[gen] = dead;
-  }
-  return some_were_revived;
-}
-
-
-
-
-static void 
-forward_guardians(gc_t* gc){
+handle_guardians(gc_t* gc){
   ikpcb* pcb = gc->pcb;
-  ik_ptr_page* dead_tc_dead_obj_list[generation_count];
-  ik_ptr_page* live_tc_dead_obj_list[generation_count];
-  ik_ptr_page* dead_tc_live_obj_list[generation_count];
-  ik_ptr_page* live_tc_live_obj_list[generation_count];
-  ik_ptr_page* cache = 0;
-  int seen_live_tc_dead_obj =
-    forward_guardians_initial(gc, &cache,
-      dead_tc_dead_obj_list, live_tc_dead_obj_list,
-      dead_tc_live_obj_list, live_tc_live_obj_list);
-  if (seen_live_tc_dead_obj){
-  /* objects in live_tc_dead_obj_list must be revived */
-    forward_guardians_revive_dead(gc, live_tc_dead_obj_list);
-    int some_were_revived = 1;
-    while(some_were_revived){
-      collect_loop(gc);
-      some_were_revived = 
-        forward_guardians_process_tconcs(gc, &cache,
-            dead_tc_dead_obj_list, live_tc_dead_obj_list,
-            dead_tc_live_obj_list, live_tc_live_obj_list);
+  ik_ptr_page* pend_hold_list = 0;
+  ik_ptr_page* pend_final_list = 0;
+  int gen;
+  /* sort protected pairs into pend_hold and pend_final lists */
+  for(gen=0; gen<=gc->collect_gen; gen++){
+    ik_ptr_page* prot_list = pcb->protected_list[gen];
+    pcb->protected_list[gen] = 0;
+    while(prot_list){
+      int i;
+      for(i=0; i<prot_list->count; i++){
+        ikptr p = prot_list->ptr[i];
+        ikptr tc = ref(p, off_car);
+        ikptr obj = ref(p, off_cdr);
+        if(tc == forward_ptr){
+          ikptr np = ref(p, off_cdr);
+          tc = ref(np, off_car);
+          obj = ref(np, off_cdr);
+        }
+        if(is_live(obj, gc)){
+          pend_hold_list = move_tconc(p, pend_hold_list);
+        } else {
+          pend_final_list = move_tconc(p, pend_final_list);
+        }
+      }
+      ik_ptr_page* next = prot_list->next;
+      ik_munmap((ikptr)prot_list, pagesize);
+      prot_list = next;
     }
   }
-  /* dead_tc_dead_obj_list and dead_tc_live_obj_list must go away */
-  int gen;
-  for(gen=0; gen<=gc->collect_gen; gen++){
-    ik_ptr_page* src,* dst;
-    src = dead_tc_dead_obj_list[gen];
-    while(src){
-      ik_ptr_page* next = src->next;
-      src->next = cache;
-      cache = src;
-      src = next;
-    }
-    src = dead_tc_live_obj_list[gen];
-    while(src){
-      ik_ptr_page* next = src->next;
-      src->next = cache;
-      cache = src;
-      src = next;
-    }
-    /* make all pairs in live_tc_dead_obj live */
-    src = live_tc_dead_obj_list[gen];
-    pcb->guardians_dropped[gen] = src;
-    while(src){
+  /* move live tc pend_final_list pairs into final_list,
+     the rest remain in pend_final_list,
+     final_list objects are made live and collected in 
+     gc->forward_list */
+  gc->forward_list = 0;
+  int done = 0;
+  while(!done){
+    ik_ptr_page* final_list = 0;
+    ik_ptr_page* ls = pend_final_list;
+    pend_final_list = 0;
+    while(ls){
       int i;
-      int n = src->count;
-      for(i=0; i<n; i++){
-        src->ptr[i] = 
-          add_object(gc, src->ptr[i], "guardian3");
+      for(i=0; i<ls->count; i++){
+        ikptr p = ls->ptr[i];
+        ikptr tc = ref(p, off_car);
+        if(tc == forward_ptr){
+          ikptr np = ref(p, off_cdr);
+          tc = ref(np, off_car);
+        }
+        if(is_live(tc, gc)){
+          final_list = move_tconc(p, final_list);
+        } else {
+          pend_final_list = move_tconc(p, pend_final_list);
+        }
       }
-      src = src->next;
+      ik_ptr_page* next = ls->next;
+      ik_munmap((ikptr)ls, pagesize);
+      ls = next;
     }
-    /* make all pairs in live_tc_live_obj live and 
-       add them to next gen */
-    src = live_tc_live_obj_list[gen];
-    dst = pcb->guardians[next_gen(gen)];
-    while(src){
-      int i;
-      int n = src->count;
-      for(i=0; i<n; i++){
-        dst = move_guardian(add_object(gc, src->ptr[i], "g4"), dst, &cache);
+    if(final_list == NULL){
+      done = 1;
+    } else {
+      ls = final_list;
+      while(ls){
+        int i;
+        for(i=0; i<ls->count; i++){
+          ikptr p = ls->ptr[i];
+          gc->forward_list = 
+            move_tconc(add_object(gc, p, "guardian"),
+                gc->forward_list);
+        }
+        ik_ptr_page* next = ls->next;
+        ik_munmap((ikptr)ls, pagesize);
+        ls = next;
       }
-      ik_ptr_page* next = src->next;
-      src->next = cache;
-      cache = src;
-      src = next;
+      collect_loop(gc);
     }
-    pcb->guardians[next_gen(gen)] = dst;
+  }
+  /* pend_final_list now contains things that are dead and
+     their tconcs are also dead, deallocate */
+  while(pend_final_list){
+    ik_ptr_page* next = pend_final_list->next;
+    ik_munmap((ikptr)pend_final_list, pagesize);
+    pend_final_list = next;
+  }
+  /* pend_hold_list pairs with live tconcs are moved to 
+     the protected list of next generation. */
+  ik_ptr_page* target = pcb->protected_list[next_gen(gc->collect_gen)];
+  while(pend_hold_list){
+    int i;
+    for(i=0; i<pend_hold_list->count; i++){
+      ikptr p = pend_hold_list->ptr[i];
+      ikptr tc = ref(p, off_car);
+      if(tc == forward_ptr){
+        ikptr np = ref(p, off_cdr);
+        tc = ref(np, off_car);
+      }
+      if(is_live(tc, gc)){
+        target = move_tconc(add_object(gc, p, "guardian"), target);
+      }
+    }
+    ik_ptr_page* next = pend_hold_list->next;
+    ik_munmap((ikptr)pend_hold_list, pagesize);
+    pend_hold_list = next;
   }
   collect_loop(gc);
-  while(cache){
-    ik_ptr_page* next = cache->next;
-    ik_munmap((ikptr)(long)cache, sizeof(ik_ptr_page));
-    cache = next;
-  }
+  pcb->protected_list[next_gen(gc->collect_gen)] = target;
 }
 
-static void 
-empty_dropped_guardians(gc_t* gc){
-  ikpcb* pcb = gc->pcb;
-  int gen;
-  for(gen = 0; gen<=gc->collect_gen; gen++){
-    ik_ptr_page* src = pcb->guardians_dropped[gen];
-    while(src){
-      int i;
-      int n = src->count;
-      for(i=0; i<n; i++){
-        ikptr a = src->ptr[i];
-        ikptr tc = ref(a, off_car);
-        ikptr obj = ref(a, off_cdr);
-        assert(tagof(tc) == pair_tag);
-        ikptr d = ref(tc, off_cdr);
-        assert(tagof(d) == pair_tag);
-        ref(d, off_car) = obj;
-        ref(d, off_cdr) = a;
-        ref(a, off_car) = false_object;
-        ref(a, off_cdr) = false_object;
-        ref(tc, off_cdr) = a;
-        ((int*)(long)pcb->dirty_vector)[page_index(tc)] = -1;
-        //pcb->dirty_vector[page_index(d)] = -1;
-        {
-          int dgen = pcb->segment_vector[page_index(d)] & gen_mask;
-          if( (dgen > (pcb->segment_vector[page_index(obj)] & gen_mask)) 
-              ||
-              (dgen > (pcb->segment_vector[page_index(a)] & gen_mask))){
-            ((int*)(long)pcb->dirty_vector)[page_index(d)] = -1;
-          }
-        }
-      }
-      ik_ptr_page* next = src->next;
-      ik_munmap((ikptr)(long)src, sizeof(ik_ptr_page));
-      src = next;
+static void
+gc_finalize_guardians(gc_t* gc){
+  ik_ptr_page* ls = gc->forward_list;
+  int tconc_count = 0;
+  unsigned int* dirty_vec = (unsigned int*)(long)gc->pcb->dirty_vector;
+  while(ls){
+    int i;
+    for(i=0; i<ls->count; i++){
+      tconc_count++;
+      ikptr p = ls->ptr[i];
+      ikptr tc = ref(p, off_car);
+      ikptr obj = ref(p, off_cdr);
+      ikptr last_pair = ref(tc, off_cdr);
+      ref(last_pair, off_car) = obj;
+      ref(last_pair, off_cdr) = p;
+      ref(p, off_car) = false_object;
+      ref(p, off_cdr) = false_object;
+      ref(tc, off_cdr) = p;
+      dirty_vec[page_index(tc)] = -1;
+      dirty_vec[page_index(last_pair)] = -1;
     }
-    pcb->guardians_dropped[gen] = 0;
+    ik_ptr_page* next = ls->next;
+    ik_munmap((ikptr)ls, pagesize);
+    ls = next;
   }
 }
 
- 
-
-
-#define CODE_EXTENSION_SIZE (pagesize)
 
 static int alloc_code_count = 0;
 

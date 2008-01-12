@@ -49,8 +49,8 @@
   (f 0 536870911000 536870911)
   (printf "[exact-integer-sqrt] Happy Happy Joy Joy\n"))
 
-(test-case-folding)
 (test-parse-flonums)
+(test-case-folding)
 (test-reader)
 (test-char-syntax)
 (test-bytevectors)
@@ -61,6 +61,7 @@
 (test-div-and-mod)
 (test-bignums)
 (test-bignum-length)
+
 (test-fxcarry)
 (test-lists)
 (test-hashtables)

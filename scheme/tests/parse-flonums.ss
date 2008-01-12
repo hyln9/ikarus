@@ -53,15 +53,6 @@
           [else (error 'frac "invalid char" x)])))
     (st))
 
-  ;(define (ratnum->flonum x) 
-  ;  (let f ([n (numerator x)] [d (denominator x)])
-  ;    (let-values ([(q r) (quotient+remainder n d)])
-  ;      (if (= q 0) 
-  ;          (/ 1.0 (f d n))
-  ;          (if (= r 0)
-  ;              (inexact q)
-  ;              (+ q (f r d)))))))
-
   (define smallest-flonum
     (bytevector-ieee-double-ref 
       #vu8(1 0 0 0 0 0 0 0)

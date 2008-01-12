@@ -376,7 +376,7 @@ void ik_delete_pcb(ikpcb* pcb){
   {
     int i;
     for(i=0; i<generation_count; i++){
-      ik_ptr_page* p = pcb->guardians[i];
+      ik_ptr_page* p = pcb->protected_list[i];
       while(p){
         ik_ptr_page* next = p->next;
         ik_munmap((ikptr)(long)p, pagesize);
@@ -795,13 +795,13 @@ ikrt_bvftime(ikptr outbv, ikptr fmtbv){
 
 ikptr
 ikrt_register_guardian_pair(ikptr p0, ikpcb* pcb){
-  ik_ptr_page* x = pcb->guardians[0];
+  ik_ptr_page* x = pcb->protected_list[0];
   if((x == NULL) || (x->count == ik_ptr_page_size)){
     assert(sizeof(ik_ptr_page) == pagesize);
     ik_ptr_page* y = (ik_ptr_page*)(long)ik_mmap(pagesize);
     y->count = 0;
     y->next = x;
-    pcb->guardians[0] = y;
+    pcb->protected_list[0] = y;
     x = y;
   }
   x->ptr[x->count++] = p0;

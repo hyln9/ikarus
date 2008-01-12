@@ -242,7 +242,7 @@
              (clean-up))]))
       (lambda (p)
         (clean-up)
-        (when (fixnum? ($port-cookie p)) 
+        (when (fixnum? ($port-cookie p))
           (G p))
         p)))
 
@@ -1417,31 +1417,31 @@
                     (open-string-input-port string)])
       (proc)))
 
-  (define (standard-input-port) 
-    (fh->input-port 0 '*stdin* 256 #f #f))
+  (define (standard-input-port)
+    (fh->input-port 0 '*stdin1* 256 #f #f))
 
   (define (standard-output-port)
-    (fh->output-port 1 '*stdout* 256 #f #f))
+    (fh->output-port 1 '*stdout1* 256 #f #f))
   
   (define (standard-error-port)
-    (fh->output-port 2 '*stderr* 256 #f #f))
+    (fh->output-port 2 '*stderr1* 256 #f #f))
 
   (define *the-input-port* 
     (make-parameter
       (transcoded-port 
-        (fh->input-port 0 '*stdin* input-file-buffer-size #f #f)
+        (fh->input-port 0 '*stdin2* input-file-buffer-size #f #f)
         (native-transcoder))))
 
   (define *the-output-port* 
     (make-parameter
       (transcoded-port
-        (fh->output-port 1 '*stdout* output-file-buffer-size #f #f)
+        (fh->output-port 1 '*stdout2* output-file-buffer-size #f #f)
         (native-transcoder))))
   
   (define *the-error-port* 
     (make-parameter
       (transcoded-port 
-        (fh->output-port 2 '*stderr* output-file-buffer-size #f #f)
+        (fh->output-port 2 '*stderr2* output-file-buffer-size #f #f)
         (native-transcoder))))
 
   (define console-output-port
