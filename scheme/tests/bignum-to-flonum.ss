@@ -1,6 +1,6 @@
 
 (library (tests bignum-to-flonum)
-  (export test-bignum-to-flonum)
+  (export test-bignum-to-flonum test-bignum->flonum)
   (import (ikarus) (tests framework))
   (define (t x s)
     (let ([fl (format "~a" (exact->inexact x))])
@@ -13,6 +13,41 @@
        (define-tests name 
          [(lambda (x) (string=? str (number->string x))) (exact->inexact num)]
          ...)]))
+
+  (define (testnum x) 
+    (define precision 53)
+    (assert (bignum? x)) 
+    (let ([fl (inexact x)])
+      (let ([n (if (> x 0) x (- x))])
+        (let ([bits (bitwise-length n)])
+          (printf "bits = ~s\n" bits)
+          (cond
+            [(<= bits precision) 
+             (unless (= x (exact fl))
+               (error #f "should be exactly equal" x fl (exact fl)))]
+            [else 
+             (let ([hi53 (sra n (- bits precision))]
+                   [lo (bitwise-and n (- (sll 1 (- bits precision)) 1))]
+                   [breakpoint (sll 1 (- bits precision 1))])
+               (assert (= n (+ lo (sll hi53 (- bits precision)))))
+               (let ([fl2
+                      (cond
+                        [(or (< lo breakpoint) 
+                             (and (= lo breakpoint) (even? hi53)))
+                         (* (inexact hi53) (sll 1 (- bits precision)))]
+                        [else
+                         (* (inexact (+ hi53 1)) (sll 1 (- bits precision)))])])
+                 (let ([fl2 (if (> x 0) fl2 (* fl2 -1))])
+                   (printf "x=~s fl=~s\n" x fl)
+                   (unless (fl=? fl fl2) 
+                     (error #f "should be equal" x fl fl2)))))])))))
+
+
+  (define (test-pos-neg x)
+    (testnum x)
+    (testnum (- x)))
+
+
   (test* test-bignum-to-flonum
     (1000000000  "1e9")
     (2000000000  "2e9")
@@ -50,5 +85,40 @@
     (100000000000000000000000000000000000000000000000 "1e47")
     (-1000000000000000000000 "-1e21")
     (-100000000000000000000000000000 "-1e29")
-    (-100000000000000000000000000000000000000000000000 "-1e47")))
+    (-100000000000000000000000000000000000000000000000 "-1e47"))
+  
+  
+  (define (test-bignum->flonum)
+    (test-pos-neg 34872389478)
+    (test-pos-neg 34872389479)
+    (test-pos-neg 3487238948347878)
+    (test-pos-neg 3487238948347879)
+    (test-pos-neg 5487238948347878)
+    (test-pos-neg 5487238948347879)
+    (test-pos-neg 543877238948347878)
+    (test-pos-neg 543877238948347879)
+    (test-pos-neg 5438748878948347878)
+    (test-pos-neg 5438748878948347879)
+    (test-pos-neg 13874887238948347878)
+    (test-pos-neg 13874887238948347879)
+    (test-pos-neg 543874887238948347878)
+    (test-pos-neg 543874887238948347879)
+    (test-pos-neg 5433847834874887238948347878)
+    (test-pos-neg 5433847834874887238948347879)
+    (test-pos-neg 329847892374892374895433847834874887238948347878)
+    (test-pos-neg 329847892374892374895433847834874887238948347879)
+    (test-pos-neg 
+      13407807929942598588139732355608757972494524375225679733981068131349151486565474898751136354405850399729303719974268319295398132445078977825297784408899585)
+    (test-pos-neg
+      13407807929942598588139732355608757972494524375225679733981068131349151486565474898751136354405850399729303719974268319295398132445078977825297784408899584)
+    (test-pos-neg
+      13407807929942598588139732355608757972494524375225679733981068131349151486565474898751136354405850399729303719974268319295398132445078977825297784408899586)
+    (test-pos-neg
+      1340780792994259858813973235560875797249452437522567973398106813134915148656547489875113635440585039972930371997426831929539813244507897782529778440889958413407807929942598588139732355608757972494524375225679733981068131349151486565474898751136354405850399729303719974268319295398132445078977825297784408899584))
     
+
+  
+  )
+  
+
+

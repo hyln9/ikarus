@@ -57,6 +57,7 @@
 (test-strings)
 (test-exact-integer-sqrt)
 (test-bignum-to-flonum)
+(test-bignum->flonum)
 (test-string-to-number)
 (test-div-and-mod)
 (test-bignums)

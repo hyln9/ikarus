@@ -1746,3 +1746,89 @@ ikrt_fxrandom(ikptr x){
   }
 }
 
+static int 
+limb_size(mp_limb_t x){
+  int i = 0;
+  while(x){
+    i++;
+    x = x>>1;
+  }
+  return i;
+}
+
+static int 
+all_zeros(mp_limb_t* start, mp_limb_t* end){
+  while(start <= end){
+    if(*end) return 0; 
+    end--;
+  }
+  return 1;
+}
+
+#define PRECISION 53
+ikptr
+ikrt_bignum_to_flonum(ikptr bn, ikptr more_bits, ikptr fl){
+  if(mp_bits_per_limb != 32){
+    fprintf(stderr, "ikarus BUG: bignum_to_flonum only works in 32bit now\n");
+    exit(-1);
+  }
+  ikptr fst = ref(bn, -vector_tag);
+  long int limb_count = bnfst_limb_count(fst);
+  mp_limb_t* sp = (mp_limb_t*)(long)(bn+off_bignum_data);
+  double pos_result;
+  if(limb_count == 1){
+    pos_result = sp[0];
+  } else if (limb_count == 2){
+    mp_limb_t lo = sp[0];
+    mp_limb_t hi = sp[1];
+    pos_result = hi;
+    pos_result = pos_result * 4294967296.0;
+    pos_result = pos_result + lo;
+  } else {
+    mp_limb_t hi = sp[limb_count-1];
+    mp_limb_t mi = sp[limb_count-2];
+    int bc = limb_size(hi);
+    if(bc < 32){
+      mp_limb_t lo = sp[limb_count-3];
+      hi = (hi << (32-bc)) | (mi >> bc);
+      mi = (mi << (32-bc)) | (lo >> bc);
+    }
+    /* now hi has 32 full bits, and mi has 32 full bits */
+    mp_limb_t mask = ((1<<(64-PRECISION)) - 1);
+    if((mi & mask) == ((mask+1)>>1)){
+      /* exactly at break point */
+      if(((sp[limb_count-3] << (32-bc)) == 0) &&
+          all_zeros(sp, sp+limb_count-4) &&
+          (more_bits == 0)){
+        if(mi & (1<<(64-PRECISION))){
+          /* odd number, round to even */
+          mi = mi | mask;
+        }
+      } else {
+        /* round up */
+        mi = mi | mask;
+      }
+    } else if ((mi & mask) > ((mask+1)>>1)){
+      /* also round up */
+      mi = mi | mask;
+    } else {
+      /* keep it to round down */
+    }
+    pos_result = hi;
+    pos_result = pos_result * 4294967296.0;
+    pos_result = pos_result + mi;
+    int bignum_bits = bc + (mp_bits_per_limb * (limb_count-1));
+    int exponent = bignum_bits - (2 * mp_bits_per_limb);
+    while(exponent){
+      pos_result *= 2.0;
+      exponent -= 1;
+    }
+  }
+  if(bnfst_negative(fst)){
+    flonum_data(fl)  = - pos_result;
+  } else {
+    flonum_data(fl) = pos_result;
+  }
+  return fl;
+}
+
