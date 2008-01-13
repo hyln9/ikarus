@@ -1914,7 +1914,13 @@
               (let ([v (sqrt (inexact x))])
                 ;;; could the [dropped] residual ever affect the answer?
                 (cond
-                  [(infinite? v) (inexact s)]
+                  [(infinite? v)
+                   (if (bignum? s) 
+                       (foreign-call "ikrt_bignum_to_flonum" 
+                          s
+                          1 ;;; round up in case of a tie
+                          ($make-flonum))
+                       (inexact s))]
                   [else v]))]))]
         [(ratnum? x)
          ;;; FIXME: incorrect as per bug 180170
