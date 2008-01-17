@@ -1956,14 +1956,6 @@
                  (if ($fx= i j) 
                      (values j ($fx- x j^2))
                      (fxsqrt x j k))))))
-      (define (bnsqrt x i k) 
-        (let ([j (quotient (+ i k) 2)])
-          (let ([j^2 (* j j)])
-             (if (> j^2 x)
-                 (bnsqrt x i j)
-                 (if (= i j) 
-                     (values j (- x j^2))
-                     (bnsqrt x j k))))))
       (cond
         [(fixnum? x) 
          (cond
@@ -1976,7 +1968,8 @@
         [(bignum? x) 
          (cond
            [($bignum-positive? x) 
-            (bnsqrt x 23170 (quotient x 23170))]
+            (let ([r (foreign-call "ikrt_exact_bignum_sqrt" x)])
+              (values (car r) (cdr r)))]
            [else (die who "invalid argument" x)])]
         [else (die who "invalid argument" x)])))
 
