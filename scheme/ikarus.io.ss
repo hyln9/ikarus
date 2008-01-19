@@ -927,7 +927,10 @@
            ($set-port-attrs! p 
              (fxior textual-input-port-bits fast-u7-text-tag))
            (eof-object? (advance-bom p who '(#xEF #xBB #xBF)))]
-          [else (die 'slow-get-char "codec not handled")])))
+          [else 
+           (die 'slow-get-char
+              "BUG: codec not handled"
+              (transcoder-codec tr))])))
     ;;;
     (define (lookahead-char-char-mode p who)
       (let ([str ($port-buffer p)]

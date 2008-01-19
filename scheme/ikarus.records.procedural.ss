@@ -255,31 +255,63 @@
                        all-fields)))))
 
     (define (constructor main-rtd size prcd proto)
+      (define (fill i r flds f*) 
+        (cond
+          [(null? flds)
+           (if (null? f*)
+               r
+               (fill i r (car f*) (cdr f*)))]
+          [else
+           ($struct-set! r i (car flds))
+           (fill (add1 i) r (cdr flds) f*)]))
       (if (not prcd) ;;; base
-          (lambda (f*)
-            (let ([a-record-constructor
-                   (lambda flds
-                      (let ([n (rtd-size main-rtd)])
-                        (unless (= (length flds) size)
-                          (apply die
-                             'a-record-constructor
-                             (format 
-                               "expected ~a args, got ~a instead" 
-                               n (length flds))
-                             flds))
-                        (let ([r ($make-struct main-rtd n)])
-                          (let f ([i 0] [r r] [flds flds] [f* f*])
-                            (cond
-                              [(null? flds)
-                               (if (null? f*)
-                                   r
-                                   (f i r (car f*) (cdr f*)))]
-                              [else
-                               ($struct-set! r i (car flds))
-                               (f (add1 i) r (cdr flds) f*)])))))])
-              (if proto
-                 (proto a-record-constructor)
-                 a-record-constructor)))
+          (let ([n (rtd-size main-rtd)])
+            (define-syntax expand-setters
+              (syntax-rules ()
+                [(_ r idx) #f]
+                [(_ r idx a0 a* ...)
+                 (begin
+                   ($struct-set! r idx a0)
+                   (expand-setters r (+ idx 1) a* ...))]))
+            (define-syntax expand-constructor
+              (syntax-rules (default)
+                [(_ f* default) 
+                 (lambda flds
+                   (unless (= (length flds) size)
+                     (apply die
+                        'a-record-constructor
+                        (format 
+                          "expected ~a args, got ~a instead" 
+                          n (length flds))
+                        flds))
+                   (let ([r ($make-struct main-rtd n)])
+                     (fill 0 r flds f*)))]
+                [(_ f* (args ...)) 
+                 (lambda (args ...) 
+                   (let ([r ($make-struct main-rtd n)])
+                     (expand-setters r 0 args ...)
+                     (if (null? f*) 
+                         r
+                         (fill (length '(args ...)) r (car f*) (cdr f*)))))]))
+            (define-syntax expand-one-case
+              (syntax-rules ()
+                [(_ arg-case) 
+                 (if proto
+                     (lambda (f*)
+                       (let ([a-record-constructor 
+                               (expand-constructor f* arg-case)])
+                          (proto a-record-constructor)))
+                     (lambda (f*)
+                       (let ([a-record-constructor
+                               (expand-constructor f* arg-case)])
+                         a-record-constructor)))]))
+            (case size 
+              [(0)  (expand-one-case ())]
+              [(1)  (expand-one-case (f0))]
+              [(2)  (expand-one-case (f0 f1))]
+              [(3)  (expand-one-case (f0 f1 f2))]
+              [(4)  (expand-one-case (f0 f1 f2 f3))]
+              [else (expand-one-case default)]))
           (let ([pprcd (rcd-prcd prcd)]
                 [sz (rtd-size (rcd-rtd prcd))])
             (let ([p (constructor main-rtd sz pprcd (rcd-proc prcd))]
