@@ -209,7 +209,11 @@
   (define fast-put-latin-tag       #b00000001100110)
 
   (define fast-attrs-mask          #xFFF)
-  (define ($port-fast-attrs x) (fxand ($port-tag x) fast-attrs-mask))
+  (define-syntax $port-fast-attrs
+    (identifier-syntax
+      (lambda (x) 
+        (import (ikarus system $fx))
+        ($fxlogand ($port-tag x) fast-attrs-mask))))
 
   (define (input-port-name p)
     (if (input-port? p) 
@@ -1183,6 +1187,7 @@
             (make-i/o-filename-error id))))))
 
   (define block-size 4096)
+  ;(define block-size (* 16 4096))
   (define input-file-buffer-size (+ block-size 128))
   (define output-file-buffer-size block-size)
 
@@ -1195,9 +1200,12 @@
                 id
                 (letrec ([refill
                           (lambda (bv idx cnt) 
+                            (import UNSAFE)
                             (let ([bytes
                                    (foreign-call "ikrt_read_fd" fd bv idx 
-                                      (fxmin block-size cnt))])
+                                      (if (fx< block-size cnt)
+                                          block-size
+                                          cnt))])
                               (cond
                                 [(fx>= bytes 0) bytes]
                                 [(fx= bytes EAGAIN-error-code)
