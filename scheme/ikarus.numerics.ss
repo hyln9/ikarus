@@ -2741,11 +2741,39 @@
     (div-and-mod* n m 'div-and-mod))
 
   (define (div n m) 
-    (let-values ([(a b) (div-and-mod* n m 'div)])
-      a))
+    (import (ikarus system $fx))
+    (cond
+      [(and (fixnum? n) (fixnum? m)) 
+       (cond
+         [(eq? m 0) (error 'div "division by 0")]
+         [else 
+          (let ([d0 ($fxquotient n m)])
+            (if ($fx>= n ($fx* d0 m))
+                d0
+                (if ($fx>= m 0)
+                    ($fx- d0 1)
+                    ($fx+ d0 1))))])]
+      [else
+       (let-values ([(a b) (div-and-mod* n m 'div)])
+         a)]))
+
   (define (mod n m) 
-    (let-values ([(a b) (div-and-mod* n m 'mod)])
-      b))
+    (import (ikarus system $fx))
+    (cond
+      [(and (fixnum? n) (fixnum? m)) 
+       (cond
+         [(eq? m 0) (error 'mod "division by 0")]
+         [else
+          (let ([d0 ($fxquotient n m)])
+            (let ([m0 ($fx- n ($fx* d0 m))])
+              (if ($fx>= m0 0)
+                  m0
+                  (if ($fx>= m 0)
+                      ($fx+ m0 m)
+                      ($fx- m0 m)))))])]
+      [else
+       (let-values ([(a b) (div-and-mod* n m 'mod)])
+         b)]))
   
   (define (div0-and-mod0 x y) 
     (define who 'div0-and-mod0)
