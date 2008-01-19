@@ -264,6 +264,48 @@
      (prm 'mset x (K (- disp-cdr pair-tag)) (T v))
      (smart-dirty-vector-set x v))])
 
+
+(define (expand-cxr val ls) 
+  (cond
+    [(null? ls) (T val)]
+    [else 
+     (with-tmp ([x (expand-cxr val (cdr ls))]) 
+       (interrupt-unless (tag-test x pair-mask pair-tag))
+       (prm 'mref x 
+          (case (car ls) 
+            [(a)  (K (- disp-car pair-tag))]
+            [else (K (- disp-cdr pair-tag))])))]))
+
+(define-primop caar   safe [(V x) (expand-cxr x '(a a))])
+(define-primop cadr   safe [(V x) (expand-cxr x '(a d))])
+(define-primop cdar   safe [(V x) (expand-cxr x '(d a))])
+(define-primop cddr   safe [(V x) (expand-cxr x '(d d))])
+(define-primop caaar  safe [(V x) (expand-cxr x '(a a a))])
+(define-primop caadr  safe [(V x) (expand-cxr x '(a a d))])
+(define-primop cadar  safe [(V x) (expand-cxr x '(a d a))])
+(define-primop caddr  safe [(V x) (expand-cxr x '(a d d))])
+(define-primop cdaar  safe [(V x) (expand-cxr x '(d a a))])
+(define-primop cdadr  safe [(V x) (expand-cxr x '(d a d))])
+(define-primop cddar  safe [(V x) (expand-cxr x '(d d a))])
+(define-primop cdddr  safe [(V x) (expand-cxr x '(d d d))])
+;(define-primop caaaar safe [(V x) (expand-cxr x '(a a a a))])
+;(define-primop caaadr safe [(V x) (expand-cxr x '(a a a d))])
+;(define-primop caadar safe [(V x) (expand-cxr x '(a a d a))])
+;(define-primop caaddr safe [(V x) (expand-cxr x '(a a d d))])
+;(define-primop cadaar safe [(V x) (expand-cxr x '(a d a a))])
+;(define-primop cadadr safe [(V x) (expand-cxr x '(a d a d))])
+;(define-primop caddar safe [(V x) (expand-cxr x '(a d d a))])
+(define-primop cadddr safe [(V x) (expand-cxr x '(a d d d))])
+;(define-primop cdaaar safe [(V x) (expand-cxr x '(d a a a))])
+;(define-primop cdaadr safe [(V x) (expand-cxr x '(d a a d))])
+;(define-primop cdadar safe [(V x) (expand-cxr x '(d a d a))])
+;(define-primop cdaddr safe [(V x) (expand-cxr x '(d a d d))])
+;(define-primop cddaar safe [(V x) (expand-cxr x '(d d a a))])
+;(define-primop cddadr safe [(V x) (expand-cxr x '(d d a d))])
+;(define-primop cdddar safe [(V x) (expand-cxr x '(d d d a))])
+;(define-primop cddddr safe [(V x) (expand-cxr x '(d d d d))])
+
+
 (define-primop list safe
   [(V) (K nil)]
   [(V . arg*)
