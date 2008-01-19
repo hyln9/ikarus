@@ -68,6 +68,6 @@ EXTRA_DIST=README bench.ss benchall.ss rn100 parsing-data.ss \
 
 benchall: 
 	date +"NOW: %Y-%m-%d %H:%M:%S" >>timelog
-	../src/ikarus -b ../scheme/ikarus.boot --r6rs-script benchall.ss >>timelog
+	../src/ikarus -b ../scheme/ikarus.boot --r6rs-script benchall.ss 2>>timelog
 	rm -f z*.scm z*.tex
 

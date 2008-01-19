@@ -1192,6 +1192,26 @@
   [(E) (nop)]
   [(E a . a*) (assert-fixnums a a*)])
 
+(define-primop bitwise-and safe
+  [(V) (K (fxsll -1 fx-shift))]
+  [(V a . a*)
+   (cond
+     [(or (non-fixnum? a) (ormap non-fixnum? a*)) (interrupt)]
+     [else
+      (interrupt)
+      (seq*
+        (assert-fixnums a a*)
+        (let f ([a (T a)] [a* a*])
+          (cond
+            [(null? a*) a]
+            [else
+             (f (prm 'logand a (T (car a*))) (cdr a*))])))])]
+  [(P) (K #t)]
+  [(P a . a*) (seq* (assert-fixnums a a*) (K #t))]
+  [(E) (nop)]
+  [(E a . a*) (assert-fixnums a a*)])
+
+
 (define-primop fx+ safe
   [(V x y) (cogen-value-+ x y)])
 

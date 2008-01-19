@@ -1,4 +1,4 @@
-#!/usr/bin/env ikarus --r6rs-script
+#!../src/ikarus -b ../scheme/ikarus.boot --r6rs-script
 
 (import (ikarus))
 
@@ -10,6 +10,7 @@
                       (list 'rnrs-benchmarks name)))))])
     (proc)))
 
+(verbose-timer #t)
 (apply 
   (case-lambda
     [(script-name bench-name) 

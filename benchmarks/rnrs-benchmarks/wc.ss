@@ -28,7 +28,8 @@
                       (set! nw (+ nw 1))
                       (set! inword #t))))
             (wcport port)))))
-  
+
+
   (define (go)
     (set! inport (open-input-file "bib"))
     (set! nl 0)
