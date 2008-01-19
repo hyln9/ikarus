@@ -570,7 +570,8 @@
         (die 'port-transcoder "not a port" p)))
               
   (define ($port-closed? p) 
-    (not (fxzero? (fxand ($port-attrs p) closed-port-tag))))
+    (import UNSAFE)
+    (not (fx= (fxand ($port-attrs p) closed-port-tag) 0)))
 
   (define (port-closed? p) 
     (if (port? p) 
@@ -607,6 +608,7 @@
     (case-lambda
       [() (flush-output-port (*the-output-port*))] 
       [(p)
+       (import UNSAFE)
        (unless (output-port? p) 
          (die 'flush-output-port "not an output port" p))
        (when ($port-closed? p) 
@@ -667,7 +669,7 @@
       (when ($port-closed? p) (die who "port is closed" p))
       (let ([bv ($port-buffer p)] [i ($port-index p)] [j ($port-size p)])
         (let ([c0 (fx- j i)])
-          (bytevector-copy! bv i bv 0 c0)
+          (unless (fx= c0 0) (bytevector-copy! bv i bv 0 c0))
           (let ([pos ($port-position p)])
             (when pos
               ($set-port-position! p (fx+ pos i))))
@@ -1186,10 +1188,13 @@
             (make-message-condition msg)
             (make-i/o-filename-error id))))))
 
-  (define block-size 4096)
-  ;(define block-size (* 16 4096))
-  (define input-file-buffer-size (+ block-size 128))
-  (define output-file-buffer-size block-size)
+  ;(define block-size 4096)
+  ;(define block-size (* 4 4096))
+  (define input-block-size (* 4 4096))
+  (define output-block-size (* 4 4096))
+
+  (define input-file-buffer-size (+ input-block-size 128))
+  (define output-file-buffer-size output-block-size)
 
   (define (fh->input-port fd id size transcoder close)
     (letrec ([port
@@ -1203,8 +1208,8 @@
                             (import UNSAFE)
                             (let ([bytes
                                    (foreign-call "ikrt_read_fd" fd bv idx 
-                                      (if (fx< block-size cnt)
-                                          block-size
+                                      (if (fx< input-block-size cnt)
+                                          input-block-size
                                           cnt))])
                               (cond
                                 [(fx>= bytes 0) bytes]
@@ -1234,9 +1239,13 @@
                 #f
                 (letrec ([refill
                           (lambda (bv idx cnt) 
+                            (import UNSAFE)
                             (let ([bytes
                                    (foreign-call "ikrt_write_fd" fd bv idx
-                                     (fxmin block-size cnt))])
+                                     (if (fx< output-block-size cnt)
+                                         output-block-size
+                                         cnt))])
+
                               (cond
                                 [(fx>= bytes 0) bytes]
                                 [(fx= bytes EAGAIN-error-code)
