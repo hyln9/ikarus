@@ -643,8 +643,8 @@
    [(imull src dst)
     (cond
       [(and (imm8? src) (reg? dst))     (CR*  #x6B dst dst (IMM8 src ac))]
-      [(and (imm32? src) (reg? dst))      (CR*  #x69 dst dst (IMM32 src ac))]
-      [(and (reg? src) (reg? dst))    (CCR* #x0F #xAF dst src ac)]
+      [(and (imm32? src) (reg? dst))    (CR*  #x69 dst dst (IMM32 src ac))]
+      [(and (reg? src) (reg? dst))      (CCR* #x0F #xAF dst src ac)]
       [(and (mem? src) (reg? dst))      (CCR* #x0F #xAF dst src ac)]
       [else (die who "invalid" instr)])]
    [(idivl dst)

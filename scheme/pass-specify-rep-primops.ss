@@ -1192,6 +1192,32 @@
   [(E) (nop)]
   [(E a . a*) (assert-fixnums a a*)])
 
+(define-primop * safe
+  [(V) (K (fxsll 1 fx-shift))]
+  [(V a b) 
+   (struct-case a
+     [(constant ak) 
+      (cond
+        [(fx? ak)
+         (with-tmp ([b (T b)])
+           (assert-fixnum b)
+           (prm 'int*/overflow b a))]
+        [else (interrupt)])]
+     [else 
+      (struct-case b
+        [(constant bk)
+         (cond
+           [(fx? bk) 
+            (with-tmp ([a (T a)])
+              (assert-fixnum a)
+              (prm 'int*/overflow a b))]
+           [else (interrupt)])]
+        [else (interrupt)])])]
+  [(P) (K #t)]
+  [(P a . a*) (seq* (assert-fixnums a a*) (K #t))]
+  [(E) (nop)]
+  [(E a . a*) (assert-fixnums a a*)])
+
 (define-primop bitwise-and safe
   [(V) (K (fxsll -1 fx-shift))]
   [(V a . a*)

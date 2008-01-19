@@ -2173,6 +2173,13 @@
                  (make-seq
                    (E (make-asm-instr 'move u b))
                    (E (make-asm-instr op a u))))]
+              [(and (memq op '(int* int*/overflow)) (mem? a))
+               (let ([u (mku)])
+                 (make-seq
+                   (make-seq
+                     (E (make-asm-instr 'move u a))
+                     (E (make-asm-instr op u b)))
+                   (E (make-asm-instr 'move a u))))]
               [(and (mem? a) (mem? b)) 
                (let ([u (mku)])
                  (make-seq
