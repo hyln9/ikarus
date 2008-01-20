@@ -34,6 +34,7 @@
         (tests parse-flonums)
         (tests io)
         (tests case-folding)
+        (tests sorting)
         )
 
 (define (test-exact-integer-sqrt)
@@ -75,4 +76,5 @@
 (test-fxlength)
 (test-bitwise-bit-count)
 (test-io)
+(test-sorting)
 (printf "Happy Happy Joy Joy\n")
