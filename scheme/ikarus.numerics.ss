@@ -398,7 +398,7 @@
           bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left 
           bitwise-arithmetic-shift 
           bitwise-length
-          bitwise-copy-bit
+          bitwise-copy-bit bitwise-bit-field
           positive? negative? expt gcd lcm numerator denominator
           exact-integer-sqrt
           quotient+remainder number->string string->number min max
@@ -421,7 +421,7 @@
             bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left
             bitwise-arithmetic-shift 
             bitwise-length
-            bitwise-copy-bit 
+            bitwise-copy-bit bitwise-bit-field
             positive? negative? bitwise-and bitwise-not
             string->number expt gcd lcm numerator denominator
             exact->inexact inexact floor ceiling round log
@@ -2469,6 +2469,30 @@
              [else (die who "bit must be either 0 or 1" bit)])
            (die who "negative bit index" idx))]
       [else (die who "index is not an exact integer" idx)]))
+
+  (define (bitwise-bit-field n idx1 idx2) 
+    (define who 'bitwise-bit-field)
+    (cond
+      [(and (fixnum? idx1) (fx>= idx1 0))
+       (cond
+         [(and (fixnum? idx2) (fx>= idx2 0))
+          (cond
+            [(fx<= idx1 idx2) 
+             (cond
+               [(or (fixnum? n) (bignum? n)) 
+                (bitwise-and 
+                   (sra n idx1)
+                   (- (sll 1 (- idx2 idx1)) 1))]
+               [else (die who "not an exact integer" n)])]
+            [else (die who "invalid order for indices" idx1 idx2)])]
+         [else 
+          (if (not (fixnum? idx2)) 
+              (die who "invalid index" idx2)
+              (die who "negative index" idx2))])]
+      [else 
+       (if (not (fixnum? idx1)) 
+           (die who "invalid index" idx1)
+           (die who "negative index" idx1))]))
 
   )
 

@@ -259,7 +259,7 @@
     [bitwise-ior                                S bw]
     [bitwise-xor                                S bw]
     [bitwise-bit-count                          C bw]
-    [bitwise-bit-field                          S bw]
+    [bitwise-bit-field                          C bw]
     [bitwise-bit-set?                           C bw]
     [bitwise-copy-bit                           C bw]
     [bitwise-copy-bit-field                     S bw]
