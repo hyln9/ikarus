@@ -1,5 +1,5 @@
 ;;; Ikarus Scheme -- A compiler for R6RS Scheme.
-;;; Copyright (C) 2006,2007  Abdulaziz Ghuloum
+;;; Copyright (C) 2006,2008  Abdulaziz Ghuloum
 ;;; 
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License version 3 as
@@ -32,7 +32,7 @@
             (+ 1 (string->number ikarus-revision))
             (let-syntax ([ds (lambda (x) (date-string))])
               ds))))
-    (display "Copyright (c) 2006-2007 Abdulaziz Ghuloum\n\n"))
+    (display "Copyright (c) 2006-2008 Abdulaziz Ghuloum\n\n"))
 
   (define (init-library-path) 
     (define (split s)

@@ -22,7 +22,7 @@
 \setsansfont[Mapping=tex-text]{Geneva}
 %\setmonofont{DejaVu Sans Mono}
 %\setmonofont{Monaco}
-\setmonofont{Inconsolata}
+\setmonofont[Scale=0.95]{Inconsolata}
 
 \usepackage{fancyhdr}
 \usepackage{makeidx}
@@ -138,7 +138,7 @@
   \noindent Ikarus Scheme\\ User's Guide\\ }
   \noindent \rule{\textwidth}{6pt}
 {\fontsize{18}{18} \fstpagefont{}
-  \hfill{} (Preliminary Document) \hfill Version~0.0.2+ }
+  \hfill{} (Preliminary Document) \hfill Version~0.0.3rc-1 }
 \vfill
 { \fontsize{24}{24} \fstpagefont{}
   \hfill{} Abdulaziz Ghuloum}
@@ -152,16 +152,35 @@
 %\addcontentsline{toc}{section}{Copyrights}
 \noindent
 Ikarus Scheme User's Guide\\
-Copyright \copyright{} 2007,  Abdulaziz Ghuloum\\
+Copyright \copyright{} 2007,2008,  Abdulaziz Ghuloum\\
 
+{\small
 \noindent
-Permission is granted to copy, distribute and/or modify this
-document under the terms of the GNU Free Documentation License,
-Version 1.2 published by the Free Software
-Foundation; with no Invariant Sections, the Front-Cover Texts
-being \emph{``Ikarus Scheme User's Guide''}, and
-no Back-Cover Texts.  A copy of the license is included in the
-section entitled ``GNU Free Documentation License''.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 3 as
+published by the Free Software Foundation.
+\\ \\
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+\\ \\
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see
+\url{http://www.gnu.org/licenses/}.
+}
+
+
+
+
+
+% Permission is granted to copy, distribute and/or modify this
+% document under the terms of the GNU Free Documentation License,
+% Version 1.2 published by the Free Software
+% Foundation; with no Invariant Sections, the Front-Cover Texts
+% being \emph{``Ikarus Scheme User's Guide''}, and
+% no Back-Cover Texts.  A copy of the license is included in the
+% section entitled ``GNU Free Documentation License''.
 
 \newpage
 
@@ -184,10 +203,10 @@ of the features found in the current standard, the
 Revised$^\mathrm{6}$ report on the algorithmic language
 Scheme\cite{r6rs} including full \rnrs{6} library and script syntax,
 syntax-case, unicode strings, bytevectors, user-defined record
-types, exception handling, conditions, and enumerations.  Over 90\%
-of the \rnrs{6} procedures and keywords are currently implemented
-and subsequent releases will proceed towards brining Ikarus to full
-\rnrs{6} conformance.
+types, exception handling, conditions, and enumerations.  More than
+94\% of the \rnrs{6} procedures and keywords are currently
+implemented and subsequent releases will proceed towards brining
+Ikarus to full \rnrs{6} conformance.
 
 The main purpose behind releasing Ikarus early is to give Scheme
 programmers the opportunity to experiment with the various new
@@ -255,7 +274,7 @@ numbers.
 Ikarus is tested under the following operating systems:
 
 \begin{itemize}
-\item Mac OS X version 10.4.
+\item Mac OS X version 10.4 and 10.5.
 \item Linux 2.6.18 (Debian, Fedora, Gentoo, and Ubuntu).
 \item FreeBSD version 6.2.
 \item NetBSD version 3.1.
@@ -401,8 +420,8 @@ need to have administrator privileges (use the \texttt{sudo} or
 \item Test that Ikarus runs from the command line.
 \begin{verbatim}
   $ ikarus
-  Ikarus Scheme version 0.0.2
-  Copyright (c) 2006-2007 Abdulaziz Ghuloum
+  Ikarus Scheme version 0.0.3
+  Copyright (c) 2006-2008 Abdulaziz Ghuloum
 
   > 
 \end{verbatim}
@@ -558,30 +577,34 @@ page~\pageref{chapter:ikarus}).
 When writing a new library to a file, Ikarus uses a simple mechanism
 to map library names to file names.  A library name is converted to
 a file path by joining the library identifiers with a path
-separator, e.g. \verb|"/"|, and appending the \emph{scheme source},
-e.g. \verb|".ss"|, suffix at the end.  
+separator, e.g. \verb|"/"|.
 
 \begin{center}
 \begin{tabular}{lcl}
-  Library Name & \hspace{2em}$\Rightarrow$\hspace{2em} & File path \\
+  Library Name & \hspace{2em}$\Rightarrow$\hspace{2em} & File name \\
   \hline
-  \verb|(foo)|         & $\Rightarrow$ & \verb|foo.ss| \\
-  \verb|(foo bar)|     & $\Rightarrow$ & \verb|foo/bar.ss| \\
-  \verb|(foo bar baz)| & $\Rightarrow$ & \verb|foo/bar/baz.ss| 
+  \verb|(foo)|         & $\Rightarrow$ & \verb|foo| \\
+  \verb|(foo bar)|     & $\Rightarrow$ & \verb|foo/bar| \\
+  \verb|(foo bar baz)| & $\Rightarrow$ & \verb|foo/bar/baz| 
 \end{tabular}
 \end{center}
 
+
 Having mapped a library name to a file path, Ikarus attempts to
-locate that file in one of several locations.  First, Ikarus
-attempts to locate the file in the current working directory from
-which Ikarus was invoked.  If the file is not found in the current
+locate that file in one of several locations.  The locations
+attempted depend on two settings: the search path and the file
+prefix set (e.g., \verb|.sls|, \verb|.ss|, \verb|.scm|, etc.).
+First, Ikarus attempts to locate the file in the current working
+directory from which Ikarus was invoked.  In the current working
+directory, Ikarus enumerates all file prefixes first before
+searching other locations.  If the file is not found in the current
 directory, Ikarus tries to find it in the Ikarus library directory.
 The Ikarus library directory is determined when Ikarus is installed
 (based on the \texttt{--prefix} argument that was passed to the
 \texttt{configure} script).  If Ikarus failes to locate the library
-file, it raises an exception and exits. 
-See Chapter~\ref{chapter:contributed} for more details about the
-library locations.
+file, it raises an exception and exits.  See
+Chapter~\ref{chapter:contributed} for more details about the library
+locations.
 
 
 \BoxedText{Tip:}{Use simple library names for the libraries that
@@ -590,6 +613,53 @@ complex punctuations, or unicode may pose a challenge for some
 operating systems.  If Ikarus cannot find a library, it will raise
 an error listing the locations in which it looked, helping you move
 the library file to a place where Ikarus can find it.}
+
+\section{Writing cross-implementation libraries}
+
+When searching for a library, Ikarus appends a prefix (e.g.,
+\verb|.ss|) to the appropriate file name (e.g., \verb|foo/bar|).
+The initial set of file extensions are: \verb|.ikarus.sls|,
+\verb|.ikarus.ss|, \verb|.ikarus.scm|,
+\verb|.sls|, \verb|.ss|, and \verb|.scm|.
+
+The list of file extensions are searched sequentially.  As a
+consequence, files ending with the \verb|.ikarus.*| prefixes are
+given precedence over files that have generic Scheme extensions.
+The rationale for this behavior is to facilitate writing
+cross-implementation libraries: ones that take advantage of
+implementation-specific features, while at the same time 
+provide a fail-safe alternative for other \rnrs{6}
+implementations.
+
+Consider for example a program which would like to use the
+\verb|pretty-print| procedure to format some code, and suppose
+furthr that pretty printing is just a nice add-on (e.g., using
+\verb|write| suffices, but pretty-printing is \emph{just prettier})
+Ikarus exports a good pretty-printing facility in its
+\verb|(ikarus)| library.  However, since \verb|pretty-print| is not
+a standard procedure, a program that uses it would be rendered
+unportable to other \rnrs{6} Scheme implementations.  
+
+The programmer can put the \verb|.ikarus.*| extensions to use in
+this situation.  First, the programmer writes two versions of a
+\verb|(pretty-printing)| library: one for use by Ikarus, and one
+portable for other implementations.
+
+\begin{CodeInline}
+(library (pretty-printing) ;;; this is pretty-printing.ikarus.ss
+  (export pretty-print)    ;;; can only be used by Ikarus
+  (import (only (ikarus) pretty-print)))
+\end{CodeInline}
+
+\begin{CodeInline}
+(library (pretty-printing) ;;; this is pretty-printing.sls
+  (export pretty-print)    ;;; *portable* though not very pretty.
+  (import (rnrs))          ;;; for any other implementation
+  (define (pretty-print x port)
+    (write x port)
+    (newline port)))
+\end{CodeInline}
+
 
 \chapter{\rnrs{6} Crash Course}
 
@@ -923,6 +993,7 @@ first takes the arguments for \texttt{point}'s constructor, then
 takes the initial color value.  The definition below shows how the
 custom constructor may be defined.
 
+\newpage
 \begin{CodeInline}
 (define-record-type cpoint
   (parent point) 
@@ -1905,6 +1976,8 @@ The \texttt{trace-lambda} macro is similar to \texttt{lambda} except
 that the resulting procedure is traced: it prints the arguments it
 receives and the results it returns.
 
+\newpage
+
 \defun{make-traced-procedure}{procedure}
 \texttt{(make-traced-procedure name proc)}
 
@@ -2136,10 +2209,9 @@ To load both stream libraries, say:
 \chapter{Missing Features}
 
 Ikarus does not fully conform to \rnrs{6} yet.  Although it
-implements the most immediately useful features of \rnrs{6}
-including more than 90\% of \rnrs{6}'s macros and procedures, some
-areas are still lacking.  This section summarizes the set of
-missing features and procedures.  
+implements more than 94\% of \rnrs{6}'s macros and procedures, some
+are still missing.  This section summarizes the set of missing
+features and procedures.  
 
 
 \begin{itemize}
@@ -2149,10 +2221,10 @@ missing features and procedures.
     (e.g.~\texttt{5-7i}).\\
   -- Procedures that may construct complex numbers from non-complex
     arguments may signal an error or return an incorrect value
-    (for example, \texttt{(sqrt -1)} should \emph{not} be \texttt{+nan.0}).
+    (e.g., \texttt{(sqrt~-1)} should return \verb|+i| instead
+    of signaling an error).
 \item The procedure \texttt{equal?}\ may not terminate on
 \texttt{equal?}\ infinite (circular) input.
-\item Representation of I/O ports is missing a transcoder field.
 \item \texttt{number->string} does not accept the third argument
 (precision).  Similarly, \texttt{string->number} and the reader do
 not recognize the \texttt{|p} notation. 
@@ -2165,10 +2237,10 @@ The following procedures are missing from \texttt{(rnrs base)}:
 angle magnitude make-polar make-rectangular
 \end{Verbatim}
 
-The following procedures are missing from \texttt{(rnrs bytevectors)}:
-\begin{Verbatim}
-string->utf16     string->utf32    utf16->string     utf32->string
-\end{Verbatim}
+% string->utf16     
+% string->utf32 
+% utf16->string
+% utf32->string
 
 
 The following procedures are missing from \texttt{(rnrs unicode)}:
@@ -2182,11 +2254,12 @@ string-normalize-nfkc     string-normalize-nfkd
 The following procedures are missing from \texttt{(rnrs arithmetic
 bitwise)}:
 \begin{Verbatim}
-bitwise-ior  bitwise-xor    bitwise-if         bitwise-bit-field 
-bitwise-copy-bit-field      bitwise-copy-bit   bitwise-length  
-bitwise-reverse-bit-field   bitwise-rotate-bit-field  
+bitwise-ior  bitwise-xor  bitwise-if  bitwise-copy-bit-field      
+bitwise-reverse-bit-field bitwise-rotate-bit-field 
 \end{Verbatim}
-
+% bitwise-bit-field  
+% bitwise-copy-bit 
+% bitwise-length  
 
 The following procedures are missing from \texttt{(rnrs arithmetic
 fixnum)}:
@@ -2205,21 +2278,39 @@ hashtable-hash-function    hashtable-equivalence-function
 
 The following procedures are missing from \texttt{(rnrs io ports)}:
 \begin{Verbatim}
-call-with-bytevector-output-port    call-with-string-output-port
-binary-port?     textual-port?      port-eof?
-port-has-port-position?             port-position 
+get-bytevector-some
+string->bytevector                  bytevector->string
+port-has-port-position?             port-position
 port-has-set-port-position!?        set-port-position!
-call-with-port       lookahead-char    lookahead-u8
-get-bytevector-all   get-bytevector-some     get-string-all
-make-custom-binary-input-port         make-custom-binary-input/output-port    
-make-custom-binary-output-port        make-custom-textual-input-port    
-make-custom-textual-input/output-port make-custom-textual-output-port
-open-bytevector-input-port            open-bytevector-output-port 
-open-file-input-port   open-file-input/output-port open-file-output-port    
-output-port-buffer-mode   transcoded-port   port-transcoderput-bytevector 
-string->bytevector    bytevector->string
+make-custom-binary-input/output-port    
+make-custom-textual-input/output-port 
+open-file-input/output-port
 \end{Verbatim}
 
+
+% call-with-bytevector-output-port  
+% call-with-string-output-port
+% binary-port?
+% textual-port? 
+% port-eof?
+% call-with-port 
+% lookahead-char  
+% lookahead-u8
+% get-bytevector-all
+% get-bytevector-some  
+% get-string-all
+% make-custom-binary-input-port         
+% make-custom-binary-output-port        
+% make-custom-textual-input-port    
+% make-custom-textual-output-port
+% open-bytevector-input-port  
+% open-bytevector-output-port 
+% open-file-input-port  
+% open-file-output-port    
+% transcoded-port 
+% port-transcoder
+% put-bytevector 
+% output-port-buffer-mode 
 
 
 
