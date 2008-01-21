@@ -398,6 +398,7 @@
           bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left 
           bitwise-arithmetic-shift 
           bitwise-length
+          bitwise-copy-bit
           positive? negative? expt gcd lcm numerator denominator
           exact-integer-sqrt
           quotient+remainder number->string string->number min max
@@ -420,6 +421,7 @@
             bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left
             bitwise-arithmetic-shift 
             bitwise-length
+            bitwise-copy-bit 
             positive? negative? bitwise-and bitwise-not
             string->number expt gcd lcm numerator denominator
             exact->inexact inexact floor ceiling round log
@@ -2422,7 +2424,51 @@
     (cond
       [(fixnum? n) (fxlength n)]
       [(bignum? n) (foreign-call "ikrt_bignum_length" n)]
-      [else (error 'bitwise-length "not an exact integer" n)]))
+      [else (die 'bitwise-length "not an exact integer" n)]))
+
+  (define (bitwise-copy-bit n idx bit)
+    (define who 'bitwise-copy-bit)
+    (define (do-copy-bit n idx bit)
+      (case bit
+        [(0)
+         (cond
+           [(bitwise-bit-set? n idx) 
+            (bitwise-and n (bitwise-not (sll 1 idx)))]
+           [else n])]
+        [(1)
+         (cond
+           [(bitwise-bit-set? n idx) n]
+           [(>= n 0) (+ n (sll 1 idx))]
+           [else
+            (bitwise-not
+              (bitwise-and 
+                (bitwise-not n) 
+                (bitwise-not (sll 1 idx))))])]
+        [else (die who "bit must be either 0 or 1" bit)]))
+    (cond
+      [(fixnum? idx)
+       (cond
+         [(fx< idx 0) 
+          (die who "negative bit index" idx)]
+         [(or (fixnum? n) (bignum? n))
+          (do-copy-bit n idx bit)]
+         [else (die who "not an exact integer" n)])]
+      [(bignum? idx)
+       (unless (or (fixnum? n) (bignum? n)) 
+         (die who "not an exact integer" n))
+       (if ($bignum-positive? idx)
+           (case bit
+             [(0)
+              (if (>= n 0) 
+                  n
+                  (die who "unrepresentable result"))]
+             [(1) 
+              (if (< n 0) 
+                  n
+                  (die who "unrepresentable result"))]
+             [else (die who "bit must be either 0 or 1" bit)])
+           (die who "negative bit index" idx))]
+      [else (die who "index is not an exact integer" idx)]))
 
   )
 
