@@ -39,7 +39,7 @@
     ;port-has-set-port-position!? set-port-position!
     call-with-port
     flush-output-port
-    put-u8
+    put-u8 put-bytevector
     put-char write-char
     put-string
     open-bytevector-output-port
@@ -93,7 +93,7 @@
       ;port-has-set-port-position!? set-port-position!
       call-with-port
       flush-output-port
-      put-u8
+      put-u8 put-bytevector
       put-char write-char
       put-string
       open-bytevector-output-port
@@ -1883,7 +1883,7 @@
        
 
        
-  (module (put-u8)
+  (module (put-u8 put-bytevector)
     (import UNSAFE)
     (define (put-u8-byte-mode p b who)
       (let ([write! ($port-write! p)])
@@ -1922,7 +1922,63 @@
           [else 
            (if (output-port? p)
                (die who "not a binary port" p)
-               (die who "not an output port" p))]))))
+               (die who "not an output port" p))])))
+    ;;;
+    (define ($put-bytevector p bv i c) 
+      (define who 'put-bytevector)
+      (define (copy! src dst si di c)
+        (when (fx> c 0) 
+          (bytevector-u8-set! dst di (bytevector-u8-ref src si))
+          (copy! src dst (fx+ si 1) (fx+ di 1) (fx- c 1))))
+      (let ([m ($port-fast-attrs p)])
+        (cond
+          [(eq? m fast-put-byte-tag)
+           (let ([idx ($port-index p)])
+             (let ([room (fx- ($port-size p) idx)])
+               (cond
+                 [(fx>= room c)
+                  ;; hurray
+                  ($set-port-index! p (fx+ idx c))
+                  (copy! bv ($port-buffer p) i idx c)]
+                 [else
+                  ($set-port-index! p (fx+ idx room))
+                  (copy! bv ($port-buffer p) i idx room)
+                  (flush-output-port p)
+                  ($put-bytevector p bv (fx+ i room) (fx- c room))])))]
+          [else
+           (if (output-port? p)
+               (die who "not a binary port" p)
+               (die who "not an output port" p))])))
+    (define put-bytevector
+      (case-lambda
+        [(p bv) 
+         (if (bytevector? bv) 
+             ($put-bytevector p bv 0 (bytevector-length bv))
+             (die 'put-bytevector "not a bytevector" bv))]
+        [(p bv i) 
+         (if (bytevector? bv) 
+             (if (fixnum? i) 
+                 (let ([n (bytevector-length bv)])
+                   (if (and (fx< i n) (fx>= i 0))
+                       ($put-bytevector p bv i (fx- n i))
+                       (die 'put-bytevector "index out of range" i)))
+                 (die 'put-bytevector "invalid index" i))
+             (die 'put-bytevector "not a bytevector" bv))]
+        [(p bv i c) 
+         (if (bytevector? bv) 
+             (if (fixnum? i) 
+                 (let ([n (bytevector-length bv)])
+                   (if (and (fx< i n) (fx>= i 0))
+                       (if (fixnum? c) 
+                           (if (and (fx>= c 0) (fx>= (fx- n c) i))
+                               ($put-bytevector p bv i c)
+                               (die 'put-bytevector "count out of range" c))
+                           (die 'put-bytevector "invalid count" c))
+                       (die 'put-bytevector "index out of range" i)))
+                 (die 'put-bytevector "invalid index" i))
+             (die 'put-bytevector "not a bytevector" bv))]))
+    ;;; module 
+    )
 
 
 
