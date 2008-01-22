@@ -543,13 +543,13 @@
          i]
         [(output-port? x)
          (write-char* "#<output-port " p)
-         (write-char* (if (binary-port? p) "(binary)" "(textual)") p)
+         (write-char* (if (binary-port? x) "(binary) " "(textual) ") p)
          (let ([i (writer (output-port-name x) p #t h i)])
            (write-char #\> p)
            i)]
         [(input-port? x)
          (write-char* "#<input-port " p)
-         (write-char* (if (binary-port? p) "(binary)" "(textual)") p)
+         (write-char* (if (binary-port? x) "(binary) " "(textual) ") p)
          (let ([i (writer (input-port-name x) p #t h i)])
            (write-char #\> p)
            i)]
