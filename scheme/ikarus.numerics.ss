@@ -2846,12 +2846,7 @@
          b)]))
   
   (define (div0-and-mod0 x y) 
-    (define who 'div0-and-mod0)
-    (unless (integer? x)
-      (die who "not an integer" x))
-    (unless (and (integer? y) (not (= y 0)))
-      (die who "not an integer" y))
-    (let-values ([(d m) (div-and-mod x y)])
+    (let-values ([(d m) (div-and-mod* x y 'div0-and-mod0)])
       (if (> y 0) 
           (if (< m (/ y 2))
               (values d m)
@@ -2861,13 +2856,25 @@
               (values d m)))))
   
   (define (div0 x y) 
-    (let-values ([(n m) (div0-and-mod0 x y)])
-       n))
-  
+    (let-values ([(d m) (div-and-mod* x y 'div0)])
+      (if (> y 0) 
+          (if (< m (/ y 2))
+              d
+              (+ d 1))
+          (if (> m (/ y -2))
+              (- d 1)
+              d))))
+   
   (define (mod0 x y) 
-    (let-values ([(n m) (div0-and-mod0 x y)])
-       m)))
-  
+    (let-values ([(d m) (div-and-mod* x y 'mod0)])
+      (if (> y 0) 
+          (if (< m (/ y 2))
+              m
+              (- m y))
+          (if (> m (/ y -2))
+              (+ m y)
+              m))))
+  ) 
 
 (library (ikarus flonums div-and-mod)
   (export fldiv flmod fldiv-and-mod fldiv0 flmod0 fldiv0-and-mod0)
