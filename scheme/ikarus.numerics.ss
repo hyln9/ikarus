@@ -2497,10 +2497,16 @@
   )
 
 (library (ikarus complexnums)
-  (export real-part imag-part)
-  (import (except (ikarus) real-part imag-part))
+  (export real-part imag-part magnitude)
+  (import (except (ikarus) real-part imag-part magnitude))
   ;;; stub implementation since we don't have a way of 
   ;;; constructing complex numbers yet.
+
+  (define magnitude 
+    (lambda (x)
+      (if (number? x) 
+          (abs x)
+          (die 'magnitude "not a number" x))))
 
   (define real-part
     (lambda (x) 
