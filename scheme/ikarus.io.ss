@@ -328,26 +328,29 @@
 
 
 
-  (define (input-transcoder-attrs x)
+  (define (input-transcoder-attrs x who)
     (cond
       [(not x) ;;; binary input port
        binary-input-port-bits]
-      [(and (eq? 'latin-1-codec (transcoder-codec x))
-            (eq? 'none (transcoder-eol-style x)))
+      [(not (eq? 'none (transcoder-eol-style x)))
+       (die who "unsupported transcoder eol-style" 
+            (transcoder-eol-style x))]
+      [(eq? 'latin-1-codec (transcoder-codec x))
        (fxior textual-input-port-bits fast-u8-text-tag)]
       ;;; attrs for utf-8-codec are set as part of the 
       ;;; bom-reading dance when the first char is read.
       [else textual-input-port-bits]))
 
-  (define (output-transcoder-attrs x)
+  (define (output-transcoder-attrs x who)
     (cond
       [(not x) ;;; binary input port
        binary-output-port-bits]
-      [(and (eq? 'latin-1-codec (transcoder-codec x))
-            (eq? 'none (transcoder-eol-style x)))
+      [(not (eq? 'none (transcoder-eol-style x)))
+       (die who "unsupported transcoder eol-style" 
+            (transcoder-eol-style x))]
+      [(eq? 'latin-1-codec (transcoder-codec x))
        (fxior textual-output-port-bits fast-u8-text-tag)]
-      [(and (eq? 'utf-8-codec (transcoder-codec x))
-            (eq? 'none (transcoder-eol-style x)))
+      [(eq? 'utf-8-codec (transcoder-codec x))
        (fxior textual-output-port-bits fast-u7-text-tag)]
       [else textual-output-port-bits]))
 
@@ -363,7 +366,8 @@
          (die 'open-bytevector-input-port 
                 "not a transcoder" maybe-transcoder))
        ($make-port 
-          (input-transcoder-attrs maybe-transcoder)
+          (input-transcoder-attrs maybe-transcoder
+            'open-bytevector-output-port)
           0 (bytevector-length bv) bv 
           maybe-transcoder 
           "*bytevector-input-port*" 
@@ -384,7 +388,8 @@
        (let ([buf* '()] [buffer-size 256])
          (let ([p 
                 ($make-port 
-                   (output-transcoder-attrs transcoder)
+                   (output-transcoder-attrs transcoder
+                     'open-bytevector-output-port)
                    0 buffer-size (make-bytevector buffer-size)
                    transcoder
                    "*bytevector-output-port*"
@@ -541,8 +546,10 @@
       (guarded-port
         ($make-port 
           (cond
-            [read! (input-transcoder-attrs transcoder)]
-            [write! (output-transcoder-attrs transcoder)]
+            [read! (input-transcoder-attrs transcoder
+                     'transcoded-port)]
+            [write! (output-transcoder-attrs transcoder
+                      'transcoded-port)]
             [else
              (die 'transcoded-port 
                "port is neither input nor output!")])
@@ -1200,10 +1207,10 @@
   (define input-file-buffer-size (+ input-block-size 128))
   (define output-file-buffer-size output-block-size)
 
-  (define (fh->input-port fd id size transcoder close)
+  (define (fh->input-port fd id size transcoder close who)
     (letrec ([port
               ($make-port 
-                (input-transcoder-attrs transcoder)
+                (input-transcoder-attrs transcoder who)
                 0 0 (make-bytevector size)
                 transcoder
                 id
@@ -1233,10 +1240,10 @@
                 fd)])
     (guarded-port port)))
 
-  (define (fh->output-port fd id size transcoder close)
+  (define (fh->output-port fd id size transcoder close who)
     (letrec ([port
               ($make-port 
-                (output-transcoder-attrs transcoder)
+                (output-transcoder-attrs transcoder who)
                 0 size (make-bytevector size)
                 transcoder
                 id
@@ -1319,7 +1326,8 @@
          filename
          input-file-buffer-size
          transcoder
-         #t)]))
+         #t
+         'open-file-input-port)]))
 
 
   (define open-file-output-port
@@ -1343,7 +1351,8 @@
          filename
          output-file-buffer-size
          transcoder
-         #t)]))
+         #t
+         'open-file-output-port)]))
 
   (define (open-output-file filename)
     (unless (string? filename)
@@ -1354,7 +1363,8 @@
        filename
        output-file-buffer-size
        (native-transcoder)
-       #t))
+       #t
+       'open-output-file))
 
   (define (open-input-file filename)
     (unless (string? filename)
@@ -1364,7 +1374,8 @@
        filename
        input-file-buffer-size
        (native-transcoder)
-       #t))
+       #t
+       'open-input-file))
 
 
   (define (with-output-to-file filename proc)
@@ -1379,7 +1390,8 @@
         filename
         output-file-buffer-size
         (native-transcoder)
-        #t)
+        #t
+        'with-output-to-file)
       (lambda (p)
         (parameterize ([*the-output-port* p])
           (proc)))))
@@ -1396,7 +1408,8 @@
         filename
         output-file-buffer-size
         (native-transcoder)
-        #t)
+        #t
+        'call-with-output-file)
       proc))
 
   (define (call-with-input-file filename proc)
@@ -1410,7 +1423,8 @@
         filename
         input-file-buffer-size
         (native-transcoder)
-        #t)
+        #t
+        'call-with-input-file)
       proc))
 
   (define (with-input-from-file filename proc)
@@ -1424,7 +1438,8 @@
         filename
         input-file-buffer-size
         (native-transcoder)
-        #t)
+        #t
+        'with-input-from-file)
       (lambda (p)
         (parameterize ([*the-input-port* p])
           (proc)))))
@@ -1439,30 +1454,30 @@
       (proc)))
 
   (define (standard-input-port)
-    (fh->input-port 0 '*stdin1* 256 #f #f))
+    (fh->input-port 0 '*stdin* 256 #f #f 'standard-input-port))
 
   (define (standard-output-port)
-    (fh->output-port 1 '*stdout1* 256 #f #f))
+    (fh->output-port 1 '*stdout* 256 #f #f 'standard-output-port))
   
   (define (standard-error-port)
-    (fh->output-port 2 '*stderr1* 256 #f #f))
+    (fh->output-port 2 '*stderr* 256 #f #f 'standard-error-port))
 
   (define *the-input-port* 
     (make-parameter
       (transcoded-port 
-        (fh->input-port 0 '*stdin2* input-file-buffer-size #f #f)
+        (fh->input-port 0 '*stdin* input-file-buffer-size #f #f #f)
         (native-transcoder))))
 
   (define *the-output-port* 
     (make-parameter
       (transcoded-port
-        (fh->output-port 1 '*stdout2* output-file-buffer-size #f #f)
+        (fh->output-port 1 '*stdout* output-file-buffer-size #f #f #f)
         (native-transcoder))))
   
   (define *the-error-port* 
     (make-parameter
       (transcoded-port 
-        (fh->output-port 2 '*stderr2* output-file-buffer-size #f #f)
+        (fh->output-port 2 '*stderr* output-file-buffer-size #f #f #f)
         (native-transcoder))))
 
   (define console-output-port
@@ -1863,7 +1878,9 @@
           [else 
            (if (output-port? p)
                (if (textual-port? p) 
-                   (die who "port is closed" p)
+                   (if (port-closed? p)
+                       (die who "port is closed" p)
+                       (die who "unsupported port" p))
                    (die who "not a textual port" p))
                (die who "not an output port" p))]))))
 
@@ -1877,7 +1894,7 @@
          (die 'newline "not an output port" p))
        (unless (textual-port? p) 
          (die 'newline "not a textual port" p))
-       (when ($port-closed? p) 
+       (when ($port-closed? p)
          (die 'newline "port is closed" p))
        (put-char p #\newline)
        (flush-output-port p)]))
@@ -1998,11 +2015,14 @@
           (values
             (vector-ref r 0) ; pid
             (fh->output-port (vector-ref r 1) 
-                cmd output-file-buffer-size #f #t)
+                cmd output-file-buffer-size #f #t
+                'process)
             (fh->input-port (vector-ref r 2) 
-                cmd input-file-buffer-size #f #t)
+                cmd input-file-buffer-size #f #t
+                'process)
             (fh->input-port (vector-ref r 3) 
-                cmd input-file-buffer-size #f #t)))))
+                cmd input-file-buffer-size #f #t
+                'process)))))
 
   (define (socket->ports socket who id)
     (if (< socket 0)
@@ -2015,9 +2035,9 @@
                        (set! closed-once? #t))))])
           (values 
             (fh->output-port socket
-               id output-file-buffer-size #f close)
+               id output-file-buffer-size #f close who)
             (fh->input-port socket
-               id input-file-buffer-size #f close)))))
+               id input-file-buffer-size #f close who)))))
 
   (define (tcp-connect host srvc)
     (socket->ports 
