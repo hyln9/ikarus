@@ -34,6 +34,7 @@ ikrt_io_error(){
     case EEXIST          : return fix(-20);
     case EINVAL          : return fix(-21);
     case EAGAIN          : return fix(-22); /* hardcoded in ikarus.io.ss */
+    case EPIPE           : return fix(-23);
   }
   return fix(-1);
 }

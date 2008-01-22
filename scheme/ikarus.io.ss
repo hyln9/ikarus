@@ -1172,7 +1172,8 @@
        #| 18 |# "access fault"
        #| 19 |# "file already exists"
        #| 20 |# "invalid file name"
-       #| 21 |# "non-blocking operation would block"))
+       #| 21 |# "non-blocking operation would block"
+       #| 22 |# "broken pipe (e.g., writing to a closed process or socket)"))
 
   (define (io-error who id err)
     (let ([err (fxnot err)])

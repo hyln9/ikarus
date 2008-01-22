@@ -237,6 +237,18 @@ register_handlers(){
     fprintf(stderr, "Sigaction Failed: %s\n", strerror(errno));
     exit(-1);
   }
+
+  /* ignore sigpipes */
+  {
+    sigset_t set;
+    sigprocmask(0, 0, &set); /* get the set */
+    sigaddset(&set, SIGPIPE);
+    int err = sigprocmask(SIG_SETMASK, &set, &set);
+    if(err){
+      fprintf(stderr, "Sigprocmask Failed: %s\n", strerror(errno));
+      exit(-1);
+    }
+  }
 }
 
 
