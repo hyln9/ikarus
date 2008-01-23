@@ -62,12 +62,11 @@
                           (let ([v* (filter v*)])
                             (write (car v*))
                             (let f ([v* (cdr v*)])
-                              (cond
-                                [(null? v*) (newline)]
-                                [else
-                                 (write-char #\space)
-                                 (write (car v*))
-                                 (f (cdr v*))]))))
+                              (unless (null? v*)
+                                (write-char #\space)
+                                (write (car v*))
+                                (f (cdr v*))))))
+                        (newline)
                         (apply values v*))))
                   (lambda () (set! k* (cdr k*))))]))))])))
 
