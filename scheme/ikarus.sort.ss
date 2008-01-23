@@ -19,33 +19,60 @@
   (import 
     (except (ikarus) list-sort vector-sort vector-sort!))
 
+    
+  (module UNSAFE  
+    (fx<? fx<=? fx>? fx>=? fx=? 
+     fx+ fx- fxarithmetic-shift-right
+     vector-ref vector-set! car cdr)
+    (import 
+      (rename (ikarus system $pairs)
+        ($car    car)
+        ($cdr    cdr))
+      (rename (ikarus system $vectors) 
+        ($vector-ref    vector-ref)
+        ($vector-set!   vector-set!))
+      (rename (ikarus system $fx) 
+        ($fxsra    fxarithmetic-shift-right)
+        ($fx+      fx+)
+        ($fx-      fx-)
+        ($fx<      fx<?)
+        ($fx>      fx>?)
+        ($fx>=     fx>=?)
+        ($fx<=     fx<=?)
+        ($fx=      fx=?))))
+
   (define (list-sort proc ls) 
+    (import UNSAFE)
+    (define race
+      (lambda (h t ls n)
+        (if (pair? h)
+            (let ([h (cdr h)])
+               (if (pair? h)
+                   (if (not (eq? h t))
+                       (race (cdr h) (cdr t) ls (fx+ n 2))
+                       (die 'list-sort "circular list" ls))
+                   (if (null? h)
+                       (fx+ n 1)
+                       (die 'list-sort "not a proper list" ls))))
+            (if (null? h)
+                n
+                (die 'list-sort "not a proper list" ls)))))
     (unless (procedure? proc)
       (die 'list-sort "not a procedure" proc))
-    (unless (list? ls) 
-      (die 'list-sort "not a list" ls))
-    (let ([v (list->vector ls)])
-      (vector-sort! proc v)
-      (vector->list v)))
+    (let ([n (race ls ls ls 0)])
+      (cond
+        [(fx< n 2) ls]
+        [else
+         (let f ([v (make-vector n)] [ls ls] [i 0])
+           (cond
+             [(null? ls) 
+              (vector-sort! proc v)
+              (vector->list v)]
+             [else 
+              (vector-set! v i (car ls))
+              (f v (cdr ls) (fx+ i 1))]))])))
 
   (module (vector-sort vector-sort!)
-    (module UNSAFE  
-      (fx<? fx<=? fx>? fx>=? fx=? 
-       fx+ fx- fxarithmetic-shift-right
-       vector-ref vector-set!)
-      (import 
-        (rename (ikarus system $vectors) 
-          ($vector-ref    vector-ref)
-          ($vector-set!   vector-set!))
-        (rename (ikarus system $fx) 
-          ($fxsra    fxarithmetic-shift-right)
-          ($fx+      fx+)
-          ($fx-      fx-)
-          ($fx<      fx<?)
-          ($fx>      fx>?)
-          ($fx>=     fx>=?)
-          ($fx<=     fx<=?)
-          ($fx=      fx=?))))
    
     (import UNSAFE) 
 
