@@ -519,7 +519,7 @@
 
   (define (open-string-input-port str)
     (unless (string? str) 
-      (die 'open-string-input-port str))
+      (die 'open-string-input-port "not a string" str))
     ($make-port 
        (fxior textual-input-port-bits fast-char-text-tag)
        0 (string-length str) str
