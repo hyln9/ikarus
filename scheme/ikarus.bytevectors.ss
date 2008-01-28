@@ -73,7 +73,7 @@
     (ikarus system $pairs)
     (ikarus system $bytevectors))
 
-  (define (native-endianness) 'big) ;;; HARDCODED
+  (define (native-endianness) 'little) ;;; HARDCODED
 
 
   (define ($bytevector-fill x i j fill)

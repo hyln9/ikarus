@@ -779,15 +779,17 @@
                        (apply body ls/false)
                        (syntax-match t (lits ...) cls* ...)))))))))))
 
+    
   (define parse-define
     (lambda (x)
-      ;;; FIXME:  (define f) is not supported yet
       (syntax-match x ()
         ((_ (id . fmls) b b* ...) (id? id)
-         (values id (cons 'defun (cons fmls (cons b b*)))))
+         (begin
+           (verify-formals fmls x)
+           (values id (cons 'defun (cons fmls (cons b b*))))))
         ((_ id val) (id? id)
          (values id (cons 'expr val)))
-        ((_ id) (id? id) 
+        ((_ id) (id? id)
          (values id (cons 'expr (bless '(void))))))))
 
   (define parse-define-syntax
@@ -2630,33 +2632,43 @@
                 "attempt to assign to an unexportable variable"))
              (else (stx-error e))))))))
   
+  (define (verify-formals fmls stx)
+    (syntax-match fmls ()
+      ((x* ...)
+       (unless (valid-bound-ids? x*)
+         (invalid-fmls-error stx fmls)))
+      ((x* ... . x)
+       (unless (valid-bound-ids? (cons x x*))
+         (invalid-fmls-error stx fmls)))
+      (_ (stx-error stx "invalid syntax"))))
+
   (define chi-lambda-clause
     (lambda (stx fmls body* r mr)
       (syntax-match fmls ()
         ((x* ...)
-         (if (valid-bound-ids? x*)
-             (let ((lex* (map gen-lexical x*))
-                   (lab* (map gen-label x*)))
-               (values
-                 lex*
-                 (chi-internal
-                   (add-subst (make-full-rib x* lab*) body*)
-                   (add-lexicals lab* lex* r)
-                   mr)))
-             (invalid-fmls-error stx fmls)))
+         (begin
+           (verify-formals fmls stx)
+           (let ((lex* (map gen-lexical x*))
+                 (lab* (map gen-label x*)))
+             (values
+               lex*
+               (chi-internal
+                 (add-subst (make-full-rib x* lab*) body*)
+                 (add-lexicals lab* lex* r)
+                 mr)))))
         ((x* ... . x)
-         (if (valid-bound-ids? (cons x x*))
-             (let ((lex* (map gen-lexical x*)) (lab* (map gen-label x*))
-                   (lex (gen-lexical x)) (lab (gen-label x)))
-               (values
-                 (append lex* lex)
-                 (chi-internal
-                   (add-subst
-                     (make-full-rib (cons x x*) (cons lab lab*))
-                     body*)
-                   (add-lexicals (cons lab lab*) (cons lex lex*) r)
-                   mr)))
-             (invalid-fmls-error stx fmls)))
+         (begin
+           (verify-formals fmls stx)
+           (let ((lex* (map gen-lexical x*)) (lab* (map gen-label x*))
+                 (lex (gen-lexical x)) (lab (gen-label x)))
+             (values
+               (append lex* lex)
+               (chi-internal
+                 (add-subst
+                   (make-full-rib (cons x x*) (cons lab lab*))
+                   body*)
+                 (add-lexicals (cons lab lab*) (cons lex lex*) r)
+                 mr)))))
         (_ (stx-error fmls "invalid syntax")))))
   
   (define chi-lambda-clause*
