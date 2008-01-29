@@ -2,9 +2,9 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(ikarus, 0.0.2patched, aghuloum@cs.indiana.edu)
+AC_INIT(ikarus, 0.0.3-rc1, aghuloum@cs.indiana.edu)
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(ikarus, 0.0.2patched)
+AM_INIT_AUTOMAKE(ikarus, 0.0.3-rc1)
 AC_CONFIG_SRCDIR([src/])
 
 
@@ -13,7 +13,9 @@ AM_PROG_AS
 AC_PROG_CC
 AM_PROG_CC_C_O
 
-CFLAGS="$CFLAGS -DNDEBUG -O3 -Wall"
+CFLAGS="$CFLAGS -DNDEBUG -O3 -Wall -m32"
+CCASFLAGS="$CCASFLAGS -m32"
+LDFLAGS="$LDFLAGS -m32"
 
 case "$target_os" in
   *linux*)
