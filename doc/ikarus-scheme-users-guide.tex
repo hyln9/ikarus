@@ -138,7 +138,7 @@
   \noindent Ikarus Scheme\\ User's Guide\\ }
   \noindent \rule{\textwidth}{6pt}
 {\fontsize{18}{18} \fstpagefont{}
-  \hfill{} (Preliminary Document) \hfill Version~0.0.3rc-1 }
+  \hfill{} (Preliminary Document) \hfill Version~0.0.3 }
 \vfill
 { \fontsize{24}{24} \fstpagefont{}
   \hfill{} Abdulaziz Ghuloum}
@@ -2095,9 +2095,10 @@ the \texttt{import} clause and the rest is done by the system.
 
 If you have written a useful \rnrs{6} library and wish for it to be
 available for a wider audience, contact us and we would be delighted
-to include it in the next release of Ikarus.  High quality SRFIs
-with \rnrs{6} reference implementations will be distributed with
-Ikarus as they become available.
+to include information about it in the next release of Ikarus.
+% High
+% quality SRFIs with \rnrs{6} reference implementations will be
+% distributed with Ikarus as they become available.
 
 \BoxedText{Note:}{Contributed libraries may have bugs on their own
 or may exhibit bugs in Ikarus itself.  If you have a problem using
@@ -2165,6 +2166,109 @@ following lines:
    export IKARUS_LIBRARY_PATH
 \end{verbatim}
 
+\newpage
+\section{\texttt{(srfi *)}}
+
+Ported by: Derick Eddington
+
+Scheme Requests For Implementation (SRFIs) for R6RS/Ikarus can be found
+at: 
+\url{https://code.launchpad.net/~ikarus-srfi-team/ikarus-libraries/srfi}
+
+Currently provided:
+\begin{itemize}
+\item  SRFI-0:  \verb|(srfi feature-expand)|
+\item  SRFI-1:  \verb|(srfi lists)|
+\item  SRFI-2:  \verb|(srfi and-let)|
+\item  SRFI-6:  \verb|(srfi string-ports)|
+\item  SRFI-8:  \verb|(srfi receive)|
+\item  SRFI-9:  \verb|(srfi records)|
+\item  SRFI-11: \verb|(srfi let-values)|
+\item  SRFI-13: \verb|(srfi strings)|
+\item  SRFI-14: \verb|(srfi char-set)|
+\item  SRFI-16: \verb|(srfi case-lambda)|
+\item  SRFI-19: \verb|(srfi time)|
+\item  SRFI-23: \verb|(srfi error-reporting)|
+\item  SRFI-26: \verb|(srfi specialize-procedures)|
+\item  SRFI-27: \verb|(srfi random)|
+\item  SRFI-31: \verb|(srfi rec)|
+\item  SRFI-37: \verb|(srfi args-fold)|
+\item  SRFI-39: \verb|(srfi parameters)|
+\item  SRFI-41: \verb|(srfi streams)| \hspace{.5in}by Phil Bewig
+\item  SRFI-42: \verb|(srfi eager-comprehensions)|
+\item  SRFI-43: \verb|(srfi vectors)|
+\item  SRFI-67: \verb|(srfi compare)|
+\item  SRFI-78: \verb|(srfi lightweight-testing)|
+\end{itemize}
+
+To install (you'll need a new version of the Bazaar revision
+control system):
+\begin{verbatim}
+$ bzr checkout --lightweight http://bazaar.launchpad.net/
+~ikarus-srfi-team/ikarus-libraries/srfi
+\end{verbatim}
+
+After you do the above, you'll get a new \verb|srfi/| directory in the
+directory you ran the checkout command, and that parent directory of the
+new srfi/ directory needs to be in your
+\verb|IKARUS_LIBRARY_PATH|, so that
+attempts to import \verb|(srfi ---)| will look in the directory containing the
+\verb|srfi/| directory.
+
+You can stay up-to-date by changing directory into your
+\verb|srfi/| and doing:
+\begin{verbatim}
+$ bzr update
+\end{verbatim}
+
+
+\newpage
+\section{\texttt{(math number-theory)}}
+Provided by: Jens Axel Søgaard
+
+URL: \url{https://code.launchpad.net/~soegaard/ikarus-libraries/soegaard}
+
+
+This library contains number theory code that I have written
+over a long period. The code began as an experiment.  I
+grabbed a book on number theory from the shelve (\emph{``Elementary
+Number Theory''} by Gareth A. Jones and J. Mary Jones) and began
+illustrating each definition and each theorem with Scheme
+code. The first half of the surce code is thus a well
+commented mix of definitions, theorems and code.
+
+The second half contains more sophisticated algorithms mostly
+of from the excellent book \emph{``Modern Computer Algebra''} by
+Joachim von zur Gathen and Jürgen Gerhard. The algorithms for
+factorizing large integers come from this book.
+
+Finally there are some definitions of special functions,
+mostly inspired by the problems of the Euler Project.
+
+\newpage
+\section{\texttt{(r6rs-clos)}}
+Provided by: Christian Sloma
+
+URL: \url{https://launchpad.net/r6rs-clos}
+
+
+\rnrs{6}-clos is a port of tiny-clos to the latest
+(6$^{\textrm{th}}$) revision
+of the language standard for scheme. It uses the library
+system that is new in \rnrs{6} to structure the code based on
+functionality (bootstrap of core classes and generic functions,
+actual implementation of the standard protocols, class layout
+and slot access \ldots).
+
+The homepage for now is \url{https://launchpad.net/r6rs-clos},
+where my current development branch can be found.
+
+% Currently the code in my repository will only work with the
+% 0.0.2 release of Ikarus and uses a private copy of two
+% SRFIs, but after the 0.0.3 release I intend to fix these so
+% that installing should be as simple as putting the r6rs-clos
+% files into the ikarus library load path and installing the
+% srfi's accordingly.
 
 
 \newpage
