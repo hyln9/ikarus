@@ -61,16 +61,19 @@
         (cond
           [(boolean? v) v]
           [else
-           (die 'file-exists?
-                  (case v
-                    [(1) "the path contains a non-directory"]
-                    [(2) "the path is too long"]
-                    [(3) "the path is not accessible"]
-                    [(4) "the path contains too many symbolic links"]
-                    [(5) "internal access die while accessing"]
-                    [(6) "IO die encountered while accessing"]
-                    [else "Unknown die"])
-                  x)]))))
+           (raise
+             (condition
+               (make-who-condition 'file-exists?)
+               (make-message-condition
+                 (case v
+                   [(1) "file path contains a non-directory"]
+                   [(2) "file path is too long"]
+                   [(3) "file path is not accessible"]
+                   [(4) "file path contains too many symbolic links"]
+                   [(5) "internal access error while accessing file"]
+                   [(6) "IO error encountered while accessing file"]
+                   [else "Unknown error while testing file"]))
+               (make-i/o-filename-error x)))]))))
 
   (define delete-file
     (lambda (x)
@@ -81,20 +84,23 @@
         (case v
           [(0) (void)]
           [else
-           (die 'delete-file
-                  (case v
-                    [(1) "the path contains a non-directory"]
-                    [(2) "the path is too long"]
-                    [(3) "the file does not exist"]
-                    [(4) "the path is not accessible"]
-                    [(5) "the path contains too many symbolic links"]
-                    [(6) "you do not have permissions to delete file"]
-                    [(7) "device is busy"]
-                    [(8) "IO die encountered while deleting"]
-                    [(9) "is in a read-only file system"]
-                    [(10) "internal access die while deleting"]
-                    [else "Unknown die while deleting"])
-                  x)]))))
+           (raise
+             (condition
+               (make-who-condition 'delete-file)
+               (make-message-condition
+                 (case v
+                   [(1) "file path contains a non-directory"]
+                   [(2) "file path is too long"]
+                   [(3) "file does not exist"]
+                   [(4) "file path is not accessible"]
+                   [(5) "file path contains too many symbolic links"]
+                   [(6) "you do not have permissions to delete file"]
+                   [(7) "device is busy"]
+                   [(8) "IO error encountered while deleting"]
+                   [(9) "file is in a read-only file system"]
+                   [(10) "internal access error while deleting"]
+                   [else "Unknown error while deleting file"]))
+               (make-i/o-filename-error x)))]))))
 
   (define ($getenv-bv key)
     (foreign-call "ikrt_getenv" key))

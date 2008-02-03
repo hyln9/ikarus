@@ -657,7 +657,7 @@ ikrt_delete_file(ikptr filename){
   if(err == 0){
     return 0;
   } 
-  switch (err){
+  switch (errno){
     case ENOTDIR:  return fix(1);    
     case ENAMETOOLONG: return fix(2);
     case ENOENT: return fix(3);     
