@@ -1761,9 +1761,12 @@
       (unless (number? n)
         (die 'expt "not a numebr" n))
       (cond
-        [(fixnum? m) 
+        [(fixnum? m)
          (if ($fx>= m 0)
-             (fxexpt n m)
+             (cond
+               [(ratnum? n) 
+                ($make-ratnum (expt ($ratnum-n n) m) (expt ($ratnum-d n) m))]
+               [else (fxexpt n m)])
              (/ 1 (expt n (- m))))]
         [(bignum? m) 
          (cond
