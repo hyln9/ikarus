@@ -273,9 +273,9 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
     }
     else {
       /* allocate marks */
-      p->marks = (ikptr*)(long)ik_mmap(pagesize*sizeof(ikptr*));
-      bzero(p->marks, pagesize*sizeof(ikptr*));
-      p->marks_size = pagesize;
+      p->marks = (ikptr*)(long)ik_mmap(2*pagesize*sizeof(ikptr*));
+      bzero(p->marks, 2*pagesize*sizeof(ikptr*));
+      p->marks_size = 2*pagesize;
     }
   }
   if(c == 'x'){
