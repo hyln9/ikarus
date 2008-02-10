@@ -283,7 +283,8 @@
                                    [(not (car loc*)) (f (cdr lhs*) (cdr loc*))]
                                    [else
                                     (make-seq 
-                                      (make-global-set! (car loc*) (car lhs*))
+                                      (make-constant #f)
+                                      ;(make-global-set! (car loc*) (car lhs*))
                                       (f (cdr lhs*) (cdr loc*)))])))])
                   (ungen-fml* lhs*)
                   expr))))]
@@ -790,8 +791,8 @@
            (let* ([b (car b*)]
                   [lhs (binding-lhs b)])
              (unless (var-assigned lhs) 
-               (set-var-assigned! lhs #t)
-               (printf "MADE COMPLEX ~s\n" (unparse lhs)))
+               ;(printf "MADE COMPLEX ~s\n" (unparse lhs))
+               (set-var-assigned! lhs #t))
              (make-seq
                (make-assign lhs (binding-rhs b))
                (mkset!s (cdr b*) body)))]))
@@ -859,12 +860,12 @@
       (let ([body (E body bc)]) 
         (when ordered? (insert-order-edges b*))
         (let ([scc* (get-sccs-in-order b* (map binding-free* b*) b*)])
-          (printf "SCCS:\n")
-          (for-each 
-            (lambda (scc) 
-              (printf "  ~s\n" 
-                (map unparse (map binding-lhs scc))))
-            scc*)
+          ;(printf "SCCS:\n")
+          ;(for-each 
+          ;  (lambda (scc) 
+          ;    (printf "  ~s\n" 
+          ;      (map unparse (map binding-lhs scc))))
+          ;  scc*)
           (gen-letrecs scc* ordered? body)))))
   (define (sort-bindings ls)
     (list-sort
@@ -939,9 +940,9 @@
        (mark-complex bc)
        (make-forcall rator (E* rand* bc))]
       [else (error who "invalid expression" (unparse x))]))
-  (printf "===========================================\n")
+  ;(printf "===========================================\n")
   (let ([x (E x (make-binding #f #f #f #t #t '()))])
-    (pretty-print (unparse x)) 
+    ;(pretty-print (unparse x)) 
     x))
 
 (define (uncover-assigned/referenced x)
@@ -950,7 +951,7 @@
     (for-each Expr x*))
   (define (init-var x)
     (set-var-assigned! x #f)
-    (set-var-referenced! x #f))
+    (set-var-referenced! x (var-global-loc x)))
   (define (Expr x)
     (struct-case x
       [(constant) (void)]
@@ -1759,7 +1760,7 @@
        (cond
          [(var-global-loc lhs) =>
           (lambda (loc) 
-            (make-funcall (make-primref '$set-symbol-value!)
+            (make-funcall (make-primref '$init-symbol-value!)
               (list (make-constant loc) (Expr rhs))))]
          [else
           (make-funcall (make-primref '$vector-set!)
@@ -1860,7 +1861,98 @@
   (Expr x))
 
 
- 
+(define (insert-global-assignments x)
+  (define who 'insert-global-assignments)
+  (define (global-assign lhs* body)
+    (cond
+      [(null? lhs*) body]
+      [(var-global-loc (car lhs*)) =>
+       (lambda (loc)
+         (make-seq
+           (make-funcall (make-primref '$init-symbol-value!) 
+             (list (make-constant loc) (car lhs*)))
+           (global-assign (cdr lhs*) body)))]
+      [else (global-assign (cdr lhs*) body)]))
+  (define (global-fix lhs* body)
+    (cond
+      [(null? lhs*) body]
+      [(var-global-loc (car lhs*)) =>
+       (lambda (loc)
+         (make-seq
+           (make-funcall (make-primref '$set-symbol-value/proc!)
+             (list (make-constant loc) (car lhs*)))
+           (global-assign (cdr lhs*) body)))]
+      [else (global-assign (cdr lhs*) body)]))
+  (define (Expr x)
+    (struct-case x
+      [(constant) x]
+      [(var) 
+       (cond
+         [(var-global-loc x) =>
+          (lambda (loc) 
+            (make-funcall 
+              (make-primref '$symbol-value) 
+              (list (make-constant loc))))]
+         [else x])]
+      [(primref)  x]
+      [(bind lhs* rhs* body)
+       (make-bind lhs* (map Expr rhs*)
+         (global-assign lhs* (Expr body)))]
+      [(fix lhs* rhs* body)
+       (make-fix lhs* (map Expr rhs*) 
+         (global-fix lhs* (Expr body)))]
+      [(conditional test conseq altern)
+       (make-conditional (Expr test) (Expr conseq) (Expr altern))]
+      [(seq e0 e1) (make-seq (Expr e0) (Expr e1))]
+      [(clambda g cls* cp free name) 
+       (make-clambda g
+         (map (lambda (cls)
+                (struct-case cls
+                  [(clambda-case info body)
+                   (make-clambda-case info (Expr body))]))
+              cls*)
+         cp free name)]
+      [(forcall op rand*)
+       (make-forcall op (map Expr rand*))]
+      [(funcall rator rand*)
+       (make-funcall (Expr rator) (map Expr rand*))]
+      [(mvcall p c) (make-mvcall (Expr p) (Expr c))]
+      [(jmpcall label rator rand*)
+       (make-jmpcall label (Expr rator) (map Expr rand*))]
+      [else (error who "invalid expression" (unparse x))]))
+  (define (Main x)
+    (struct-case x
+      [(constant) x]
+      [(var)      x]
+      [(primref)  x]
+      [(bind lhs* rhs* body)
+       (make-bind lhs* (map Main rhs*) 
+         (global-assign lhs* (Main body)))]
+      [(fix lhs* rhs* body)
+       (make-fix lhs* (map Main rhs*) 
+         (global-fix lhs* (Main body)))]
+      [(conditional test conseq altern)
+       (make-conditional (Main test) (Main conseq) (Main altern))]
+      [(seq e0 e1) (make-seq (Main e0) (Main e1))]
+      [(clambda g cls* cp free name) 
+       (make-clambda g
+         (map (lambda (cls)
+                (struct-case cls
+                  [(clambda-case info body)
+                   (make-clambda-case info (Expr body))]))
+              cls*)
+         cp free name)]
+      [(forcall op rand*)
+       (make-forcall op (map Main rand*))]
+      [(funcall rator rand*)
+       (make-funcall (Main rator) (map Main rand*))]
+      [(mvcall p c) (make-mvcall (Main p) (Main c))]
+      [(jmpcall label rator rand*)
+       (make-jmpcall label (Main rator) (map Main rand*))]
+      [else (error who "invalid expression" (unparse x))]))
+  (let ([x (Main x)])
+    ;(pretty-print x)
+    x))
 
 (define (convert-closures prog)
   (define who 'convert-closures)
@@ -1871,13 +1963,13 @@
        (let-values ([(a a-free) (Expr (car x*))]
                     [(d d-free) (Expr* (cdr x*))])
          (values (cons a d) (union a-free d-free)))]))
-   (define (do-clambda* lhs* x*)
-    (cond
-      [(null? x*) (values '() '())]
-      [else
-       (let-values ([(a a-free) (do-clambda (car lhs*) (car x*))]
-                    [(d d-free) (do-clambda* (cdr lhs*) (cdr x*))])
-         (values (cons a d) (union a-free d-free)))]))
+  (define (do-clambda* lhs* x*)
+   (cond
+     [(null? x*) (values '() '())]
+     [else
+      (let-values ([(a a-free) (do-clambda (car lhs*) (car x*))]
+                   [(d d-free) (do-clambda* (cdr lhs*) (cdr x*))])
+        (values (cons a d) (union a-free d-free)))]))
   (define (do-clambda lhs x)
     (struct-case x 
       [(clambda g cls* _cp _free name)
@@ -1949,7 +2041,7 @@
                     (union p-free c-free))]
            [else (error who "invalid mvcall consumer" 
                         (unparse c))]))]
-      [else (error who "invalid expression" (unparse ex))]))
+      [else (error who "invalid expression" ex)]))
   (let-values ([(prog free) (Expr prog)])
     (unless (null? free) 
       (error 'convert-closures "free vars encountered in program"
@@ -2108,9 +2200,9 @@
   ;  (pretty-print (unparse x)))
   (let ([x (E x)])
     (let ([v (make-codes all-codes x)])
-      (when (scc-letrec) 
-        (printf "CONVERT-CLOSURE \n")
-        (pretty-print (unparse v)))
+      ;(when (scc-letrec) 
+      ;  (printf "CONVERT-CLOSURE \n")
+      ;  (pretty-print (unparse v)))
       v)))
 
 
@@ -2780,6 +2872,7 @@
          [p (copy-propagate p)]
          [p (rewrite-assignments p)]
          [p (optimize-for-direct-jumps p)]
+         [p (insert-global-assignments p)]
          [p (convert-closures p)]
          [p (optimize-closures/lift-codes p)])
     (let ([ls* (alt-cogen p)])

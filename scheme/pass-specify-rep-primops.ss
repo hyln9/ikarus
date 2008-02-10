@@ -566,6 +566,13 @@
      (prm 'mset x (K (- disp-symbol-record-proc symbol-ptag)) (T v))
      (dirty-vector-set x))])
 
+(define-primop $set-symbol-value/proc! unsafe
+  [(E x v)
+   (with-tmp ([x (T x)] [v (T v)])
+     (prm 'mset x (K (- disp-symbol-record-value symbol-ptag)) v)
+     (prm 'mset x (K (- disp-symbol-record-proc symbol-ptag)) v)
+     (dirty-vector-set x))])
+
 (define-primop top-level-value safe
   [(V x)
    (struct-case x
