@@ -16,7 +16,7 @@
 
 (library (ikarus compiler)
   (export compile-core-expr-to-port 
-          assembler-output
+          assembler-output scc-letrec
           current-primitive-locations eval-core)
   (import 
     (rnrs hashtables)
@@ -25,7 +25,7 @@
     (only (ikarus system $codes) $code->closure)
     (only (ikarus system $structs) $struct-ref $struct/rtd?)
     (except (ikarus)
-        fasl-write
+        fasl-write scc-letrec
         compile-core-expr-to-port assembler-output
         current-primitive-locations eval-core)
     (ikarus fasl write)
@@ -562,6 +562,8 @@
   ;;; FIXME: surely something must go here, no?
   '())
 
+(define complex-count 0)
+
 (define (optimize-letrec x)
   (define who 'optimize-letrec)
   (define (extend-hash lhs* h ref)
@@ -576,24 +578,6 @@
       [else
        (cons (E (car x*) ref comp)
              (E* (cdr x*) ref comp))]))  
-  (define (do-rhs*-old i lhs* rhs* ref comp vref vcomp)
-    (cond
-      [(null? rhs*) '()]
-      [else
-       (let ([h (make-eq-hashtable)])
-         (let ([ref
-                (lambda (x)
-                  (unless (hashtable-ref h x #f)
-                    (hashtable-set! h x #t)
-                    (ref x)
-                    (when (memq x lhs*)
-                      (vector-set! vref i #t))))]
-               [comp
-                (lambda ()
-                  (vector-set! vcomp i #t)
-                  (comp))])
-           (cons (E (car rhs*) ref comp)
-                 (do-rhs* (fxadd1 i) lhs* (cdr rhs*) ref comp vref vcomp))))])) 
   (define (do-rhs* i lhs* rhs* ref comp vref vcomp)
     (cond
       [(null? rhs*) '()]
@@ -639,8 +623,15 @@
         (let ([rhs* (do-rhs* 0 lhs* rhs* ref comp vref vcomp)])
           (let-values ([(slhs* srhs* llhs* lrhs* clhs* crhs*)
                         (partition-rhs* 0 lhs* rhs* vref vcomp)])
-            ;(unless (null? clhs*)
-            ;  (printf "CLHS* = ~s\n" (map unparse clhs*)))
+            ;;; (let ([made-complex 
+            ;;;        (filter (lambda (x) (not (var-assigned x)))
+            ;;;                clhs*)])
+            ;;;   (unless (null? made-complex)
+            ;;;     (set! complex-count 
+            ;;;       (+ complex-count (length made-complex)))
+            ;;;     (printf "COMPLEX (~s) = ~s\n" 
+            ;;;             complex-count 
+            ;;;             (map unparse made-complex))))
             (let ([void* (map (lambda (x) (make-constant (void))) clhs*)])
               (make-bind slhs* srhs*
                 (make-bind clhs* void*
@@ -664,6 +655,7 @@
       [(assign lhs rhs)
        (set-var-assigned! lhs #t)
        (ref lhs)
+       (comp)
        (make-assign lhs (E rhs ref comp))]
       [(primref) x]
       [(bind lhs* rhs* body)
@@ -711,7 +703,246 @@
   (E x (lambda (x) (error who "free var found" x))
        void))
 
+#|
+(letrec* (bi ...
+          [x (let ([lhs* rhs*] ...) body)]
+          bj ...) 
+  body)
+===?
+(letrec* (bi ...
+            [tmp* rhs*] ...
+            [lhs* tmp*] ...
+            [x body]
+          bj ...)
+  body)
+|#
 
+(define (optimize-letrec/scc x)
+  (define who 'optimize-letrec/scc)
+  (module (get-sccs-in-order)
+    (define-struct node (data link* lowlink root done collection))
+    (define (create-graph v* e** data*)
+      (define h (make-eq-hashtable))
+      (let ([v*
+             (let f ([v* v*] [data* data*])
+               (cond
+                 [(null? v*) '()]
+                 [else
+                  (let ([node (make-node (car data*) '() #f #f #f #f)])
+                    (hashtable-set! h (car v*) node) 
+                    (cons node (f (cdr v*) (cdr data*))))]))])
+        (for-each
+          (lambda (v e*)
+            (set-node-link*! v
+              (map (lambda (f) 
+                     (or (hashtable-ref h f #f)
+                         (error who "invalid node" f)))
+                   e*)))
+          v* e**)
+        v*))
+    (define (compute-sccs! v*)
+      (define all-sccs '())
+      (define (visit v i) 
+        (set-node-lowlink! v i)
+        (set-node-root! v v)
+        (set-node-collection! v '())
+        (for-each 
+          (lambda (v^)
+            (unless (node-done v^)
+              (unless (node-lowlink v^)
+                (visit v^ (+ i 1)))
+              (when (< (node-lowlink v^) (node-lowlink v))
+                (set-node-lowlink! v (node-lowlink v^))
+                (set-node-root! v (node-root v^)))))
+          (node-link* v))
+        (let ([root (node-root v)])
+          (let ([nodes (cons v (node-collection root))])
+            (cond
+              [(eq? v root)
+               (set! all-sccs (cons nodes all-sccs))
+               (for-each (lambda (x) (set-node-done! x #t)) nodes)]
+              [else
+               (set-node-collection! root 
+                 (append (node-collection v) nodes))]))))
+      (for-each (lambda (v) (unless (node-done v) (visit v 0))) v*)
+      (reverse all-sccs))
+    (define (get-sccs-in-order n* e** data*)
+      (let ([G (create-graph n* e** data*)])
+        (let ([sccs (compute-sccs! G)])
+          (map (lambda (scc) (map node-data scc)) sccs)))))
+  (define (gen-letrecs scc* ordered? body) 
+    (define (gen-letrec scc ordered? body)
+      (define (mklet lhs* rhs* body)
+        (if (null? lhs*) 
+            body
+            (make-bind lhs* rhs* body)))
+      (define (mkfix lhs* rhs* body)
+        (if (null? lhs*) 
+            body
+            (make-fix lhs* rhs* body)))
+      (define (lambda-binding? x)
+        (and (not (var-assigned (binding-lhs x)))
+             (clambda? (binding-rhs x))))
+      (define (mkset!s b* body) 
+        (cond
+          [(null? b*) body]
+          [else 
+           (let* ([b (car b*)]
+                  [lhs (binding-lhs b)])
+             (unless (var-assigned lhs) 
+               (set-var-assigned! lhs #t)
+               (printf "MADE COMPLEX ~s\n" (unparse lhs)))
+             (make-seq
+               (make-assign lhs (binding-rhs b))
+               (mkset!s (cdr b*) body)))]))
+      (cond
+        [(null? (cdr scc)) 
+         (let ([b (car scc)])
+           (cond
+             [(lambda-binding? b)
+              (mkfix (list (binding-lhs b))
+                     (list (binding-rhs b))
+                     body)]
+             [(not (memq b (binding-free* b)))
+              (mklet (list (binding-lhs b))
+                     (list (binding-rhs b))
+                     body)]
+             [else 
+              (mklet (list (binding-lhs b)) 
+                     (list (make-primcall 'void '()))
+                (mkset!s scc body))]))]
+        [else 
+         (let-values ([(lambda* complex*) 
+                       (partition lambda-binding? scc)])
+           (let ([complex* 
+                  (if ordered? (sort-bindings complex*) complex*)])
+             (mklet (map binding-lhs complex*)
+                    (map (lambda (x) (make-primcall 'void '()))
+                          complex*)
+                (mkfix (map binding-lhs lambda*)
+                       (map binding-rhs lambda*)
+                  (mkset!s complex* body)))))]))
+    (cond
+      [(null? scc*) body]
+      [else 
+       (gen-letrec (car scc*) ordered?
+         (gen-letrecs (cdr scc*) ordered? body))]))
+  (define (do-recbind lhs* rhs* body bc ordered?)
+    (define (make-bindings lhs* rhs* bc i)
+      (cond
+        [(null? lhs*) '()]
+        [else 
+         (let ([b (make-binding i (car lhs*) (car rhs*) #f bc '())])
+           (set-var-index! (car lhs*) b)
+           (cons b (make-bindings (cdr lhs*) (cdr rhs*) bc (+ i 1))))]))
+    (define (complex? x) 
+      (or (binding-complex x) 
+          (var-assigned (binding-lhs x))))
+    (define (insert-order-edges b*)
+      (define (mark pb b*)
+        (unless (null? b*)
+          (let ([b (car b*)])
+            (if (complex? b)
+                (let ([free* (binding-free* b)])
+                  (unless (memq pb free*)
+                    (set-binding-free*! b (cons pb free*)))
+                  (mark b (cdr b*)))
+                (mark pb (cdr b*))))))
+      (unless (null? b*)
+        (let ([b (car b*)])
+          (if (complex? b)
+              (mark b (cdr b*))
+              (insert-order-edges (cdr b*))))))
+    (let ([b* (make-bindings lhs* rhs* bc 0)])
+      (for-each (lambda (b) (set-binding-rhs! b (E (binding-rhs b) b))) b*)
+      (for-each (lambda (x) (set-var-index! x #f)) lhs*)
+      (let ([body (E body bc)]) 
+        (when ordered? (insert-order-edges b*))
+        (let ([scc* (get-sccs-in-order b* (map binding-free* b*) b*)])
+          (printf "SCCS:\n")
+          (for-each 
+            (lambda (scc) 
+              (printf "  ~s\n" 
+                (map unparse (map binding-lhs scc))))
+            scc*)
+          (gen-letrecs scc* ordered? body)))))
+  (define (sort-bindings ls)
+    (list-sort
+      (lambda (x y) (< (binding-serial x) (binding-serial y)))
+      ls))
+  (define-struct binding (serial lhs rhs complex prev free*))
+  (define (mark-complex bc)
+    (unless (binding-complex bc)
+      (set-binding-complex! bc #t)
+      (mark-complex (binding-prev bc))))
+  (define (mark-free var bc)
+    (let ([rb (var-index var)])
+      (when rb
+        (let ([lb 
+               (let ([pr (binding-prev rb)])
+                 (let f ([bc bc])
+                   (let ([bcp (binding-prev bc)])
+                     (cond
+                       [(eq? bcp pr) bc]
+                       [else (f bcp)]))))])
+          (let ([free* (binding-free* lb)])
+            (unless (memq rb free*)
+              ;(printf "MARK FREE ~s in ~s\n" 
+              ;        (unparse (binding-lhs rb))
+              ;        (unparse (binding-lhs lb)))
+              (set-binding-free*! lb (cons rb free*))))))))
+  (define (E* x* bc)
+    (map (lambda (x) (E x bc)) x*))
+  (define (E x bc)
+    (struct-case x
+      [(constant) x]
+      [(var) 
+       (mark-free x bc)
+       x]
+      [(assign lhs rhs)
+       (set-var-assigned! lhs #t)
+       (mark-free lhs bc)
+       (mark-complex bc)
+       (make-assign lhs (E rhs bc))]
+      [(primref) x]
+      [(bind lhs* rhs* body)
+       (if (null? lhs*)
+           (E body bc)
+           (make-bind lhs* (E* rhs* bc) (E body bc)))]
+      [(recbind lhs* rhs* body)
+       (if (null? lhs*)
+           (E body bc)
+           (do-recbind lhs* rhs* body bc #f))]
+      [(rec*bind lhs* rhs* body)
+       (if (null? lhs*)
+           (E body bc)
+           (do-recbind lhs* rhs* body bc #t))]
+      [(conditional e0 e1 e2)
+       (make-conditional (E e0 bc) (E e1 bc) (E e2 bc))]
+      [(seq e0 e1) (make-seq (E e0 bc) (E e1 bc))]
+      [(clambda g cls* cp free name)
+       (let ([bc (make-binding #f #f #f #t bc '())])
+         (make-clambda g
+           (map (lambda (x)
+                  (struct-case x
+                    [(clambda-case info body)
+                     (make-clambda-case info (E body bc))]))
+                cls*)
+           cp free name))]
+      [(funcall rator rand*)
+       (mark-complex bc)
+       (make-funcall (E rator bc) (E* rand* bc))]
+      [(mvcall p c)
+       (mark-complex bc)
+       (make-mvcall (E p bc) (E c bc))]
+      [(forcall rator rand*) 
+       (mark-complex bc)
+       (make-forcall rator (E* rand* bc))]
+      [else (error who "invalid expression" (unparse x))]))
+  (printf "===========================================\n")
+  (let ([x (E x (make-binding #f #f #f #t #t '()))])
+    (pretty-print (unparse x)) 
+    x))
 
 (define (uncover-assigned/referenced x)
   (define who 'uncover-assigned/referenced)
@@ -1722,7 +1953,7 @@
   (let-values ([(prog free) (Expr prog)])
     (unless (null? free) 
       (error 'convert-closures "free vars encountered in program"
-          free (unparse prog)))
+          (map unparse free) #;(unparse prog)))
    prog))
 
 
@@ -1877,9 +2108,9 @@
   ;  (pretty-print (unparse x)))
   (let ([x (E x)])
     (let ([v (make-codes all-codes x)])
-      ;(when (assembler-output) 
-      ;  (printf "AFTER\n")
-      ;  (pretty-print (unparse v)))
+      (when (scc-letrec) 
+        (printf "CONVERT-CLOSURE \n")
+        (pretty-print (unparse v)))
       v)))
 
 
@@ -2536,11 +2767,15 @@
     [else 
      (printf "    ~s\n" x)]))
 
+(define scc-letrec (make-parameter #f))
+
 (define (compile-core-expr->code p)
   (let* ([p (recordize p)]
          [p (parameterize ([open-mvcalls #f])
               (optimize-direct-calls p))]
-         [p (optimize-letrec p)]
+         [p (if (scc-letrec) 
+                (optimize-letrec/scc p)
+                (optimize-letrec p))]
          [p (uncover-assigned/referenced p)]
          [p (copy-propagate p)]
          [p (rewrite-assignments p)]

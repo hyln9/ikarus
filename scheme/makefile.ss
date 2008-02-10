@@ -16,10 +16,10 @@
 
 ;;; vim:syntax=scheme
 (import (only (ikarus) import))
-(import (except (ikarus) assembler-output))
+(import (except (ikarus) assembler-output scc-letrec))
 (import (ikarus compiler))
 (import (except (psyntax system $bootstrap)
-                eval-core
+                eval-core 
                 current-primitive-locations
                 compile-core-expr-to-port))
 (import (ikarus compiler)) ; just for fun
@@ -1383,6 +1383,7 @@
     [i/o-would-block-condition?       i]
     [i/o-would-block-port             i]
     [ellipsis-map ]
+    [scc-letrec i]
   ))
 
 (define (macro-identifier? x) 

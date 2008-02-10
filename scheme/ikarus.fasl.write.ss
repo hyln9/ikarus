@@ -44,6 +44,16 @@
 
   (define-syntax fxbits (identifier-syntax (- intbits fxshift)))
 
+  ;;;(define fxshift 
+  ;;;  (case wordsize
+  ;;;    [(4) 2]
+  ;;;    [(8) 3]
+  ;;;    [else (error 'fxshift "invalid wordsize" wordsize)]))
+
+  ;;;(define intbits (* wordsize 8))
+
+  ;;;(define fxbits (- intbits fxshift))
+
   (define (fx? x)
     (and (or (fixnum? x) (bignum? x)) 
          (<= (- (expt 2 (- fxbits 1)))
