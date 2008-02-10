@@ -772,15 +772,17 @@
         (let ([sccs (compute-sccs! G)])
           (map (lambda (scc) (map node-data scc)) sccs)))))
   (define (gen-letrecs scc* ordered? body) 
-    (define (gen-letrec scc ordered? body)
+    (define (mkfix b* body)
+      (if (null? b*) 
+          body
+          (make-fix (map binding-lhs b*) 
+                    (map binding-rhs b*) 
+                    body)))
+    (define (gen-letrec scc fix* body)
       (define (mklet lhs* rhs* body)
         (if (null? lhs*) 
             body
             (make-bind lhs* rhs* body)))
-      (define (mkfix lhs* rhs* body)
-        (if (null? lhs*) 
-            body
-            (make-fix lhs* rhs* body)))
       (define (lambda-binding? x)
         (and (not (var-assigned (binding-lhs x)))
              (clambda? (binding-rhs x))))
@@ -801,33 +803,41 @@
          (let ([b (car scc)])
            (cond
              [(lambda-binding? b)
-              (mkfix (list (binding-lhs b))
-                     (list (binding-rhs b))
-                     body)]
+              (values (cons b fix*) body)]
              [(not (memq b (binding-free* b)))
-              (mklet (list (binding-lhs b))
-                     (list (binding-rhs b))
-                     body)]
+              (values '()
+                (mklet (list (binding-lhs b))
+                       (list (binding-rhs b))
+                  (mkfix fix* body)))]
              [else 
-              (mklet (list (binding-lhs b)) 
-                     (list (make-primcall 'void '()))
-                (mkset!s scc body))]))]
+              (values '()
+                (mklet (list (binding-lhs b)) 
+                       (list (make-primcall 'void '()))
+                  (mkset!s scc 
+                    (mkfix fix* body))))]))]
         [else 
          (let-values ([(lambda* complex*) 
                        (partition lambda-binding? scc)])
-           (let ([complex* 
-                  (if ordered? (sort-bindings complex*) complex*)])
-             (mklet (map binding-lhs complex*)
-                    (map (lambda (x) (make-primcall 'void '()))
-                          complex*)
-                (mkfix (map binding-lhs lambda*)
-                       (map binding-rhs lambda*)
-                  (mkset!s complex* body)))))]))
-    (cond
-      [(null? scc*) body]
-      [else 
-       (gen-letrec (car scc*) ordered?
-         (gen-letrecs (cdr scc*) ordered? body))]))
+           (cond
+             [(null? complex*) 
+              (values (append lambda* fix*) body)]
+             [else
+              (let ([complex* 
+                     (if ordered? (sort-bindings complex*) complex*)])
+                (values '()
+                  (mklet (map binding-lhs complex*)
+                         (map (lambda (x) (make-primcall 'void '()))
+                               complex*)
+                     (mkfix (append lambda* fix*)
+                       (mkset!s complex* body)))))]))]))
+    (let-values ([(fix* body)
+                  (let f ([scc* scc*])
+                    (cond
+                      [(null? scc*) (values '() body)]
+                      [else 
+                       (let-values ([(fix* body) (f (cdr scc*))])
+                         (gen-letrec (car scc*) fix* body))]))])
+      (mkfix fix* body)))
   (define (do-recbind lhs* rhs* body bc ordered?)
     (define (make-bindings lhs* rhs* bc i)
       (cond
@@ -2859,7 +2869,7 @@
     [else 
      (printf "    ~s\n" x)]))
 
-(define scc-letrec (make-parameter #f))
+(define scc-letrec (make-parameter #t))
 
 (define (compile-core-expr->code p)
   (let* ([p (recordize p)]

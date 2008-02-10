@@ -33,26 +33,26 @@
   (module (wordsize)
     (include "ikarus.config.ss"))
 
-  (define-syntax fxshift 
-    (identifier-syntax
-      (case wordsize
-        [(4) 2]
-        [(8) 3]
-        [else (error 'fxshift "invalid wordsize" wordsize)])))
+  ;;; (define-syntax fxshift 
+  ;;;   (identifier-syntax
+  ;;;     (case wordsize
+  ;;;       [(4) 2]
+  ;;;       [(8) 3]
+  ;;;       [else (error 'fxshift "invalid wordsize" wordsize)])))
 
-  (define-syntax intbits (identifier-syntax (* wordsize 8)))
+  ;;; (define-syntax intbits (identifier-syntax (* wordsize 8)))
 
-  (define-syntax fxbits (identifier-syntax (- intbits fxshift)))
+  ;;; (define-syntax fxbits (identifier-syntax (- intbits fxshift)))
 
-  ;;;(define fxshift 
-  ;;;  (case wordsize
-  ;;;    [(4) 2]
-  ;;;    [(8) 3]
-  ;;;    [else (error 'fxshift "invalid wordsize" wordsize)]))
+  (define fxshift 
+    (case wordsize
+      [(4) 2]
+      [(8) 3]
+      [else (error 'fxshift "invalid wordsize" wordsize)]))
 
-  ;;;(define intbits (* wordsize 8))
+  (define intbits (* wordsize 8))
 
-  ;;;(define fxbits (- intbits fxshift))
+  (define fxbits (- intbits fxshift))
 
   (define (fx? x)
     (and (or (fixnum? x) (bignum? x)) 
