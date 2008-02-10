@@ -1482,7 +1482,7 @@
                        (partition-referenced
                            (cdr lhs*) (cdr rhs*))])
            (cond
-             [(var-referenced lhs)
+             [(or (var-referenced lhs) (var-global-loc lhs))
               (values (cons lhs lhs*) (cons rhs rhs*) eff*)]
              [else
               (values lhs* rhs* 
@@ -1497,10 +1497,20 @@
                        (partition/assign-known
                            (cdr lhs*) (cdr rhs*))])
            (cond
-             [(and (not (var-assigned lhs)) (known-value rhs)) =>
+             [(and (not (var-assigned lhs))
+              ;     (not (var-global-loc lhs))
+                   (known-value rhs)) =>
               (lambda (v)
                 (set-var-referenced! lhs v)
-                (values lhs* rhs* (mk-seq eff* rhs)))]
+                (values lhs* rhs* 
+                  (mk-seq eff* 
+                    (cond
+                      [(var-global-loc lhs) =>
+                       (lambda (loc) 
+                         (make-funcall 
+                           (make-primref '$init-symbol-value!) 
+                           (list (make-constant loc) rhs)))]
+                      [else rhs]))))]
              [else
               (values (cons lhs lhs*) (cons rhs rhs*) eff*)])))]))
   (define (do-bind lhs* rhs* body k) 
