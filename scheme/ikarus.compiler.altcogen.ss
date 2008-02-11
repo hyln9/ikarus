@@ -187,7 +187,7 @@
     (struct-case x
       [(clambda label case* cp free* name)
        (make-clambda label (map (ClambdaCase cp free*) case*) 
-                     cp free* name)]
+                     #f free* name)]
       [else (error who "invalid clambda" x)]))
   ;;;
   (define (Program x)

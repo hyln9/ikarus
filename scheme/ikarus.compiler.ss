@@ -904,6 +904,17 @@
               (set-binding-free*! lb (cons rb free*))))))))
   (define (E* x* bc)
     (map (lambda (x) (E x bc)) x*))
+  (define (L x bc)
+    (struct-case x
+      [(clambda g cls* cp free name)
+       (let ([bc (make-binding #f #f #f #t bc '())])
+         (make-clambda g
+           (map (lambda (x)
+                  (struct-case x
+                    [(clambda-case info body)
+                     (make-clambda-case info (E body bc))]))
+                cls*)
+           cp free name))]))
   (define (E x bc)
     (struct-case x
       [(constant) x]
@@ -932,14 +943,7 @@
        (make-conditional (E e0 bc) (E e1 bc) (E e2 bc))]
       [(seq e0 e1) (make-seq (E e0 bc) (E e1 bc))]
       [(clambda g cls* cp free name)
-       (let ([bc (make-binding #f #f #f #t bc '())])
-         (make-clambda g
-           (map (lambda (x)
-                  (struct-case x
-                    [(clambda-case info body)
-                     (make-clambda-case info (E body bc))]))
-                cls*)
-           cp free name))]
+       (L x bc)]
       [(funcall rator rand*)
        (mark-complex bc)
        (make-funcall (E rator bc) (E* rand* bc))]
@@ -1790,7 +1794,55 @@
   (Expr x))
 
 
-
+(define (sanitize-bindings x)
+  (define who 'sanitize-bindings)
+  (define (CLambda x)
+    (struct-case x
+      [(clambda g cls* cp free name) 
+       (make-clambda g
+         (map (lambda (cls)
+                (struct-case cls
+                  [(clambda-case info body)
+                   (struct-case info
+                     [(case-info label fml* proper)
+                      (make-clambda-case 
+                        (make-case-info label fml* proper)
+                        (Expr body))])]))
+              cls*)
+         cp free name)]))
+  (define (do-fix lhs* rhs* body) 
+    (if (null? lhs*) 
+        (Expr body)
+        (make-fix lhs* (map CLambda rhs*) (Expr body))))
+  (define (Expr x)
+    (struct-case x
+      [(constant) x]
+      [(var)      x]
+      [(primref) x]
+      [(bind lhs* rhs* body)
+       (let-values ([(lambda* other*) 
+                     (partition
+                       (lambda (x) (clambda? (cdr x)))
+                       (map cons lhs* rhs*))])
+         (make-bind (map car other*) 
+                    (map Expr (map cdr other*))
+           (do-fix (map car lambda*) (map cdr lambda*)
+             body)))]
+      [(fix lhs* rhs* body)
+       (do-fix lhs* rhs* body)]
+      [(conditional test conseq altern)
+       (make-conditional (Expr test) (Expr conseq) (Expr altern))]
+      [(seq e0 e1) (make-seq (Expr e0) (Expr e1))]
+      [(clambda g cls* cp free name) 
+       (let ([t (unique-var 'anon)])
+         (make-fix (list t) (list (CLambda x)) t))]
+      [(forcall op rand*)
+       (make-forcall op (map Expr rand*))]
+      [(funcall rator rand*)
+       (make-funcall (Expr rator) (map Expr rand*))]
+      [(mvcall p c) (make-mvcall (Expr p) (Expr c))]
+      [else (error who "invalid expression" (unparse x))]))
+  (Expr x))
 
 
 (define (optimize-for-direct-jumps x)
@@ -1836,6 +1888,17 @@
                                 (cons (car rand*)
                                       (f (cdr fml*) (cdr rand*)))])))
                         (f (cdr cls*)))])])]))])))
+  (define (CLambda x)
+    (struct-case x
+      [(clambda g cls* cp free name) 
+       (make-clambda g
+         (map (lambda (cls)
+                (struct-case cls
+                  [(clambda-case info body)
+                   (for-each init-var (case-info-args info))
+                   (make-clambda-case info (Expr body))]))
+              cls*)
+         cp free name)]))
   (define (Expr x)
     (struct-case x
       [(constant) x]
@@ -1848,19 +1911,10 @@
          (make-bind lhs* rhs* (Expr body)))]
       [(fix lhs* rhs* body)
        (for-each set-var lhs* rhs*)
-       (make-fix lhs* (map Expr rhs*) (Expr body))]
+       (make-fix lhs* (map CLambda rhs*) (Expr body))]
       [(conditional test conseq altern)
        (make-conditional (Expr test) (Expr conseq) (Expr altern))]
       [(seq e0 e1) (make-seq (Expr e0) (Expr e1))]
-      [(clambda g cls* cp free name) 
-       (make-clambda g
-         (map (lambda (cls)
-                (struct-case cls
-                  [(clambda-case info body)
-                   (for-each init-var (case-info-args info))
-                   (make-clambda-case info (Expr body))]))
-              cls*)
-         cp free name)]
       [(forcall op rand*)
        (make-forcall op (map Expr rand*))]
       [(funcall rator rand*)
@@ -1974,6 +2028,65 @@
     ;(pretty-print x)
     x))
 
+
+(define (get-non-operator-cps x)
+  (define who 'get-non-operator-cps)
+  (define-struct loc (seen?))
+  (define (do-fix lhs* rhs* body ac)
+    (for-each (lambda (lhs) (set-var-index! lhs (make-loc #f))) lhs*)
+    (let ([ac (L* rhs* (E body ac))])
+      (for-each (lambda (lhs) (set-var-index! lhs #f)) lhs*)
+      ac))
+  (define (L* ls ac)
+    (cond
+      [(null? ls) ac]
+      [else (L* (cdr ls) (L (car ls) ac))]))
+  (define (L x ac)
+    (struct-case x
+      [(clambda label cls* cp free* name)
+       (let f ([cls* cls*] [ac ac])
+         (cond
+           [(null? cls*) ac]
+           [else
+            (struct-case (car cls*) 
+              [(clambda-case info body)
+               (f (cdr cls*) (E body ac))])]))]
+      [else (error who "invalid L" x)]))
+  (define (E* ls ac)
+    (cond 
+      [(null? ls) ac]
+      [else (E* (cdr ls) (E (car ls) ac))]))
+  (define (E x ac)
+    (struct-case x
+      [(constant) ac]
+      [(var)      
+       (let ([v (var-index x)])
+         (cond
+           [(loc? v) 
+            (if (loc-seen? v)
+                ac
+                (begin
+                  (set-loc-seen?! v #t)
+                  (cons x ac)))]
+           [else ac]))]
+      [(primref)  ac]
+      [(bind lhs* rhs* body) 
+       (E* rhs* (E body ac))]
+      [(fix lhs* rhs* body) (do-fix lhs* rhs* body ac)]
+      [(conditional test conseq altern)
+       (E test (E conseq (E altern ac)))]
+      [(seq e0 e1)           (E e0 (E e1 ac))]
+      [(forcall op rand*)    (E* rand* ac)]
+      [(funcall rator rand*) (E rator (E* rand* ac))]
+      [(jmpcall label rator rand*) 
+       ;;; skip rator
+       (E* rand* ac)]
+      [(mvcall p c)
+       (E p (E c ac))]
+      [else (error who "invalid expression" (unparse x))]))
+  (E x '()))
+
+
 (define (convert-closures prog)
   (define who 'convert-closures)
   (define (Expr* x*)
@@ -2006,12 +2119,11 @@
                                  (cons (make-clambda-case info body) cls*)
                                  (union (difference body-free (case-info-args info))
                                         cls*-free)))])]))])
-          (let ([free (difference free (list lhs))])
-            (values 
-              (make-closure 
-                (make-clambda g cls* lhs free name)
-                free)
-              free)))]))
+          (values 
+            (make-closure 
+              (make-clambda g cls* lhs free name)
+              free)
+            free))]))
   (define (Expr ex)
     (struct-case ex
       [(constant) (values ex '())]
@@ -2037,8 +2149,6 @@
        (let-values ([(e0 e0-free) (Expr e0)]
                     [(e1 e1-free) (Expr e1)])
          (values (make-seq e0 e1) (union e0-free e1-free)))]
-      [(clambda)
-       (do-clambda #f ex)]
       [(forcall op rand*)
        (let-values ([(rand* rand*-free) (Expr* rand*)])
          (values (make-forcall op rand*)  rand*-free))]
@@ -2062,29 +2172,26 @@
            [else (error who "invalid mvcall consumer" 
                         (unparse c))]))]
       [else (error who "invalid expression" ex)]))
+  ;(get-non-operator-cps prog)
   (let-values ([(prog free) (Expr prog)])
     (unless (null? free) 
       (error 'convert-closures "free vars encountered in program"
-          (map unparse free) #;(unparse prog)))
+          (map unparse free)))
    prog))
-
-
- 
-
 
 
 
 (define (optimize-closures/lift-codes x)
   (define who 'optimize-closures/lift-codes)
   (define all-codes '())
-  (define (init-non-thunk var)
+  (define (init-non-combinator var)
     (set-var-assigned! var #f)
     (set-var-referenced! var #f))
-  (define (var-thunk var)
+  (define (var-combinator var)
     (var-referenced var))
-  (define (make-thunk-var var thunk)
-    (set-var-referenced! var thunk))
-  (define (thunk? x)
+  (define (make-combinator-var var combinator)
+    (set-var-referenced! var combinator))
+  (define (combinator? x)
     (struct-case x
       [(closure code free*)
        (null? free*)]
@@ -2096,7 +2203,7 @@
                      (lambda (x)
                        (struct-case x 
                          [(clambda-case info body)
-                          (for-each init-non-thunk
+                          (for-each init-non-combinator
                               (case-info-args info))
                           (make-clambda-case info (E body))]))
                      cls*)])
@@ -2114,34 +2221,37 @@
       [else
        (cons (car ls) (trim p? (cdr ls)))]))
   (define (trim-vars ls)
-    (trim var-thunk ls))
-  (define (trim-thunks ls)
-    (trim thunk? ls))
+    (trim var-combinator ls))
+  (define (trim-combinators ls)
+    (trim combinator? ls))
   (define (do-bind lhs* rhs* body)
-    (for-each init-non-thunk lhs*)
+    (for-each init-non-combinator lhs*)
     (let ([rhs* (map E rhs*)])
       (for-each (lambda (x v) 
-                  (when (thunk? v) (make-thunk-var x v)))
+                  (when (combinator? v) (make-combinator-var x v)))
                 lhs* rhs*)
-      (make-bind (trim-vars lhs*) (trim-thunks rhs*) (E body))))
+      (make-bind (trim-vars lhs*) (trim-combinators rhs*) (E body))))
   (define (do-fix lhs* rhs* body)
-    (for-each init-non-thunk lhs*)
+    (for-each init-non-combinator lhs*)
     (let ([free** ;;; trim the free lists first; after init.
-           (map (lambda (x) (trim-vars (closure-free* x))) rhs*)])
+           (map (lambda (lhs rhs) ;;; remove self also
+                  (trim-vars (remq lhs (closure-free* rhs))))
+                lhs* rhs*)])
       (define-struct node (name code deps whacked free))
-      (let ([node* (map (lambda (lhs rhs) 
-                          (let ([n (make-node lhs (closure-code rhs) '() #f '())])
-                            (make-thunk-var lhs n)
-                            n))
-                        lhs* rhs*)])
-        ;;; if x is free in y, then whenever x becomes a non-thunk,
-        ;;; y also becomes a non-thunk.  Here, we mark these
+      (let ([node* 
+             (map (lambda (lhs rhs) 
+                    (let ([n (make-node lhs (closure-code rhs) '() #f '())])
+                      (make-combinator-var lhs n)
+                      n))
+                   lhs* rhs*)])
+        ;;; if x is free in y, then whenever x becomes a non-combinator,
+        ;;; y also becomes a non-combinator.  Here, we mark these
         ;;; dependencies.
         (for-each 
           (lambda (my-node free*)
             (for-each (lambda (fvar)
                         (cond
-                          [(var-thunk fvar) => ;;; one of ours
+                          [(var-combinator fvar) => ;;; one of ours
                            (lambda (her-node)
                              (set-node-deps! her-node 
                                (cons my-node (node-deps her-node))))]
@@ -2151,7 +2261,7 @@
                       free*))
            node* free**)
         ;;; Next, we go over the list of nodes, and if we find one
-        ;;; that has any free variables, we know it's a non-thunk,
+        ;;; that has any free variables, we know it's a non-combinator,
         ;;; so we whack it and add it to all of its dependents.
         (let ()
           (define (process-node x)
@@ -2166,7 +2276,7 @@
                   (node-deps x)))))
           (for-each process-node node*))
         ;;; Now those that have free variables are actual closures.
-        ;;; Those with no free variables are actual thunks.
+        ;;; Those with no free variables are actual combinators.
         (let ([rhs*
                (map
                  (lambda (node)
@@ -2174,8 +2284,8 @@
                      (let ([closure
                             (make-closure (node-code node) free)])
                        (if (null? free)
-                           (make-thunk-var (node-name node) closure)
-                           (init-non-thunk (node-name node)))
+                           (make-combinator-var (node-name node) closure)
+                           (init-non-combinator (node-name node)))
                        closure)))
                  node*)])
           (for-each 
@@ -2187,12 +2297,12 @@
             rhs*)
           ;;;
           (make-fix (trim-vars lhs*)
-                    (trim-thunks rhs*)
+                    (trim-combinators rhs*)
                     (E body))))))
   (define (E x)
     (struct-case x
       [(constant) x]
-      [(var)      (or (var-thunk x) x)]
+      [(var)      (or (var-combinator x) x)]
       [(primref)  x]
       [(bind lhs* rhs* body) (do-bind lhs* rhs* body)]
       [(fix lhs* rhs* body) (do-fix lhs* rhs* body)]
@@ -2891,6 +3001,7 @@
          [p (uncover-assigned/referenced p)]
          [p (copy-propagate p)]
          [p (rewrite-assignments p)]
+         [p (sanitize-bindings p)]
          [p (optimize-for-direct-jumps p)]
          [p (insert-global-assignments p)]
          [p (convert-closures p)]
