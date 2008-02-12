@@ -1248,6 +1248,31 @@
 (define-primop fx+ safe
   [(V x y) (cogen-value-+ x y)])
 
+(define-primop fx* safe
+  [(V a b) 
+   (struct-case a
+     [(constant ak) 
+      (cond
+        [(fx? ak)
+         (with-tmp ([b (T b)])
+           (assert-fixnum b)
+           (prm 'int*/overflow b a))]
+        [else (interrupt)])]
+     [else 
+      (struct-case b
+        [(constant bk)
+         (cond
+           [(fx? bk) 
+            (with-tmp ([a (T a)])
+              (assert-fixnum a)
+              (prm 'int*/overflow a b))]
+           [else (interrupt)])]
+        [else 
+         (with-tmp ([a (T a)] [b (T b)])
+           (assert-fixnum a)
+           (assert-fixnum b)
+           (prm 'int*/overflow 
+             (prm 'sra a (K fx-shift)) b))])])])
 
 (define-primop zero? safe
   [(P x)
