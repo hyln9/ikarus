@@ -1244,10 +1244,11 @@
   [(E) (nop)]
   [(E a . a*) (assert-fixnums a a*)])
 
-
 (define-primop fx+ safe
   [(V x y) (cogen-value-+ x y)])
+
 (define-primop fx- safe
+  [(V x)   (cogen-value-- (K 0) x)]
   [(V x y) (cogen-value-- x y)])
 
 (define-primop fx* safe

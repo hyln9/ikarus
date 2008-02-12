@@ -77,29 +77,35 @@
       ($fxlognot x)))
   
   (define (make-fx-error who msg)
-    (lambda (x y) 
-      (if (fixnum? x)
-          (if (fixnum? y) 
-              (die who msg x y)
-              (die who "not a fixnum" y))
-          (die who "not a fixnum" x))))
+    (case-lambda
+      [(x y)
+       (if (fixnum? x)
+           (if (fixnum? y) 
+               (die who msg x y)
+               (die who "not a fixnum" y))
+           (die who "not a fixnum" x))]
+      [(x) 
+       (if (fixnum? x)
+           (die who msg x)
+           (die who "not a fixnum" x))]))
 
   (define error@fx+ 
-    (make-fx-error 'fx+ "overflow when adding numbers"))
+    (make-fx-error 'fx+ "overflow during addition"))
   
   (define error@fx- 
-    (make-fx-error 'fx- "overflow when subtracting numbers"))
+    (make-fx-error 'fx- "overflow during subtraction"))
 
   (define error@fx*
-    (make-fx-error 'fx* "overflow when multiplying numbers"))
+    (make-fx-error 'fx* "overflow during multiplication"))
 
   (define (fx+ x y) (sys:fx+ x y))
 
   (define (fx* x y) (sys:fx* x y))
 
-  (define (fx- x y) (sys:fx- x y))
-
-  
+  (define fx-
+    (case-lambda
+      [(x y) (sys:fx- x y)]
+      [(x)   (sys:fx- x)]))
 
   (define false-loop
     (lambda (who ls)
