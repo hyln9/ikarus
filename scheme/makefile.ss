@@ -16,7 +16,7 @@
 
 ;;; vim:syntax=scheme
 (import (only (ikarus) import))
-(import (except (ikarus) assembler-output scc-letrec))
+(import (except (ikarus) assembler-output scc-letrec optimize-cp))
 (import (ikarus compiler))
 (import (except (psyntax system $bootstrap)
                 eval-core 
@@ -41,7 +41,9 @@
   ;;;  an error (which may lead to the infamous Error: Error: 
   ;;;  Error: Error: Error: Error: Error: Error: Error: ...).
   ;;;
-  '("ikarus.singular-objects.ss"
+  '(
+    
+    "ikarus.singular-objects.ss"
     "ikarus.handlers.ss"
     "ikarus.multiple-values.ss"
     "ikarus.control.ss"
@@ -75,7 +77,9 @@
     "ikarus.intel-assembler.ss"
     "ikarus.trace.ss"
     "ikarus.fasl.write.ss"
+;;; HERE
     "ikarus.fasl.ss"
+
     "ikarus.compiler.ss"
     "psyntax.compat.ss"
     "psyntax.library-manager.ss"
@@ -1384,6 +1388,7 @@
     [i/o-would-block-port             i]
     [ellipsis-map ]
     [scc-letrec i]
+    [optimize-cp i]
   ))
 
 (define (macro-identifier? x) 

@@ -139,8 +139,8 @@
     (define (do-fix lhs* rhs* body)
       (define (handle-closure x)
         (struct-case x
-          [(closure code free*) 
-           (make-closure code (map Var free*))]))
+          [(closure code free* well-known?) 
+           (make-closure code (map Var free*) well-known?)]))
       (make-fix lhs* (map handle-closure rhs*) body))
     (define (Expr x)
       (struct-case x

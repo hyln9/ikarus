@@ -1997,12 +1997,16 @@
   [(E x) (nop)])
 
 (define-primop $make-call-with-values-procedure unsafe
-  [(V) (K (make-closure (make-code-loc (sl-cwv-label)) '()))]
+  [(V) (K (make-closure 
+            (make-code-loc (sl-cwv-label))
+            '() #f))]
   [(P) (interrupt)]
   [(E) (interrupt)])
 
 (define-primop $make-values-procedure unsafe
-  [(V) (K (make-closure (make-code-loc (sl-values-label)) '()))]
+  [(V) (K (make-closure 
+            (make-code-loc (sl-values-label)) 
+            '() #f))]
   [(P) (interrupt)]
   [(E) (interrupt)])
 
