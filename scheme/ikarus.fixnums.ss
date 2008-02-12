@@ -26,13 +26,13 @@
           fixnum->string 
           fxarithmetic-shift-left fxarithmetic-shift-right fxarithmetic-shift
           fxmin fxmax
-          error@fx+ error@fx*)
+          error@fx+ error@fx* error@fx-)
   (import 
     (ikarus system $fx)
     (ikarus system $chars)
     (ikarus system $pairs)
     (ikarus system $strings)
-    (prefix (only (ikarus) fx+ fx*) sys:)
+    (prefix (only (ikarus) fx+ fx* fx-) sys:)
     (except (ikarus) fxzero? fxadd1 fxsub1 fxlognot fx+ fx- fx*
             fxquotient fxremainder fxmodulo fxlogor fxlogand
             fxlogxor fxsll fxsra fx= fx< fx<= fx> fx>=
@@ -76,38 +76,29 @@
         (die 'fxnot "not a fixnum" x))
       ($fxlognot x)))
   
-
-  (define error@fx+
+  (define (make-fx-error who msg)
     (lambda (x y) 
       (if (fixnum? x)
           (if (fixnum? y) 
-              (die 'fx+ "overflow when adding numbers" x y)
-              (die 'fx+ "not a fixnum" y))
-          (die 'fx+ "not a fixnum" x))))
+              (die who msg x y)
+              (die who "not a fixnum" y))
+          (die who "not a fixnum" x))))
+
+  (define error@fx+ 
+    (make-fx-error 'fx+ "overflow when adding numbers"))
+  
+  (define error@fx- 
+    (make-fx-error 'fx- "overflow when subtracting numbers"))
 
   (define error@fx*
-    (lambda (x y) 
-      (if (fixnum? x) 
-          (if (fixnum? y) 
-              (die 'fx* "overflow when multiplying numbers" x y)
-              (die 'fx* "not a fixnum" y))
-          (die 'fx* "not a fixnum" x))))
+    (make-fx-error 'fx* "overflow when multiplying numbers"))
 
-  (define fx+ 
-    (lambda (x y) 
-      (sys:fx+ x y)))
+  (define (fx+ x y) (sys:fx+ x y))
 
-  (define fx-
-    (lambda (x y) 
-      (unless (fixnum? x)
-        (die 'fx- "not a fixnum" x))
-      (unless (fixnum? y)
-        (die 'fx- "not a fixnum" y))
-      ($fx- x y)))
+  (define (fx* x y) (sys:fx* x y))
 
-  (define fx*
-    (lambda (x y) 
-      (sys:fx* x y)))
+  (define (fx- x y) (sys:fx- x y))
+
   
 
   (define false-loop

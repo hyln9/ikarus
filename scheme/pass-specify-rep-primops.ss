@@ -1247,6 +1247,8 @@
 
 (define-primop fx+ safe
   [(V x y) (cogen-value-+ x y)])
+(define-primop fx- safe
+  [(V x y) (cogen-value-- x y)])
 
 (define-primop fx* safe
   [(V a b) 

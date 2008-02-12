@@ -56,6 +56,7 @@
   (define (primop-interrupt-handler x)
     (case x
       [(fx+)          'error@fx+]
+      [(fx-)          'error@fx-]
       [(fx*)          'error@fx*]
       [else                    x]))
   (define (make-interrupt-call op args)

@@ -566,6 +566,7 @@
     [make-traced-procedure                       i]
     [error@fx+                                   ]
     [error@fx*                                   ]
+    [error@fx-                                   ]
     [fasl-write                                  i]
     [lambda                                      i r ba se ne]
     [and                                         i r ba se ne]
