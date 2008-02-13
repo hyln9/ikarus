@@ -5,7 +5,8 @@ EXTRA_DIST=ikarus.boot.prebuilt ikarus.enumerations.ss \
   ikarus.exceptions.ss ikarus.apply.ss ikarus.bytevectors.ss \
   ikarus.cafe.ss ikarus.chars.ss ikarus.code-objects.ss \
   ikarus.codecs.ss ikarus.collect.ss ikarus.command-line.ss \
-  ikarus.compiler.altcogen.ss ikarus.compiler.ss ikarus.control.ss \
+  ikarus.compiler.altcogen.ss ikarus.compiler.ss \
+  ikarus.compiler.source-optimizer.ss ikarus.control.ss \
   ikarus.date-string.ss ikarus.fasl.ss ikarus.fasl.write.ss \
   ikarus.fixnums.ss ikarus.guardians.ss ikarus.handlers.ss \
   ikarus.hash-tables.ss ikarus.intel-assembler.ss \
@@ -23,7 +24,7 @@ EXTRA_DIST=ikarus.boot.prebuilt ikarus.enumerations.ss \
   psyntax.internal.ss psyntax.library-manager.ss \
   ikarus/code-objects.ss ikarus/compiler.ss ikarus/intel-assembler.ss \
   ikarus/fasl/write.ss unicode/unicode-char-cases.ss \
-  unicode/unicode-charinfo.ss ikarus.io.ss ikarus.time-and-date.ss
+  unicode/unicode-charinfo.ss ikarus.io.ss ikarus.time-and-date.ss 
  
 all: $(nodist_pkglib_DATA)
 

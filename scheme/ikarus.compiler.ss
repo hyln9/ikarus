@@ -837,7 +837,7 @@
              [else 
               (values '()
                 (mklet (list (binding-lhs b)) 
-                       (list (make-primcall 'void '()))
+                       (list (make-funcall (make-primref 'void) '()))
                   (mkset!s scc 
                     (mkfix fix* body))))]))]
         [else 
@@ -851,7 +851,8 @@
                      (if ordered? (sort-bindings complex*) complex*)])
                 (values '()
                   (mklet (map binding-lhs complex*)
-                         (map (lambda (x) (make-primcall 'void '()))
+                         (map (lambda (x)
+                                (make-funcall (make-primref 'void) '()))
                                complex*)
                      (mkfix (append lambda* fix*)
                        (mkset!s complex* body)))))]))]))
@@ -983,6 +984,10 @@
   (let ([x (E x (make-binding #f #f #f #t #t '()))])
     ;(pretty-print (unparse x)) 
     x))
+
+
+(include "ikarus.compiler.source-optimizer.ss")
+
 
 (define (uncover-assigned/referenced x)
   (define who 'uncover-assigned/referenced)
@@ -3048,6 +3053,7 @@
          [p (if (scc-letrec) 
                 (optimize-letrec/scc p)
                 (optimize-letrec p))]
+         [p (source-optimize p)]
          [p (uncover-assigned/referenced p)]
          [p (copy-propagate p)]
          [p (rewrite-assignments p)]
