@@ -406,7 +406,8 @@
           exact->inexact inexact floor ceiling round log fl=? fl<? fl<=? fl>?
           fl>=? fl+ fl- fl* fl/ flsqrt flmin flzero? flnegative?
           sin cos tan asin acos atan sqrt exp
-          flmax random)
+          flmax random
+          error@add1 error@sub1)
   (import 
     (ikarus system $fx)
     (ikarus system $flonums)
@@ -1720,23 +1721,31 @@
     (mk< >= $fx>= fxbn> bnfx> bnbn>= fxfl>= flfx>= bnfl>= flbn>= flfl>=
                exrt> rtex> exrt> rtex> flrt>= rtfl>= rtrt>=))
 
+  (define error@add1
+    (lambda (x)
+      (import (ikarus))
+      (cond
+        [(fixnum? x) (+ (greatest-fixnum) 1)]
+        [(number? x) (+ x 1)]
+        [else (die 'add1 "not a number" x)])))
+  
   (define add1
     (lambda (x)
+      (import (ikarus))
+      (add1 x)))
+
+  (define error@sub1
+    (lambda (x)
+      (import (ikarus))
       (cond
-        [(fixnum? x) 
-         (foreign-call "ikrt_fxfxplus" x 1)]
-        [(bignum? x)
-         (foreign-call "ikrt_fxbnplus" 1 x)]
-        [else (die 'add1 "not a number" x)])))
+        [(fixnum? x) (- (least-fixnum) 1)]
+        [(number? x) (- x 1)]
+        [else (die 'sub1 "not a number" x)])))
 
   (define sub1
     (lambda (x)
-      (cond
-        [(fixnum? x) 
-         (foreign-call "ikrt_fxfxplus" x -1)]
-        [(bignum? x)
-         (foreign-call "ikrt_fxbnplus" -1 x)]
-        [else (die 'sub1 "not a number" x)])))
+      (import (ikarus))
+      (sub1 x)))
 
   (define zero?
     (lambda (x)

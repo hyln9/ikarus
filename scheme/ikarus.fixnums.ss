@@ -26,7 +26,7 @@
           fixnum->string 
           fxarithmetic-shift-left fxarithmetic-shift-right fxarithmetic-shift
           fxmin fxmax
-          error@fx+ error@fx* error@fx-)
+          error@fx+ error@fx* error@fx- error@fxadd1 error@fxsub1)
   (import 
     (ikarus system $fx)
     (ikarus system $chars)
@@ -52,17 +52,6 @@
         [(fixnum? x) #f]
         [else (die 'fxzero? "not a fixnum" x)])))
   
-  (define fxadd1
-    (lambda (n)
-      (if (fixnum? n)
-          ($fxadd1 n)
-          (die 'fxadd1 "not a fixnum" n))))
-  
-  (define fxsub1 
-    (lambda (n) 
-      (if (fixnum? n)
-          ($fxsub1 n)
-          (die 'fxsub1 "not a fixnum" n))))
 
   (define fxlognot 
     (lambda (x)
@@ -106,6 +95,22 @@
     (case-lambda
       [(x y) (sys:fx- x y)]
       [(x)   (sys:fx- x)]))
+
+  (define error@fxadd1 
+    (make-fx-error 'fxadd1 "overflow during addition"))
+
+  (define error@fxsub1 
+    (make-fx-error 'fxsub1 "overflow during subtraction"))
+
+  (define fxadd1
+    (lambda (n)
+      (import (ikarus))
+      (fxadd1 n)))
+  
+  (define fxsub1 
+    (lambda (n) 
+      (import (ikarus))
+      (fxsub1 n)))
 
   (define false-loop
     (lambda (who ls)

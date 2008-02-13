@@ -58,6 +58,10 @@
       [(fx+)          'error@fx+]
       [(fx-)          'error@fx-]
       [(fx*)          'error@fx*]
+      [(add1)         'error@add1]
+      [(sub1)         'error@sub1]
+      [(fxadd1)       'error@fxadd1]
+      [(fxsub1)       'error@fxsub1]
       [else                    x]))
   (define (make-interrupt-call op args)
     (make-funcall 

@@ -1199,6 +1199,17 @@
   [(E) (nop)]
   [(E a . a*) (assert-fixnums a a*)])
 
+(define-primop add1 safe
+  [(V x) (cogen-value-+ x (K 1))])
+(define-primop sub1 safe
+  [(V x) (cogen-value-+ x (K -1))])
+
+(define-primop fxadd1 safe
+  [(V x) (cogen-value-+ x (K 1))])
+(define-primop fxsub1 safe
+  [(V x) (cogen-value-+ x (K -1))])
+
+
 (define-primop * safe
   [(V) (K (fxsll 1 fx-shift))]
   [(V a b) 
