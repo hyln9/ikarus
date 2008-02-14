@@ -1,1 +1,0 @@
-../../ikarus.fasl.write.ss

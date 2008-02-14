@@ -14,7 +14,7 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-(library (ikarus compiler)
+(library (ikarus.compiler)
   (export compile-core-expr-to-port 
           assembler-output scc-letrec optimize-cp
           current-primitive-locations eval-core)
@@ -28,8 +28,8 @@
         fasl-write scc-letrec optimize-cp
         compile-core-expr-to-port assembler-output
         current-primitive-locations eval-core)
-    (ikarus fasl write)
-    (ikarus intel-assembler))
+    (ikarus.fasl.write)
+    (ikarus.intel-assembler))
 
 
 (define-syntax struct-case

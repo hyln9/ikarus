@@ -14,7 +14,7 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-(library (ikarus fasl write)
+(library (ikarus.fasl.write)
   (export fasl-write)
   (import
     (rnrs hashtables)
@@ -27,7 +27,7 @@
     (ikarus system $strings)
     (ikarus system $flonums)
     (ikarus system $bignums)
-    (except (ikarus code-objects) procedure-annotation)
+    (except (ikarus.code-objects) procedure-annotation)
     (except (ikarus) fasl-write write-byte))
  
   (module (wordsize)

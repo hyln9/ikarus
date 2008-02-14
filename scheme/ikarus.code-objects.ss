@@ -14,7 +14,7 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-(library (ikarus code-objects)
+(library (ikarus.code-objects)
   (export
     make-code code-reloc-vector code-freevars
     code-size code-ref code-set! set-code-reloc-vector!

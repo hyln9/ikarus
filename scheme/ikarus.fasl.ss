@@ -56,7 +56,7 @@
 (library (ikarus fasl read)
   (export fasl-read)
   (import (ikarus)
-          (except (ikarus code-objects) procedure-annotation)
+          (except (ikarus.code-objects) procedure-annotation)
           (ikarus system $codes)
           (ikarus system $structs))
 

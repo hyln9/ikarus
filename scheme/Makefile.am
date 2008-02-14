@@ -22,9 +22,8 @@ EXTRA_DIST=ikarus.boot.prebuilt ikarus.enumerations.ss \
   pass-specify-rep-primops.ss pass-specify-rep.ss psyntax.builders.ss \
   psyntax.compat.ss psyntax.config.ss psyntax.expander.ss \
   psyntax.internal.ss psyntax.library-manager.ss \
-  ikarus/code-objects.ss ikarus/compiler.ss ikarus/intel-assembler.ss \
-  ikarus/fasl/write.ss unicode/unicode-char-cases.ss \
-  unicode/unicode-charinfo.ss ikarus.io.ss ikarus.time-and-date.ss 
+  unicode/unicode-char-cases.ss unicode/unicode-charinfo.ss \
+  ikarus.io.ss ikarus.time-and-date.ss 
  
 all: $(nodist_pkglib_DATA)
 

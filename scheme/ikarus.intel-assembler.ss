@@ -15,12 +15,12 @@
 
 
 
-(library (ikarus intel-assembler)
+(library (ikarus.intel-assembler)
   (export instruction-size assemble-sources code-entry-adjustment)
   (import 
     (ikarus)
     (rnrs bytevectors)
-    (except (ikarus code-objects) procedure-annotation)
+    (except (ikarus.code-objects) procedure-annotation)
     (ikarus system $pairs))
 
 

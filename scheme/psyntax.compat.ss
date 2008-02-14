@@ -21,7 +21,7 @@
           annotation? annotation-expression annotation-source
           annotation-stripped)
   (import 
-    (only (ikarus compiler) eval-core)
+    (only (ikarus.compiler) eval-core)
     (ikarus))
 
   (define-syntax define-record

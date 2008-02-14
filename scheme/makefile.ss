@@ -17,12 +17,12 @@
 ;;; vim:syntax=scheme
 (import (only (ikarus) import))
 (import (except (ikarus) assembler-output scc-letrec optimize-cp))
-(import (ikarus compiler))
+(import (ikarus.compiler))
 (import (except (psyntax system $bootstrap)
                 eval-core 
                 current-primitive-locations
                 compile-core-expr-to-port))
-(import (ikarus compiler)) ; just for fun
+(import (ikarus.compiler)) ; just for fun
 
 (define scheme-library-files
   ;;; Listed in the order in which they're loaded.
@@ -1542,7 +1542,7 @@
                   (import 
                     (only (psyntax library-manager)
                           install-library)
-                    (only (ikarus compiler)
+                    (only (ikarus.compiler)
                           current-primitive-locations)
                     (ikarus))
                   (current-primitive-locations 
