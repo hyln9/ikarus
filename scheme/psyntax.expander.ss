@@ -1457,6 +1457,8 @@
   
   (define quasiquote-macro
     (let ()
+      (define (datum x)
+        (list (scheme-stx 'quote) (mkstx x '() '() '())))
       (define-syntax app
         (syntax-rules (quote)
           ((_ 'x arg* ...)
@@ -1519,7 +1521,7 @@
                 (if (= lev 0)
                     (quasicons* p (vquasi q lev))
                     (quasicons
-                      (quasicons (app 'quote 'unquote)
+                      (quasicons (datum 'unquote)
                                  (quasi p (- lev 1)))
                       (vquasi q lev))))
                ((unquote-splicing p ...)
@@ -1527,7 +1529,7 @@
                     (quasiappend p (vquasi q lev))
                     (quasicons
                       (quasicons
-                        (app 'quote 'unquote-splicing)
+                        (datum 'unquote-splicing)
                         (quasi p (- lev 1)))
                       (vquasi q lev))))
                (p (quasicons (quasi p lev) (vquasi q lev)))))
@@ -1538,23 +1540,24 @@
             ((unquote p)
              (if (= lev 0)
                  p
-                 (quasicons (app 'quote 'unquote) (quasi (list p) (- lev 1)))))
+                 (quasicons (datum 'unquote) (quasi (list p) (- lev 1)))))
             (((unquote p ...) . q)
              (if (= lev 0)
                  (quasicons* p (quasi q lev))
                  (quasicons
-                   (quasicons (app 'quote 'unquote) (quasi p (- lev 1)))
+                   (quasicons (datum 'unquote)
+                              (quasi p (- lev 1)))
                    (quasi q lev))))
             (((unquote-splicing p ...) . q)
              (if (= lev 0)
                  (quasiappend p (quasi q lev))
                  (quasicons
-                   (quasicons
-                     (app 'quote 'unquote-splicing)
+                   (quasicons (datum 'unquote-splicing)
                      (quasi p (- lev 1)))
                    (quasi q lev))))
             ((quasiquote p)
-             (quasicons (app 'quote 'quasiquote) (quasi (list p) (+ lev 1))))
+             (quasicons (datum 'quasiquote)
+                        (quasi (list p) (+ lev 1))))
             ((p . q) (quasicons (quasi p lev) (quasi q lev)))
             (#(x ...) (not (stx? x)) (quasivector (vquasi x lev)))
             (p (app 'quote p)))))
