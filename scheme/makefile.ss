@@ -16,7 +16,8 @@
 
 ;;; vim:syntax=scheme
 (import (only (ikarus) import))
-(import (except (ikarus) assembler-output scc-letrec optimize-cp))
+(import (except (ikarus) 
+          optimize-level assembler-output scc-letrec optimize-cp))
 (import (ikarus.compiler))
 (import (except (psyntax system $bootstrap)
                 eval-core 
@@ -1395,6 +1396,7 @@
     [ellipsis-map ]
     [scc-letrec i]
     [optimize-cp i]
+    [optimize-level i]
   ))
 
 (define (macro-identifier? x) 

@@ -15,7 +15,7 @@
 
 
 (library (ikarus.compiler)
-  (export compile-core-expr-to-port 
+  (export compile-core-expr-to-port optimize-level
           assembler-output scc-letrec optimize-cp
           current-primitive-locations eval-core)
   (import 
@@ -25,6 +25,7 @@
     (only (ikarus system $codes) $code->closure)
     (only (ikarus system $structs) $struct-ref $struct/rtd?)
     (except (ikarus)
+        optimize-level
         fasl-write scc-letrec optimize-cp
         compile-core-expr-to-port assembler-output
         current-primitive-locations eval-core)
