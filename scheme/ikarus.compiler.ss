@@ -2721,12 +2721,13 @@
 
 (module ;assembly-labels
   (refresh-cached-labels!
-   sl-apply-label sl-fx+-type-label sl-fx+-types-label
-   sl-continuation-code-label sl-invalid-args-label
-   sl-mv-ignore-rp-label sl-mv-error-rp-label sl-values-label 
-   sl-cwv-label sl-top-level-value-error-label sl-cadr-error-label
-   sl-cdr-error-label sl-car-error-label sl-nonprocedure-error-label
-   sl-fxsub1-error-label sl-fxadd1-error-label sl-fx+-overflow-label)
+   sl-apply-label 
+   sl-continuation-code-label 
+   sl-invalid-args-label
+   sl-mv-ignore-rp-label 
+   sl-mv-error-rp-label
+   sl-values-label 
+   sl-cwv-label)
   (define-syntax define-cached
     (lambda (x)
       (syntax-case x ()
@@ -2769,29 +2770,6 @@
               (addl (int wordsize) eax)
               (tail-indirect-cpr-call))))
       SL_apply)]
-   [(sl-fx+-type-label)
-    (define SL_fx+_type (gensym "SL_fx+_type"))
-    (assemble-sources (lambda (x) #f)
-      (list
-        (list 0
-              (label SL_fx+_type)
-              (movl eax (mem (fx- 0 wordsize) fpr))
-              (movl (primref-loc 'fx+-type-error) cpr)
-              (movl (int (argc-convention 1)) eax)
-              (tail-indirect-cpr-call))))
-    SL_fx+_type]
-   [(sl-fx+-types-label)
-    (define SL_fx+_types (gensym "SL_fx+_types"))
-    (assemble-sources (lambda (x) #f)
-      (list
-        (list 0
-          (label SL_fx+_types)
-          (movl eax (mem (fx- 0 wordsize) fpr))
-          (movl ebx (mem (fx- wordsize wordsize) fpr))
-          (movl (primref-loc 'fx+-types-error) cpr)
-          (movl (int (argc-convention 2)) eax)
-          (tail-indirect-cpr-call))))
-    SL_fx+_types]
    [(sl-continuation-code-label)
     (define SL_continuation_code (gensym "SL_continuation_code"))
     (assemble-sources (lambda (x) #f)
@@ -2959,84 +2937,7 @@
               (jne (label (sl-nonprocedure-error-label)))
               (tail-indirect-cpr-call)))))
     SL_call_with_values]
-   [(sl-top-level-value-error-label)
-    (define SL_top_level_value_error (gensym "SL_top_level_value_error"))
-    (assemble-sources (lambda (x) #f)
-      (list
-        (list 0
-          (label SL_top_level_value_error)
-          (movl ebx (mem (fx- 0 wordsize) fpr))
-          (movl (primref-loc 'top-level-value-error) cpr)
-          (movl (int (argc-convention 1)) eax)
-          (tail-indirect-cpr-call))))
-    SL_top_level_value_error]
-   [(sl-cadr-error-label)
-    (define SL_cadr_error (gensym "SL_cadr_error"))
-    (assemble-sources (lambda (x) #f)
-      (list
-        (list 0
-          (label SL_cadr_error)
-          (movl ebx (mem (fx- 0 wordsize) fpr))
-          (movl (primref-loc 'cadr-error) cpr)
-          (movl (int (argc-convention 1)) eax)
-          (tail-indirect-cpr-call))))
-    SL_cadr_error]
-   [(sl-cdr-error-label)
-    (define SL_cdr_error (gensym "SL_cdr_error"))
-    (assemble-sources (lambda (x) #f)
-      (list
-        (list 0
-          (label SL_cdr_error)
-          (movl ebx (mem (fx- 0 wordsize) fpr))
-          (movl (primref-loc 'cdr-error) cpr)
-          (movl (int (argc-convention 1)) eax)
-          (tail-indirect-cpr-call))))
-    SL_cdr_error]
-   [(sl-car-error-label)
-    (define SL_car_error (gensym "SL_car_error"))
-    (assemble-sources (lambda (x) #f)
-      (list
-        (list 0
-          (label SL_car_error)
-          (movl ebx (mem (fx- 0 wordsize) fpr))
-          (movl (primref-loc 'car-error) cpr)
-          (movl (int (argc-convention 1)) eax)
-          (tail-indirect-cpr-call))))
-    SL_car_error]
-   [(sl-fxsub1-error-label)
-    (define SL_fxsub1_error (gensym "SL_fxsub1_error"))
-    (assemble-sources (lambda (x) #f)
-      (list
-        (list 0
-          (label SL_fxsub1_error)
-          (movl eax (mem (fx- 0 wordsize) fpr))
-          (movl (primref-loc 'fxsub1-error) cpr)
-          (movl (int (argc-convention 1)) eax)
-          (tail-indirect-cpr-call))))
-    SL_fxsub1_error]
-   [(sl-fxadd1-error-label)
-    (define SL_fxadd1_error (gensym "SL_fxadd1_error"))
-    (assemble-sources (lambda (x) #f)
-      (list
-        (list 0
-          (label SL_fxadd1_error)
-          (movl eax (mem (fx- 0 wordsize) fpr))
-          (movl (primref-loc 'fxadd1-error) cpr)
-          (movl (int (argc-convention 1)) eax)
-          (tail-indirect-cpr-call))))
-    SL_fxadd1_error]
-   [(sl-fx+-overflow-label)
-    (define SL_fx+_overflow (gensym "SL_fx+_overflow"))
-    (assemble-sources (lambda (x) #f)
-      (list
-        (list 0
-          (label SL_fx+_overflow)
-          (movl eax (mem (fx- 0 wordsize) fpr))
-          (movl ebx (mem (fx- wordsize wordsize) fpr))
-          (movl (primref-loc 'fx+-overflow-error) cpr)
-          (movl (int (argc-convention 2)) eax)
-          (tail-indirect-cpr-call))))
-    SL_fx+_overflow]))
+   ))
 
 (define (print-instr x)
   (cond
