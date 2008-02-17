@@ -43,7 +43,6 @@
     (psyntax compat)
     (psyntax config)
     (psyntax internal)
-    (only (ikarus) printf)
     (only (rnrs syntax-case) syntax-case syntax with-syntax)
     (prefix (rnrs syntax-case) sys.))
   
@@ -1413,7 +1412,7 @@
           (with-input-from-file filename
             (lambda ()
               (let f ((ls '()))
-                (let ((x (read)))
+                (let ((x (read-annotated)))
                   (cond
                     ((eof-object? x) (reverse ls))
                     (else
@@ -3538,7 +3537,8 @@
                   (let ((loc (car x)) (proc (cadr x)))
                     (set-symbol-value! loc proc)))
                 macro*))
-    (let-values (((name ver imp* inv* vis* invoke-code macro* export-subst export-env)
+    (let-values (((name ver imp* inv* vis* 
+                   invoke-code macro* export-subst export-env)
                   (core-library-expander x)))
       (let ((id (gensym))
             (name name)
@@ -3551,14 +3551,16 @@
            (lambda () (visit! macro*))
            (lambda () (eval-core (expanded->core invoke-code)))
            #t)
-        (values invoke-code
+        (values id name ver imp* vis* inv* 
+                invoke-code
                 (build-visit-code macro*)
                 export-subst export-env))))
 
   ;;; when bootstrapping the system, visit-code is not (and cannot
   ;;; be) be used in the "next" system.  So, we drop it.
   (define (boot-library-expand x)
-    (let-values (((invoke-code visit-code export-subst export-env)
+    (let-values (((id name ver imp* vis* inv* 
+                   invoke-code visit-code export-subst export-env)
                   (library-expander x)))
       (values invoke-code export-subst export-env)))
   

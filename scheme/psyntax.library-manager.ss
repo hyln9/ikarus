@@ -182,7 +182,8 @@
 
   (define (find-external-library name)
     (when (member name (external-pending-libraries))
-      (assertion-violation #f "circular attempt to import library was detected" name))
+      (assertion-violation #f 
+        "circular attempt to import library was detected" name))
     (parameterize ((external-pending-libraries
                     (cons name (external-pending-libraries))))
       (let ((lib-expr ((library-locator) name)))
