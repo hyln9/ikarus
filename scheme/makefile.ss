@@ -88,6 +88,8 @@
     "psyntax.config.ss"
     "psyntax.builders.ss"
     "psyntax.expander.ss"
+
+    "ikarus.separate-compilation.ss"
     "ikarus.load.ss"
     "ikarus.pretty-print.ss"
     "ikarus.cafe.ss"
@@ -1397,6 +1399,7 @@
     [scc-letrec i]
     [optimize-cp i]
     [optimize-level i]
+    [compile-library-to-port i]
   ))
 
 (define (macro-identifier? x) 

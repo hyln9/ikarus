@@ -154,13 +154,23 @@
             f
             (assertion-violation 'file-locator "not a procedure" f)))))
 
-  (define library-locator
+  (define (library-precompiled? x) #f)
+
+  (define (load-precompiled-library x) 
+    (error 'load-precompiled-library "not implemented"))
+
+  (define library-loader
     (make-parameter
       (lambda (x)
         (let ((file-name ((file-locator) x)))
-          (and (string? file-name)
-               (with-input-from-file file-name 
-                 read-annotated))))
+          (cond
+            [(not file-name) 
+             (assertion-violation #f "cannot file library" x)]
+            [(library-precompiled? file-name)
+             (load-precompiled-library file-name)]
+            [else 
+             ((current-library-expander) 
+              (with-input-from-file file-name read-annotated))])))
       (lambda (f)
         (if (procedure? f)
             f
@@ -186,16 +196,13 @@
         "circular attempt to import library was detected" name))
     (parameterize ((external-pending-libraries
                     (cons name (external-pending-libraries))))
-      (let ((lib-expr ((library-locator) name)))
-        (unless lib-expr 
-          (assertion-violation #f "cannot find library" name))
-        ((current-library-expander) lib-expr)
-        (or (find-library-by
-              (lambda (x) (equal? (library-name x) name)))
-            (assertion-violation #f
-              "handling external library did not yield the correct library"
-               name)))))
-          
+      ((library-loader) name)
+      (or (find-library-by
+            (lambda (x) (equal? (library-name x) name)))
+          (assertion-violation #f
+            "handling external library did not yield the correct library"
+             name))))
+        
   (define (find-library-by-name name)
     (or (find-library-by
           (lambda (x) (equal? (library-name x) name)))

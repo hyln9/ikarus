@@ -744,6 +744,8 @@
   body)
 |#
 
+(define scc-letrec (make-parameter #t))
+
 (define (optimize-letrec/scc x)
   (define who 'optimize-letrec/scc)
   (module (get-sccs-in-order)
@@ -2946,7 +2948,6 @@
     [else 
      (printf "    ~s\n" x)]))
 
-(define scc-letrec (make-parameter #t))
 
 (define (compile-core-expr->code p)
   (let* ([p (recordize p)]
