@@ -23,7 +23,8 @@
     visit-library library-name library-version library-exists?
     find-library-by-name install-library library-spec invoke-library 
     extend-library-subst! extend-library-env! current-library-expander
-    current-library-collection library-path library-extensions)
+    current-library-collection library-path library-extensions
+    make-library)
   (import (rnrs) (psyntax compat) (rnrs r5rs))
 
   (define (make-collection)
@@ -245,9 +246,11 @@
           (vis-lib* (map find-library-by-spec/die vis*))
           (inv-lib* (map find-library-by-spec/die inv*)))
       (unless (and (symbol? id) (list? name) (list? ver))
-        (assertion-violation 'install-library "invalid spec with id/name/ver" id name ver))
+        (assertion-violation 'install-library 
+          "invalid spec with id/name/ver" id name ver))
       (when (library-exists? name)
-        (assertion-violation 'install-library "library is already installed" name))
+        (assertion-violation 'install-library 
+          "library is already installed" name))
       (let ((lib (make-library id name ver imp-lib* vis-lib* inv-lib* 
                     exp-subst exp-env visit-code invoke-code 
                     visible?)))

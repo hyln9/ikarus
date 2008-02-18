@@ -55,25 +55,37 @@
 
 (library (ikarus fasl read)
   (export fasl-read)
-  (import (ikarus)
+  (import (except (ikarus) fasl-read)
           (except (ikarus.code-objects) procedure-annotation)
           (ikarus system $codes)
           (ikarus system $structs))
 
   (define who 'fasl-read)
+  
+  (define (read-u8 p)
+    (let ([b (get-u8 p)])
+      (when (eof-object? b) 
+        (error who "invalid eof encountered" p))
+      b))
+
+  (define (read-u8-as-char p)
+    (integer->char (read-u8 p)))
+
   (define (assert-eq? x y)
     (unless (eq? x y)
       (die who 
         (format "Expected ~s, got ~s\n" y x))))
+
   (define (char->int x)
     (if (char? x)
         (char->integer x)
         (die who "unexpected eof inside a fasl object")))
+
   (define (read-fixnum p)
-    (let ([c0 (char->int (read-char p))]
-          [c1 (char->int (read-char p))]
-          [c2 (char->int (read-char p))]
-          [c3 (char->int (read-char p))])
+    (let* ([c0 (read-u8 p)]
+           [c1 (read-u8 p)]
+           [c2 (read-u8 p)]
+           [c3 (read-u8 p)])
       (cond
         [(fx<= c3 127)
          (fxlogor (fxlogor (fxsra c0 2) (fxsll c1 6))
@@ -89,10 +101,10 @@
                       (fxlogor (fxsll c2 14) 
                                (fxsll c3 22)))))])))
   (define (read-int p)
-    (let ([c0 (char->int (read-char p))]
-          [c1 (char->int (read-char p))]
-          [c2 (char->int (read-char p))]
-          [c3 (char->int (read-char p))])
+    (let* ([c0 (char->int (read-u8-as-char p))]
+           [c1 (char->int (read-u8-as-char p))]
+           [c2 (char->int (read-u8-as-char p))]
+           [c3 (char->int (read-u8-as-char p))])
       (cond
         [(fx<= c3 127)
          (fxlogor (fxlogor c0 (fxsll c1 8))
@@ -136,21 +148,22 @@
              [freevars (read-fixnum p)])
         (let ([code (make-code code-size freevars)])
           (when code-m (put-mark code-m code))
-          (let f ([i 0])
-            (unless (fx= i code-size)
-              (code-set! code i (char->int (read-char p)))
-              (f (fxadd1 i))))
-          (cond
-            [clos-m
-             (let ([clos ($code->closure code)])
-               (put-mark clos-m clos)
+          (let ([annotations (read)])
+            (let f ([i 0])
+              (unless (fx= i code-size)
+                (code-set! code i (char->int (read-u8-as-char p)))
+                (f (fxadd1 i))))
+            (cond
+              [clos-m
+               (let ([clos ($code->closure code)])
+                 (put-mark clos-m clos)
+                 (set-code-reloc-vector! code (read))
+                 code)]
+              [else
                (set-code-reloc-vector! code (read))
-               code)]
-            [else
-             (set-code-reloc-vector! code (read))
-             code]))))
+               code])))))
     (define (read-thunk m)
-      (let ([c (read-char p)])
+      (let ([c (read-u8-as-char p)])
         (case c
           [(#\x)
            (let ([code (read-code #f m)])
@@ -165,17 +178,16 @@
                  proc)))]
           [(#\>)
            (let ([cm (read-int p)])
-             (assert-eq? (read-char p) #\x)
+             (assert-eq? (read-u8-as-char p) #\x)
              (let ([code (read-code cm m)])
                (if m (vector-ref marks m) ($code->closure code))))]
           [else (die who "invalid code header" c)])))
     (define (read/mark m)
       (define (nom)
         (when m (die who "unhandled mark")))
-      (let ([h (read-char p)])
+      (let ([h (read-u8-as-char p)])
         (case h
           [(#\I) 
-           (nom)
            (read-fixnum p)]
           [(#\P)
            (if m
@@ -191,12 +203,12 @@
           [(#\F) #f]
           [(#\E) (eof-object)]
           [(#\U) (void)]
-          [(#\S) ;;; string
+          [(#\s) ;;; string
            (let ([n (read-int p)])
              (let ([str (make-string n)])
                (let f ([i 0])
                  (unless (fx= i n)
-                   (let ([c (read-char p)])
+                   (let ([c (read-u8-as-char p)])
                      (string-set! str i c)
                      (f (fxadd1 i)))))
                (when m (put-mark m str))
@@ -209,7 +221,9 @@
           [(#\G)
            (let* ([pretty (read)]
                   [unique (read)])
-             (foreign-call "ikrt_strings_to_gensym" pretty unique))]
+             (let ([g (foreign-call "ikrt_strings_to_gensym" pretty unique)])
+               (when m (put-mark m g))
+               g))]
           [(#\V) ;;; vector
            (let ([n (read-int p)])
              (let ([v (make-vector n)])
@@ -217,6 +231,15 @@
                (let f ([i 0])
                  (unless (fx= i n)
                    (vector-set! v i (read))
+                   (f (fxadd1 i))))
+               v))]
+          [(#\v) ;;; bytevector
+           (let ([n (read-int p)])
+             (let ([v (make-bytevector n)])
+               (when m (put-mark m v))
+               (let f ([i 0])
+                 (unless (fx= i n)
+                   (bytevector-u8-set! v i (read-u8 p))
                    (f (fxadd1 i))))
                v))]
           [(#\x) ;;; code
@@ -248,12 +271,12 @@
                      ($struct-set! x i (read))
                      (f (fxadd1 i))))
                  x)))]
-          [(#\C)
-           (let ([c (read-char p)])
-             (cond
-               [(char? c) c]
-               [else
-                (die who "invalid eof inside a fasl object")]))]
+          ;[(#\C)
+          ; (let ([c (read-u8-as-char p)])
+          ;   (cond
+          ;     [(char? c) c]
+          ;     [else
+          ;      (die who "invalid eof inside a fasl object")]))]
           [(#\>)
            (let ([m (read-int p)])
              (read/mark m))]
@@ -261,21 +284,34 @@
            (let ([m (read-int p)])
              (unless (fx< m (vector-length marks))
                (die who "invalid mark" m))
-             (vector-ref marks m))]
+             (or (vector-ref marks m)
+                 (error who "uninitialized mark" m)))]
+          [(#\l) ;;; list of length <= 255
+           (let ([n (read-u8 p)])
+             (let f ([n n])
+               (cond
+                 [(< n 0) (read)]
+                 [else 
+                  (let ([x (read)])
+                    (cons x (f (- n 1))))])))]
           [else
            (die who "Unexpected char as a fasl object header" h)])))
     (read))
   (define $fasl-read
     (lambda (p)
-      (assert-eq? (read-char p) #\I)
-      (assert-eq? (read-char p) #\K)
-      (assert-eq? (read-char p) #\0)
-      (assert-eq? (read-char p) #\1)
-      (do-read p)))
+      (assert-eq? (read-u8-as-char p) #\#)
+      (assert-eq? (read-u8-as-char p) #\@)
+      (assert-eq? (read-u8-as-char p) #\I)
+      (assert-eq? (read-u8-as-char p) #\K)
+      (assert-eq? (read-u8-as-char p) #\0)
+      (assert-eq? (read-u8-as-char p) #\1)
+      (let ([v (do-read p)])
+        (unless (port-eof? p)
+          (printf "port did not reach eof\n"))
+        v)))
   
   (define fasl-read
     (case-lambda
-      [() ($fasl-read (current-input-port))]
       [(p) 
        (if (input-port? p) 
            ($fasl-read p)

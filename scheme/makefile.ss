@@ -575,6 +575,7 @@
     [error@fxadd1                                ]
     [error@fxsub1                                ]
     [fasl-write                                  i]
+    [fasl-read                                   i]
     [lambda                                      i r ba se ne]
     [and                                         i r ba se ne]
     [begin                                       i r ba se ne]
@@ -1400,6 +1401,7 @@
     [optimize-cp i]
     [optimize-level i]
     [compile-library-to-port i]
+    [install-library-from-file i]
   ))
 
 (define (macro-identifier? x) 

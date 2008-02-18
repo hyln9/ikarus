@@ -17,7 +17,8 @@
 (library (ikarus.compiler)
   (export compile-core-expr-to-port optimize-level
           assembler-output scc-letrec optimize-cp
-          current-primitive-locations eval-core)
+          current-primitive-locations eval-core
+          compile-core-expr)
   (import 
     (rnrs hashtables)
     (ikarus system $fx)
