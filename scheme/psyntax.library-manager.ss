@@ -50,7 +50,8 @@
 
   (define-record library 
     (id name version imp* vis* inv* subst env visit-state
-        invoke-state visit-code invoke-code visible?)
+        invoke-state visit-code invoke-code visible?
+        source-file-name)
     (lambda (x p)
       (unless (library? x)
         (assertion-violation 'record-type-printer "not a library"))
@@ -199,7 +200,8 @@
             [(try-load-from-file file-name)]
             [else 
              ((current-library-expander)
-              (with-input-from-file file-name read-annotated))])))
+              (with-input-from-file file-name read-annotated)
+              file-name)])))
       (lambda (f)
         (if (procedure? f)
             f
@@ -269,22 +271,30 @@
         exp-env))
     ((current-library-collection) lib))
 
-  (define (install-library id name ver imp* vis* inv* 
-            exp-subst exp-env visit-proc invoke-proc 
-            visit-code invoke-code visible?)
-    (let ((imp-lib* (map find-library-by-spec/die imp*))
-          (vis-lib* (map find-library-by-spec/die vis*))
-          (inv-lib* (map find-library-by-spec/die inv*)))
-      (unless (and (symbol? id) (list? name) (list? ver))
-        (assertion-violation 'install-library 
-          "invalid spec with id/name/ver" id name ver))
-      (when (library-exists? name)
-        (assertion-violation 'install-library 
-          "library is already installed" name))
-      (let ((lib (make-library id name ver imp-lib* vis-lib* inv-lib* 
-                    exp-subst exp-env visit-proc invoke-proc 
-                    visit-code invoke-code visible?)))
-        (install-library-record lib))))
+  (define install-library 
+    (case-lambda
+      [(id name ver imp* vis* inv* exp-subst exp-env 
+        visit-proc invoke-proc visit-code invoke-code 
+        visible? source-file-name)
+       (let ((imp-lib* (map find-library-by-spec/die imp*))
+             (vis-lib* (map find-library-by-spec/die vis*))
+             (inv-lib* (map find-library-by-spec/die inv*)))
+         (unless (and (symbol? id) (list? name) (list? ver))
+           (assertion-violation 'install-library 
+             "invalid spec with id/name/ver" id name ver))
+         (when (library-exists? name)
+           (assertion-violation 'install-library 
+             "library is already installed" name))
+         (let ((lib (make-library id name ver imp-lib* vis-lib* inv-lib* 
+                       exp-subst exp-env visit-proc invoke-proc 
+                       visit-code invoke-code visible? source-file-name)))
+           (install-library-record lib)))]
+      #;[(id name ver imp* vis* inv* exp-subst exp-env 
+        visit-proc invoke-proc visit-code invoke-code 
+        visible?)
+       (install-library id name ver imp* vis* inv* exp-subst exp-env 
+          visit-proc invoke-proc visit-code invoke-code 
+          visible? #f)]))
 
   (define extend-library-subst!
     (lambda (lib sym label)

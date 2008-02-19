@@ -3523,41 +3523,45 @@
   ;;; Given a (library . _) s-expression, library-expander expands
   ;;; it to core-form, registers it with the library manager, and
   ;;; returns its invoke-code, visit-code, subst and env.
-  (define (library-expander x)
-    (define (build-visit-code macro*)
-      (if (null? macro*)
-          (build-void)
-          (build-sequence no-source
-            (map (lambda (x)
-                   (let ((loc (car x)) (src (cddr x)))
-                     (build-global-assignment no-source loc src)))
-                 macro*))))
-    (define (visit! macro*)
-      (for-each (lambda (x)
-                  (let ((loc (car x)) (proc (cadr x)))
-                    (set-symbol-value! loc proc)))
-                macro*))
-    (let-values (((name ver imp* inv* vis* 
-                   invoke-code macro* export-subst export-env)
-                  (core-library-expander x)))
-      (let ((id (gensym))
-            (name name)
-            (ver ver)
-            (imp* (map library-spec imp*))
-            (vis* (map library-spec vis*))
-            (inv* (map library-spec inv*))
-            (visit-proc (lambda () (visit! macro*)))
-            (invoke-proc (lambda () (eval-core (expanded->core invoke-code))))
-            (visit-code (build-visit-code macro*))
-            (invoke-code invoke-code))
-        (install-library id name ver
-           imp* vis* inv* export-subst export-env
-           visit-proc invoke-proc
-           visit-code invoke-code
-           #t)
-        (values id name ver imp* vis* inv* 
-                invoke-code visit-code
-                export-subst export-env))))
+  (define library-expander
+    (case-lambda 
+      [(x filename)
+       (define (build-visit-code macro*)
+         (if (null? macro*)
+             (build-void)
+             (build-sequence no-source
+               (map (lambda (x)
+                      (let ((loc (car x)) (src (cddr x)))
+                        (build-global-assignment no-source loc src)))
+                    macro*))))
+       (define (visit! macro*)
+         (for-each (lambda (x)
+                     (let ((loc (car x)) (proc (cadr x)))
+                       (set-symbol-value! loc proc)))
+                   macro*))
+       (let-values (((name ver imp* inv* vis* 
+                      invoke-code macro* export-subst export-env)
+                     (core-library-expander x)))
+         (let ((id (gensym))
+               (name name)
+               (ver ver)
+               (imp* (map library-spec imp*))
+               (vis* (map library-spec vis*))
+               (inv* (map library-spec inv*))
+               (visit-proc (lambda () (visit! macro*)))
+               (invoke-proc 
+                (lambda () (eval-core (expanded->core invoke-code))))
+               (visit-code (build-visit-code macro*))
+               (invoke-code invoke-code))
+           (install-library id name ver
+              imp* vis* inv* export-subst export-env
+              visit-proc invoke-proc
+              visit-code invoke-code
+              #t filename)
+           (values id name ver imp* vis* inv* 
+                   invoke-code visit-code
+                   export-subst export-env)))]
+      [(x) (library-expander x #f)]))
 
   ;;; when bootstrapping the system, visit-code is not (and cannot
   ;;; be) be used in the "next" system.  So, we drop it.
