@@ -18,8 +18,39 @@
   (export load load-r6rs-top-level)
   (import 
     (except (ikarus) load)
+    (only (ikarus.compiler) compile-core-expr)
+    (only (psyntax library-manager) 
+      serialize-all current-precompiled-library-loader)
     (only (psyntax expander) eval-top-level compile-r6rs-top-level)
     (only (ikarus reader) read-initial))
+
+
+  (define-struct serialized-library (contents))
+
+  (define (load-serialized-library filename sk)
+    ;;; TODO: check file last-modified date
+    (let ([ikfasl (string-append filename ".ikfasl")])
+      (and (file-exists? ikfasl)
+           (let ([x 
+                  (let ([p (open-file-input-port ikfasl)])
+                    (let ([x (fasl-read p)])
+                      (close-input-port p)
+                      x))])
+             (if (serialized-library? x)
+                 (apply sk (serialized-library-contents x))
+                 (begin
+                   (printf
+                      "WARNING: not using fasl file ~s because it was \
+                       compiled with a different version of ikarus.\n" 
+                      ikfasl)
+                   #f))))))
+
+  (define (do-serialize-library filename contents)
+    (let ([ikfasl (string-append filename ".ikfasl")])
+      (printf "Serializing ~s\n" ikfasl)
+      (let ([p (open-file-output-port ikfasl (file-options no-fail))])
+        (fasl-write (make-serialized-library contents) p)
+        (close-output-port p))))
 
   (define load-handler
     (lambda (x)
@@ -63,6 +94,14 @@
         (let ([thunk (compile-r6rs-top-level prog)])
           (case how
             [(run) (thunk)]
-            [(compile) (error 'load-r6rs "not yet")]
+            [(compile) 
+             (serialize-all 
+               (lambda (file-name contents)
+                 (do-serialize-library file-name contents))
+               (lambda (core-expr) 
+                 (compile-core-expr core-expr)))]
             [else (error 'load-r6rs-top-level "invali argument" how)])))))
+
+  (current-precompiled-library-loader load-serialized-library)
+  
   )

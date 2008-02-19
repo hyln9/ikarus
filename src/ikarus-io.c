@@ -186,3 +186,15 @@ ikrt_tcp_connect_nonblocking(ikptr host, ikptr srvc, ikpcb* pcb){
   return fdptr;
 }
 
+ikptr
+ikrt_file_ctime(ikptr filename, ikptr res){
+  struct stat s;
+  int err = stat((char*)(filename + off_bytevector_data), &s);
+  if(err) {
+    return fix(errno);
+  }
+  ref(res, off_car) = fix(s.st_ctimespec.tv_sec);
+  ref(res, off_cdr) = fix(s.st_ctimespec.tv_nsec);
+  return fix(0);
+}
+

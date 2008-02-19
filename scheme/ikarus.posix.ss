@@ -16,12 +16,12 @@
 
 (library (ikarus posix)
   (export posix-fork fork waitpid system file-exists? delete-file
-          getenv env environ)
+          getenv env environ file-ctime)
   (import 
     (rnrs bytevectors)
     (except (ikarus)
        posix-fork fork waitpid system file-exists? delete-file
-       getenv env environ))
+       getenv env environ file-ctime))
 
   (define posix-fork
     (lambda ()
@@ -101,6 +101,22 @@
                    [(10) "internal access error while deleting"]
                    [else "Unknown error while deleting file"]))
                (make-i/o-filename-error x)))]))))
+
+  (define (file-ctime x)
+    (define who 'file-ctime)
+    (unless (string? x) 
+      (die who "not a string" x))
+    (let ([p (cons #f #f)])
+      (let ([v (foreign-call "ikrt_file_ctime" (string->utf8 x) p)])
+        (case v
+          [(0) (+ (* (car p) #e1e9) (cdr p))]
+          [else 
+           (raise
+             (condition 
+               (make-who-condition who)
+               (make-message-condition "cannot stat a file")
+               (make-i/o-filename-error x)))]))))
+
 
   (define ($getenv-bv key)
     (foreign-call "ikrt_getenv" key))

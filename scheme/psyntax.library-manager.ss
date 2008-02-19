@@ -23,7 +23,8 @@
     visit-library library-name library-version library-exists?
     find-library-by-name install-library library-spec invoke-library 
     extend-library-subst! extend-library-env! current-library-expander
-    current-library-collection library-path library-extensions)
+    current-library-collection library-path library-extensions
+    serialize-all current-precompiled-library-loader)
   (import (rnrs) (psyntax compat) (rnrs r5rs)
     (only (ikarus) printf))
 
@@ -157,9 +158,33 @@
             f
             (assertion-violation 'file-locator "not a procedure" f)))))
 
+  (define (serialize-all serialize compile)
+    (define (library-desc x) 
+      (list (library-id x) (library-name x)))
+    (for-each 
+      (lambda (x)
+        (when (library-source-file-name x) 
+          (serialize 
+            (library-source-file-name x)
+            (list (library-id x) 
+                  (library-name x)
+                  (library-version x) 
+                  (map library-desc (library-imp* x))
+                  (map library-desc (library-vis* x))
+                  (map library-desc (library-inv* x))
+                  (library-subst x)
+                  (library-env x)
+                  (compile (library-visit-code x))
+                  (compile (library-invoke-code x))
+                  (library-visible? x)))))
+      ((current-library-collection))))
 
+  (define current-precompiled-library-loader
+    (make-parameter (lambda (filename sk) #f)))
+        
   (define (try-load-from-file filename)
-    (load-precompiled-library filename
+    ((current-precompiled-library-loader)
+      filename
       (case-lambda
         [(id name ver imp* vis* inv* exp-subst exp-env
           visit-proc invoke-proc visible?)
@@ -172,7 +197,7 @@
              [(null? deps)
               (install-library id name ver imp* vis* inv* 
                 exp-subst exp-env visit-proc invoke-proc 
-                #f #f visible?)
+                #f #f visible? #f)
               #t]
              [else
               (let ([d (car deps)]) 
@@ -288,13 +313,7 @@
          (let ((lib (make-library id name ver imp-lib* vis-lib* inv-lib* 
                        exp-subst exp-env visit-proc invoke-proc 
                        visit-code invoke-code visible? source-file-name)))
-           (install-library-record lib)))]
-      #;[(id name ver imp* vis* inv* exp-subst exp-env 
-        visit-proc invoke-proc visit-code invoke-code 
-        visible?)
-       (install-library id name ver imp* vis* inv* exp-subst exp-env 
-          visit-proc invoke-proc visit-code invoke-code 
-          visible? #f)]))
+           (install-library-record lib)))]))
 
   (define extend-library-subst!
     (lambda (lib sym label)

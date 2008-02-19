@@ -1211,6 +1211,7 @@
     [vector-sort!                                i r sr]
     [file-exists?                                i r fi]
     [delete-file                                 i r fi]
+    [file-ctime                                  i]
     [define-record-type                          i r rs]
     [fields                                      i r rs]
     [immutable                                   i r rs]
