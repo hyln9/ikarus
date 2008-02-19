@@ -193,8 +193,9 @@ ikrt_file_ctime(ikptr filename, ikptr res){
   if(err) {
     return fix(errno);
   }
-  ref(res, off_car) = fix(s.st_ctimespec.tv_sec);
-  ref(res, off_cdr) = fix(s.st_ctimespec.tv_nsec);
+  
+  ref(res, off_car) = fix(s.st_ctime);
+  ref(res, off_cdr) = 0;
   return fix(0);
 }
 
