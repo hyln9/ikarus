@@ -284,21 +284,27 @@
              (or (vector-ref marks m)
                  (error who "uninitialized mark" m)))]
           [(#\l) ;;; list of length <= 255
-           (let ([n (read-u8 p)])
-             (let f ([n n])
-               (cond
-                 [(< n 0) (read)]
-                 [else 
-                  (let ([x (read)])
-                    (cons x (f (- n 1))))])))]
+           (let ([ls 
+                  (let ([n (read-u8 p)])
+                    (let f ([n n])
+                      (cond
+                        [(< n 0) (read)]
+                        [else 
+                         (let ([x (read)])
+                           (cons x (f (- n 1))))])))])
+             (when m (put-mark m ls))
+             ls)]
           [(#\L) ;;; list of length > 255
-           (let ([n (read-int p)])
-             (let f ([n n])
-               (cond
-                 [(< n 0) (read)]
-                 [else 
-                  (let ([x (read)])
-                    (cons x (f (- n 1))))])))]
+           (let ([ls 
+                  (let ([n (read-int p)])
+                    (let f ([n n])
+                      (cond
+                        [(< n 0) (read)]
+                        [else 
+                         (let ([x (read)])
+                           (cons x (f (- n 1))))])))])
+             (when m (put-mark m ls))
+             ls)]
           [else
            (die who "Unexpected char as a fasl object header" h)])))
     (read))
