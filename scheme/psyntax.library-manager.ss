@@ -26,7 +26,7 @@
     current-library-collection library-path library-extensions
     serialize-all current-precompiled-library-loader)
   (import (rnrs) (psyntax compat) (rnrs r5rs)
-    (only (ikarus) printf))
+    (only (ikarus) fprintf))
 
   (define (make-collection)
     (let ((set '()))
@@ -207,11 +207,11 @@
                       [(and (library? l) (eq? label (library-id l)))
                        (f (cdr deps))]
                       [else 
-                       (printf 
-                          "WARNING: missing or inconsistent dependency \
-                           on library ~s.  \
-                           Library ~s in file ~s will be recompiled.\n"
-                         dname name filename)
+                       (fprintf (current-error-port)
+                          "WARNING: library ~s has an inconsistent dependency \
+                           on library ~s; file ~s will be recompiled from \
+                           source.\n"
+                         name dname filename)
                        #f]))))]))]
         [others #f])))
 

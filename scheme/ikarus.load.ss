@@ -52,13 +52,13 @@
                (begin
                  (fprintf (current-error-port)
                     "WARNING: not using fasl file ~s because it was \
-                     compiled with a different version of ikarus.\n" 
+                     compiled with a different instance of ikarus.\n" 
                     ikfasl)
                  #f)))])))
 
   (define (do-serialize-library filename contents)
     (let ([ikfasl (string-append filename fasl-extension)])
-      (fprintf (current-error-port) "Serializing ~s\n" ikfasl)
+      (fprintf (current-error-port) "Serializing ~s ...\n" ikfasl)
       (let ([p (open-file-output-port ikfasl (file-options no-fail))])
         (fasl-write (make-serialized-library contents) p)
         (close-output-port p))))
