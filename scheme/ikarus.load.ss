@@ -30,20 +30,29 @@
   (define (load-serialized-library filename sk)
     ;;; TODO: check file last-modified date
     (let ([ikfasl (string-append filename ".ikfasl")])
-      (and (file-exists? ikfasl)
-           (let ([x 
-                  (let ([p (open-file-input-port ikfasl)])
-                    (let ([x (fasl-read p)])
-                      (close-input-port p)
-                      x))])
-             (if (serialized-library? x)
-                 (apply sk (serialized-library-contents x))
-                 (begin
-                   (printf
-                      "WARNING: not using fasl file ~s because it was \
-                       compiled with a different version of ikarus.\n" 
-                      ikfasl)
-                   #f))))))
+      (cond
+        [(not (file-exists? ikfasl)) #f]
+        [(<= (file-ctime ikfasl) (file-ctime filename))
+         (printf 
+            "WARNING: not using fasl file ~s because it is older \
+             than the source file ~s\n" 
+           ikfasl
+           filename)
+         #f]
+        [else
+         (let ([x 
+                (let ([p (open-file-input-port ikfasl)])
+                  (let ([x (fasl-read p)])
+                    (close-input-port p)
+                    x))])
+           (if (serialized-library? x)
+               (apply sk (serialized-library-contents x))
+               (begin
+                 (printf
+                    "WARNING: not using fasl file ~s because it was \
+                     compiled with a different version of ikarus.\n" 
+                    ikfasl)
+                 #f)))])))
 
   (define (do-serialize-library filename contents)
     (let ([ikfasl (string-append filename ".ikfasl")])

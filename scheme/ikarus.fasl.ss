@@ -291,6 +291,14 @@
                  [else 
                   (let ([x (read)])
                     (cons x (f (- n 1))))])))]
+          [(#\L) ;;; list of length > 255
+           (let ([n (read-int p)])
+             (let f ([n n])
+               (cond
+                 [(< n 0) (read)]
+                 [else 
+                  (let ([x (read)])
+                    (cons x (f (- n 1))))])))]
           [else
            (die who "Unexpected char as a fasl object header" h)])))
     (read))
