@@ -35,7 +35,7 @@
       (cond
         [(not (file-exists? ikfasl)) #f]
         [(<= (file-ctime ikfasl) (file-ctime filename))
-         (printf 
+         (fprintf (current-error-port)
             "WARNING: not using fasl file ~s because it is older \
              than the source file ~s\n" 
            ikfasl
@@ -50,7 +50,7 @@
            (if (serialized-library? x)
                (apply sk (serialized-library-contents x))
                (begin
-                 (printf
+                 (fprintf (current-error-port)
                     "WARNING: not using fasl file ~s because it was \
                      compiled with a different version of ikarus.\n" 
                     ikfasl)
@@ -58,7 +58,7 @@
 
   (define (do-serialize-library filename contents)
     (let ([ikfasl (string-append filename fasl-extension)])
-      (printf "Serializing ~s\n" ikfasl)
+      (fprintf (current-error-port) "Serializing ~s\n" ikfasl)
       (let ([p (open-file-output-port ikfasl (file-options no-fail))])
         (fasl-write (make-serialized-library contents) p)
         (close-output-port p))))

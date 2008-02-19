@@ -62,6 +62,15 @@
 
   (define who 'fasl-read)
   
+  (define (make-struct rtd n)
+    (import (ikarus system $fx))
+    (let f ([i 0] [n n] [s ($make-struct rtd n)])
+      (cond
+        [($fx= i n) s]
+        [else 
+         ($struct-set! s i 0)
+         (f ($fx+ i 1) n s)])))
+
   (define (read-u8 p)
     (let ([b (get-u8 p)])
       (when (eof-object? b) 
@@ -265,7 +274,7 @@
           [(#\{)
            (let ([n (read-int p)])
              (let ([rtd (read)])
-               (let ([x ($make-struct rtd n)])
+               (let ([x (make-struct rtd n)])
                  (when m (put-mark m x))
                  (let f ([i 0])
                    (unless (fx= i n)
