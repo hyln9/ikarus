@@ -27,9 +27,11 @@
 
   (define-struct serialized-library (contents))
 
+  (define fasl-extension ".ikarus-fasl")
+
   (define (load-serialized-library filename sk)
     ;;; TODO: check file last-modified date
-    (let ([ikfasl (string-append filename ".ikfasl")])
+    (let ([ikfasl (string-append filename fasl-extension)])
       (cond
         [(not (file-exists? ikfasl)) #f]
         [(<= (file-ctime ikfasl) (file-ctime filename))
@@ -55,7 +57,7 @@
                  #f)))])))
 
   (define (do-serialize-library filename contents)
-    (let ([ikfasl (string-append filename ".ikfasl")])
+    (let ([ikfasl (string-append filename fasl-extension)])
       (printf "Serializing ~s\n" ikfasl)
       (let ([p (open-file-output-port ikfasl (file-options no-fail))])
         (fasl-write (make-serialized-library contents) p)
