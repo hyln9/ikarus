@@ -24,7 +24,7 @@
           bound-identifier=? datum->syntax syntax-error
           syntax-violation
           syntax->datum make-variable-transformer
-          eval-r6rs-top-level boot-library-expand eval-top-level
+          compile-r6rs-top-level boot-library-expand eval-top-level
           null-environment scheme-report-environment ellipsis-map)
   (import
     (except (rnrs) 
@@ -3759,11 +3759,12 @@
   (define syntax->datum
     (lambda (x) (stx->datum x)))
 
-  (define eval-r6rs-top-level
+  (define compile-r6rs-top-level
     (lambda (x*)
       (let-values (((lib* invoke-code) (top-level-expander x*)))
-        (for-each invoke-library lib*)
-        (eval-core (expanded->core invoke-code)))))
+        (lambda ()
+          (for-each invoke-library lib*)
+          (eval-core (expanded->core invoke-code))))))
 
   ;;; The interaction-library is a parameter that is either #f 
   ;;; (the default, for r6rs scripts) or set to an extensible library

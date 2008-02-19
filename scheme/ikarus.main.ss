@@ -90,13 +90,25 @@
                           (die 'ikarus "--r6rs-script requires a script name")]
                          [else
                           (values '() (car d) 'r6rs-script (cdr d))]))]
+                    [(string=? (car args) "--compile-r6rs-script")
+                     (let ([d (cdr args)])
+                       (cond
+                         [(null? d)
+                          (die 'ikarus
+                            "--compile-r6rs-script requires a script name")]
+                         [else
+                          (values '() (car d) 'compile-r6rs-script (cdr d))]))]
                     [else
                      (let-values ([(f* script script-type a*) (f (cdr args))])
                        (values (cons (car args) f*) script script-type a*))]))])
     (cond
       [(eq? script-type 'r6rs-script)
        (command-line-arguments (cons script args))
-       (load-r6rs-top-level script)
+       (load-r6rs-top-level script 'run)
+       (exit 0)]
+      [(eq? script-type 'compile-r6rs-script)
+       (command-line-arguments (cons script args))
+       (load-r6rs-top-level script 'compile)
        (exit 0)]
       [(eq? script-type 'script) ; no greeting, no cafe
        (command-line-arguments (cons script args))

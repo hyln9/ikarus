@@ -18,7 +18,7 @@
   (export load load-r6rs-top-level)
   (import 
     (except (ikarus) load)
-    (only (psyntax expander) eval-top-level eval-r6rs-top-level)
+    (only (psyntax expander) eval-top-level compile-r6rs-top-level)
     (only (ikarus reader) read-initial))
 
   (define load-handler
@@ -45,7 +45,7 @@
              (read-and-eval p eval-proc)))
          (close-input-port p))]))
   (define load-r6rs-top-level
-    (lambda (x)
+    (lambda (x how)
       (define (read-file)
         (let ([p (open-input-file x)])
           (let ([x (read-script-annotated p)])
@@ -60,5 +60,9 @@
                          '()]
                         [else (cons x (f))]))))))))
       (let ([prog (read-file)])
-        (eval-r6rs-top-level prog))))
+        (let ([thunk (compile-r6rs-top-level prog)])
+          (case how
+            [(run) (thunk)]
+            [(compile) (error 'load-r6rs "not yet")]
+            [else (error 'load-r6rs-top-level "invali argument" how)])))))
   )

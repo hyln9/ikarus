@@ -19,10 +19,12 @@
           eval-core symbol-value set-symbol-value!
           file-options-spec make-struct-type read-annotated
           annotation? annotation-expression annotation-source
-          annotation-stripped)
+          annotation-stripped load-precompiled-library)
   (import 
     (only (ikarus.compiler) eval-core)
     (ikarus))
+
+  (define (load-precompiled-library filename sk) #f)
 
   (define-syntax define-record
     (syntax-rules ()

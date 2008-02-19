@@ -24,7 +24,8 @@
     find-library-by-name install-library library-spec invoke-library 
     extend-library-subst! extend-library-env! current-library-expander
     current-library-collection library-path library-extensions)
-  (import (rnrs) (psyntax compat) (rnrs r5rs))
+  (import (rnrs) (psyntax compat) (rnrs r5rs)
+    (only (ikarus) printf))
 
   (define (make-collection)
     (let ((set '()))
@@ -155,10 +156,38 @@
             f
             (assertion-violation 'file-locator "not a procedure" f)))))
 
-  (define (library-precompiled? x) #f)
 
-  (define (load-precompiled-library x) 
-    (error 'load-precompiled-library "not implemented"))
+  (define (try-load-from-file filename)
+    (load-precompiled-library filename
+      (case-lambda
+        [(id name ver imp* vis* inv* exp-subst exp-env
+          visit-proc invoke-proc visible?)
+         ;;; make sure all dependencies are met
+         ;;; if all is ok, install the library
+         ;;; otherwise, return #f so that the
+         ;;; library gets recompiled.
+         (let f ([deps (append imp* vis* inv*)])
+           (cond
+             [(null? deps)
+              (install-library id name ver imp* vis* inv* 
+                exp-subst exp-env visit-proc invoke-proc 
+                #f #f visible?)
+              #t]
+             [else
+              (let ([d (car deps)]) 
+                (let ([label (car d)] [dname (cadr d)]) 
+                  (let ([l (find-library-by-name dname)]) 
+                    (cond
+                      [(and (library? l) (eq? label (library-id l)))
+                       (f (cdr deps))]
+                      [else 
+                       (printf 
+                          "WARNING: missing or inconsistent dependency \
+                           on library ~s.  \
+                           Library ~s in file ~s will be recompiled.\n"
+                         dname name filename)
+                       #f]))))]))]
+        [others #f])))
 
   (define library-loader
     (make-parameter
@@ -167,10 +196,9 @@
           (cond
             [(not file-name) 
              (assertion-violation #f "cannot file library" x)]
-            [(library-precompiled? file-name)
-             (load-precompiled-library file-name)]
+            [(try-load-from-file file-name)]
             [else 
-             ((current-library-expander) 
+             ((current-library-expander)
               (with-input-from-file file-name read-annotated))])))
       (lambda (f)
         (if (procedure? f)
@@ -218,7 +246,8 @@
     (let ((id (car spec)))
       (or (find-library-by
             (lambda (x) (eq? id (library-id x))))
-          (assertion-violation #f "cannot find library with required spec" spec))))
+          (assertion-violation #f 
+            "cannot find library with required spec" spec))))
 
   (define label->binding-table (make-eq-hashtable))
 
@@ -278,7 +307,8 @@
           (lambda () (assertion-violation 'invoke "circularity detected" lib)))
         (for-each invoke-library (library-inv* lib))
         (set-library-invoke-state! lib 
-          (lambda () (assertion-violation 'invoke "first invoke did not return" lib)))
+          (lambda () 
+            (assertion-violation 'invoke "first invoke did not return" lib)))
         (invoke)
         (set-library-invoke-state! lib #t))))
 
@@ -290,7 +320,8 @@
           (lambda () (assertion-violation 'visit "circularity detected" lib)))
         (for-each invoke-library (library-vis* lib))
         (set-library-visit-state! lib 
-          (lambda () (assertion-violation 'invoke "first visit did not return" lib)))
+          (lambda () 
+            (assertion-violation 'invoke "first visit did not return" lib)))
         (visit)
         (set-library-visit-state! lib #t))))
 
