@@ -3545,15 +3545,18 @@
             (ver ver)
             (imp* (map library-spec imp*))
             (vis* (map library-spec vis*))
-            (inv* (map library-spec inv*)))
+            (inv* (map library-spec inv*))
+            (visit-proc (lambda () (visit! macro*)))
+            (invoke-proc (lambda () (eval-core (expanded->core invoke-code))))
+            (visit-code (build-visit-code macro*))
+            (invoke-code invoke-code))
         (install-library id name ver
            imp* vis* inv* export-subst export-env
-           (lambda () (visit! macro*))
-           (lambda () (eval-core (expanded->core invoke-code)))
+           visit-proc invoke-proc
+           visit-code invoke-code
            #t)
         (values id name ver imp* vis* inv* 
-                invoke-code
-                (build-visit-code macro*)
+                invoke-code visit-code
                 export-subst export-env))))
 
   ;;; when bootstrapping the system, visit-code is not (and cannot

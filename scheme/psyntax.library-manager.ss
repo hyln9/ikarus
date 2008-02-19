@@ -23,8 +23,7 @@
     visit-library library-name library-version library-exists?
     find-library-by-name install-library library-spec invoke-library 
     extend-library-subst! extend-library-env! current-library-expander
-    current-library-collection library-path library-extensions
-    make-library)
+    current-library-collection library-path library-extensions)
   (import (rnrs) (psyntax compat) (rnrs r5rs))
 
   (define (make-collection)
@@ -49,7 +48,8 @@
         x)))
 
   (define-record library 
-    (id name version imp* vis* inv* subst env visit-state invoke-state visible?)
+    (id name version imp* vis* inv* subst env visit-state
+        invoke-state visit-code invoke-code visible?)
     (lambda (x p)
       (unless (library? x)
         (assertion-violation 'record-type-printer "not a library"))
@@ -241,7 +241,8 @@
     ((current-library-collection) lib))
 
   (define (install-library id name ver imp* vis* inv* 
-            exp-subst exp-env visit-code invoke-code visible?)
+            exp-subst exp-env visit-proc invoke-proc 
+            visit-code invoke-code visible?)
     (let ((imp-lib* (map find-library-by-spec/die imp*))
           (vis-lib* (map find-library-by-spec/die vis*))
           (inv-lib* (map find-library-by-spec/die inv*)))
@@ -252,8 +253,8 @@
         (assertion-violation 'install-library 
           "library is already installed" name))
       (let ((lib (make-library id name ver imp-lib* vis-lib* inv-lib* 
-                    exp-subst exp-env visit-code invoke-code 
-                    visible?)))
+                    exp-subst exp-env visit-proc invoke-proc 
+                    visit-code invoke-code visible?)))
         (install-library-record lib))))
 
   (define extend-library-subst!

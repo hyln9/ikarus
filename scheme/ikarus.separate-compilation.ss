@@ -9,16 +9,17 @@
     (only (psyntax library-manager)
       install-library current-library-expander))
 
-  (define-struct library (id name ver imp* vis* inv* 
-    export-subst export-env visit-code invoke-code visible?))
+  (define-struct library 
+    (id name ver imp* vis* inv* export-subst export-env
+     visit-code invoke-code visible?))
 
   (define (install-library-from-file filename)
     (let ([p (open-file-input-port filename)])
       (let ([L (fasl-read p)])
         (unless (library? L) 
-          (error 'install-library "file does not contain a library"
-                 filename))
-        (printf "L=~s\n" L)
+          (error 'install-library 
+            "file does not contain a valid library"
+            filename))
         (install-library (library-id L) (library-name L) 
           (library-ver L) (library-imp* L) (library-vis* L)
           (library-inv* L) (library-export-subst L)
@@ -34,6 +35,5 @@
                   (compile-core-expr visit-code)
                   (compile-core-expr invoke-code)
                   #t)])
-        (printf "L=~s\n" L)
         (fasl-write L p)))))
 

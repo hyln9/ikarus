@@ -148,21 +148,22 @@
              [freevars (read-fixnum p)])
         (let ([code (make-code code-size freevars)])
           (when code-m (put-mark code-m code))
-          (let ([annotations (read)])
-            (let f ([i 0])
-              (unless (fx= i code-size)
-                (code-set! code i (char->int (read-u8-as-char p)))
-                (f (fxadd1 i))))
-            (cond
-              [clos-m
-               (let ([clos ($code->closure code)])
-                 (put-mark clos-m clos)
-                 (set-code-reloc-vector! code (read))
-                 code)]
-              [else
+          (let ([annotation (read)])
+            (set-code-annotation! code annotation))
+          (let f ([i 0])
+            (unless (fx= i code-size)
+              (code-set! code i (char->int (read-u8-as-char p)))
+              (f (fxadd1 i))))
+          (cond
+            [clos-m
+             (let ([clos ($code->closure code)])
+               (put-mark clos-m clos)
                (set-code-reloc-vector! code (read))
-               code])))))
-    (define (read-thunk m)
+               code)]
+            [else
+             (set-code-reloc-vector! code (read))
+             code]))))
+    (define (read-procedure m)
       (let ([c (read-u8-as-char p)])
         (case c
           [(#\x)
@@ -244,8 +245,8 @@
                v))]
           [(#\x) ;;; code
            (read-code m #f)]
-          [(#\Q) ;;; thunk
-           (read-thunk m)]
+          [(#\Q) ;;; procedure
+           (read-procedure m)]
           [(#\R)
            (let* ([rtd-name (read)]
                   [rtd-symbol (read)]
@@ -271,12 +272,8 @@
                      ($struct-set! x i (read))
                      (f (fxadd1 i))))
                  x)))]
-          ;[(#\C)
-          ; (let ([c (read-u8-as-char p)])
-          ;   (cond
-          ;     [(char? c) c]
-          ;     [else
-          ;      (die who "invalid eof inside a fasl object")]))]
+          [(#\C) (integer->char (read-int p))]
+          [(#\c) (read-u8-as-char p)]
           [(#\>)
            (let ([m (read-int p)])
              (read/mark m))]

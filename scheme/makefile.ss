@@ -1543,7 +1543,7 @@
                             '()))])
           `(install-library 
              ',id ',name ',version ',import-libs ',visit-libs ',invoke-libs
-             ',subst ',env void void ',visible?)))))
+             ',subst ',env void void '#f '#f ',visible?)))))
   (let ([code `(library (ikarus primlocs)
                   (export) ;;; must be empty
                   (import 
