@@ -199,35 +199,55 @@
                (f (fxadd1 i) n)))
            (fasl-write-object (code-reloc-vector x) p h m))]
         [(struct? x)
-         (let ([rtd (struct-type-descriptor x)])
-           (cond
-             [(eq? rtd (base-rtd))
-              ;;; rtd record
-              (put-tag #\R p)
-              (let ([names (struct-type-field-names x)]
-                    [m 
-                     (fasl-write-object (struct-type-symbol x) p h
-                       (fasl-write-object (struct-type-name x) p h m))])
-                (write-int (length names) p)
-                (let f ([names names] [m m])
+         (cond
+           [(record-type-descriptor? x)
+            (put-tag #\W p)
+            (let* ([m (fasl-write-object (record-type-name x) p h m)]
+                   [m (fasl-write-object (record-type-parent x) p h m)]
+                   [m (fasl-write-object (record-type-uid x) p h m)])
+              (fasl-write-immediate (record-type-sealed? x) p)
+              (fasl-write-immediate (record-type-opaque? x) p)
+              (let* ([fields (record-type-field-names x)]
+                     [n (vector-length fields)])
+                (fasl-write-immediate n p)
+                (let f ([i 0] [m m])
                   (cond
-                    [(null? names) m]
+                    [(= i n) m]
                     [else
-                     (f (cdr names)
-                        (fasl-write-object (car names) p h m))])))]
-             [else
-              ;;; non-rtd record
-              (put-tag #\{ p)
-              (write-int (length (struct-type-field-names rtd)) p)
-              (let f ([names (struct-type-field-names rtd)] 
-                      [m (fasl-write-object rtd p h m)])
-                (cond
-                  [(null? names) m]
-                  [else
-                   (f (cdr names) 
-                      (fasl-write-object 
-                         ((struct-field-accessor rtd (car names)) x)
-                         p h m))]))]))]
+                     (fasl-write-immediate (record-field-mutable? x i) p)
+                     (f (+ i 1) 
+                        (fasl-write-object (vector-ref fields i) p h m))]))))]
+           [else
+            (let ([rtd (struct-type-descriptor x)])
+              (cond
+                [(eq? rtd (base-rtd))
+                 ;;; rtd record
+                 (put-tag #\R p)
+                 (let ([names (struct-type-field-names x)]
+                       [m 
+                        (fasl-write-object (struct-type-symbol x) p h
+                          (fasl-write-object (struct-type-name x) p h m))])
+                   (write-int (length names) p)
+                   (let f ([names names] [m m])
+                     (cond
+                       [(null? names) m]
+                       [else
+                        (f (cdr names)
+                           (fasl-write-object (car names) p h m))])))]
+                [else
+                 ;;; non-rtd record
+                 (put-tag #\{ p)
+                 (let ([n (struct-length x)])
+                   (write-int n p)
+                   (let f ([i 0] 
+                           [m (fasl-write-object rtd p h m)])
+                     (cond
+                       [(= i n) m]
+                       [else
+                        (f (+ i 1)
+                           (fasl-write-object 
+                              (struct-ref x i)
+                              p h m))])))]))])]
         [(procedure? x)
          (put-tag #\Q p)
          (fasl-write-object ($closure-code x) p h m)]
@@ -313,23 +333,32 @@
               (make-graph ($code-annotation x) h)
               (make-graph (code-reloc-vector x) h)]
              [(struct? x)
-              (when (eq? x (base-rtd))
-                (die 'fasl-write "base-rtd is not writable"))
-              (let ([rtd (struct-type-descriptor x)])
-                (cond
-                  [(eq? rtd (base-rtd))
-                   ;;; this is an rtd
-                   (make-graph (struct-type-name x) h)
-                   (make-graph (struct-type-symbol x) h)
-                   (for-each (lambda (x) (make-graph x h))
-                     (struct-type-field-names x))]
-                  [else
-                   ;;; this is a record
-                   (make-graph rtd h)
-                   (for-each 
-                     (lambda (name) 
-                       (make-graph ((struct-field-accessor rtd name) x) h))
-                     (struct-type-field-names rtd))]))]
+              (cond
+                [(eq? x (base-rtd))
+                 (die 'fasl-write "base-rtd is not writable")]
+                [(record-type-descriptor? x) 
+                 (make-graph (record-type-name x) h)
+                 (make-graph (record-type-parent x) h)
+                 (make-graph (record-type-uid x) h)
+                 (vector-for-each 
+                   (lambda (x) (make-graph x h))
+                   (record-type-field-names x))]
+                [else
+                 (let ([rtd (struct-type-descriptor x)])
+                   (cond
+                     [(eq? rtd (base-rtd))
+                      ;;; this is a struct rtd
+                      (make-graph (struct-type-name x) h)
+                      (make-graph (struct-type-symbol x) h)
+                      (for-each (lambda (x) (make-graph x h))
+                        (struct-type-field-names x))]
+                     [else
+                      ;;; this is a struct
+                      (make-graph rtd h)
+                      (let f ([i 0] [n (struct-length x)])
+                        (unless (= i n) 
+                          (make-graph (struct-ref x i) h)
+                          (f (+ i 1) n)))]))])]
              [(procedure? x)
               (let ([code ($closure-code x)])
                 (unless (fxzero? (code-freevars code))

@@ -75,7 +75,11 @@
 
   (define (record-type-uid x)
     (if (rtd? x)
-        (rtd-uid x)
+        (or (rtd-uid x)
+            (let ([g (gensym)])
+              (set-rtd-uid! x g) 
+              (intern-rtd! g x)
+              g))
         (die 'record-type-uid "not an rtd" x)))
 
   (define (record-type-sealed? x)
@@ -90,7 +94,7 @@
 
   (define (record-type-generative? x)
     (if (rtd? x)
-        (not (rtd-sealed? x))
+        (not (rtd-sealed? x)) ;;; FIXME: bogus?
         (die 'record-type-generative? "not an rtd" x)))
 
   (define (record-type-field-names x)

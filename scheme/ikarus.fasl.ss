@@ -314,6 +314,28 @@
                            (cons x (f (- n 1))))])))])
              (when m (put-mark m ls))
              ls)]
+          [(#\W) ;;; r6rs record type descriptor
+           (let* ([name    (read)]
+                  [parent  (read)]
+                  [uid     (read)]
+                  [sealed? (read)]
+                  [opaque? (read)]
+                  [n       (read)]
+                  [fields  (make-vector n)])
+             (let f ([i 0])
+               (cond
+                 [(= i n) 
+                  (let ([rtd (make-record-type-descriptor
+                               name parent uid sealed? opaque?
+                               fields)])
+                    (when m (put-mark m rtd))
+                    rtd)]
+                 [else
+                  (let* ([field-mutable? (read)]
+                         [field-name (read)])
+                    (vector-set! fields i 
+                      (list (if field-mutable? 'mutable 'immutable) field-name))
+                    (f (+ i 1)))])))]
           [else
            (die who "Unexpected char as a fasl object header" h)])))
     (read))
