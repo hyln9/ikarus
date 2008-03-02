@@ -2710,11 +2710,11 @@
            (- (simplest^ (- n^) d^ (- n) d)))]
         [else 1]))
     (define (simplest^ n d n^ d^)
-      (let-values ([(q r) (quotient+remainder n d)])
+      (let-values ([(q r) (div-and-mod n d)])
         (if (= r 0) 
             q
-            (let-values ([(q^ r^) (quotient+remainder n^ d^)])
-              (if (= q q^) 
+            (let-values ([(q^ r^) (div-and-mod n^ d^)])
+              (if (= q q^)
                   (let ([v (simplest^ d^ r^ d r)])
                     (let ([n^^ (numerator v)] [d^^ (denominator v)])
                       (/ (+ (* q n^^) d^^) n^^)))
