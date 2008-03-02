@@ -482,7 +482,7 @@
     (let ([n ($ratnum-n num)] [d ($ratnum-d num)])
       (if (> n 0) 
           (pos n d)
-          (- (pos n d)))))
+          (- (pos (- n) d)))))
 
 
   (define binary+
