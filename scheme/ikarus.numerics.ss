@@ -676,7 +676,7 @@
       [(a)
        (cond
          [(fixnum? a) a]
-         [(bignum? a) a]
+         [(number? a) a]
          [else (die '+ "not a number" a)])]
       [() 0]
       [(a b c d . e*)
@@ -730,7 +730,7 @@
       [(a)
        (cond
          [(fixnum? a) a]
-         [(bignum? a) a]
+         [(number? a) a]
          [else (die '* "not a number" a)])]
       [() 1]
       [(a b c d . e*)
