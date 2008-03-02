@@ -95,7 +95,7 @@
                        (cond
                          [(null? d)
                           (die 'ikarus
-                            "--compile-r6rs-script requires a script name")]
+                            "--compile-dependencies requires a script name")]
                          [else
                           (values '() (car d) 'compile (cdr d))]))]
                     [else
