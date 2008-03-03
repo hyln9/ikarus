@@ -1873,42 +1873,48 @@
       (cond
         [(flonum? x) (foreign-call "ikrt_fl_sin" x)]
         [(fixnum? x) (foreign-call "ikrt_fx_sin" x)]
-        [else (die 'sin "BUG: unsupported" x)])))
+        [(number? x) (sin (inexact x))]
+        [else (die 'sin "not a number" x)])))
 
   (define cos
     (lambda (x)
       (cond
         [(flonum? x) (foreign-call "ikrt_fl_cos" x)]
         [(fixnum? x) (foreign-call "ikrt_fx_cos" x)]
-        [else (die 'cos "BUG: unsupported" x)])))
+        [(number? x) (cos (inexact x))]
+        [else (die 'cos "not a number" x)])))
 
   (define tan
     (lambda (x)
       (cond
         [(flonum? x) (foreign-call "ikrt_fl_tan" x)]
         [(fixnum? x) (foreign-call "ikrt_fx_tan" x)]
-        [else (die 'tan "BUG: unsupported" x)])))
+        [(number? x) (tan (inexact x))]
+        [else (die 'tan "not a number" x)])))
 
   (define asin
     (lambda (x)
       (cond
         [(flonum? x) (foreign-call "ikrt_fl_asin" x)]
         [(fixnum? x) (foreign-call "ikrt_fx_asin" x)]
-        [else (die 'asin "BUG: unsupported" x)])))
+        [(number? x) (asin (inexact x))]
+        [else (die 'asin "not a number" x)])))
 
   (define acos
     (lambda (x)
       (cond
         [(flonum? x) (foreign-call "ikrt_fl_acos" x)]
         [(fixnum? x) (foreign-call "ikrt_fx_acos" x)]
-        [else (die 'acos "BUG: unsupported" x)])))
+        [(number? x) (acos (inexact x))]
+        [else (die 'acos "not a number" x)])))
 
   (define atan
     (lambda (x)
       (cond
         [(flonum? x) (foreign-call "ikrt_fl_atan" x)]
         [(fixnum? x) (foreign-call "ikrt_fx_atan" x)]
-        [else (die 'atan "BUG: unsupported" x)])))
+        [(number? x) (atan (inexact x))]
+        [else (die 'atan "not a number" x)])))
 
   (define sqrt
     (lambda (x)
