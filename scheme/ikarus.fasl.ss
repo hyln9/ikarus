@@ -336,6 +336,34 @@
                     (vector-set! fields i 
                       (list (if field-mutable? 'mutable 'immutable) field-name))
                     (f (+ i 1)))])))]
+          [(#\b) ;;; bignum
+           (let ([i (read-int p)]) 
+             (let ([bytes (if (< i 0) (- i) i)])
+               (let ([bv (get-bytevector-n p bytes)])
+                 (let ([n (bytevector-uint-ref bv 0 'little bytes)])
+                   (let ([n (if (< i 0) (- n) n)])
+                     (when m (put-mark m n))
+                     n)))))]
+          [(#\f) ;;; flonum
+           (let ()
+             (import (ikarus system $flonums))
+             (let ([x ($make-flonum)])
+               ($flonum-set! x 7 (get-u8 p))
+               ($flonum-set! x 6 (get-u8 p))
+               ($flonum-set! x 5 (get-u8 p))
+               ($flonum-set! x 4 (get-u8 p))
+               ($flonum-set! x 3 (get-u8 p))
+               ($flonum-set! x 2 (get-u8 p))
+               ($flonum-set! x 1 (get-u8 p))
+               ($flonum-set! x 0 (get-u8 p))
+               (when m (put-mark m x))
+               x))]
+          [(#\r) ;;; ratnum
+           (let* ([den (read)]
+                  [num (read)])
+             (let ([x (/ num den)])
+               (when m (put-mark m x))
+               x))]
           [else
            (die who "Unexpected char as a fasl object header" h)])))
     (read))

@@ -35,6 +35,7 @@
         (tests io)
         (tests case-folding)
         (tests sorting)
+        (tests fasl)
         )
 
 (define (test-exact-integer-sqrt)
@@ -77,4 +78,5 @@
 (test-bitwise-bit-count)
 (test-io)
 (test-sorting)
+(test-fasl)
 (printf "Happy Happy Joy Joy\n")
