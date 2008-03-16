@@ -289,7 +289,7 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
     ref(code, disp_code_code_size) = fix(code_size);
     ref(code, disp_code_freevars) = freevars;
     ref(code, disp_code_annotation) = annotation;
-    fasl_read_buf(p, (void*)(long)code+disp_code_data, code_size);
+    fasl_read_buf(p, (void*)(disp_code_data+(long)code), code_size);
     if(put_mark_index){
       p->marks[put_mark_index] = code+vector_tag;
     }

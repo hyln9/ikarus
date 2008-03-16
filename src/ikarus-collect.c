@@ -1044,7 +1044,7 @@ add_object_proc(gc_t* gc, ikptr x)
       /* real vector */
       //fprintf(stderr, "X=0x%08x, FST=0x%08x\n", (int)x, (int)fst);
       ikptr size = fst;
-      assert(size >= 0);
+      assert(((long)size) >= 0);
       ikptr memreq = align(size + disp_vector_data);
       if(memreq >= pagesize){
         if((t & large_object_mask) == large_object_tag){
@@ -1654,7 +1654,7 @@ scan_dirty_code_page(gc_t* gc, long int page_idx, unsigned int mask){
       segment_vec = gc->segment_vector;
       ikptr rvec = ref(p, disp_code_reloc_vector);
       ikptr len = ref(rvec, off_vector_length);
-      assert(len >= 0);
+      assert(((long)len) >= 0);
       long int i;
       unsigned long int code_d = segment_vec[page_index(rvec)];
       for(i=0; i<len; i+=wordsize){

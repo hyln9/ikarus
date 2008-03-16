@@ -985,4 +985,4 @@ ikptr
 ikrt_debug(ikptr x){
   fprintf(stderr, "DEBUG 0x%016lx\n", (long int)x);
   return 0;
-};
+}
