@@ -380,10 +380,12 @@
             (cond
               [(eof-object? c) (multiline-error p)]
               [($char= #\| c) 
-               (let ([c (read-char p)])
+               (let g ([c (read-char p)] [ac ac])
                  (cond
                    [(eof-object? c) (multiline-error p)]
                    [($char= #\# c) ac]
+                   [($char= #\| c)
+                    (g (read-char p) (cons c ac))]
                    [else (f p (cons c ac))]))]
               [($char= #\# c)
                (let ([c (read-char p)])
