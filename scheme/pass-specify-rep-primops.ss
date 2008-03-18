@@ -1295,6 +1295,42 @@
      (cogen-pred-$fxzero? x))]
   [(E x) (interrupt-unless (cogen-pred-fixnum? x))])
 
+
+(define-primop fxarithmetic-shift-left safe
+  [(V x n) 
+   (struct-case n 
+     [(constant i) 
+      (cond
+        [(and (fixnum? i)
+              (>= i 0)
+              (< i (- (* wordsize 8) fx-shift)))
+         (with-tmp ([x (T x)])
+           (assert-fixnum x)
+           (cond
+             [(< i 6) 
+              (let f ([i i]) 
+                (cond
+                  [(zero? i) x]
+                  [else (prm 'sll/overflow (f (- i 1)) (K 1))]))]
+             [else 
+              (with-tmp ([x2 (prm 'sll x (K i))])
+                (interrupt-unless (prm '= (prm 'sra x2 (K i)) x))
+                x2)]))]
+        [else
+         (interrupt)])]
+     [else 
+      (with-tmp ([x (T x)] [n (T n)])
+        (assert-fixnums x (list n))
+        (with-tmp ([n (prm 'sra n (K fx-shift))])
+          (interrupt-when 
+            (prm '< n (K 0)))
+          (interrupt-when 
+            (prm '>= n (K (- (* wordsize 8) fx-shift))))
+          (with-tmp ([x2 (prm 'sll x n)])
+            (interrupt-unless (prm '= (prm 'sra x2 n) x))
+            x2)))])])
+
+
 (define (log2 n) 
   (let f ([n n] [i 0])
     (cond
@@ -1302,6 +1338,8 @@
        (f (fxsra n 1) (+ i 1))]
       [(= n 1) i]
       [else #f])))
+
+
 
 (define-primop div safe
   [(V x n) 

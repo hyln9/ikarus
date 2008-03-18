@@ -568,6 +568,7 @@
     [make-promise                                ]
     [make-traced-procedure                       i]
     [error@fx+                                   ]
+    [error@fxarithmetic-shift-left               ]
     [error@fx*                                   ]
     [error@fx-                                   ]
     [error@add1                                  ]

@@ -514,7 +514,7 @@
                   (make-asm-instr 'cltd edx eax)
                   (make-asm-instr 'idiv edx (cadr rands))
                   (make-set d edx))))]
-         [(sll sra srl)
+         [(sll sra srl sll/overflow)
           (let ([a (car rands)] [b (cadr rands)])
             (cond
               [(constant? b)
@@ -1419,7 +1419,8 @@
                       (mark-nfv/frms-conf! d fs)
                       (R s vs rs fs (add-nfv d ns)))])]
                 [else (error who "invalid op d" (unparse x))])))] 
-         [(logand logor logxor sll sra srl int+ int- int* bswap!) 
+         [(logand logor logxor sll sra srl int+ int- int* bswap!
+           sll/overflow) 
           (cond
             [(var? d) 
              (cond
@@ -1665,7 +1666,8 @@
               sll sra srl bswap!
               cltd idiv int-/overflow int+/overflow int*/overflow
               fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
-              fl:from-int fl:shuffle fl:load-single fl:store-single)
+              fl:from-int fl:shuffle fl:load-single fl:store-single
+              sll/overflow)
             (make-asm-instr op (R d) (R s))]
            [(nop) (make-primcall 'nop '())]
            [else (error who "invalid op" op)])]
@@ -1888,7 +1890,8 @@
             (let ([s (set-rem d (set-union s (exception-live-set)))])
               (set-for-each (lambda (y) (add-edge! g d y)) s)
               (set-union (set-union (R v) (R d)) s))] 
-           [(logand logxor int+ int- int* logor sll sra srl bswap!)
+           [(logand logxor int+ int- int* logor sll sra srl bswap!
+             sll/overflow)
             (let ([s (set-rem d s)])
               (set-for-each (lambda (y) (add-edge! g d y)) s)
               (set-union (set-union (R v) (R d)) s))]
@@ -2234,7 +2237,7 @@
               [(disp? b)
                (error who "invalid arg to idiv" b)]
               [else x])]
-           [(sll sra srl)
+           [(sll sra srl sll/overflow)
             (unless (or (constant? b)
                         (eq? b ecx))
               (error who "invalid shift" b))
@@ -2552,6 +2555,12 @@
           (let ([L (or (exception-label) 
                        (error who "no exception label"))])
             (cons* `(subl ,(R s) ,(R d)) 
+                   `(jo ,L)
+                   ac))]
+         [(sll/overflow)
+          (let ([L (or (exception-label) 
+                       (error who "no exception label"))])
+            (cons* `(sall ,(R/cl s) ,(R d))
                    `(jo ,L)
                    ac))]
          [(int*/overflow)

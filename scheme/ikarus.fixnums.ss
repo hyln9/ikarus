@@ -26,7 +26,9 @@
           fixnum->string 
           fxarithmetic-shift-left fxarithmetic-shift-right fxarithmetic-shift
           fxmin fxmax
-          error@fx+ error@fx* error@fx- error@fxadd1 error@fxsub1)
+          error@fx+ error@fx* error@fx- error@fxadd1 error@fxsub1
+          error@fxarithmetic-shift-left
+          )
   (import 
     (ikarus system $fx)
     (ikarus system $chars)
@@ -267,16 +269,22 @@
         (die 'fxsll "negative shift not allowed" y))
       ($fxsll x y))) 
 
+  (define (error@fxarithmetic-shift-left x y)
+    (unless (fixnum? x)
+      (die 'fxarithmetic-shift-left "not a fixnum" x))
+    (unless (fixnum? y)
+      (die 'fxarithmetic-shift-left "not a fixnum" y))
+    (unless ($fx>= y 0)
+      (die 'fxarithmetic-shift-left "negative shift not allowed" y))
+    (unless ($fx< y (fixnum-width))
+      (die 'fxarithmetic-shift-left 
+        "shift is not less than fixnum-width" y))
+    (die 'fxarithmetic-shift-left "overflow" x y))
 
   (define fxarithmetic-shift-left
     (lambda (x y) 
-      (unless (fixnum? x)
-        (die 'fxarithmetic-shift-left "not a fixnum" x))
-      (unless (fixnum? y)
-        (die 'fxarithmetic-shift-left "not a fixnum" y))
-      (unless ($fx>= y 0)
-        (die 'fxarithmetic-shift-left "negative shift not allowed" y))
-      ($fxsll x y)))
+      (import (ikarus))
+      (fxarithmetic-shift-left x y)))
 
   (define fxarithmetic-shift
     (lambda (x y) 
