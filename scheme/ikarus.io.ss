@@ -64,6 +64,7 @@
     process 
     
     tcp-connect tcp-connect-nonblocking
+    udp-connect udp-connect-nonblocking
     )
 
   
@@ -116,7 +117,9 @@
       port-id
       input-port-byte-position
       process
-      tcp-connect tcp-connect-nonblocking))
+      tcp-connect tcp-connect-nonblocking
+      udp-connect udp-connect-nonblocking
+      ))
 
   (module UNSAFE  
     (fx< fx<= fx> fx>= fx= fx+ fx-
@@ -1181,7 +1184,8 @@
        #| 19 |# "file already exists"
        #| 20 |# "invalid file name"
        #| 21 |# "non-blocking operation would block"
-       #| 22 |# "broken pipe (e.g., writing to a closed process or socket)"))
+       #| 22 |# "broken pipe (e.g., writing to a closed process or socket)"
+       #| 23 |# "connection refused"))
 
   (define (io-error who id err)
     (let ([err (fxnot err)])
@@ -2052,7 +2056,7 @@
 
   (define (socket->ports socket who id)
     (if (< socket 0)
-        (io-error 'tcp-connect id socket)
+        (io-error who id socket)
         (let ([close
                (let ([closed-once? #f])
                  (lambda () 
@@ -2065,18 +2069,22 @@
             (fh->input-port socket
                id input-file-buffer-size #f close who)))))
 
-  (define (tcp-connect host srvc)
-    (socket->ports 
-      (foreign-call "ikrt_tcp_connect" 
-        (string->utf8 host) (string->utf8 srvc))
-      'tcp-connect
-      (string-append host ":" srvc)))
+  (define-syntax define-connector 
+    (syntax-rules ()
+      [(_ who foreign-name)
+       (define (who host srvc)
+         (unless (and (string? host) (string? srvc))
+           (die 'who "host and service must both be strings" host srvc))
+         (socket->ports 
+           (foreign-call foreign-name
+             (string->utf8 host) (string->utf8 srvc))
+           'who
+           (string-append host ":" srvc)))]))
 
-  (define (tcp-connect-nonblocking host srvc)
-    (socket->ports 
-      (foreign-call "ikrt_tcp_connect_nonblocking" 
-        (string->utf8 host) (string->utf8 srvc))
-      'tcp-connect-nonblocking
-      (string-append host ":" srvc)))
+  (define-connector tcp-connect             "ikrt_tcp_connect")
+  (define-connector udp-connect             "ikrt_udp_connect")
+  (define-connector tcp-connect-nonblocking "ikrt_tcp_connect_nonblocking")
+  (define-connector udp-connect-nonblocking "ikrt_udp_connect_nonblocking")
+
   )
 

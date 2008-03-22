@@ -25,12 +25,17 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <string.h>
 
 #include "ikarus-data.h"
 
 ikptr 
 ikrt_io_error(){
-  switch(errno){
+  int err = errno;
+#if 0
+  fprintf(stderr, "errno=%d %s\n", err, strerror(err));
+#endif
+  switch(err){
     case EBADF           : return fix(-2);
     case EINTR           : return fix(-3);
     case ENOTDIR         : return fix(-4);
@@ -53,6 +58,7 @@ ikrt_io_error(){
     case EINVAL          : return fix(-21);
     case EAGAIN          : return fix(-22); /* hardcoded in ikarus.io.ss */
     case EPIPE           : return fix(-23);
+    case ECONNREFUSED    : return fix(-24);
   }
   return fix(-1);
 }
@@ -107,13 +113,18 @@ ikrt_open_output_fd(ikptr fn, ikptr ikopts, ikpcb* pcb){
 }
 
 
-
 ikptr
 ikrt_read_fd(ikptr fd, ikptr bv, ikptr off, ikptr cnt, ikpcb* pcb){
+#if 0
+  fprintf(stderr, "READ: %d\n", unfix(fd));
+#endif
   ssize_t bytes = 
    read(unfix(fd),
         (char*)(long)(bv+off_bytevector_data+unfix(off)), 
         unfix(cnt));
+#if 0
+  fprintf(stderr, "BYTES: %d\n", bytes);
+#endif
   if(bytes >= 0){
     return fix(bytes);
   } else {
@@ -136,8 +147,8 @@ ikrt_write_fd(ikptr fd, ikptr bv, ikptr off, ikptr cnt, ikpcb* pcb){
 
 
 
-ikptr
-ikrt_tcp_connect(ikptr host, ikptr srvc, ikpcb* pcb){
+static ikptr
+do_connect(ikptr host, ikptr srvc, int socket_type){
   struct addrinfo* info;
   int err = getaddrinfo((char*)(long)(host+off_bytevector_data),
                         (char*)(long)(srvc+off_bytevector_data),
@@ -149,7 +160,7 @@ ikrt_tcp_connect(ikptr host, ikptr srvc, ikpcb* pcb){
   struct addrinfo* i = info;
   int sock = -1;
   while(i){
-    if(i->ai_socktype != SOCK_STREAM){
+    if(i->ai_socktype != socket_type){
       i = i->ai_next;
     } else {
       int s = socket(i->ai_family, i->ai_socktype, i->ai_protocol);
@@ -171,8 +182,17 @@ ikrt_tcp_connect(ikptr host, ikptr srvc, ikpcb* pcb){
 }
 
 ikptr
-ikrt_tcp_connect_nonblocking(ikptr host, ikptr srvc, ikpcb* pcb){
-  ikptr fdptr = ikrt_tcp_connect(host, srvc, pcb);
+ikrt_tcp_connect(ikptr host, ikptr srvc, ikpcb* pcb){
+  return do_connect(host, srvc, SOCK_STREAM);
+}
+
+ikptr
+ikrt_udp_connect(ikptr host, ikptr srvc, ikpcb* pcb){
+  return do_connect(host, srvc, SOCK_DGRAM);
+}
+
+static ikptr
+do_unblock(ikptr fdptr){
   int fd = unfix(fdptr);
   if(fd >= 0){
     /* connected alright */
@@ -185,6 +205,17 @@ ikrt_tcp_connect_nonblocking(ikptr host, ikptr srvc, ikpcb* pcb){
   }
   return fdptr;
 }
+
+ikptr
+ikrt_tcp_connect_nonblocking(ikptr host, ikptr srvc, ikpcb* pcb){
+  return do_unblock(ikrt_tcp_connect(host, srvc, pcb));
+}
+
+ikptr
+ikrt_udp_connect_nonblocking(ikptr host, ikptr srvc, ikpcb* pcb){
+  return do_unblock(ikrt_udp_connect(host, srvc, pcb));
+}
+  
 
 ikptr
 ikrt_file_ctime(ikptr filename, ikptr res){
