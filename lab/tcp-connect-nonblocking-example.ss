@@ -12,22 +12,15 @@
 ;;; it succeeds.  Pretty lame at this point, but it works.
 
 (define (http-cat host)
-  (with-exception-handler
-    (lambda (c)
-      ;;; just return and let it retry until it succeeds
-      (print-condition c)
-      (unless (i/o-would-block-condition? c)
-        (raise c)))
-    (lambda ()
-      (let-values ([(op ip) (tcp-connect-nonblocking host "http")])
-        (let ([op (transcoded-port op (native-transcoder))]
-              [ip (transcoded-port ip (native-transcoder))])
-          (display "GET /\n" op)
-          (display (get-string-all ip))
-          (close-input-port ip)
-          (close-output-port op))))))
+  (let-values ([(op ip) (tcp-connect-nonblocking host "http")])
+    (let ([op (transcoded-port op (native-transcoder))]
+          [ip (transcoded-port ip (native-transcoder))])
+      (display "GET /\n" op)
+      (display (get-string-all ip))
+      (newline)
+      (close-input-port ip)
+      (close-output-port op))))
 
 (http-cat "www.google.com")
-(newline)
 ;(http-cat "127.0.0.1")
 

@@ -201,6 +201,18 @@ ikrt_make_fd_nonblocking(ikptr fdptr, ikpcb* pcb){
   return 0;
 }
 
+ikptr 
+ikrt_select(ikptr fds, ikptr rfds, ikptr wfds, ikptr xfds, ikpcb* pcb){
+  int rv = select(unfix(fds),
+                  (fd_set*)(rfds + off_bytevector_data),
+                  (fd_set*)(wfds + off_bytevector_data),
+                  (fd_set*)(xfds + off_bytevector_data),
+                  NULL);
+  if(rv < 0){
+    return ikrt_io_error();
+  } 
+  return fix(rv);
+}
 
 ikptr
 ikrt_file_ctime(ikptr filename, ikptr res){
