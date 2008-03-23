@@ -215,6 +215,60 @@ ikrt_select(ikptr fds, ikptr rfds, ikptr wfds, ikptr xfds, ikpcb* pcb){
 }
 
 ikptr
+ikrt_listen(ikptr port, ikpcb* pcb){
+  
+  int sock = socket(AF_INET, SOCK_STREAM, 0);
+  if(sock < 0){
+    return ikrt_io_error();
+  }
+
+  struct sockaddr_in servaddr;
+  memset(&servaddr, 0, sizeof(struct sockaddr_in));
+  servaddr.sin_family = AF_INET;
+  servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+  servaddr.sin_port = htons(unfix(port));
+
+  int err;
+
+  int reuse = 1;
+  err = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int));
+  if(err < 0){
+    return ikrt_io_error();
+  }
+
+
+  err = bind(sock, (struct sockaddr *)&servaddr, sizeof(servaddr));
+  if(err < 0){
+    return ikrt_io_error();
+  }
+
+  err = listen(sock, 1024);
+  if(err < 0){
+    return ikrt_io_error();
+  }
+  return fix(sock);
+}
+
+ikptr
+ikrt_accept(ikptr s, ikpcb* pcb){
+  int sock = accept(unfix(s), NULL, NULL);
+  if(sock < 0){
+    return ikrt_io_error();
+  } 
+  return fix(sock);
+}
+
+ikptr
+ikrt_shutdown(ikptr s, ikpcb* pcb){
+  int err = shutdown(unfix(s), SHUT_RDWR);
+  if(err < 0){
+    return ikrt_io_error();
+  } 
+  return 0;
+}
+
+
+ikptr
 ikrt_file_ctime(ikptr filename, ikptr res){
   struct stat s;
   int err = stat((char*)(filename + off_bytevector_data), &s);

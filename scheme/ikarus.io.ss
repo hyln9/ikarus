@@ -65,6 +65,7 @@
     
     tcp-connect tcp-connect-nonblocking
     udp-connect udp-connect-nonblocking
+    tcp-server-socket accept-connection close-tcp-server-socket 
     )
 
   
@@ -119,6 +120,7 @@
       process
       tcp-connect tcp-connect-nonblocking
       udp-connect udp-connect-nonblocking
+      tcp-server-socket accept-connection close-tcp-server-socket 
       ))
 
   (module UNSAFE  
@@ -2187,7 +2189,41 @@
               ls)))))
     )
 
+  
+  (define-struct tcp-server (portnum fd))
+  
+  (define (tcp-server-socket portnum) 
+    (unless (fixnum? portnum)
+      (error 'tcp-server-socket "not a fixnum" portnum))
+    (let ([sock (foreign-call "ikrt_listen" portnum)])
+      (cond
+        [(fx>= sock 0) (make-tcp-server portnum sock)]
+        [else (die 'tcp-server-socket "failed to start server")])))
 
+  (define (accept-connection s)
+    (define who 'accept-connection)
+    (unless (tcp-server? s) 
+      (die who "not a tcp server" s))
+    (let ([fd (tcp-server-fd s)])
+      (unless fd 
+        (die who "server is closed" s))
+      (socket->ports 
+        (foreign-call "ikrt_accept" fd)
+        'accept-connection
+        #f
+        #t)))
+
+  (define (close-tcp-server-socket s)
+    (define who 'close-tcp-server-socket)
+    (unless (tcp-server? s) 
+      (die who "not a tcp server" s))
+    (let ([fd (tcp-server-fd s)])
+      (unless fd 
+        (die who "server is closed" s))
+      ;(file-close-proc who fd)
+      (let ([rv (foreign-call "ikrt_shutdown" fd)])
+        (when (fx< rv 0)
+          (die who "failed to shutdown")))))
 
   (set-fd-nonblocking 0 'init '*stdin*)
   )
