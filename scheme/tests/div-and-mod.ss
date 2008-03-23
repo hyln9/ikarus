@@ -71,7 +71,18 @@
     (test +10 -4)
     (test -10 +4)
     (test -10 -4)
-    
+ 
+    (test +3 +5/6)
+    (test -3 +5/6)
+    (test +3 -5/6)
+    (test -3 -5/6)
+
+    (test +3 +7/11)
+    (test -3 +7/11)
+    (test +3 -7/11)
+    (test -3 -7/11)
+
+   
     (test (least-fixnum)    +1)
     (test (least-fixnum)    -1) ;; overflows
     (test (greatest-fixnum) +1)
