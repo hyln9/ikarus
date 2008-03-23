@@ -2054,7 +2054,7 @@
                 cmd input-file-buffer-size #f #t
                 'process)))))
 
-  (define (socket->ports socket who id)
+  (define (socket->ports socket who id block?)
     (if (< socket 0)
         (io-error who id socket)
         (let ([close
@@ -2063,6 +2063,10 @@
                    (if closed-once?
                        ((file-close-proc id socket))
                        (set! closed-once? #t))))])
+          (unless block?
+            (let ([rv (foreign-call "ikrt_make_fd_nonblocking" socket)])
+              (unless (eq? rv 0) 
+                (io-error who id socket))))
           (values 
             (fh->output-port socket
                id output-file-buffer-size #f close who)
@@ -2071,7 +2075,7 @@
 
   (define-syntax define-connector 
     (syntax-rules ()
-      [(_ who foreign-name)
+      [(_ who foreign-name block?)
        (define (who host srvc)
          (unless (and (string? host) (string? srvc))
            (die 'who "host and service must both be strings" host srvc))
@@ -2079,12 +2083,13 @@
            (foreign-call foreign-name
              (string->utf8 host) (string->utf8 srvc))
            'who
-           (string-append host ":" srvc)))]))
+           (string-append host ":" srvc)
+           block?))]))
 
-  (define-connector tcp-connect             "ikrt_tcp_connect")
-  (define-connector udp-connect             "ikrt_udp_connect")
-  (define-connector tcp-connect-nonblocking "ikrt_tcp_connect_nonblocking")
-  (define-connector udp-connect-nonblocking "ikrt_udp_connect_nonblocking")
+  (define-connector tcp-connect             "ikrt_tcp_connect" #t)
+  (define-connector udp-connect             "ikrt_udp_connect" #t)
+  (define-connector tcp-connect-nonblocking "ikrt_tcp_connect" #f)
+  (define-connector udp-connect-nonblocking "ikrt_udp_connect" #f)
 
   )
 

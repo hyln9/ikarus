@@ -15,6 +15,7 @@
   (with-exception-handler
     (lambda (c)
       ;;; just return and let it retry until it succeeds
+      (print-condition c)
       (unless (i/o-would-block-condition? c)
         (raise c)))
     (lambda ()

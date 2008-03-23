@@ -32,9 +32,9 @@
 ikptr 
 ikrt_io_error(){
   int err = errno;
-//#if 0
+#if 0
   fprintf(stderr, "errno=%d %s\n", err, strerror(err));
-//#endif
+#endif
   switch(err){
     case EBADF           : return fix(-2);
     case EINTR           : return fix(-3);
@@ -191,31 +191,16 @@ ikrt_udp_connect(ikptr host, ikptr srvc, ikpcb* pcb){
   return do_connect(host, srvc, SOCK_DGRAM);
 }
 
-static ikptr
-do_unblock(ikptr fdptr){
+ikptr 
+ikrt_make_fd_nonblocking(ikptr fdptr, ikpcb* pcb){
   int fd = unfix(fdptr);
-  if(fd >= 0){
-    /* connected alright */
-    int err = fcntl(fd, F_SETFL, O_NONBLOCK);
-    if(err == -1){
-      ikptr errptr = ikrt_io_error();
-      close(fd);
-      return errptr;
-    }
+  int err = fcntl(fd, F_SETFL, O_NONBLOCK);
+  if(err == -1){
+    return ikrt_io_error();
   }
-  return fdptr;
+  return 0;
 }
 
-ikptr
-ikrt_tcp_connect_nonblocking(ikptr host, ikptr srvc, ikpcb* pcb){
-  return do_unblock(ikrt_tcp_connect(host, srvc, pcb));
-}
-
-ikptr
-ikrt_udp_connect_nonblocking(ikptr host, ikptr srvc, ikpcb* pcb){
-  return do_unblock(ikrt_udp_connect(host, srvc, pcb));
-}
-  
 
 ikptr
 ikrt_file_ctime(ikptr filename, ikptr res){
