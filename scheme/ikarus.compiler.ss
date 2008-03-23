@@ -745,6 +745,7 @@
   body)
 |#
 
+
 (define scc-letrec (make-parameter #t))
 
 (define (optimize-letrec/scc x)
@@ -770,35 +771,38 @@
                    e*)))
           v* e**)
         v*))
-    (define (compute-sccs! v*)
-      (define all-sccs '())
-      (define (visit v i) 
-        (set-node-lowlink! v i)
-        (set-node-root! v v)
-        (set-node-collection! v '())
-        (for-each 
-          (lambda (v^)
-            (unless (node-done v^)
-              (unless (node-lowlink v^)
-                (visit v^ (+ i 1)))
-              (when (< (node-lowlink v^) (node-lowlink v))
-                (set-node-lowlink! v (node-lowlink v^))
-                (set-node-root! v (node-root v^)))))
-          (node-link* v))
-        (let ([root (node-root v)])
-          (let ([nodes (cons v (node-collection root))])
-            (cond
-              [(eq? v root)
-               (set! all-sccs (cons nodes all-sccs))
-               (for-each (lambda (x) (set-node-done! x #t)) nodes)]
-              [else
-               (set-node-collection! root 
-                 (append (node-collection v) nodes))]))))
-      (for-each (lambda (v) (unless (node-done v) (visit v 0))) v*)
-      (reverse all-sccs))
+    (define (compute-sccs v*) ; Tarjan's algorithm
+      (define scc* '())
+      (define (compute-sccs v)
+        (define index 0)
+        (define stack '())
+        (define (tarjan v)
+          (let ([v-index index])
+            (set-node-root! v v-index)
+            (set! stack (cons v stack))
+            (set! index (fx+ index 1))
+            (for-each
+              (lambda (v^)
+                (unless (node-done v^)
+                  (unless (node-root v^) (tarjan v^))
+                  (set-node-root! v (fxmin (node-root v) (node-root v^)))))
+              (node-link* v))
+            (when (fx= (node-root v) v-index)
+              (set! scc*
+                (cons
+                  (let f ([ls stack])
+                    (let ([v^ (car ls)])
+                      (set-node-done! v^ #t)
+                      (cons v^ (if (eq? v^ v)
+                                   (begin (set! stack (cdr ls)) '())
+                                   (f (cdr ls))))))
+                  scc*)))))
+        (tarjan v))
+      (for-each (lambda (v) (unless (node-done v) (compute-sccs v))) v*)
+      (reverse scc*))
     (define (get-sccs-in-order n* e** data*)
       (let ([G (create-graph n* e** data*)])
-        (let ([sccs (compute-sccs! G)])
+        (let ([sccs (compute-sccs G)])
           (map (lambda (scc) (map node-data scc)) sccs)))))
   (define (gen-letrecs scc* ordered? body) 
     (define (mkfix b* body)
@@ -950,6 +954,8 @@
       [(constant) x]
       [(var) 
        (mark-free x bc)
+       (when (var-assigned x) 
+         (mark-complex bc))
        x]
       [(assign lhs rhs)
        (set-var-assigned! lhs #t)
