@@ -32,9 +32,9 @@
 ikptr 
 ikrt_io_error(){
   int err = errno;
-#if 0
+//#if 0
   fprintf(stderr, "errno=%d %s\n", err, strerror(err));
-#endif
+//#endif
   switch(err){
     case EBADF           : return fix(-2);
     case EINTR           : return fix(-3);

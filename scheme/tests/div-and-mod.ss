@@ -28,7 +28,22 @@
     (test +10 +4)
     (test +10 -4)
     (test -10 +4)
-    (test -10 -4))
+    (test -10 -4)
+    
+    (test +3 +5/6)
+    (test -3 +5/6)
+    (test +3 -5/6)
+    (test -3 -5/6)
+
+    (test +3 +7/11)
+    (test -3 +7/11)
+    (test +3 -7/11)
+    (test -3 -7/11)
+
+
+
+
+    )
   
 
   (define (test-div0-and-mod0)

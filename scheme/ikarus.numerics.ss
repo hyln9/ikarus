@@ -2776,9 +2776,14 @@
           [(or (fixnum? x) (bignum? x)) 
            (values x 0)]
           [else
-           (let-values ([(a b)
-                         (int-div-and-mod (numerator x) (denominator x))])
-             (values a (/ b m)))])))
+           (let ([n0 (numerator x)] [d0 (denominator x)])
+             (let ([q (quotient n0 d0)]) 
+               (let ([r (- n (* q m))])
+                 (if (>= r 0)
+                     (values q r)
+                     (if (> m 0)
+                         (values (- q 1) (+ r m))
+                         (values (+ q 1) (- r m)))))))])))
     (cond
       [(fixnum? m) 
        (cond
