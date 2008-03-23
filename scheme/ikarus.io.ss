@@ -65,7 +65,10 @@
     
     tcp-connect tcp-connect-nonblocking
     udp-connect udp-connect-nonblocking
-    tcp-server-socket accept-connection close-tcp-server-socket 
+    tcp-server-socket tcp-server-socket-nonblocking
+    accept-connection accept-connection-nonblocking
+    close-tcp-server-socket 
+    register-callback
     )
 
   
@@ -120,7 +123,10 @@
       process
       tcp-connect tcp-connect-nonblocking
       udp-connect udp-connect-nonblocking
-      tcp-server-socket accept-connection close-tcp-server-socket 
+      tcp-server-socket tcp-server-socket-nonblocking
+      accept-connection accept-connection-nonblocking
+      close-tcp-server-socket 
+      register-callback
       ))
 
   (module UNSAFE  
@@ -258,14 +264,14 @@
   (define ($make-custom-binary-port attrs init-size id 
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-bytevector buffer-size)])
-      ($make-port attrs 0 init-size bv #f id read! write! get-position
-                  set-position! close #f)))
+      ($make-port attrs 0 init-size bv #f id read! write! 
+                  #f #f close #f)))
 
   (define ($make-custom-textual-port attrs init-size id 
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-string buffer-size)])
-      ($make-port attrs 0 init-size bv #t id read! write! get-position
-                  set-position! close #f)))
+      ($make-port attrs 0 init-size bv #t id read! write! 
+                  #f #f close #f)))
 
   (define (make-custom-binary-input-port id 
             read! get-position set-position! close)
@@ -2199,19 +2205,37 @@
       (cond
         [(fx>= sock 0) (make-tcp-server portnum sock)]
         [else (die 'tcp-server-socket "failed to start server")])))
+  
+  (define (tcp-server-socket-nonblocking portnum) 
+    (let ([s (tcp-server-socket portnum)])
+      (set-fd-nonblocking (tcp-server-fd s) 
+        'tcp-server-socket-nonblocking
+        '#f)
+      s))
 
-  (define (accept-connection s)
-    (define who 'accept-connection)
+
+  (define (do-accept-connection s who blocking?)
     (unless (tcp-server? s) 
       (die who "not a tcp server" s))
     (let ([fd (tcp-server-fd s)])
       (unless fd 
         (die who "server is closed" s))
-      (socket->ports 
-        (foreign-call "ikrt_accept" fd)
-        'accept-connection
-        #f
-        #t)))
+      (let ([sock (foreign-call "ikrt_accept" fd)])
+        (cond
+          [(eq? sock EAGAIN-error-code)
+           (call/cc 
+             (lambda (k) 
+               (add-io-event fd k 'r)
+               (process-events)))
+           (do-accept-connection s who blocking?)]
+          [else
+           (socket->ports sock who #f blocking?)]))))
+
+  (define (accept-connection s)
+    (do-accept-connection s 'accept-connection #t))
+
+  (define (accept-connection-nonblocking s)
+    (do-accept-connection s 'accept-connection-nonblocking #f))
 
   (define (close-tcp-server-socket s)
     (define who 'close-tcp-server-socket)
@@ -2220,10 +2244,27 @@
     (let ([fd (tcp-server-fd s)])
       (unless fd 
         (die who "server is closed" s))
-      ;(file-close-proc who fd)
       (let ([rv (foreign-call "ikrt_shutdown" fd)])
         (when (fx< rv 0)
           (die who "failed to shutdown")))))
+
+  (define (register-callback what proc)
+    (define who 'register-callback) 
+    (unless (procedure? proc) 
+      (die who "not a procedure" proc))
+    (cond
+      [(output-port? what) 
+       (let ([c ($port-cookie what)])
+         (unless (fixnum? c) (die who "not a file-based port" what))
+         (add-io-event c proc 'w))]
+      [(input-port? what) 
+       (let ([c ($port-cookie what)])
+         (unless (fixnum? c) (die who "not a file-based port" what))
+         (add-io-event c proc 'r))]
+      [(tcp-server? what)
+       (add-io-event (tcp-server-fd what) proc 'r)]
+      [else (die who "invalid argument" what)]))
+
 
   (set-fd-nonblocking 0 'init '*stdin*)
   )
