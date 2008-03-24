@@ -2073,7 +2073,7 @@
   (define (set-fd-nonblocking fd who id)
     (let ([rv (foreign-call "ikrt_make_fd_nonblocking" fd)])
       (unless (eq? rv 0) 
-        (io-error who id fd))))
+        (io-error who id rv))))
 
   (define (socket->ports socket who id block?)
     (if (< socket 0)

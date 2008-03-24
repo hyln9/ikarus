@@ -15,19 +15,20 @@
   (case-lambda
     [(who port)
      (let ([s (tcp-server-socket-nonblocking
-                (or (string->number port) 
+                (or (string->number port)
                     (error who "invalid port number" port)))])
+       (printf "Listening on port ~a\n" port)
        (call/cc
-         (lambda (k) 
+         (lambda (k)
            (with-exception-handler k
-             (lambda () 
+             (lambda ()
                (let f ()
                  (let-values ([(op ip)
                                (accept-connection-nonblocking s)])
                    (let ([op (transcoded-port op (native-transcoder))]
                          [ip (transcoded-port ip (native-transcoder))])
-                     (register-callback op 
-                       (lambda () 
+                     (register-callback op
+                       (lambda ()
                          (display "What's your name? " op)
                          (let ([name (get-name ip)])
                            (printf "Connection from ~s\n" name)

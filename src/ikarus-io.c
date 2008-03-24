@@ -158,27 +158,29 @@ do_connect(ikptr host, ikptr srvc, int socket_type){
     return fix(-1);
   }
   struct addrinfo* i = info;
-  int sock = -1;
+  ikptr sock = fix(-1);
   while(i){
     if(i->ai_socktype != socket_type){
       i = i->ai_next;
     } else {
       int s = socket(i->ai_family, i->ai_socktype, i->ai_protocol);
       if(s < 0){
+        sock = ikrt_io_error();
         i = i->ai_next;
       } else {
         int err = connect(s, i->ai_addr, i->ai_addrlen);
         if(err < 0){
+          sock = ikrt_io_error();
           i = i->ai_next;
         } else {
-          sock = s;
+          sock = fix(s);
           i = 0;
         }
       }
     }
   }
   freeaddrinfo(info);
-  return fix(sock);
+  return sock;
 }
 
 ikptr
