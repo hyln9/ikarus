@@ -1301,7 +1301,11 @@
     (lambda (stx)
       (syntax-match stx ()
         ((_ expr)
-         (bless `(time-it (format "~s" ',expr) (lambda () ,expr)))))))
+         (let ([str 
+                (let-values ([(p e) (open-string-output-port)])
+                  (write (syntax->datum expr) p)
+                  (e))])
+           (bless `(time-it ,str (lambda () ,expr))))))))
   
   (define delay-macro
     (lambda (stx)
