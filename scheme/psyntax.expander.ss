@@ -1301,7 +1301,7 @@
     (lambda (stx)
       (syntax-match stx ()
         ((_ expr)
-         (bless `(time-it ',expr (lambda () ,expr)))))))
+         (bless `(time-it (format "~s" ',expr) (lambda () ,expr)))))))
   
   (define delay-macro
     (lambda (stx)
