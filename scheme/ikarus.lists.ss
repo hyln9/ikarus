@@ -606,7 +606,8 @@
             [(null? ls)
              (if (andmap null? ls*)
                  '()
-                 (die who "length mismatch"))])])))
+                 (die who "length mismatch"))]
+            [else (die who "not a list" ls)])])))
 
   (module (for-each)
     (define who 'for-each)
