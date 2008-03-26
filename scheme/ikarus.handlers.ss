@@ -62,8 +62,8 @@
       (die 'apply "not a procedure" x)))
   
   (define $incorrect-args-error-handler
-    (lambda (p n)
-      (die 'apply "incorrect number of arguments" n p)))
+    (lambda (p . ls)
+      (apply die 'apply "incorrect number of arguments" p ls)))
   
   (define $multiple-values-error
     (lambda args
