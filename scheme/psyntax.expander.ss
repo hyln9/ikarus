@@ -3735,7 +3735,8 @@
           (make-syntax-violation 
             (syntax->datum x)
             #f)
-          (extract-position-condition x)))))
+          (extract-position-condition x)
+          (extract-trace x)))))
 
   (define (extract-trace x)
     (define-condition-type &trace &condition
