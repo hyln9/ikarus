@@ -578,7 +578,9 @@
 
   (define (reset-input-port! p)
     (if (input-port? p) 
-        ($set-port-index! p ($port-size p))
+        (begin
+          ($set-port-index! p ($port-size p))
+          (unregister-callback p))
         (die 'reset-input-port! "not an input port" p)))
 
   (define (port-transcoder p)
@@ -2110,12 +2112,13 @@
   (define-connector tcp-connect-nonblocking "ikrt_tcp_connect" #f)
   (define-connector udp-connect-nonblocking "ikrt_udp_connect" #f)
 
-  (module (add-io-event process-events)
+  (module (add-io-event rem-io-event process-events)
     (define-struct t (fd proc type))
     ;;; callbacks
     (define pending '())
     (define out-queue '())
     (define in-queue '())
+
 
     (define (process-events) 
       (if (null? out-queue) 
@@ -2137,6 +2140,12 @@
     (define (add-io-event fd proc event-type) 
       (set! pending 
         (cons (make-t fd proc event-type) pending)))
+
+    (define (rem-io-event fd) 
+      (define (p x) (eq? (t-fd x) fd))
+      (set! pending (remp p pending))
+      (set! out-queue (remp p out-queue))
+      (set! in-queue (remp p in-queue)))
     
     (define (get-max-fd)
       (assert (pair? pending))
@@ -2247,6 +2256,21 @@
       (let ([rv (foreign-call "ikrt_shutdown" fd)])
         (when (fx< rv 0)
           (die who "failed to shutdown")))))
+
+  (define (unregister-callback what)
+    (define who 'unregister-callback)
+    (cond
+      [(output-port? what)
+       (let ([c ($port-cookie what)])
+         (unless (fixnum? c) (die who "not a file-based port" what))
+         (rem-io-event c))]
+      [(input-port? what)
+       (let ([c ($port-cookie what)])
+         (unless (fixnum? c) (die who "not a file-based port" what))
+         (rem-io-event c))]
+      [(tcp-server? what)
+       (rem-io-event (tcp-server-fd what))]
+      [else (die who "invalid argument" what)]))
 
   (define (register-callback what proc)
     (define who 'register-callback) 
