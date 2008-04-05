@@ -1197,7 +1197,7 @@
        #| 22 |# "broken pipe (e.g., writing to a closed process or socket)"
        #| 23 |# "connection refused"))
 
-  (define (io-error who id err)
+  (define (io-error who id err . other-conditions)
     (let ([err (fxnot err)])
       (let ([msg 
              (cond
@@ -1205,14 +1205,16 @@
                 (vector-ref io-errors-vec err)]
                [else "unknown error"])])
         (raise 
-          (condition
+          (apply condition
             (make-who-condition who)
+            (make-i/o-error)
             (case err
               [(6 9 18) (make-i/o-file-protection-error)]
               [(19)     (make-i/o-file-already-exists-error id)]
               [else     (condition)])
             (make-message-condition msg)
-            (make-i/o-filename-error id))))))
+            (make-i/o-filename-error id)
+            other-conditions)))))
 
   ;(define block-size 4096)
   ;(define block-size (* 4 4096))
@@ -1247,7 +1249,9 @@
                                      (add-io-event fd k 'r)
                                      (process-events)))
                                  (refill bv idx cnt)]
-                                [else (io-error 'read id bytes)])))])
+                                [else 
+                                 (io-error 'read id bytes
+                                   (make-i/o-write-error))])))])
                   refill)
                 #f ;;; write!
                 #f ;;; get-position
@@ -1286,7 +1290,9 @@
                                      (add-io-event fd k 'w)
                                      (process-events)))
                                  (refill bv idx cnt)]
-                                [else (io-error 'write id bytes)])))])
+                                [else 
+                                 (io-error 'write id bytes
+                                    (make-i/o-write-error))])))])
                   refill)
                 #f ;;; get-position
                 #f ;;; set-position!
