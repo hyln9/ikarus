@@ -356,6 +356,7 @@
     [console-error-port                          i]
     [console-output-port                         i]
     [reset-input-port!                           i]
+    [reset-output-port!                          i]
     [write-byte                                  i]
     [read-token                                  i]
     [printf                                      i]

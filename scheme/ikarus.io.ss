@@ -59,6 +59,7 @@
     output-port-name
     port-mode set-port-mode!
     reset-input-port!
+    reset-output-port!
     port-id
     input-port-byte-position
     process 
@@ -118,6 +119,7 @@
       output-port-name
       port-mode set-port-mode!
       reset-input-port!
+      reset-output-port!
       port-id
       input-port-byte-position
       process
@@ -583,6 +585,14 @@
           (unregister-callback p))
         (die 'reset-input-port! "not an input port" p)))
 
+  (define (reset-output-port! p)
+    (if (output-port? p) 
+        (begin
+          ($set-port-index! p 0)
+          (unregister-callback p))
+        (die 'reset-output-port! "not an output port" p)))
+
+
   (define (port-transcoder p)
     (if (port? p)
         (let ([tr ($port-transcoder p)])
@@ -645,6 +655,7 @@
                [(fx= bytes idx) 
                 ($set-port-index! p 0)]
                [(fx= bytes 0) 
+                ($mark-port-closed! p)
                 (die 'flush-output-port "could not write bytes to sink")]
                [else
                 (bytevector-copy! buf bytes buf 0 (fx- idx bytes))
@@ -1286,7 +1297,7 @@
                                  ;(raise-continuable 
                                  ;  (make-i/o-would-block-condition port))
                                  (call/cc 
-                                   (lambda (k) 
+                                   (lambda (k)
                                      (add-io-event fd k 'w)
                                      (process-events)))
                                  (refill bv idx cnt)]
@@ -2138,9 +2149,9 @@
                 (set! out-queue (reverse in-queue))
                 (set! in-queue '())
                 (process-events)))
-          (let ([proc (car out-queue)])
+          (let ([t (car out-queue)])
             (set! out-queue (cdr out-queue))
-            (proc)
+            ((t-proc t))
             (process-events))))
 
     (define (add-io-event fd proc event-type) 
@@ -2204,7 +2215,7 @@
                        (set! pending (cons t pending))]
                       [else 
                        ;;; ready
-                       (set! in-queue (cons (t-proc t) in-queue))])))))
+                       (set! in-queue (cons t in-queue))])))))
             (let ([ls pending])
               (set! pending '())
               ls)))))
@@ -2296,6 +2307,6 @@
       [else (die who "invalid argument" what)]))
 
 
-  (set-fd-nonblocking 0 'init '*stdin*)
+  ;(set-fd-nonblocking 0 'init '*stdin*)
   )
 
