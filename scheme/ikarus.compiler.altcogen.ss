@@ -2864,7 +2864,6 @@
                       (parameterize ([exceptions-conc ac])
                         (T body ac))))
              (map Clambda code*))]))
-  ;;;
   ;;; (print-code x)
   (Program x))
 

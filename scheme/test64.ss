@@ -70,6 +70,7 @@
     [fx- $fx-]
     [fx* $fx*]
     [fxadd1 $fxadd1]
+    [fxsub1 $fxsub1]
     [fxlogor $fxlogor]
     [fxlogand $fxlogand]
     [fxlognot $fxlognot]
@@ -82,6 +83,22 @@
     [cons cons]
     [car $car]
     [cdr $cdr]
+    [set-car! $set-car!]
+    [set-cdr! $set-cdr!]
+    [eq? eq?]
+    [make-vector $make-vector]
+    [vector? vector?]
+    [vector-length $vector-length]
+    [vector-set! $vector-set!]
+    [vector-ref $vector-ref]
+    [string? string?]
+    [make-string $make-string]
+    [string-set! $string-set!]
+    [string-ref $string-ref]
+    [string-length $string-length]
+    [char= $char=]
+    [fixnum->char $fixnum->char]
+    [char->fixnum $char->fixnum]
     ))
 
 
@@ -102,12 +119,17 @@
        `((primitive ,(cadr (assq prim prims-alist))) ,args ...)]
       [(if ,[e0] ,[e1] ,[e2])
        `(if ,e0 ,e1 ,e2)]
-      [(let ([,lhs* ,[rhs*]] ...) ,body)
+      [(let ([,lhs* ,[rhs*]] ...) ,body ,body* ...)
        (let ([nlhs* (map gensym lhs*)])
          (let ([env (append (map cons lhs* nlhs*) env)])
            `((case-lambda 
-               [,nlhs* ,(Expr body env)])
+               [,nlhs* 
+                (begin ,(Expr body env)
+                       ,(map (lambda (x) (Expr x env)) body*)
+                       ...)])
              ,rhs* ...)))]
+      [(begin ,[e] ,[e*] ...) 
+       `(begin ,e ,e* ...)]
       [,_ (error 'fixup "invalid expression" _)]))
   (Expr x '()))
 
@@ -119,14 +141,15 @@
            (append all-tests 
               '([test string] ...)))])))
 
-(include "tests/tests-1.1-req.scm")
-(include "tests/tests-1.2-req.scm")
-(include "tests/tests-1.3-req.scm")
-(include "tests/tests-1.4-req.scm")
-(include "tests/tests-1.5-req.scm")
-(include "tests/tests-1.6-req.scm")
-(include "tests/tests-1.7-req.scm")
-(include "tests/tests-1.8-req.scm")
+; (include "tests/tests-1.1-req.scm")
+; (include "tests/tests-1.2-req.scm")
+; (include "tests/tests-1.3-req.scm")
+; (include "tests/tests-1.4-req.scm")
+; (include "tests/tests-1.5-req.scm")
+; (include "tests/tests-1.6-req.scm")
+; (include "tests/tests-1.7-req.scm")
+; (include "tests/tests-1.8-req.scm")
+(include "tests/tests-1.9-req.scm")
 
 
 (current-primitive-locations

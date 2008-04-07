@@ -129,13 +129,11 @@ print(FILE* fh, ikptr x){
   else if(tagof(x) == string_tag){
     ikptr fxlen = ref(x, off_string_length);
     int len = unfix(fxlen);
-    fprintf(stderr, "bug: printer busted!\n");
-    exit(-1);
-    char* data = 0; //string_data(x);
+    long int * data = (long int*)(x + off_string_data);
     fprintf(fh, "\"");
     int i;
     for(i=0; i<len; i++){
-      char c = data[i];
+      char c = (data[i]) >> char_shift;
       if((c == '\\') || (c == '"')){
         fprintf(fh, "\\");
       }

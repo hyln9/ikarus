@@ -45,10 +45,11 @@
     (prm 'mref x (K (- disp tag)))))
 
 (define (dirty-vector-set address)
+  (define shift-bits 2)
   (prm 'mset 
      (prm 'int+
           (prm 'mref pcr (K pcb-dirty-vector))
-          (prm 'sll (prm 'srl address (K pageshift)) (K wordshift)))
+          (prm 'sll (prm 'srl address (K pageshift)) (K shift-bits)))
      (K 0)
      (K dirty-word)))
 
@@ -391,7 +392,7 @@
                         (K vector-tag))])
           (prm 'mset v 
                (K (- disp-vector-length vector-tag))
-               (K (make-constant (* i fx-scale))))
+               (K (* i fx-scale)))
           v)]
      [else
       (with-tmp ([alen (align-code (T len) disp-vector-data)])
