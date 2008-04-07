@@ -107,7 +107,7 @@ print(FILE* fh, ikptr x){
     fprintf(fh, "(");
     print(fh, ref(x, off_car));
     ikptr d = ref(x, off_cdr);
-    fprintf(stderr, "d=0x%016lx\n", (long int)d);
+    /* fprintf(stderr, "d=0x%016lx\n", (long int)d); */
     while(1){
       if(is_pair(d)){
         fprintf(fh, " ");

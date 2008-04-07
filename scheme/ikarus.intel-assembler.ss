@@ -469,27 +469,24 @@
             (lambda (a0 a1)
               (cond
                 [(and (imm? a0) (reg32? a1))
-                 (error 'REC+RM "not here 5")
-                 (if (reg-requires-REX? a1) 
-                     (C 4 (REX.R #b001 ac))
-                     ac)]
+                 (if (reg-requires-REX? a1)
+                     (REX.R #b001 ac)
+                     (REX.R 0 ac))]
                 [(and (imm? a1) (reg32? a0))
-                 (error 'REC+RM "not here 6")
                  (if (reg-requires-REX? a0) 
-                     (C 5 (REX.R #b001 ac))
-                     ac)]
+                     (REX.R #b001 ac)
+                     (REX.R 0 ac))]
                 [(and (reg32? a0) (reg32? a1))
-                 (error 'REC+RM "not here 7")
                  (if (reg-requires-REX? a0) 
                      (if (reg-requires-REX? a1)
                          (error 'REX+RM "unhandled x1" a0 a1)
                          (C 6 (REX.R #b010 ac)))
                      (if (reg-requires-REX? a1)
                          (error 'REX+RM "unhandled x3" a0 a1)
-                         ac))]
+                         (REX.R 0 ac)))]
                 [(and (imm? a0) (imm? a1)) 
-                 (error 'REC+RM "not here 8")
-                 ac]
+                 ;(error 'REC+RM "not here 8")
+                 (REX.R 0 ac)]
                 [else (die 'REX+RM "unhandled" a0 a1)]))))]
     [(reg? rm) 
      (let* ([bits 0]
@@ -508,6 +505,14 @@
   (case wordsize
     [(4) (CODE c ac)]
     [else (REX.R 0 (CODE c ac))]))
+
+(define (trace-ac ac1 ac2)
+  (printf "~s\n" 
+    (let f ([ls ac2]) 
+      (cond
+        [(eq? ls ac1) '()]
+        [else (cons (car ls) (f (cdr ls)))])))
+  ac2)
 
 (define (CR c r ac) 
   (REX+r r (CODE+r c r ac)))
@@ -541,9 +546,9 @@
    [(cltd)                                (CODE #x99 ac)]
    [(movl src dst)
     (cond
-      [(and (imm? src) (reg? dst))        (CR #xB8 dst (IMM src ac))]
-      [(and (imm? src) (mem? dst))        (CR* #xC7 '/0 dst (IMM src ac))]
-      [(and (reg? src) (reg? dst))    (CR* #x89 src dst ac)]
+      [(and (imm? src) (reg? dst))      (CR #xB8 dst (IMM src ac))]
+      [(and (imm? src) (mem? dst))      (CR* #xC7 '/0 dst (IMM32 src ac))]
+      [(and (reg? src) (reg? dst))      (CR* #x89 src dst ac)]
       [(and (reg? src) (mem? dst))      (CR* #x89 src dst ac)]
       [(and (mem? src) (reg? dst))      (CR* #x8B dst src ac)]
       [else (die who "invalid" instr)])]

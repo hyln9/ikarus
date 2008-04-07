@@ -16,9 +16,9 @@
 
 ;;; vim:syntax=scheme
 (import 
-  (ikarus compiler)
+  (ikarus.compiler)
   (match)
-  (except (ikarus) assembler-output))
+  (except (ikarus) scc-letrec  optimize-cp optimize-level assembler-output))
 
 (define (compile1 x)
   (let ([p (open-file-output-port "test64.fasl" (file-options no-fail))])
@@ -69,6 +69,7 @@
     [fx+ $fx+]
     [fx- $fx-]
     [fx* $fx*]
+    [fxadd1 $fxadd1]
     [fxlogor $fxlogor]
     [fxlogand $fxlogand]
     [fxlognot $fxlognot]
@@ -77,6 +78,10 @@
     [fx<= $fx<=]
     [fx> $fx>]
     [fx>= $fx>=]
+    [pair? pair?]
+    [cons cons]
+    [car $car]
+    [cdr $cdr]
     ))
 
 
@@ -120,6 +125,21 @@
 (include "tests/tests-1.4-req.scm")
 (include "tests/tests-1.5-req.scm")
 (include "tests/tests-1.6-req.scm")
+(include "tests/tests-1.7-req.scm")
+(include "tests/tests-1.8-req.scm")
+
+
+(current-primitive-locations
+  (lambda (x) 
+    (define prims
+      '(do-overflow 
+        $apply-nonprocedure-error-handler 
+        $incorrect-args-error-handler 
+        $multiple-values-error))
+    (cond
+      [(memq x prims) x]
+      [else (error 'current-primloc "invalid" x)])))
+
 
 (test-all)
 (printf "Passed ~s tests\n" (length all-tests))
