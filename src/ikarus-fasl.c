@@ -183,11 +183,17 @@ ik_relocate_code(ikptr code){
     else if(tag == 3){
       /* jump label */
       long int obj_off = unfix(ref(p, wordsize));
-      ikptr obj = ref(p, 2*wordsize);
-      ikptr displaced_object = obj + obj_off;
-      ikptr next_word = data + code_off + wordsize;
-      ikptr relative_distance = displaced_object - (long int)next_word;
-      ref(next_word, -wordsize) = relative_distance;
+      long int obj = ref(p, 2*wordsize);
+      long int displaced_object = obj + obj_off;
+      long int next_word = data + code_off + 4;
+      long int relative_distance = displaced_object - next_word;
+#if 0
+      if(wordsize == 8){
+        relative_distance += 4;
+      }
+#endif
+      *((int*)(data+code_off)) = relative_distance;
+//      ref(next_word, -wordsize) = relative_distance;
       p += (3*wordsize);
     }
     else if(tag == 1){

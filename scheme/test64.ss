@@ -99,6 +99,8 @@
     [char= $char=]
     [fixnum->char $fixnum->char]
     [char->fixnum $char->fixnum]
+    [procedure? procedure?]
+    [fxzero? $fxzero?]
     ))
 
 
@@ -128,6 +130,14 @@
                        ,(map (lambda (x) (Expr x env)) body*)
                        ...)])
              ,rhs* ...)))]
+      [(lambda (,fml* ...) ,body ,body* ...)
+       (let ([g* (map gensym fml*)])
+         (let ([env (append (map cons fml* g*) env)])
+           `(case-lambda 
+              [(,g* ...) 
+               (begin ,(Expr body env)
+                      ,(map (lambda (x) (Expr x env)) body*)
+                      ...)])))]
       [(begin ,[e] ,[e*] ...) 
        `(begin ,e ,e* ...)]
       [,_ (error 'fixup "invalid expression" _)]))
@@ -141,21 +151,26 @@
            (append all-tests 
               '([test string] ...)))])))
 
-; (include "tests/tests-1.1-req.scm")
-; (include "tests/tests-1.2-req.scm")
-; (include "tests/tests-1.3-req.scm")
-; (include "tests/tests-1.4-req.scm")
-; (include "tests/tests-1.5-req.scm")
-; (include "tests/tests-1.6-req.scm")
-; (include "tests/tests-1.7-req.scm")
-; (include "tests/tests-1.8-req.scm")
-(include "tests/tests-1.9-req.scm")
+(begin
+ (include "tests/tests-1.1-req.scm")
+ (include "tests/tests-1.2-req.scm")
+ (include "tests/tests-1.3-req.scm")
+ (include "tests/tests-1.4-req.scm")
+ (include "tests/tests-1.5-req.scm")
+ (include "tests/tests-1.6-req.scm")
+ (include "tests/tests-1.7-req.scm")
+ (include "tests/tests-1.8-req.scm")
+ (include "tests/tests-1.9-req.scm"))
+
+(include "tests/tests-2.1-req.scm")
 
 
 (current-primitive-locations
   (lambda (x) 
     (define prims
       '(do-overflow 
+        error 
+        $do-event
         $apply-nonprocedure-error-handler 
         $incorrect-args-error-handler 
         $multiple-values-error))
@@ -163,6 +178,8 @@
       [(memq x prims) x]
       [else (error 'current-primloc "invalid" x)])))
 
+
+;(assembler-output #t)
 
 (test-all)
 (printf "Passed ~s tests\n" (length all-tests))

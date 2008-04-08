@@ -205,6 +205,8 @@
          (byte (sra n 16))
          (byte (sra n 24))
          ac)]
+      [(label? n)
+       (cons (cons 'relative (label-name n)) ac)]
       [else (die 'IMM32 "invalid" n)])))
 
 (define IMM
@@ -531,11 +533,11 @@
 
 
 (define (CCI32 c0 c1 i32 ac)
-  (CODE c0 (CODE c1 (IMM i32 ac))))
+  (CODE c0 (CODE c1 (IMM32 i32 ac))))
 
 (define (dotrace orig ls)
   (printf "TRACE: ~s\n" 
-    (let f ([ls ls]) 
+    (let f ([ls ls])
       (if (eq? ls orig)
           '()
           (cons (car ls) (f (cdr ls))))))
@@ -672,7 +674,7 @@
    [(notl dst)
     (cond
       [(reg? dst)                     (CR* #xF7 '/2 dst ac)]
-      [(mem? dst)                       (CR* #xF7 '/7 dst ac)]
+      [(mem? dst)                     (CR* #xF7 '/7 dst ac)]
       [else (die who "invalid" instr)])]
    [(bswap dst)
     (cond
@@ -680,18 +682,18 @@
       [else (die who "invalid" instr)])]
    [(negl dst)
     (cond
-      [(reg? dst)                    (CR* #xF7 '/3 dst ac)]
+      [(reg? dst)                     (CR* #xF7 '/3 dst ac)]
       [else (die who "invalid" instr)])]
    [(jmp dst)
     (cond
-      [(imm? dst)                     (CODE #xE9 (IMM dst ac))]
+      [(imm? dst)                     (CODE #xE9 (IMM32 dst ac))]
       [(mem? dst)                     (CR*  #xFF '/4 dst ac)]
       [else (die who "invalid jmp target" dst)])]
    [(call dst)
     (cond
-      [(imm? dst)                     (CODE #xE8 (IMM dst ac))]
+      [(imm? dst)                     (CODE #xE8 (IMM32 dst ac))]
       [(mem? dst)                     (CR* #xFF '/2 dst ac)]
-      [(reg? dst)                   (CR* #xFF '/2 dst ac)]
+      [(reg? dst)                     (CR* #xFF '/2 dst ac)]
       [else (die who "invalid jmp target" dst)])]
    [(movsd src dst)
     (cond
@@ -782,11 +784,11 @@
                 (fx+ ac 1)
                 (case (car x)
                   [(byte) (fx+ ac 1)]
-                  [(reloc-word reloc-word+ label-addr foreign-label 
-                    local-relative)
+                  [(relative reloc-word+ foreign-label local-relative)
                    (fx+ ac 4)]
                   [(label) ac]
-                  [(word relative current-frame-offset) (+ ac wordsize)]
+                  [(word reloc-word label-addr current-frame-offset)
+                   (+ ac wordsize)]
                   [else (die 'compute-code-size "unknown instr" x)])))
           0 
           ls)))
@@ -856,11 +858,11 @@
                   [(byte) 
                    (code-set! x idx (cdr a))
                    (f (cdr ls) (fx+ idx 1) reloc)]
-                  [(reloc-word reloc-word+)
+                  [(reloc-word+)
                    (f (cdr ls) (fx+ idx 4) (cons (cons idx a) reloc))]
-                  [(local-relative label-addr foreign-label)
+                  [(relative local-relative foreign-label)
                    (f (cdr ls) (fx+ idx 4) (cons (cons idx a) reloc))]
-                  [(relative)
+                  [(reloc-word label-addr)
                    (f (cdr ls) (fx+ idx wordsize) (cons (cons idx a) reloc))]
                   [(word)
                    (let ([v (cdr a)])
