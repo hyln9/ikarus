@@ -2154,6 +2154,18 @@
             (not (<= (- (expt 2 31)) n (- (expt 2 31) 1)))]
            [else #t])]
         [else #f]))
+    (define (small-operand? x)
+      (case wordsize
+        [(4) (not (mem? x))]
+        [(8) 
+         (struct-case x 
+           [(constant n) 
+            (cond
+              [(integer? n) 
+               (<= (- (expt 2 31)) n (- (expt 2 31) 1))]
+              [else #f])]
+           [else (or (register? x) (var? x))])]
+        [else (error 'small-operand? "huh?")]))
     (define (mem? x)
       (or (disp? x) (fvar? x)))
     ;;; unspillable effect
@@ -2183,7 +2195,7 @@
                      (E (make-asm-instr 'move u a))
                      (E (make-asm-instr op u b)))
                    (E (make-asm-instr 'move a u))))]
-              [(and (mem? a) (mem? b)) 
+              [(and (mem? a) (not (small-operand? b))) 
                (let ([u (mku)])
                  (make-seq
                    (E (make-asm-instr 'move u b))
@@ -2201,7 +2213,12 @@
                       (make-seq
                         (E (make-asm-instr 'move u s1))
                         (E (make-asm-instr op (make-disp s0 u) b))))]
-                   [else x]))]
+                   [(small-operand? b) x]
+                   [else 
+                    (let ([u (mku)])
+                      (make-seq
+                        (E (make-asm-instr 'move u b))
+                        (E (make-asm-instr op a u))))]))]
               [(disp? b) 
                (let ([s0 (disp-s0 b)] [s1 (disp-s1 b)])
                  (cond
@@ -2244,7 +2261,7 @@
             x]
            [(mset bset/c bset/h) 
             (cond
-              [(mem? b) 
+              [(not (small-operand? b))
                (let ([u (mku)])
                  (make-seq
                    (E (make-asm-instr 'move u b))
