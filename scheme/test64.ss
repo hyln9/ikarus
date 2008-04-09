@@ -29,9 +29,13 @@
 (define (compile-and-run x) 
   (compile1 x)
   (let ([rs (system "../src/ikarus -b test64.fasl > test64.out")])
-    (unless (= rs 0) (error 'run1 "died"))
+    (unless (= rs 0) (error 'run1 "died with status" rs))
     (with-input-from-file "test64.out"
-      (lambda () (get-string-all (current-input-port))))))
+      (lambda () 
+        (let ([s (get-string-all (current-input-port))])
+          (if (eof-object? s) 
+              ""
+              s))))))
 
 (define (compile-test-and-run expr expected)
   (printf "Compiling:\n")
@@ -233,6 +237,9 @@
        (cond
          [(assq x env) => (lambda (p) `(set! ,(cdr p) ,v))]
          [else (error 'fixup "unbound" x)])]
+      [(foreign-call ,str ,[arg*] ...) 
+       (guard (string? str))
+       `(foreign-call ',str ,arg* ...)]
       [(,[rator] ,[rand*] ...) `(,rator ,rand* ...)]
       [,_ (error 'fixup "invalid expression" _)]))
   (Expr x '()))
@@ -260,7 +267,10 @@
  (include "tests/tests-2.3-req.scm")
  (include "tests/tests-2.4-req.scm")
  (include "tests/tests-2.6-req.scm")
- (include "tests/tests-2.8-req.scm"))
+ (include "tests/tests-2.8-req.scm")
+ (include "tests/tests-2.9-req.scm")
+ )
+
 
 (current-primitive-locations
   (lambda (x) 
@@ -276,8 +286,6 @@
       [(memq x prims) x]
       [else (error 'current-primloc "invalid" x)])))
 
-
-;(assembler-output #t)
 
 (test-all)
 (printf "Passed ~s tests\n" (length all-tests))

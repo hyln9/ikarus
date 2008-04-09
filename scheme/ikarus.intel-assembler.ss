@@ -802,10 +802,11 @@
                 (fx+ ac 1)
                 (case (car x)
                   [(byte) (fx+ ac 1)]
-                  [(relative foreign-label local-relative)
+                  [(relative local-relative)
                    (fx+ ac 4)]
                   [(label) ac]
-                  [(word reloc-word reloc-word+ label-addr current-frame-offset)
+                  [(word reloc-word reloc-word+ label-addr 
+                    current-frame-offset foreign-label)
                    (+ ac wordsize)]
                   [else (die 'compute-code-size "unknown instr" x)])))
           0 
@@ -876,9 +877,9 @@
                   [(byte) 
                    (code-set! x idx (cdr a))
                    (f (cdr ls) (fx+ idx 1) reloc)]
-                  [(relative local-relative foreign-label)
+                  [(relative local-relative)
                    (f (cdr ls) (fx+ idx 4) (cons (cons idx a) reloc))]
-                  [(reloc-word reloc-word+ label-addr)
+                  [(reloc-word reloc-word+ label-addr foreign-label)
                    (f (cdr ls) (fx+ idx wordsize) (cons (cons idx a) reloc))]
                   [(word)
                    (let ([v (cdr a)])

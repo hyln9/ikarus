@@ -124,47 +124,44 @@ L_multi_reentry:
 .align 8
 ik_foreign_call:
 _ik_foreign_call:
-  movl %esp, 8(%esi)     # (movl fpr (pcb-ref 'frame-pointer))
-  movl %ebp, 0(%esi)     # (movl apr (pcb-ref 'allocation-pointer))
-  movl %esp, %ebx        # (movl fpr ebx)
-  movl 24(%esi), %esp    # (movl (pcb-ref 'system-stack) esp)
+  movq %rsp, 16(%rsi)    # (movl fpr (pcb-ref 'frame-pointer))
+  movq %rbp, 0(%rsi)     # (movl apr (pcb-ref 'allocation-pointer))
+  movq %rsp, %rbx        # (movl fpr ebx)
+  movq 48(%rsi), %rsp    # (movl (pcb-ref 'system-stack) esp)
   # %esp is the system stack, %eax is the index to the last arg,
   # %esi is the pcb.
-  # Now, the value of %esp is 16-byte aligned
-  # we always push %esi (4 bytes) and do a call (4 bytes),
-  # 0 args require 6 (2) pushes => argc=   0 (0000): %esp +=  -8
-  # 1 args require 5 (1) pushes => argc=  -4 (1100): %esp +=  -4
-  # 2 args require 4 (0) pushes => argc=  -8 (1000): %esp +=   0
-  # 3 args require 3 (3) pushes => argc= -12 (0100): %esp += -12
-  movl %eax, %ecx
-  andl $15, %ecx
-check_ecx:
-  cmpl $8, %ecx
-  je L_zero
-  cmpl $12, %ecx
-  je L_one
-  cmpl $0, %ecx
-  je L_two
-  push $0
-L_two:
-  push $0
-L_one:
-  push $0
-L_zero:
-  push %rsi             # (pushl pcr)
-  cmpl $0, %eax          # (cmpl (int 0) eax)
-  je L_set               # (je (label Lset))
-L_loop:                  # (label Lloop)
-  movl (%ebx,%eax), %ecx # (movl (mem ebx eax) ecx)
-  push %rcx             # (pushl ecx)
-  addl $4, %eax          # (addl (int 4) eax)
-  cmpl $0, %eax          # (cmpl (int 0) eax)
-  jne L_loop             # (jne (label Lloop))
+
+  # align the system stack by subtracting 8 if it's not 16-byte aligned
+  movq %rsp, %r12
+  andq $15, %r12
+  subq %r12, %rsp
+
+  # AMD64 says: %rbp, %rbx, %r12 .. %r15 are preserved by the callee
+  #             %rdi, %rsi, %rdx, %rcx, %r8, %r9 are parameter regs
+
+  movq %rdi, %r12 # put target of call in %r12
+  movq %rsi, %r13 # put pcb in %r13
+
+  movq %rsi, %rdi # put pcb in first arg reg
+  cmpq $0, %rax
+  je L_zero_args
+  cmpq $-8, %rax
+  je L_one_arg
+  movq $0, %rax
+  movq %rax,0(%rax)
+L_one_arg:
+  movq %rdi, %rsi
+  movq -8(%rbx), %rdi
+  jmp L_set
+
+L_zero_args:
 L_set:                   # (label Lset)
-  call *%rdi             # (call cpr)
-  movl 8(%esi), %esp     # (movl (pcb-ref 'frame-pointer) fpr)
-  movl 0(%esi), %ebp     # (movl (pcb-ref 'allocation-pointer) apr)
-  ret                    # (ret)))
+  call *%r12             # (call cpr)
+L_back:
+  movq %r13, %rsi        # restore pcb from r13
+  movq 16(%rsi), %rsp    # get frame pointer from 16(pcb)
+  movq 0(%rsi), %rbp     # get allocation pointer from 0(pcb)
+  ret                    # return to scheme
 
 #else  
 

@@ -213,7 +213,7 @@ ik_relocate_code(ikptr code){
         fprintf(stderr, "failed to find foreign name %s: %s\n", name, err);
         exit(-1);
       }
-      ref(data,code_off) = (ikptr)(long)sym;
+      ref(data,code_off) = (ikptr)sym;
       p += (2*wordsize);
     }
     else {
