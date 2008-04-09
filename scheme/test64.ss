@@ -101,10 +101,14 @@
     [char->fixnum $char->fixnum]
     [procedure? procedure?]
     [fxzero? $fxzero?]
+    [vector vector]
+    [symbol? symbol?]
     ))
 
 
 (define (fixup x)
+  (define (P x) 
+    `(primitive ,x))
   (define (Expr x env)
     (match x
       [,n (guard (self-evaluating? n)) `(quote ,n)]
@@ -130,6 +134,22 @@
                        ,(map (lambda (x) (Expr x env)) body*)
                        ...)])
              ,rhs* ...)))]
+      [(letrec ([,lhs* ,rhs*] ...) ,body ,body* ...)
+       (let* ([nlhs* (map gensym lhs*)]
+              [env (append (map cons lhs* nlhs*) env)]
+              [E (lambda (x) (Expr x env))])
+         `(letrec ([,nlhs* ,(map E rhs*)] ...)
+            (begin
+              ,(E body)
+              ,(map E body*) ...)))]
+      [(letrec* ([,lhs* ,rhs*] ...) ,body ,body* ...)
+       (let* ([nlhs* (map gensym lhs*)]
+              [env (append (map cons lhs* nlhs*) env)]
+              [E (lambda (x) (Expr x env))])
+         `(letrec* ([,nlhs* ,(map E rhs*)] ...)
+            (begin
+              ,(E body)
+              ,(map E body*) ...)))] 
       [(lambda (,fml* ...) ,body ,body* ...)
        (let ([g* (map gensym fml*)])
          (let ([env (append (map cons fml* g*) env)])
@@ -138,8 +158,77 @@
                (begin ,(Expr body env)
                       ,(map (lambda (x) (Expr x env)) body*)
                       ...)])))]
+      [(lambda (,fml* ... . ,fml) ,body ,body* ...)
+       (let ([g* (map gensym fml*)]
+             [g (gensym fml)])
+         (let ([env (append (map cons 
+                                 (cons fml fml*)
+                                 (cons g g*))
+                            env)])
+           `(case-lambda 
+              [(,g* ... . ,g) 
+               (begin ,(Expr body env)
+                      ,(map (lambda (x) (Expr x env)) body*)
+                      ...)])))] 
       [(begin ,[e] ,[e*] ...) 
        `(begin ,e ,e* ...)]
+      [(and) ''#t]
+      [(and ,[e]) e]
+      [(and ,[e] ,e* ...)
+       `(if ,e ,(Expr `(and ,e* ...) env) (quote #f))]
+      [(or) ''#f]
+      [(or ,[e]) e]
+      [(or ,[e] ,e* ...)
+       (let ([t (gensym)])
+         `((case-lambda 
+             [(,t) 
+              (if ,t ,t ,(Expr `(or ,e* ...) env))])
+           ,e))]
+      [(when ,[e] ,[b] ,[b*] ...) 
+       `(if ,e 
+            (begin ,b ,b* ...) 
+            (,(P 'void)))]
+      [(unless ,[e] ,[b] ,[b*] ...) 
+       `(if (,(P 'not) ,e)
+            (begin ,b ,b* ...)
+            (,(P 'void)))]
+      [(cond) `(,(P 'void))]
+      [(cond ,cls* ... ,cls)
+       (let ()
+         (define (fst-clause x rest)
+           (match x
+             [(,e ,arr ,v) 
+              (guard (and (eq? arr '=>) (not (assq arr env))))
+              (let ([t (gensym)])
+                `((case-lambda
+                    [(,t) 
+                     (if ,t (,(Expr v env) ,t) ,rest)])
+                  ,(Expr e env)))]
+             [(,e)
+              (let ([t (gensym)])
+                `((case-lambda
+                    [(,t) 
+                     (if ,t ,t ,rest)])
+                  ,(Expr e env)))]
+             [(,e ,e* ...)
+              `(if ,(Expr e env)
+                    (begin ,(map (lambda (x) (Expr x env)) e*) ...)
+                    ,rest)]
+             [,others (error 'cond "invalid clause" others)]))
+         (define (last-clause x)
+           (match x 
+             [(,els ,e ,e* ...) 
+              (guard (and (eq? els 'else) (not (assq els env))))
+              `(begin ,(Expr e env) 
+                      ,(map (lambda (x) (Expr x env)) e*)
+                      ...)]
+             [,others 
+              (fst-clause others `(,(P 'void)))]))
+         (let f ([cls* cls*] [ac (last-clause cls)]) 
+           (cond
+             [(null? cls*) ac]
+             [else (fst-clause (car cls*) 
+                     (f (cdr cls*) ac))])))]
       [(set! ,x ,[v]) 
        (cond
          [(assq x env) => (lambda (p) `(set! ,(cdr p) ,v))]
@@ -168,13 +257,16 @@
  (include "tests/tests-1.9-req.scm")
  (include "tests/tests-2.1-req.scm")
  (include "tests/tests-2.2-req.scm")
- (include "tests/tests-2.3-req.scm"))
-
+ (include "tests/tests-2.3-req.scm")
+ (include "tests/tests-2.4-req.scm")
+ (include "tests/tests-2.6-req.scm")
+ (include "tests/tests-2.8-req.scm"))
 
 (current-primitive-locations
   (lambda (x) 
     (define prims
       '(do-overflow 
+        do-vararg-overflow
         error 
         $do-event
         $apply-nonprocedure-error-handler 

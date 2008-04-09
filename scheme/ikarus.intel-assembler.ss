@@ -401,11 +401,11 @@
             [(and (imm8? a0) (reg32? a1))
              (ModRM 1 /d a1 (IMM8 a0 ac))]
             [(and (imm? a0) (reg32? a1))
-             (ModRM 2 /d a1 (IMM a0 ac))]
+             (ModRM 2 /d a1 (IMM32 a0 ac))]
             [(and (imm8? a1) (reg32? a0))
              (ModRM 1 /d a0 (IMM8 a1 ac))]
             [(and (imm? a1) (reg32? a0))
-             (ModRM 2 /d a0 (IMM a1 ac))]
+             (ModRM 2 /d a0 (IMM32 a1 ac))]
             [(and (reg32? a0) (reg32? a1))
              (RegReg /d a0 a1 ac)]
             [(and (imm? a0) (imm? a1))
@@ -536,6 +536,7 @@
 (define (CCI32 c0 c1 i32 ac)
   (CODE c0 (CODE c1 (IMM32 i32 ac))))
 
+
 (define (dotrace orig ls)
   (printf "TRACE: ~s\n" 
     (let f ([ls ls])
@@ -580,7 +581,7 @@
    [(addl src dst)
     (cond   
       [(and (imm8? src) (reg? dst))     (CR*  #x83 '/0 dst (IMM8 src ac))]
-      [(and (imm32? src) (eq? dst '%eax))   (CODE #x05 (IMM32 src ac))]
+      [(and (imm32? src) (eq? dst '%eax))   (C #x05 (IMM32 src ac))]
       [(and (imm32? src) (reg? dst))      (CR*  #x81 '/0 dst (IMM32 src ac))]
       [(and (reg? src) (reg? dst))    (CR*  #x01 src dst ac)]
       [(and (mem? src) (reg? dst))      (CR*  #x03 dst src ac)]
@@ -590,7 +591,7 @@
    [(subl src dst)
     (cond   
       [(and (imm8? src) (reg? dst))     (CR*  #x83 '/5 dst (IMM8 src ac))]
-      [(and (imm32? src) (eq? dst '%eax))   (CODE #x2D (IMM32 src ac))]
+      [(and (imm32? src) (eq? dst '%eax))   (C #x2D (IMM32 src ac))]
       [(and (imm32? src) (reg? dst))      (CR*  #x81 '/5 dst (IMM32 src ac))]
       [(and (reg? src) (reg? dst))    (CR*  #x29 src dst ac)]
       [(and (mem? src) (reg? dst))      (CR*  #x2B dst src ac)]

@@ -2338,6 +2338,16 @@
                     (E (make-asm-instr 'move u a))
                     (make-asm-instr op u b)))
                 x)]
+           [(and (not (mem? a)) (not (small-operand? a)))
+            (let ([u (mku)])
+              (make-seq
+                (E (make-asm-instr 'move u a))
+                (P (make-asm-instr op u b))))]
+           [(and (not (mem? b)) (not (small-operand? b)))
+            (let ([u (mku)])
+              (make-seq
+                (E (make-asm-instr 'move u b))
+                (P (make-asm-instr op a u))))]
            [(and (mem? a) (mem? b)) 
             (let ([u (mku)])
               (make-seq

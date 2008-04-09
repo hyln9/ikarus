@@ -84,20 +84,35 @@ print(FILE* fh, ikptr x){
   }
 #endif
   else if(tagof(x) == vector_tag){
-    ikptr len = ref(x, off_vector_length);
-    if(len == 0){
-      fprintf(fh, "#()");
-    } else {
-      fprintf(fh, "#(");
-      ikptr data = x + off_vector_data;
-      print(fh, ref(data, 0));
-      ikptr i = (ikptr)wordsize;
-      while(i<len){
-        fprintf(fh, " ");
-        print(fh, ref(data,i));
-        i += wordsize;
+    ikptr fst = ref(x, off_vector_length);
+    if(is_fixnum(fst)){
+      ikptr len = fst;
+      if(len == 0){
+        fprintf(fh, "#()");
+      } else {
+        fprintf(fh, "#(");
+        ikptr data = x + off_vector_data;
+        print(fh, ref(data, 0));
+        ikptr i = (ikptr)wordsize;
+        while(i<len){
+          fprintf(fh, " ");
+          print(fh, ref(data,i));
+          i += wordsize;
+        }
+        fprintf(fh, ")");
       }
-      fprintf(fh, ")");
+    } else if (fst == symbol_record_tag){
+      ikptr str = ref(x, off_symbol_record_string);
+      ikptr fxlen = ref(str, off_string_length);
+      int len = unfix(fxlen);
+      int * data = (int*)(str + off_string_data);
+      int i;
+      for(i=0; i<len; i++){
+        char c = (data[i]) >> char_shift;
+        fprintf(fh, "%c", c);
+      }
+    } else {
+      fprintf(fh, "#<unknown fst=0x%p>", (void*)fst);
     }
   }
   else if(is_closure(x)){
