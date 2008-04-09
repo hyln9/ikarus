@@ -140,6 +140,11 @@
                       ...)])))]
       [(begin ,[e] ,[e*] ...) 
        `(begin ,e ,e* ...)]
+      [(set! ,x ,[v]) 
+       (cond
+         [(assq x env) => (lambda (p) `(set! ,(cdr p) ,v))]
+         [else (error 'fixup "unbound" x)])]
+      [(,[rator] ,[rand*] ...) `(,rator ,rand* ...)]
       [,_ (error 'fixup "invalid expression" _)]))
   (Expr x '()))
 
@@ -160,9 +165,10 @@
  (include "tests/tests-1.6-req.scm")
  (include "tests/tests-1.7-req.scm")
  (include "tests/tests-1.8-req.scm")
- (include "tests/tests-1.9-req.scm"))
-
-(include "tests/tests-2.1-req.scm")
+ (include "tests/tests-1.9-req.scm")
+ (include "tests/tests-2.1-req.scm")
+ (include "tests/tests-2.2-req.scm")
+ (include "tests/tests-2.3-req.scm"))
 
 
 (current-primitive-locations

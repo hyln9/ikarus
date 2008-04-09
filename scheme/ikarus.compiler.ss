@@ -2450,6 +2450,7 @@
   (define unbound #x6F) ; double check
   (define void-object #x7F) ; double check
   (define bwp-object  #x8F) ; double check
+  (define char-size 4)
   (define char-shift 8)
   (define char-tag #x0F)
   (define char-mask #xFF)

@@ -1857,12 +1857,16 @@
    (struct-case i
      [(constant i)
       (unless (fixnum? i) (interrupt))
-      (prm 'mref (T s)
-        (K (+ (* i fx-scale) 
+      (prm 'mref32 (T s)
+        (K (+ (* i char-size) 
               (- disp-string-data string-tag))))]
      [else
-      (prm 'mref (T s)
-        (prm 'int+ (T i)
+      (prm 'mref32 (T s)
+        (prm 'int+ 
+          (cond 
+            [(= wordsize char-size) (T i)]
+            [(= wordsize 8) (prm 'sra (T i) (K 1))]
+            [else (error '$string-ref "invalid operand")])
           (K (- disp-string-data string-tag))))])]
   [(P s i) (K #t)]
   [(E s i) (nop)])
@@ -1903,12 +1907,18 @@
    (struct-case i
      [(constant i) 
       (unless (fixnum? i) (interrupt))
-      (prm 'mset (T x) 
-         (K (+ (* i fx-scale) (- disp-string-data string-tag)))
+      (prm 'mset32 (T x) 
+         (K (+ (* i char-size) 
+               (- disp-string-data string-tag)))
          (T c))]
      [else
-      (prm 'mset (T x) 
-         (prm 'int+ (T i) (K (- disp-string-data string-tag)))
+      (prm 'mset32 (T x) 
+         (prm 'int+ 
+              (cond
+                [(= wordsize char-size) (T i)]
+                [(= wordsize 8) (prm 'sra (T i) (K 1))]
+                [else (error '$string-set! "invalid operand")])
+              (K (- disp-string-data string-tag)))
          (T c))])])
 
 /section)

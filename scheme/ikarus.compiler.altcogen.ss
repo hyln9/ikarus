@@ -486,6 +486,11 @@
           (S* rands
               (lambda (rands)
                 (make-set d (make-disp (car rands) (cadr rands)))))]
+         [(mref32) 
+          (S* rands
+              (lambda (rands)
+                (make-asm-instr 'load32 d 
+                  (make-disp (car rands) (cadr rands)))))]
          [(bref) 
           (S* rands
               (lambda (rands)
@@ -571,7 +576,7 @@
        (do-bind lhs* rhs* (E e))]
       [(primcall op rands)
        (case op
-         [(mset bset/c bset/h)
+         [(mset bset/c bset/h mset32)
           (S* rands
               (lambda (s*)
                 (make-asm-instr op
@@ -1280,7 +1285,7 @@
             (union-nfvs ns1 ns2)))]
       [(asm-instr op d s)
        (case op
-         [(move move-byte)
+         [(move move-byte load32)
           (cond
             [(reg? d)
              (cond
@@ -1459,7 +1464,7 @@
          [(cltd) 
           (mark-reg/vars-conf! edx vs)
           (R s vs (rem-reg edx rs) fs ns)]
-         [(mset bset/c bset/h fl:load fl:store fl:add! fl:sub!
+         [(mset mset32 bset/c bset/h fl:load fl:store fl:add! fl:sub!
                 fl:mul! fl:div! fl:from-int fl:shuffle
                 fl:load-single fl:store-single) 
           (R* (list s d) vs rs fs ns)]
@@ -1655,14 +1660,14 @@
          (make-conditional (P e0) (E e1) (E e2))]
         [(asm-instr op d s)
          (case op
-           [(move move-byte) 
+           [(move move-byte load32) 
             (let ([d (R d)] [s (R s)])
               (cond
                 [(eq? d s) 
                  (make-primcall 'nop '())]
                 [else
                  (make-asm-instr op d s)]))]
-           [(logand logor logxor int+ int- int* mset bset/c bset/h 
+           [(logand logor logxor int+ int- int* mset mset32 bset/c bset/h 
               sll sra srl bswap!
               cltd idiv int-/overflow int+/overflow int*/overflow
               fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
@@ -1872,7 +1877,7 @@
       (struct-case x
         [(asm-instr op d v)
          (case op
-           [(move)
+           [(move load32)
             (let ([s (set-rem d s)])
               (set-for-each (lambda (y) (add-edge! g d y)) s)
               (set-union (R v) s))]
@@ -1915,7 +1920,7 @@
                   s))
               (set-union (set-union (R eax) (R edx))
                      (set-union (R v) s)))]
-           [(mset fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
+           [(mset mset32 fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
                   fl:from-int fl:shuffle fl:store-single
                   fl:load-single)
             (set-union (R v) (set-union (R d) s))]
@@ -2176,7 +2181,8 @@
          (make-conditional (P e0) (E e1) (E e2))]
         [(asm-instr op a b) 
          (case op
-           [(logor logxor logand int+ int- int* move move-byte
+           [(logor logxor logand int+ int- int* move 
+                   move-byte load32 
                    int-/overflow int+/overflow int*/overflow)
             (cond
               [(and (eq? op 'move) (eq? a b)) 
@@ -2196,19 +2202,26 @@
                      (E (make-asm-instr op u b)))
                    (E (make-asm-instr 'move a u))))]
               [(and (mem? a) (not (small-operand? b))) 
-               (let ([u (mku)])
-                 (make-seq
-                   (E (make-asm-instr 'move u b))
-                   (E (make-asm-instr op a u))))]
+               (case op
+                 [(load32)
+                  (let ([u (mku)])
+                    (make-seq
+                      (E (make-asm-instr 'load32 u b))
+                      (E (make-asm-instr 'move a u))))]
+                 [else
+                  (let ([u (mku)])
+                    (make-seq
+                      (E (make-asm-instr 'move u b))
+                      (E (make-asm-instr op a u))))])]
               [(disp? a) 
                (let ([s0 (disp-s0 a)] [s1 (disp-s1 a)])
                  (cond
-                   [(mem? s0)
+                   [(not (small-operand? s0))
                     (let ([u (mku)])
                       (make-seq
                         (E (make-asm-instr 'move u s0))
                         (E (make-asm-instr op (make-disp u s1) b))))]
-                   [(mem? s1)
+                   [(not (small-operand? s1))
                     (let ([u (mku)])
                       (make-seq
                         (E (make-asm-instr 'move u s1))
@@ -2222,12 +2235,12 @@
               [(disp? b) 
                (let ([s0 (disp-s0 b)] [s1 (disp-s1 b)])
                  (cond
-                   [(mem? s0)
+                   [(not (small-operand? s0))
                     (let ([u (mku)])
                       (make-seq
                         (E (make-asm-instr 'move u s0))
                         (E (make-asm-instr op a (make-disp u s1)))))]
-                   [(mem? s1)
+                   [(not (small-operand? s1))
                     (let ([u (mku)])
                       (make-seq
                         (E (make-asm-instr 'move u s1))
@@ -2259,7 +2272,7 @@
                         (eq? b ecx))
               (error who "invalid shift" b))
             x]
-           [(mset bset/c bset/h) 
+           [(mset mset32 bset/c bset/h) 
             (cond
               [(not (small-operand? b))
                (let ([u (mku)])
@@ -2299,7 +2312,7 @@
                    (E (make-asm-instr op u b))))]
               [else x])]
            [(fl:from-int fl:shuffle) x]
-           [else (error who "invalid effect" op)])]
+           [else (error who "invalid effect op" op)])]
         [(primcall op rands) 
          (case op
            [(nop interrupt incr/zero? fl:single->double
@@ -2568,6 +2581,8 @@
           (let ([s (R s)] [d (R d)])
             (unless (eq? s d) (error who "invalid instr" x))
             (cons `(bswap ,s) ac))]
+         [(mset32) (cons `(mov32 ,(R s) ,(R d)) ac)]
+         [(load32) (cons `(mov32 ,(R s) ,(R d)) ac)]
          [(int-/overflow)
           (let ([L (or (exception-label) 
                        (error who "no exception label"))])

@@ -129,7 +129,7 @@ print(FILE* fh, ikptr x){
   else if(tagof(x) == string_tag){
     ikptr fxlen = ref(x, off_string_length);
     int len = unfix(fxlen);
-    long int * data = (long int*)(x + off_string_data);
+    int * data = (int*)(x + off_string_data);
     fprintf(fh, "\"");
     int i;
     for(i=0; i<len; i++){
