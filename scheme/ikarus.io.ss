@@ -1206,7 +1206,10 @@
        #| 20 |# "invalid file name"
        #| 21 |# "non-blocking operation would block"
        #| 22 |# "broken pipe (e.g., writing to a closed process or socket)"
-       #| 23 |# "connection refused"))
+       #| 23 |# "connection refused"
+       #| 24 |# "not a socket"
+       #| 25 |# "not enough memory to perform operation"
+       ))
 
   (define (io-error who id err . other-conditions)
     (let ([err (fxnot err)])
@@ -2136,7 +2139,6 @@
     (define out-queue '())
     (define in-queue '())
 
-
     (define (process-events) 
       (if (null? out-queue) 
           (if (null? in-queue) 
@@ -2241,12 +2243,22 @@
 
 
   (define (do-accept-connection s who blocking?)
+    (define (make-socket-info x) 
+      (unless (= (bytevector-length x) 16) 
+        (error who "BUG: unexpected return value" x))
+      (format "~s.~s.~s.~s:~s" 
+        (bytevector-u8-ref x 4)
+        (bytevector-u8-ref x 5)
+        (bytevector-u8-ref x 6)
+        (bytevector-u8-ref x 7)
+        (+ (* 256 (bytevector-u8-ref x 2))
+           (bytevector-u8-ref x 3))))
     (unless (tcp-server? s) 
       (die who "not a tcp server" s))
-    (let ([fd (tcp-server-fd s)])
+    (let ([fd (tcp-server-fd s)] [bv (make-bytevector 16)])
       (unless fd 
         (die who "server is closed" s))
-      (let ([sock (foreign-call "ikrt_accept" fd)])
+      (let ([sock (foreign-call "ikrt_accept" fd bv)])
         (cond
           [(eq? sock EAGAIN-error-code)
            (call/cc 
@@ -2254,8 +2266,10 @@
                (add-io-event fd k 'r)
                (process-events)))
            (do-accept-connection s who blocking?)]
+          [(< sock 0)
+           (io-error who s sock)]
           [else
-           (socket->ports sock who #f blocking?)]))))
+           (socket->ports sock who (make-socket-info bv) blocking?)]))))
 
   (define (accept-connection s)
     (do-accept-connection s 'accept-connection #t))

@@ -59,6 +59,8 @@ ikrt_io_error(){
     case EAGAIN          : return fix(-22); /* hardcoded in ikarus.io.ss */
     case EPIPE           : return fix(-23);
     case ECONNREFUSED    : return fix(-24);
+    case ENOTSOCK        : return fix(-25);
+    case ENOBUFS         : return fix(-26);
   }
   return fix(-1);
 }
@@ -251,12 +253,37 @@ ikrt_listen(ikptr port, ikpcb* pcb){
   return fix(sock);
 }
 
+#if 0 
+not used
+ikptr 
+ikrt_getsockname(ikptr s, ikpcb* pcb){
+  socklen_t size = sizeof(struct sockaddr);
+  ikptr bv = ik_safe_alloc(pcb, align(disp_bytevector_data+size))
+             + bytevector_tag;
+  int r = getsockname(unfix(s),
+                     (struct sockaddr*)(bv+off_bytevector_data),
+                     &size);
+  if(r == 0){
+    ref(bv, off_bytevector_length) = fix(size);
+    return bv;
+  } else {
+    return ikrt_io_error();
+  }
+}
+#endif
+
+
+
 ikptr
-ikrt_accept(ikptr s, ikpcb* pcb){
-  int sock = accept(unfix(s), NULL, NULL);
+ikrt_accept(ikptr s, ikptr bv, ikpcb* pcb){
+  socklen_t addrlen = unfix(ref(bv, off_bytevector_length));
+  int sock = accept(unfix(s),
+                    (struct sockaddr*) (bv+off_bytevector_data),
+                    &addrlen);
   if(sock < 0){
     return ikrt_io_error();
   } 
+  ref(bv, off_bytevector_length) = fix(addrlen);
   return fix(sock);
 }
 
@@ -286,4 +313,7 @@ ikrt_file_ctime(ikptr filename, ikptr res){
   ref(res, off_cdr) = 0;
   return fix(0);
 }
+
+
+
 

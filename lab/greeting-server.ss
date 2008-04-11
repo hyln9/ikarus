@@ -23,6 +23,8 @@
              (lambda () 
                (let f ()
                  (let-values ([(op ip) (accept-connection s)])
+                   (printf "Connection from address ~a\n" 
+                           op)
                    (let ([op (transcoded-port op (native-transcoder))]
                          [ip (transcoded-port ip (native-transcoder))])
                      (display "What's your name? " op) 
