@@ -248,8 +248,6 @@ _ik_foreign_call:
   movl 24(%esi), %esp    # (movl (pcb-ref 'system-stack) esp)
   # %esp is the system stack, %eax is the index to the last arg,
   # %esi is the pcb.
-  # Now, the value of %esp is 16-byte aligned
-  # we always push %esi (4 bytes) and do a call (4 bytes),
   # 0 args require 6 (2) pushes => argc=   0 (0000): %esp +=  -8
   # 1 args require 5 (1) pushes => argc=  -4 (1100): %esp +=  -4
   # 2 args require 4 (0) pushes => argc=  -8 (1000): %esp +=   0
@@ -269,7 +267,11 @@ L_two:
 L_one:
   push $0
 L_zero:
+
+  # Now, the value of %esp is 16-byte aligned
+  # we always push %esi (4 bytes) and do a call (4 bytes),
   push %esi             # (pushl pcr)
+
   cmpl $0, %eax          # (cmpl (int 0) eax)
   je L_set               # (je (label Lset))
 L_loop:                  # (label Lloop)

@@ -16,10 +16,11 @@
 
 (library (ikarus posix)
   (export posix-fork fork waitpid system file-exists? delete-file
-          getenv env environ file-ctime)
+          nanosleep getenv env environ file-ctime)
   (import 
     (rnrs bytevectors)
     (except (ikarus)
+       nanosleep
        posix-fork fork waitpid system file-exists? delete-file
        getenv env environ file-ctime))
 
@@ -165,4 +166,22 @@
                         (substring s (fxadd1 i) n)
                         "")))))
         (foreign-call "ikrt_environ"))))
+
+  (define (nanosleep secs nsecs)
+    (import (ikarus system $fx))
+    (unless (cond
+              [(fixnum? secs) ($fx>= secs 0)]
+              [(bignum? secs) (<= 0 secs (- (expt 2 32) 1))]
+              [else (die 'nanosleep "not an exact integer" secs)])
+      (die 'nanosleep "seconds must be a nonnegative integer <=" secs))
+    (unless (cond
+              [(fixnum? nsecs) ($fx>= nsecs 0)]
+              [(bignum? nsecs) (<= 0 nsecs 999999999)]
+              [else (die 'nanosleep "not an exact integer" nsecs)])
+      (die 'nanosleep "nanoseconds must be an integer \
+                       in the range 0..999999999" nsecs))
+    (let ([rv (foreign-call "ikrt_nanosleep" secs nsecs)])
+      (unless (eq? rv 0)
+        (error 'nanosleep "failed"))))
+
   )

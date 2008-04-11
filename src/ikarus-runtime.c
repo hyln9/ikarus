@@ -982,6 +982,17 @@ ikrt_exit(ikptr status, ikpcb* pcb){
 }
 
 ikptr
+ikrt_nanosleep(ikptr secs, ikptr nsecs, ikpcb* pcb){
+  struct timespec t;
+  t.tv_sec = 
+    is_fixnum(secs) ? unfix(secs) : ref(secs, off_bignum_data);
+  t.tv_nsec = 
+    is_fixnum(nsecs) ? unfix(nsecs) : ref(nsecs, off_bignum_data);
+  return fix(nanosleep(&t, NULL));
+}
+
+
+ikptr
 ikrt_debug(ikptr x){
   fprintf(stderr, "DEBUG 0x%016lx\n", (long int)x);
   return 0;

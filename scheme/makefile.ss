@@ -1287,6 +1287,7 @@
     [string-titlecase                            r uc]
     [string-upcase                               r uc]
     [getenv                                      i]
+    [nanosleep                                   i]
     [char-ready?                                 ]
     [interaction-environment                     ]
     [load                                        i]
