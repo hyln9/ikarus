@@ -373,6 +373,13 @@
        (bytevector-s64-native-ref bv 8))]
 
 
+    [(lambda (x) (= x 73))
+     (let ([sz (- (* 10 4096) 8)])
+       (import (ikarus system $bytevectors))
+       (let ([bv (make-bytevector sz)])
+         (bytevector-u8-set! bv (- sz 1) 73)
+         (collect)
+         ($bytevector-u8-ref bv (- sz 1))))]
 
     ))
 

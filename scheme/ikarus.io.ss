@@ -70,6 +70,7 @@
     accept-connection accept-connection-nonblocking
     close-tcp-server-socket 
     register-callback
+    input-socket-buffer-size output-socket-buffer-size
     )
 
   
@@ -129,6 +130,7 @@
       accept-connection accept-connection-nonblocking
       close-tcp-server-socket 
       register-callback
+      input-socket-buffer-size output-socket-buffer-size
       ))
 
   (module UNSAFE  
@@ -1238,6 +1240,26 @@
   (define input-file-buffer-size (+ input-block-size 128))
   (define output-file-buffer-size output-block-size)
 
+  (define input-socket-buffer-size 
+    (make-parameter (+ input-block-size 128)
+      (lambda (x) 
+        (import (ikarus system $fx))
+        (if (and (fixnum? x) ($fx>= x 128))
+            x
+            (error 'input-socket-buffer-size 
+              "buffer size should be a fixnum >= 128"
+              x)))))
+
+  (define output-socket-buffer-size 
+    (make-parameter output-block-size
+      (lambda (x) 
+        (import (ikarus system $fx))
+        (if (and (fixnum? x) ($fx> x 0))
+            x
+            (error 'output-socket-buffer-size 
+              "buffer size should be a positive fixnum"
+              x)))))
+
   (define (fh->input-port fd id size transcoder close who)
     (letrec ([port
               ($make-port 
@@ -2110,9 +2132,9 @@
             (set-fd-nonblocking socket who id))
           (values 
             (fh->output-port socket
-               id output-file-buffer-size #f close who)
+               id (output-socket-buffer-size) #f close who)
             (fh->input-port socket
-               id input-file-buffer-size #f close who)))))
+               id (input-socket-buffer-size) #f close who)))))
 
   (define-syntax define-connector 
     (syntax-rules ()

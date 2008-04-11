@@ -2170,7 +2170,7 @@
   [(V x i) 
    (prm 'sll
      (prm 'logand
-          (prm 'mref (T x)
+          (prm 'bref (T x)
                (prm 'int+
                     (prm 'sra (T i) (K fx-shift))
                     (K (- disp-code-data vector-tag))))
