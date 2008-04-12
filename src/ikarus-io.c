@@ -136,6 +136,22 @@ ikrt_read_fd(ikptr fd, ikptr bv, ikptr off, ikptr cnt, ikpcb* pcb){
 
 ikptr
 ikrt_write_fd(ikptr fd, ikptr bv, ikptr off, ikptr cnt, ikpcb* pcb){
+#if 0
+  if (0) {
+    fprintf(stderr, "WRITE %d, %p %d %d %d\n", 
+         unfix(fd),
+         bv,
+         unfix(ref(bv, off_bytevector_length)),
+         unfix(off),
+        unfix(cnt));
+    int i;
+    for(i=0; i<100; i++){
+      fprintf(stderr, "bv[%d]=0x%02x ", i,
+             ((char*)(bv+off_bytevector_data))[i]);
+    }
+    fprintf(stderr, "\n");
+  }
+#endif
   ssize_t bytes = 
    write(unfix(fd),
          (char*)(long)(bv+off_bytevector_data+unfix(off)), 

@@ -576,7 +576,7 @@
        (do-bind lhs* rhs* (E e))]
       [(primcall op rands)
        (case op
-         [(mset bset/c bset/h mset32)
+         [(mset bset bset/c bset/h mset32)
           (S* rands
               (lambda (s*)
                 (make-asm-instr op
@@ -1464,9 +1464,9 @@
          [(cltd) 
           (mark-reg/vars-conf! edx vs)
           (R s vs (rem-reg edx rs) fs ns)]
-         [(mset mset32 bset/c bset/h fl:load fl:store fl:add! fl:sub!
-                fl:mul! fl:div! fl:from-int fl:shuffle
-                fl:load-single fl:store-single) 
+         [(mset mset32 bset bset/c bset/h 
+           fl:load fl:store fl:add! fl:sub! fl:mul! fl:div! fl:from-int
+           fl:shuffle fl:load-single fl:store-single) 
           (R* (list s d) vs rs fs ns)]
          [else (error who "invalid effect op" (unparse x))])]
       [(ntcall target value args mask size)
@@ -1667,7 +1667,7 @@
                  (make-primcall 'nop '())]
                 [else
                  (make-asm-instr op d s)]))]
-           [(logand logor logxor int+ int- int* mset mset32 bset/c bset/h 
+           [(logand logor logxor int+ int- int* mset bset mset32 bset/c bset/h 
               sll sra srl bswap!
               cltd idiv int-/overflow int+/overflow int*/overflow
               fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
@@ -1902,7 +1902,7 @@
               (set-union (set-union (R v) (R d)) s))]
            [(bset/c)
             (set-union (set-union (R v) (R d)) s)]
-           [(bset/h)
+           [(bset/h bset)
             (when (var? v)
               (for-each (lambda (r) (add-edge! g v r))
                 non-8bit-registers))
@@ -2272,7 +2272,7 @@
                         (eq? b ecx))
               (error who "invalid shift" b))
             x]
-           [(mset mset32 bset/c bset/h) 
+           [(mset mset32 bset bset/c bset/h) 
             (cond
               [(not (small-operand? b))
                (let ([u (mku)])
@@ -2582,6 +2582,7 @@
               (cons `(movb ,(R/l s) ,(R/l d)) ac))]
          [(bset/c) (cons `(movb ,(BYTE s) ,(R d)) ac)]
          [(bset/h) (cons `(movb ,(reg/h s) ,(R d)) ac)]
+         [(bset)   (cons `(movb ,(reg/l s) ,(R d)) ac)]
          [(sll)  (cons `(sall ,(R/cl s) ,(R d)) ac)]
          [(sra)  (cons `(sarl ,(R/cl s) ,(R d)) ac)]
          [(srl)  (cons `(shrl ,(R/cl s) ,(R d)) ac)]

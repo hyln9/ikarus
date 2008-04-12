@@ -110,12 +110,8 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
       }
       close(fd);
     }
-    if(wordsize == 4){
-      ik_exec_code(pcb, v);
-    } else {
-      fprintf(stderr, ";;; EXECING ...\n");
-      ikptr val = ik_exec_code(pcb, v);
-      fprintf(stderr, ";;; RETURNED ...\n");
+    ikptr val = ik_exec_code(pcb, v);
+    if(val != void_object){
       ik_print(val);
     }
   }

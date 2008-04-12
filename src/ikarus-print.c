@@ -156,6 +156,20 @@ print(FILE* fh, ikptr x){
     }
     fprintf(fh, "\"");
   }
+  else if(tagof(x) == bytevector_tag){
+    ikptr fxlen = ref(x, off_bytevector_length);
+    int len = unfix(fxlen);
+    unsigned char* data = (unsigned char*)(x + off_bytevector_data);
+    fprintf(fh, "#vu8(");
+    int i;
+    for(i=0; i<(len-1); i++){
+      fprintf(fh, "%d ", data[i]);
+    }
+    if(i < len){
+      fprintf(fh, "%d", data[i]);
+    }
+    fprintf(fh, ")");
+  }
   else {
     fprintf(fh, "#<unknown>");
   }

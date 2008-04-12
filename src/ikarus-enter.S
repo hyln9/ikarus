@@ -147,8 +147,33 @@ _ik_foreign_call:
   je L_zero_args
   cmpq $-8, %rax
   je L_one_arg
-  movq $0, %rax
-  movq %rax,0(%rax)
+  cmpq $-16, %rax
+  je L_two_args
+  cmpq $-24, %rax
+  je L_three_args
+  cmpq $-32, %rax
+  je L_four_args
+
+  movq $0, %rbx
+  movq %rbx,0(%rbx)
+L_four_args:
+  movq %rdi, %r8        # pcb
+  movq -8(%rbx), %rdi
+  movq -16(%rbx), %rsi
+  movq -24(%rbx), %rdx
+  movq -32(%rbx), %rcx
+  jmp L_set
+L_three_args:
+  movq %rdi, %rcx        # pcb
+  movq -8(%rbx), %rdi
+  movq -16(%rbx), %rsi
+  movq -24(%rbx), %rdx
+  jmp L_set
+L_two_args:
+  movq %rdi, %rdx        # pcb
+  movq -8(%rbx), %rdi
+  movq -16(%rbx), %rsi
+  jmp L_set
 L_one_arg:
   movq %rdi, %rsi
   movq -8(%rbx), %rdi

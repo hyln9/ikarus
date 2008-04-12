@@ -107,6 +107,11 @@
     [fxzero? $fxzero?]
     [vector vector]
     [symbol? symbol?]
+    [make-bytevector $make-bytevector]
+    [bytevector? bytevector?]
+    [bytevector-set! $bytevector-set!]
+    [bytevector-ref $bytevector-u8-ref]
+    [bytevector-length $bytevector-length]
     ))
 
 

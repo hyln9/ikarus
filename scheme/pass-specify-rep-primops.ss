@@ -1668,9 +1668,9 @@
                    [(<= 128 c 255) (- c 256)]
                    [else (interrupt)])))]
         [else
-         (prm 'bset/h (T x)
+         (prm 'bset (T x)
                (K (+ i (- disp-bytevector-data bytevector-tag)))
-               (prm 'sll (T c) (K (- 8 fx-shift))))])]
+               (prm 'sra (T c) (K fx-shift)))])]
      [else
       (struct-case c
         [(constant c)
@@ -1684,11 +1684,11 @@
                    [(<= 128 c 255) (- c 256)]
                    [else (interrupt)])))]
         [else
-         (prm 'bset/h (T x)
-               (prm 'int+ 
-                    (prm 'sra (T i) (K fx-shift))
-                    (K (- disp-bytevector-data bytevector-tag)))
-               (prm 'sll (T c) (K (- 8 fx-shift))))])])])
+         (prm 'bset (T x)
+              (prm 'int+ 
+                   (prm 'sra (T i) (K fx-shift))
+                   (K (- disp-bytevector-data bytevector-tag)))
+              (prm 'sra (T c) (K fx-shift)))])])])
 
 (define-primop $bytevector-ieee-double-native-ref unsafe
   [(V bv i)

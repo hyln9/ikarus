@@ -227,3 +227,57 @@
      (string-set! s 0 #\\)
      s) => "\"\\\\\"\n"]
 )
+
+(add-tests-with-string-output "bytevectors"
+  [(bytevector? (make-bytevector 0)) => "#t\n"]
+  [(make-bytevector 0) => "#vu8()\n"]
+  [(let ([s (make-bytevector 1)]) 
+     (bytevector-set! s 0 12)
+     (bytevector-ref s 0)) => "12\n"]
+  [(let ([s (make-bytevector 2)]) 
+     (bytevector-set! s 0 12)
+     (bytevector-set! s 1 13)
+     (cons (bytevector-ref s 0) (bytevector-ref s 1))) => "(12 . 13)\n"]
+  [(let ([i (let ([f (lambda () 0)]) (f))])
+    (let ([s (make-bytevector 1)]) 
+     (bytevector-set! s i 12)
+     (bytevector-ref s i))) => "12\n"]
+  [(let ([i (let ([f (lambda () 0)]) (f))]
+         [j (let ([f (lambda () 1)]) (f))])
+    (let ([s (make-bytevector 2)]) 
+     (bytevector-set! s i 12)
+     (bytevector-set! s j 13)
+     (cons (bytevector-ref s i) (bytevector-ref s j)))) => "(12 . 13)\n"]
+  [(let ([i (lambda () 0)])
+    (let ([s (make-bytevector 1)]) 
+     (bytevector-set! s 0 12)
+     (bytevector-ref s (i)))) => "12\n"]
+  [(let ([c (lambda () 12)])
+     (let ([s (make-bytevector 1)]) 
+       (bytevector-set! s 0 (c))
+       s)) => "#vu8(12)\n"] 
+  [(let ([i (lambda () 0)])
+    (let ([s (make-bytevector 1)]) 
+     (bytevector-set! s (i) 12)
+     (bytevector-ref s 0))) => "12\n"] 
+  [(let ([c (lambda () 12)])
+    (let ([s (make-bytevector 1)]) 
+     (bytevector-set! s 0 (c))
+     (bytevector-ref s 0))) => "12\n"] 
+  [(let ([i (lambda () 0)] [c (lambda () 12)])
+    (let ([s (make-bytevector 1)]) 
+     (bytevector-set! s (i) (c))
+     (bytevector-ref s (i)))) => "12\n"]
+  [(bytevector-length (make-bytevector 12)) => "12\n"]
+  [(bytevector? (make-vector 12)) => "#f\n"]
+  [(bytevector? (cons 1 2)) => "#f\n"]
+  [(bytevector? 1287) => "#f\n"]
+  [(bytevector? ()) => "#f\n"]
+  [(bytevector? #t) => "#f\n"]
+  [(bytevector? #f) => "#f\n"]
+  [(pair? (make-bytevector 12)) => "#f\n"]
+  [(null? (make-bytevector 12)) => "#f\n"]
+  [(boolean? (make-bytevector 12)) => "#f\n"]
+  [(vector? (make-bytevector 12)) => "#f\n"]
+)
+
