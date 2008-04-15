@@ -99,26 +99,31 @@ L_multivalue_underflow:
 .align 8
 ik_asm_reenter:
 _ik_asm_reenter:
-  # argc is at 12(%esp)
-  # scheme stack is third arg   8(%esp)
-  # pcb is the first arg        4(%esp)
+  # c parameters come in registers:
+  #     %rdi, %rsi, %rdx, %rcx, %r8 and %r9
+  # return value registers are %rax and %rdi
+  # callee-save registers:
+  #     %rbp, %rbx, %r12, r13, r14, %r15 are callee-save 
+
+  # argc is the third arg       12(%esp)   %rdx
+  # scheme stack is second arg  8(%esp)    %rsi
+  # pcb is the first arg        4(%esp)    %rdi
   # return point is at          0(%esp)
-  movl 12(%esp), %eax
-  movl  8(%esp), %ebx
-  movl %esi, -4(%esp)
-  movl %ebp, -8(%esp)
-  movl 4(%esp), %esi   
-  movl 0(%esi), %ebp     # allocation pointer is at 0(pcb)
-  subl $16, %esp         # 24 for alignment
-  movl %esp, 24(%esi)    # save esp in pcb->system_stack
-  movl %ebx, %esp        # load scheme stack from second arg
-  cmpl $-4, %eax
+  movq %rdx, %rax        # third arg -> argc
+  movq %rsi, %rbx        # second arg -> rbx  (scheme stack)
+  movq %rdi, %rsi        # first arg -> pcb
+  movq 0(%rsi), %rbp     # allocation pointer is at 0(pcb)
+  movq %rsp, 48(%rsi)    # save esp in pcb->system_stack
+  movq %rbx, %rsp        # load scheme stack from rbx
+  cmpq $-8, %rax
   jne L_multi_reentry
-  movl -4(%esp), %eax
+  movq -8(%rsp), %rax
   ret
 L_multi_reentry:
-  movl 0(%esp), %ebx
-  jmp *-9(%ebx)
+  movq $0, %rax
+  movq %rax, 0(%rax)
+  movq 0(%rsp), %rbx
+  jmp *-9(%rbx)
 
 
 .align 8

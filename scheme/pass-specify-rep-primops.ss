@@ -2179,11 +2179,11 @@
 
 (define-primop $code-set! unsafe
   [(E x i v)
-   (prm 'bset/h (T x)
+   (prm 'bset (T x)
         (prm 'int+ 
              (prm 'sra (T i) (K fx-shift))
              (K (- disp-code-data vector-tag)))
-        (prm 'sll (T v) (K (- 8 fx-shift))))])
+        (prm 'sra (T v) (K fx-shift)))])
 
 (define-primop $set-code-annotation! unsafe
   [(E x v) (mem-assign v (T x) (- disp-code-annotation vector-tag))])
