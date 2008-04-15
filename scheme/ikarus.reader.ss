@@ -1239,17 +1239,21 @@
               (values (cdr t) 
                 (annotate-simple (cdr t) pos p) locs k)]
              [(eq? (car t) 'macro)
-              (let-values ([(expr expr^ locs k)
-                            (read-expr p locs k)])
-                (when (eof-object? expr) 
-                  (die/p p 'read 
-                    (format "invalid eof after ~a read macro"
-                            (cdr t))))
-                (let ([x (list expr)] [x^ (list expr^)])
-                  (values (cons (cdr t) x)
-                          (cons (annotate-simple (cdr t) pos p) x^)
-                          locs
-                     (extend-k-pair x x^ expr '() k))))]
+              (let ([macro (cdr t)])
+                (define (read-macro)
+                  (let-values ([(t pos) (tokenize/1+pos p)])
+                    (cond
+                      [(eof-object? t) 
+                       (die/p p 'read 
+                         (format "invalid eof after ~a read macro"
+                         macro))]
+                      [else (parse-token p locs k t pos)])))
+                (let-values ([(expr expr^ locs k) (read-macro)])
+                  (let ([x (list expr)] [x^ (list expr^)])
+                    (values (cons macro x)
+                            (cons (annotate-simple macro pos p) x^)
+                            locs
+                       (extend-k-pair x x^ expr '() k)))))]
              [(eq? (car t) 'mark) 
               (let ([n (cdr t)])
                 (let-values ([(expr expr^ locs k) 
