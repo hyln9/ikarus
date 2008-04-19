@@ -341,7 +341,7 @@
     make-no-nans-violation no-nans-violation?)
 
   ;;; ikarus-specific conditions
-  (define-condition-type &interrupted &condition
+  (define-condition-type &interrupted &serious
     make-interrupted-condition interrupted-condition?)
 
   (define-condition-type &i/o-would-block &condition
