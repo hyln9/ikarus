@@ -2804,6 +2804,26 @@
              (stx-error e "module exports must be identifiers"))
            (values name (list->vector export*) b*))))))
 
+  (define-record module-interface (first-mark exp-id-vec exp-lab-vec))
+
+  (define (module-interface-exp-id* iface id)
+    (define (diff-marks ls x) 
+      (when (null? ls) (error 'diff-marks "BUG: should not happen"))
+      (let ([a (car ls)])
+        (if (eq? a x)
+            '()
+            (cons a (diff-marks (cdr ls) x)))))
+    (let ([diff
+           (diff-marks (stx-mark* id) (module-interface-first-mark iface))]
+          [id-vec (module-interface-exp-id-vec iface)])
+      (if (null? diff)
+          id-vec
+          (vector-map
+            (lambda (x)
+              (make-stx (stx-expr x) (append diff (stx-mark* x)) '() '()))
+            id-vec))))
+
+
   (define chi-internal-module
     (lambda (e r mr lex* rhs* mod** kwd*)
       (let-values (((name exp-id* e*) (parse-module e)))
@@ -2824,7 +2844,14 @@
                 (if (not name) ;;; explicit export
                     (values lex* rhs* exp-id* exp-lab* r mr mod** kwd*)
                     (let ((lab (gen-label 'module))
-                          (iface (cons exp-id* exp-lab*)))
+                          (iface 
+                           (make-module-interface 
+                             (car (stx-mark* name))
+                             (vector-map 
+                               (lambda (x) 
+                                 (make-stx (stx-expr x) (stx-mark* x) '() '()))
+                               exp-id*)
+                             exp-lab*)))
                       (values lex* rhs*
                               (vector name) ;;; FIXME: module cannot
                               (vector lab)  ;;;  export itself yet
@@ -2927,8 +2954,9 @@
                            (case type
                              (($module)
                               (let ((iface value))
-                                (let ((id* (car iface)) (lab* (cdr iface)))
-                                  (values id* lab*))))
+                                (values 
+                                  (module-interface-exp-id* iface id)
+                                  (module-interface-exp-lab-vec iface))))
                              (else (stx-error e "invalid import")))))))
                     (define (library-import e) 
                       (syntax-match e ()
