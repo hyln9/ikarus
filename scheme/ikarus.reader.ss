@@ -52,6 +52,19 @@
     (die/pos p -1 who msg arg*))
 
 
+  (define (checked-integer->char n ac p) 
+    (define (valid-integer-char? n)
+      (cond
+        [(<= n #xD7FF)   #t]
+        [(< n #xE000)    #f]
+        [(<= n #x10FFFF) #t]
+        [else            #f]))
+    (if (valid-integer-char? n) 
+        ($fixnum->char n)
+        (die/p p 'tokenize 
+          "invalid numeric value for character"
+          (list->string (reverse ac)))))
+
   (define-syntax read-char 
     (syntax-rules ()
       [(_ p) (get-char p)]))
@@ -155,20 +168,20 @@
                 (die/p p 'tokenize "invalid eof inside string")]
                [(hex c) =>
                 (lambda (n)
-                  (let f ([n n])
+                  (let f ([n n] [ac (cons c '(#\x))])
                     (let ([c (read-char p)])
                       (cond
                         [(eof-object? n) 
                          (die/p p 'tokenize "invalid eof inside string")]
                         [(hex c) =>
-                         (lambda (v) (f (+ (* n 16) v)))]
+                         (lambda (v) (f (+ (* n 16) v) (cons c ac)))]
                         [($char= c #\;) 
                          (tokenize-string
-                           (cons (integer->char n) ls) p)]
+                           (cons (checked-integer->char n ac p) ls) p)]
                         [else
                          (die/p-1 p 'tokenize
                            "invalid char in escape sequence"
-                           c)]))))]
+                           (list->string (reverse (cons c ac))))]))))]
                [else 
                 (die/p-1 p 'tokenize
                   "invalid char in escape sequence" c)]))]
@@ -253,7 +266,7 @@
            [(eof-object? c) d]
            [(delimiter? c)  d]
            [else (die/p p 'tokenize "invalid character after sequence"
-                    (string-append (string c) str))]))]
+                    (string-append str (string c)))]))]
        [else
         (let ([c (read-char p)])
           (cond
@@ -325,21 +338,23 @@
                [(or (eof-object? n) (delimiter? n))
                 '(datum . #\x)]
                [(hex n) =>
-                (lambda (v) 
+                (lambda (v)
                   (read-char p)
-                  (let f ([v v])
+                  (let f ([v v] [ac (cons n '(#\x))])
                     (let ([c (peek-char p)])
                       (cond
                         [(eof-object? c)
-                         (cons 'datum (integer->char v))]
+                         (cons 'datum (checked-integer->char v ac p))]
                         [(delimiter? c)
-                         (cons 'datum (integer->char v))]
+                         (cons 'datum (checked-integer->char v ac p))]
                         [(hex c) =>
                          (lambda (v0)
                            (read-char p)
-                           (f (+ (* v 16) v0)))]
+                           (f (+ (* v 16) v0) (cons c ac)))]
                         [else
-                         (die/p p 'tokenize "invalid character sequence")]))))]
+                         (die/p p 'tokenize 
+                           "invalid character sequence"
+                           (list->string (reverse (cons c ac))))]))))]
                [else
                 (die/p p 'tokenize "invalid character sequence"
                        (string-append "#\\" (string n)))]))]
@@ -355,11 +370,11 @@
     (cond
       [(and ($char<= #\0 x) ($char<= x #\9))
        ($fx- ($char->fixnum x) ($char->fixnum #\0))]
-      [(and ($char<= #\a x) ($char<= x #\z))
+      [(and ($char<= #\a x) ($char<= x #\f))
        ($fx- ($char->fixnum x) 
              ($fx- ($char->fixnum #\a) 10))]
-      [(and ($char<= #\A x) ($char<= x #\Z))
-       ($fx- ($char->fixnum x) 
+      [(and ($char<= #\A x) ($char<= x #\F))
+       ($fx- ($char->fixnum x)
              ($fx- ($char->fixnum #\A) 10))]
       [else #f]))
   (define multiline-error
@@ -897,7 +912,9 @@
                          (format "invalid eof after ~a"
                            (list->string (reverse ac))))]
                       [($char= #\; c)
-                       (tokenize-identifier (cons (integer->char v) main-ac) p)]
+                       (tokenize-identifier 
+                         (cons (checked-integer->char v ac p) main-ac)
+                         p)]
                       [(hex c) =>
                        (lambda (v0)
                          (f (+ (* v 16) v0) (cons c ac)))]
