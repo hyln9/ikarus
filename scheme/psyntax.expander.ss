@@ -407,16 +407,26 @@
           (if (syntax-null? x)
               '()
               (assertion-violation 'syntax->list "BUG: invalid argument" x)))))
+
   (define id?
-    (lambda (x) (syntax-kind? x symbol?)))
+    (lambda (x) 
+      (and (stx? x) 
+        (let ([expr (stx-expr x)])
+          (symbol? (if (annotation? expr)
+                       (annotation-stripped expr)
+                       expr))))))
   
   (define id->sym
     (lambda (x)
-      (cond
-        [(stx? x) (id->sym (stx-expr x))]
-        [(annotation? x) (annotation-expression x)]
-        [(symbol? x) x]
-        [else (assertion-violation 'id->sym "BUG: not an id" x)])))
+      (unless (stx? x)
+        (error 'id->sym "BUG in ikarus: not an id" x))
+      (let ([expr (stx-expr x)])
+        (let ([sym (if (annotation? expr) 
+                       (annotation-stripped expr)
+                       expr)])
+          (if (symbol? sym) 
+              sym
+              (error 'id->sym "BUG in ikarus: not an id" x))))))
 
   ;;; Two lists of marks are considered the same if they have the 
   ;;; same length and the corresponding marks on each are eq?.
@@ -2136,6 +2146,7 @@
                       (and r* (combine r* r)))))
                ((free-id)
                 (and (symbol? e)
+                     (top-marked? m*)
                      (free-id=? (stx^ e m* s* ae*) (vector-ref p 1))
                      r))
                ((each+)
@@ -3112,10 +3123,11 @@
         expanded-rhs)))
 
   (define (parse-exports exp*)
+    (define (idsyn? x) (symbol? (syntax->datum x)))
     (let f ((exp* exp*) (int* '()) (ext* '()))
       (cond
         ((null? exp*)
-         (let ((id* (map (lambda (x) (mkstx x top-mark* '() '())) ext*)))
+         (let ((id* (map (lambda (x) (make-stx x top-mark* '() '())) ext*)))
            (unless (valid-bound-ids? id*)
              (syntax-violation 'export "invalid exports" 
                 (find-dups id*))))
@@ -3125,13 +3137,13 @@
            ((rename (i* e*) ...)
             (begin
               (unless (and (eq? (syntax->datum rename) 'rename)
-                           (for-all id? i*)
-                           (for-all id? e*))
+                           (for-all idsyn? i*)
+                           (for-all idsyn? e*))
                 (syntax-violation 'export "invalid export specifier" (car exp*)))
               (f (cdr exp*) (append i* int*) (append e* ext*))))
            (ie
             (begin
-              (unless (id? ie) 
+              (unless (idsyn? ie)
                 (syntax-violation 'export "invalid export" ie))
               (f (cdr exp*) (cons ie int*) (cons ie ext*)))))))))
 
@@ -3148,9 +3160,9 @@
                (and (integer? x) (exact? x))))
            v*)
          (values '() (map syntax->datum v*))]
-        [(x . rest) (id? x)
+        [(x . rest) (symbol? (syntax->datum x))
          (let-values ([(x* v*) (parse rest)])
-           (values (cons (id->sym x) x*) v*))]
+           (values (cons (syntax->datum x) x*) v*))]
         [() (values '() '())]
         [_ (stx-error spec "invalid library name")]))
     (let-values (((name* ver*) (parse spec)))
@@ -3177,7 +3189,9 @@
   ;;; Example: given ((rename (only (foo) x z) (x y)) (only (bar) q))
   ;;; returns: ((z . z$label) (y . x$label) (q . q$label))
   ;;;     and  (#<library (foo)> #<library (bar)>)
+  
   (define (parse-import-spec* imp*)
+    (define (idsyn? x) (symbol? (syntax->datum x)))
     (define (dup-error name)
       (syntax-violation 'import "two imports with different bindings" name))
     (define (merge-substs s subst)
@@ -3284,9 +3298,9 @@
         (syntax-match x ()
           [((version-spec* ...)) 
            (values '() (version-pred version-spec*))]
-          [(x . x*) (id? x)
+          [(x . x*) (idsyn? x)
            (let-values ([(name pred) (f x*)])
-             (values (cons (id->sym x) name) pred))]
+             (values (cons (syntax->datum x) name) pred))]
           [() (values '() (lambda (x) #t))]
           [_ (stx-error spec "invalid import spec")])))
     (define (import-library spec*)
@@ -3311,31 +3325,31 @@
          (import-library (cons x x*)))
         ((rename isp (old* new*) ...)
          (and (eq? (syntax->datum rename) 'rename) 
-              (for-all id? old*) 
-              (for-all id? new*))
+              (for-all idsyn? old*) 
+              (for-all idsyn? new*))
          (let ((subst (get-import isp))
-               [old* (map id->sym old*)]
-               [new* (map id->sym new*)])
+               [old* (map syntax->datum old*)]
+               [new* (map syntax->datum new*)])
            ;;; rewrite this to eliminate find* and rem* and merge
            (let ((old-label* (find* old* subst)))
              (let ((subst (rem* old* subst)))
                ;;; FIXME: make sure map is valid
                (merge-substs (map cons new* old-label*) subst)))))
         ((except isp sym* ...) 
-         (and (eq? (syntax->datum except) 'except) (for-all id? sym*))
+         (and (eq? (syntax->datum except) 'except) (for-all idsyn? sym*))
          (let ((subst (get-import isp)))
-           (rem* (map id->sym sym*) subst)))
+           (rem* (map syntax->datum sym*) subst)))
         ((only isp sym* ...)
-         (and (eq? (syntax->datum only) 'only) (for-all id? sym*))
+         (and (eq? (syntax->datum only) 'only) (for-all idsyn? sym*))
          (let ((subst (get-import isp))
-               [sym* (map id->sym sym*)])
+               [sym* (map syntax->datum sym*)])
            (let ((sym* (remove-dups sym*)))
              (let ((lab* (find* sym* subst)))
                (map cons sym* lab*)))))
         ((prefix isp p) 
-         (and (eq? (syntax->datum prefix) 'prefix) (id? p))
+         (and (eq? (syntax->datum prefix) 'prefix) (idsyn? p))
          (let ((subst (get-import isp))
-               (prefix (symbol->string (id->sym p))))
+               (prefix (symbol->string (syntax->datum p))))
            (map
              (lambda (x)
                (cons
@@ -3383,7 +3397,9 @@
     (let ((rib (make-empty-rib)))
       (vector-for-each
         (lambda (name label)
-          (extend-rib! rib (mkstx name top-mark* '() '()) label))
+          (unless (symbol? name) 
+            (error 'make-top-rib "BUG: not a symbol" name))
+          (extend-rib! rib (make-stx name top-mark* '() '()) label))
         names labels)
       rib))
 
