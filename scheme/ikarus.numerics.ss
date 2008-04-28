@@ -1458,7 +1458,7 @@
                     #f
                     (loopf (car ls) (cdr ls)))]
                [else (err x)])))
-         (define f
+         (define name
            (case-lambda
              [(x y)
               (cond
@@ -1491,7 +1491,7 @@
                    [(ratnum? y) (rtrt< x y)]
                    [else (err y)])]
                 [else (err x)])]
-             [(x y z) (and (f x y) (f y z))]
+             [(x y z) (and (name x y) (name y z))]
              [(x) (if (number? x) #t (err x))]
              [(x y . ls) 
               (cond
@@ -1500,7 +1500,7 @@
                 [(flonum? x) (flloopt x y ls)]
                 [(ratnum? x) (rtloopt x y ls)]
                 [else (err x)])]))
-         f)]))
+         name)]))
 
   (define-syntax false (syntax-rules () [(_ x y) #f]))
   (define-syntax bnbncmp
