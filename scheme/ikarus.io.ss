@@ -45,6 +45,7 @@
     open-bytevector-output-port
     call-with-bytevector-output-port
     open-string-output-port with-output-to-string
+    with-output-to-port
     call-with-string-output-port 
     open-output-string get-output-string
     standard-output-port standard-error-port
@@ -112,6 +113,7 @@
       current-output-port current-error-port
       open-file-output-port open-output-file 
       call-with-output-file with-output-to-file
+      with-output-to-port
       console-output-port
       console-input-port
       console-error-port
@@ -469,7 +471,18 @@
       (parameterize ([*the-output-port* p])
         (proc))
       (extract)))
-  
+
+  (define (with-output-to-port p proc)
+    (define who 'with-output-to-port)
+    (unless (procedure? proc)
+      (die who "not a procedure" proc))
+    (unless (output-port? p) 
+      (die who "not an output port" p))
+    (unless (textual-port? p)
+      (die who "not a textual port" p))
+    (parameterize ([*the-output-port* p])
+      (proc)))
+
   (define-struct output-string-cookie (strings))
 
 

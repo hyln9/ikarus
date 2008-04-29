@@ -1186,6 +1186,7 @@
     [read-char                                   i r is se]
     [with-input-from-file                        i r is se]
     [with-output-to-file                         i r is se]
+    [with-output-to-port                         i]
     [write                                       i r is se]
     [write-char                                  i r is se]
     [call-with-input-file                        i r is se]
