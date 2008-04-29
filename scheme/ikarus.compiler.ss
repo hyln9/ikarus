@@ -2401,30 +2401,6 @@
       v)))
 
 
-
-
-(define (insert-engine-checks x)
-  (define (Tail x)
-    (make-seq
-      (make-interrupt-call 
-        (make-primcall '$engine-check '())
-        (make-funcall (make-primref '$do-event) '()))
-      x))
-  (define (CaseExpr x)
-    (struct-case x 
-      [(clambda-case info body)
-       (make-clambda-case info (Tail body))]))
-  (define (CodeExpr x)
-    (struct-case x
-      [(clambda L cases cp free name)
-       (make-clambda L (map CaseExpr cases) cp free name)]))
-  (define (CodesExpr x)
-    (struct-case x 
-      [(codes list body)
-       (make-codes (map CodeExpr list) (Tail body))]))
-  (CodesExpr x))
-
-
 (begin ;;; DEFINITIONS
   (module (wordsize)
     (include "ikarus.config.ss"))

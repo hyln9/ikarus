@@ -2026,7 +2026,16 @@
   [(E) 
    (begin
      (interrupt)
-     (prm 'incr/zero? pcr (K pcb-engine-counter)))])
+     (prm 'incr/zero? pcr (K pcb-engine-counter) 
+          (K (fxsll 1 fx-shift))))])
+
+(define-primop $swap-engine-counter! unsafe
+  [(V x) 
+   ;;; FIXME: should be atomic swap instead of load and set!
+   (with-tmp ([x0 (T x)])
+     (with-tmp ([t (prm 'mref pcr (K pcb-engine-counter))])
+       (prm 'mset pcr (K pcb-engine-counter) x0)
+       t))])
 
 (define-primop $stack-overflow-check unsafe
   [(E) 

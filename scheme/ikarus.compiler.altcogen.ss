@@ -2650,7 +2650,7 @@
           (let ([l (or (exception-label)
                        (error who "no exception label"))])
             (cons* 
-              `(addl 1 ,(R (make-disp (car rands) (cadr rands))))
+              `(addl ,(D (caddr rands)) ,(R (make-disp (car rands) (cadr rands))))
               `(je ,l)
               ac))]
          [(fl:double->single)

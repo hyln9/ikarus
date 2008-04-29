@@ -38,8 +38,8 @@
     $incorrect-args-error-handler $multiple-values-error $debug
     $underflow-misaligned-error top-level-value-error car-error
     cdr-error fxadd1-error fxsub1-error cadr-error fx+-type-error
-    fx+-types-error fx+-overflow-error $do-event)
-  (import (except (ikarus) interrupt-handler)
+    fx+-types-error fx+-overflow-error $do-event engine-handler)
+  (import (except (ikarus) interrupt-handler engine-handler)
           (only (ikarus system $interrupts) $interrupted? $unset-interrupted!))
 
   (define interrupt-handler
@@ -56,6 +56,14 @@
         (if (procedure? x)
             x
             (die 'interrupt-handler "not a procedure" x)))))
+
+  (define engine-handler
+    (make-parameter
+      void
+      (lambda (x)
+        (if (procedure? x)
+            x
+            (die 'engine-handler "not a procedure" x)))))
 
   (define $apply-nonprocedure-error-handler
     (lambda (x)
@@ -128,7 +136,11 @@
   
   (define $do-event
     (lambda ()
-      (when ($interrupted?)
-        ($unset-interrupted!)
-        ((interrupt-handler)))))
+      (cond
+        [($interrupted?)
+         ($unset-interrupted!)
+         ((interrupt-handler))]
+        [else
+         ((engine-handler))])))
+
   )

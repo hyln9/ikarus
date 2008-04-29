@@ -218,7 +218,7 @@ Notice how the bsd manpages have incorrect type for the handler.
 #endif
 
 void handler(int signo, siginfo_t* info, void* uap){
-  the_pcb->engine_counter = -1;
+  the_pcb->engine_counter = fix(-1);
   the_pcb->interrupted = 1;
 }
 
