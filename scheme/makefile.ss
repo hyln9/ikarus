@@ -197,7 +197,7 @@
     [&i/o-invalid-position     ($core-rtd . (&i/o-invalid-position-rtd &i/o-invalid-position-rcd ))]
     [&i/o-filename             ($core-rtd . (&i/o-filename-rtd &i/o-filename-rcd))]
     [&i/o-file-protection      ($core-rtd . (&i/o-file-protection-rtd &i/o-file-protection-rcd))]
-    [&i/o-file-is-read-only    ($core-rtd . (&i/o-file-is-read-only-rtd &i/o-fie-is-read-only-rcd ))]
+    [&i/o-file-is-read-only    ($core-rtd .  (&i/o-file-is-read-only-rtd &i/o-file-is-read-only-rcd ))]
     [&i/o-file-already-exists  ($core-rtd . (&i/o-file-already-exists-rtd &i/o-file-already-exists-rcd))]
     [&i/o-file-does-not-exist  ($core-rtd . (&i/o-file-does-not-exist-rtd &i/o-file-does-not-exist-rcd))]
     [&i/o-port                 ($core-rtd . (&i/o-port-rtd &i/o-port-rcd))]
@@ -328,21 +328,6 @@
     [top-level-value                             i symbols]
     [reset-symbol-proc!                          i symbols]
     [make-guardian                               i]
-    [make-input-port                             i]
-    [make-output-port                            i]
-    [port-output-index                           i]
-    [port-output-size                            i]
-    [port-output-buffer                          i]
-    [set-port-output-index!                      i]
-    [set-port-output-size!                       i]
-    [port-input-buffer                           i]
-    [port-input-index                            i]
-    [port-input-size                             i]
-    [set-port-input-index!                       i]
-    [set-port-input-size!                        i]
-    [port-name                                   i]
-    [input-port-name                             i]
-    [output-port-name                            i]
     [port-mode                                   i]
     [set-port-mode!                              i]
     [with-input-from-string                      i]
@@ -357,7 +342,6 @@
     [console-output-port                         i]
     [reset-input-port!                           i]
     [reset-output-port!                          i]
-    [write-byte                                  i]
     [read-token                                  i]
     [printf                                      i]
     [fprintf                                     i]
@@ -386,7 +370,6 @@
     [time-nanosecond                             i]
     [command-line-arguments                      i]
     [set-rtd-printer!                            i]
-    [make-record-type                            i]
     [struct?                                     i]
     [make-struct-type                            i]
     [struct-type-name                            i]
@@ -1379,8 +1362,8 @@
     [&i/o-filename-rcd]
     [&i/o-file-protection-rtd]
     [&i/o-file-protection-rcd]
-    [&i/o-fie-is-read-only-rtd]
-    [&i/o-fie-is-read-only-rcd]
+    [&i/o-file-is-read-only-rtd]
+    [&i/o-file-is-read-only-rcd]
     [&i/o-file-already-exists-rtd]
     [&i/o-file-already-exists-rcd]
     [&i/o-file-does-not-exist-rtd]
@@ -1517,6 +1500,7 @@
             [else 
              ;;; core primitive with no backing definition, assumed to
              ;;; be defined in other strata of the system
+             ;(printf "undefined primitive ~s\n" x)
              (let ([label (gensym)])
                (export-subst (cons x label))
                (export-env (cons label (cons 'core-prim x))))])))

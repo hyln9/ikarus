@@ -56,8 +56,6 @@
     console-error-port
     console-input-port
     newline
-    input-port-name
-    output-port-name
     port-mode set-port-mode!
     reset-input-port!
     reset-output-port!
@@ -118,8 +116,6 @@
       console-input-port
       console-error-port
       newline
-      input-port-name
-      output-port-name
       port-mode set-port-mode!
       reset-input-port!
       reset-output-port!
@@ -231,16 +227,6 @@
       (lambda (x) 
         (import (ikarus system $fx))
         ($fxlogand ($port-tag x) fast-attrs-mask))))
-
-  (define (input-port-name p)
-    (if (input-port? p) 
-        ($port-id p)
-        (die 'input-port-name "not an input port" p)))
-
-  (define (output-port-name p)
-    (if (output-port? p) 
-        ($port-id p)
-        (die 'output-port-name "not an output port" p)))
 
   (define (port-id p)
     (if (port? p) 
