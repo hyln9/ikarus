@@ -63,7 +63,7 @@
     reset-output-port!
     port-id
     input-port-byte-position
-    process 
+    process process-nonblocking
     
     tcp-connect tcp-connect-nonblocking
     udp-connect udp-connect-nonblocking
@@ -125,7 +125,7 @@
       reset-output-port!
       port-id
       input-port-byte-position
-      process
+      process process-nonblocking
       tcp-connect tcp-connect-nonblocking
       udp-connect udp-connect-nonblocking
       tcp-server-socket tcp-server-socket-nonblocking
@@ -2126,6 +2126,36 @@
             (fh->input-port (vector-ref r 3) 
                 cmd input-file-buffer-size #f #t
                 'process)))))
+
+
+  (define (process-nonblocking cmd . args)
+    (define who 'process-nonblocking)
+    (unless (string? cmd)
+      (die who "command is not a string" cmd))
+    (unless (andmap string? args) 
+      (die who "all arguments must be strings"))
+    (let ([r (foreign-call "ikrt_process" 
+                (make-vector 4)
+                (string->utf8 cmd)
+                (map string->utf8 (cons cmd args)))])
+      (if (fixnum? r) 
+          (io-error who cmd r)
+          (begin 
+            (set-fd-nonblocking (vector-ref r 1) who cmd)
+            (set-fd-nonblocking (vector-ref r 2) who cmd)
+            (set-fd-nonblocking (vector-ref r 3) who cmd)
+            (values
+              (vector-ref r 0) ; pid
+              (fh->output-port (vector-ref r 1) 
+                  cmd output-file-buffer-size #f #t
+                  'process)
+              (fh->input-port (vector-ref r 2) 
+                  cmd input-file-buffer-size #f #t
+                  'process)
+              (fh->input-port (vector-ref r 3) 
+                  cmd input-file-buffer-size #f #t
+                  'process))))))
+
 
   (define (set-fd-nonblocking fd who id)
     (let ([rv (foreign-call "ikrt_make_fd_nonblocking" fd)])

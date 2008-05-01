@@ -403,6 +403,7 @@
     [pointer-value                               i]
     [system                                      i]
     [process                                     i]
+    [process-nonblocking                         i]
     [waitpid                                     i]
     [installed-libraries                         i]
     [library-path                                i]
