@@ -506,7 +506,7 @@
   ;;; same label or if both are unbound and they have the same name.
   (define free-id=?
     (lambda (i j)
-      (let ((t0 (id->label i)) (t1 (id->label j)))
+      (let ((t0 (id->real-label i)) (t1 (id->real-label j)))
         (if (or t0 t1)
             (eq? t0 t1)
             (eq? (id->sym i) (id->sym j))))))
@@ -580,21 +580,23 @@
   ;;; id->label takes an id (that's a sym x marks x substs) and
   ;;; searches the substs for a label associated with the same sym
   ;;; and marks.
-  (define id->label
+  (define (id->label id)
+    (or (id->real-label id)
+        (cond
+          [(top-level-context) =>
+           (lambda (env)
+             ;;; fabricate binding
+             (let ([rib (interaction-env-rib env)])
+               (let-values ([(lab loc_) (gen-define-label+loc id rib)])
+                 lab)))]
+          [else #f])))
+          
+  (define id->real-label
     (lambda (id)
       (let ((sym (id->sym id)))
         (let search ((subst* (stx-subst* id)) (mark* (stx-mark* id)))
           (cond
-            ((null? subst*)
-             (cond
-               [(top-level-context) =>
-                (lambda (env)
-                  ;;; fabricate binding
-                  (let ([rib (interaction-env-rib env)])
-                    (let-values ([(lab loc_) (gen-define-label+loc id rib)])
-                      (extend-rib! rib id lab)
-                      lab)))]
-               [else #f]))
+            ((null? subst*) #f)
             ((eq? (car subst*) 'shift) 
              ;;; a shift is inserted when a mark is added.
              ;;; so, we search the rest of the substitution
