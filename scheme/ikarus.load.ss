@@ -21,7 +21,7 @@
     (only (ikarus.compiler) compile-core-expr)
     (only (psyntax library-manager) 
       serialize-all current-precompiled-library-loader)
-    (only (psyntax expander) eval-top-level compile-r6rs-top-level)
+    (only (psyntax expander) compile-r6rs-top-level)
     (only (ikarus reader) read-initial))
 
 
@@ -65,7 +65,8 @@
 
   (define load-handler
     (lambda (x)
-      (eval-top-level x)))
+      (eval x (interaction-environment))))
+
   (define read-and-eval
     (lambda (p eval-proc)
       (let ([x (read p)])

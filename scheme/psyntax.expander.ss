@@ -24,8 +24,10 @@
           bound-identifier=? datum->syntax syntax-error
           syntax-violation
           syntax->datum make-variable-transformer
-          compile-r6rs-top-level boot-library-expand eval-top-level
-          null-environment scheme-report-environment ellipsis-map)
+          compile-r6rs-top-level boot-library-expand 
+          null-environment scheme-report-environment
+          interaction-environment
+          ellipsis-map)
   (import
     (except (rnrs) 
       environment environment? identifier?
@@ -118,22 +120,24 @@
 
   (define (gen-define-label+loc id rib)
     (cond
-      [(top-level-context?)
-       (let ([label (gen-top-level-label id rib)])
-         (values label
-           (cond
-             [(assq label top-level-locations) => cdr]
-             [else 
-              (let ([loc (gen-lexical id)])
-                (set! top-level-locations 
-                  (cons (cons label loc) top-level-locations))
-                loc)])))]
+      [(top-level-context) =>
+       (lambda (env)
+         (let ([label (gen-top-level-label id rib)]
+               [locs (interaction-env-locs env)])
+           (values label
+             (cond
+               [(assq label locs) => cdr]
+               [else 
+                (let ([loc (gen-lexical id)])
+                  (set-interaction-env-locs! env
+                    (cons (cons label loc) locs))
+                  loc)]))))]
       [else (values (gensym) (gen-lexical id))]))
 
 
   (define (gen-define-label id rib)
     (cond
-      [(top-level-context?)
+      [(top-level-context)
        (gen-top-level-label id rib)]
       [else (gensym)]))
 
@@ -176,7 +180,7 @@
            (lambda (p) 
              (unless (eq? label (car p))
                (cond
-                 [(top-level-context?) 
+                 [(top-level-context)
                   ;;; override label
                   (set-car! p label)]
                  [else
@@ -583,12 +587,13 @@
           (cond
             ((null? subst*)
              (cond
-               [(top-level-context?) 
-                ;;; fabricate binding
-                (let ([rib (get-top-rib)])
-                  (let-values ([(lab loc_) (gen-define-label+loc id rib)])
-                    (extend-rib! rib id lab)
-                    lab))]
+               [(top-level-context) =>
+                (lambda (env)
+                  ;;; fabricate binding
+                  (let ([rib (interaction-env-rib env)])
+                    (let-values ([(lab loc_) (gen-define-label+loc id rib)])
+                      (extend-rib! rib id lab)
+                      lab)))]
                [else #f]))
             ((eq? (car subst*) 'shift) 
              ;;; a shift is inserted when a mark is added.
@@ -641,11 +646,13 @@
                 (cons '$rtd (symbol-value loc)))]
              [else b])))
         ((assq x r) => cdr)
-        [(and 
-           (top-level-context?)
-           (assq x top-level-locations)) =>
-         (lambda (p)  ;;; fabricate
-           (cons* 'lexical (cdr p) #f))]
+        [(top-level-context) =>
+         (lambda (env)
+           (cond
+             [(assq x (interaction-env-locs env)) =>
+              (lambda (p)  ;;; fabricate
+                (cons* 'lexical (cdr p) #f))]
+             [else '(displaced-lexical . #f)]))]
         (else '(displaced-lexical . #f)))))
 
   (define make-binding cons)
@@ -3437,7 +3444,7 @@
     (lambda (exp* imp* b* top?)
       (define itc (make-collector))
       (parameterize ((imp-collector itc)
-                     (top-level-context? #f))
+                     (top-level-context #f))
         (let-values (((exp-int* exp-ext*) (parse-exports exp*)))
           (let-values (((subst-names subst-labels)
                         (parse-import-spec* imp*)))
@@ -3526,12 +3533,14 @@
   ;;; libraries.
   (define-record env (names labels itc)
     (lambda (x p)
-      (unless (env? x)
-        (assertion-violation 'record-type-printer "not an environment"))
+      (display "#<environment>" p)))
+
+  (define-record interaction-env (rib r locs)
+    (lambda (x p)
       (display "#<environment>" p)))
   
   (define environment?
-    (lambda (x) (env? x)))
+    (lambda (x) (or (env? x) (interaction-env? x))))
   
   ;;; This is R6RS's environment.  It parses the import specs 
   ;;; and constructs an env record that can be used later by 
@@ -3561,31 +3570,47 @@
   ;;; libraries that must be invoked before evaluating the core expr.
   (define expand
     (lambda (x env)
-      (unless (env? env)
-        (assertion-violation 'expand "not an environment" env))
-      (let ((rib (make-top-rib (env-names env) (env-labels env))))
-        (let ((x (mkstx x top-mark* (list rib) '()))
-              (itc (env-itc env))
-              (rtc (make-collector))
-              (vtc (make-collector)))
-            (let ((x
-                   (parameterize ((inv-collector rtc)
-                                  (vis-collector vtc)
-                                  (imp-collector itc))
-                      (chi-expr x '() '()))))
-              (seal-rib! rib)
-              (values x (rtc)))))))
+      (cond
+        [(env? env)
+         (let ((rib (make-top-rib (env-names env) (env-labels env))))
+           (let ((x (mkstx x top-mark* (list rib) '()))
+                 (itc (env-itc env))
+                 (rtc (make-collector))
+                 (vtc (make-collector)))
+               (let ((x
+                      (parameterize ((inv-collector rtc)
+                                     (vis-collector vtc)
+                                     (imp-collector itc))
+                         (chi-expr x '() '()))))
+                 (seal-rib! rib)
+                 (values x (rtc)))))]
+        [(interaction-env? env)
+         (let ([rib (interaction-env-rib env)]
+               [r (interaction-env-r env)]
+               [rtc (make-collector)])
+           (let ([x (make-stx x top-mark* (list rib) '())])
+             (let-values ([(e r^) 
+                           (parameterize ([top-level-context env]
+                                          [inv-collector rtc]
+                                          [vis-collector (make-collector)]
+                                          [imp-collector (make-collector)])
+                             (chi-interaction-expr x rib r))])
+               (set-interaction-env-r! env r^)
+               (values e (rtc)))))]
+        [else
+         (assertion-violation 'expand "not an environment" env)])))
 
   ;;; This is R6RS's eval.  It takes an expression and an environment,
   ;;; expands the expression, invokes its invoke-required libraries and
   ;;; evaluates its expanded core form.
   (define eval
     (lambda (x env)
-      (unless (env? env)
-        (assertion-violation 'eval "not an environment" env))
+      (unless (environment? env)
+        (error 'eval "not an environment" env))
       (let-values (((x invoke-req*) (expand x env)))
         (for-each invoke-library invoke-req*)
         (eval-core (expanded->core x)))))
+
 
   ;;; Given a (library . _) s-expression, library-expander expands
   ;;; it to core-form, registers it with the library manager, and
@@ -3838,10 +3863,10 @@
           (for-each invoke-library lib*)
           (eval-core (expanded->core invoke-code))))))
 
-  (define get-top-rib
-    (let ([top-rib #f])
+  (define interaction-environment
+    (let ([the-env #f])
       (lambda ()
-        (or top-rib 
+        (or the-env 
             (let ([lib (find-library-by-name '(ikarus))]
                   [rib (make-empty-rib)])
               (let ([subst (library-subst lib)]) 
@@ -3849,26 +3874,11 @@
                 (set-rib-mark**! rib 
                   (map (lambda (x) top-mark*) subst))
                 (set-rib-label*! rib (map cdr subst)))
-              (set! top-rib rib)
-              rib)))))
+              (let ([env (make-interaction-env rib '() '())])
+                (set! the-env env)
+                env))))))
 
-  (define top-level-locations '())
-  (define top-level-context? (make-parameter #f))
-
-  (define eval-top-level
-    (let ([r '()])
-      (lambda (x)
-        (let ([rib (get-top-rib)] [rtc (make-collector)])
-          (let ([x (make-stx x top-mark* (list rib) '())])
-            (let-values ([(e r^) 
-                          (parameterize ([top-level-context? #t]
-                                         [inv-collector rtc]
-                                         [vis-collector (make-collector)]
-                                         [imp-collector (make-collector)])
-                            (chi-interaction-expr x rib r))])
-              (set! r r^)
-              (for-each invoke-library (rtc))
-              (eval-core (expanded->core e))))))))
+  (define top-level-context (make-parameter #f))
 
   ;;; register the expander with the library manager
   (current-library-expander library-expander))

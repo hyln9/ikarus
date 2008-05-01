@@ -41,7 +41,6 @@ description:
   (export new-cafe)
   (import 
     (only (rnrs) with-exception-handler)
-    (only (psyntax expander) eval-top-level)
     (except (ikarus) new-cafe))
 
   (define eval-depth 0)
@@ -105,7 +104,7 @@ description:
 
   (define default-cafe-eval
     (lambda (x) 
-      (eval-top-level x)))
+      (eval x (interaction-environment))))
 
   (define new-cafe
     (case-lambda

@@ -22,7 +22,7 @@
   (export imported-label->binding library-subst installed-libraries
     visit-library library-name library-version library-exists?
     find-library-by-name install-library library-spec invoke-library 
-    extend-library-subst! extend-library-env! current-library-expander
+    current-library-expander
     current-library-collection library-path library-extensions
     serialize-all current-precompiled-library-loader)
   (import (rnrs) (psyntax compat) (rnrs r5rs)
@@ -314,17 +314,6 @@
                        exp-subst exp-env visit-proc invoke-proc 
                        visit-code invoke-code visible? source-file-name)))
            (install-library-record lib)))]))
-
-  (define extend-library-subst!
-    (lambda (lib sym label)
-      (set-library-subst! lib 
-        (cons (cons sym label) (library-subst lib)))))
-
-  (define extend-library-env!
-    (lambda (lib label binding)
-      (set-library-env! lib
-        (cons (cons label binding) (library-env lib)))
-      (hashtable-set! label->binding-table label binding)))
 
   (define (imported-label->binding lab)
     (hashtable-ref label->binding-table lab #f))
