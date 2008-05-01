@@ -213,7 +213,6 @@
     [cm          (chez modules)                        #t     #t]
     [symbols     (ikarus symbols)                      #t     #t]
     [parameters  (ikarus parameters)                   #t     #t]
-    [interaction (ikarus interaction)                  #t     #t]
     [r           (rnrs)                                #t     #t]
     [r5          (rnrs r5rs)                           #t     #t]
     [ct          (rnrs control)                        #t     #t]
