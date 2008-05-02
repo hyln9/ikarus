@@ -3809,7 +3809,7 @@
             (make-trace x)
             (map f (stx-ae* x)))]
         [(annotation? x)
-         (make-trace x)]
+         (make-trace (make-stx x '() '() '()))]
         [else (condition)])))
 
     
