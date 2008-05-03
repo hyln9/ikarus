@@ -545,6 +545,7 @@
       [(pair? x) 
        (cons (strip-annotations (car x))
              (strip-annotations (cdr x)))]
+      [(vector? x) (vector-map strip-annotations x)]
       [(annotation? x) (annotation-stripped x)]
       [else x]))
 
@@ -552,8 +553,10 @@
     (lambda (x m*)
       (if (top-marked? m*)
           (if (or (annotation? x)
-                  (and (pair? x)
-                       (annotation? (car x))))
+                  (and (pair? x) 
+                       (annotation? (car x)))
+                  (and (vector? x) (> (vector-length x) 0)
+                       (annotation? (vector-ref x 0))))
               ;;; TODO: Ask Kent why this is a sufficient test
               (strip-annotations x)
               x)
