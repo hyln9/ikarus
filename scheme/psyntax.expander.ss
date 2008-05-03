@@ -29,6 +29,7 @@
           interaction-environment
           ellipsis-map)
   (import
+    (only (ikarus) printf)
     (except (rnrs) 
       environment environment? identifier?
       eval generate-temporaries free-identifier=?
@@ -1121,11 +1122,29 @@
   (define with-syntax-macro
     (lambda (e)
       (syntax-match e ()
-        ((_ ((fml* expr*) ...) b b* ...)
-         (bless
-           `(syntax-case (list . ,expr*) ()
-              (,fml* (begin ,b . ,b*))))))))
-  
+        ((_ ((pat* expr*) ...) b b* ...)
+         (let ([idn*
+                (let f ([pat* pat*])
+                  (cond
+                    [(null? pat*) '()]
+                    [else
+                     (let-values ([(pat idn*) (convert-pattern (car pat*) '())])
+                       (append idn* (f (cdr pat*))))]))])
+           (verify-formals (map car idn*) e)
+           (let ([t* (generate-temporaries expr*)])
+             (bless 
+               `(let ,(map list t* expr*)
+                  ,(let f ([pat* pat*] [t* t*])
+                     (cond
+                       [(null? pat*) `(begin #f ,b . ,b*)]
+                       [else
+                        `(syntax-case ,(car t*) ()
+                           [,(car pat*) ,(f (cdr pat*) (cdr t*))]
+                           [_ (assertion-violation 'with-syntax
+                                "pattern does not match value"
+                                ',(car pat*)
+                                ,(car t*))])]))))))))))
+
   (define (invalid-fmls-error stx fmls)
     (syntax-match fmls ()
       [(id* ... . last) 
@@ -3767,7 +3786,7 @@
               (assertion-violation 'bound-identifier=? "not an identifier" y))
           (assertion-violation 'bound-identifier=? "not an identifier" x))))
   
-  (define (extract-position-condition x) 
+  (define (extract-position-condition x)
     (define-condition-type &source-information &condition
       make-source-condition source-condition?
       (file-name source-filename)
