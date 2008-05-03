@@ -33,20 +33,20 @@
   
   (define (make-enumeration ls) 
     (unless (and (list? ls) (for-all symbol? ls))
-      (die 'make-enumeration "~s is not a list of symbols" ls))
+      (die 'make-enumeration "not a list of symbols" ls))
     (make-enum (gensym) ls ls))
   
   (define (enum-set-universe x)
     (unless (enum? x) 
-      (die 'enum-set-universe "~s is not an enumeration" x))
+      (die 'enum-set-universe "not an enumeration" x))
     (enum-univ x))
   
   (define (enum-set-indexer x)
     (unless (enum? x) 
-      (die 'enum-set-indexer "~s is not an enumeration" x))
+      (die 'enum-set-indexer "not an enumeration" x))
     (lambda (s)
       (unless (symbol? s) 
-        (die 'enum-set-indexer "~s is not a symbol" s))
+        (die 'enum-set-indexer "not a symbol" s))
       (let f ([s s] [i 0] [ls (enum-univ x)])
         (cond
           [(pair? ls) 
@@ -57,15 +57,15 @@
   
   (define (enum-set-constructor x)
     (unless (enum? x) 
-      (die 'enum-set-constructor "~s is not an enumeration" x))
+      (die 'enum-set-constructor "not an enumeration" x))
     (let ([idx (enum-set-indexer x)])
       (lambda (ls) 
         (unless (and (list? ls) (for-all symbol? ls))
-          (die 'enum-set-constructor "~s is not a list of symbols" ls))
+          (die 'enum-set-constructor "not a list of symbols" ls))
         (for-each 
           (lambda (s) 
             (unless (memq s (enum-univ x))
-              (die 'enum-set-constructor "~s is not in the universe of ~s" s x)))
+              (die 'enum-set-constructor "not in the universe" s x)))
           ls)
         (make-enum (enum-g x) (enum-univ x) 
           (map car
@@ -75,7 +75,7 @@
     
   (define (enum-set->list x)
     (unless (enum? x) 
-      (die 'enum-set->list "~s is not an enumeration" x))
+      (die 'enum-set->list "not an enumeration" x))
     (map values (enum-values x)))
   
   (define (enum-set-member? s x) 
