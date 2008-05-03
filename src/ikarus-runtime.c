@@ -32,6 +32,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/wait.h>
+#include <sys/param.h>
 #ifdef __CYGWIN__
 #include "ikarus-winmmap.h"
 #endif
@@ -990,6 +991,27 @@ ikrt_nanosleep(ikptr secs, ikptr nsecs, ikpcb* pcb){
     is_fixnum(nsecs) ? unfix(nsecs) : ref(nsecs, off_bignum_data);
   return fix(nanosleep(&t, NULL));
 }
+
+ikptr
+ikrt_chdir(ikptr pathbv, ikpcb* pcb){
+  int err = chdir(off_bytevector_data+(char*)pathbv);
+  return fix(err); /* FIXME: provide more meaninful result */
+}
+
+ikptr
+ikrt_getcwd(ikpcb* pcb){
+  char buff[MAXPATHLEN+1];
+  char* path = getcwd(buff, MAXPATHLEN);
+  if(! path){
+    return fix(-1); /* FIXME: provide more meaninful result */
+  }
+  int len = strlen(path);
+  ikptr bv = ik_safe_alloc(pcb, align(disp_bytevector_data+len+1));
+  ref(bv,0) = fix(len);
+  strncpy(disp_bytevector_data+(char*)(bv), path, len);
+  return bv+bytevector_tag;
+}
+
 
 
 ikptr

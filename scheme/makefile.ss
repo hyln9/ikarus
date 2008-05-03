@@ -1202,6 +1202,7 @@
     [vector-sort!                                i r sr]
     [file-exists?                                i r fi]
     [delete-file                                 i r fi]
+    [current-directory                           i]
     [file-ctime                                  i]
     [define-record-type                          i r rs]
     [fields                                      i r rs]

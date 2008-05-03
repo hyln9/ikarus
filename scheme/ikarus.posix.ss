@@ -16,13 +16,13 @@
 
 (library (ikarus posix)
   (export posix-fork fork waitpid system file-exists? delete-file
-          nanosleep getenv env environ file-ctime)
+          nanosleep getenv env environ file-ctime current-directory)
   (import 
     (rnrs bytevectors)
     (except (ikarus)
        nanosleep
        posix-fork fork waitpid system file-exists? delete-file
-       getenv env environ file-ctime))
+       getenv env environ file-ctime current-directory))
 
   (define posix-fork
     (lambda ()
@@ -183,5 +183,23 @@
     (let ([rv (foreign-call "ikrt_nanosleep" secs nsecs)])
       (unless (eq? rv 0)
         (error 'nanosleep "failed"))))
+
+
+  (define current-directory
+    (case-lambda
+      [() 
+       (let ([v (foreign-call "ikrt_getcwd")])
+         (if (bytevector? v) 
+             (utf8->string v)
+             (die 'current-directory 
+               "failed to get current directory")))]
+      [(x) 
+       (if (string? x) 
+           (let ([rv (foreign-call "ikrt_chdir" (string->utf8 x))])
+             (unless (eq? rv 0) 
+               (die 'current-directory
+                 "failed to set current directory")))
+           (die 'current-directory "not a string" x))]))
+
 
   )
