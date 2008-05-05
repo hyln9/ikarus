@@ -1266,11 +1266,11 @@
                          macro))]
                       [else (parse-token p locs k t pos)])))
                 (let-values ([(expr expr^ locs k) (read-macro)])
-                  (let ([x (list expr)] [x^ (list expr^)])
-                    (values (cons macro x)
-                            (cons (annotate-simple macro pos p) x^)
-                            locs
-                       (extend-k-pair x x^ expr '() k)))))]
+                  (let ([d (list expr)] [d^ (list expr^)])
+                    (let ([x (cons macro d)] 
+                          [x^ (cons (annotate-simple macro pos p) d^)])
+                      (values x (annotate x x^ pos p) locs
+                        (extend-k-pair d d^ expr '() k))))))]
              [(eq? (car t) 'mark) 
               (let ([n (cdr t)])
                 (let-values ([(expr expr^ locs k) 
