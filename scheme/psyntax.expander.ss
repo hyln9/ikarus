@@ -1367,14 +1367,25 @@
         (or (null? x) 
             (and (not (memq (car x) (cdr x)))
                  (set? (cdr x)))))
+      (define (remove-dups ls)
+        (cond
+          [(null? ls) '()]
+          [else 
+           (cons (car ls) 
+              (remove-dups (remq (car ls) (cdr ls))))]))
       (syntax-match stx ()
         [(_ name (id* ...) maker) 
          (and (id? name) (id? maker) (for-all id? id*))
-         (let ([name* (syntax->datum id*)] [mk (gensym)]) 
-           (unless (set? name*) 
-             (stx-error stx "duplicate names in enumeration set"))
+         (let ([name* (remove-dups (syntax->datum id*))] [mk (gensym)]) 
            (bless 
              `(begin
+                ;;; can be constructed at compile time
+                ;;; but ....  it's not worth it.
+                ;;; also, generativity of defined enum types
+                ;;; is completely unspecified, making them just
+                ;;; more useless than they really are.
+                ;;; eventually, I'll make them all compile-time
+                ;;; generative just to piss some known people off.
                 (define ,mk 
                   (enum-set-constructor 
                     (make-enumeration ',name*)))
@@ -1385,9 +1396,9 @@
                        (identifier? #'n)
                        (if (memq (syntax->datum #'n) ',name*) 
                            #''n
-                           (syntax-error x
+                           (syntax-violation ',name
                               "not a member of set"
-                              ',name*))])))
+                              x #'n))])))
                 (define-syntax ,maker
                   (lambda (x)
                     (syntax-case x ()
@@ -1396,9 +1407,17 @@
                          (for-each
                            (lambda (n) 
                               (unless (identifier? n) 
-                                (syntax-error x "non-identifier argument"))
+                                (syntax-violation
+                                  ',maker 
+                                  "non-identifier argument"
+                                  x
+                                  n))
                               (unless (memq (syntax->datum n) ',name*)
-                                (syntax-error n "not a member of set")))
+                                (syntax-violation
+                                  ',maker
+                                  "not a member of set"
+                                  x
+                                  n)))
                            #'(n* ...))
                          #'(,mk '(n* ...)))]))))))])))
 

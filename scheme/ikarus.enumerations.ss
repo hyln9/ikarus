@@ -31,15 +31,23 @@
     (opaque #t) (sealed #t)
     (nongenerative))
   
+  (define (remove-dups ls)
+    (cond
+      [(null? ls) '()]
+      [else (cons (car ls) (remq (car ls) (cdr ls)))]))
+
+
   (define (make-enumeration ls) 
     (unless (and (list? ls) (for-all symbol? ls))
       (die 'make-enumeration "not a list of symbols" ls))
-    (make-enum (gensym) ls ls))
+    (let ([u (remove-dups ls)])
+      (make-enum (gensym) u u)))
   
   (define (enum-set-universe x)
     (unless (enum? x) 
       (die 'enum-set-universe "not an enumeration" x))
-    (enum-univ x))
+    (let ([u (enum-univ x)])
+      (make-enum (enum-g x) u u)))
   
   (define (enum-set-indexer x)
     (unless (enum? x) 
@@ -58,25 +66,26 @@
   (define (enum-set-constructor x)
     (unless (enum? x) 
       (die 'enum-set-constructor "not an enumeration" x))
-    (let ([idx (enum-set-indexer x)])
-      (lambda (ls) 
-        (unless (and (list? ls) (for-all symbol? ls))
-          (die 'enum-set-constructor "not a list of symbols" ls))
-        (for-each 
-          (lambda (s) 
-            (unless (memq s (enum-univ x))
-              (die 'enum-set-constructor "not in the universe" s x)))
-          ls)
-        (make-enum (enum-g x) (enum-univ x) 
-          (map car
-            (list-sort (lambda (a b) (< (cdr a) (cdr b)))
-              (map (lambda (x) (cons x (idx x)))
-                   ls)))))))
+    (lambda (ls) 
+      (unless (and (list? ls) (for-all symbol? ls))
+        (die 'enum-set-constructor "not a list of symbols" ls))
+      (for-each 
+        (lambda (s) 
+          (unless (memq s (enum-univ x))
+            (die 'enum-set-constructor "not in the universe" s x)))
+        ls)
+      (make-enum (enum-g x) (enum-univ x) 
+        (remove-dups ls))))
     
   (define (enum-set->list x)
     (unless (enum? x) 
       (die 'enum-set->list "not an enumeration" x))
-    (map values (enum-values x)))
+    (let ([idx (enum-set-indexer x)]
+          [ls (enum-values x)])
+      (map car
+        (list-sort (lambda (a b) (< (cdr a) (cdr b)))
+          (map (lambda (x) (cons x (idx x)))
+               ls)))))
   
   (define (enum-set-member? s x) 
     (if (enum? x)
