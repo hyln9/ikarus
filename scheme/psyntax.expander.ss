@@ -265,7 +265,7 @@
         (when (annotation? expr) 
           (let ([src (annotation-source expr)])
             (when (pair? src)
-              (display " [byte " p)
+              (display " [char " p)
               (display (cdr src) p)
               (display " of " p)
               (display (car src) p)

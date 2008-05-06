@@ -225,7 +225,7 @@
             [(try-load-from-file file-name)]
             [else 
              ((current-library-expander)
-              (with-input-from-file file-name read-annotated)
+              (read-library-source-file file-name)
               file-name)])))
       (lambda (f)
         (if (procedure? f)

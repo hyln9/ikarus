@@ -22,7 +22,8 @@
     call-with-input-file with-input-from-file
     standard-input-port current-input-port
     open-bytevector-input-port
-    open-string-input-port with-input-from-string
+    open-string-input-port open-string-input-port/id
+    with-input-from-string
     make-custom-binary-input-port 
     make-custom-binary-output-port 
     make-custom-textual-input-port 
@@ -531,21 +532,25 @@
              (die 'get-output-string "not an output-string port" p)]))
         (die 'get-output-string "not a port" p)))
 
-  (define (open-string-input-port str)
+  
+
+  (define (open-string-input-port/id str id)
     (unless (string? str) 
       (die 'open-string-input-port "not a string" str))
     ($make-port 
        (fxior textual-input-port-bits fast-char-text-tag)
        0 (string-length str) str
        #t ;;; transcoder
-       "*string-input-port*" 
+       id
        (lambda (str i c) 0) ;;; read!
        #f ;;; write!
        #f ;;; FIXME: get-position
        #f ;;; FIXME: set-position!
        #f ;;; close
        #f))
-    
+
+  (define (open-string-input-port str)
+    (open-string-input-port/id str "*string-input-port*"))
 
   (define (transcoded-port p transcoder)
     (define who 'transcoded-port)

@@ -22,7 +22,7 @@
     (only (psyntax library-manager) 
       serialize-all current-precompiled-library-loader)
     (only (psyntax expander) compile-r6rs-top-level)
-    (only (ikarus reader) read-initial))
+    (only (ikarus reader) read-initial read-script-source-file))
 
 
   (define-struct serialized-library (contents))
@@ -89,20 +89,7 @@
          (close-input-port p))]))
   (define load-r6rs-top-level
     (lambda (x how)
-      (define (read-file)
-        (let ([p (open-input-file x)])
-          (let ([x (read-script-annotated p)])
-            (if (eof-object? x)
-                (begin (close-input-port p) '())
-                (cons x 
-                  (let f ()
-                    (let ([x (read-annotated p)])
-                      (cond
-                        [(eof-object? x) 
-                         (close-input-port p)
-                         '()]
-                        [else (cons x (f))]))))))))
-      (let ([prog (read-file)])
+      (let ([prog (read-script-source-file x)])
         (let ([thunk (compile-r6rs-top-level prog)])
           (case how
             [(run) (thunk)]
