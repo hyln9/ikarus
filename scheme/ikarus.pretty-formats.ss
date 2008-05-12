@@ -1,3 +1,19 @@
+;;; Ikarus Scheme -- A compiler for R6RS Scheme.
+;;; Copyright (C) 2006,2007,2008  Abdulaziz Ghuloum
+;;; 
+;;; This program is free software: you can redistribute it and/or modify
+;;; it under the terms of the GNU General Public License version 3 as
+;;; published by the Free Software Foundation.
+;;; 
+;;; This program is distributed in the hope that it will be useful, but
+;;; WITHOUT ANY WARRANTY; without even the implied warranty of
+;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;;; General Public License for more details.
+;;; 
+;;; You should have received a copy of the GNU General Public License
+;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 (library (ikarus.pretty-formats)
   (export get-fmt pretty-format)
   (import (except (ikarus) pretty-format))
@@ -57,3 +73,63 @@
   (set-fmt! 'import '(_ tab e ...))
 
 )
+
+
+#!eof
+
+(define (test x)
+  (pretty-print x)
+  (printf "====================================\n"))
+
+(test 12)
+(test #t)
+(test #f)
+(test (if #f #f))
+(test '())
+(test "string")
+(test "\n")
+(test "\r")
+(test (string (integer->char 0)))
+(test (string (integer->char 240)))
+(test 'hello)
+(test '(foo bar))
+(test '
+  (define pp 
+    (case-lambda
+      [(x) (pretty x (current-output-port))]
+      [(x p)
+       (if (output-port? p)
+           (pretty x p)
+           (die 'pretty-print "not an output port" p))])))
+
+(test '(384 7384 83947 893478 9137489 3894789 134789314 79817238
+        97314897 318947138974 981374 89137489 1374897 13498713
+        894713894 137894 89137489 1374 891348314 12 17 9000000 . 17))
+
+(test '(',,@#''(quote (syntax unquote-splicing . 2) 2)))
+
+(test '#(1 2 3))
+
+(test '#(384 7384 83947 893478 9137489 3894789 134789314 79817238
+         97314897 318947138974 981374 89137489 1374897 13498713
+         894713894 137894 89137489))
+
+
+(define (test-file x)
+  (printf "testing file ~s ...\n" x)
+  (with-input-from-file x 
+    (lambda ()
+      (let f ([i 0])
+        (let ([x (read)] [fname (format "tmp.~a.pp" i)])
+          (unless (eof-object? x)
+            (let ([y
+                   (begin
+                     (call-with-output-file fname
+                        (lambda (p) 
+                          (pretty-print x p))
+                        'replace)
+                     (with-input-from-file fname read))])
+              (if (equal? x y)
+                  (f (fxadd1 i))
+                  (die 'test-file "mismatch" x y)))))))))
+
