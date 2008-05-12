@@ -1285,6 +1285,7 @@
     [set-symbol-value!                           i symbols $boot]
     [eval-core                                   $boot]
     [pretty-print                                i $boot]
+    [pretty-format                               i]
     [pretty-width                                i]
     [module                                      i cm]
     [library                                     i]

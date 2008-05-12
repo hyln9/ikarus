@@ -15,10 +15,10 @@
 
 
 (library (ikarus pretty-print)
-  (export pretty-print pretty-width)
+  (export pretty-print pretty-width pretty-format)
   (import 
     (rnrs hashtables)
-    (except (ikarus) pretty-print pretty-width))
+    (except (ikarus) pretty-print pretty-width pretty-format))
   (define (map1ltr f ls)
     ;;; ltr so that gensym counts get assigned properly
     (cond
@@ -609,6 +609,15 @@
        (if (output-port? p)
            (pretty x p)
            (die 'pretty-print "not an output port" p))]))
+
+  (define pretty-format
+    (lambda (x)
+      (unless (symbol? x)
+        (die 'pretty-format "not a symbol" x))
+      (case-lambda
+        [() (getprop x '*pretty-format*)]
+        [(v) (putprop x '*pretty-format* v)])))
+
   ;;; standard formats
   (set-fmt! 'quote '(read-macro . "'"))
   (set-fmt! 'unquote '(read-macro . ","))

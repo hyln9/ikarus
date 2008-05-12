@@ -449,22 +449,20 @@
   
   (define macro
     (lambda (x h)
-      (define macro-forms
-        '([quote .             "'"]
-          [quasiquote .        "`"]
-          [unquote .           ","]
-          [unquote-splicing .  ",@"]
-          [syntax .            "#'"]
-          [quasisyntax .       "#`"]
-          [unsyntax .          "#,"]
-          [unsyntax-splicing . "#,@"]
-          [|#primitive| .     "#%"]))
-      (and (pair? x)
-           (let ([d ($cdr x)])
-             (and (pair? d)
-                  (null? ($cdr d))
-                  (not (hashtable-ref h x #f))))
-           (assq ($car x) macro-forms))))
+      (and 
+        (pair? x)
+        (let ([a ($car x)])
+          (and
+            (symbol? a)
+            (let ([d ($cdr x)])
+              (and (pair? d)
+                (null? ($cdr d))
+                (not (hashtable-ref h x #f))))
+            (let ([p ((pretty-format a))])
+              (and (pair? p)
+                (eq? (car p) 'read-macro)
+                (string? (cdr p)))
+                p))))))
   
   (define write-pair
     (lambda (x p m h i)
