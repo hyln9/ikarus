@@ -18,20 +18,21 @@
   (export get-fmt pretty-format)
   (import (except (ikarus) pretty-format))
 
-  (define *pretty-format* '*pretty-format*)
-  (define (get-fmt name)
-    (getprop name *pretty-format*))
-  (define (set-fmt! name fmt)
-    (putprop name *pretty-format* fmt))
+  (define h (make-eq-hashtable))
 
+  (define (get-fmt name)
+    (hashtable-ref h name #f))
+  
+  (define (set-fmt! name fmt)
+    (hashtable-set! h name fmt))
 
   (define pretty-format
     (lambda (x)
       (unless (symbol? x)
         (die 'pretty-format "not a symbol" x))
       (case-lambda
-        [() (getprop x *pretty-format*)]
-        [(v) (putprop x *pretty-format* v)])))
+        [() (hashtable-ref h x)]
+        [(v) (hashtable-set! h x v)])))
 
   ;;; standard formats
   (set-fmt! 'quote '(read-macro . "'"))

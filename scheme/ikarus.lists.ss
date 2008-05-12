@@ -525,14 +525,18 @@
                               ($car d1) ($car d2)
                               ($cdr d1) ($cdr d2)
                               ($fxsub1 n))))]
-             [else (die who "length mismatch")])]
+             [(null? d2) (die who "length mismatch")]
+             [else (die who "not a proper list")])]
           [(null? d1)
            (cond
              [(null? d2)
               (if ($fxzero? n)
                   (cons (f a1 a2) '())
                   (die who "list was altered"))]
-             [else (die who "length mismatch")])]
+             [else
+              (die who (if (list? d2) 
+                           "length mismatch"
+                           "not a proper list"))])]
           [else (die who "list was altered")])))
     (define cars
       (lambda (ls*)
@@ -590,11 +594,17 @@
              (if (pair? ls2)
                  (let ([d ($cdr ls)])
                    (map2 f ($car ls) ($car ls2) d ($cdr ls2) (len d d 0)))
-                 (die who "length mismatch"))]
+                 (die who 
+                    (if (list? ls2)
+                        "length mismatch"
+                        "not a proper list")))]
             [(null? ls)
              (if (null? ls2)
                  '()
-                 (die who "length mismatch"))]
+                 (die who
+                   (if (list? ls2)
+                       "length mismatch"
+                       "not a proper list")))]
             [else (die who "not a list")])]
          [(f ls . ls*)
           (unless (procedure? f)
@@ -606,7 +616,7 @@
             [(null? ls)
              (if (andmap null? ls*)
                  '()
-                 (die who "length mismatch"))]
+                 (die who "invalid arguments"))]
             [else (die who "not a list" ls)])])))
 
   (module (for-each)
