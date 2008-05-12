@@ -27,6 +27,7 @@
     (ikarus system $symbols)
     (ikarus system $bytevectors)
     (ikarus system $transcoders)
+    (only (ikarus.pretty-formats) get-fmt)
     (only (ikarus unicode-data) unicode-printable-char?) 
     (except (ikarus) 
       write display format printf fprintf print-error print-unicode print-graph
@@ -458,7 +459,7 @@
               (and (pair? d)
                 (null? ($cdr d))
                 (not (hashtable-ref h x #f))))
-            (let ([p ((pretty-format a))])
+            (let ([p (get-fmt a)])
               (and (pair? p)
                 (eq? (car p) 'read-macro)
                 (string? (cdr p)))

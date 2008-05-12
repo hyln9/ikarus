@@ -72,6 +72,7 @@
     "ikarus.bytevectors.ss"
     "ikarus.io.ss"
     "ikarus.hash-tables.ss"
+    "ikarus.pretty-formats.ss"
     "ikarus.writer.ss"
     "ikarus.reader.ss"
     "ikarus.code-objects.ss"
