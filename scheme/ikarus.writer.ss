@@ -462,8 +462,8 @@
             (let ([p (get-fmt a)])
               (and (pair? p)
                 (eq? (car p) 'read-macro)
-                (string? (cdr p)))
-                p))))))
+                (string? (cdr p))
+                p)))))))
   
   (define write-pair
     (lambda (x p m h i)

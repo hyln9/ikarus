@@ -31,7 +31,7 @@
       (unless (symbol? x)
         (die 'pretty-format "not a symbol" x))
       (case-lambda
-        [() (hashtable-ref h x)]
+        [() (hashtable-ref h x #f)]
         [(v) (hashtable-set! h x v)])))
 
   ;;; standard formats
