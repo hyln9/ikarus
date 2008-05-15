@@ -592,6 +592,7 @@
              ;;; fabricate binding
              (let ([rib (interaction-env-rib env)])
                (let-values ([(lab loc_) (gen-define-label+loc id rib)])
+                 (extend-rib! rib id lab)
                  lab)))]
           [else #f])))
           
