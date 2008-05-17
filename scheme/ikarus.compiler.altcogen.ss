@@ -245,7 +245,7 @@
 
 (define (insert-stack-overflow-check x)
   (define who 'insert-stack-overflow-check)
-   (define (NonTail x)
+  (define (NonTail x)
     (struct-case x
       [(constant)                 #f]
       [(var)                      #f]
@@ -275,31 +275,77 @@
       [(jmpcall label rator arg*) (or (NonTail rator) (ormap NonTail arg*))]
       [(mvcall rator k) #t] ; punt
       [else (error who "invalid expr" x)]))
- 
   (define (insert-check x)
     (make-seq (make-primcall '$stack-overflow-check '()) x))
-
   (define (ClambdaCase x)
     (struct-case x
       [(clambda-case info body)
        (make-clambda-case info (Main body))]))
-  ;;;
   (define (Clambda x)
     (struct-case x
       [(clambda label case* cp free* name)
        (make-clambda label (map ClambdaCase case*) cp free* name)]))
-  ;;;
   (define (Main x)
     (if (Tail x) 
         (insert-check x) 
         x))
-  ;;;
   (define (Program x)
     (struct-case x 
       [(codes code* body)
        (make-codes (map Clambda code*) (Main body))]))
-  ;;;
   (Program x))
+
+
+
+(define (insert-dummy-type-annotations x)
+  (define who 'insert-dummy-type-annotations)
+  (define (Closure x)
+    (struct-case x
+      [(closure code free*) 
+       x]
+       ;(make-closure (Expr code) (map Var free*))]
+      [else (error who "not a closure" x)]))
+  (define (Expr x)
+    (struct-case x
+      [(constant i) 
+       (make-known x 'constant i)]
+      [(var)      x]
+      [(primref op) 
+       (make-known x 'primitive op)]
+      [(bind lhs* rhs* body)
+       (make-bind lhs* (map Expr rhs*) (Expr body))]
+      [(fix lhs* rhs* body)
+       (make-fix lhs* (map Closure rhs*) (Expr body))]
+      [(conditional e0 e1 e2)
+       (make-conditional (Expr e0) (Expr e1) (Expr e2))]
+      [(seq e0 e1)
+       (make-seq (Expr e0) (Expr e1))]
+      [(primcall op arg*)         
+       (make-primcall op (map Expr arg*))]
+      [(forcall op arg*)
+       (make-forcall op (map Expr arg*))]
+      [(funcall rator arg*)
+       (make-funcall (Expr rator) (map Expr arg*))]
+      [(jmpcall label rator arg*) 
+       (make-jmpcall label (Expr rator) (map Expr arg*))]
+      [(mvcall rator k)
+       (make-mvcall (Expr rator) (Expr k))]
+      [else (error who "invalid expr" x)]))
+  (define (ClambdaCase x)
+    (struct-case x
+      [(clambda-case info body)
+       (make-clambda-case info (Expr body))]))
+  (define (Clambda x)
+    (struct-case x
+      [(clambda label case* cp free* name)
+       (make-clambda label (map ClambdaCase case*) cp free* name)]))
+  (define (Program x)
+    (struct-case x 
+      [(codes code* body)
+       (make-codes (map Clambda code*) (Expr body))]))
+  (Program x))
+
+
 
 (include "pass-specify-rep.ss")
 
@@ -2921,6 +2967,7 @@
          [x (eliminate-fix x)]
          [x (insert-engine-checks x)]
          [x (insert-stack-overflow-check x)]
+         ;[x (insert-dummy-type-annotations x)]
          [x (specify-representation x)]
          [x (impose-calling-convention/evaluation-order x)]
          [x (time-it "frame" (lambda () (assign-frame-sizes x)))]

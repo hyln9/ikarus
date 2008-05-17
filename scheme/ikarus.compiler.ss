@@ -137,7 +137,7 @@
 (define-struct assign (lhs rhs))
 (define-struct mvcall (producer consumer))
 
-
+(define-struct known (expr type value))
 
 (define-struct shortcut (body handler))
 

@@ -139,11 +139,14 @@
         [else
          (let-values ([(lhs* rhs* arg*) (S* (cdr ls))])
            (let ([a (car ls)])
-             (cond
-               [(constant? a) 
+             (struct-case a
+               [(known expr type v)
+                (let ([tmp (unique-var 'tmp)])
+                  (values (cons tmp lhs*)
+                          (cons (V expr) rhs*)
+                          (cons (make-known tmp type v) arg*)))]
+               [(constant i)
                 (values lhs* rhs* (cons a arg*))]
-               ;[(var? a)
-               ; (values lhs* rhs* (cons a arg*))]
                [else
                 (let ([t (unique-var 'tmp)])
                   (values (cons t lhs*) (cons (V a) rhs*) (cons t arg*)))])))]))
@@ -348,7 +351,13 @@
         [(object? c) (error 'constant-rep "double-wrap")]
         [else (make-constant (make-object c))])))
 
-  (define (V x)
+  (define (V x) ;;; erase known values
+    (struct-case x 
+      [(known x type value)
+       (unknown-V x)]
+      [else (unknown-V x)]))
+
+  (define (unknown-V x)
     (struct-case x
       [(constant) (constant-rep x)]
       [(var)      x]
@@ -396,6 +405,9 @@
       [(funcall) (prm '!= (V x) (V (K #f)))]
       [(jmpcall) (prm '!= (V x) (V (K #f)))]
       [(forcall) (prm '!= (V x) (V (K #f)))]
+      [(known expr type val)
+       ;;; FIXME: suboptimal
+       (P expr)]
       [else (error 'cogen-P "invalid pred expr" x)])) 
   
   (define (E x)
@@ -421,6 +433,9 @@
        (make-funcall (Function rator) (map V arg*))]
       [(jmpcall label rator arg*)
        (make-jmpcall label (V rator) (map V arg*))]
+      [(known expr type val)
+       ;;; FIXME: suboptimal
+       (E expr)]
       [else (error 'cogen-E "invalid effect expr" x)]))
 
   (define (Function x)
@@ -476,6 +491,7 @@
     (struct-case x
       [(var) x]
       [(constant i) (constant-rep x)]
+      [(known expr type val) (T expr)]
       [else (error 'cogen-T "invalid" (unparse x))]))
 
   (define (ClambdaCase x)
