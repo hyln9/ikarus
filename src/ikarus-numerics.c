@@ -1476,20 +1476,6 @@ ikrt_bnbnlogor(ikptr x, ikptr y, ikpcb* pcb){
   }
 }
 
-
-ikptr
-ikrt_fxbnlogxor(ikptr x, ikptr y, ikpcb* pcb){
-  fprintf(stderr, "ikrt_fxbnlogxor\n");
-  exit(-1);
-}
-
-ikptr
-ikrt_bnbnlogxor(ikptr x, ikptr y, ikpcb* pcb){
-  fprintf(stderr, "ikrt_bnbnlogxor\n");
-  exit(-1);
-}
-
-
 static void
 copy_bits_shifting_right(mp_limb_t* src, mp_limb_t* dst, int n, int m){
   mp_limb_t carry = src[0] >> m;

@@ -590,20 +590,37 @@
 
   (define binary-bitwise-xor
     (lambda (x y)
+      (define (fxbn x y)
+        (let ([y0 (bitwise-and y (greatest-fixnum))]
+              [y1 (bitwise-arithmetic-shift-right y (- (fixnum-width) 1))])
+          (bitwise-ior
+            ($fxlogand ($fxlogxor x y0) (greatest-fixnum))
+            (bitwise-arithmetic-shift-left
+              (bitwise-arithmetic-shift-right
+                (if ($fx>= x 0) y (bitwise-not y))
+                (- (fixnum-width) 1))
+              (- (fixnum-width) 1)))))
+      (define (bnbn x y)
+        (let ([x0 (bitwise-and x (greatest-fixnum))]
+              [x1 (bitwise-arithmetic-shift-right x (- (fixnum-width) 1))]
+              [y0 (bitwise-and y (greatest-fixnum))]
+              [y1 (bitwise-arithmetic-shift-right y (- (fixnum-width) 1))])
+          (bitwise-ior
+            ($fxlogand ($fxlogxor x0 y0) (greatest-fixnum))
+            (bitwise-arithmetic-shift-left
+              (binary-bitwise-xor x1 y1)
+              (- (fixnum-width) 1)))))
       (cond
         [(fixnum? x)
          (cond
            [(fixnum? y) ($fxlogxor x y)]
-           [(bignum? y)
-            (foreign-call "ikrt_fxbnlogxor" x y)]
+           [(bignum? y) (fxbn x y)]
            [else 
             (die 'bitwise-xor "not an exact integer" y)])]
         [(bignum? x)
          (cond
-           [(fixnum? y)
-            (foreign-call "ikrt_fxbnlogxor" y x)]
-           [(bignum? y) 
-            (foreign-call "ikrt_bnbnlogxor" x y)]
+           [(fixnum? y) (fxbn y x)]
+           [(bignum? y) (bnbn x y)]
            [else
             (die 'bitwise-xor "not an exact integer" y)])]
         [else (die 'bitwise-xor "not an exact integer" x)])))

@@ -74,7 +74,7 @@
   (define (test-other-cases)
     (test-case bitwise-and)
     (test-case bitwise-ior)
-    ;(test-case bitwise-xor)
+    (test-case bitwise-xor)
     )
 
 
