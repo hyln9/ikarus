@@ -394,7 +394,8 @@
 
 (library (ikarus generic-arithmetic)
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
-          modulo even? odd? bitwise-and bitwise-not
+          modulo even? odd? bitwise-and bitwise-not bitwise-ior
+          bitwise-xor
           bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left 
           bitwise-arithmetic-shift 
           bitwise-length
@@ -423,7 +424,8 @@
             bitwise-arithmetic-shift 
             bitwise-length
             bitwise-copy-bit bitwise-bit-field
-            positive? negative? bitwise-and bitwise-not
+            positive? negative? bitwise-and bitwise-not bitwise-ior
+            bitwise-xor
             string->number expt gcd lcm numerator denominator
             exact->inexact inexact floor ceiling round log
             exact-integer-sqrt min max abs real->flonum
@@ -565,6 +567,47 @@
             (die 'bitwise-and "not an exact integer" y)])]
         [else (die 'bitwise-and "not an exact integer" x)])))
 
+  (define binary-bitwise-ior
+    (lambda (x y)
+      (cond
+        [(fixnum? x)
+         (cond
+           [(fixnum? y) ($fxlogor x y)]
+           [(bignum? y)
+            (foreign-call "ikrt_fxbnlogor" x y)]
+           [else 
+            (die 'bitwise-ior "not an exact integer" y)])]
+        [(bignum? x)
+         (cond
+           [(fixnum? y)
+            (foreign-call "ikrt_fxbnlogor" y x)]
+           [(bignum? y) 
+            (foreign-call "ikrt_bnbnlogor" x y)]
+           [else
+            (die 'bitwise-ior "not an exact integer" y)])]
+        [else (die 'bitwise-ior "not an exact integer" x)])))
+
+
+  (define binary-bitwise-xor
+    (lambda (x y)
+      (cond
+        [(fixnum? x)
+         (cond
+           [(fixnum? y) ($fxlogxor x y)]
+           [(bignum? y)
+            (foreign-call "ikrt_fxbnlogxor" x y)]
+           [else 
+            (die 'bitwise-xor "not an exact integer" y)])]
+        [(bignum? x)
+         (cond
+           [(fixnum? y)
+            (foreign-call "ikrt_fxbnlogxor" y x)]
+           [(bignum? y) 
+            (foreign-call "ikrt_bnbnlogxor" x y)]
+           [else
+            (die 'bitwise-xor "not an exact integer" y)])]
+        [else (die 'bitwise-xor "not an exact integer" x)])))
+
 
   (define binary-
     (lambda (x y)
@@ -704,6 +747,44 @@
          (cond
            [(null? e*) ac]
            [else (f (binary-bitwise-and ac (car e*)) (cdr e*))]))]))
+
+  (define bitwise-ior
+    (case-lambda
+      [(x y) (binary-bitwise-ior x y)]
+      [(x y z) (binary-bitwise-ior (binary-bitwise-ior x y) z)]
+      [(a)
+       (cond
+         [(fixnum? a) a]
+         [(bignum? a) a]
+         [else (die 'bitwise-ior "not a number" a)])]
+      [() 0]
+      [(a b c d . e*)
+       (let f ([ac (binary-bitwise-ior a
+                     (binary-bitwise-ior b 
+                       (binary-bitwise-ior c d)))]
+               [e* e*])
+         (cond
+           [(null? e*) ac]
+           [else (f (binary-bitwise-ior ac (car e*)) (cdr e*))]))]))
+
+  (define bitwise-xor
+    (case-lambda
+      [(x y) (binary-bitwise-xor x y)]
+      [(x y z) (binary-bitwise-xor (binary-bitwise-xor x y) z)]
+      [(a)
+       (cond
+         [(fixnum? a) a]
+         [(bignum? a) a]
+         [else (die 'bitwise-xor "not a number" a)])]
+      [() 0]
+      [(a b c d . e*)
+       (let f ([ac (binary-bitwise-xor a
+                     (binary-bitwise-xor b 
+                       (binary-bitwise-xor c d)))]
+               [e* e*])
+         (cond
+           [(null? e*) ac]
+           [else (f (binary-bitwise-xor ac (car e*)) (cdr e*))]))]))
 
   (define (bitwise-not x)
     (cond

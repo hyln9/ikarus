@@ -17,6 +17,7 @@
 
 
 (import (ikarus)
+        (tests bitwise-op)
         (tests reader)
         (tests lists)
         (tests bytevectors)
@@ -50,6 +51,8 @@
   (f 0 536870911 10000)
   (f 0 536870911000 536870911)
   (printf "[exact-integer-sqrt] Happy Happy Joy Joy\n"))
+
+(test-bitwise-op)
 
 (test-parse-flonums)
 (test-case-folding)

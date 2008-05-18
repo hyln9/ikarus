@@ -1,7 +1,7 @@
 
 (library (ikarus not-yet-implemented)
   (export 
-    make-rectangular angle make-polar bitwise-ior bitwise-xor
+    make-rectangular angle make-polar 
     bitwise-copy-bit-field bitwise-reverse-bit-field
     bitwise-rotate-bit-field bitwise-if fxreverse-bit-field
     fxrotate-bit-field bytevector->string string->bytevector
@@ -17,7 +17,7 @@
     string-upcase)
 
   (import (except (ikarus) 
-    make-rectangular angle make-polar bitwise-ior bitwise-xor
+    make-rectangular angle make-polar 
     bitwise-copy-bit-field bitwise-reverse-bit-field
     bitwise-rotate-bit-field bitwise-if fxreverse-bit-field
     fxrotate-bit-field bytevector->string string->bytevector
@@ -57,10 +57,11 @@
          ...)]))
 
   (not-yet 
-    make-rectangular angle make-polar bitwise-ior bitwise-xor
-    bitwise-copy-bit-field bitwise-reverse-bit-field
-    bitwise-rotate-bit-field bitwise-if fxreverse-bit-field
-    fxrotate-bit-field bytevector->string string->bytevector
+    make-rectangular angle make-polar 
+    bitwise-if
+    bitwise-rotate-bit-field bitwise-copy-bit-field bitwise-reverse-bit-field
+    fxreverse-bit-field fxrotate-bit-field 
+    bytevector->string string->bytevector
     make-custom-binary-input/output-port
     make-custom-textual-input/output-port
     open-file-input/output-port output-port-buffer-mode

@@ -182,7 +182,6 @@ ikrt_fxbnplus(ikptr x, ikptr y, ikpcb* pcb){
       }
     }
     else {
-      //fprintf(stderr, "this case 0x%08x\n", intx);
       /* positive fx + negative bn = smaller negative bn */
       pcb->root0 = &y;
       ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data+limb_count*wordsize));
@@ -1041,59 +1040,6 @@ ikrt_bnbncomp(ikptr bn1, ikptr bn2){
   }
 }
 
-/* FIXME: Too complicated! */
-ikptr
-ikrt_fxbnlogand(ikptr x, ikptr y, ikpcb* pcb){
-  long int n1 = unfix(x);
-  ikptr fst = ref(y, -vector_tag);
-  if(n1 >= 0){
-    if(bnfst_negative(fst)){
-      /* y is negative */
-      return fix(n1 & (1+~(long int)ref(y, disp_vector_data-vector_tag))); 
-    } else {
-      /* y is positive */
-      return fix(n1 & (long int)ref(y, disp_vector_data-vector_tag)); 
-    }
-  } else {
-    if(n1 == -1){ return y; }
-    if(bnfst_negative(fst)){
-      /* y is negative */
-      long int len = bnfst_limb_count(fst);
-      unsigned long int nn = 
-        (1+~((1+~(long int)ref(y, disp_bignum_data - vector_tag)) & n1));
-      if((len == 1) && (nn <= most_negative_fixnum)){
-        return fix(-nn);
-      }
-      pcb->root0 = &y;
-      ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data + len * wordsize));
-      pcb->root0 = 0;
-      ref(r, 0) = fst;
-      ref(r, disp_bignum_data) = (ikptr) nn;
-      int i;
-      for(i=1; i<len; i++){
-        ref(r, disp_bignum_data+i*wordsize) = 
-          ref(y, disp_bignum_data-vector_tag+i*wordsize);
-      }
-      return BN(r+vector_tag);
-    } else {
-      /* y is positive */
-      long int len = bnfst_limb_count(fst);
-      pcb->root0 = &y;
-      ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data + len * wordsize));
-      pcb->root0 = 0;
-      ref(r, 0) = fst;
-      ref(r, disp_bignum_data) = (ikptr)
-        (((long int)ref(y, disp_bignum_data - vector_tag)) & n1);
-      int i;
-      for(i=1; i<len; i++){
-        ref(r, disp_bignum_data+i*wordsize) = 
-          ref(y, disp_bignum_data-vector_tag+i*wordsize);
-      }
-      return BN(r+vector_tag);
-    }
-  }
-}
-
 
 static inline int
 count_leading_ffs(int n, mp_limb_t* x){
@@ -1104,6 +1050,15 @@ count_leading_ffs(int n, mp_limb_t* x){
     }
   }
   return n;
+}
+
+
+static void
+copy_limbs(mp_limb_t* src, mp_limb_t* dst, int n1, int n2){
+  while(n1 < n2){
+    dst[n1] = src[n1];
+    n1++;
+  }
 }
 
 static void
@@ -1117,6 +1072,39 @@ bits_compliment(mp_limb_t* src, mp_limb_t* dst, int n){
     carry = (carry && ! d);
   }
 }
+
+static void
+bits_compliment2(mp_limb_t* src, mp_limb_t* dst, int n1, int n2){
+  mp_limb_t carry = 1;
+  int i;
+  for(i=0; i<n1; i++){
+    mp_limb_t d = src[i];
+    mp_limb_t c = carry + ~ d;
+    dst[i] = c;
+    carry = (carry && ! d);
+  }
+  for(i=n1; i<n2; i++){
+    mp_limb_t d = 0;
+    mp_limb_t c = carry + ~ d;
+    dst[i] = c;
+    carry = (carry && ! d);
+  }
+}
+
+static int
+bits_compliment_carry(mp_limb_t* src, mp_limb_t* dst, int n1, int n2, mp_limb_t carry){
+  int i;
+  for(i=n1; i<n2; i++){
+    mp_limb_t d = src[i];
+    mp_limb_t c = carry + ~ d;
+    dst[i] = c;
+    carry = (carry && ! d);
+  }
+  return carry;
+}
+
+
+
 
 static void
 bits_compliment_with_carry(mp_limb_t* src, mp_limb_t* dst, int n, int carry){
@@ -1140,6 +1128,22 @@ bits_compliment_logand(mp_limb_t* s1, mp_limb_t* s2, mp_limb_t* dst, int n){
     carry = (carry && ! d);
   }
 }
+
+
+
+static int
+bits_compliment_logor(mp_limb_t* s1, mp_limb_t* s2, mp_limb_t* dst, int n){
+  int carry = 1;
+  int i;
+  for(i=0; i<n; i++){
+    mp_limb_t d = s1[i];
+    mp_limb_t c = carry + ~ d;
+    dst[i] = c | s2[i];
+    carry = (carry && ! d);
+  }
+  return carry;
+}
+
 
 static int
 bits_carry(mp_limb_t* s, int n){
@@ -1214,6 +1218,53 @@ ikrt_bnlognot(ikptr x, ikpcb* pcb){
 
 
 ikptr
+ikrt_fxbnlogand(ikptr x, ikptr y, ikpcb* pcb){
+  long int n1 = unfix(x);
+  ikptr fst = ref(y, -vector_tag);
+  if(n1 >= 0){
+    /* x is positive */
+    if(bnfst_negative(fst)){
+      /* y is negative */
+      return fix(n1 & (1+~(long int)ref(y, disp_vector_data-vector_tag))); 
+    } else {
+      /* y is positive */
+      return fix(n1 & (long int)ref(y, disp_vector_data-vector_tag)); 
+    }
+  } else {
+    /* x is negative */
+    if(n1 == -1){ return y; }
+    if(bnfst_negative(fst)){
+      /* y is negative */
+      long int len = bnfst_limb_count(fst);
+      pcb->root0 = &y;
+      ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data + (len+1)*wordsize));
+      pcb->root0 = 0;
+      mp_limb_t* s2 = (mp_limb_t*)(long)(y+disp_bignum_data-vector_tag);
+      mp_limb_t* s = (mp_limb_t*)(long)(r+disp_bignum_data);
+      bits_compliment2(s2, s, len, len+1);
+      s[0] = s[0] & n1;
+      bits_compliment2(s, s, len+1, len+1);
+      return normalize_bignum(len+1, 1<<bignum_sign_shift, r);
+    } else {
+      /* y is positive */
+      long int len = bnfst_limb_count(fst);
+      pcb->root0 = &y;
+      ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data + len * wordsize));
+      pcb->root0 = 0;
+      ref(r, 0) = fst;
+      ref(r, disp_bignum_data) = (ikptr)
+        (((long int)ref(y, disp_bignum_data - vector_tag)) & n1);
+      int i;
+      for(i=1; i<len; i++){
+        ref(r, disp_bignum_data+i*wordsize) = 
+          ref(y, disp_bignum_data-vector_tag+i*wordsize);
+      }
+      return BN(r+vector_tag);
+    }
+  }
+}
+
+ikptr
 ikrt_bnbnlogand(ikptr x, ikptr y, ikpcb* pcb){
   ikptr xfst = ref(x, -vector_tag);
   ikptr yfst = ref(y, -vector_tag);
@@ -1224,16 +1275,16 @@ ikrt_bnbnlogand(ikptr x, ikptr y, ikpcb* pcb){
       if(n1 >= n2){
         pcb->root0 = &x;
         pcb->root1 = &y;
-        ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data + n1*wordsize));
+        ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data + (n1+1)*wordsize));
         pcb->root0 = 0;
         pcb->root1 = 0;
         mp_limb_t* s1 = (mp_limb_t*)(long)(x+disp_bignum_data-vector_tag);
         mp_limb_t* s2 = (mp_limb_t*)(long)(y+disp_bignum_data-vector_tag);
         mp_limb_t* s = (mp_limb_t*)(long)(r+disp_bignum_data);
-        bits_compliment(s1, s, n1);
+        bits_compliment2(s1, s, n1, n1+1);
         bits_compliment_logand(s2, s, s, n2);
-        bits_compliment(s, s, n1);
-        return normalize_bignum(n1, 1<<bignum_sign_shift, r);
+        bits_compliment2(s, s, n1+1, n1+1);
+        return normalize_bignum(n1+1, 1<<bignum_sign_shift, r);
       } else {
         return ikrt_bnbnlogand(y,x,pcb);
       }
@@ -1252,7 +1303,12 @@ ikrt_bnbnlogand(ikptr x, ikptr y, ikpcb* pcb){
       mp_limb_t* s1 = (mp_limb_t*)(long)(x+disp_bignum_data-vector_tag);
       mp_limb_t* s2 = (mp_limb_t*)(long)(y+disp_bignum_data-vector_tag);
       mp_limb_t* s = (mp_limb_t*)(long)(r+disp_bignum_data);
-      bits_compliment_logand(s2, s1, s, n1);
+      if(n1 <= n2){
+        bits_compliment_logand(s2, s1, s, n1);
+      } else {
+        bits_compliment_logand(s2, s1, s, n2);
+        copy_limbs(s1, s, n2, n1);
+      }
       return normalize_bignum(n1, 0, r);
     } else {
       /* both positive */
@@ -1263,7 +1319,7 @@ ikrt_bnbnlogand(ikptr x, ikptr y, ikpcb* pcb){
           (long int) ref(x, disp_bignum_data-vector_tag+i*wordsize);
         long int l2 = 
           (long int) ref(y, disp_bignum_data-vector_tag+i*wordsize);
-        long int last = l1 & l2;
+        unsigned long int last = l1 & l2;
         if(last){
           if((i == 0) && (last < most_positive_fixnum)){
             return fix(last);
@@ -1288,6 +1344,149 @@ ikrt_bnbnlogand(ikptr x, ikptr y, ikpcb* pcb){
       return 0;
     }
   }
+}
+
+
+ikptr
+ikrt_fxbnlogor(ikptr x, ikptr y, ikpcb* pcb){
+  long int n1 = unfix(x);
+  ikptr fst = ref(y, -vector_tag);
+  if(n1 < 0){
+    /* x is negative */
+    if(bnfst_negative(fst)){
+      /* y is negative */
+      return fix(n1 | (1+~(long int)ref(y, disp_vector_data-vector_tag))); 
+    } else {
+      /* y is positive */
+      return fix(n1 | (long int)ref(y, disp_vector_data-vector_tag)); 
+    }
+  } else {
+    /* x is non negative */
+    if(n1 == 0){ return y; }
+    /* x is positive */
+    if(bnfst_negative(fst)){
+      /* y is negative */
+      long int len = bnfst_limb_count(fst);
+      pcb->root0 = &y;
+      ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data + (len+1)*wordsize));
+      pcb->root0 = 0;
+      mp_limb_t* s2 = (mp_limb_t*)(long)(y+disp_bignum_data-vector_tag);
+      mp_limb_t* s = (mp_limb_t*)(long)(r+disp_bignum_data);
+      bits_compliment2(s2, s, len, len+1);
+      s[0] = s[0] | n1;
+      bits_compliment2(s, s, len+1, len+1);
+      return normalize_bignum(len+1, 1<<bignum_sign_shift, r);
+    } else {
+      /* y is positive */
+      long int len = bnfst_limb_count(fst);
+      pcb->root0 = &y;
+      ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data + len * wordsize));
+      pcb->root0 = 0;
+      ref(r, 0) = fst;
+      ref(r, disp_bignum_data) = (ikptr)
+        (((long int)ref(y, disp_bignum_data - vector_tag)) | n1);
+      int i;
+      for(i=1; i<len; i++){
+        ref(r, disp_bignum_data+i*wordsize) = 
+          ref(y, disp_bignum_data-vector_tag+i*wordsize);
+      }
+      return BN(r+vector_tag);
+    }
+  }
+}
+
+ikptr
+ikrt_bnbnlogor(ikptr x, ikptr y, ikpcb* pcb){
+  ikptr xfst = ref(x, -vector_tag);
+  ikptr yfst = ref(y, -vector_tag);
+  long int n1 = bnfst_limb_count(xfst);
+  long int n2 = bnfst_limb_count(yfst);
+  if(bnfst_negative(xfst)){
+    if(bnfst_negative(yfst)){
+      if(n1 >= n2){
+        pcb->root0 = &x;
+        pcb->root1 = &y;
+        ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data + n1*wordsize));
+        pcb->root0 = 0;
+        pcb->root1 = 0;
+        mp_limb_t* s1 = (mp_limb_t*)(long)(x+disp_bignum_data-vector_tag);
+        mp_limb_t* s2 = (mp_limb_t*)(long)(y+disp_bignum_data-vector_tag);
+        mp_limb_t* s = (mp_limb_t*)(long)(r+disp_bignum_data);
+        bits_compliment2(s2, s, n2, n1);
+        int carry = bits_compliment_logor(s1, s, s, n1);
+        bits_compliment_carry(s,s,n1,n1,carry);
+        bits_compliment2(s, s, n1, n1);
+        return normalize_bignum(n1, 1<<bignum_sign_shift, r);
+      } else {
+        return ikrt_bnbnlogor(y,x,pcb);
+      }
+    } else {
+      return ikrt_bnbnlogor(y,x,pcb);
+    }
+  } else {
+    if(bnfst_negative(yfst)){
+      /* x positive, y negative */
+      /*  the result is at most n2 words long */
+      pcb->root0 = &x;
+      pcb->root1 = &y;
+      ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data + n2*wordsize));
+      pcb->root0 = 0;
+      pcb->root1 = 0;
+      mp_limb_t* s1 = (mp_limb_t*)(long)(x+disp_bignum_data-vector_tag);
+      mp_limb_t* s2 = (mp_limb_t*)(long)(y+disp_bignum_data-vector_tag);
+      mp_limb_t* s = (mp_limb_t*)(long)(r+disp_bignum_data);
+      if(n2 <= n1){
+        bits_compliment_logor(s2, s1, s, n2);
+        bits_compliment2(s, s, n2, n2);
+      } else {
+        int carry = bits_compliment_logor(s2, s1, s, n1);
+        bits_compliment_carry(s2, s, n1, n2, carry);
+        bits_compliment_carry(s, s, 0, n2, 1);
+      }
+      return normalize_bignum(n2, 1<<bignum_sign_shift, r);
+    } else {
+      /* both positive */
+      int n = (n1>n2)?n1:n2;
+      pcb->root0 = &x;
+      pcb->root1 = &y;
+      ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data+n*wordsize));
+      mp_limb_t* s = (mp_limb_t*)(long)(r+disp_bignum_data);
+      mp_limb_t* s1 = (mp_limb_t*)(long)(x+disp_bignum_data-vector_tag);
+      mp_limb_t* s2 = (mp_limb_t*)(long)(y+disp_bignum_data-vector_tag);
+      pcb->root0 = 0;
+      pcb->root1 = 0;
+      long int i;
+      if(n == n1){
+        for(i=0; i<n2; i++){
+          s[i] = s1[i] | s2[i];
+        }
+        for(i=n2; i<n1; i++){
+          s[i] = s1[i];
+        }
+      } else {
+        for(i=0; i<n1; i++){
+          s[i] = s1[i] | s2[i];
+        }
+        for(i=n1; i<n2; i++){
+          s[i] = s2[i];
+        }
+      }
+      return normalize_bignum(n, 0, r);
+    }
+  }
+}
+
+
+ikptr
+ikrt_fxbnlogxor(ikptr x, ikptr y, ikpcb* pcb){
+  fprintf(stderr, "ikrt_fxbnlogxor\n");
+  exit(-1);
+}
+
+ikptr
+ikrt_bnbnlogxor(ikptr x, ikptr y, ikpcb* pcb){
+  fprintf(stderr, "ikrt_bnbnlogxor\n");
+  exit(-1);
 }
 
 
