@@ -1139,6 +1139,7 @@
               [($fx= n 1) d]
               [($fx= n -1) (- d)]
               [else ($make-ratnum d n)]))]
+         [(compnum? x) (binary/ 1 x)]
          [else (die '/ "not a number" x)])]
       [(x y z . rest)
        (let f ([a (binary/ x y)] [b z] [ls rest])
@@ -1532,7 +1533,7 @@
                fxrt< rtfx< bnrt< rtbn< flrt< rtfl< rtrt<)
        (let ()
          (define err
-           (lambda (x) (die 'name "not a number" x)))
+           (lambda (x) (die 'name "not a real number" x)))
          (define fxloopt
            (lambda (x y ls)
              (cond
@@ -1696,6 +1697,7 @@
                 [(ratnum? x) (rtloopt x y ls)]
                 [else (err x)])]))
          name)]))
+
 
   (define-syntax false (syntax-rules () [(_ x y) #f]))
   (define-syntax bnbncmp
@@ -1900,9 +1902,185 @@
   (define (rtrt= x y)
     (and (= ($ratnum-n x) ($ratnum-n y)) (= ($ratnum-d x) ($ratnum-d y))))
 
-  (define = 
-    (mk< = $fx= false false bnbn= fxfl= flfx= bnfl= flbn= flfl=
-               false false false false flrt= rtfl= rtrt=))
+
+
+  (define =
+    (let ()
+      (define err
+        (lambda (x) (die '= "not a number" x)))
+      (define fxloopt
+        (lambda (x y ls)
+          (cond
+            [(fixnum? y)
+             (if (null? ls)
+                 ($fx= x y)
+                 (if ($fx= x y)
+                     (fxloopt y (car ls) (cdr ls))
+                     (loopf (car ls) (cdr ls))))]
+            [(bignum? y) (loopf (car ls) (cdr ls))]
+            [(flonum? y)
+             (if (null? ls)
+                 (fxfl= x y)
+                 (if (fxfl= x y)
+                     (flloopt y (car ls) (cdr ls))
+                     (loopf (car ls) (cdr ls))))]
+            [(ratnum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
+            [(compnum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
+            [else (err y)])))
+      (define bnloopt
+        (lambda (x y ls)
+          (cond
+            [(fixnum? y) (loopf (car ls) (cdr ls))]
+            [(bignum? y)
+             (if (null? ls)
+                 (bnbn= x y)
+                 (if (bnbn= x y)
+                     (bnloopt y (car ls) (cdr ls))
+                     (loopf (car ls) (cdr ls))))]
+            [(flonum? y)
+             (if (null? ls)
+                 (bnfl= x y)
+                 (if (bnfl= x y)
+                     (flloopt y (car ls) (cdr ls))
+                     (loopf (car ls) (cdr ls))))]
+            [(ratnum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
+            [(compnum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
+            [else (err y)])))
+      (define flloopt
+        (lambda (x y ls)
+          (cond
+            [(fixnum? y)
+             (if (null? ls)
+                 (flfx= x y)
+                 (if (flfx= x y)
+                     (fxloopt y (car ls) (cdr ls))
+                     (loopf (car ls) (cdr ls))))]
+            [(bignum? y)
+             (if (null? ls)
+                 (flbn= x y)
+                 (if (flbn= x y)
+                     (bnloopt y (car ls) (cdr ls))
+                     (loopf (car ls) (cdr ls))))]
+            [(flonum? y)
+             (if (null? ls)
+                 (flfl= x y)
+                 (if (flfl= x y)
+                     (flloopt y (car ls) (cdr ls))
+                     (loopf (car ls) (cdr ls))))]
+            [(ratnum? y)
+             (if (null? ls)
+                 (flrt= x y)
+                 (if (flrt= x y)
+                     (rtloopt y (car ls) (cdr ls))
+                     (loopf (car ls) (cdr ls))))]
+            [(compnum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
+            [else (err y)])))
+      (define rtloopt
+        (lambda (x y ls)
+          (cond
+            [(fixnum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
+            [(bignum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
+            [(flonum? y)
+             (if (null? ls)
+                 (rtfl= x y)
+                 (if (rtfl= x y)
+                     (flloopt y (car ls) (cdr ls))
+                     (loopf (car ls) (cdr ls))))]
+            [(ratnum? y)
+             (if (null? ls)
+                 (rtrt= x y)
+                 (if (rtrt= x y)
+                     (rtloopt y (car ls) (cdr ls))
+                     (loopf (car ls) (cdr ls))))]
+            [(compnum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
+            [else (err y)]))) 
+      (define cnloopt
+        (lambda (x y ls)
+          (cond
+            [(compnum? y)
+             (if (null? ls)
+                 (cncn= x y)
+                 (if (cncn= x y)
+                     (cnloopt y (car ls) (cdr ls))
+                     (loopf (car ls) (cdr ls))))]
+            [(fixnum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
+            [(bignum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
+            [(flonum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
+            [(ratnum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
+            [else (err y)]))) 
+      (define loopf
+        (lambda (x ls)
+          (cond
+            [(number? x) 
+             (if (null? ls) 
+                 #f
+                 (loopf (car ls) (cdr ls)))]
+            [else (err x)])))
+      (define (cncn= x y)
+        (and 
+          (= ($compnum-real x) ($compnum-real y))
+          (= ($compnum-imag x) ($compnum-imag y))))
+      (define =
+        (case-lambda
+          [(x y)
+           (cond
+             [(fixnum? x)
+              (cond
+                [(fixnum? y) ($fx= x y)]
+                [(bignum? y) #f]
+                [(flonum? y) (fxfl= x y)]
+                [(ratnum? y) #f]
+                [(compnum? y) #f]
+                [else (err y)])]
+             [(bignum? x)
+              (cond
+                [(fixnum? y) #f]
+                [(bignum? y) (bnbn= x y)]
+                [(flonum? y) (bnfl= x y)]
+                [(ratnum? y) #f]
+                [(compnum? y) #f]
+                [else (err y)])]
+             [(flonum? x)
+              (cond
+                [(fixnum? y) (flfx= x y)]
+                [(bignum? y) (flbn= x y)]
+                [(flonum? y) (flfl= x y)]
+                [(ratnum? y) (flrt= x y)]
+                [(compnum? y) #f]
+                [else (err y)])]
+             [(ratnum? x)
+              (cond
+                [(fixnum? y) #f]
+                [(bignum? y) #f]
+                [(flonum? y) (rtfl= x y)]
+                [(ratnum? y) (rtrt= x y)]
+                [(compnum? y) #f]
+                [else (err y)])]
+             [(compnum? x)
+              (cond
+                [(compnum? y) (cncn= x y)]
+                [(fixnum? y) #f]
+                [(bignum? y) #f]
+                [(flonum? y) #f]
+                [(ratnum? y) #f]
+                [else (err y)])]
+             [else (err x)])]
+          [(x y z) (and (= x y) (= y z))]
+          [(x) (if (number? x) #t (err x))]
+          [(x y . ls) 
+           (cond
+             [(fixnum? x) (fxloopt x y ls)]
+             [(bignum? x) (bnloopt x y ls)]
+             [(flonum? x) (flloopt x y ls)]
+             [(ratnum? x) (rtloopt x y ls)]
+             [(compnum? x) (cnloopt x y ls)]
+             [else (err x)])]))
+      =))
+
+  ;(define = 
+  ;  (mk< = $fx= false false bnbn= fxfl= flfx= bnfl= flbn= flfl=
+  ;             false false false false flrt= rtfl= rtrt=))
+
   (define < 
     (mk< < $fx< fxbn< bnfx< bnbn< fxfl< flfx< bnfl< flbn< flfl<
                exrt< rtex< exrt< rtex< flrt< rtfl< rtrt<))
