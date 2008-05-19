@@ -13,13 +13,6 @@
 ;;; You should have received a copy of the GNU General Public License
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-
-
-
-
-
-
 (library (ikarus flonums)
   (export $flonum->exact $flonum->integer flonum-parts
           inexact->exact exact $flonum-rational? $flonum-integer? $flzero?
@@ -384,12 +377,7 @@
                  (foreign-call "ikrt_flfl_expt" x y ($make-flonum))]))
             (die 'flexpt "not a flonum" y))
         (die 'fllog "not a flonum" x)))
-
-
-  )
-
-
-
+)
 
 
 (library (ikarus generic-arithmetic)
@@ -414,6 +402,7 @@
     (ikarus system $flonums)
     (ikarus system $ratnums)
     (ikarus system $bignums)
+    (ikarus system $compnums)
     (ikarus system $chars)
     (ikarus system $strings)
     (only (ikarus flonums) $flonum->exact $flzero? $flnegative?
@@ -486,6 +475,8 @@
           (pos n d)
           (- (pos (- n) d)))))
 
+  (define (err who x)
+    (die who (if (number? x) "invalid argument" "not a number") x))
 
   (define binary+
     (lambda (x y)
@@ -502,8 +493,11 @@
             ($make-ratnum
               (+ (* x ($ratnum-d y)) ($ratnum-n y))
               ($ratnum-d y))]
-           [else 
-            (die '+ "not a number" y)])]
+           [(compnum? y) 
+            ($make-compnum 
+              (binary+ x ($compnum-real y)) 
+              ($compnum-imag y))]
+           [else (err '+ y)])]
         [(bignum? x)
          (cond
            [(fixnum? y)
@@ -516,8 +510,11 @@
             ($make-ratnum
               (+ (* x ($ratnum-d y)) ($ratnum-n y))
               ($ratnum-d y))] 
-           [else 
-            (die '+ "not a number" y)])]
+           [(compnum? y) 
+            ($make-compnum 
+              (binary+ x ($compnum-real y)) 
+              ($compnum-imag y))] 
+           [else (err '+ y)])]
         [(flonum? x)
          (cond
            [(fixnum? y)
@@ -528,8 +525,7 @@
             ($fl+ x y)]
            [(ratnum? y)
             ($fl+ x (ratnum->flonum y))]
-           [else 
-            (die '+ "not a number" y)])]
+           [else (err '+ y)])]
         [(ratnum? x)
          (cond
            [(or (fixnum? y) (bignum? y))
@@ -543,9 +539,23 @@
                   [d0 ($ratnum-d x)] [d1 ($ratnum-d y)])
               ;;; FIXME: inefficient
               (/ (+ (* n0 d1) (* n1 d0)) (* d0 d1)))]
-           [else 
-            (die '+ "not a number" y)])] 
-        [else (die '+ "not a number" x)])))
+           [(compnum? y) 
+            ($make-compnum 
+              (binary+ x ($compnum-real y)) 
+              ($compnum-imag y))] 
+           [else (err '+ y)])]
+        [(compnum? x) 
+         (cond
+           [(or (fixnum? y) (bignum? y) (ratnum? y))
+            ($make-compnum 
+              (binary+ ($compnum-real x) y)
+              ($compnum-imag x))]
+           [(compnum? y) 
+            ($make-compnum 
+              (binary+ ($compnum-real x) ($compnum-real y)) 
+              (binary+ ($compnum-imag x) ($compnum-imag y)))]
+           [else (err '+ y)])]
+        [else (err '+ x)])))
 
   (define binary-bitwise-and
     (lambda (x y)
@@ -642,8 +652,11 @@
            [(ratnum? y) 
             (let ([n ($ratnum-n y)] [d ($ratnum-d y)])
               (binary/ (binary- (binary* d x) n) d))]
-           [else 
-            (die '- "not a number" y)])]
+           [(compnum? y)
+            ($make-compnum 
+              (binary- x ($compnum-real y))
+              (binary- 0 ($compnum-imag y)))]
+           [else (err '- y)])]
         [(bignum? x)
          (cond
            [(fixnum? y)
@@ -655,8 +668,11 @@
            [(ratnum? y) 
             (let ([n ($ratnum-n y)] [d ($ratnum-d y)])
               (binary/ (binary- (binary* d x) n) d))]
-           [else 
-            (die '- "not a number" y)])]
+           [(compnum? y)
+            ($make-compnum 
+              (binary- x ($compnum-real y))
+              (binary- 0 ($compnum-imag y)))] 
+           [else (err '- y)])]
         [(flonum? x)
          (cond
            [(fixnum? y)
@@ -668,8 +684,7 @@
            [(ratnum? y) 
             (let ([n ($ratnum-n y)] [d ($ratnum-d y)])
               (binary/ (binary- (binary* d x) n) d))]
-           [else
-            (die '- "not a number" y)])]
+           [else (err '- y)])]
         [(ratnum? x)
          (let ([nx ($ratnum-n x)] [dx ($ratnum-d x)])
            (cond
@@ -679,9 +694,24 @@
               (let ([ny ($ratnum-n y)] [dy ($ratnum-d y)])
                 (binary/ (binary- (binary* nx dy) (binary* ny dx))
                          (binary* dx dy)))]
-             [else
-              (die '- "not a number" y)]))]
-        [else (die '- "not a number" x)])))
+             [(compnum? y)
+              ($make-compnum 
+                (binary- x ($compnum-real y))
+                (binary- 0 ($compnum-imag y)))] 
+             [else (err '- y)]))]
+        [(compnum? x)
+         (cond
+           [(or (fixnum? y) (bignum? y) (ratnum? y))
+            ($make-compnum 
+               (binary- ($compnum-real x) y)
+               ($compnum-imag x))]
+           [(compnum? y)
+            ($make-rectangular 
+              (binary- ($compnum-real x) ($compnum-real y))
+              (binary- ($compnum-imag x) ($compnum-imag y)))]
+           [else
+            (err '- y)])]
+        [else (err '- x)])))
 
   (define binary*
     (lambda (x y)
@@ -696,8 +726,11 @@
             ($fl* ($fixnum->flonum x) y)]
            [(ratnum? y) 
             (binary/ (binary* x ($ratnum-n y)) ($ratnum-d y))]
-           [else 
-            (die '* "not a number" y)])]
+           [(compnum? y) 
+            ($make-rectangular
+              (binary* x ($compnum-real y))
+              (binary* x ($compnum-imag y)))]
+           [else (err '* y)])]
         [(bignum? x)
          (cond
            [(fixnum? y)
@@ -708,8 +741,11 @@
             ($fl* (bignum->flonum x) y)]
            [(ratnum? y) 
             (binary/ (binary* x ($ratnum-n y)) ($ratnum-d y))]
-           [else 
-            (die '* "not a number" y)])]
+           [(compnum? y) 
+            ($make-rectangular
+              (binary* x ($compnum-real y))
+              (binary* x ($compnum-imag y)))] 
+           [else (err '* y)])]
         [(flonum? x)
          (cond
            [(fixnum? y)
@@ -720,14 +756,33 @@
             ($fl* x y)]
            [(ratnum? y) 
             (binary/ (binary* x ($ratnum-n y)) ($ratnum-d y))]
-           [else
-            (die '* "not a number" y)])]
+           [else (err '* y)])]
         [(ratnum? x) 
-         (if (ratnum? y) 
-             (binary/ (binary* ($ratnum-n x) ($ratnum-n y))
-                      (binary* ($ratnum-d x) ($ratnum-d y)))
-             (binary* y x))]
-        [else (die '* "not a number" x)])))
+         (cond
+           [(ratnum? y) 
+            (binary/ (binary* ($ratnum-n x) ($ratnum-n y))
+                     (binary* ($ratnum-d x) ($ratnum-d y)))]
+           [(compnum? y)
+            ($make-rectangular
+              (binary* x ($compnum-real y))
+              (binary* x ($compnum-imag y)))]
+           [else (binary* y x)])]
+        [(compnum? x) 
+         (cond
+           [(or (fixnum? y) (bignum? y) (ratnum? y)) 
+            ($make-rectangular
+              (binary* ($compnum-real x) y)
+              (binary* ($compnum-imag x) y))]
+           [(compnum? y)
+            (let ([r0 ($compnum-real x)]
+                  [r1 ($compnum-real y)]
+                  [i0 ($compnum-imag x)]
+                  [i1 ($compnum-imag y)])
+              ($make-rectangular
+                (- (* r0 r1) (* i0 i1))
+                (+ (* r0 i1) (* i0 r1))))]
+           [else (err '* y)])]
+        [else (err '* x)])))
 
   (define +
     (case-lambda
@@ -917,8 +972,30 @@
 
 
 
-  (define binary/ ;;; implements ratnums
+  (define binary/
     (lambda (x y)
+      (define (x/compy x y) 
+        (let ([yr ($compnum-real y)]
+              [yi ($compnum-imag y)])
+          (let ([denom (+ (* yr yr) (* yi yi))])
+            ($make-rectangular 
+              (binary/ (* x yr) denom)
+              (binary/ (* (- x) yi) denom)))))
+      (define (compx/y x y) 
+        (let ([xr ($compnum-real x)]
+              [xi ($compnum-imag x)])
+          ($make-rectangular 
+            (binary/ xr y)
+            (binary/ xi y))))
+      (define (compx/compy x y) 
+        (let ([xr ($compnum-real x)]
+              [xi ($compnum-imag x)]
+              [yr ($compnum-real y)]
+              [yi ($compnum-imag y)])
+          (let ([denom (+ (* yr yr) (* yi yi))])
+            ($make-rectangular 
+              (binary/ (+ (* xr yr) (* xi yi)) denom)
+              (binary/ (- (* xi yr) (* xr yi)) denom)))))
       (cond
         [(flonum? x)
          (cond
@@ -926,7 +1003,7 @@
            [(fixnum? y) ($fl/ x ($fixnum->flonum y))]
            [(bignum? y) ($fl/ x (bignum->flonum y))]
            [(ratnum? y) ($fl/ x (ratnum->flonum y))]
-           [else (die '/ "not a number" y)])]
+           [else (err '/ y)])]
         [(fixnum? x)
          (cond
            [(flonum? y) ($fl/ ($fixnum->flonum x) y)]
@@ -969,7 +1046,8 @@
                         (binary- 0 (quotient y g))))]))]
            [(ratnum? y) 
             (/ (* x ($ratnum-d y)) ($ratnum-n y))]
-           [else (die '/ "not a number" y)])]
+           [(compnum? y) (x/compy x y)]
+           [else (err '/ y)])]
         [(bignum? x) 
          (cond
            [(fixnum? y) 
@@ -1017,15 +1095,22 @@
            [(flonum? y) ($fl/ (bignum->flonum x) y)]
            [(ratnum? y) 
             (binary/ (binary* x ($ratnum-n y)) ($ratnum-d y))]
-           [else (die '/ "not a number" y)])]
+           [(compnum? y) (x/compy x y)]
+           [else (err '/ y)])]
         [(ratnum? x)
          (cond
            [(ratnum? y) 
             (binary/
               (binary* ($ratnum-n x) ($ratnum-d y))
               (binary* ($ratnum-n y) ($ratnum-d x)))]
+           [(compnum? y) (x/compy x y)]
            [else (binary/ 1 (binary/ y x))])]
-        [else (die '/ "not a number" x)])))
+        [(compnum? x)
+         (cond
+           [(compnum? y) (compx/compy x y)]
+           [(or (fixnum? y) (bignum? y) (ratnum? y)) (compx/y x y)]
+           [else (err '/ y)])]
+        [else (err '/ x)])))
 
   (define /
     (case-lambda
