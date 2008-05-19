@@ -1,7 +1,7 @@
 
 (library (ikarus not-yet-implemented)
   (export 
-    make-rectangular angle make-polar 
+    angle make-polar 
     bitwise-copy-bit-field bitwise-reverse-bit-field
     bitwise-rotate-bit-field bitwise-if fxreverse-bit-field
     fxrotate-bit-field bytevector->string string->bytevector
@@ -17,7 +17,7 @@
     string-upcase)
 
   (import (except (ikarus) 
-    make-rectangular angle make-polar 
+    angle make-polar 
     bitwise-copy-bit-field bitwise-reverse-bit-field
     bitwise-rotate-bit-field bitwise-if fxreverse-bit-field
     fxrotate-bit-field bytevector->string string->bytevector
@@ -31,8 +31,6 @@
     string-downcase string-normalize-nfc string-normalize-nfd
     string-normalize-nfkc string-normalize-nfkd string-titlecase
     string-upcase))
-                  
-                  
   
   (define-syntax not-yet
     (syntax-rules ()
@@ -57,20 +55,25 @@
          ...)]))
 
   (not-yet 
-    make-rectangular angle make-polar 
+    ;;; should be implemented
+    bytevector->string string->bytevector
+    string-downcase string-titlecase string-upcase
+    angle make-polar 
     bitwise-if
     bitwise-rotate-bit-field bitwise-copy-bit-field bitwise-reverse-bit-field
     fxreverse-bit-field fxrotate-bit-field 
-    bytevector->string string->bytevector
+    ;;; not top priority at the moment
+    make-eqv-hashtable make-hashtable equal-hash
+    hashtable-hash-function hashtable-equivalence-function
+    string-normalize-nfc string-normalize-nfd
+    string-normalize-nfkc string-normalize-nfkd 
+    ;;; won't be implemented
     make-custom-binary-input/output-port
     make-custom-textual-input/output-port
-    open-file-input/output-port output-port-buffer-mode
-    port-has-port-position? port-has-set-port-position!?
-    port-position set-port-position! make-eqv-hashtable
-    hashtable-hash-function make-hashtable
-    hashtable-equivalence-function equal-hash
-    string-downcase string-normalize-nfc string-normalize-nfd
-    string-normalize-nfkc string-normalize-nfkd string-titlecase
-    string-upcase))
+    open-file-input/output-port
+    output-port-buffer-mode
+    port-has-set-port-position!? set-port-position! 
+    port-has-port-position? port-position
+    ))
 
 

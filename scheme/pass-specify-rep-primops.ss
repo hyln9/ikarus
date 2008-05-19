@@ -1083,6 +1083,34 @@
 
 /section)
 
+(section ;;; complnums
+
+(define-primop compnum? safe
+  [(P x) (sec-tag-test (T x) vector-mask vector-tag #f compnum-tag)]
+  [(E x) (nop)])
+
+(define-primop $make-compnum unsafe
+  [(V real imag)
+   (with-tmp ([x (prm 'alloc (K (align compnum-size)) (K vector-tag))])
+     (prm 'mset x (K (- vector-tag)) (K compnum-tag))
+     (prm 'mset x (K (- disp-compnum-real vector-tag)) (T real))
+     (prm 'mset x (K (- disp-compnum-imag vector-tag)) (T imag))
+     x)]
+  [(P str) (K #t)]
+  [(E str) (nop)])
+
+
+(define-primop $compnum-real unsafe
+  [(V x) (prm 'mref (T x) (K (- disp-compnum-real vector-tag)))])
+
+(define-primop $compnum-imag unsafe
+  [(V x) (prm 'mref (T x) (K (- disp-compnum-imag vector-tag)))])
+
+/section)
+
+
+
+
 (section ;;; generic arithmetic
 
 (define (non-fixnum? x)

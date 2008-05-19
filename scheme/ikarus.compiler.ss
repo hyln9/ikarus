@@ -2445,9 +2445,14 @@
   (define disp-ratnum-den  (* 2 wordsize))
   (define ratnum-size      (* 4 wordsize))
 
+  (define compnum-tag        #x37)
+  (define disp-compnum-real  (* 1 wordsize))
+  (define disp-compnum-imag  (* 2 wordsize))
+  (define compnum-size       (* 4 wordsize))
+
   (define bignum-mask        #b111)
   (define bignum-tag         #b011)
-  (define bignum-sign-mask  #b1000)
+  (define bignum-sign-mask   #b1000)
   (define bignum-sign-shift   3)
   (define bignum-length-shift 4) 
   (define disp-bignum-data    wordsize)

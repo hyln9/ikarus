@@ -1224,6 +1224,18 @@ add_object_proc(gc_t* gc, ikptr x)
       ref(y, disp_ratnum_den-vector_tag) = add_object(gc, den, "den");
       return y;
     }
+    else if(fst == compnum_tag){
+      ikptr y = gc_alloc_new_data(compnum_size, gc) + vector_tag;
+      ikptr rl = ref(x, disp_compnum_real-vector_tag);
+      ikptr im = ref(x, disp_compnum_imag-vector_tag);
+      ref(x, -vector_tag) = forward_ptr;
+      ref(x, wordsize-vector_tag) = y;
+      ref(y, -vector_tag) = fst;
+      ref(y, disp_compnum_real-vector_tag) = add_object(gc, rl, "real");
+      ref(y, disp_compnum_imag-vector_tag) = add_object(gc, im, "imag");
+      return y;
+    }
+
     else {
       fprintf(stderr, "unhandled vector with fst=0x%016lx\n",
                (long int)fst);

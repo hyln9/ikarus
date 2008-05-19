@@ -1300,7 +1300,7 @@
         [(bignum? x) (even-bignum? x)]
         [(flonum? x) (die 'odd? "BUG" x)]
         [else (die 'odd? "not an integer" x)])))
-  
+
   (module (number->string)
     (module (bignum->string)
       (define (bignum->decimal-string x)
@@ -1353,8 +1353,15 @@
           ($number->string ($ratnum-n x) r)
           "/"
           ($number->string ($ratnum-d x) r))))
+    (define (imag x r)
+      (cond
+        [(eqv? x 1) "+"]
+        [(eqv? x -1) "-"]
+        [(< x 0) ($number->string x r)]
+        [else (string-append "+" ($number->string x r))]))
     (define $number->string
       (lambda (x r)
+        (import (ikarus system $compnums))
         (cond
           [(fixnum? x) (fixnum->string x r)]
           [(bignum? x) (bignum->string x r)]
@@ -1365,6 +1372,11 @@
                 r x))
            (flonum->string x)]
           [(ratnum? x) (ratnum->string x r)]
+          [(compnum? x)
+           (string-append 
+             ($number->string ($compnum-real x) r)
+             (imag ($compnum-imag x) r)
+             "i")]
           [else (die 'number->string "not a number" x)])))
     (define number->string
       (case-lambda
@@ -3352,5 +3364,36 @@
         (die who "not a fixnum" x)))
 
   )
+
+
+(library (ikarus complex-numbers)
+  (export make-rectangular $make-rectangular)
+  (import 
+    (except (ikarus) make-rectangular)
+    (except (ikarus system $compnums) $make-rectangular))
+
+  (define ($make-rectangular r i)
+    (cond
+      [(eqv? i 0) r]
+      [else ($make-compnum r i)]))
+
+  (define (make-rectangular r i)
+    (define who 'make-rectangular)
+    (define (err x)
+      (die who "invalid argument" x))
+    (define (valid-part? x)
+      (or (fixnum? x)
+          (bignum? x)
+          (ratnum? x)))
+    (cond
+      [(eqv? i 0)
+       (if (valid-part? r) r (err r))]
+      [(valid-part? i) 
+       (if (valid-part? r) 
+           ($make-compnum r i)
+           (err i))]
+      [else (err r)]))
+)
+
 
 

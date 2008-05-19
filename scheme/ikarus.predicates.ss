@@ -16,14 +16,16 @@
 
 (library (ikarus predicates)
 
-  (export fixnum? flonum? bignum? ratnum? number? complex? real? rational?
+  (export fixnum? flonum? bignum? ratnum? compnum?
+          number? complex? real? rational?
           integer? exact? inexact? eof-object? bwp-object? immediate?
           boolean? char? vector? bytevector? string? procedure? null? pair?
           symbol? code? not weak-pair? eq? eqv? equal? boolean=?
           symbol=? finite? infinite? nan? real-valued?
           rational-valued? integer-valued? transcoder?)
   (import 
-    (except (ikarus) fixnum? flonum? bignum? ratnum? number? complex? real?
+    (except (ikarus) fixnum? flonum? bignum? ratnum? compnum? 
+            number? complex? real?
             rational? integer? exact? inexact? eof-object? bwp-object?
             immediate? boolean? char? vector? bytevector? string? procedure?
             null? pair? weak-pair? symbol? code? not eq? eqv? equal?
@@ -36,7 +38,9 @@
     (ikarus system $chars)
     (ikarus system $strings)
     (ikarus system $vectors)
-    (rename (only (ikarus) fixnum? flonum? bignum? ratnum? eof-object?
+    ;(ikarus system $compnums)
+    (rename (only (ikarus) fixnum? flonum? bignum? ratnum? compnum? 
+                  eof-object?
                   bwp-object? immediate? boolean? char? vector? string?
                   bytevector? procedure? null? pair? symbol? code? eq?
                   transcoder?)
@@ -44,6 +48,7 @@
             (flonum? sys:flonum?)
             (bignum? sys:bignum?)
             (ratnum? sys:ratnum?)
+            (compnum? sys:compnum?)
             (eof-object? sys:eof-object?)
             (bwp-object? sys:bwp-object?)
             (immediate? sys:immediate?)
@@ -73,21 +78,29 @@
   (define flonum? 
     (lambda (x) (sys:flonum? x)))
   
+  (define compnum? 
+    (lambda (x) (sys:compnum? x)))
+
   (define number?
     (lambda (x)
       (or (sys:fixnum? x)
           (sys:bignum? x)
           (sys:flonum? x)
-          (sys:ratnum? x))))
+          (sys:ratnum? x)
+          (sys:compnum? x))))
   
   (define complex?
     (lambda (x) (number? x)))
   
   (define real?
-    (lambda (x) (number? x)))
+    (lambda (x) 
+      (or (sys:fixnum? x)
+          (sys:bignum? x)
+          (sys:flonum? x)
+          (sys:ratnum? x))))
 
   (define real-valued?
-    (lambda (x) (number? x)))
+    (lambda (x) (real? x)))
 
   (define rational?
     (lambda (x) 
@@ -120,6 +133,7 @@
         [(sys:bignum? x) #t]
         [(sys:ratnum? x) #t]
         [(sys:flonum? x) #f]
+        [(sys:compnum? x) #t]
         [else 
          (die 'exact? "not a number" x)])))
   
@@ -131,6 +145,7 @@
         [(sys:fixnum? x) #f]
         [(sys:bignum? x) #f]
         [(sys:ratnum? x) #f]
+        [(sys:compnum? x) #f]
         [else 
          (die 'inexact? "not a number" x)])))
 
@@ -141,6 +156,7 @@
         [(sys:fixnum? x) #t]
         [(sys:bignum? x) #t]
         [(sys:ratnum? x) #t]
+        [(sys:compnum? x) #t]
         [else 
          (die 'finite? "not a number" x)])))
 
@@ -151,6 +167,7 @@
         [(sys:fixnum? x) #f]
         [(sys:bignum? x) #f]
         [(sys:ratnum? x) #f]
+        [(sys:compnum? x) #f]
         [else 
          (die 'infinite? "not a number" x)])))
 
@@ -161,6 +178,7 @@
         [(sys:fixnum? x) #f]
         [(sys:bignum? x) #f]
         [(sys:ratnum? x) #f]
+        [(sys:compnum? x) #f]
         [else 
          (die 'nan? "not a number" x)])))
 
