@@ -364,6 +364,12 @@
              (let ([x (/ num den)])
                (when m (put-mark m x))
                x))]
+          [(#\i) ;;; compnum
+           (let* ([real (read)]
+                  [imag (read)])
+             (let ([x (make-rectangular real imag)])
+               (when m (put-mark m x))
+               x))]
           [else
            (die who "Unexpected char as a fasl object header" h)])))
     (read))

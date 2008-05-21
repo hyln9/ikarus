@@ -281,6 +281,10 @@
                (write-byte ($bignum-byte-ref x i) p)
                (f (fxadd1 i)))))
          m]
+        [(compnum? x)
+         (put-tag #\i p)
+         (fasl-write-object (imag-part x) p h
+           (fasl-write-object (real-part x) p h m))]
         [else (die 'fasl-write "not fasl-writable" x)])))
   (define (write-bytevector x i j p)
     (unless ($fx= i j)
@@ -373,6 +377,9 @@
              [(ratnum? x) 
               (make-graph (numerator x) h)
               (make-graph (denominator x) h)]
+             [(compnum? x)
+              (make-graph (real-part x) h)
+              (make-graph (imag-part x) h)]
              [else (die 'fasl-write "not fasl-writable" x)])]))))
   (define fasl-write-to-port
     (lambda (x port)
