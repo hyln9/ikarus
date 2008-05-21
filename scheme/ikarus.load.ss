@@ -22,7 +22,7 @@
     (only (psyntax library-manager) 
       serialize-all current-precompiled-library-loader)
     (only (psyntax expander) compile-r6rs-top-level)
-    (only (ikarus reader) read-initial read-script-source-file))
+    (only (ikarus.reader.annotated) read-script-source-file))
 
 
   (define-struct serialized-library (contents))
@@ -81,12 +81,7 @@
          (die 'load "not a string" x))
        (unless (procedure? eval-proc)
          (die 'load "not a procedure" eval-proc))
-       (let ([p (open-input-file x)])
-         (let ([x (read-initial p)])
-           (unless (eof-object? x)
-             (eval-proc x)
-             (read-and-eval p eval-proc)))
-         (close-input-port p))]))
+       (for-each eval-proc (read-script-source-file x))]))
   (define load-r6rs-top-level
     (lambda (x how)
       (let ([prog (read-script-source-file x)])

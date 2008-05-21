@@ -28,7 +28,7 @@
     (ikarus system $bytevectors)
     (ikarus system $transcoders)
     (only (ikarus.pretty-formats) get-fmt)
-    (only (ikarus unicode-data) unicode-printable-char?) 
+    ;(only (ikarus unicode-data) unicode-printable-char?) 
     (except (ikarus) 
       write display format printf fprintf print-error print-unicode print-graph
       put-datum))

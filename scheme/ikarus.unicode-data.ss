@@ -34,6 +34,7 @@
     (ikarus system $pairs)
     (ikarus system $strings)
     (except (ikarus) 
+      unicode-printable-char?
       char-downcase char-upcase char-titlecase char-foldcase
       char-ci=? char-ci<? char-ci<=? char-ci>? char-ci>=?
       string-ci=?  string-ci<?  string-ci<=?  string-ci>?

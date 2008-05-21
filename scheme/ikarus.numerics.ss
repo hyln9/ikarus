@@ -2294,27 +2294,42 @@
       (cond
         [(flonum? x) (foreign-call "ikrt_fl_sqrt" x)]
         [(fixnum? x)
-         (when ($fx< x 0) 
-           (die 'sqrt "complex results not supported" x))
-         (foreign-call "ikrt_fx_sqrt" x)]
-        [(bignum? x) 
-         (unless ($bignum-positive? x) 
-           (die 'sqrt "complex results not supported" x))
-         (let-values ([(s r) (exact-integer-sqrt x)])
-           (cond
-             [(eq? r 0) s]
-             [else 
-              (let ([v (sqrt (inexact x))])
-                ;;; could the [dropped] residual ever affect the answer?
-                (cond
-                  [(infinite? v)
-                   (if (bignum? s) 
-                       (foreign-call "ikrt_bignum_to_flonum" 
-                          s
-                          1 ;;; round up in case of a tie
-                          ($make-flonum))
-                       (inexact s))]
-                  [else v]))]))]
+         (cond
+           [($fx< x 0)
+            (let-values ([(s r) (exact-integer-sqrt (- x))])
+              (cond
+                [(eq? r 0) ($make-rectangular 0 s)]
+                [else 
+                 (error 'sqrt "inexact complex numbers not supported yet")]))]
+           [else
+            (let-values ([(s r) (exact-integer-sqrt x)])
+              (cond
+                [(eq? r 0) s]
+                [else (foreign-call "ikrt_fx_sqrt" x)]))])]
+        [(bignum? x)
+         (cond
+           [($bignum-positive? x)
+            (let-values ([(s r) (exact-integer-sqrt x)])
+              (cond
+                [(eq? r 0) s]
+                [else 
+                 (let ([v (sqrt (inexact x))])
+                   ;;; could the [dropped] residual ever affect the answer?
+                   (cond
+                     [(infinite? v)
+                      (if (bignum? s) 
+                          (foreign-call "ikrt_bignum_to_flonum" 
+                             s
+                             1 ;;; round up in case of a tie
+                             ($make-flonum))
+                          (inexact s))]
+                     [else v]))]))]
+           [else
+            (let-values ([(s r) (exact-integer-sqrt (- x))])
+              (cond
+                [(eq? r 0) (make-rectangular 0 s)]
+                [else 
+                 (error 'sqrt "inexact complex numbers not supported yet")]))])]
         [(ratnum? x)
          ;;; FIXME: incorrect as per bug 180170
          (/ (sqrt ($ratnum-n x)) (sqrt ($ratnum-d x)))]
@@ -2887,33 +2902,6 @@
 
   )
 
-(library (ikarus complexnums)
-  (export real-part imag-part magnitude)
-  (import (except (ikarus) real-part imag-part magnitude))
-  ;;; stub implementation since we don't have a way of 
-  ;;; constructing complex numbers yet.
-
-  (define magnitude 
-    (lambda (x)
-      (if (number? x) 
-          (abs x)
-          (die 'magnitude "not a number" x))))
-
-  (define real-part
-    (lambda (x) 
-      (if (number? x) 
-          x
-          (die 'real-part "not a number" x))))
-
-  (define imag-part
-    (lambda (x)
-      (cond
-        [(fixnum? x) 0]
-        [(bignum? x) 0]
-        [(ratnum? x) 0]
-        [(flonum? x) 0.0]
-        [else 
-         (die 'imag-part "not a number" x)]))))
 
 
 
@@ -3630,9 +3618,11 @@
 
 
 (library (ikarus complex-numbers)
-  (export make-rectangular $make-rectangular)
+  (export make-rectangular $make-rectangular
+          real-part imag-part magnitude)
   (import 
-    (except (ikarus) make-rectangular)
+    (except (ikarus)
+      make-rectangular real-part imag-part magnitude)
     (except (ikarus system $compnums) $make-rectangular))
 
   (define ($make-rectangular r i)
@@ -3656,7 +3646,38 @@
            ($make-compnum r i)
            (err i))]
       [else (err r)]))
+
+  (define magnitude
+    (lambda (x)
+      (cond
+        [(or (fixnum? x) (bignum? x) (ratnum? x) (flonum? x))
+         (abs x)]
+        [(compnum? x)
+         (let ([r ($compnum-real x)]
+               [i ($compnum-imag x)])
+           (sqrt (+ (* r r) (* i i))))]
+        [else 
+         (die 'magnitude "not a number" x)])))
+
+  (define real-part
+    (lambda (x)
+      (cond
+        [(fixnum? x) x]
+        [(bignum? x) x]
+        [(ratnum? x) x]
+        [(flonum? x) x]
+        [(compnum? x) ($compnum-real x)]
+        [else 
+         (die 'real-part "not a number" x)])))
+
+  (define imag-part
+    (lambda (x)
+      (cond
+        [(fixnum? x) 0]
+        [(bignum? x) 0]
+        [(ratnum? x) 0]
+        [(flonum? x) 0.0]
+        [(compnum? x) ($compnum-imag x)]
+        [else 
+         (die 'imag-part "not a number" x)])))
 )
-
-
-

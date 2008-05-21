@@ -14,19 +14,17 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-(library (ikarus reader)
+(library (ikarus.reader)
   (export read read-initial read-token comment-handler get-datum
           read-annotated read-script-annotated annotation?
           annotation-expression annotation-source
-          annotation-stripped 
-          read-library-source-file read-script-source-file)
+          annotation-stripped)
   (import
     (ikarus system $chars)
     (ikarus system $fx)
     (ikarus system $pairs)
     (ikarus system $bytevectors)
-    (only (io-spec) open-string-input-port/id)
-    (only (ikarus unicode-data) unicode-printable-char?) 
+    ;(only (ikarus unicode-data) unicode-printable-char?)
     (except (ikarus) read-char read read-token comment-handler get-datum
       read-annotated read-script-annotated annotation?
       annotation-expression annotation-source annotation-stripped))
@@ -1428,27 +1426,7 @@
           (die 'comment-handler "not a procedure" x))
         x)))
 
-  (define (annotated-port file-name)
-    (open-string-input-port/id 
-      (with-input-from-file file-name 
-        (lambda () (get-string-all (current-input-port))))
-      file-name))
+)
 
-  (define (read-library-source-file file-name)
-    (read-annotated (annotated-port file-name)))
-
-  (define (read-script-source-file file-name)
-    (let ([p (annotated-port file-name)])
-      (let ([x (read-script-annotated p)])
-        (if (eof-object? x)
-            (begin (close-input-port p) '())
-            (cons x 
-              (let f ()
-                (let ([x (read-annotated p)])
-                  (cond
-                    [(eof-object? x) 
-                     (close-input-port p)
-                     '()]
-                    [else (cons x (f))]))))))))
-  )
+          
 

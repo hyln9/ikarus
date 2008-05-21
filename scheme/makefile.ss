@@ -75,6 +75,7 @@
     "ikarus.pretty-formats.ss"
     "ikarus.writer.ss"
     "ikarus.reader.ss"
+    "ikarus.reader.annotated.ss"
     "ikarus.code-objects.ss"
     "ikarus.intel-assembler.ss"
     "ikarus.trace.ss"
@@ -353,6 +354,7 @@
     [print-gensym                                i symbols]
     [print-graph                                 i]
     [print-unicode                               i]
+    [unicode-printable-char?                     i]
     [gensym-count                                i symbols]
     [gensym-prefix                               i symbols]
     [make-parameter                              i parameters]

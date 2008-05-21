@@ -23,7 +23,7 @@
           read-library-source-file)
   (import 
     (only (ikarus.compiler) eval-core)
-    (only (ikarus reader) read-library-source-file)
+    (only (ikarus.reader.annotated) read-library-source-file)
     (ikarus))
 
 
