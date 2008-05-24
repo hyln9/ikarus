@@ -281,7 +281,7 @@
                (write-byte ($bignum-byte-ref x i) p)
                (f (fxadd1 i)))))
          m]
-        [(compnum? x)
+        [(or (compnum? x) (cflonum? x))
          (put-tag #\i p)
          (fasl-write-object (imag-part x) p h
            (fasl-write-object (real-part x) p h m))]
@@ -377,7 +377,7 @@
              [(ratnum? x) 
               (make-graph (numerator x) h)
               (make-graph (denominator x) h)]
-             [(compnum? x)
+             [(or (compnum? x) (cflonum? x))
               (make-graph (real-part x) h)
               (make-graph (imag-part x) h)]
              [else (die 'fasl-write "not fasl-writable" x)])]))))

@@ -1109,7 +1109,30 @@
 /section)
 
 
+(section ;;; cflonums
 
+(define-primop cflonum? safe
+  [(P x) (sec-tag-test (T x) vector-mask vector-tag #f cflonum-tag)]
+  [(E x) (nop)])
+
+(define-primop $make-cflonum unsafe
+  [(V real imag)
+   (with-tmp ([x (prm 'alloc (K (align cflonum-size)) (K vector-tag))])
+     (prm 'mset x (K (- vector-tag)) (K cflonum-tag))
+     (prm 'mset x (K (- disp-cflonum-real vector-tag)) (T real))
+     (prm 'mset x (K (- disp-cflonum-imag vector-tag)) (T imag))
+     x)]
+  [(P str) (K #t)]
+  [(E str) (nop)])
+
+
+(define-primop $cflonum-real unsafe
+  [(V x) (prm 'mref (T x) (K (- disp-cflonum-real vector-tag)))])
+
+(define-primop $cflonum-imag unsafe
+  [(V x) (prm 'mref (T x) (K (- disp-cflonum-imag vector-tag)))])
+
+/section)
 
 (section ;;; generic arithmetic
 

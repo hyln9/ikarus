@@ -16,7 +16,7 @@
 
 (library (ikarus predicates)
 
-  (export fixnum? flonum? bignum? ratnum? compnum?
+  (export fixnum? flonum? bignum? ratnum? compnum? cflonum?
           number? complex? real? rational?
           integer? exact? inexact? eof-object? bwp-object? immediate?
           boolean? char? vector? bytevector? string? procedure? null? pair?
@@ -24,7 +24,7 @@
           symbol=? finite? infinite? nan? real-valued?
           rational-valued? integer-valued? transcoder?)
   (import 
-    (except (ikarus) fixnum? flonum? bignum? ratnum? compnum? 
+    (except (ikarus) fixnum? flonum? bignum? ratnum? compnum?  cflonum?
             number? complex? real?
             rational? integer? exact? inexact? eof-object? bwp-object?
             immediate? boolean? char? vector? bytevector? string? procedure?
@@ -38,8 +38,8 @@
     (ikarus system $chars)
     (ikarus system $strings)
     (ikarus system $vectors)
-    ;(ikarus system $compnums)
-    (rename (only (ikarus) fixnum? flonum? bignum? ratnum? compnum? 
+    (only (ikarus system $compnums) $cflonum-real $cflonum-imag)
+    (rename (only (ikarus) fixnum? flonum? bignum? ratnum? compnum? cflonum?
                   eof-object?
                   bwp-object? immediate? boolean? char? vector? string?
                   bytevector? procedure? null? pair? symbol? code? eq?
@@ -49,6 +49,7 @@
             (bignum? sys:bignum?)
             (ratnum? sys:ratnum?)
             (compnum? sys:compnum?)
+            (cflonum? sys:cflonum?)
             (eof-object? sys:eof-object?)
             (bwp-object? sys:bwp-object?)
             (immediate? sys:immediate?)
@@ -81,13 +82,17 @@
   (define compnum? 
     (lambda (x) (sys:compnum? x)))
 
+  (define cflonum? 
+    (lambda (x) (sys:cflonum? x)))
+
   (define number?
     (lambda (x)
       (or (sys:fixnum? x)
           (sys:bignum? x)
           (sys:flonum? x)
           (sys:ratnum? x)
-          (sys:compnum? x))))
+          (sys:compnum? x)
+          (sys:cflonum? x))))
   
   (define complex?
     (lambda (x) (number? x)))
@@ -134,6 +139,7 @@
         [(sys:ratnum? x) #t]
         [(sys:flonum? x) #f]
         [(sys:compnum? x) #t]
+        [(sys:cflonum? x) #f]
         [else 
          (die 'exact? "not a number" x)])))
   
@@ -146,6 +152,7 @@
         [(sys:bignum? x) #f]
         [(sys:ratnum? x) #f]
         [(sys:compnum? x) #f]
+        [(sys:cflonum? x) #t]
         [else 
          (die 'inexact? "not a number" x)])))
 
@@ -157,6 +164,10 @@
         [(sys:bignum? x) #t]
         [(sys:ratnum? x) #t]
         [(sys:compnum? x) #t]
+        [(sys:cflonum? x) 
+         (and 
+           (flfinite? ($cflonum-real x)) 
+           (flfinite? ($cflonum-imag x)))]
         [else 
          (die 'finite? "not a number" x)])))
 
@@ -168,6 +179,10 @@
         [(sys:bignum? x) #f]
         [(sys:ratnum? x) #f]
         [(sys:compnum? x) #f]
+        [(sys:cflonum? x) 
+         (or 
+           (flinfinite? ($cflonum-real x)) 
+           (flinfinite? ($cflonum-imag x)))]
         [else 
          (die 'infinite? "not a number" x)])))
 
@@ -179,6 +194,10 @@
         [(sys:bignum? x) #f]
         [(sys:ratnum? x) #f]
         [(sys:compnum? x) #f]
+        [(sys:cflonum? x) 
+         (or 
+           (nan? ($cflonum-real x)) 
+           (nan? ($cflonum-imag x)))]
         [else 
          (die 'nan? "not a number" x)])))
 
@@ -212,8 +231,21 @@
 
   (define eqv?
     (lambda (x y)
-      (or (sys:eq? x y)
-          (and (number? x) (number? y) (= x y)))))
+      (import (ikarus))
+      (cond
+        [(eq? x y) #t]
+        [(flonum? x) (and (flonum? y) (fl=? x y))]
+        [(bignum? x) (and (bignum? y) (= x y))]
+        [(ratnum? x) (and (ratnum? y) (= x y))]
+        [(compnum? x)
+         (and (compnum? y) 
+              (= (real-part x) (real-part y))
+              (= (imag-part x) (imag-part y)))]
+        [(cflonum? x)
+         (and (cflonum? y)
+              (= (real-part x) (real-part y))
+              (= (imag-part x) (imag-part y)))]
+        [else #f])))
 
   (define boolean=?
     (lambda (x y) 
@@ -265,9 +297,9 @@
                 (let ([n ($string-length x)])
                   (and ($fx= n ($string-length y))
                        (string-loop x y 0 n))))]
-          [(number? x) (and (number? y) (= x y))]
           [(sys:bytevector? x)
            (and (sys:bytevector? y) (bytevector=? x y))]
+          [(number? x) (eqv? x y)]
           [else #f]))))
 
 

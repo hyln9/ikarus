@@ -397,6 +397,12 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define disp_compnum_unused   (3 * wordsize)
 #define compnum_size          (4 * wordsize)
 
+#define cflonum_tag           ((ikptr) 0x47)
+#define disp_cflonum_real     (1 * wordsize)
+#define disp_cflonum_imag     (2 * wordsize)
+#define disp_cflonum_unused   (3 * wordsize)
+#define cflonum_size          (4 * wordsize)
+
 #define ik_eof_p(x) ((x) == ik_eof_object)
 #define page_index(x) (((unsigned long int)(x)) >> pageshift)
 

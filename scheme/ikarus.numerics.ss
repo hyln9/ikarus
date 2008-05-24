@@ -1463,6 +1463,11 @@
              ($number->string ($compnum-real x) r)
              (imag ($compnum-imag x) r)
              "i")]
+          [(cflonum? x)
+           (string-append 
+             ($number->string ($cflonum-real x) r)
+             (imag ($cflonum-imag x) r)
+             "i")]
           [else (die 'number->string "not a number" x)])))
     (define number->string
       (case-lambda
@@ -1924,8 +1929,8 @@
                  (if (fxfl= x y)
                      (flloopt y (car ls) (cdr ls))
                      (loopf (car ls) (cdr ls))))]
-            [(ratnum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
-            [(compnum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
+            [(or (ratnum? y) (compnum? y) (cflonum? y))
+             (and (pair? ls) (loopf (car ls) (cdr ls)))]
             [else (err y)])))
       (define bnloopt
         (lambda (x y ls)
@@ -1943,8 +1948,8 @@
                  (if (bnfl= x y)
                      (flloopt y (car ls) (cdr ls))
                      (loopf (car ls) (cdr ls))))]
-            [(ratnum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
-            [(compnum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
+            [(or (ratnum? y) (compnum? y) (cflonum? y))
+             (and (pair? ls) (loopf (car ls) (cdr ls)))]
             [else (err y)])))
       (define flloopt
         (lambda (x y ls)
@@ -1973,13 +1978,12 @@
                  (if (flrt= x y)
                      (rtloopt y (car ls) (cdr ls))
                      (loopf (car ls) (cdr ls))))]
-            [(compnum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
+            [(or (compnum? y) (cflonum? y))
+             (and (pair? ls) (loopf (car ls) (cdr ls)))]
             [else (err y)])))
       (define rtloopt
         (lambda (x y ls)
           (cond
-            [(fixnum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
-            [(bignum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
             [(flonum? y)
              (if (null? ls)
                  (rtfl= x y)
@@ -1992,7 +1996,8 @@
                  (if (rtrt= x y)
                      (rtloopt y (car ls) (cdr ls))
                      (loopf (car ls) (cdr ls))))]
-            [(compnum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
+            [(or (fixnum? y) (bignum? y) (compnum? y) (cflonum? y))
+             (and (pair? ls) (loopf (car ls) (cdr ls)))]
             [else (err y)]))) 
       (define cnloopt
         (lambda (x y ls)
@@ -2003,10 +2008,32 @@
                  (if (cncn= x y)
                      (cnloopt y (car ls) (cdr ls))
                      (loopf (car ls) (cdr ls))))]
-            [(fixnum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
-            [(bignum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
-            [(flonum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
-            [(ratnum? y) (and (pair? ls) (loopf (car ls) (cdr ls)))]
+            [(cflonum? y)
+             (if (null? ls)
+                 (cncf= x y)
+                 (if (cncf= x y)
+                     (cfloopt y (car ls) (cdr ls))
+                     (loopf (car ls) (cdr ls))))]
+            [(or (fixnum? y) (bignum? y) (flonum? y) (ratnum? y))
+             (and (pair? ls) (loopf (car ls) (cdr ls)))]
+            [else (err y)])))
+      (define cfloopt
+        (lambda (x y ls)
+          (cond
+            [(cflonum? y)
+             (if (null? ls)
+                 (cfcf= x y)
+                 (if (cfcf= x y)
+                     (cfloopt y (car ls) (cdr ls))
+                     (loopf (car ls) (cdr ls))))]
+            [(compnum? y)
+             (if (null? ls)
+                 (cncf= y x)
+                 (if (cncf= y x)
+                     (cnloopt y (car ls) (cdr ls))
+                     (loopf (car ls) (cdr ls))))]
+            [(or (fixnum? y) (bignum? y) (flonum? y) (ratnum? y))
+             (and (pair? ls) (loopf (car ls) (cdr ls)))]
             [else (err y)]))) 
       (define loopf
         (lambda (x ls)
@@ -2020,6 +2047,14 @@
         (and 
           (= ($compnum-real x) ($compnum-real y))
           (= ($compnum-imag x) ($compnum-imag y))))
+      (define (cncf= x y)
+        (and 
+          (= ($compnum-real x) ($cflonum-real y))
+          (= ($compnum-imag x) ($cflonum-imag y))))
+      (define (cfcf= x y)
+        (and 
+          (= ($cflonum-real x) ($cflonum-real y))
+          (= ($cflonum-imag x) ($cflonum-imag y))))
       (define =
         (case-lambda
           [(x y)
@@ -2027,18 +2062,14 @@
              [(fixnum? x)
               (cond
                 [(fixnum? y) ($fx= x y)]
-                [(bignum? y) #f]
                 [(flonum? y) (fxfl= x y)]
-                [(ratnum? y) #f]
-                [(compnum? y) #f]
+                [(or (bignum? y) (ratnum? y) (compnum? y) (cflonum? y)) #f]
                 [else (err y)])]
              [(bignum? x)
               (cond
-                [(fixnum? y) #f]
                 [(bignum? y) (bnbn= x y)]
                 [(flonum? y) (bnfl= x y)]
-                [(ratnum? y) #f]
-                [(compnum? y) #f]
+                [(or (fixnum? y) (ratnum? y) (compnum? y) (cflonum? y)) #f]
                 [else (err y)])]
              [(flonum? x)
               (cond
@@ -2046,23 +2077,25 @@
                 [(bignum? y) (flbn= x y)]
                 [(flonum? y) (flfl= x y)]
                 [(ratnum? y) (flrt= x y)]
-                [(compnum? y) #f]
+                [(or (compnum? y) (cflonum? y)) #f]
                 [else (err y)])]
              [(ratnum? x)
               (cond
-                [(fixnum? y) #f]
-                [(bignum? y) #f]
                 [(flonum? y) (rtfl= x y)]
                 [(ratnum? y) (rtrt= x y)]
-                [(compnum? y) #f]
+                [(or (fixnum? y) (bignum? y) (compnum? y) (cflonum? y)) #f]
                 [else (err y)])]
              [(compnum? x)
               (cond
                 [(compnum? y) (cncn= x y)]
-                [(fixnum? y) #f]
-                [(bignum? y) #f]
-                [(flonum? y) #f]
-                [(ratnum? y) #f]
+                [(cflonum? y) (cncf= x y)]
+                [(or (fixnum? y) (bignum? y) (flonum? y) (ratnum? y)) #f]
+                [else (err y)])]
+             [(cflonum? x)
+              (cond
+                [(cflonum? y) (cfcf= x y)]
+                [(compnum? y) (cncf= y x)]
+                [(or (fixnum? y) (bignum? y) (flonum? y) (ratnum? y)) #f]
                 [else (err y)])]
              [else (err x)])]
           [(x y z) (and (= x y) (= y z))]
@@ -2074,6 +2107,7 @@
              [(flonum? x) (flloopt x y ls)]
              [(ratnum? x) (rtloopt x y ls)]
              [(compnum? x) (cnloopt x y ls)]
+             [(cflonum? x) (cfloopt x y ls)]
              [else (err x)])]))
       =))
 
@@ -3626,26 +3660,30 @@
     (except (ikarus system $compnums) $make-rectangular))
 
   (define ($make-rectangular r i)
-    (cond
-      [(eqv? i 0) r]
-      [else ($make-compnum r i)]))
+    ;;; should be called with 2 exacts or two inexacts
+    (if (flonum? i) 
+        (if (fl=? i 0.0) r ($make-cflonum r i))
+        (if (eqv? i 0) r ($make-compnum r i))))
 
   (define (make-rectangular r i)
     (define who 'make-rectangular)
     (define (err x)
       (die who "invalid argument" x))
-    (define (valid-part? x)
-      (or (fixnum? x)
-          (bignum? x)
-          (ratnum? x)))
     (cond
-      [(eqv? i 0)
-       (if (valid-part? r) r (err r))]
-      [(valid-part? i) 
-       (if (valid-part? r) 
-           ($make-compnum r i)
-           (err i))]
-      [else (err r)]))
+      [(flonum? i) 
+       (cond
+         [(flonum? r) ($make-rectangular r i)]
+         [(or (fixnum? r) (bignum? r) (ratnum? r))
+          ($make-rectangular (inexact r) i)]
+         [else (err r)])]
+      [(or (fixnum? i) (bignum? i) (ratnum? i))
+       (cond
+         [(or (fixnum? r) (bignum? r) (ratnum? r))
+          ($make-rectangular r i)]
+         [(flonum? r)
+          ($make-rectangular r (inexact i))]
+         [else (err r)])]
+      [else (err i)]))
 
   (define magnitude
     (lambda (x)
@@ -3655,6 +3693,10 @@
         [(compnum? x)
          (let ([r ($compnum-real x)]
                [i ($compnum-imag x)])
+           (sqrt (+ (* r r) (* i i))))]
+        [(cflonum? x)
+         (let ([r ($cflonum-real x)]
+               [i ($cflonum-imag x)])
            (sqrt (+ (* r r) (* i i))))]
         [else 
          (die 'magnitude "not a number" x)])))
@@ -3667,6 +3709,7 @@
         [(ratnum? x) x]
         [(flonum? x) x]
         [(compnum? x) ($compnum-real x)]
+        [(cflonum? x) ($cflonum-real x)]
         [else 
          (die 'real-part "not a number" x)])))
 
@@ -3678,6 +3721,7 @@
         [(ratnum? x) 0]
         [(flonum? x) 0.0]
         [(compnum? x) ($compnum-imag x)]
+        [(cflonum? x) ($cflonum-imag x)]
         [else 
          (die 'imag-part "not a number" x)])))
 )

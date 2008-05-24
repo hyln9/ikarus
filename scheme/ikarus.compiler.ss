@@ -2450,6 +2450,11 @@
   (define disp-compnum-imag  (* 2 wordsize))
   (define compnum-size       (* 4 wordsize))
 
+  (define cflonum-tag        #x47)
+  (define disp-cflonum-real  (* 1 wordsize))
+  (define disp-cflonum-imag  (* 2 wordsize))
+  (define cflonum-size       (* 4 wordsize))
+
   (define bignum-mask        #b111)
   (define bignum-tag         #b011)
   (define bignum-sign-mask   #b1000)
