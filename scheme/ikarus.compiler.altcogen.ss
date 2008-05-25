@@ -487,7 +487,7 @@
   (define (alloc-check size)
     (E (make-shortcut
          (make-conditional ;;; PCB ALLOC-REDLINE
-           (make-primcall '<= 
+           (make-primcall 'u<= 
              (list (make-primcall 'int+ (list apr size)) 
                    (make-primcall 'mref 
                      (list pcr 
