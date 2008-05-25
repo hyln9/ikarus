@@ -487,11 +487,13 @@
   (define (alloc-check size)
     (E (make-shortcut
          (make-conditional ;;; PCB ALLOC-REDLINE
-           (make-primcall 'u<= 
-             (list (make-primcall 'int+ (list apr size)) 
-                   (make-primcall 'mref 
-                     (list pcr 
-                        (make-constant pcb-allocation-redline)))))
+           (make-primcall '>= 
+             (list (make-primcall 'int- 
+                      (list 
+                        (make-primcall 'mref 
+                          (list pcr (make-constant pcb-allocation-redline))) 
+                        apr))
+                   size))
            (make-primcall 'nop '())
            (make-primcall 'interrupt '()))
          (make-funcall 
