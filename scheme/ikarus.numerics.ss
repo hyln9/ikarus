@@ -2345,18 +2345,9 @@
         [(flonum? m) (flexpt (inexact n) m)]
         [(ratnum? m) (flexpt (inexact n) (inexact m))]
         [(or (compnum? m) (cflonum? m))
-         ;; n^m = e^(m ln n)
-         ;; z = m ln n
-         ;; e^z = e^(zr + zi i)
-         ;;     = e^zr cos(zi) + e^zr sin(zi) i
          (let ([e 2.718281828459045])
            (define (ln x) (/ (log x) (log e)))
-           (let ([z (* m (ln n))])
-             (let ([zr (real-part z)] [zi (imag-part z)])
-               (let ([e^zr (expt e zr)])
-                 (make-rectangular 
-                   (* e^zr (cos zi))
-                   (* e^zr (sin zi)))))))]
+           (exp (* m (ln n))))]
         [else (die 'expt "not a number" m)])))
 
   (define quotient
@@ -3036,6 +3027,14 @@
        (if ($fx= x 0) 1 (flexp (fixnum->flonum x)))]
       [(bignum? x) (flexp (bignum->flonum x))]
       [(ratnum? x) (flexp (ratnum->flonum x))]
+      [(or (compnum? x) (cflonum? x))
+       ;; e^x = e^(xr + xi i)
+       ;;     = e^xr cos(xi) + e^xr sin(xi) i
+       (let ([xr (real-part x)] [xi (imag-part x)])
+         (let ([e^xr (exp xr)])
+           (make-rectangular 
+             (* e^xr (cos xi))
+             (* e^xr (sin xi)))))]
       [else (die 'exp "not a number" x)]))
 
   (define (bitwise-length n)
