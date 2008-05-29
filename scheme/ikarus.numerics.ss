@@ -2344,6 +2344,19 @@
             (die 'expt "result is too big to compute" n m)])]
         [(flonum? m) (flexpt (inexact n) m)]
         [(ratnum? m) (flexpt (inexact n) (inexact m))]
+        [(or (compnum? m) (cflonum? m))
+         ;; n^m = e^(m ln n)
+         ;; z = m ln n
+         ;; e^z = e^(zr + zi i)
+         ;;     = e^zr cos(zi) + e^zr sin(zi) i
+         (let ([e 2.718281828459045])
+           (define (ln x) (/ (log x) (log e)))
+           (let ([z (* m (ln n))])
+             (let ([zr (real-part z)] [zi (imag-part z)])
+               (let ([e^zr (expt e zr)])
+                 (make-rectangular 
+                   (* e^zr (cos zi))
+                   (* e^zr (sin zi)))))))]
         [else (die 'expt "not a number" m)])))
 
   (define quotient
@@ -2462,12 +2475,17 @@
         [else (die 'acos "not a number" x)])))
 
   (define atan
-    (lambda (x)
-      (cond
-        [(flonum? x) (foreign-call "ikrt_fl_atan" x)]
-        [(fixnum? x) (foreign-call "ikrt_fx_atan" x)]
-        [(number? x) (atan (inexact x))]
-        [else (die 'atan "not a number" x)])))
+    (case-lambda
+      [(x)
+       (cond
+         [(flonum? x) (foreign-call "ikrt_fl_atan" x)]
+         [(fixnum? x) (foreign-call "ikrt_fx_atan" x)]
+         [(or (ratnum? x) (bignum? x)) (atan (inexact x))]
+         [else (die 'atan "not a number" x)])]
+      [(y x)
+       (unless (real? x) (die 'atan "not a real number" x))
+       (unless (real? y) (die 'atan "not a real number" y))
+       (foreign-call "ikrt_atan2" (inexact y) (inexact x))]))
 
   (define sqrt
     (lambda (x)
@@ -2513,6 +2531,13 @@
         [(ratnum? x)
          ;;; FIXME: incorrect as per bug 180170
          (/ (sqrt ($ratnum-n x)) (sqrt ($ratnum-d x)))]
+        [(or (compnum? x) (cflonum? x))
+         (let ([xr (real-part x)] [xi (imag-part x)])
+           (let ([m (sqrt (+ (* xr xr) (* xi xi)))]
+                 [s (if (> xi 0) 1 -1)])
+             (make-rectangular 
+               (sqrt (/ (+ m xr) 2))
+               (* s (sqrt (/ (- m xr) 2))))))]
         [else (die 'sqrt "not a number" x)])))
 
   (define flsqrt
@@ -2694,6 +2719,13 @@
         [(ratnum? x) 
          ;;; FIXME: incorrect as per bug 180170
          (- (log (numerator x)) (log (denominator x)))]
+        [(or (compnum? x) (cflonum? x))
+         (let ([e 2.718281828459045])
+           (define (ln x) (/ (log x) (log e)))
+           (let ([xr (real-part x)] [xi (imag-part x)])
+             (make-rectangular 
+               (/ (ln (+ (* xr xr) (* xi xi))) 2)
+               (atan xi xr))))]
         [else (die 'log "not a number" x)])))
 
   (define string->number

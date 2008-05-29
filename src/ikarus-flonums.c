@@ -143,6 +143,14 @@ ikrt_fl_atan(ikptr x, ikpcb* pcb){
   return r;
 }
 
+ikptr
+ikrt_atan2(ikptr y, ikptr x, ikpcb* pcb){
+  ikptr r = ik_unsafe_alloc(pcb, flonum_size) + vector_tag;
+  ref(r, -vector_tag) = (ikptr)flonum_tag;
+  flonum_data(r) = atan2(flonum_data(y), flonum_data(x));
+  return r;
+}
+
 
 
 
