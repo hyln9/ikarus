@@ -33,10 +33,13 @@
 #include <sys/resource.h>
 #include <sys/wait.h>
 #include <sys/param.h>
+#include <dirent.h>
 #ifdef __CYGWIN__
 #include "ikarus-winmmap.h"
 #endif
 
+
+extern ikptr ik_errno_to_code();
 
 int total_allocated_pages = 0;
          
@@ -553,97 +556,48 @@ ikptr ik_uuid(ikptr bv){
 }
 
 
-
-/*
-     #include <sys/types.h>
-     #include <sys/stat.h>
-     int
-     stat(const char *path, struct stat *sb);
-ERRORS
-     Stat() and lstat() will fail if:
-     [ENOTDIR]          A component of the path prefix is not a directory.
-     [ENAMETOOLONG]     A component of a pathname exceeded {NAME_MAX} charac-
-                        ters, or an entire path name exceeded {PATH_MAX} char-
-                        acters.
-     [ENOENT]           The named file does not exist.
-     [EACCES]           Search permission is denied for a component of the
-                        path prefix.
-     [ELOOP]            Too many symbolic links were encountered in translat-
-                        ing the pathname.
-     [EFAULT]           Sb or name points to an invalid address.
-     [EIO]              An I/O error occurred while reading from or writing to
-                        the file system.
-*/
-ikptr 
-ikrt_file_exists(ikptr filename){
-  char* str;
-  if(tagof(filename) == bytevector_tag){
-    str = (char*)(long)(filename + off_bytevector_data);
-  } else {
-    fprintf(stderr, "bug in ikrt_file_exists\n");
-    exit(-1);
+ikptr
+ikrt_stat(ikptr filename, ikptr follow, ikpcb* pcb){
+  char* fn = (char*)(filename + off_bytevector_data);
+  struct stat s;
+  int r;
+  if(follow == false_object){
+    r = lstat(fn, &s);
+  } else{
+    r = stat(fn, &s);
   }
-  struct stat sb;
-  int st = stat(str, &sb);
-  if(st == 0){
-    /* success */
-    return true_object;
-  } else {
-    int err = errno;
-    if(err == ENOENT){
-      return false_object;
-    } 
-    else if(err == ENOTDIR){
+  if(r == 0){
+    if(S_ISREG(s.st_mode)){
       return fix(1);
     } 
-    else if(err == ENAMETOOLONG){
+    else if(S_ISDIR(s.st_mode)){
       return fix(2);
-    } 
-    else if(err == EACCES){
-      return fix(3);
-    } 
-    else if(err == ELOOP){
-      return fix(4);
-    } 
-    else if(err == EFAULT){
-      return fix(5);
-    } 
-    else if(err == EIO){
-      return fix(6);
-    } 
-    else {
-      return fix(-1);
     }
-  }
+    else if(S_ISLNK(s.st_mode)){
+      return fix(3);
+    }
+    else {
+      return fix(0);
+    }
+  }  
+  return ik_errno_to_code();
 }
 
 
-/*
-     [ENOTDIR]          A component of the path prefix is not a directory.
-     [ENAMETOOLONG]     A component of a pathname exceeded {NAME_MAX} charac-
-                        ters, or an entire path name exceeded {PATH_MAX} char-
-                        acters.
-     [ENOENT]           The named file does not exist.
-     [EACCES]           Search permission is denied for a component of the
-                        path prefix.
-     [EACCES]           Write permission is denied on the directory containing
-                        the link to be removed.
-     [ELOOP]            Too many symbolic links were encountered in translat-
-                        ing the pathname.
-     [EPERM]            The named file is a directory and the effective user
-                        ID of the process is not the super-user.
-     [EPERM]            The directory containing the file is marked sticky,
-                        and neither the containing directory nor the file to
-                        be removed are owned by the effective user ID.
-     [EBUSY]            The entry to be unlinked is the mount point for a
-                        mounted file system.
-     [EIO]              An I/O error occurred while deleting the directory
-                        entry or deallocating the inode.
-     [EROFS]            The named file resides on a read-only file system.
-     [EFAULT]           Path points outside the process's allocated address
-                        space.
-*/
-
+/* ikrt_file_exists needs to be removed.
+   This is here only to be able to use old ikarus.boot.prebuilt */
+ikptr
+ikrt_file_exists(ikptr filename, ikpcb* pcb){
+  switch (ikrt_stat(filename, true_object, pcb)){
+    case fix(0):
+    case fix(1):
+    case fix(2):
+    case fix(3):
+      return true_object;
+    default:
+      return false_object;
+  }
+}
 
 ikptr
 ikrt_delete_file(ikptr filename){
@@ -656,30 +610,89 @@ ikrt_delete_file(ikptr filename){
   }
   int err = unlink(str);
   if(err == 0){
-    return 0;
+    return true_object;
   } 
-  switch (errno){
-    case ENOTDIR:  return fix(1);    
-    case ENAMETOOLONG: return fix(2);
-    case ENOENT: return fix(3);     
-    case EACCES: return fix(4);     
-    case ELOOP: return fix(5);      
-    case EPERM: return fix(6);      
-    case EBUSY: return fix(7);      
-    case EIO: return fix(8);        
-    case EROFS: return fix(9);      
-    case EFAULT: return fix(10);     
-  }
-  return fix(-1);
+  return ik_errno_to_code();
 }
 
+ikptr
+ikrt_directory_list(ikptr filename, ikpcb* pcb){
+  DIR* dir;
+  struct dirent* de;
+  if((dir = opendir((char*)(filename + off_bytevector_data))) == NULL){
+    return ik_errno_to_code();
+  }
+  ikptr ac = null_object;
+  pcb->root0 = &ac;
+  while(1){
+    errno = 0;
+    de = readdir(dir);
+    if(de == NULL){
+      pcb->root0 = 0;
+      pcb->root1 = 0;
+      ikptr retval = (errno ? ik_errno_to_code() : ac);
+      closedir(dir);
+      return retval;
+    }
+    int len = strlen(de->d_name);
+    ikptr bv = ik_safe_alloc(pcb, align(disp_bytevector_data+len+1))
+               + bytevector_tag;
+    ref(bv, off_bytevector_length) = fix(len);
+    memcpy((char*)(bv+off_bytevector_data), de->d_name, len+1);
+    pcb->root1 = &bv;
+    ikptr p = ik_safe_alloc(pcb, pair_size) + pair_tag;
+    ref(p, off_car) = bv;
+    ref(p, off_cdr) = ac;
+    ac = p;
+  }
+}
 
+ikptr
+ikrt_mkdir(ikptr path, ikptr mode, ikpcb* pcb){
+  int r = mkdir((char*)(path+off_bytevector_data), unfix(mode));
+  if(r == 0){
+    return true_object;
+  }
+  return ik_errno_to_code();
+}
+
+ikptr
+ikrt_rmdir(ikptr path, ikpcb* pcb){
+  int r = rmdir((char*)(path+off_bytevector_data));
+  if(r == 0){
+    return true_object;
+  }
+  return ik_errno_to_code();
+}
+
+ikptr
+ikrt_chmod(ikptr path, ikptr mode, ikpcb* pcb){
+  int r = chmod((char*)(path+off_bytevector_data), (mode_t)unfix(mode));
+  if(r == 0){
+    return true_object;
+  }
+  return ik_errno_to_code();
+}
+
+ikptr
+ikrt_symlink(ikptr to, ikptr path, ikpcb* pcb){
+  int r = symlink((char*)(to+off_bytevector_data), (char*)(path+off_bytevector_data));
+  if(r == 0){
+    return true_object;
+  }
+  return ik_errno_to_code();
+}
 
 
 ikptr 
 ik_system(ikptr str){
   if(tagof(str) == bytevector_tag){
-    return fix(system((char*)(long)(str+off_bytevector_data)));
+    int r = system((char*)(long)(str+off_bytevector_data));
+    if(r >= 0) {  
+      return fix(r);
+    } else {
+      return ik_errno_to_code();
+    }
   } else {
     fprintf(stderr, "bug in ik_system\n");
     exit(-1);
@@ -817,9 +830,6 @@ ikrt_register_guardian(ikptr tc, ikptr obj, ikpcb* pcb){
   return ikrt_register_guardian_pair(p0, pcb);
 }
 
-
-
-
 ikptr 
 ikrt_stats_now(ikptr t, ikpcb* pcb){
   struct rusage r;
@@ -881,7 +891,11 @@ ikrt_gmt_offset(ikptr t){
 ikptr 
 ikrt_fork(){
   int pid = fork();
-  return fix(pid);
+  if(pid >= 0){
+    return fix(pid);
+  } else {
+    return ik_errno_to_code();
+  }
 }
 
 
@@ -898,6 +912,7 @@ ikrt_getenv(ikptr bv, ikpcb* pcb){
     return s;
   } 
   else {
+    /* empty bv */
     ikptr s = ik_safe_alloc(pcb, align(disp_bytevector_data+1)) 
           + bytevector_tag;
     ref(s, -bytevector_tag) = fix(0);
@@ -995,7 +1010,10 @@ ikrt_nanosleep(ikptr secs, ikptr nsecs, ikpcb* pcb){
 ikptr
 ikrt_chdir(ikptr pathbv, ikpcb* pcb){
   int err = chdir(off_bytevector_data+(char*)pathbv);
-  return fix(err); /* FIXME: provide more meaninful result */
+  if(err == 0){
+    return true_object;
+  }
+  return ik_errno_to_code();
 }
 
 ikptr
@@ -1003,12 +1021,12 @@ ikrt_getcwd(ikpcb* pcb){
   char buff[MAXPATHLEN+1];
   char* path = getcwd(buff, MAXPATHLEN);
   if(! path){
-    return fix(-1); /* FIXME: provide more meaninful result */
+    return ik_errno_to_code();
   }
   int len = strlen(path);
   ikptr bv = ik_safe_alloc(pcb, align(disp_bytevector_data+len+1));
   ref(bv,0) = fix(len);
-  strncpy(disp_bytevector_data+(char*)(bv), path, len);
+  memcpy(disp_bytevector_data+(char*)(bv), path, len+1);
   return bv+bytevector_tag;
 }
 

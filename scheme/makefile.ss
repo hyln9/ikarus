@@ -70,6 +70,7 @@
     "ikarus.command-line.ss"
     "ikarus.codecs.ss"
     "ikarus.bytevectors.ss"
+    "ikarus.posix.ss"
     "ikarus.io.ss"
     "ikarus.hash-tables.ss"
     "ikarus.pretty-formats.ss"
@@ -94,7 +95,6 @@
     "ikarus.load.ss"
     "ikarus.pretty-print.ss"
     "ikarus.cafe.ss"
-    "ikarus.posix.ss"
     "ikarus.timer.ss"
     "ikarus.time-and-date.ss"
     "ikarus.sort.ss"
@@ -361,6 +361,7 @@
     [make-parameter                              i parameters]
     [call/cf                                     i]
     [print-error                                 i]
+    [strerror                                    i]
     [interrupt-handler                           i]
     [engine-handler                              i]
     [assembler-output                            i]
@@ -1215,7 +1216,15 @@
     [vector-sort!                                i r sr]
     [file-exists?                                i r fi]
     [delete-file                                 i r fi]
+    [file-regular?                               i]
+    [file-directory?                             i]
+    [file-symbolic-link?                         i]
     [current-directory                           i]
+    [directory-list                              i]
+    [make-directory                              i]
+    [delete-directory                            i]
+    [change-mode                                 i]
+    [make-symbolic-link                          i]
     [file-ctime                                  i]
     [define-record-type                          i r rs]
     [fields                                      i r rs]

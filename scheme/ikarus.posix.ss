@@ -14,15 +14,21 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-(library (ikarus posix)
+(library (ikarus.posix)
   (export posix-fork fork waitpid system file-exists? delete-file
-          nanosleep getenv env environ file-ctime current-directory)
+          nanosleep getenv env environ file-ctime current-directory
+          file-regular? file-directory? file-symbolic-link? make-symbolic-link
+          directory-list make-directory delete-directory change-mode
+          strerror)
   (import 
     (rnrs bytevectors)
     (except (ikarus)
        nanosleep
        posix-fork fork waitpid system file-exists? delete-file
-       getenv env environ file-ctime current-directory))
+       getenv env environ file-ctime current-directory
+       file-regular? file-directory? file-symbolic-link? make-symbolic-link
+       directory-list make-directory delete-directory change-mode
+       strerror))
 
   (define posix-fork
     (lambda ()
@@ -33,15 +39,17 @@
       (let ([pid (posix-fork)])
         (cond
           [(fx= pid 0) (child-proc)]
-          [(fx= pid -1) 
-           (die 'fork "failed")]
+          [(fx< pid 0) (raise/strerror 'fork pid)]
           [else (parent-proc pid)]))))
 
   (define waitpid
     (lambda (pid)
       (unless (fixnum? pid)
         (die 'waitpid "not a fixnum" pid))
-      (foreign-call "ikrt_waitpid" pid)))
+      (let ([r (foreign-call "ikrt_waitpid" pid)])
+        (if (fx< r 0)
+            (raise/strerror 'waitpid r)
+            r))))
 
   (define system
     (lambda (x)
@@ -49,59 +57,110 @@
         (die 'system "not a string" x))
       (let ([rv (foreign-call "ik_system"
                   (string->utf8 x))])
-        (if (fx= rv -1)
-            (die 'system "failed")
+        (if (fx< rv 0)
+            (raise/strerror 'system rv)
             rv))))
+  
+  (define stat
+    (lambda (path follow who)
+      (unless (string? path)
+        (die who "not a string" path))
+      (let ([r (foreign-call "ikrt_stat" (string->utf8 path) follow)])
+        (case r
+          [(0) 'unknown]
+          [(1) 'regular]
+          [(2) 'directory]
+          [(3) 'symlink]
+          [(-45) #f]  ;; from ikarus-errno.c: ENOENT -- path does not exist
+          [else (raise/strerror who r path)]))))
 
   (define file-exists?
-    (lambda (x)
-      (unless (string? x)
-        (die 'file-exists? "filename is not a string" x))
-      (let ([v (foreign-call "ikrt_file_exists" 
-                  (string->utf8 x))])
-        (cond
-          [(boolean? v) v]
-          [else
-           (raise
-             (condition
-               (make-who-condition 'file-exists?)
-               (make-message-condition
-                 (case v
-                   [(1) "file path contains a non-directory"]
-                   [(2) "file path is too long"]
-                   [(3) "file path is not accessible"]
-                   [(4) "file path contains too many symbolic links"]
-                   [(5) "internal access error while accessing file"]
-                   [(6) "IO error encountered while accessing file"]
-                   [else "Unknown error while testing file"]))
-               (make-i/o-filename-error x)))]))))
+    (case-lambda 
+      [(path) (file-exists? path #t)]
+      [(path follow)
+       (and (stat path follow 'file-exists?) #t)]))
+  
+  (define file-regular?
+    (case-lambda
+      [(path) (file-regular? path #t)]
+      [(path follow)
+       (eq? 'regular (stat path follow 'file-regular?))]))
+  
+  (define file-directory?
+    (case-lambda
+      [(path) (file-directory? path #t)]
+      [(path follow)
+       (eq? 'directory (stat path follow 'file-directory?))]))
+  
+  (define file-symbolic-link?
+    (lambda (path)
+      (eq? 'symlink (stat path #f 'file-symbolic-link?))))
 
   (define delete-file
     (lambda (x)
+      (define who 'delete-file)
       (unless (string? x)
-        (die 'delete-file "filename is not a string" x))
+        (die who "filename is not a string" x))
       (let ([v (foreign-call "ikrt_delete_file"
                  (string->utf8 x))])
-        (case v
-          [(0) (void)]
-          [else
-           (raise
-             (condition
-               (make-who-condition 'delete-file)
-               (make-message-condition
-                 (case v
-                   [(1) "file path contains a non-directory"]
-                   [(2) "file path is too long"]
-                   [(3) "file does not exist"]
-                   [(4) "file path is not accessible"]
-                   [(5) "file path contains too many symbolic links"]
-                   [(6) "you do not have permissions to delete file"]
-                   [(7) "device is busy"]
-                   [(8) "IO error encountered while deleting"]
-                   [(9) "file is in a read-only file system"]
-                   [(10) "internal access error while deleting"]
-                   [else "Unknown error while deleting file"]))
-               (make-i/o-filename-error x)))]))))
+        (unless (eq? v #t)
+          (raise/strerror who v x)))))
+  
+  (define directory-list
+    (lambda (path)
+      (define who 'directory-list)
+      (unless (string? path)
+        (die who "not a string" path))
+      (let ([r (foreign-call "ikrt_directory_list" (string->utf8 path))])
+        (if (fixnum? r)
+            (raise/strerror who r path)
+            (map utf8->string (reverse r))))))
+  
+  (define make-directory
+    (case-lambda 
+      [(path) (make-directory path #o755)]
+      [(path mode)
+       (define who 'make-directory)
+       (unless (string? path)
+         (die who "not a string" path))
+       (unless (fixnum? mode)
+         (die who "not a fixnum" mode))
+       (let ([r (foreign-call "ikrt_mkdir" (string->utf8 path) mode)])
+         (unless (eq? r #t)
+           (raise/strerror who r path)))]))
+  
+  (define delete-directory
+    (case-lambda
+      [(path) (delete-directory path #f)]
+      [(path want-error?)
+       (define who 'delete-directory)
+       (unless (string? path)
+         (die who "not a string" path))
+       (let ([r (foreign-call "ikrt_rmdir" (string->utf8 path))])
+         (if want-error?
+             (unless (eq? r #t) (raise/strerror who r path))
+             (eq? r #t)))]))
+  
+  (define change-mode
+    (lambda (path mode)
+      (define who 'change-mode)
+      (unless (string? path)
+        (die who "not a string" path))
+      (unless (fixnum? mode)
+        (die who "not a fixnum" mode))
+      (let ([r (foreign-call "ikrt_chmod" (string->utf8 path) mode)])
+        (unless (eq? r #t)
+          (raise/strerror who r path)))))
+  
+  (define make-symbolic-link
+    (lambda (to path)
+      (define who 'make-symbolic-link)
+      (unless (and (string? to) (string? path))
+        (die who "not a string" (if (string? to) path to)))
+      (let ([r (foreign-call "ikrt_symlink" 
+                 (string->utf8 to) (string->utf8 path))])
+        (unless (eq? r #t)
+          (raise/strerror who r path)))))
 
   (define (file-ctime x)
     (define who 'file-ctime)
@@ -111,12 +170,7 @@
       (let ([v (foreign-call "ikrt_file_ctime" (string->utf8 x) p)])
         (case v
           [(0) (+ (* (car p) #e1e9) (cdr p))]
-          [else 
-           (raise
-             (condition 
-               (make-who-condition who)
-               (make-message-condition "cannot stat a file")
-               (make-i/o-filename-error x)))]))))
+          [else (raise/strerror who v x)]))))
 
 
   (define ($getenv-bv key)
@@ -189,17 +243,43 @@
     (case-lambda
       [() 
        (let ([v (foreign-call "ikrt_getcwd")])
-         (if (bytevector? v) 
-             (utf8->string v)
-             (die 'current-directory 
-               "failed to get current directory")))]
+         (if (eq? v #t)
+             (raise/strerror 'current-directory v) 
+             (utf8->string v)))]
       [(x) 
        (if (string? x) 
            (let ([rv (foreign-call "ikrt_chdir" (string->utf8 x))])
-             (unless (eq? rv 0) 
-               (die 'current-directory
-                 "failed to set current directory")))
+             (unless (eq? rv #t)
+               (raise/strerror 'current-directory rv x)))
            (die 'current-directory "not a string" x))]))
-
+  
+  (define raise/strerror 
+    (case-lambda
+      [(who errno-code) 
+       (raise/strerror who errno-code #f)]
+      [(who errno-code filename)
+       (raise
+         (condition
+           (make-who-condition who)
+           (make-message-condition (strerror errno-code))
+           (if filename 
+               (make-i/o-filename-error filename)
+               (condition))))]))
+  
+  (define strerror
+    (lambda (errno-code)
+      (define who 'strerror)
+      (unless (fixnum? errno-code)
+        (die who "not a fixnum" errno-code))
+      (let ([emsg (foreign-call "ikrt_strerror" errno-code)])
+        (if emsg
+            (let ([errno-name 
+                   (foreign-call "ikrt_errno_code_to_name" errno-code)])
+              (assert errno-name)
+              (format "~a: ~a" 
+                (utf8->string errno-name)
+                (utf8->string emsg)))
+            (format "Ikarus's ~a: don't know Ikarus errno code ~s" 
+              who errno-code)))))
 
   )

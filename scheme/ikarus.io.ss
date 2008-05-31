@@ -76,7 +76,6 @@
   
   (import 
     (ikarus system $io)
-
     (except (ikarus)
       port? input-port? output-port? textual-port? binary-port? 
       open-file-input-port open-input-file 
@@ -1187,54 +1186,26 @@
              (eof-object? (lookahead-u8 p)))]
         [else (die 'port-eof? "not an input port" p)])))
 
-  (define EAGAIN-error-code -22) ;;; from ikarus-io.c
-  (define io-errors-vec
-    '#(#|  0 |# "unknown error"
-       #|  1 |# "bad file name"
-       #|  2 |# "operation interrupted"
-       #|  3 |# "not a directory"
-       #|  4 |# "file name too long"
-       #|  5 |# "missing entities"
-       #|  6 |# "insufficient access privileges"
-       #|  7 |# "circular path"
-       #|  8 |# "file is a directory"
-       #|  9 |# "file system is read-only"
-       #| 10 |# "maximum open files reached"
-       #| 11 |# "maximum open files reached"
-       #| 12 |# "ENXIO"
-       #| 13 |# "operation not supported"
-       #| 14 |# "not enough space on device"
-       #| 15 |# "quota exceeded"
-       #| 16 |# "io error"
-       #| 17 |# "device is busy"
-       #| 18 |# "access fault"
-       #| 19 |# "file already exists"
-       #| 20 |# "invalid file name"
-       #| 21 |# "non-blocking operation would block"
-       #| 22 |# "broken pipe (e.g., writing to a closed process or socket)"
-       #| 23 |# "connection refused"
-       #| 24 |# "not a socket"
-       #| 25 |# "not enough memory to perform operation"
-       ))
+  (define EAGAIN-error-code -6) ;;; from ikarus-errno.c
 
   (define (io-error who id err . other-conditions)
-    (let ([err (fxnot err)])
-      (let ([msg 
-             (cond
-               [(fx< err (vector-length io-errors-vec))
-                (vector-ref io-errors-vec err)]
-               [else "unknown error"])])
-        (raise 
-          (apply condition
-            (make-who-condition who)
-            (make-i/o-error)
-            (case err
-              [(6 9 18) (make-i/o-file-protection-error)]
-              [(19)     (make-i/o-file-already-exists-error id)]
-              [else     (condition)])
-            (make-message-condition msg)
-            (make-i/o-filename-error id)
-            other-conditions)))))
+    (raise 
+      (apply condition
+        (make-who-condition who)
+        (make-message-condition (strerror err))
+        (case err
+          ;; from ikarus-errno.c: EACCES=-2, EFAULT=-21, EROFS=-71, EEXIST=-20,
+          ;;                      EIO=-29, ENOENT=-45
+          ;; Why is EFAULT included here?
+          [(-2 -21) (make-i/o-file-protection-error id)]
+          [(-71)    (make-i/o-file-is-read-only-error id)]
+          [(-20)    (make-i/o-file-already-exists-error id)]
+          [(-29)    (make-i/o-error)]
+          [(-45)    (make-i/o-file-does-not-exist-error id)]
+          [else (if id
+                  (make-irritants-condition (list id))
+                  (condition))])
+        other-conditions)))
 
   ;(define block-size 4096)
   ;(define block-size (* 4 4096))
@@ -2177,8 +2148,9 @@
          (unless (and (string? host) (string? srvc))
            (die 'who "host and service must both be strings" host srvc))
          (socket->ports 
-           (foreign-call foreign-name
-             (string->utf8 host) (string->utf8 srvc))
+           (or (foreign-call foreign-name
+                 (string->utf8 host) (string->utf8 srvc))
+               (die 'who "failed to resolve host name or connect" host srvc))
            'who
            (string-append host ":" srvc)
            block?))]))
@@ -2252,8 +2224,8 @@
             pending)
           ;;; do select
           (let ([rv (foreign-call "ikrt_select" n rbv wbv xbv)])
-            (when (< rv 0) 
-              (die 'select "error selecting from fds")))
+            (when (< rv 0)
+              (io-error 'select #f rv)))
           ;;; go through fds again and see if they're selected
           (for-each 
             (lambda (t) 

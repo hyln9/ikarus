@@ -25,7 +25,7 @@
 #include <errno.h>
 #include "ikarus-data.h"
 
-extern ikptr ikrt_io_error();
+extern ikptr ik_errno_to_code();
 
 static int 
 list_length(ikptr x){
@@ -56,9 +56,9 @@ ikrt_process(ikptr rvec, ikptr cmd, ikptr argv, ikpcb* pcb){
   int infds[2];
   int outfds[2];
   int errfds[2];
-  if(pipe(infds))  return ikrt_io_error();
-  if(pipe(outfds)) return ikrt_io_error();
-  if(pipe(errfds)) return ikrt_io_error();
+  if(pipe(infds))  return ik_errno_to_code();
+  if(pipe(outfds)) return ik_errno_to_code();
+  if(pipe(errfds)) return ik_errno_to_code();
   pid_t pid = fork();
   if(pid == 0){
     /* child */
@@ -87,13 +87,18 @@ ikrt_process(ikptr rvec, ikptr cmd, ikptr argv, ikpcb* pcb){
     ref(rvec,off_vector_data+3*wordsize) = fix(errfds[0]);
     return rvec;
   } else {
-    return ikrt_io_error();
+    return ik_errno_to_code();
   }
 }
 
 ikptr 
 ikrt_waitpid(ikptr pid, ikpcb* pcb){
   int status;
-  waitpid(unfix(pid), &status, 0);
-  return fix(status);
+  pid_t r = waitpid(unfix(pid), &status, 0);
+  if(r >= 0){
+    return fix(status);
+  } else {
+    return ik_errno_to_code();
+  }
 }
+

@@ -29,48 +29,13 @@
 #include <netinet/in.h>
 #include "ikarus-data.h"
 
-ikptr 
-ikrt_io_error(){
-  int err = errno;
-#if 0
-  fprintf(stderr, "errno=%d %s\n", err, strerror(err));
-#endif
-  switch(err){
-    case EBADF           : return fix(-2);
-    case EINTR           : return fix(-3);
-    case ENOTDIR         : return fix(-4);
-    case ENAMETOOLONG    : return fix(-5);
-    case ENOENT          : return fix(-6);
-    case EACCES          : return fix(-7);
-    case ELOOP           : return fix(-8);
-    case EISDIR          : return fix(-9);
-    case EROFS           : return fix(-10);
-    case EMFILE          : return fix(-11);
-    case ENFILE          : return fix(-12);
-    case ENXIO           : return fix(-13);
-    case EOPNOTSUPP      : return fix(-14);
-    case ENOSPC          : return fix(-15);
-    case EDQUOT          : return fix(-16);
-    case EIO             : return fix(-17);
-    case ETXTBSY         : return fix(-18);
-    case EFAULT          : return fix(-19);
-    case EEXIST          : return fix(-20);
-    case EINVAL          : return fix(-21);
-    case EAGAIN          : return fix(-22); /* hardcoded in ikarus.io.ss */
-    case EPIPE           : return fix(-23);
-    case ECONNREFUSED    : return fix(-24);
-    case ENOTSOCK        : return fix(-25);
-    case ENOBUFS         : return fix(-26);
-  }
-  return fix(-1);
-}
-
+extern ikptr ik_errno_to_code();
 
 ikptr
 ikrt_close_fd(ikptr fd, ikpcb* pcb){
   int err = close(unfix(fd));
   if(err == -1){
-    return ikrt_io_error();
+    return ik_errno_to_code();
   } else {
     return false_object;;
   }
@@ -79,10 +44,10 @@ ikrt_close_fd(ikptr fd, ikpcb* pcb){
 ikptr
 ikrt_open_input_fd(ikptr fn, ikpcb* pcb){
   int fh = open((char*)(long)(fn+off_bytevector_data), O_RDONLY, 0);
-  if(fh > 0){
+  if(fh >= 0){
     return fix(fh);
   } else {
-    return ikrt_io_error();
+    return ik_errno_to_code();
   }
 }
 
@@ -107,10 +72,10 @@ ikrt_open_output_fd(ikptr fn, ikptr ikopts, ikpcb* pcb){
   int fh = open((char*)(long)(fn+off_bytevector_data), 
                 mode,
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-  if(fh > 0){
+  if(fh >= 0){
     return fix(fh);
   } else {
-    return ikrt_io_error();
+    return ik_errno_to_code();
   }
 }
 
@@ -130,7 +95,7 @@ ikrt_read_fd(ikptr fd, ikptr bv, ikptr off, ikptr cnt, ikpcb* pcb){
   if(bytes >= 0){
     return fix(bytes);
   } else {
-    return ikrt_io_error();
+    return ik_errno_to_code();
   }
 }
 
@@ -159,7 +124,7 @@ ikrt_write_fd(ikptr fd, ikptr bv, ikptr off, ikptr cnt, ikpcb* pcb){
   if(bytes >= 0){
     return fix(bytes);
   } else {
-    return ikrt_io_error();
+    return ik_errno_to_code();
   }
 }
 
@@ -173,22 +138,25 @@ do_connect(ikptr host, ikptr srvc, int socket_type){
                         0,
                         &info);
   if(err){
-    return fix(-1);
+    switch(err){
+      case EAI_SYSTEM: return ik_errno_to_code();
+      default: return false_object;
+    }
   }
   struct addrinfo* i = info;
-  ikptr sock = fix(-1);
+  ikptr sock = false_object;
   while(i){
     if(i->ai_socktype != socket_type){
       i = i->ai_next;
     } else {
       int s = socket(i->ai_family, i->ai_socktype, i->ai_protocol);
       if(s < 0){
-        sock = ikrt_io_error();
+        sock = ik_errno_to_code();
         i = i->ai_next;
       } else {
         int err = connect(s, i->ai_addr, i->ai_addrlen);
         if(err < 0){
-          sock = ikrt_io_error();
+          sock = ik_errno_to_code();
           i = i->ai_next;
         } else {
           sock = fix(s);
@@ -216,7 +184,7 @@ ikrt_make_fd_nonblocking(ikptr fdptr, ikpcb* pcb){
   int fd = unfix(fdptr);
   int err = fcntl(fd, F_SETFL, O_NONBLOCK);
   if(err == -1){
-    return ikrt_io_error();
+    return ik_errno_to_code();
   }
   return 0;
 }
@@ -229,7 +197,7 @@ ikrt_select(ikptr fds, ikptr rfds, ikptr wfds, ikptr xfds, ikpcb* pcb){
                   (fd_set*)(xfds + off_bytevector_data),
                   NULL);
   if(rv < 0){
-    return ikrt_io_error();
+    return ik_errno_to_code();
   } 
   return fix(rv);
 }
@@ -239,7 +207,7 @@ ikrt_listen(ikptr port, ikpcb* pcb){
   
   int sock = socket(AF_INET, SOCK_STREAM, 0);
   if(sock < 0){
-    return ikrt_io_error();
+    return ik_errno_to_code();
   }
 
   struct sockaddr_in servaddr;
@@ -253,18 +221,18 @@ ikrt_listen(ikptr port, ikpcb* pcb){
   int reuse = 1;
   err = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int));
   if(err < 0){
-    return ikrt_io_error();
+    return ik_errno_to_code();
   }
 
 
   err = bind(sock, (struct sockaddr *)&servaddr, sizeof(servaddr));
   if(err < 0){
-    return ikrt_io_error();
+    return ik_errno_to_code();
   }
 
   err = listen(sock, 1024);
   if(err < 0){
-    return ikrt_io_error();
+    return ik_errno_to_code();
   }
   return fix(sock);
 }
@@ -283,7 +251,7 @@ ikrt_getsockname(ikptr s, ikpcb* pcb){
     ref(bv, off_bytevector_length) = fix(size);
     return bv;
   } else {
-    return ikrt_io_error();
+    return ik_errno_to_code();
   }
 }
 #endif
@@ -297,7 +265,7 @@ ikrt_accept(ikptr s, ikptr bv, ikpcb* pcb){
                     (struct sockaddr*) (bv+off_bytevector_data),
                     &addrlen);
   if(sock < 0){
-    return ikrt_io_error();
+    return ik_errno_to_code();
   } 
   ref(bv, off_bytevector_length) = fix(addrlen);
   return fix(sock);
@@ -311,7 +279,7 @@ ikrt_shutdown(ikptr s, ikpcb* pcb){
   int err = shutdown(unfix(s), SHUT_RDWR);
 #endif
   if(err < 0){
-    return ikrt_io_error();
+    return ik_errno_to_code();
   } 
   return 0;
 }
@@ -322,7 +290,7 @@ ikrt_file_ctime(ikptr filename, ikptr res){
   struct stat s;
   int err = stat((char*)(filename + off_bytevector_data), &s);
   if(err) {
-    return fix(errno);
+    return ik_errno_to_code();
   }
   
   ref(res, off_car) = fix(s.st_ctime);
