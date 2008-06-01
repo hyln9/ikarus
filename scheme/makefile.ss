@@ -64,6 +64,7 @@
     "ikarus.symbols.ss"
     "ikarus.vectors.ss"
     "ikarus.unicode-data.ss"
+    "ikarus.string-to-number.ss"
     "ikarus.numerics.ss"
     "ikarus.conditions.ss"
     "ikarus.guardians.ss"

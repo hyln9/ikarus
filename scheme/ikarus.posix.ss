@@ -243,9 +243,9 @@
     (case-lambda
       [() 
        (let ([v (foreign-call "ikrt_getcwd")])
-         (if (eq? v #t)
-             (raise/strerror 'current-directory v) 
-             (utf8->string v)))]
+         (if (bytevector? v)
+             (utf8->string v)
+             (raise/strerror 'current-directory v)))]
       [(x) 
        (if (string? x) 
            (let ([rv (foreign-call "ikrt_chdir" (string->utf8 x))])

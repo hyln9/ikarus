@@ -390,7 +390,7 @@
           bitwise-copy-bit bitwise-bit-field
           positive? negative? expt gcd lcm numerator denominator
           exact-integer-sqrt
-          quotient+remainder number->string string->number min max
+          quotient+remainder number->string min max
           abs truncate fltruncate sra sll real->flonum
           exact->inexact inexact floor ceiling round log fl=? fl<? fl<=? fl>?
           fl>=? fl+ fl- fl* fl/ flsqrt flmin flzero? flnegative?
@@ -415,7 +415,7 @@
             bitwise-copy-bit bitwise-bit-field
             positive? negative? bitwise-and bitwise-not bitwise-ior
             bitwise-xor
-            string->number expt gcd lcm numerator denominator
+            expt gcd lcm numerator denominator
             exact->inexact inexact floor ceiling round log
             exact-integer-sqrt min max abs real->flonum
             fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt flmin
@@ -1605,15 +1605,26 @@
            (flonum->string x)]
           [(ratnum? x) (ratnum->string x r)]
           [(compnum? x)
-           (string-append 
-             ($number->string ($compnum-real x) r)
-             (imag ($compnum-imag x) r)
-             "i")]
+           (let ([xr ($compnum-real x)]
+                 [xi ($compnum-imag x)])
+             (if (eqv? xr 0)
+                 (string-append (imag xi r) "i")
+                 (string-append 
+                   ($number->string xr r)
+                   (imag xi r)
+                   "i")))]
           [(cflonum? x)
-           (string-append 
-             ($number->string ($cflonum-real x) r)
-             (imag ($cflonum-imag x) r)
-             "i")]
+           (let ([xr ($cflonum-real x)]
+                 [xi ($cflonum-imag x)])
+             (cond
+               [(flnan? xi)
+                (string-append ($number->string xr r) "+nan.0i")]
+               [(flinfinite? xi)
+                (string-append ($number->string xr r)
+                  (if ($fl> xi 0.0) "+inf.0i" "-inf.0i"))]
+               [else
+                (string-append 
+                  ($number->string xr r) (imag xi r) "i")]))]
           [else (die 'number->string "not a number" x)])))
     (define number->string
       (case-lambda
@@ -2718,220 +2729,6 @@
                (/ (ln (+ (* xr xr) (* xi xi))) 2)
                (atan xi xr))))]
         [else (die 'log "not a number" x)])))
-
-  (define string->number
-    (case-lambda
-      [(x) (string->number-radix-10 x)]
-      [(x r) 
-       (unless (eqv? r 10) 
-         (die 'string->number
-                "BUG: only radix 10 is supported"
-                x r))
-       (string->number-radix-10 x)]))
-
-  (define string->number-radix-10
-    (lambda (x)
-      (define (convert-char c radix)
-        (case radix
-          [(10) 
-           (cond
-             [(char<=? #\0 c #\9) 
-              (fx- (char->integer c) (char->integer #\0))]
-             [else #f])]
-          [(16) 
-           (cond
-             [(char<=? #\0 c #\9) 
-              (fx- (char->integer c) (char->integer #\0))]
-             [(char<=? #\a c #\f) 
-              (fx- (char->integer c) (fx- (char->integer #\a) 10))]
-             [(char<=? #\A c #\F)
-              (fx- (char->integer c) (fx- (char->integer #\A) 10))]
-             [else #f])]
-          [(8) 
-           (cond
-             [(char<=? #\0 c #\7) 
-              (fx- (char->integer c) (char->integer #\0))]
-             [else #f])] 
-          [(2) 
-           (case c
-             [(#\0) 0]
-             [(#\1) 1]
-             [else #f])]
-          [else (die 'convert-char "invalid radix" radix)]))
-      (define (parse-exponent-start x n i radix)
-        (define (parse-exponent x n i radix ac) 
-          (cond
-            [(fx= i n) ac]
-            [else
-             (let ([c (string-ref x i)])
-               (cond
-                 [(convert-char c radix) =>
-                  (lambda (d)
-                    (parse-exponent x n (fxadd1 i) radix
-                      (+ d (* ac radix))))]
-                 [else #f]))]))
-        (define (parse-exponent-sign x n i radix)
-          (cond
-            [(fx= i n) #f]
-            [else
-             (let ([c (string-ref x i)])
-               (cond
-                 [(convert-char c radix) =>
-                  (lambda (d) (parse-exponent x n (fxadd1 i) radix d))]
-                 [else #f]))]))
-        (cond
-          [(fx= i n) #f]
-          [else
-           (let ([c (string-ref x i)])
-             (cond
-               [(convert-char c radix) =>
-                (lambda (d)
-                  (parse-exponent x n (fxadd1 i) radix d))]
-               [(char=? c #\+) 
-                (parse-exponent-sign x n (fxadd1 i) radix)]
-               [(char=? c #\-) 
-                (let ([v (parse-exponent-sign x n (fxadd1 i) radix)])
-                  (and v (- v)))]
-               [else #f]))]))
-      (define (parse-decimal x n i pos? radix exact? ac exp)
-        (cond
-          [(fx= i n) 
-           (let ([ac (* (if pos? ac (- ac)) (expt radix exp))])
-             (exact-conv (or exact? 'i) ac))]
-          [else
-           (let ([c (string-ref x i)])
-             (cond
-               [(convert-char c radix) =>
-                (lambda (d)
-                  (parse-decimal x n (fxadd1 i) pos? radix exact? 
-                    (+ (* ac radix) d) (fxsub1 exp)))]
-               [(memv c '(#\e #\E)) 
-                (let ([ex (parse-exponent-start x n (fxadd1 i) radix)])
-                  (and ex 
-                       (exact-conv (or exact? 'i) 
-                         (* (if pos? ac (- ac)) (expt radix (+ exp ex))))))]
-               [else #f]))]))
-      (define (parse-decimal-no-digits x n i pos? radix exact?)
-        (cond
-          [(fx= i n) #f]
-          [else
-           (let ([c (string-ref x i)])
-             (cond
-               [(convert-char c radix) =>
-                (lambda (d)
-                  (parse-decimal x n (fxadd1 i) pos? radix exact?  d -1))]
-               [else #f]))])) 
-      (define (parse-integer x n i pos? radix exact? ac)
-        (define (parse-denom-start x n i radix)
-          (define (parse-denom x n i radix ac)
-            (cond
-              [(fx= n i) ac]
-              [else
-               (let ([c (string-ref x i)])
-                 (cond
-                   [(convert-char c radix) =>
-                    (lambda (d)
-                      (parse-denom x n (fxadd1 i) radix 
-                        (+ (* radix ac) d)))]
-                   [else #f]))]))
-          (cond
-            [(fx= n i) #f]
-            [else
-             (let ([c (string-ref x i)])
-               (cond
-                 [(convert-char c radix) =>
-                  (lambda (d) 
-                    (parse-denom x n (fxadd1 i) radix d))]
-                 [else #f]))]))
-        (cond
-          [(fx= i n)
-           (let ([ac (exact-conv exact? ac)])
-             (if pos? ac (- ac)))]
-          [else
-           (let ([c (string-ref x i)])
-             (cond
-               [(convert-char c radix) =>
-                (lambda (d)
-                  (parse-integer x n (fxadd1 i) pos? radix exact? (+ (* ac radix) d)))]
-               [(char=? c #\.) 
-                (parse-decimal x n (fxadd1 i) pos? radix exact? ac 0)]
-               [(char=? c #\/) 
-                (let ([denom (parse-denom-start x n (fxadd1 i) radix)])
-                  (and denom 
-                       (not (= denom 0))
-                       (let ([ac (exact-conv exact? ac)])
-                         (/ (if pos? ac (- ac)) denom))))]
-               [(memv c '(#\e #\E))
-                (let ([ex (parse-exponent-start x n (fxadd1 i) radix)])
-                  (and ex 
-                     (let ([ac (* (if pos? ac (- ac)) (expt radix ex))])
-                       (exact-conv (or exact? 'i) ac))))]
-               [else #f]))]))
-      (define (parse-integer-no-digits x n i pos? radix exact?) 
-        (cond
-          [(fx= i n) #f]
-          [else
-           (let ([c (string-ref x i)])
-             (cond
-               [(convert-char c radix) =>
-                (lambda (d)
-                  (parse-integer x n (fxadd1 i) pos? radix exact? d))]
-               [(char=? c #\.) 
-                (parse-decimal-no-digits x n (fxadd1 i) pos? radix exact?)]
-               [else #f]))]))
-      (define (exact-conv exact? x)
-        (and x (if (eq? exact? 'i) (exact->inexact x) x)))
-      (define (start x n i exact? radix?)
-        (cond
-          [(fx= i n) #f]
-          [else
-           (let ([c (string-ref x i)])
-             (cond
-               [(char=? c #\-) 
-                (parse-integer-no-digits x n (fxadd1 i) #f (or radix? 10) exact?)]
-               [(char=? c #\+)
-                (parse-integer-no-digits x n (fxadd1 i) #t (or radix? 10) exact?)]
-               [(char=? c #\#)
-                (let ([i (fxadd1 i)])
-                  (cond
-                    [(fx= i n) #f]
-                    [else
-                     (let ([c (string-ref x i)])
-                       (case c
-                         [(#\x #\X) 
-                          (and (not radix?) (start x n (fxadd1 i) exact? 16))]
-                         [(#\b #\B) 
-                          (and (not radix?) (start x n (fxadd1 i) exact? 2))]
-                         [(#\o #\O) 
-                          (and (not radix?) (start x n (fxadd1 i) exact? 8))]
-                         [(#\d #\D) 
-                          (and (not radix?) (start x n (fxadd1 i) exact? 10))]
-                         [(#\e #\E) 
-                          (and (not exact?) (start x n (fxadd1 i) 'e radix?))]
-                         [(#\i #\I) 
-                          (and (not exact?) (start x n (fxadd1 i) 'i radix?))]
-                         [else #f]))]))]
-               [(char=? c #\.)
-                (parse-decimal-no-digits x n (fxadd1 i) #t (or radix?  10) exact?)]
-               [(convert-char c (or radix? 10)) =>
-                (lambda (d)
-                  (parse-integer x n (fxadd1 i) #t (or radix? 10) exact? d))]
-               [else #f]))]))
-      ;;;
-      (unless (string? x)
-        (die 'string->number "not a string" x))
-      (let ([n (string-length x)])
-        (cond
-          [(fx= n (string-length "+xxx.0"))
-           (cond
-             [(string-ci=? x "+inf.0") +inf.0]
-             [(string-ci=? x "-inf.0") -inf.0]
-             [(string-ci=? x "+nan.0") +nan.0]
-             [(string-ci=? x "-nan.0") -nan.0]
-             [else (start x n 0 #f #f)])]
-          [(fx> n 0) (start x n 0 #f #f)]
-          [else #f]))))
-
 
   (define (random n) 
     (if (fixnum? n) 
