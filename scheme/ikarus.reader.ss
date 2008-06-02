@@ -20,6 +20,7 @@
           annotation-expression annotation-source
           annotation-stripped)
   (import
+    (only (ikarus.string-to-number) define-string->number-parser)
     (ikarus system $chars)
     (ikarus system $fx)
     (ikarus system $pairs)
@@ -255,8 +256,8 @@
                 (die/p p 'tokenize "invalid syntax"
                   (string-append ".." (string c)))]))]
           [else 
-           (cons 'datum 
-             (tokenize-decimal-no-digits p '(#\.) #f))]))))
+           (cons 'datum
+             (dot p '(#\.) 10 #f #f))]))))
   (define tokenize-char* 
     (lambda (i str p d)
       (cond
@@ -566,17 +567,17 @@
              [else (die/p p 'tokenize
                      (format "invalid sequence #v~a" c))]))]
         [(memq c '(#\e #\E)) 
-         (cons 'datum (tokenize-exactness-mark p (list c #\#) 'e))]
+         (cons 'datum (parse-string p (list c #\#) 10 #f 'e))]
         [(memq c '(#\i #\I)) 
-         (cons 'datum (tokenize-exactness-mark p (list c #\#) 'i))]
+         (cons 'datum (parse-string p (list c #\#) 10 #f 'i))]
         [(memq c '(#\b #\B)) 
-         (cons 'datum (tokenize-radix-mark p (list c #\#) 2))]
+         (cons 'datum (parse-string p (list c #\#) 2 2 #f))]
         [(memq c '(#\x #\X)) 
-         (cons 'datum (tokenize-radix-mark p (list c #\#) 16))]
+         (cons 'datum (parse-string p (list c #\#) 16 16 #f))]
         [(memq c '(#\o #\O)) 
-         (cons 'datum (tokenize-radix-mark p (list c #\#) 8))]
+         (cons 'datum (parse-string p (list c #\#) 8 8 #f))]
         [(memq c '(#\d #\D)) 
-         (cons 'datum (tokenize-radix-mark p (list c #\#) 10))]
+         (cons 'datum (parse-string p (list c #\#) 10 10 #f))]
         [($char= #\@ c)
          (when (eq? (port-mode p) 'r6rs-mode)
            (die/p-1 p 'tokenize "fasl syntax is invalid in #!r6rs mode"
@@ -586,233 +587,30 @@
         [else 
          (die/p-1 p 'tokenize 
             (format "invalid syntax #~a" c))])))
-  (define (tokenize-exactness-mark p ls exact?)
-    (let ([c (read-char p)])
-      (cond
-        [(eof-object? c) (num-error p "eof object" ls)]
-        [(radix-digit c 10) =>
-         (lambda (d) 
-           (tokenize-integer p (cons c ls) exact? 10 d))]
-        [(char=? c #\.) 
-         (tokenize-decimal-no-digits p (cons c ls) exact?)]
-        [(char=? c #\-) 
-         (- (tokenize-integer-no-digits p (cons c ls) exact? 10))]
-        [(char=? c #\+)
-         (tokenize-integer-no-digits p (cons c ls) exact? 10)]
-        [(char=? c #\#)
-         (let ([c1 (read-char p)])
-           (cond
-             [(eof-object? c1) 
-              (num-error p "eof object" (cons c ls))]
-             [(memv c1 '(#\b #\B)) 
-              (tokenize-radix/exactness-marks p (cons* c1 c ls) exact? 2)]
-             [(memv c1 '(#\x #\X)) 
-              (tokenize-radix/exactness-marks p (cons* c1 c ls) exact? 16)]
-             [(memv c1 '(#\o #\O)) 
-              (tokenize-radix/exactness-marks p (cons* c1 c ls) exact? 8)]
-             [(memv c1 '(#\d #\D)) 
-              (tokenize-radix/exactness-marks p (cons* c1 c ls) exact? 10)]
-             [else (num-error p "invalid sequence" (cons* c1 c ls))]))]
-        [else (num-error p "invalid sequence" (cons c ls))]))) 
-  (define (tokenize-radix-mark p ls radix)
-    (let ([c (read-char p)])
-      (cond
-        [(eof-object? c) (num-error p "eof object" ls)]
-        [(radix-digit c radix) =>
-         (lambda (d)
-           (tokenize-integer p (cons c ls) #f radix d))]
-        [(char=? c #\.) 
-         (unless (= radix 10)
-           (num-error p "invalid decimal" (cons c ls)))
-         (tokenize-decimal-no-digits p (cons c ls) #f)]
-        [(char=? c #\-)
-         (- (tokenize-integer-no-digits p (cons c ls) #f radix))]
-        [(char=? c #\+)
-         (tokenize-integer-no-digits p (cons c ls) #f radix)]
-        [(char=? c #\#)
-         (let ([c1 (read-char p)])
-           (cond
-             [(eof-object? c1) 
-              (num-error p "eof object" (cons c ls))]
-             [(memv c1 '(#\e #\E)) 
-              (tokenize-radix/exactness-marks p (cons c1 (cons c ls))
-                'e radix)]
-             [(memv c1 '(#\i #\I)) 
-              (tokenize-radix/exactness-marks p (cons c1 (cons c ls))
-                'i radix)]
-             [else (num-error p "invalid sequence" (cons* c1 c ls))]))]
-        [else (num-error p "invalid sequence" (cons c ls))])))
-  (define (tokenize-radix/exactness-marks p ls exact? radix) 
-    (let ([c (read-char p)])
-      (cond
-        [(eof-object? c) (num-error p "eof object" ls)]
-        [(radix-digit c radix) =>
-         (lambda (d) 
-           (tokenize-integer p (cons c ls) exact? radix d))]
-        [(char=? c #\.) 
-         (unless (= radix 10)
-           (num-error p "invalid decimal" (cons c ls)))
-         (tokenize-decimal-no-digits p (cons c ls) exact?)]
-        [(char=? c #\-) 
-         (- (tokenize-integer-no-digits p (cons c ls) exact? radix))]
-        [(char=? c #\+)
-         (tokenize-integer-no-digits p (cons c ls) exact? radix)]
-        [else (num-error p "invalid sequence" (cons c ls))])))
-  (define (tokenize-integer p ls exact? radix ac) 
-    (define (tokenize-denom-start p ls exact? radix num)
-      (let ([c (read-char p)])
-        (cond
-          [(eof-object? c) (num-error p "eof object" ls)]
-          [(radix-digit c radix) =>
-           (lambda (d) 
-             (tokenize-denom p (cons c ls) exact? radix num d))]
-          [(char=? c #\-)
-           (tokenize-denom-no-digits p (cons c ls) exact? radix (- num))]
-          [(char=? c #\+)
-           (tokenize-denom-no-digits p (cons c ls) exact? radix num)]
-          [else (num-error p "invalid sequence" (cons c ls))])))
-    (define (tokenize-denom-no-digits p ls exact? radix num)
-      (let ([c (read-char p)])
-        (cond
-          [(eof-object? c) (num-error p "eof object" ls)]
-          [(radix-digit c radix) =>
-           (lambda (d) 
-             (tokenize-denom p (cons c ls) exact? radix num d))]
-          [else (num-error p "invalid sequence" (cons c ls))])))
-    (define (tokenize-denom p ls exact? radix num ac)
-      (let ([c (peek-char p)])
-        (cond
-          [(eof-object? c) 
-           (read-char p)
-           (if (= ac 0) 
-               (num-error p "zero denominator" ls)
-               (convert/exact exact? (/ num ac)))]
-          [(radix-digit c radix) =>
-           (lambda (d) 
-             (read-char p)
-             (tokenize-denom p (cons c ls) exact? radix num 
-                (+ (* radix ac) d)))]
-          [(delimiter? c) 
-           (if (= ac 0)
-               (num-error p "zero denominator" ls)
-               (convert/exact exact? (/ num ac)))]
-          [else (num-error p "invalid sequence" (cons c ls))])))
-    (let ([c (peek-char p)])
-      (cond
-        [(eof-object? c) (convert/exact exact? ac)]
-        [(radix-digit c radix) =>
-         (lambda (d)
-           (read-char p)
-           (tokenize-integer p (cons c ls) exact? radix 
-             (+ (* ac radix) d)))]
-        [(char=? c #\.)
-         (unless (= radix 10)
-           (num-error p "invalid decimal" (cons c ls)))
-         (read-char p)
-         (tokenize-decimal p (cons c ls) exact? ac 0)]
-        [(char=? c #\/)
-         (read-char p)
-         (tokenize-denom-start p (cons #\/ ls) exact? radix ac)]
-        [(memv c '(#\e #\E)) ; exponent
-         (read-char p)
-         (unless (= radix 10)
-           (num-error p "invalid decimal" (cons c ls)))
-         (let ([ex (tokenize-exponent-start p (cons c ls))])
-           (convert/exact (or exact? 'i)
-             (* ac (expt radix ex))))]
-        [(delimiter? c)
-         (convert/exact exact? ac)]
-        [else (num-error p "invalid sequence" (cons c ls))])))
-  (define (tokenize-exponent-start p ls)
-    (define (tokenize-exponent-no-digits p ls)
-      (let ([c (read-char p)])
-        (cond
-          [(eof-object? c) (num-error p "eof object" ls)]
-          [(radix-digit c 10) =>
-           (lambda (d) 
-             (tokenize-exponent p (cons c ls) d))]
-          [else (num-error p "invalid sequence" (cons c ls))])))
-    (define (tokenize-exponent p ls ac)
-      (let ([c (peek-char p)])
-        (cond
-          [(eof-object? c) ac]
-          [(radix-digit c 10) =>
-           (lambda (d) 
-             (read-char p)
-             (tokenize-exponent p (cons c ls) 
-               (+ (* ac 10) d)))]
-          [(delimiter? c) ac]
-          [else (num-error p "invalid sequence" (cons c ls))])))
-    (let ([c (read-char p)])
-      (cond
-        [(eof-object? c) (num-error p "eof object" ls)]
-        [(radix-digit c 10) =>
-         (lambda (d) 
-           (tokenize-exponent p (cons c ls) d))]
-        [(char=? c #\-)
-         (- (tokenize-exponent-no-digits p (cons c ls)))]
-        [(char=? c #\+)
-         (tokenize-exponent-no-digits p (cons c ls))]
-        [else (num-error p "invalid sequence" (cons c ls))])))
-  (define (tokenize-decimal p ls exact? ac exp)
-    (let ([c (peek-char p)])
-      (cond
-        [(eof-object? c) 
-         (let ([ac (* ac (expt 10 exp))])
-           (convert/exact (or exact? 'i) ac))]
-        [(radix-digit c 10) =>
-         (lambda (d) 
-           (read-char p)
-           (tokenize-decimal p (cons c ls) exact? 
-             (+ (* ac 10) d) (- exp 1)))]
-        [(memv c '(#\e #\E)) 
-         (read-char p)
-         (let ([ex (tokenize-exponent-start p (cons c ls))])
-           (let ([ac (* ac (expt 10 (+ exp ex)))])
-             (convert/exact (or exact? 'i) ac)))]
-        [(delimiter? c) 
-         (let ([ac (* ac (expt 10 exp))])
-           (convert/exact (or exact? 'i) ac))]
-        [else (num-error p "invalid sequence" (cons c ls))])))
-  (define (tokenize-decimal-no-digits p ls exact?)
-    (let ([c (read-char p)])
-      (cond
-        [(eof-object? c) (num-error p "eof object" ls)]
-        [(radix-digit c 10) =>
-         (lambda (d) 
-           (tokenize-decimal p (cons c ls) exact? d -1))]
-        [else (num-error p "invalid sequence" (cons c ls))])))
-  (define (convert/exact exact? n)
-    (if (eq? exact? 'i) 
-        (exact->inexact n)
-        n))
-  (define (radix-digit c radix)
-    (case radix
-      [(10) 
-       (cond
-         [(char<=? #\0 c #\9) 
-          (fx- (char->integer c) (char->integer #\0))]
-         [else #f])]
-      [(16) 
-       (cond
-         [(char<=? #\0 c #\9) 
-          (fx- (char->integer c) (char->integer #\0))]
-         [(char<=? #\a c #\f) 
-          (fx- (char->integer c) (fx- (char->integer #\a) 10))]
-         [(char<=? #\A c #\F) 
-          (fx- (char->integer c) (fx- (char->integer #\A) 10))]
-         [else #f])]
-      [(8) 
-       (cond
-         [(char<=? #\0 c #\7) 
-          (fx- (char->integer c) (char->integer #\0))]
-         [else #f])]
-      [(2) 
-       (case c
-         [(#\0) 0]
-         [(#\1) 1]
-         [else #f])]
-      [else (die 'radix-digit "invalid radix" radix)]))
+
+  (define (num-error p str ls)
+    (die/p-1 p 'read "invalid numeric sequence"
+      (list->string (reverse ls))))
+
+  (define-syntax port-config
+    (syntax-rules (GEN-TEST GEN-ARGS FAIL)
+      [(_ GEN-ARGS k . rest) (k (p ac) . rest)]
+      [(_ FAIL (p ac))
+       (num-error p "invalid numeric sequence" ac)]
+      [(_ GEN-TEST var next (p ac) eof-case char-case)
+       (let ([c (peek-char p)])
+         (if (or (eof-object? c) (delimiter? c))
+             eof-case
+             (let ([var c])
+               (define-syntax next
+                 (syntax-rules ()
+                   [(_ who args (... ...))
+                    (who p (cons (get-char p) ac) args (... ...))]))
+               char-case)))]))
+
+  (define-string->number-parser port-config
+    (parse-string digit+ sign dot))
+
   (define (read-char* p ls str who ci? delimited?)
     (let f ([i 0] [ls ls])
       (cond
@@ -836,37 +634,6 @@
               (die/p-1 p 'tokenize 
                 (format "invalid ~a: ~s" who
                   (list->string (reverse (cons c ls)))))]))])))
-  (define (tokenize-integer/nan/inf-no-digits p ls)
-    (let ([c (read-char p)])
-      (cond
-        [(eof-object? c) (num-error p "invalid eof" ls)]
-        [(radix-digit c 10) =>
-         (lambda (d)
-           (tokenize-integer p (cons c ls) #f 10 d))]
-        [(char=? c #\.) 
-         (tokenize-decimal-no-digits p (cons c ls) #f)]
-        [(memv c '(#\i #\I)) 
-         (read-char* p (cons #\i ls) "nf.0" "number sequence" #t #t)
-         +inf.0]
-        [(memv c '(#\n #\N))
-         (read-char* p (cons #\i ls) "an.0" "number sequence" #t #t)
-         +nan.0]
-        [else (num-error p "invalid sequence" (cons c ls))]))) 
-  (define (tokenize-integer-no-digits p ls exact? radix?)
-    (let ([c (read-char p)])
-      (cond
-        [(eof-object? c) (num-error p "invalid eof" ls)]
-        [(radix-digit c (or radix? 10)) =>
-         (lambda (d) 
-           (tokenize-integer p (cons c ls) exact? (or radix? 10) d))]
-        [(char=? c #\.) 
-         (when (and radix? (not (= radix? 10)))
-           (num-error p "invalid decimal" (cons c ls)))
-         (tokenize-decimal-no-digits p (cons c ls) exact?)]
-        [else (num-error p "invalid sequence" (cons c ls))])))
-  (define (num-error p str ls)
-    (die/p-1 p 'read "invalid numeric sequence"
-      (list->string (reverse ls))))
   (define (tokenize-hashnum p n)
     (let ([c (read-char p)])
       (cond
@@ -948,10 +715,10 @@
              '(macro . unquote-splicing)]
             [else '(macro . unquote)]))]
         [($char= #\# c) (tokenize-hash p)]
-        [(radix-digit c 10) =>
-         (lambda (d) 
+        [(char<=? #\0 c #\9) 
+         (let ([d (fx- (char->integer c) (char->integer #\0))])
            (cons 'datum
-             (tokenize-integer p (list c) #f 10 d)))]
+             (digit+ p (list c) 10 #f +1 d)))]
         [(initial? c)
          (let ([ls (reverse (tokenize-identifier (cons c '()) p))])
            (cons 'datum (string->symbol (list->string ls))))]
@@ -965,7 +732,7 @@
              [(delimiter? c)  '(datum . +)]
              [else
               (cons 'datum
-                (tokenize-integer/nan/inf-no-digits p '(#\+)))]))]
+                (sign p '(#\+) 10 #f +1))]))]
         [(memq c '(#\-))
          (let ([c (peek-char p)])
            (cond
@@ -978,7 +745,7 @@
                   (cons 'datum (string->symbol str))))]
              [else
               (cons 'datum
-                (- (tokenize-integer/nan/inf-no-digits p '(#\-))))]))]
+                (sign p '(#\-) 10 #f -1))]))]
         [($char= #\. c)
          (tokenize-dot p)]
         [($char= #\| c)

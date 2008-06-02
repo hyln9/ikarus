@@ -82,9 +82,7 @@
     "ikarus.intel-assembler.ss"
     "ikarus.trace.ss"
     "ikarus.fasl.write.ss"
-;;; HERE
     "ikarus.fasl.ss"
-
     "ikarus.compiler.ss"
     "psyntax.compat.ss"
     "psyntax.library-manager.ss"
@@ -92,7 +90,6 @@
     "psyntax.config.ss"
     "psyntax.builders.ss"
     "psyntax.expander.ss"
-
     "ikarus.load.ss"
     "ikarus.pretty-print.ss"
     "ikarus.cafe.ss"
