@@ -26,33 +26,43 @@
   (module (define-parser)
     (define-syntax gen-empty
       (syntax-rules (eof)
-        [(_ C Ca) (C FAIL Ca)]
+        [(_ C Ca) (C EOF-ERROR Ca)]
         [(_ C Ca [(eof) then] . rest) then]
         [(_ C Ca other . rest) (gen-empty C Ca . rest)]))
+    (define-syntax gen-delimiter
+      (syntax-rules (eof)
+        [(_ C Ca c) 
+         (C GEN-DELIM-TEST c
+            (C FAIL Ca)
+            (C FAIL Ca c))]
+        [(_ C Ca c [(eof) then] . rest) 
+         (C GEN-DELIM-TEST c
+             then
+             (C FAIL Ca c))]
+        [(_ C Ca c other . rest) (gen-delimiter C Ca c . rest)]))
     (define-syntax gen-char
       (syntax-rules (eof =>)
-        [(_ C Ca c) (C FAIL Ca)]
-        [(_ C Ca c [(eof) then] . rest)
-         (gen-char C Ca c . rest)]
-        [(_ C Ca c [(test . args) => result then] . rest)
+        [(_ C Ca c dc) dc]
+        [(_ C Ca c dc [(eof) then] . rest)
+         (gen-char C Ca c dc . rest)]
+        [(_ C Ca c dc [(test . args) => result then] . rest)
          (cond
            [(test c . args) => 
             (lambda (result) then)]
-           [else (gen-char C Ca c . rest)])]
-        [(_ C Ca c [ls then] . rest)
+           [else (gen-char C Ca c dc . rest)])]
+        [(_ C Ca c dc [ls then] . rest)
          (if (memv c 'ls)
              then
-             (gen-char C Ca c . rest))]))
+             (gen-char C Ca c dc . rest))]))
     (define-syntax gen-clause
       (syntax-rules ()
         [(_ (Ca ...) C next fail name (arg* ...) (clause* ...))
          (define (name Ca ... arg* ...)
-           (define-syntax fail
-             (syntax-rules ()
-               [(_) (C FAIL (Ca ...))]))
-           (C GEN-TEST c next (Ca ...)
+           (C GEN-TEST c next fail (Ca ...)
               (gen-empty C (Ca ...) clause* ...)
-              (gen-char C (Ca ...) c clause* ...)))]))
+              (gen-char C (Ca ...) c 
+                  (gen-delimiter C (Ca ...) c clause* ...)
+                  clause* ...)))]))
     (define-syntax define-parser^
       (lambda (x)
         (define (lookup ls1 ls2)
@@ -119,7 +129,8 @@
       [(#\i)
        (if (= ac 0)
            (fail)
-           (make-rectangular 0 (do-sn/ex sn ex (/ num ac))))])
+           (next im:done
+             (make-rectangular 0 (do-sn/ex sn ex (/ num ac)))))])
 
     (im:ratio+ (r real ex sn num ac)
       [(digit r) => d
@@ -147,15 +158,33 @@
       [(digit r) => d
        (next exponent+digit r ex sn ac exp1 (+ (* exp2 r) d) exp-sign)])
 
+    (im:exponent+digit (r real ex sn ac exp1 exp2 exp-sign)
+      [(digit r) => d
+       (next im:exponent+digit r real ex sn ac exp1 (+ (* exp2 r) d) exp-sign)]
+      [(#\i)
+       (let ([imag (do-dec-sn/ex sn ex
+                     (* ac (expt 10 (+ exp1 (* exp2 exp-sign)))))])
+         (next im:done (make-rectangular real imag)))])
+
     (exponent+sign (r ex sn ac exp1 exp-sign)
       [(digit r) => d
        (next exponent+digit r ex sn ac exp1 d exp-sign)])
+
+    (im:exponent+sign (r real ex sn ac exp1 exp-sign)
+      [(digit r) => d
+       (next im:exponent+digit r real ex sn ac exp1 d exp-sign)])
 
     (exponent (r ex sn ac exp1)
       [(digit r) => d
        (next exponent+digit r ex sn ac exp1 d +1)]
       [(#\+) (next exponent+sign r ex sn ac exp1 +1)]
       [(#\-) (next exponent+sign r ex sn ac exp1 -1)])
+
+    (im:exponent (r real ex sn ac exp1)
+      [(digit r) => d
+       (next im:exponent+digit r real ex sn ac exp1 d +1)]
+      [(#\+) (next im:exponent+sign r real ex sn ac exp1 +1)]
+      [(#\-) (next im:exponent+sign r real ex sn ac exp1 -1)])
 
     (digit+dot (r ex sn ac exp)
       [(eof)
@@ -175,6 +204,17 @@
        (if (fx=? r 10)
            (next exponent r ex sn ac exp)
            (fail))])
+
+    (im:digit+dot (r real ex sn ac exp)
+      [(eof)
+       (do-dec-sn/ex sn ex (* ac (expt 10 exp)))]
+      [(digit r) => d
+       (next im:digit+dot r real ex sn (+ (* ac r) d) (- exp 1))]
+      [(#\i)
+       (let ([imag (do-dec-sn/ex sn ex (* ac (expt 10 exp)))])
+         (next im:done (make-rectangular real imag)))]
+      [(#\e)
+       (next im:exponent r real ex sn ac exp)])
 
     (digit+ (r ex sn ac)
       [(eof) (do-sn/ex sn ex ac)]
@@ -238,13 +278,21 @@
     (dot (r ex sn)
       [(digit r) => d
        (next digit+dot r ex sn d -1)])
+    
+    (im:dot (r real ex sn)
+      [(digit r) => d
+       (next im:digit+dot r real ex sn d -1)])
 
     (im:sign (r real ex sn)
       [(digit r) => d
        (next im:digit+ r real ex sn d)]
       [(#\i) 
-       (next im:sign-i real ex sn)])
-  
+       (next im:sign-i real ex sn)]
+      [(#\.)
+       (if (fx=? r 10)
+           (next im:dot r real ex sn)
+           (fail))])
+
     (sign (r ex sn)
       [(digit r) => d
        (next digit+ r ex sn d)]
@@ -293,18 +341,25 @@
   )
 
   (define-syntax string-config
-    (syntax-rules (GEN-TEST GEN-ARGS FAIL)
+    (syntax-rules (EOF-ERROR GEN-TEST GEN-ARGS FAIL GEN-DELIM-TEST)
       [(_ GEN-ARGS k . rest) (k (s n i) . rest)]
+      [(_ FAIL (s n i) c) #f]
       [(_ FAIL (s n i)) #f]
-      [(_ GEN-TEST var next (s n i) sk fk)
-       (if (fx=? i n)
-           sk
-           (let ([var (string-ref s i)])
-             (define-syntax next
-               (syntax-rules ()
-                 [(_ who args (... ...))
-                  (who s n (fx+ i 1) args (... ...))]))
-             fk))]))
+      [(_ EOF-ERROR (s n i)) #f]
+      [(_ GEN-DELIM-TEST c sk fk) #f]
+      [(_ GEN-TEST var next fail (s n i) sk fk)
+       (let ()
+         (define-syntax fail
+           (syntax-rules ()
+             [(_) #f]))
+         (if (fx=? i n)
+             sk
+             (let ([var (string-ref s i)])
+               (define-syntax next
+                 (syntax-rules ()
+                   [(_ who args (... ...))
+                    (who s n (fx+ i 1) args (... ...))]))
+               fk)))]))
 
   (define-string->number-parser string-config (parse-string))
 

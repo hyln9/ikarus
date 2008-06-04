@@ -589,19 +589,34 @@
             (format "invalid syntax #~a" c))])))
 
   (define (num-error p str ls)
-    (die/p-1 p 'read "invalid numeric sequence"
+    (die/p-1 p 'read str
       (list->string (reverse ls))))
 
   (define-syntax port-config
-    (syntax-rules (GEN-TEST GEN-ARGS FAIL)
+    (syntax-rules (GEN-TEST GEN-ARGS FAIL EOF-ERROR GEN-DELIM-TEST)
       [(_ GEN-ARGS k . rest) (k (p ac) . rest)]
       [(_ FAIL (p ac))
        (num-error p "invalid numeric sequence" ac)]
-      [(_ GEN-TEST var next (p ac) eof-case char-case)
+      [(_ FAIL (p ac) c)
+       (num-error p "invalid numeric sequence" (cons c ac))]
+      [(_ EOF-ERROR (p ac))
+       (num-error p "invalid eof while reading number" ac)]
+      [(_ GEN-DELIM-TEST c sk fk)
+       (if (delimiter? c) sk fk)]
+      [(_ GEN-TEST var next fail (p ac) eof-case char-case)
        (let ([c (peek-char p)])
-         (if (or (eof-object? c) (delimiter? c))
-             eof-case
+         (if (eof-object? c)
+             (let ()
+               (define-syntax fail
+                 (syntax-rules ()
+                    [(_) (num-error p "invalid numeric sequence" ac)]))
+               eof-case)
              (let ([var c])
+               (define-syntax fail
+                 (syntax-rules ()
+                    [(_) 
+                     (num-error p "invalid numeric sequence" 
+                        (cons var ac))]))
                (define-syntax next
                  (syntax-rules ()
                    [(_ who args (... ...))
