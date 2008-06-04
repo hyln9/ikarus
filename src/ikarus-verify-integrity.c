@@ -74,7 +74,7 @@ verify_code(char* x, char* base, unsigned int* svec, unsigned int* dvec){
 
 static void 
 verify_object(ikptr x, char* base, unsigned int* svec, unsigned int* dvec){
-  
+  x=x; base=base; svec=svec; dvec=dvec; /* no warning */ 
 }
 
 
@@ -82,6 +82,7 @@ static char*
 verify_code_small(char* p, int s, unsigned int d, 
     char* base, unsigned int* svec, unsigned int* dvec){
   char* q = p + pagesize;
+  s=s; d=d; /* no warning */
   while(p < q){
     ikptr fst = ref(p, 0);
     if(fst == code_tag){
@@ -104,6 +105,7 @@ verify_code_small(char* p, int s, unsigned int d,
 static char*
 verify_code_large(char* p, unsigned int s, unsigned int d, 
     char* base, unsigned int* svec, unsigned int* dvec){
+  s=s; d=d; /* no warning */
   ikptr fst = ref(p, 0);
   fst += 0;
   assert(fst == code_tag);
@@ -144,6 +146,7 @@ verify_code_page(char* p, unsigned int s, unsigned int d,
 static char*
 verify_pointers_page(char* p, unsigned int s, unsigned int d, 
     char* base, unsigned int* svec, unsigned int* dvec){
+  s=s; d=d; /* no warning */
   {
     int i = 0;
     while(i < pagesize){

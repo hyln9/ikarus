@@ -32,7 +32,7 @@
 extern ikptr ik_errno_to_code();
 
 ikptr
-ikrt_close_fd(ikptr fd, ikpcb* pcb){
+ikrt_close_fd(ikptr fd /*, ikpcb* pcb */){
   int err = close(unfix(fd));
   if(err == -1){
     return ik_errno_to_code();
@@ -42,7 +42,7 @@ ikrt_close_fd(ikptr fd, ikpcb* pcb){
 }
 
 ikptr
-ikrt_open_input_fd(ikptr fn, ikpcb* pcb){
+ikrt_open_input_fd(ikptr fn /*, ikpcb* pcb */){
   int fh = open((char*)(long)(fn+off_bytevector_data), O_RDONLY, 0);
   if(fh >= 0){
     return fix(fh);
@@ -52,7 +52,7 @@ ikrt_open_input_fd(ikptr fn, ikpcb* pcb){
 }
 
 ikptr
-ikrt_open_output_fd(ikptr fn, ikptr ikopts, ikpcb* pcb){
+ikrt_open_output_fd(ikptr fn, ikptr ikopts /*, ikpcb* pcb */){
   int opts = unfix(ikopts);
   int mode = 0;
   switch (opts){
@@ -81,7 +81,7 @@ ikrt_open_output_fd(ikptr fn, ikptr ikopts, ikpcb* pcb){
 
 
 ikptr
-ikrt_read_fd(ikptr fd, ikptr bv, ikptr off, ikptr cnt, ikpcb* pcb){
+ikrt_read_fd(ikptr fd, ikptr bv, ikptr off, ikptr cnt /*, ikpcb* pcb */){
 #if 0
   fprintf(stderr, "READ: %d\n", unfix(fd));
 #endif
@@ -100,7 +100,7 @@ ikrt_read_fd(ikptr fd, ikptr bv, ikptr off, ikptr cnt, ikpcb* pcb){
 }
 
 ikptr
-ikrt_write_fd(ikptr fd, ikptr bv, ikptr off, ikptr cnt, ikpcb* pcb){
+ikrt_write_fd(ikptr fd, ikptr bv, ikptr off, ikptr cnt /*, ikpcb* pcb */){
 #if 0
   if (0) {
     fprintf(stderr, "WRITE %d, %p %d %d %d\n", 
@@ -170,17 +170,17 @@ do_connect(ikptr host, ikptr srvc, int socket_type){
 }
 
 ikptr
-ikrt_tcp_connect(ikptr host, ikptr srvc, ikpcb* pcb){
+ikrt_tcp_connect(ikptr host, ikptr srvc /*, ikpcb* pcb */){
   return do_connect(host, srvc, SOCK_STREAM);
 }
 
 ikptr
-ikrt_udp_connect(ikptr host, ikptr srvc, ikpcb* pcb){
+ikrt_udp_connect(ikptr host, ikptr srvc /*, ikpcb* pcb */){
   return do_connect(host, srvc, SOCK_DGRAM);
 }
 
 ikptr 
-ikrt_make_fd_nonblocking(ikptr fdptr, ikpcb* pcb){
+ikrt_make_fd_nonblocking(ikptr fdptr /*, ikpcb* pcb */){
   int fd = unfix(fdptr);
   int err = fcntl(fd, F_SETFL, O_NONBLOCK);
   if(err == -1){
@@ -190,7 +190,7 @@ ikrt_make_fd_nonblocking(ikptr fdptr, ikpcb* pcb){
 }
 
 ikptr 
-ikrt_select(ikptr fds, ikptr rfds, ikptr wfds, ikptr xfds, ikpcb* pcb){
+ikrt_select(ikptr fds, ikptr rfds, ikptr wfds, ikptr xfds /*, ikpcb* pcb */){
   int rv = select(unfix(fds),
                   (fd_set*)(rfds + off_bytevector_data),
                   (fd_set*)(wfds + off_bytevector_data),
@@ -203,7 +203,7 @@ ikrt_select(ikptr fds, ikptr rfds, ikptr wfds, ikptr xfds, ikpcb* pcb){
 }
 
 ikptr
-ikrt_listen(ikptr port, ikpcb* pcb){
+ikrt_listen(ikptr port /*, ikpcb* pcb */){
   
   int sock = socket(AF_INET, SOCK_STREAM, 0);
   if(sock < 0){
@@ -259,7 +259,7 @@ ikrt_getsockname(ikptr s, ikpcb* pcb){
 
 
 ikptr
-ikrt_accept(ikptr s, ikptr bv, ikpcb* pcb){
+ikrt_accept(ikptr s, ikptr bv /*, ikpcb* pcb */){
   socklen_t addrlen = unfix(ref(bv, off_bytevector_length));
   int sock = accept(unfix(s),
                     (struct sockaddr*) (bv+off_bytevector_data),

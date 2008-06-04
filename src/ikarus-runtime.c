@@ -54,7 +54,7 @@ ikptr ik_mmap(int size);
 void ik_munmap(ikptr mem, int size);
 
 static void
-extend_table_maybe(ikptr p, int size, ikpcb* pcb){
+extend_table_maybe(ikptr p, unsigned long int size, ikpcb* pcb){
   assert(size == align_to_next_page(size));
   ikptr q = p + size;
   if(p < pcb->memory_base){
@@ -107,7 +107,7 @@ extend_table_maybe(ikptr p, int size, ikpcb* pcb){
 
 
 static void
-set_segment_type(ikptr base, int size, unsigned int type, ikpcb* pcb){
+set_segment_type(ikptr base, unsigned long int size, unsigned int type, ikpcb* pcb){
   assert(base >= pcb->memory_base);
   assert((base+size) <= pcb->memory_end);
   assert(size == align_to_next_page(size));
@@ -120,7 +120,7 @@ set_segment_type(ikptr base, int size, unsigned int type, ikpcb* pcb){
 }
 
 void
-ik_munmap_from_segment(ikptr base, int size, ikpcb* pcb){
+ik_munmap_from_segment(ikptr base, unsigned long int size, ikpcb* pcb){
   assert(base >= pcb->memory_base);
   assert((base+size) <= pcb->memory_end);
   assert(size == align_to_next_page(size));
@@ -557,7 +557,7 @@ ikptr ik_uuid(ikptr bv){
 
 
 ikptr
-ikrt_stat(ikptr filename, ikptr follow, ikpcb* pcb){
+ikrt_stat(ikptr filename, ikptr follow /*, ikpcb* pcb */){
   char* fn = (char*)(filename + off_bytevector_data);
   struct stat s;
   int r;
@@ -587,8 +587,8 @@ ikrt_stat(ikptr filename, ikptr follow, ikpcb* pcb){
 /* ikrt_file_exists needs to be removed.
    This is here only to be able to use old ikarus.boot.prebuilt */
 ikptr
-ikrt_file_exists(ikptr filename, ikpcb* pcb){
-  switch (ikrt_stat(filename, true_object, pcb)){
+ikrt_file_exists(ikptr filename /*, ikpcb* pcb */){
+  switch (ikrt_stat(filename, true_object /*, pcb */)){
     case fix(0):
     case fix(1):
     case fix(2):
@@ -648,7 +648,7 @@ ikrt_directory_list(ikptr filename, ikpcb* pcb){
 }
 
 ikptr
-ikrt_mkdir(ikptr path, ikptr mode, ikpcb* pcb){
+ikrt_mkdir(ikptr path, ikptr mode /*, ikpcb* pcb */){
   int r = mkdir((char*)(path+off_bytevector_data), unfix(mode));
   if(r == 0){
     return true_object;
@@ -657,7 +657,7 @@ ikrt_mkdir(ikptr path, ikptr mode, ikpcb* pcb){
 }
 
 ikptr
-ikrt_rmdir(ikptr path, ikpcb* pcb){
+ikrt_rmdir(ikptr path /*, ikpcb* pcb */){
   int r = rmdir((char*)(path+off_bytevector_data));
   if(r == 0){
     return true_object;
@@ -666,7 +666,7 @@ ikrt_rmdir(ikptr path, ikpcb* pcb){
 }
 
 ikptr
-ikrt_chmod(ikptr path, ikptr mode, ikpcb* pcb){
+ikrt_chmod(ikptr path, ikptr mode /*, ikpcb* pcb */){
   int r = chmod((char*)(path+off_bytevector_data), (mode_t)unfix(mode));
   if(r == 0){
     return true_object;
@@ -675,7 +675,7 @@ ikrt_chmod(ikptr path, ikptr mode, ikpcb* pcb){
 }
 
 ikptr
-ikrt_symlink(ikptr to, ikptr path, ikpcb* pcb){
+ikrt_symlink(ikptr to, ikptr path /*, ikpcb* pcb */){
   int r = symlink((char*)(to+off_bytevector_data), (char*)(path+off_bytevector_data));
   if(r == 0){
     return true_object;
@@ -998,17 +998,21 @@ ikrt_exit(ikptr status, ikpcb* pcb){
 }
 
 ikptr
-ikrt_nanosleep(ikptr secs, ikptr nsecs, ikpcb* pcb){
+ikrt_nanosleep(ikptr secs, ikptr nsecs /*, ikpcb* pcb */){
   struct timespec t;
   t.tv_sec = 
-    is_fixnum(secs) ? unfix(secs) : ref(secs, off_bignum_data);
+    is_fixnum(secs) 
+      ? (unsigned long) unfix(secs) 
+      : ref(secs, off_bignum_data);
   t.tv_nsec = 
-    is_fixnum(nsecs) ? unfix(nsecs) : ref(nsecs, off_bignum_data);
+    is_fixnum(nsecs) 
+      ? (unsigned long) unfix(nsecs)
+      : ref(nsecs, off_bignum_data);
   return fix(nanosleep(&t, NULL));
 }
 
 ikptr
-ikrt_chdir(ikptr pathbv, ikpcb* pcb){
+ikrt_chdir(ikptr pathbv /*, ikpcb* pcb */){
   int err = chdir(off_bytevector_data+(char*)pathbv);
   if(err == 0){
     return true_object;

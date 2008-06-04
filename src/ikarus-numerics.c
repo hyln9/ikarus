@@ -40,14 +40,14 @@
 static ikptr
 verify_bignum(ikptr x, char* caller){
   if(tagof(x) != vector_tag){
-    fprintf(stderr, "Error in (%s) invalid primary tag %p\n", caller, x);
+    fprintf(stderr, "Error in (%s) invalid primary tag 0x%016lx\n", caller, x);
     exit(-1);
   }
   ikptr fst = ref(x, -vector_tag);
   long int limb_count = ((unsigned long int) fst) >> bignum_length_shift;
   if(limb_count <= 0){
     fprintf(stderr, 
-        "Error in (%s) invalid limb count in fst=0x%08x\n", 
+        "Error in (%s) invalid limb count in fst=0x%016lx\n",
         caller, (long int)fst);
     exit(-1);
   }
@@ -61,21 +61,21 @@ verify_bignum(ikptr x, char* caller){
     (mp_limb_t) ref(x, off_bignum_data + (limb_count - 1) * wordsize);
   if(last_limb == 0){
     fprintf(stderr, 
-        "Error in (%s) invalid last limb = 0x%08x", caller, last_limb);
+        "Error in (%s) invalid last limb = 0x%016lx", caller, last_limb);
     exit(-1);
   }
   if(limb_count == 1){
     if(pos){
       if(last_limb <= most_positive_fixnum){
         fprintf(stderr, 
-                "Error in (%s) should be a positive fixnum: 0x%08x\n", 
+                "Error in (%s) should be a positive fixnum: 0x%016lx\n", 
                 caller, last_limb);
         exit(-1);
       }
     } else {
       if(last_limb <= most_negative_fixnum){
         fprintf(stderr, 
-                "Error in (%s) should be a negative fixnum: 0x%08x\n", 
+                "Error in (%s) should be a negative fixnum: 0x%016lx\n", 
                 caller, last_limb);
         exit(-1);
       }
@@ -1045,7 +1045,7 @@ static inline int
 count_leading_ffs(int n, mp_limb_t* x){
   int idx;
   for(idx=0; idx<n; idx++){
-    if(x[idx] != -1){
+    if(x[idx] != (mp_limb_t)-1){
       return idx;
     }
   }
@@ -1189,7 +1189,7 @@ ikrt_bnlognot(ikptr x, ikpcb* pcb){
     /* positive */
     long int i;
     mp_limb_t* s1 = (mp_limb_t*)(long)(x+disp_bignum_data-vector_tag);
-    for(i=0; (i<n) && (s1[i] == -1); i++) {/*nothing*/}
+    for(i=0; (i<n) && (s1[i] == (mp_limb_t)-1); i++) {/*nothing*/}
     if(i==n){
       pcb->root0 = &x;
       ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data + (n+1)*wordsize));
@@ -1789,7 +1789,7 @@ ikrt_bnfxdivrem(ikptr x, ikptr y, ikpcb* pcb){
 }
 
 ikptr
-ikrt_bnfx_modulo(ikptr x, ikptr y, ikpcb* pcb){
+ikrt_bnfx_modulo(ikptr x, ikptr y /*, ikpcb* pcb */){
   int yint = unfix(y);
   mp_limb_t* s2p = (mp_limb_t*)(long)(x+off_bignum_data);
   ikptr fst = ref(x, -vector_tag);
@@ -1838,7 +1838,7 @@ ikrt_bignum_length(ikptr x){
   int n0 = limb_length(last);
   if(((unsigned long int) fst) & bignum_sign_mask){
     /* negative */
-    if (last == (1<<(n0-1))){
+    if (last == (mp_limb_t)(1<<(n0-1))){
       /* single bit set in last limb */
       int i;
       for(i=0; i<(sn-1); i++){

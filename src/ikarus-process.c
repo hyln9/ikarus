@@ -52,7 +52,7 @@ list_to_vec(ikptr x){
 }
 
 ikptr 
-ikrt_process(ikptr rvec, ikptr cmd, ikptr argv, ikpcb* pcb){
+ikrt_process(ikptr rvec, ikptr cmd, ikptr argv /*, ikpcb* pcb */){
   int infds[2];
   int outfds[2];
   int errfds[2];
@@ -92,7 +92,7 @@ ikrt_process(ikptr rvec, ikptr cmd, ikptr argv, ikpcb* pcb){
 }
 
 ikptr 
-ikrt_waitpid(ikptr pid, ikpcb* pcb){
+ikrt_waitpid(ikptr pid /*, ikpcb* pcb */){
   int status;
   pid_t r = waitpid(unfix(pid), &status, 0);
   if(r >= 0){

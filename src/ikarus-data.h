@@ -146,14 +146,14 @@ typedef struct ikpcb{
   ikptr weak_pairs_ap;
   ikptr weak_pairs_ep;
   ikptr   heap_base; 
-  int   heap_size;
+  unsigned long int   heap_size;
   ikpages* heap_pages;
   ikpage* cached_pages; /* pages cached so that we don't map/unmap */
   ikpage* uncached_pages; /* ikpages cached so that we don't malloc/free */
   ikptr cached_pages_base;
   int cached_pages_size;
   ikptr   stack_base;
-  int   stack_size;
+  unsigned long int   stack_size;
   ikptr   symbol_table;
   ikptr   gensym_table;
   ik_ptr_page* protected_list[generation_count];
@@ -169,7 +169,7 @@ typedef struct ikpcb{
   struct timeval collect_rtime; 
 } ikpcb;
 
-ikpcb* ik_collect(int req, ikpcb* pcb);
+ikpcb* ik_collect(unsigned long int, ikpcb*);
 void ikarus_usage_short(void);
 
 void* ik_malloc(int);
@@ -182,7 +182,7 @@ ikptr ik_mmap_data(int size, int gen, ikpcb*);
 ikptr ik_mmap_code(int size, int gen, ikpcb*);
 ikptr ik_mmap_mixed(int size, ikpcb*);
 void ik_munmap(ikptr, int);
-void ik_munmap_from_segment(ikptr, int, ikpcb*);
+void ik_munmap_from_segment(ikptr, unsigned long int, ikpcb*);
 ikpcb* ik_make_pcb();
 void ik_delete_pcb(ikpcb*);
 void ik_free_symbol_table(ikpcb* pcb);
@@ -208,7 +208,7 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define IK_HEAP_EXT_SIZE  (32 * 4096)
 #define IK_HEAPSIZE       (1024 * ((wordsize==4)?1:2) * 4096) /* 4/8 MB */
 
-#define wordsize (sizeof(ikptr))
+#define wordsize ((int)(sizeof(ikptr)))
 #define wordshift ((wordsize == 4)?2:3)
 #define align_shift (wordshift + 1) 
 #define align_size (2 * wordsize)

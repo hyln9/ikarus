@@ -373,7 +373,7 @@ extern void verify_integrity(ikpcb* pcb, char*);
 
 
 ikpcb* 
-ik_collect(int mem_req, ikpcb* pcb){
+ik_collect(unsigned long int mem_req, ikpcb* pcb){
 //  fprintf(stderr, "ik_collect\n");
 #ifndef NDEBUG
   verify_integrity(pcb, "entry");
@@ -400,10 +400,9 @@ ik_collect(int mem_req, ikpcb* pcb){
   gc.collect_gen_tag = next_gen_tag[gc.collect_gen];
   pcb->collection_id++;
 #ifndef NDEBUG
-  fprintf(stderr, "ik_collect entry %d free=%d (collect gen=%d/id=%d)\n",
+  fprintf(stderr, "ik_collect entry %ld free=%ld (collect gen=%d/id=%d)\n",
       mem_req,
-      (unsigned int) pcb->allocation_redline
-        - (unsigned int) pcb->allocation_pointer,
+       pcb->allocation_redline - pcb->allocation_pointer,
       gc.collect_gen, pcb->collection_id-1);
 #endif
 
@@ -498,12 +497,12 @@ ik_collect(int mem_req, ikpcb* pcb){
     old_heap_pages = 0;
   }
 
-  long int free_space = 
+  unsigned long int free_space = 
     ((unsigned long int)pcb->allocation_redline) - 
     ((unsigned long int)pcb->allocation_pointer);
   if((free_space <= mem_req) || (pcb->heap_size < IK_HEAPSIZE)){
 #ifndef NDEBUG
-    fprintf(stderr, "REQ=%d, got %d\n", mem_req, free_space);
+    fprintf(stderr, "REQ=%ld, got %ld\n", mem_req, free_space);
 #endif
     long int memsize = (mem_req > IK_HEAPSIZE) ? mem_req : IK_HEAPSIZE;
     memsize = align_to_next_page(memsize);
@@ -972,11 +971,11 @@ add_list(gc_t* gc, unsigned int t, ikptr x, ikptr* loc){
 
 static ikptr 
 #ifndef NDEBUG
-add_object_proc(gc_t* gc, ikptr x, char* caller)
+add_object_proc(gc_t* gc, ikptr x, char* caller) {
+  caller = caller;
 #else
-add_object_proc(gc_t* gc, ikptr x)
+add_object_proc(gc_t* gc, ikptr x) {
 #endif
-{
   if(is_fixnum(x)){ 
     return x;
   } 
@@ -1143,7 +1142,7 @@ add_object_proc(gc_t* gc, ikptr x)
       ikptr size =  ref(x, off_continuation_size);
 #ifndef NDEBUG
       if(size > 4096){
-        fprintf(stderr, "large cont size=0x%08x\n", size);
+        fprintf(stderr, "large cont size=0x%016lx\n", size);
       }
 #endif
       ikptr next = ref(x, off_continuation_next);
@@ -1173,8 +1172,8 @@ add_object_proc(gc_t* gc, ikptr x)
       ref(y,off_tcbucket_val) = ref(x, off_tcbucket_val);
       ref(y,off_tcbucket_next) = ref(x, off_tcbucket_next);
       if((! is_fixnum(key)) && (tagof(key) != immediate_tag)){
-        unsigned int kt = gc->segment_vector[page_index(key)];
-        if((kt & gen_mask) <= gc->collect_gen){
+        int gen = gc->segment_vector[page_index(key)] & gen_mask;
+        if(gen <= gc->collect_gen){
           /* key will be moved */
           gc_tconc_push(gc, y);
         }
@@ -1656,8 +1655,8 @@ scan_dirty_pointers_page(gc_t* gc, long int page_idx, int mask){
   dirty_vec[page_idx] = new_d;
 }
 
-static void            
-scan_dirty_code_page(gc_t* gc, long int page_idx, unsigned int mask){
+static void
+scan_dirty_code_page(gc_t* gc, long int page_idx){
   ikptr p = (ikptr)(page_idx << pageshift);
   ikptr start = p;
   ikptr q = p + pagesize;
@@ -1679,7 +1678,7 @@ scan_dirty_code_page(gc_t* gc, long int page_idx, unsigned int mask){
       ikptr rvec = ref(p, disp_code_reloc_vector);
       ikptr len = ref(rvec, off_vector_length);
       assert(((long)len) >= 0);
-      long int i;
+      unsigned long int i;
       unsigned long int code_d = segment_vec[page_index(rvec)];
       for(i=0; i<len; i+=wordsize){
         ikptr r = ref(rvec, i+off_vector_data);
@@ -1718,7 +1717,8 @@ scan_dirty_pages(gc_t* gc){
     unsigned int d = dirty_vec[i];
     if(d & mask){
       unsigned int t = segment_vec[i];
-      if((t & gen_mask) > collect_gen){
+      int tgen = t & gen_mask;
+      if(tgen > collect_gen){
         int type = t & type_mask;
         if(type == pointers_type){
           scan_dirty_pointers_page(gc, i, mask);
@@ -1736,11 +1736,9 @@ scan_dirty_pages(gc_t* gc){
           segment_vec = (unsigned int*)(long)pcb->segment_vector;
         }
         else if (type == code_type){
-          if((t & gen_mask) > collect_gen){
-            scan_dirty_code_page(gc, i, mask);
-            dirty_vec = (unsigned int*)(long)pcb->dirty_vector;
-            segment_vec = (unsigned int*)(long)pcb->segment_vector;
-          }
+          scan_dirty_code_page(gc, i);
+          dirty_vec = (unsigned int*)(long)pcb->dirty_vector;
+          segment_vec = (unsigned int*)(long)pcb->segment_vector;
         }
         else if (t & scannable_mask) {
           fprintf(stderr, "BUG: unhandled scan of type 0x%08x\n", t);
