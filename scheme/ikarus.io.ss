@@ -2208,51 +2208,52 @@
 
     (define (do-select)
       (let ([n (add1 (get-max-fd))])
-        (let ([rbv (make-bytevector n 0)]
-              [wbv (make-bytevector n 0)]
-              [xbv (make-bytevector n 0)])
-          ;;; add all fds to their bytevectors depending on type
-          (for-each 
-            (lambda (t) 
-              (let ([fd (t-fd t)])
-                (let ([i (div fd 8)] [j (mod fd 8)])
-                  (let ([bv (case (t-type t)
-                              [(r) rbv]
-                              [(w) wbv]
-                              [(x) xbv]
-                              [else 
-                               (error 'do-select "invalid type" t)])])
-                    (bytevector-u8-set! bv i 
-                      (fxlogor (fxsll 1 j) 
-                        (bytevector-u8-ref bv i)))))))
-            pending)
-          ;;; do select
-          (let ([rv (foreign-call "ikrt_select" n rbv wbv xbv)])
-            (when (< rv 0)
-              (io-error 'select #f rv)))
-          ;;; go through fds again and see if they're selected
-          (for-each 
-            (lambda (t) 
-              (let ([fd (t-fd t)])
-                (let ([i (div fd 8)] [j (mod fd 8)])
-                  (let ([bv (case (t-type t)
-                              [(r) rbv]
-                              [(w) wbv]
-                              [(x) xbv]
-                              [else 
-                               (error 'do-select "invalid type" t)])])
-                    (cond
-                      [(fxzero? 
-                         (fxlogand (fxsll 1 j) 
-                           (bytevector-u8-ref bv i)))
-                       ;;; not selected
-                       (set! pending (cons t pending))]
-                      [else 
-                       ;;; ready
-                       (set! in-queue (cons t in-queue))])))))
-            (let ([ls pending])
-              (set! pending '())
-              ls)))))
+        (let ([vecsize (div (+ n 7) 8)])
+          (let ([rbv (make-bytevector vecsize 0)]
+                [wbv (make-bytevector vecsize 0)]
+                [xbv (make-bytevector vecsize 0)])
+            ;;; add all fds to their bytevectors depending on type
+            (for-each 
+              (lambda (t) 
+                (let ([fd (t-fd t)])
+                  (let ([i (div fd 8)] [j (mod fd 8)])
+                    (let ([bv (case (t-type t)
+                                [(r) rbv]
+                                [(w) wbv]
+                                [(x) xbv]
+                                [else 
+                                 (error 'do-select "invalid type" t)])])
+                      (bytevector-u8-set! bv i 
+                        (fxlogor (fxsll 1 j)
+                          (bytevector-u8-ref bv i)))))))
+              pending)
+            ;;; do select
+            (let ([rv (foreign-call "ikrt_select" n rbv wbv xbv)])
+              (when (< rv 0)
+                (io-error 'select #f rv)))
+            ;;; go through fds again and see if they're selected
+            (for-each 
+              (lambda (t) 
+                (let ([fd (t-fd t)])
+                  (let ([i (div fd 8)] [j (mod fd 8)])
+                    (let ([bv (case (t-type t)
+                                [(r) rbv]
+                                [(w) wbv]
+                                [(x) xbv]
+                                [else 
+                                 (error 'do-select "invalid type" t)])])
+                      (cond
+                        [(fxzero? 
+                           (fxlogand (fxsll 1 j) 
+                             (bytevector-u8-ref bv i)))
+                         ;;; not selected
+                         (set! pending (cons t pending))]
+                        [else 
+                         ;;; ready
+                         (set! in-queue (cons t in-queue))])))))
+              (let ([ls pending])
+                (set! pending '())
+                ls))))))
     )
 
   
