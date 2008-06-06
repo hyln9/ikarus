@@ -1186,26 +1186,30 @@
              (eof-object? (lookahead-u8 p)))]
         [else (die 'port-eof? "not an input port" p)])))
 
+  ;;; FIXME: these hard coded constants should go away
   (define EAGAIN-error-code -6) ;;; from ikarus-errno.c
 
-  (define (io-error who id err . other-conditions)
-    (raise 
-      (apply condition
-        (make-who-condition who)
-        (make-message-condition (strerror err))
-        (case err
-          ;; from ikarus-errno.c: EACCES=-2, EFAULT=-21, EROFS=-71, EEXIST=-20,
-          ;;                      EIO=-29, ENOENT=-45
-          ;; Why is EFAULT included here?
-          [(-2 -21) (make-i/o-file-protection-error id)]
-          [(-71)    (make-i/o-file-is-read-only-error id)]
-          [(-20)    (make-i/o-file-already-exists-error id)]
-          [(-29)    (make-i/o-error)]
-          [(-45)    (make-i/o-file-does-not-exist-error id)]
-          [else (if id
-                  (make-irritants-condition (list id))
-                  (condition))])
-        other-conditions)))
+  (define io-error
+    (case-lambda
+      [(who id err base-condition)
+       (raise 
+         (condition
+           base-condition
+           (make-who-condition who)
+           (make-message-condition (strerror err))
+           (case err
+             ;; from ikarus-errno.c: EACCES=-2, EFAULT=-21, EROFS=-71, EEXIST=-20,
+             ;;                      EIO=-29, ENOENT=-45
+             ;; Why is EFAULT included here?
+             [(-2 -21) (make-i/o-file-protection-error id)]
+             [(-71)    (make-i/o-file-is-read-only-error id)]
+             [(-20)    (make-i/o-file-already-exists-error id)]
+             [(-29)    (make-i/o-error)]
+             [(-45)    (make-i/o-file-does-not-exist-error id)]
+             [else (if id
+                     (make-irritants-condition (list id))
+                     (condition))])))]
+      [(who id err) (io-error who id err (make-error))]))
 
   ;(define block-size 4096)
   ;(define block-size (* 4 4096))

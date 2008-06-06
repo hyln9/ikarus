@@ -260,6 +260,7 @@
       [(who errno-code filename)
        (raise
          (condition
+           (make-error)
            (make-who-condition who)
            (make-message-condition (strerror errno-code))
            (if filename 
