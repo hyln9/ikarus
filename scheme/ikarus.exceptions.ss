@@ -32,7 +32,8 @@
           (display "Unhandled exception:\n" (console-error-port))
           (print-condition x (console-error-port))
           (when (serious-condition? x)
-            (exit -1))))))
+            (exit -1)))
+        (lambda args (exit -1)))))
   
   (define (with-exception-handler handler proc2)
     (unless (procedure? handler)
