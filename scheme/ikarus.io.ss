@@ -836,8 +836,9 @@
     
     (define (lookahead-char-utf8-mode p who)
       (define (do-error p who)
+        ($set-port-index! p (fx+ ($port-index p) 1))
         (case (transcoder-error-handling-mode ($port-transcoder p))
-          [(ignore)  (lookahead-char p)]
+          [(ignore) (lookahead-char p)]
           [(replace) #\xFFFD]
           [(raise)
            (raise (make-i/o-decoding-error p))]
