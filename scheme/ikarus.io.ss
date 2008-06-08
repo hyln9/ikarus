@@ -711,9 +711,9 @@
           (unless (fixnum? c1)
             (die who "invalid return value from read! procedure" c1))
           (cond
-            [(fx>= j 0)
-             (unless (fx<= j max)
-               (die who "read! returned a value out of range" j))
+            [(fx>= c1 0)
+             (unless (fx<= c1 max)
+               (die who "read! returned a value out of range" c1))
              ($set-port-index! p 0)
              ($set-port-size! p (fx+ c1 c0))
              c1]
@@ -837,7 +837,7 @@
     (define (lookahead-char-utf8-mode p who)
       (define (do-error p who)
         (case (transcoder-error-handling-mode ($port-transcoder p))
-          [(ignore)  (get-char p)]
+          [(ignore)  (lookahead-char p)]
           [(replace) #\xFFFD]
           [(raise)
            (raise (make-i/o-decoding-error p))]
