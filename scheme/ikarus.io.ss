@@ -1266,7 +1266,7 @@
                                  (refill bv idx cnt)]
                                 [else 
                                  (io-error 'read id bytes
-                                   (make-i/o-write-error))])))])
+                                   (make-i/o-read-error))])))])
                   refill)
                 #f ;;; write!
                 #f ;;; get-position
