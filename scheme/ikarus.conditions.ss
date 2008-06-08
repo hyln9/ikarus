@@ -399,7 +399,7 @@
                        (print-simple-condition (car ls) p)
                        (f (cdr ls) (+ i 1)))))))]
           [else 
-           (display "Non-condition object: " p)
+           (display " Non-condition object: " p)
            (write x p)
            (newline p)]))
       (case-lambda

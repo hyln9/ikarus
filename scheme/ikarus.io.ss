@@ -714,7 +714,7 @@
             [(fx>= j 0)
              (unless (fx<= j max)
                (die who "read! returned a value out of range" j))
-             ($set-port-index! p c0)
+             ($set-port-index! p 0)
              ($set-port-size! p (fx+ c1 c0))
              c1]
             [else 
