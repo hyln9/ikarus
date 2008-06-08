@@ -486,12 +486,49 @@
         (f (fx+ i 1) (cdr ls))))))
 
 
+(define (test-partial-reads)
+  (define (make-test-string)
+    (list->string
+      (let f ([i 0])
+        (cond
+          [(fx=? i #x110000) '()]
+          [(fx=? i #xD800) (f #xE000)]
+          [else (cons (integer->char i) (f (+ i 1)))]))))
+  (define (make-slow-input-port bv transcoder)
+    (let ([n 0])
+      (transcoded-port
+        (make-custom-binary-input-port "foo"
+          (lambda (buffer i cnt)
+            (cond
+              [(fx=? n (bytevector-length bv)) 0]
+              [else
+               (let ([u8 (bytevector-u8-ref bv n)])
+                ; (printf "got [~s] #b~b\n" n u8)
+                 (bytevector-u8-set! buffer i u8))
+               (set! n (+ n 1))
+               1]))
+          #f #f #f)
+        transcoder)))
+  (define (test name codec conv)
+    (printf "testing partial reads for ~s codec ... " name)
+    (let ([s (make-test-string)])
+      (let ([r (call-with-port 
+                 (make-slow-input-port (conv s) 
+                   (make-transcoder codec 
+                     (eol-style none) (error-handling-mode raise)))
+                 get-string-all)])
+        (assert (string=? r s))))
+    (printf "ok\n"))
+  ;(test 'utf16 (utf-16-codec) string->utf16)
+  (test 'utf8 (utf-8-codec) string->utf8))
+
 
 (define (test-io)
   (test-custom-binary-input-ports)
   (test-custom-binary-output-ports)
   (run-exhaustive-tests)
-  (test-input-files))
+  (test-input-files)
+  (test-partial-reads))
 )
 ;(run-interactive-tests)
 
