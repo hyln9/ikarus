@@ -40,5 +40,10 @@ getaddrinfo(const char *hostname, const char* servname,
 extern void
 freeaddrinfo(struct addrinfo *ai);
 
+
+#ifndef EAI_SYSTEM
+# define EAI_SYSTEM 11 /* same code as in glibc */
+#endif
+
 #endif
 

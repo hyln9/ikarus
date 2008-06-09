@@ -27,6 +27,10 @@ typedef struct errno_info {
   ikptr c;
 } errno_info;
 
+#ifndef ECANCELED
+#define ECANCELED 140
+#endif
+
 static errno_info errno_table[] = {
   /* errnos from POSIX IEEE Std 1003.1 2004 Edition */
   {E2BIG,            "E2BIG",            fix(-1)},

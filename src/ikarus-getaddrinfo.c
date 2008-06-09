@@ -33,7 +33,7 @@ getaddrinfo(const char *hostname, const char* servname,
   const struct addrinfo* hints, struct addrinfo** res){ 
   /* hints not used */
   struct servent* sent = getservbyname(servname, "tcp");
-  if(sent == 0) return -1;
+  if (sent == 0) return -1;
   struct hostent* hent = gethostbyname(hostname);
   if (!hent){
    return -1;
@@ -57,7 +57,7 @@ getaddrinfo(const char *hostname, const char* servname,
   memcpy(&sa_in->sin_addr, *ap, sizeof(struct in_addr));
   r->ai_next = NULL;
   *res = r;
-  return (0);
+  return 0;
 }
 
 void
