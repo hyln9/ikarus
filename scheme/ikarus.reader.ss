@@ -25,7 +25,7 @@
     (ikarus system $fx)
     (ikarus system $pairs)
     (ikarus system $bytevectors)
-    ;(only (ikarus unicode-data) unicode-printable-char?)
+    (only (ikarus.io) input-port-byte-position)
     (except (ikarus) read-char read read-token comment-handler get-datum
       read-annotated read-script-annotated annotation?
       annotation-expression annotation-source annotation-stripped))

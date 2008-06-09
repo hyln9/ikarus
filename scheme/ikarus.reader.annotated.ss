@@ -19,7 +19,7 @@
   (import
     (except (ikarus) read-annotated read-script-annotated)
     (only (ikarus.reader) read-annotated read-script-annotated)
-    (only (io-spec) open-string-input-port/id))
+    (only (ikarus.io) open-string-input-port/id))
 
   (define (annotated-port file-name)
     (open-string-input-port/id

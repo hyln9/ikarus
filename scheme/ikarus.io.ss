@@ -14,7 +14,7 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-(library (io-spec) 
+(library (ikarus.io) 
   
   (export 
     port? input-port? output-port? textual-port? binary-port?
@@ -120,7 +120,6 @@
       reset-input-port!
       reset-output-port!
       port-id
-      input-port-byte-position
       process process-nonblocking
       tcp-connect tcp-connect-nonblocking
       udp-connect udp-connect-nonblocking

@@ -1343,7 +1343,6 @@
     [$set-port-attrs!     $io]
     [$port-position       $io]
     [$set-port-position!  $io]
-    [input-port-byte-position   i]
     ;;;
     [&condition-rtd]
     [&condition-rcd]
