@@ -3719,7 +3719,7 @@
     (let-values (((id name ver imp* vis* inv* 
                    invoke-code visit-code export-subst export-env)
                   (library-expander x)))
-      (values invoke-code export-subst export-env)))
+      (values name invoke-code export-subst export-env)))
   
   (define (rev-map-append f ls ac)
     (cond

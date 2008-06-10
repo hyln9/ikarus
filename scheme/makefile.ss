@@ -1469,6 +1469,15 @@
 
 (import (ikarus makefile collections))
 
+(define verbose-output? #f)
+
+(define debugf
+  (if verbose-output?
+      printf
+      (case-lambda
+        [(str) (printf str)]
+        [(str . args) (printf ".")])))
+
 (define (assq1 x ls)
   (let f ([x x] [ls ls] [p #f])
     (cond
@@ -1582,9 +1591,9 @@
                         [(assq x ',primlocs) => cdr]
                         [else #f])))
                   ,@(map build-library library-legend))])
-    (let-values ([(code empty-subst empty-env)
+    (let-values ([(name code empty-subst empty-env)
                   (boot-library-expand code)])
-       code)))
+       (values name code))))
 
 ;;; the first code to run on the system is one that initializes
 ;;; the value and proc fields of the location of $init-symbol-value!
@@ -1599,6 +1608,7 @@
   (define val (gensym))
   (define args (gensym))
   (values 
+    (list '(ikarus.init))
     (list
       `((case-lambda 
           [(,proc) (,proc ',loc ,proc)])
@@ -1626,31 +1636,35 @@
       ((null? subst) '()) 
       ((not (assq (cdar subst) env)) (prune-subst (cdr subst) env)) 
       (else (cons (car subst) (prune-subst (cdr subst) env)))))
-  (let-values (((code* subst env) (make-init-code)))
+  (let-values (((name* code* subst env) (make-init-code)))
+    (debugf "Expanding ")
     (for-each
       (lambda (file)
-        (printf "expanding ~s\n" file)
+        (debugf " ~s" file)
         (load file
           (lambda (x) 
-            (let-values ([(code export-subst export-env)
+            (let-values ([(name code export-subst export-env)
                           (boot-library-expand x)])
+               (set! name* (cons name name*))
                (set! code* (cons code code*))
                (set! subst (append export-subst subst))
                (set! env (append export-env env))))))
       files)
+    (debugf "\n")
     (let-values ([(export-subst export-env export-locs)
                   (make-system-data (prune-subst subst env) env)])
-      (let ([code (build-system-library export-subst export-env export-locs)])
+      (let-values ([(name code)
+                    (build-system-library export-subst export-env export-locs)])
         (values 
+          (reverse (cons* (car name*) name (cdr name*)))
           (reverse (cons* (car code*) code (cdr code*)))
           export-locs)))))
-
 
 (verify-map)
 
 (time-it "the entire bootstrap process"
   (lambda ()
-    (let-values ([(core* locs)
+    (let-values ([(name* core* locs)
                   (time-it "macro expansion"
                     (lambda () 
                       (parameterize ([current-library-collection
@@ -1662,15 +1676,18 @@
               [(assq x locs) => cdr]
               [else 
                (error 'bootstrap "no location for primitive" x)])))
-        
         (let ([p (open-file-output-port "ikarus.boot" 
                     (file-options no-fail))])
           (time-it "code generation and serialization"
             (lambda ()
+              (debugf "Compiling ")
               (for-each 
-                (lambda (x) 
-                  (compile-core-expr-to-port x p))
-                core*)))
+                (lambda (name core) 
+                  (debugf " ~s" name)
+                  (compile-core-expr-to-port core p))
+                name*
+                core*) 
+              (debugf "\n")))
           (close-output-port p)))))
 
 
