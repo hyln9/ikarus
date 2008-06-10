@@ -81,7 +81,7 @@
            (with-syntax ([(mapped-entries ...)
                           (map 
                             (lookup
-                              (car (syntax->datum #'orig*)) 
+                              (syntax->datum #'orig*)
                               #'(name* ...))
                             #'(entries ...))])
              #'(begin
@@ -96,8 +96,7 @@
       (lambda (x)
         (syntax-case x ()
           [(_ definer next fail [name* (arg** ...) clause** ...] ...)
-           (with-syntax ([orig*
-                          (datum->syntax #'foo (list #'(name* ...)))])
+           (with-syntax ([orig* (datum->syntax #'foo #'(name* ...))])
              #'(define-syntax definer
                  (syntax-rules ()
                    [(_ config (entries (... ...)))
