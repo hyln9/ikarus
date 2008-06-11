@@ -257,7 +257,7 @@
                   (string-append ".." (string c)))]))]
           [else 
            (cons 'datum
-             (dot p '(#\.) 10 #f #f))]))))
+             (dot p '(#\.) 10 #f +1))]))))
   (define tokenize-char* 
     (lambda (i str p d)
       (cond
