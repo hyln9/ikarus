@@ -663,7 +663,7 @@
       [(and (reg? src) (reg? dst))    (CR*  #x39 src dst ac)]
       [(and (mem? src) (reg? dst))      (CR*  #x3B dst src ac)]
       [(and (imm8? src) (mem? dst))       (CR*  #x83 '/7 dst (IMM8 src ac))]
-      [(and (imm32? src) (mem? dst))        (CR*  #x81 '/8 dst (IMM32 src ac))]
+      [(and (imm32? src) (mem? dst))        (CR*  #x81 '/7 dst (IMM32 src ac))]
       [else (die who "invalid" instr)])]
    [(imull src dst)
     (cond

@@ -406,15 +406,15 @@
             (do-bind (list t) (list x)
               (k t)))]
          [else (error who "invalid S" x)])]))
-  ;(define (Mem x k) 
-  ;  (struct-case x 
-  ;    [(primcall op arg*) 
-  ;     (if (eq? op 'mref)
-  ;         (S* arg*
-  ;            (lambda (arg*)
-  ;               (make-disp (car arg*) (cadr arg*))))
-  ;         (S x k))]
-  ;    [else (S x k)]))
+  (define (Mem x k) 
+    (struct-case x 
+      [(primcall op arg*) 
+       (if (eq? op 'mref)
+           (S* arg*
+              (lambda (arg*)
+                 (k (make-disp (car arg*) (cadr arg*)))))
+           (S x k))]
+      [else (S x k)]))
   ;;;
   (define (do-bind lhs* rhs* body)
     (cond
@@ -485,15 +485,25 @@
   ;;;              (make-constant (- disp-symbol-record-proc symbol-ptag))))
   ;;;          (list size)))))
   (define (alloc-check size)
+    (define (test size)
+      (if (struct-case size 
+             [(constant i) (<= i 4096)]
+             [else #f])
+          (make-primcall '<= 
+             (list 
+               apr
+               (make-primcall 'mref 
+                 (list pcr (make-constant pcb-allocation-redline)))))
+          (make-primcall '>= 
+            (list (make-primcall 'int- 
+                     (list 
+                       (make-primcall 'mref 
+                         (list pcr (make-constant pcb-allocation-redline))) 
+                       apr))
+                  size))))
     (E (make-shortcut
          (make-conditional ;;; PCB ALLOC-REDLINE
-           (make-primcall '>= 
-             (list (make-primcall 'int- 
-                      (list 
-                        (make-primcall 'mref 
-                          (list pcr (make-constant pcb-allocation-redline))) 
-                        apr))
-                   size))
+           (test size)
            (make-primcall 'nop '())
            (make-primcall 'interrupt '()))
          (make-funcall 
@@ -666,15 +676,26 @@
             (let ([t (unique-var 'tmp)])
               (P (make-bind (list t) (list a)
                     (make-primcall op (list t b)))))]
-           ;[(constant? a) 
-           ; (Mem b (lambda (b) (make-asm-instr op a b)))]
-           ;[(constant? b)
-           ; (Mem a (lambda (a) (make-asm-instr op a b)))]
            [else
-            (S* rands
-                (lambda (rands)
-                  (let ([a (car rands)] [b (cadr rands)])
-                    (make-asm-instr op a b))))]))]
+            (Mem a
+              (lambda (a)
+                (Mem b 
+                  (lambda (b)
+                    (make-asm-instr op a b)))))]))]
+         ;(cond
+         ;  [(and (constant? a) (constant? b))
+         ;   (let ([t (unique-var 'tmp)])
+         ;     (P (make-bind (list t) (list a)
+         ;           (make-primcall op (list t b)))))]
+         ;  [(constant? a)
+         ;   (Mem b (lambda (b) (make-asm-instr op a b)))]
+         ;  [(constant? b)
+         ;   (Mem a (lambda (a) (make-asm-instr op a b)))]
+         ;  [else
+         ;   (S* rands
+         ;       (lambda (rands)
+         ;         (let ([a (car rands)] [b (cadr rands)])
+         ;           (make-asm-instr op a b))))]))]
         [(shortcut body handler)
          (make-shortcut (P body) (P handler))]
       [else (error who "invalid pred" x)]))
@@ -2396,7 +2417,7 @@
               (make-seq
                 (E (make-asm-instr 'move u b))
                 (P (make-asm-instr op a u))))]
-           [(and (mem? a) (mem? b)) 
+           [(and (mem? a) (mem? b))
             (let ([u (mku)])
               (make-seq
                 (E (make-asm-instr 'move u b))
