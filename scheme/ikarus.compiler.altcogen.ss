@@ -2392,6 +2392,23 @@
          (let ([body (E body)])
            (make-shortcut body (E handler)))]
         [else (error who "invalid effect" (unparse x))]))
+    (define (check-disp-arg x k)
+      (cond
+        [(mem? x) 
+         (let ([u (mku)])
+           (make-seq
+             (E (make-asm-instr 'move u x))
+             (k u)))]
+        [else (k x)]))
+    (define (check-disp x k)
+      (struct-case x 
+        [(disp a b)
+         (check-disp-arg a
+           (lambda (a)
+             (check-disp-arg b
+               (lambda (b)
+                 (k (make-disp a b))))))]
+        [else (k x)]))
     (define (P x)
       (struct-case x
         [(constant) x]
@@ -2401,7 +2418,7 @@
         [(asm-instr op a b) 
          (cond
            [(memq op '(fl:= fl:< fl:<= fl:> fl:>=)) 
-            (if (mem? a) 
+            (if (mem? a)
                 (let ([u (mku)])
                   (make-seq 
                     (E (make-asm-instr 'move u a))
@@ -2421,8 +2438,13 @@
             (let ([u (mku)])
               (make-seq
                 (E (make-asm-instr 'move u b))
-                (make-asm-instr op a u)))]
-           [else x])]
+                (P (make-asm-instr op a u))))]
+           [else 
+            (check-disp a
+              (lambda (a)
+                (check-disp b
+                  (lambda (b) 
+                    (make-asm-instr op a b)))))])]
         [(shortcut body handler)
          (let ([body (P body)])
            (make-shortcut body (P handler)))]
@@ -2976,7 +2998,7 @@
                       (parameterize ([exceptions-conc ac])
                         (T body ac))))
              (map Clambda code*))]))
-  ;;; (print-code x)
+  (when (assembler-output) (print-code x))
   (Program x))
 
 (define (print-code x)
