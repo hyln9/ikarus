@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <signal.h>
 #include "ikarus-data.h"
 
 extern ikptr ik_errno_to_code();
@@ -91,14 +92,112 @@ ikrt_process(ikptr rvec, ikptr cmd, ikptr argv /*, ikpcb* pcb */){
   }
 }
 
+typedef struct signal_info {
+  int n;
+  ikptr c;
+} signal_info;
+
+#define signal_info_table_len 28
+
+static signal_info signal_info_table[signal_info_table_len] = {
+  /* Signals from POSIX */
+  {SIGABRT,     fix(1)},
+  {SIGALRM,     fix(2)},
+  {SIGBUS,      fix(3)},
+  {SIGCHLD,     fix(4)},
+  {SIGCONT,     fix(5)},
+  {SIGFPE,      fix(6)},
+  {SIGHUP,      fix(7)},
+  {SIGILL,      fix(8)},
+  {SIGINT,      fix(9)},
+  {SIGKILL,     fix(10)},
+  {SIGPIPE,     fix(11)},
+  {SIGQUIT,     fix(12)},
+  {SIGSEGV,     fix(13)},
+  {SIGSTOP,     fix(14)},
+  {SIGTERM,     fix(15)},
+  {SIGTSTP,     fix(16)},
+  {SIGTTIN,     fix(17)},
+  {SIGTTOU,     fix(18)},
+  {SIGUSR1,     fix(19)},
+  {SIGUSR2,     fix(20)},
+#ifdef SIGPOLL
+  {SIGPOLL,     fix(21)},
+#else
+  {SIGEMT,      fix(21)},
+#endif
+  {SIGPROF,     fix(22)},
+  {SIGSYS,      fix(23)},
+  {SIGTRAP,     fix(24)},
+  {SIGURG,      fix(25)},
+  {SIGVTALRM,   fix(26)},
+  {SIGXCPU,     fix(27)},
+  {SIGXFSZ,     fix(28)}
+};
+
+
+ikptr
+ik_signal_num_to_code(int signum){
+  signal_info* si;
+  int i;
+  for(i=0; i < signal_info_table_len; i++){
+    si = &signal_info_table[i];
+    if(si->n == signum){
+      return si->c;
+    }
+  }
+  fprintf(stderr, "\n*** ik_signal_num_to_code: Don't know signal %d ***\n\n", 
+          signum);
+  return fix(99999);
+}
+
+int
+ik_signal_code_to_num(ikptr sigcode){
+  signal_info* si;
+  int i;
+  for(i=0; i < signal_info_table_len; i++){
+    si = &signal_info_table[i];
+    if(si->c == sigcode){
+      return si->n;
+    }
+  }
+  fprintf(stderr, "ik_signal_code_to_num: Don't know code %ld\n",
+          unfix(sigcode));
+  exit(EXIT_FAILURE);
+  return 0;
+}
+
+ikptr
+ikrt_kill(ikptr pid, ikptr sigcode /*, ikpcb* pcb */){
+  int r = kill((pid_t)unfix(pid), ik_signal_code_to_num(sigcode));
+  if(r == 0){
+    return fix(0);
+  }
+  return ik_errno_to_code();
+}
+
 ikptr 
-ikrt_waitpid(ikptr pid /*, ikpcb* pcb */){
-  int status;
-  pid_t r = waitpid(unfix(pid), &status, 0);
-  if(r >= 0){
-    return fix(status);
-  } else {
+ikrt_waitpid(ikptr rvec, ikptr pid, ikptr block /*, ikpcb* pcb */){
+  /* rvec is assumed to come in as #(#f #f #f) */
+  int status, options = 0;
+  if(block == false_object){
+    options = WNOHANG;
+  }
+  pid_t r = waitpid(unfix(pid), &status, options);
+  if(r > 0){
+    ref(rvec, off_record_data+0*wordsize) = fix(r);
+    if(WIFEXITED(status)) {
+      ref(rvec, off_record_data+1*wordsize) = fix(WEXITSTATUS(status));
+    }
+    if(WIFSIGNALED(status)) {
+      ref(rvec, off_record_data+2*wordsize) = 
+        ik_signal_num_to_code(WTERMSIG(status));
+    }
+  }else if(r == 0){  /* would have blocked */
+    ;  /* let rvec return as all #f's */
+  }else {
     return ik_errno_to_code();
   }
+  return rvec;
 }
 

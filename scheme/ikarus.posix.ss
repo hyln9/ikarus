@@ -19,7 +19,8 @@
           nanosleep getenv env environ file-ctime current-directory
           file-regular? file-directory? file-symbolic-link? make-symbolic-link
           directory-list make-directory delete-directory change-mode
-          strerror)
+          kill strerror 
+          wstatus-pid wstatus-exit-status wstatus-received-signal)
   (import 
     (rnrs bytevectors)
     (except (ikarus)
@@ -28,7 +29,8 @@
        getenv env environ file-ctime current-directory
        file-regular? file-directory? file-symbolic-link? make-symbolic-link
        directory-list make-directory delete-directory change-mode
-       strerror))
+       kill strerror
+       wstatus-pid wstatus-exit-status wstatus-received-signal))
 
   (define posix-fork
     (lambda ()
@@ -41,15 +43,88 @@
           [(fx= pid 0) (child-proc)]
           [(fx< pid 0) (raise/strerror 'fork pid)]
           [else (parent-proc pid)]))))
+  
+  (module (signal-code->signal-name signal-name->signal-code)
+    
+    (define signal-names-al
+      ;; From ikarus-process.c
+      '((1 . SIGABRT) 
+        (2 . SIGALRM)
+        (3 . SIGBUS)
+        (4 . SIGCHLD)                   
+        (5 . SIGCONT) 
+        (6 . SIGFPE)
+        (7 . SIGHUP)
+        (8 . SIGILL)
+        (9 . SIGINT)
+        (10 . SIGKILL)
+        (11 . SIGPIPE)
+        (12 . SIGQUIT)
+        (13 . SIGSEGV)
+        (14 . SIGSTOP)
+        (15 . SIGTERM)
+        (16 . SIGTSTP)
+        (17 . SIGTTIN)
+        (18 . SIGTTOU)
+        (19 . SIGUSR1)
+        (20 . SIGUSR2)
+        (21 . SIGPOLL)
+        (22 . SIGPROF)
+        (23 . SIGSYS)
+        (24 . SIGTRAP)
+        (25 . SIGURG)
+        (26 . SIGVTALRM)
+        (27 . SIGXCPU)
+        (28 . SIGXFSZ)))
+    
+    (define signal-code->signal-name
+      (lambda (sigcode)        
+        (cond
+          [(assv sigcode signal-names-al) => cdr]
+          [else sigcode])))
+    
+    (define signal-name->signal-code
+      (lambda (signame)        
+        (cond
+          [(find (lambda (p) (eqv? (cdr p) signame)) signal-names-al) => car]
+          [else #f])))
+  )
+  
+  (define kill
+    (lambda (pid signame)
+      (define who 'kill)
+      (unless (fixnum? pid) (die who "not a fixnum" pid))
+      (unless (symbol? signame) (die who "not a symbol" signame))
+      (let ([r (foreign-call "ikrt_kill" pid
+                 (or (signal-name->signal-code signame)
+                     (die who "invalid signal name" signame)))])
+        (when (fx< r 0)
+          (error who (strerror r) pid signame)))))
+
+  (define-struct wstatus (pid exit-status received-signal))
 
   (define waitpid
-    (lambda (pid)
-      (unless (fixnum? pid)
-        (die 'waitpid "not a fixnum" pid))
-      (let ([r (foreign-call "ikrt_waitpid" pid)])
-        (if (fx< r 0)
-            (raise/strerror 'waitpid r)
-            r))))
+    ;; If block? is #f and waitpid() would have blocked,
+    ;; or if want-error? is #f and there was an error,
+    ;; the value returned is #f
+    (case-lambda
+      [() (waitpid -1 #t #t)]
+      [(pid) (waitpid pid #t #t)]
+      [(pid block?) (waitpid pid block? #t)]
+      [(pid block? want-error?)
+       (define who 'waitpid)
+       (unless (fixnum? pid) (die who "not a fixnum" pid))
+       (unless (boolean? block?) (die who "not a boolean" block?))
+       (let ([r (foreign-call "ikrt_waitpid" (make-wstatus #f #f #f) pid block?)])
+         (cond 
+           [(wstatus? r)
+            (set-wstatus-received-signal! r
+              (signal-code->signal-name 
+                (wstatus-received-signal r)))
+            r]
+           [want-error?
+            (error who (strerror r) pid)]
+           [else #f]))]))
 
   (define system
     (lambda (x)

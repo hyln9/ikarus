@@ -497,7 +497,8 @@
   (define uuid
     (lambda ()
       (let ([s ($make-bytevector 16)])
-        (utf8->string
-          (or (foreign-call "ik_uuid" s)
-              (die 'uuid "failed!"))))))
+        (let ([r (foreign-call "ik_uuid" s)])
+          (if (bytevector? r)
+              (utf8->string r)
+              (error 'uuid "cannot obtain unique id"))))))
   )

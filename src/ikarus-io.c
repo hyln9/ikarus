@@ -272,7 +272,7 @@ ikrt_accept(ikptr s, ikptr bv /*, ikpcb* pcb */){
 }
 
 ikptr
-ikrt_shutdown(ikptr s, ikpcb* pcb){
+ikrt_shutdown(ikptr s /*, ikpcb* pcb*/){
 #ifdef __CYGWIN__
   int err = close(unfix(s));
 #else
