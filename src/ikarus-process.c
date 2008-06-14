@@ -193,11 +193,11 @@ ikrt_waitpid(ikptr rvec, ikptr pid, ikptr block /*, ikpcb* pcb */){
       ref(rvec, off_record_data+2*wordsize) = 
         ik_signal_num_to_code(WTERMSIG(status));
     }
-  }else if(r == 0){  /* would have blocked */
-    ;  /* let rvec return as all #f's */
-  }else {
+    return rvec;
+  } else if(r == 0){  /* would have blocked */
+    return fix(0);
+  } else {
     return ik_errno_to_code();
   }
-  return rvec;
 }
 

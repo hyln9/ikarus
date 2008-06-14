@@ -122,7 +122,7 @@
               (signal-code->signal-name 
                 (wstatus-received-signal r)))
             r]
-           [want-error?
+           [(and want-error? (not (eqv? r 0)))
             (error who (strerror r) pid)]
            [else #f]))]))
 
