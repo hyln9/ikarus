@@ -234,8 +234,8 @@
 
   (define (input-port-byte-position p)
     (if (input-port? p) 
-        (let ([pos ($port-position p)])
-          (and pos (fx+ pos (fx+ ($port-index p) 1))))
+        (let ([pos-vec ($port-position p)])
+           (+ (vector-ref pos-vec 0) (fx+ ($port-index p) 1)))
         (error 'input-port-byte-position "not an input port" p)))
 
   (define guarded-port
@@ -256,13 +256,13 @@
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-bytevector buffer-size)])
       ($make-port attrs 0 init-size bv #f id read! write! 
-                  #f #f close #f)))
+                  #f #f close #f (vector 0))))
 
   (define ($make-custom-textual-port attrs init-size id 
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-string buffer-size)])
       ($make-port attrs 0 init-size bv #t id read! write! 
-                  #f #f close #f)))
+                  #f #f close #f (vector 0))))
 
   (define (make-custom-binary-input-port id 
             read! get-position set-position! close)
@@ -378,7 +378,8 @@
           #f ;;; FIXME: get-position
           #f ;;; FIXME: set-position!
           #f ;;; close
-          #f)]))
+          #f
+          (vector 0))]))
 
   (define open-bytevector-output-port
     (case-lambda
@@ -405,7 +406,8 @@
                    #f  ;;; FIXME: get-position
                    #f  ;;; FIXME: set-position!
                    #f
-                   #f)])
+                   #f
+                   (vector 0))])
            (values
              p
              (lambda () 
@@ -491,7 +493,8 @@
          #f  ;;; FIXME: get-position
          #f  ;;; FIXME: set-position!
          #f
-         cookie)))
+         cookie
+         (vector 0))))
 
   (define (open-string-output-port)
     (let ([p (open-output-string)])
@@ -545,7 +548,8 @@
        #f ;;; FIXME: get-position
        #f ;;; FIXME: set-position!
        #f ;;; close
-       #f))
+       #f
+       (vector 0)))
 
   (define (open-string-input-port str)
     (open-string-input-port/id str "*string-input-port*"))
@@ -580,7 +584,8 @@
           ($port-get-position p)
           ($port-set-position! p)
           ($port-close p)
-          ($port-cookie p)))))
+          ($port-cookie p)
+          (vector 0)))))
 
   (define (reset-input-port! p)
     (if (input-port? p) 
@@ -702,9 +707,8 @@
     (let ([bv ($port-buffer p)] [i ($port-index p)] [j ($port-size p)])
       (let ([c0 (fx- j i)])
         (unless (fx= c0 0) (bytevector-copy! bv i bv 0 c0))
-        (let ([pos ($port-position p)])
-          (when pos
-            ($set-port-position! p (fx+ pos i))))
+        (let ([pos-vec ($port-position p)])
+          (vector-set! pos-vec 0 (+ (vector-ref pos-vec 0) i)))
         (let* ([max (fx- (bytevector-length bv) c0)]
                [c1 (($port-read! p) bv c0 max)])
           (unless (fixnum? c1)
@@ -1275,7 +1279,8 @@
                   [(procedure? close) close]
                   [(eqv? close #t) (file-close-proc id fd)]
                   [else #f])
-                fd)])
+                fd
+                (vector 0))])
     (guarded-port port)))
 
   (define (fh->output-port fd id size transcoder close who)
@@ -1315,7 +1320,8 @@
                   [(procedure? close) close]
                   [(eqv? close #t) (file-close-proc id fd)]
                   [else #f])
-                fd)])
+                fd
+                (vector 0))])
       (guarded-port port)))
 
   (define (file-close-proc id fd)
