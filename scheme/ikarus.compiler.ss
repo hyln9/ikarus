@@ -229,10 +229,25 @@
   (define (make-global-set! lhs rhs)
     (make-funcall (make-primref '$init-symbol-value!)
       (list (make-constant lhs) rhs)))
+  (define-syntax equal-case
+    (lambda (x)
+      (syntax-case x ()
+         [(_ val clause* ...) 
+          (with-syntax ([body 
+                         (let f ([clause* #'(clause* ...)])
+                           (syntax-case clause* (else)
+                             [([else e e* ...]) 
+                              #'(begin e e* ...)]
+                             [([(datum* ...) e e* ...] . rest)
+                              (with-syntax ([rest (f #'rest)])
+                                #'(if (member t '(datum* ...))
+                                      (begin e e* ...)
+                                      rest))]))])
+            #'(let ([t val]) body))])))
   (define (E x ctxt)
     (cond
       [(pair? x)
-       (case (car x)
+       (equal-case (car x)
          [(quote) (make-constant (cadr x))]
          [(if) 
           (make-conditional 
@@ -316,6 +331,43 @@
          [(primitive)
           (let ([var (cadr x)])
             (make-primref var))]
+         [((primitive make-parameter)) 
+          (case (length x)
+            [(2) 
+             (let ([val-expr (cadr x)]
+                   [t (gensym 't)]
+                   [x (gensym 'x)])
+               (E `((lambda (,t) 
+                      (case-lambda
+                        [() ,t]
+                        [(,x) (set! ,t ,x)]))
+                    ,val-expr)
+                  ctxt))]
+            [(3)
+             (let ([val-expr (cadr x)]
+                   [guard-expr (caddr x)]
+                   [f (gensym 'f)]
+                   [t (gensym 't)]
+                   [x (gensym 'x)])
+               (E `((case-lambda 
+                      [(,t ,f)
+                       (if ((primitive procedure?) ,f)
+                           (begin
+                             (set! ,t (,f ,t))
+                             (case-lambda
+                               [() ,t]
+                               [(,x) (set! ,t (,f ,x))]))
+                           ((primitive die)
+                              'make-parameter 
+                              '"not a procedure"
+                              ,f))])
+                    ,val-expr
+                    ,guard-expr)
+                  ctxt))]
+            [else 
+             (make-funcall 
+               (make-primref 'make-parameter)
+               (map (lambda (x) (E x #f)) (cdr x)))])]
          [else
           (let ([names (get-fmls (car x) (cdr x))])
             (make-funcall 

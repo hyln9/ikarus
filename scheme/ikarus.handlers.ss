@@ -13,24 +13,15 @@
 ;;; You should have received a copy of the GNU General Public License
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 (library (ikarus system parameters)
   (export make-parameter)
   (import (except (ikarus) make-parameter))
   (define make-parameter
-    (case-lambda
-      [(x) 
-       (case-lambda
-         [() x]
-         [(v) (set! x v)])]
-      [(x guard)
-       (unless (procedure? guard)
-         (die 'make-parameter "not a procedure" guard))
-       (set! x (guard x))
-       (case-lambda
-         [() x]
-         [(v) (set! x (guard v))])])))
-
+    (let ()
+      (import (ikarus))
+      (case-lambda
+        [(x guard) (make-parameter x guard)]
+        [(x) (make-parameter x)]))))
 
 (library (ikarus system handlers)
   (export
