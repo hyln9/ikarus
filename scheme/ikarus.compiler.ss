@@ -293,19 +293,21 @@
          [(case-lambda)
           (let ([cls*
                  (map
-                   (lambda (cls)
-                     (let ([fml* (car cls)] [body (cadr cls)])
-                       (let ([nfml* (gen-fml* fml*)])
-                         (let ([body (E body #f)])
-                           (ungen-fml* fml*)
-                           (make-clambda-case 
-                             (make-case-info
-                               (gensym)
-                               (properize nfml*) 
-                               (list? fml*)) 
-                             body)))))
+                   (let ([ctxt (if (pair? ctxt) (car ctxt) #f)])
+                     (lambda (cls)
+                       (let ([fml* (car cls)] [body (cadr cls)])
+                         (let ([nfml* (gen-fml* fml*)])
+                           (let ([body (E body ctxt)])
+                             (ungen-fml* fml*)
+                             (make-clambda-case 
+                               (make-case-info
+                                 (gensym)
+                                 (properize nfml*) 
+                                 (list? fml*)) 
+                               body))))))
                    (cdr x))])
-            (make-clambda (gensym) cls* #f #f ctxt))]
+            (make-clambda (gensym) cls* #f #f
+              (and (symbol? ctxt) ctxt)))]
          [(lambda) 
           (E `(case-lambda ,(cdr x)) ctxt)]
          [(foreign-call)
@@ -317,7 +319,7 @@
          [else
           (let ([names (get-fmls (car x) (cdr x))])
             (make-funcall 
-              (E (car x) #f) 
+              (E (car x) (list ctxt))
               (let f ([arg* (cdr x)] [names names])
                 (cond
                   [(pair? names)
