@@ -36,7 +36,8 @@
     get-u8 lookahead-u8 
     get-bytevector-n get-bytevector-n!
     get-bytevector-some get-bytevector-all 
-    ;port-has-port-position? port-position
+    port-has-port-position? 
+    port-position
     ;port-has-set-port-position!? set-port-position!
     call-with-port
     flush-output-port
@@ -95,7 +96,8 @@
       get-u8 lookahead-u8 
       get-bytevector-n get-bytevector-n!
       get-bytevector-some get-bytevector-all 
-      ;port-has-port-position? port-position
+      port-has-port-position? 
+      port-position
       ;port-has-set-port-position!? set-port-position!
       call-with-port
       flush-output-port
@@ -238,6 +240,32 @@
            (+ (vector-ref pos-vec 0) (fx+ ($port-index p) 1)))
         (error 'input-port-byte-position "not an input port" p)))
 
+  (define (port-position p)
+    (define who 'port-position)
+    (if (port? p)
+        (let ([pos-vec      ($port-position p)]
+              [index        ($port-index p)]
+              [get-position ($port-get-position p)])
+          (cond
+            [(procedure? get-position) 
+             (let ([pos (get-position)])
+               (if (or (fixnum? pos) (bignum? pos))
+                   (+ pos index)
+                   (error who "invalid returned value from getter" p)))]
+            [(eqv? get-position #f)
+             (+ (vector-ref pos-vec 0) index)]
+            [else 
+             (error who "port does not supprt port-position openration" p)]))
+        (die who "not a port" p)))
+
+  (define (port-has-port-position? p)
+    (define who 'port-has-port-position?)
+    (if (port? p)
+        (let ([get-position ($port-get-position p)])
+          (or (procedure? get-position)
+              (not get-position)))
+        (die who "not a port" p)))
+             
   (define guarded-port
     (let ([G (make-guardian)])
       (define (clean-up)
@@ -256,13 +284,13 @@
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-bytevector buffer-size)])
       ($make-port attrs 0 init-size bv #f id read! write! 
-                  #f #f close #f (vector 0))))
+                  get-position set-position! close #f (vector 0))))
 
   (define ($make-custom-textual-port attrs init-size id 
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-string buffer-size)])
       ($make-port attrs 0 init-size bv #t id read! write! 
-                  #f #f close #f (vector 0))))
+                  get-position set-position! close #f (vector 0))))
 
   (define (make-custom-binary-input-port id 
             read! get-position set-position! close)
@@ -274,11 +302,17 @@
       (die who "read! is not a procedure" read!))
     (unless (or (procedure? close) (not close))
       (die who "close should be either a procedure or #f" close))
+    (unless (or (procedure? get-position) 
+                (not get-position))
+      (die who "get-position is not a procedure or #f" 
+           get-position))
     ($make-custom-binary-port 
       binary-input-port-bits
       0
-      id read! #f get-position
-      set-position! close 256))
+      id read! #f 
+      get-position
+      set-position! 
+      close 256))
 
   (define (make-custom-binary-output-port id 
             write! get-position set-position! close)
@@ -290,11 +324,17 @@
       (die who "write! is not a procedure" write!))
     (unless (or (procedure? close) (not close))
       (die who "close should be either a procedure or #f" close))
+    (unless (or (procedure? get-position) 
+                (not get-position))
+      (die who "get-position is not a procedure or #f" 
+           get-position)) 
     ($make-custom-binary-port 
       binary-output-port-bits
       256
-      id #f write! get-position
-      set-position! close 256))
+      id #f write! 
+      get-position
+      set-position! 
+      close 256))
 
   (define (make-custom-textual-input-port id 
             read! get-position set-position! close)
@@ -306,6 +346,10 @@
       (die who "read! is not a procedure" read!))
     (unless (or (procedure? close) (not close))
       (die who "close should be either a procedure or #f" close))
+    (unless (or (procedure? get-position)
+                (not get-position))
+      (die who "get-position is not a procedure or #f" 
+           get-position))
     ($make-custom-textual-port 
       (fxior textual-input-port-bits fast-char-text-tag)
       0
@@ -322,6 +366,10 @@
       (die who "write! is not a procedure" write!))
     (unless (or (procedure? close) (not close))
       (die who "close should be either a procedure or #f" close))
+    (unless (or (procedure? get-position)
+                (not get-position))
+      (die who "get-position is not a procedure or #f" 
+           get-position))
     ($make-custom-textual-port 
       (fxior textual-output-port-bits fast-char-text-tag)
       256
@@ -375,8 +423,8 @@
           "*bytevector-input-port*" 
           (lambda (bv i c) 0) ;;; read!
           #f ;;; write!
-          #f ;;; FIXME: get-position
-          #f ;;; FIXME: set-position!
+          #f 
+          #f
           #f ;;; close
           #f
           (vector 0))]))
@@ -403,8 +451,8 @@
                          (bytevector-copy! bv i x 0 c)
                          (set! buf* (cons x buf*))))
                      c)
-                   #f  ;;; FIXME: get-position
-                   #f  ;;; FIXME: set-position!
+                   #f
+                   #f
                    #f
                    #f
                    (vector 0))])
@@ -490,8 +538,8 @@
                (set-output-string-cookie-strings! cookie
                  (cons x (output-string-cookie-strings cookie)))))
            c)
-         #f  ;;; FIXME: get-position
-         #f  ;;; FIXME: set-position!
+         #f
+         #f
          #f
          cookie
          (vector 0))))
@@ -545,8 +593,8 @@
        id
        (lambda (str i c) 0) ;;; read!
        #f ;;; write!
-       #f ;;; FIXME: get-position
-       #f ;;; FIXME: set-position!
+       #f
+       #f
        #f ;;; close
        #f
        (vector 0)))
@@ -622,7 +670,6 @@
       (fxior closed-port-tag 
              (fxand ($port-attrs p) port-type-mask))))
 
-
   (define (port-mode p)
     (if (port? p) 
         (if (fxzero? (fxand ($port-attrs p) r6rs-mode-tag))
@@ -642,7 +689,6 @@
           [else (die 'set-port-mode! "invalid mode" mode)])
         (die 'set-port-mode! "not a port" p)))
 
-
   (define flush-output-port
     (case-lambda
       [() (flush-output-port (*the-output-port*))] 
@@ -660,6 +706,8 @@
                (die 'flush-output-port 
                       "write! returned an invalid value" 
                       bytes))
+             (let ([pos-vec ($port-position p)])
+               (vector-set! pos-vec 0 (+ (vector-ref pos-vec 0) bytes)))
              (cond
                [(fx= bytes idx) 
                 ($set-port-index! p 0)]

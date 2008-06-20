@@ -8,8 +8,8 @@
     make-custom-binary-input/output-port
     make-custom-textual-input/output-port
     open-file-input/output-port output-port-buffer-mode
-    port-has-port-position? port-has-set-port-position!?
-    port-position set-port-position!  make-eqv-hashtable
+    port-has-set-port-position!?
+    set-port-position!  make-eqv-hashtable
     hashtable-hash-function make-hashtable
     hashtable-equivalence-function equal-hash
     string-downcase string-normalize-nfc string-normalize-nfd
@@ -24,8 +24,8 @@
     make-custom-binary-input/output-port
     make-custom-textual-input/output-port
     open-file-input/output-port output-port-buffer-mode
-    port-has-port-position? port-has-set-port-position!?
-    port-position set-port-position!  make-eqv-hashtable
+    port-has-set-port-position!?
+    set-port-position!  make-eqv-hashtable
     hashtable-hash-function make-hashtable
     hashtable-equivalence-function equal-hash
     string-downcase string-normalize-nfc string-normalize-nfd
@@ -72,8 +72,6 @@
     make-custom-textual-input/output-port
     open-file-input/output-port
     output-port-buffer-mode
-    port-has-set-port-position!? set-port-position! 
-    port-has-port-position? port-position
-    ))
+    port-has-set-port-position!? set-port-position!  ))
 
 
