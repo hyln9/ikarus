@@ -1493,6 +1493,7 @@
                       (mark-nfv/frms-conf! d fs)
                       (R s vs rs fs (add-nfv d ns)))])]
                 [else (error who "invalid op d" (unparse x))])))] 
+         [(nop) (values vs rs fs ns)]
          [(logand logor logxor sll sra srl int+ int- int* bswap!
            sll/overflow) 
           (cond

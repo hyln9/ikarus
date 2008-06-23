@@ -17,13 +17,17 @@
 ;;; vim:syntax=scheme
 (import (only (ikarus) import))
 (import (except (ikarus) 
-          optimize-level assembler-output scc-letrec optimize-cp))
+          assembler-output scc-letrec optimize-cp
+          cp0-size-limit cp0-effort-limit))
 (import (ikarus.compiler))
 (import (except (psyntax system $bootstrap)
                 eval-core 
                 current-primitive-locations
                 compile-core-expr-to-port))
 (import (ikarus.compiler)) ; just for fun
+
+(pretty-width 160)
+((pretty-format 'fix) ((pretty-format 'letrec)))
 
 (define scheme-library-files
   ;;; Listed in the order in which they're loaded.
@@ -1428,7 +1432,8 @@
     [ellipsis-map ]
     [scc-letrec i]
     [optimize-cp i]
-    [optimize-level i]
+    [cp0-size-limit i]
+    [cp0-effort-limit i]
   ))
 
 (define (macro-identifier? x) 

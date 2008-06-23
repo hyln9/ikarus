@@ -15,10 +15,11 @@
 
 
 (library (ikarus.compiler)
-  (export compile-core-expr-to-port optimize-level
+  (export compile-core-expr-to-port 
           assembler-output scc-letrec optimize-cp
           current-primitive-locations eval-core
-          compile-core-expr)
+          compile-core-expr
+          cp0-effort-limit cp0-size-limit)
   (import 
     (rnrs hashtables)
     (ikarus system $fx)
@@ -29,7 +30,8 @@
         optimize-level
         fasl-write scc-letrec optimize-cp
         compile-core-expr-to-port assembler-output
-        current-primitive-locations eval-core)
+        current-primitive-locations eval-core
+        cp0-size-limit cp0-effort-limit)
     (ikarus.fasl.write)
     (ikarus.intel-assembler))
 
@@ -431,11 +433,11 @@
              [else (cons (E x) ac)]))
          (cons 'begin (f e0 (f e1 '()))))]
       [(clambda-case info body)
-       `(label: ,(case-info-label info)
-            ,(E-args (case-info-proper info) (case-info-args info))
-          ,(E body))]
+       `(    label: ,(case-info-label info)
+         ,(E-args (case-info-proper info) (case-info-args info))
+         ,(E body))]
       [(clambda g cls* cp free)
-       `(clambda (label: ,g cp: ,(E cp) ) ;free: ,(map E free))
+       `(clambda (label: ,g) ; cp: ,(E cp) ) ;free: ,(map E free))
            ,@(map E cls*))]
       [(clambda label clauses free)
        `(code ,label . ,(map E clauses))]
@@ -2997,6 +2999,8 @@
      (printf "    ~s\n" x)]))
 
 
+(define optimizer 'old)
+
 (define (compile-core-expr->code p)
   (let* ([p (recordize p)]
          [p (parameterize ([open-mvcalls #f])
@@ -3004,9 +3008,13 @@
          [p (if (scc-letrec) 
                 (optimize-letrec/scc p)
                 (optimize-letrec p))]
-         [p (source-optimize p)]
+         [p (if (eq? optimizer 'new)
+                (source-optimize p)
+                p)]
          [p (uncover-assigned/referenced p)]
-         [p (copy-propagate p)]
+         [p (if (eq? optimizer 'old)
+                (copy-propagate p)
+                p)]
          [p (rewrite-assignments p)]
          [p (sanitize-bindings p)]
          [p (optimize-for-direct-jumps p)]

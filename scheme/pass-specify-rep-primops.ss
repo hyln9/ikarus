@@ -420,8 +420,9 @@
              (prm 'mref (T x) 
                   (K (+ (* i wordsize) (- disp-vector-data vector-tag)))))]
        [else #f])
-        (prm 'mref (T x) 
-           (prm 'int+ (T i) (K (- disp-vector-data vector-tag)))))])
+     (prm 'mref (T x) 
+        (prm 'int+ (T i) (K (- disp-vector-data vector-tag)))))]
+  [(E x i) (nop)])
 
 (define-primop $vector-length unsafe
   [(V x) (prm 'mref (T x) (K (- disp-vector-length vector-tag)))]
@@ -1471,8 +1472,7 @@
 
 (define-primop $struct-ref unsafe
   [(V x i) (cogen-value-$vector-ref x i)]
-  [(E x i) (cogen-effect-$vector-ref x i)]
-  [(P x i) (cogen-pred-$vector-ref x i)])
+  [(E x i) (nop)])
 
 (define-primop $struct-set! unsafe
   [(V x i v) 
