@@ -29,7 +29,6 @@
           interaction-environment
           ellipsis-map)
   (import
-    (only (ikarus) printf)
     (except (rnrs) 
       environment environment? identifier?
       eval generate-temporaries free-identifier=?
@@ -3292,14 +3291,14 @@
              (lambda (x) (not (p x))))]
           [(sub* ...) 
            (let ([p* (map subversion-pred sub*)])
-             (lambda (x) 
+             (lambda (x)
                (let f ([p* p*] [x x])
                  (cond
                    [(null? p*) #t]
                    [(null? x) #f]
                    [else 
-                    (and ((car p*) (car x)) 
-                         (f (cdr p*) (cdr x*)))]))))]
+                    (and ((car p*) (car x))
+                         (f (cdr p*) (cdr x)))]))))]
           [_ (syntax-violation 'import "invalid version spec" spec x*)]))
       (let f ([x spec])
         (syntax-match x ()
