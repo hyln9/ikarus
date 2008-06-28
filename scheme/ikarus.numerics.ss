@@ -1287,10 +1287,10 @@
               [else ($make-ratnum d n)]))]
          [(compnum? x) (binary/ 1 x)]
          [else (die '/ "not a number" x)])]
-      [(x y z . rest)
-       (let f ([a (binary/ x y)] [b z] [ls rest])
+      [(x y z . ls)
+       (let f ([a (binary/ x y)] [b z] [ls ls])
          (cond
-           [(null? rest) (binary/ a b)]
+           [(null? ls) (binary/ a b)]
            [else (f (binary/ a b) (car ls) (cdr ls))]))]))
 
 

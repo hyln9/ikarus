@@ -25,7 +25,7 @@
                 current-primitive-locations
                 compile-core-expr-to-port))
 (import (ikarus.compiler)) ; just for fun
-(optimize-level 2)
+(optimize-level 1)
 
 (pretty-width 160)
 ((pretty-format 'fix) ((pretty-format 'letrec)))
