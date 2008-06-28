@@ -1940,7 +1940,7 @@
            [(ignore) (void)]
            [(replace) (put-char p #\?)]
            [(raise) 
-            (raise (make-i/o-encoding-error p))]
+            (raise (make-i/o-encoding-error p (integer->char b)))]
            [else (die who "BUG: invalid die handling mode" p)])]))
     (define (put-char-char-mode p c who)
       (flush-output-port p)

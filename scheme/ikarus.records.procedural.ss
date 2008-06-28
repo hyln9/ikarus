@@ -255,7 +255,7 @@
             (if (pair? ls) 
                 (let-values ([(m p) (f (cdr ls) (- n 1))]) 
                   (values (cons (car ls) m) p))
-                (die 'record-condtructor "insufficient arguments"
+                (die 'record-constructor "insufficient arguments"
                        all-fields)))))
 
     (define (constructor main-rtd size prcd proto)
