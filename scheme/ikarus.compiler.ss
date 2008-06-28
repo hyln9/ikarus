@@ -19,7 +19,7 @@
           assembler-output scc-letrec optimize-cp
           current-primitive-locations eval-core
           compile-core-expr
-          cp0-effort-limit cp0-size-limit)
+          cp0-effort-limit cp0-size-limit optimize-level)
   (import 
     (rnrs hashtables)
     (ikarus system $fx)
@@ -27,7 +27,7 @@
     (only (ikarus system $codes) $code->closure)
     (only (ikarus system $structs) $struct-ref $struct/rtd?)
     (except (ikarus)
-        optimize-level
+        optimize-level debug-optimizer
         fasl-write scc-letrec optimize-cp
         compile-core-expr-to-port assembler-output
         current-primitive-locations eval-core
@@ -433,7 +433,7 @@
              [else (cons (E x) ac)]))
          (cons 'begin (f e0 (f e1 '()))))]
       [(clambda-case info body)
-       `(    label: ,(case-info-label info)
+       `( ;   label: ,(case-info-label info)
          ,(E-args (case-info-proper info) (case-info-args info))
          ,(E body))]
       [(clambda g cls* cp free)
@@ -1100,34 +1100,6 @@
   x)
 
 
-#|FIXME:missing-optimizations
-  111 cadr
-  464 $record/rtd?
-  404 memq
-  249 map
-  114 not
-  451 car
-  224 syntax-error
-  248 $syntax-dispatch
-  237 pair?
-  125 length
-  165 $cdr
-  137 $car
-  805 $record-ref
-  181 fixnum?
-  328 null?
-  136 fx-
-  207 eq?
-  153 call-with-values
-  165 values
-  336 apply
-  384 cdr
-  898 cons
-  747 error
-  555 void
-  645 list
-|#
-
 
 ;;; FIXME URGENT: should handle (+ x k), (- x k) where k is a fixnum
 ;;;               also fx+, fx-
@@ -1524,6 +1496,12 @@
      (giveup)]
     ))
 
+;;; $car $cdr $struct-ref $struct/rtd? 
+;;; expt + * - fx+ fxadd1 fxsub1 
+;;; cons cons* list vector
+;;; length memq memv eq? eqv?
+;;; not null? pair? fixnum? vector? string? char? symbol? eof-object?
+;;; cadr void car cdr 
 
 (define (mk-mvcall p c)
   (struct-case p
@@ -1819,10 +1797,13 @@
       [(mvcall p c)
        (mk-mvcall (Value p) (Value c))]
       [else (error who "invalid value expression" (unparse x))]))
-  (let ([x (Value x)])
-    ;;; since we messed up the references and assignments here, we
-    ;;; redo them
-    (uncover-assigned/referenced x)))
+  (case (optimize-level)
+    [(1)
+     (let ([x (Value x)])
+       ;;; since we messed up the references and assignments here, we
+       ;;; redo them
+       (uncover-assigned/referenced x))]
+    [else x]))
 
 
 (define (rewrite-assignments x)
@@ -2998,9 +2979,6 @@
     [else 
      (printf "    ~s\n" x)]))
 
-
-(define optimizer 'old)
-
 (define (compile-core-expr->code p)
   (let* ([p (recordize p)]
          [p (parameterize ([open-mvcalls #f])
@@ -3008,13 +2986,9 @@
          [p (if (scc-letrec) 
                 (optimize-letrec/scc p)
                 (optimize-letrec p))]
-         [p (if (eq? optimizer 'new)
-                (source-optimize p)
-                p)]
+         [p (source-optimize p)]
          [p (uncover-assigned/referenced p)]
-         [p (if (eq? optimizer 'old)
-                (copy-propagate p)
-                p)]
+         [p (copy-propagate p)] ;;; old optimizer
          [p (rewrite-assignments p)]
          [p (sanitize-bindings p)]
          [p (optimize-for-direct-jumps p)]

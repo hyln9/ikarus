@@ -1,4 +1,4 @@
-#!../src/ikarus -b ikarus.boot --r6rs-script
+#!../src/ikarus -b ikarus.boot -O2 --r6rs-script
 ;;; Ikarus Scheme -- A compiler for R6RS Scheme.
 ;;; Copyright (C) 2006,2007,2008  Abdulaziz Ghuloum
 ;;; 
@@ -17,7 +17,7 @@
 ;;; vim:syntax=scheme
 (import (only (ikarus) import))
 (import (except (ikarus) 
-          assembler-output scc-letrec optimize-cp
+          assembler-output scc-letrec optimize-cp optimize-level
           cp0-size-limit cp0-effort-limit))
 (import (ikarus.compiler))
 (import (except (psyntax system $bootstrap)
@@ -25,6 +25,7 @@
                 current-primitive-locations
                 compile-core-expr-to-port))
 (import (ikarus.compiler)) ; just for fun
+(optimize-level 2)
 
 (pretty-width 160)
 ((pretty-format 'fix) ((pretty-format 'letrec)))
@@ -1311,6 +1312,7 @@
     [void                                        i $boot]
     [gensym                                      i symbols $boot]
     [symbol-value                                i symbols $boot]
+    [system-value                                i]
     [set-symbol-value!                           i symbols $boot]
     [eval-core                                   $boot]
     [pretty-print                                i $boot]
@@ -1432,6 +1434,7 @@
     [ellipsis-map ]
     [scc-letrec i]
     [optimize-cp i]
+    [optimize-level i]
     [cp0-size-limit i]
     [cp0-effort-limit i]
   ))
@@ -1589,16 +1592,19 @@
   (let ([code `(library (ikarus primlocs)
                   (export) ;;; must be empty
                   (import 
+                    (only (ikarus.symbols) system-value-gensym)
                     (only (psyntax library-manager)
                           install-library)
                     (only (ikarus.compiler)
                           current-primitive-locations)
                     (ikarus))
-                  (current-primitive-locations 
-                    (lambda (x) 
-                      (cond
-                        [(assq x ',primlocs) => cdr]
-                        [else #f])))
+                  (let ([g system-value-gensym])
+                    (for-each
+                      (lambda (x) (putprop (car x) g (cdr x)))
+                      ',primlocs)
+                    (let ([proc 
+                           (lambda (x) (getprop x g))])
+                      (current-primitive-locations proc)))
                   ,@(map build-library library-legend))])
     (let-values ([(name code empty-subst empty-env)
                   (boot-library-expand code)])
@@ -1699,6 +1705,7 @@
               (debugf "\n")))
           (close-output-port p)))))
 
+;(print-missing-prims)
 
 (printf "Happy Happy Joy Joy\n")
 

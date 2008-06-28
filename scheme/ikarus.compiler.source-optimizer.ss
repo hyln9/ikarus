@@ -21,30 +21,7 @@
 ;;; Available online: 
 ;;;   http://www.cs.indiana.edu/~owaddell/papers/thesis.ps.gz
 
-(module (source-optimize 
-         cp0-effort-limit cp0-size-limit)
-  (define-syntax define*
-    (lambda (x)
-      (import (ikarus))
-      (syntax-case x ()
-        [(_ (name args ...) b b* ...) 
-         (with-syntax ([caller (datum->syntax #'name 'caller)]
-                       [who (datum->syntax #'name 'who)]
-                       [(a* ...) (generate-temporaries #'(args ...))])
-            #'(begin
-                (define (name-aux args ... caller)
-                  (define who 'name)
-                  b b* ...)
-                (define-syntax name 
-                  (lambda (x)
-                    (syntax-case x ()
-                      [(ctxt a* ...) 
-                       (not 
-                         (bound-identifier=?
-                            (datum->syntax #'here 'who)
-                            (datum->syntax #'ctxt 'who)))
-                       (with-syntax ([caller (datum->syntax #'ctxt 'who)])
-                         #'(name-aux a* ... caller))])))))])))
+(module (source-optimize optimize-level cp0-effort-limit cp0-size-limit)
   (define who 'source-optimize)
   ;;; this define-structure definition for compatibility with the
   ;;; notation used in Oscar's thesis.
@@ -113,6 +90,10 @@
         (reset-integrated! (counter-ctxt x))
         ((counter-k x) #f))))
   ;;;
+  (define (abort-counter! x)
+    (reset-integrated! (counter-ctxt x))
+    ((counter-k x) #f))
+  ;;;
   (define (reset-integrated! ctxt)
     (set-app-inlined! ctxt #f)
     (let ([ctxt (app-ctxt ctxt)])
@@ -128,7 +109,7 @@
         (if (prelex? v)
             v
             (error 'var-prelex "not initialized" x)))))
-  (module (with-extended-env)
+  (module (with-extended-env copy-var)
     (define (copy-var x)
       (let ([xi (var-prelex x)])
         (let ([y (unique-var (var-name x))]
@@ -205,664 +186,306 @@
         [else (error who "invalid expr in prepare" x)]))
     (E x))
 
-  #;
-  (define (uncover-global-locations x)
-    (define who 'uncover-global-locations)
-    (define (make-global-assign loc val)
-      (make-funcall 
-        (make-primref '$init-symbol-value!)
-        (list (make-constant loc) val)))
-    (define (bind-globals ls e)
-      (cond
-        [(null? ls) e]
-        [else 
-         (let ([x (car ls)] [e (bind-globals (cdr ls) e)])
-           (cond
-             [(var-global-loc x) =>
-              (lambda (loc)
-                (set-var-global-loc! x #f)
-                (set-prelex-source-referenced?! (var-prelex x) #t)
-                (make-seq (make-global-assign loc x) e))]
-             [else e]))]))
-    (define (L x)
-      (struct-case x 
-        [(clambda g cases cp free name) 
-         (make-clambda g 
-           (map (lambda (x)
-                  (struct-case x 
-                    [(clambda-case info body)
-                     (make-clambda-case info 
-                       (bind-globals (case-info-args info) 
-                         (E body)))]))
-                cases)
-           cp free name)]))
-    (define (E x)
-      (struct-case x 
-        [(constant) x]
-        [(var)      x]
-        [(primref)  x]
-        [(clambda)  (L x)]
-        [(seq e0 e1) (make-seq (E e0) (E e1))]
-        [(conditional e0 e1 e2) 
-         (make-conditional (E e0) (E e1) (E e2))]
-        [(assign x val) 
-         (cond
-           [(var-global-loc x) =>
-            (lambda (loc)
-              (make-seq
-                (make-assign x (E val))
-                (make-global-assign loc x)))]
-           [else (make-assign x (E val))])]
-        [(bind lhs* rhs* body)
-         (make-bind lhs* (map E rhs*) (bind-globals lhs* (E body)))]
-        [(fix lhs* rhs* body)
-         (make-fix lhs* (map E rhs*) (bind-globals lhs* (E body)))]
-        [(funcall rator rand*)
-         (make-funcall (E rator) (map E rand*))]
-        [(forcall name rand*)
-         (make-forcall name (map E rand*))]
-        [else (error who "invalid expr" x)]))
-    (E x))
 
-
-  (define cp0-effort-limit (make-parameter 100))
-  (define cp0-size-limit (make-parameter 10))
+  (define cp0-effort-limit (make-parameter 40))
+  (define cp0-size-limit (make-parameter 7))
   ;(define cp0-size-limit (make-parameter 0))
 
-  ;;; TODO
-  (define primitive-info
+
+  (define primitive-info-list
     '(
-      [make-list ]
-      [last-pair ]
-      [bwp-object? ]
-      [weak-cons ]
-      [weak-pair? ]
-      [uuid ]
-      [date-string ]
-      [andmap ]
-      [ormap ]
-      [fx< ]
-      [fx<= ]
-      [fx> ]
-      [fx>= ]
-      [fx= ]
-      [fxadd1 ]
-      [fxsub1 ]
-      [fxquotient ]
-      [fxremainder ]
-      [fxmodulo ]
-      [fxsll ]
-      [fxsra ]
-      [sra ]
-      [sll ]
-      [fxlogand ]
-      [fxlogxor ]
-      [fxlogor ]
-      [fxlognot ]
-      [fixnum->string ]
-      [string->flonum ]
-      [add1 ]
-      [sub1 ]
-      [bignum? ]
-      [ratnum? ]
-      [compnum? ]
-      [cflonum? ]
-      [flonum-parts ]
-      [flonum-bytes ]
-      [flonum->string ]
-      [random ]
-      [gensym? ]
-      [gensym->unique-string ]
-      [unicode-printable-char? ]
-      [struct? ]
-      [$car ]
-      [$cdr ]
-      [$memq ]
-      [$memv ]
-      [$char? ]
-      [$char= ]
-      [$char< ]
-      [$char> ]
-      [$char<= ]
-      [$char>= ]
-      [$char->fixnum ]
-      [$fixnum->char ]
-      [$make-string ]
-      [$string-ref ]
-      [$string-set! ]
-      [$string-length ]
-      [$make-bytevector ]
-      [$bytevector-length ]
-      [$bytevector-s8-ref ]
-      [$bytevector-u8-ref ]
-      [$bytevector-set! ]
-      [$bytevector-ieee-double-native-ref ]
-      [$bytevector-ieee-double-native-set! ]
-      [$bytevector-ieee-double-nonnative-ref ]
-      [$bytevector-ieee-double-nonnative-set! ]
-      [$bytevector-ieee-single-native-ref ]
-      [$bytevector-ieee-single-native-set! ]
-      [$bytevector-ieee-single-nonnative-ref ]
-      [$bytevector-ieee-single-nonnative-set! ]
-      [$flonum-u8-ref ]
-      [$make-flonum ]
-      [$flonum-set! ]
-      [$flonum-signed-biased-exponent ]
-      [$flonum-rational? ]
-      [$flonum-integer? ]
-      [$fl+ ]
-      [$fl- ]
-      [$fl* ]
-      [$fl/ ]
-      [$fl= ]
-      [$fl< ]
-      [$fl<= ]
-      [$fl> ]
-      [$fl>= ]
-      [$fixnum->flonum ]
-      [$flonum-sbe ]
-      [$make-bignum ]
-      [$bignum-positive? ]
-      [$bignum-size ]
-      [$bignum-byte-ref ]
-      [$bignum-byte-set! ]
-      [$make-ratnum ]
-      [$ratnum-n ]
-      [$ratnum-d ]
-      [$make-compnum ]
-      [$compnum-real ]
-      [$compnum-imag ]
-      [$make-cflonum ]
-      [$cflonum-real ]
-      [$cflonum-imag ]
-      [$make-vector ]
-      [$vector-length ]
-      [$vector-ref ]
-      [$vector-set! ]
-      [$fxzero? ]
-      [$fxadd1 ]
-      [$fxsub1 ]
-      [$fx>= ]
-      [$fx<= ]
-      [$fx> ]
-      [$fx< ]
-      [$fx= ]
-      [$fxsll ]
-      [$fxsra ]
-      [$fxquotient ]
-      [$fxmodulo ]
-      [$fxlogxor ]
-      [$fxlogor ]
-      [$fxlognot ]
-      [$fxlogand ]
-      [$fx+ ]
-      [$fx* ]
-      [$fx- ]
-      [$fxinthash ]
-      [$make-symbol ]
-      [$symbol-unique-string ]
-      [$symbol-value ]
-      [$symbol-string ]
-      [$symbol-plist ]
-      [$set-symbol-value! ]
-      [$set-symbol-proc! ]
-      [$set-symbol-string! ]
-      [$set-symbol-unique-string! ]
-      [$set-symbol-plist! ]
-      [$init-symbol-value! ]
-      [$unbound-object? ]
-      [base-rtd ]
-      [$struct-set! ]
-      [$struct-ref ]
-      [$struct-rtd ]
-      [$struct ]
-      [$make-struct ]
-      [$struct? ]
-      [$struct/rtd? ]
-      [$closure-code ]
-      [$code->closure ]
-      [$code-reloc-vector ]
-      [$code-freevars ]
-      [$code-size ]
-      [$code-annotation ]
-      [$code-ref ]
-      [$code-set! ]
-      [$set-code-annotation! ]
-      [procedure-annotation ]
-      [$make-tcbucket ]
-      [$tcbucket-key ]
-      [$tcbucket-val ]
-      [$tcbucket-next ]
-      [$set-tcbucket-val! ]
-      [$set-tcbucket-next! ]
-      [$set-tcbucket-tconc! ]
-      [$arg-list ]
-      [$collect-key ]
-      [$$apply ]
-      [$fp-at-base ]
-      [$primitive-call/cc ]
-      [$frame->continuation ]
-      [$current-frame ]
-      [$seal-frame-and-call ]
-      [$make-call-with-values-procedure ]
-      [$make-values-procedure ]
-      [$interrupted? ]
-      [$unset-interrupted! ]
-      [$swap-engine-counter! ]
-      [interrupted-condition? ]
-      [make-interrupted-condition ]
-      [$apply-nonprocedure-error-handler ]
-      [$incorrect-args-error-handler ]
-      [$multiple-values-error ]
-      [$debug ]
-      [$underflow-misaligned-error ]
-      [top-level-value-error ]
-      [car-error ]
-      [cdr-error ]
-      [fxadd1-error ]
-      [fxsub1-error ]
-      [cadr-error ]
-      [fx+-type-error ]
-      [fx+-types-error ]
-      [fx+-overflow-error ]
-      [$do-event ]
-      [do-overflow ]
-      [do-overflow-words ]
-      [do-vararg-overflow ]
-      [collect ]
-      [collect-key ]
-      [do-stack-overflow ]
-      [make-promise ]
-      [make-traced-procedure ]
-      [error@fx+ ]
-      [error@fxarithmetic-shift-left ]
-      [error@fx* ]
-      [error@fx- ]
-      [error@add1 ]
-      [error@sub1 ]
-      [error@fxadd1 ]
-      [error@fxsub1 ]
-      [< ]
-      [<= ]
-      [= ]
-      [> ]
-      [>= ]
-      [+ ]
-      [- ]
-      [* ]
-      [/ ]
-      [abs ]
-      [acos ]
-      [angle ]
-      [append ]
-      [asin ]
-      [atan ]
-      [boolean=? ]
-      [boolean? ]
-      [car ]
-      [cdr ]
-      [caar ]
-      [cadr ]
-      [cdar ]
-      [cddr ]
-      [caaar ]
-      [caadr ]
-      [cadar ]
-      [caddr ]
-      [cdaar ]
-      [cdadr ]
-      [cddar ]
-      [cdddr ]
-      [caaaar ]
-      [caaadr ]
-      [caadar ]
-      [caaddr ]
-      [cadaar ]
-      [cadadr ]
-      [caddar ]
-      [cadddr ]
-      [cdaaar ]
-      [cdaadr ]
-      [cdadar ]
-      [cdaddr ]
-      [cddaar ]
-      [cddadr ]
-      [cdddar ]
-      [cddddr ]
-      [ceiling ]
-      [char->integer ]
-      [char<=? ]
-      [char<? ]
-      [char=? ]
-      [char>=? ]
-      [char>? ]
-      [char? ]
-      [complex? ]
-      [cons ]
-      [cos ]
-      [denominator ]
-      [div ]
-      [mod ]
-      [div0 ]
-      [mod0 ]
-      [dynamic-wind ]
-      [eq? ]
-      [equal? ]
-      [eqv? ]
-      [even? ]
-      [exact ]
-      [exact-integer-sqrt ]
-      [exact? ]
-      [exp ]
-      [expt ]
-      [finite? ]
-      [floor ]
-      [gcd ]
-      [imag-part ]
-      [inexact ]
-      [inexact? ]
-      [infinite? ]
-      [integer->char ]
-      [integer-valued? ]
-      [integer? ]
-      [lcm ]
-      [length ]
-      [list ]
-      [list->string ]
-      [list->vector ]
-      [list-ref ]
-      [list-tail ]
-      [list? ]
-      [log ]
-      [magnitude ]
-      [make-polar ]
-      [make-rectangular ]
-      [$make-rectangular ]
-      [make-string ]
-      [make-vector ]
-      [map ]
-      [max ]
-      [min ]
-      [nan? ]
-      [negative? ]
-      [not ]
-      [null? ]
-      [number->string ]
-      [number? ]
-      [numerator ]
-      [odd? ]
-      [pair? ]
-      [positive? ]
-      [procedure? ]
-      [rational-valued? ]
-      [rational? ]
-      [rationalize ]
-      [real-part ]
-      [real-valued? ]
-      [real? ]
-      [reverse ]
-      [round ]
-      [sin ]
-      [sqrt ]
-      [string ]
-      [string->list ]
-      [string->number ]
-      [string->symbol ]
-      [string-append ]
-      [string-copy ]
-      [string-for-each ]
-      [string-length ]
-      [string-ref ]
-      [string<=? ]
-      [string<? ]
-      [string=? ]
-      [string>=? ]
-      [string>? ]
-      [string? ]
-      [substring ]
-      [symbol->string ]
-      [symbol=? ]
-      [symbol? ]
-      [tan ]
-      [truncate ]
-      [vector ]
-      [vector->list ]
-      [vector-fill! ]
-      [vector-for-each ]
-      [vector-length ]
-      [vector-map ]
-      [vector-ref ]
-      [vector? ]
-      [zero? ]
-      [bitwise-arithmetic-shift ]
-      [bitwise-arithmetic-shift-left ]
-      [bitwise-arithmetic-shift-right ]
-      [bitwise-not ]
-      [bitwise-and ]
-      [bitwise-ior ]
-      [bitwise-xor ]
-      [bitwise-bit-count ]
-      [bitwise-bit-field ]
-      [bitwise-bit-set? ]
-      [bitwise-copy-bit ]
-      [bitwise-copy-bit-field ]
-      [bitwise-first-bit-set ]
-      [bitwise-if ]
-      [bitwise-length ]
-      [bitwise-reverse-bit-field ]
-      [bitwise-rotate-bit-field ]
-      [fixnum? ]
-      [fixnum-width ]
-      [least-fixnum ]
-      [greatest-fixnum ]
-      [fx* ]
-      [fx*/carry ]
-      [fx+ ]
-      [fx+/carry ]
-      [fx- ]
-      [fx-/carry ]
-      [fx<=? ]
-      [fx<? ]
-      [fx=? ]
-      [fx>=? ]
-      [fx>? ]
-      [fxand ]
-      [fxarithmetic-shift ]
-      [fxarithmetic-shift-left ]
-      [fxarithmetic-shift-right ]
-      [fxbit-count ]
-      [fxbit-field ]
-      [fxbit-set? ]
-      [fxcopy-bit ]
-      [fxcopy-bit-field ]
-      [fxdiv ]
-      [fxdiv-and-mod ]
-      [fxdiv0 ]
-      [fxdiv0-and-mod0 ]
-      [fxeven? ]
-      [fxfirst-bit-set ]
-      [fxif ]
-      [fxior ]
-      [fxlength ]
-      [fxmax ]
-      [fxmin ]
-      [fxmod ]
-      [fxmod0 ]
-      [fxnegative? ]
-      [fxnot ]
-      [fxodd? ]
-      [fxpositive? ]
-      [fxreverse-bit-field ]
-      [fxrotate-bit-field ]
-      [fxxor ]
-      [fxzero? ]
-      [fixnum->flonum ]
-      [fl* ]
-      [fl+ ]
-      [fl- ]
-      [fl/ ]
-      [fl<=? ]
-      [fl<? ]
-      [fl=? ]
-      [fl>=? ]
-      [fl>? ]
-      [flabs ]
-      [flacos ]
-      [flasin ]
-      [flatan ]
-      [flceiling ]
-      [flcos ]
-      [fldenominator ]
-      [fldiv ]
-      [fldiv0 ]
-      [fleven? ]
-      [flexp ]
-      [flexpt ]
-      [flfinite? ]
-      [flfloor ]
-      [flinfinite? ]
-      [flinteger? ]
-      [fllog ]
-      [flmax ]
-      [flmin ]
-      [flmod ]
-      [flmod0 ]
-      [flnan? ]
-      [flnegative? ]
-      [flnumerator ]
-      [flodd? ]
-      [flonum? ]
-      [flpositive? ]
-      [flround ]
-      [flsin ]
-      [flsqrt ]
-      [fltan ]
-      [fltruncate ]
-      [flzero? ]
-      [real->flonum ]
-      [bytevector->sint-list ]
-      [bytevector->u8-list ]
-      [bytevector->uint-list ]
-      [bytevector-copy ]
-      [bytevector-ieee-double-native-ref ]
-      [bytevector-ieee-double-ref ]
-      [bytevector-ieee-single-native-ref ]
-      [bytevector-ieee-single-ref ]
-      [bytevector-length ]
-      [bytevector-s16-native-ref ]
-      [bytevector-s16-ref ]
-      [bytevector-s32-native-ref ]
-      [bytevector-s32-ref ]
-      [bytevector-s64-native-ref ]
-      [bytevector-s64-ref ]
-      [bytevector-s8-ref ]
-      [bytevector-sint-ref ]
-      [bytevector-u16-native-ref ]
-      [bytevector-u16-ref ]
-      [bytevector-u32-native-ref ]
-      [bytevector-u32-ref ]
-      [bytevector-u64-native-ref ]
-      [bytevector-u64-ref ]
-      [bytevector-u8-ref ]
-      [bytevector-uint-ref ]
-      [bytevector=? ]
-      [bytevector? ]
-      [endianness ]
-      [native-endianness ]
-      [sint-list->bytevector ]
-      [string->utf16 ]
-      [string->utf32 ]
-      [string->utf8 ]
-      [u8-list->bytevector ]
-      [uint-list->bytevector ]
-      [utf8->string ]
-      [utf16->string ]
-      [utf32->string ]
-      [bytevector->string ]
-      [assoc ]
-      [assp ]
-      [assq ]
-      [assv ]
-      [cons* ]
-      [member ]
-      [memp ]
-      [memq ]
-      [memv ]
-      [exact->inexact ]
-      [inexact->exact ]
-      [modulo ]
-      [remainder ]
-      [quotient ]
-      [make-bytevector ]
-      [string->bytevector ]
-      [eof-object ]
-      [eof-object? ]
-      [record-field-mutable? ]
-      [record-rtd ]
-      [record-type-field-names ]
-      [record-type-generative? ]
-      [record-type-name ]
-      [record-type-opaque? ]
-      [record-type-parent ]
-      [record-type-sealed? ]
-      [record-type-uid ]
-      [record? ]
-      [make-record-constructor-descriptor ]
-      [make-record-type-descriptor ]
-      [record-accessor ]
-      [record-constructor ]
-      [record-mutator ]
-      [record-predicate ]
-      [record-type-descriptor? ]
-      [bound-identifier=? ]
-      [datum->syntax ]
-      [syntax ]
-      [syntax->datum ]
-      [syntax-case ]
-      [unsyntax ]
-      [unsyntax-splicing ]
-      [quasisyntax ]
-      [with-syntax ]
-      [free-identifier=? ]
-      [generate-temporaries ]
-      [identifier? ]
-      [make-variable-transformer ]
-      [char-alphabetic? ]
-      [char-ci<=? ]
-      [char-ci<? ]
-      [char-ci=? ]
-      [char-ci>=? ]
-      [char-ci>? ]
-      [char-downcase ]
-      [char-foldcase ]
-      [char-titlecase ]
-      [char-upcase ]
-      [char-general-category ]
-      [char-lower-case? ]
-      [char-numeric? ]
-      [char-title-case? ]
-      [char-upper-case? ]
-      [char-whitespace? ]
-      [string-ci<=? ]
-      [string-ci<? ]
-      [string-ci=? ]
-      [string-ci>=? ]
-      [string-ci>? ]
-      [string-downcase ]
-      [string-foldcase ]
-      [string-normalize-nfc ]
-      [string-normalize-nfd ]
-      [string-normalize-nfkc ]
-      [string-normalize-nfkd ]
-      [string-titlecase ]
-      [string-upcase ]
-      [void ]
-      [gensym ]
-      ))
-      
+      [(cons _ _)                           effect-free result-true]
+      [(cons* _)                   foldable effect-free            ]
+      [(cons* _ . _)                        effect-free result-true]
+      [(list)                      foldable effect-free result-true]
+      [(list . _)                           effect-free result-true]
+      [(reverse ())                foldable effect-free result-true]
+      [(string)                    foldable effect-free result-true]
+      [(string . _)                                     result-true]
+      [(make-string 0)             foldable effect-free result-true]
+      [(make-string 0 _)           foldable effect-free result-true]
+      [(make-string . _)                                result-true]
+      [(make-bytevector 0)         foldable effect-free result-true]
+      [(make-bytevector 0 _)       foldable             result-true]
+      [(make-bytevector . _)                            result-true]
+      [(string-length _)           foldable             result-true]
+      [(string-ref _ _)            foldable             result-true]
+      [(vector)                    foldable effect-free result-true]
+      [(vector . _)                         effect-free result-true]
+      [(make-vector 0)             foldable effect-free result-true]
+      [(make-vector 0 _)           foldable effect-free result-true]
+      [(make-vector . _)                                result-true]
+      [(vector-length _)           foldable             result-true]
+      [(vector-ref _ _)            foldable                        ]
+      [(eq? _ _)                   foldable effect-free            ]
+      [(eqv? _ _)                  foldable effect-free            ]
+      [(assq _ _)                  foldable                        ]
+      [(assv _ _)                  foldable                        ]
+      [(assoc _ _)                 foldable                        ]
+      [(not _)                     foldable effect-free            ]
+      [(null? _)                   foldable effect-free            ]
+      [(pair? _)                   foldable effect-free            ]
+      [(fixnum? _)                 foldable effect-free            ]
+      [(vector? _)                 foldable effect-free            ]
+      [(string? _)                 foldable effect-free            ]
+      [(char? _)                   foldable effect-free            ]
+      [(symbol? _)                 foldable effect-free            ]
+      [(procedure? _)              foldable effect-free            ]
+      [(eof-object? _)             foldable effect-free            ]
+      [(flonum? _)                 foldable effect-free            ]
+      [(cflonum? _)                foldable effect-free            ]
+      [(compnum? _)                foldable effect-free            ]
+      [(integer? _)                foldable effect-free            ]
+      [(bignum? _)                 foldable effect-free            ]
+      [(ratnum? _)                 foldable effect-free            ]
+      [(void)                      foldable effect-free result-true]
+      [(car _)                     foldable                        ]
+      [(cdr _)                     foldable                        ]
+      [(caar _)                    foldable                        ]
+      [(cadr _)                    foldable                        ]
+      [(cdar _)                    foldable                        ]
+      [(cddr _)                    foldable                        ]
+      [(caaar _)                   foldable                        ]
+      [(caadr _)                   foldable                        ]
+      [(cadar _)                   foldable                        ]
+      [(caddr _)                   foldable                        ]
+      [(cdaar _)                   foldable                        ]
+      [(cdadr _)                   foldable                        ]
+      [(cddar _)                   foldable                        ]
+      [(cdddr _)                   foldable                        ]
+      [(caaaar _)                  foldable                        ]
+      [(caaadr _)                  foldable                        ]
+      [(caadar _)                  foldable                        ]
+      [(caaddr _)                  foldable                        ]
+      [(cadaar _)                  foldable                        ]
+      [(cadadr _)                  foldable                        ]
+      [(caddar _)                  foldable                        ]
+      [(cadddr _)                  foldable                        ]
+      [(cdaaar _)                  foldable                        ]
+      [(cdaadr _)                  foldable                        ]
+      [(cdadar _)                  foldable                        ]
+      [(cdaddr _)                  foldable                        ]
+      [(cddaar _)                  foldable                        ]
+      [(cddadr _)                  foldable                        ]
+      [(cdddar _)                  foldable                        ]
+      [(cddddr _)                  foldable                        ]
+      [(memq _ _)                  foldable                        ]
+      [(memv _ _)                  foldable                        ]
+      [(length _)                  foldable             result-true]
+      [(+ . _)                     foldable             result-true]
+      [(* . _)                     foldable             result-true]
+      [(/ _ . _)                   foldable             result-true]
+      [(- _ . _)                   foldable             result-true]
+      [(fx+ _ _)                   foldable             result-true]
+      [(fx- _ _)                   foldable             result-true]
+      [(fx* _ _)                   foldable             result-true]
+      [(fxior . _)                 foldable             result-true]
+      [(fxlogor . _)               foldable             result-true]
+      [(fxnot _)                   foldable             result-true]
+      [(fxadd1 _)                  foldable             result-true]
+      [(fxsub1 _)                  foldable             result-true]
+      [(fx=? _ . _)                foldable                        ] 
+      [(fx<? _ . _)                foldable                        ] 
+      [(fx<=? _ . _)               foldable                        ] 
+      [(fx>? _ . _)                foldable                        ] 
+      [(fx>=? _ . _)               foldable                        ]
+      [(fx= _ . _)                 foldable                        ] 
+      [(fx< _ . _)                 foldable                        ] 
+      [(fx<= _ . _)                foldable                        ] 
+      [(fx> _ . _)                 foldable                        ] 
+      [(fx>= _ . _)                foldable                        ]
+      [(real-part _)               foldable             result-true]
+      [(imag-part _)               foldable             result-true]
+      [(fxsll _ _)                 foldable             result-true]
+      [(fxsra _ _)                 foldable             result-true]
+      [(fxremainder _ _)           foldable             result-true]
+      [(fxquotient _ _)            foldable             result-true]
+      [(greatest-fixnum)           foldable effect-free result-true]
+      [(least-fixnum)              foldable effect-free result-true]
+      [(fixnum-width)              foldable effect-free result-true]
+      [(char->integer _)           foldable             result-true]
+      [(integer->char _)           foldable             result-true]
+      [(eof-object)                foldable effect-free result-true]
+      [(zero? _)                   foldable                        ]
+      [(= _ . _)                   foldable                        ] 
+      [(< _ . _)                   foldable                        ] 
+      [(<= _ . _)                  foldable                        ] 
+      [(> _ . _)                   foldable                        ] 
+      [(>= _ . _)                  foldable                        ]
+      [(expt _ _)                  foldable             result-true]
+      [(log _)                     foldable             result-true]
+      [(sll _ _)                   foldable             result-true]
+      [(sra _ _)                   foldable             result-true]
+      [(inexact _)                 foldable             result-true]
+      [(exact _)                   foldable             result-true]
+      [(add1 _)                    foldable             result-true]
+      [(sub1 _)                    foldable             result-true]
+      [(bitwise-and _ _)           foldable             result-true]
+      [(make-rectangular _ _)      foldable             result-true]
+      [(make-eq-hashtable)                  effect-free result-true]
+      [(string->number _)          foldable                        ]
+      [(string->number _ _)        foldable                        ]
+      [($fixnum->flonum _)         foldable effect-free result-true]
+      [($char->fixnum _)           foldable effect-free result-true]
+      [($fixnum->char _)           foldable effect-free result-true]
+      [($fxzero? _)                foldable effect-free            ]
+      [($fx+ _ _)                  foldable effect-free result-true]
+      [($fx* _ _)                  foldable effect-free result-true]
+      [($fx- _ _)                  foldable effect-free result-true]
+      [($fx= _ _)                  foldable effect-free            ]
+      [($fx>= _ _)                 foldable effect-free            ]
+      [($fx> _ _)                  foldable effect-free            ]
+      [($fx<= _ _)                 foldable effect-free            ]
+      [($fx< _ _)                  foldable effect-free            ]
+      [($car _)                    foldable effect-free            ]
+      [($cdr _)                    foldable effect-free            ]
+      [($struct-ref _ _)           foldable effect-free            ]
+      [($struct/rtd? _ _)          foldable effect-free            ]
+      [($fxsll _ _)                foldable effect-free result-true]
+      [($fxsra _ _)                foldable effect-free result-true]
+      [($fxlogor _ _)              foldable effect-free result-true]
+      [($fxlogand _ _)             foldable effect-free result-true]
+      [($fxadd1 _)                 foldable effect-free result-true]
+      [($fxsub1 _)                 foldable effect-free result-true]
+      [($vector-length _)          foldable effect-free result-true]
+      [($vector-ref _ _)           foldable effect-free result-true]
+      [($make-bytevector 0)        foldable effect-free result-true]
+      [($make-bytevector 0 _)      foldable effect-free result-true]
+      [($make-bytevector . _)               effect-free result-true]
+      [($bytevector-u8-ref _ _)    foldable effect-free result-true]
+      [($bytevector-length _)      foldable effect-free result-true]
+      ;;;
+      [(annotation? #f)             foldable effect-free result-false]
+      [(annotation-stripped #f)     foldable effect-free result-false]
+      ;;; unoptimizable
+      [(condition . _)]
+      [($make-flonum . _)]
+      [(top-level-value . _)]
+      [($struct . _)]
+      [(make-message-condition . _)]
+      [(make-lexical-violation . _)]
+      [(make-who-condition . _)]
+      [(make-error . _)]
+      [(make-i/o-error . _)]
+      [(make-i/o-write-error . _)]
+      [(make-i/o-read-error . _)]
+      [(make-i/o-file-already-exists-error . _)]
+      [(make-i/o-file-is-read-only-error . _)]
+      [(make-i/o-file-protection-error . _)]
+      [(make-i/o-file-does-not-exist-error . _)]
+      [(make-undefined-violation . _)]
+      [(die . _)]
+      [(gensym . _)]
+      [(values . _)]
+      [(error . _)]
+      [(assertion-violation . _)]
+      [(console-input-port . _)]
+      [(console-output-port . _)]
+      [(console-error-port . _)]
+      [(printf . _)] ;;; FIXME: reduce to display
+      [(newline . _)]
+      [(native-transcoder . _)]
+      [(open-string-output-port . _)]
+      [(open-string-input-port . _)]
+      [(environment . _)]
+      [(print-gensym . _)]
+      [(exit . _)]
+      [(interrupt-handler . _)]
+      [(display . _)]
+      [(write-char . _)]
+      [(current-input-port . _)]
+      [(current-output-port . _)]
+      [(current-error-port . _)]
+      [(standard-input-port . _)]
+      [(standard-output-port . _)]
+      [(standard-error-port . _)]
+      [($current-frame . _)]
+      [(pretty-width . _)]
+      [($fp-at-base . _)]
+      [(read-annotated . _)]
+      [($collect-key . _)]
+      [(make-non-continuable-violation . _)]
+      [(format . _)] ;;; FIXME, reduce to string-copy
+      [(uuid . _)]
+      [(print-graph . _)]
+      [(interaction-environment . _)]
+      [(make-guardian)]
+      [(command-line-arguments)]
+      [(make-record-type-descriptor . _)] ;;; FIXME
+      [(make-assertion-violation . _)]
+      [(new-cafe . _)]
+      [(getenv . _)]
+      [(gensym-prefix . _)]
+      [($arg-list . _)]
+      [($make-symbol . _)]
+      [(string->utf8 . _)]
+      [($make-call-with-values-procedure . _)]
+      [($make-values-procedure . _)]
+      [($unset-interrupted! . _)]
+      [(make-interrupted-condition . _)]
+      [($interrupted? . _)]
+      [($symbol-value . _)]
+      [(library-extensions . _)]
+      [(base-rtd . _)]
+      [($data->transcoder . _)]
+      [(current-time . _)]
+    ))
+ 
+  (module (primprop)
+    (define-syntax ct-gensym
+      (lambda (x)
+        (with-syntax ([g (datum->syntax #'here (gensym))])
+          #'(quote g))))
+    (define g (ct-gensym))
+    (define (primprop p)
+      (or (getprop p g) '()))
+    (define (get prim ls)
+      (cond
+        [(null? ls) (values '() '())]
+        [else
+         (let ([a (car ls)])
+           (let ([cc (car a)])
+             (cond
+               [(eq? (car cc) prim)
+                (let-values ([(p* ls) (get prim (cdr ls))])
+                  (values (cons (cons (cdr cc) (cdr a)) p*) ls))]
+               [else (values '() ls)])))]))
+    (let f ([ls primitive-info-list])
+      (unless (null? ls)
+        (let ([a (car ls)])
+          (let ([cc (car a)] [cv (cdr a)])
+            (let ([prim (car cc)] [args (cdr cc)])
+              (let-values ([(p* ls) (get prim (cdr ls))])
+                (putprop prim g 
+                  (cons (cons args cv) p*))
+                (f ls))))))))
+  (define (primitive-info op args)
+    (define (matches? x)
+      (let f ([args args] [params (car x)])
+        (cond
+          [(pair? params)
+           (and (pair? args)
+                (case (car params)
+                  [(_) (f (cdr args) (cdr params))]
+                  [(#f 0 ()) 
+                   (let ([v (value-visit-operand! (car args))])
+                     (and (constant? v)
+                          (equal? (constant-value v) (car params))
+                          (f (cdr args) (cdr params))))]
+                  [else
+                   (error 'primitive-info "cannot happen" op (car params))]))]
+          [(eq? params '_) #t]
+          [(null? params) (null? args)]
+          [else (error 'primitive-info "cannot happen" op params)])))
+    (cond
+      [(find matches? (primprop op))]
+      [else '()]))
 
+  (define (info-foldable? info) (memq 'foldable info))
+  (define (info-effect-free? info) (memq 'effect-free info))
+  (define (info-result-true? info) (memq 'result-true info))
+  (define (info-result-false? info) (memq 'result-false info))
 
-  ;;; business
   (define-syntax ctxt-case
     (lambda (stx)
       (define (test x)
@@ -874,7 +497,7 @@
           [else (syntax-violation stx "invalid ctxt" x)]))
       (define (extract cls*)
         (syntax-case cls* (else)
-          [() #'(error 'extract "unmatched ctxt")]
+          [() #'(error 'extract "unmatched ctxt" t)]
           [([else e e* ...]) #'(begin e e* ...)]
           [([(t* ...) e e* ...] rest ...) 
            (with-syntax ([(t* ...) (map test #'(t* ...))]
@@ -924,7 +547,7 @@
          [else #f])]
       [else #f]))
   ;;;
-  (define* (residualize-operands e rand* sc)
+  (define (residualize-operands e rand* sc)
     (cond
       [(null? rand*) e]
       [(not (operand-residualize-for-effect (car rand*)))
@@ -934,13 +557,13 @@
          (let ([e1 (or (operand-value opnd)
                        (struct-case opnd
                          [(operand expr env ec)
-                          (E expr 'effect env ec sc)]))])
+                          (E expr 'e env ec sc)]))])
            (if (simple? e1)
                (residualize-operands e (cdr rand*) sc)
                (begin
                  (decrement sc (operand-size opnd))
                  (mkseq e1 (residualize-operands e (cdr rand*) sc))))))]))
-  (define* (value-visit-operand! rand)
+  (define (value-visit-operand! rand)
     (or (operand-value rand)
         (let ([sc (passive-counter)])
           (let ([e (struct-case rand
@@ -949,19 +572,23 @@
             (set-operand-value! rand e)
             (set-operand-size! rand (passive-counter-value sc))
             e))))
-  (define* (score-value-visit-operand! rand sc)
+  (define (score-value-visit-operand! rand sc)
     (let ([val (value-visit-operand! rand)])
-      (decrement sc (operand-size rand))
+      (let ([score (operand-size rand)])
+        (decrement sc score))
       val))
-  (define* (E-call rator rand* env ctxt ec sc)
+  (define (E-call rator rand* env ctxt ec sc)
     (let ([ctxt (make-app rand* ctxt)])
       (let ([rator (E rator ctxt env ec sc)])
         (if (app-inlined ctxt)
             (residualize-operands rator rand* sc)
-            (make-funcall rator 
-              (map (lambda (x) (score-value-visit-operand! x sc)) rand*))))))
+            (begin
+              (decrement sc (if (primref? rator) 1 3))
+              (make-funcall rator
+                (map (lambda (x) (score-value-visit-operand! x sc))
+                     rand*)))))))
   ;;;
-  (define* (E-var x ctxt env ec sc)
+  (define (E-var x ctxt env ec sc)
     (ctxt-case ctxt
       [(e) (make-constant (void))]
       [else 
@@ -978,7 +605,7 @@
                      (copy x opnd ctxt ec sc)))
                (residualize-ref x sc))))]))
   ;;;
-  (define* (copy x opnd ctxt ec sc)
+  (define (copy x opnd ctxt ec sc)
     (let ([rhs (result-expr (operand-value opnd))])
       (struct-case rhs
         [(constant) rhs]
@@ -991,7 +618,7 @@
                    (residualize-ref rhs sc))))]
         [else (copy2 x opnd ctxt ec sc)])))
   ;;;
-  (define* (copy2 x opnd ctxt ec sc)
+  (define (copy2 x opnd ctxt ec sc)
     (let ([rhs (result-expr (operand-value opnd))])
       (struct-case rhs
         [(clambda) 
@@ -1006,7 +633,7 @@
                        (lambda ()
                          (call/cc
                            (lambda (abort)
-                             (inline rhs ctxt empty-env ;(operand-env opnd) ; empty-env 
+                             (inline rhs ctxt empty-env 
                                (if (active-counter? ec)
                                    ec
                                    (make-counter
@@ -1026,18 +653,27 @@
            [(e) (make-constant (void))]
            [(app) (fold-prim p ctxt ec sc)])]
         [else (residualize-ref x sc)])))
-  ;;;
-  (define* (inline proc ctxt env ec sc)
+  (define (inline proc ctxt env ec sc)
     (define (get-case cases rand*)
       (define (compatible? x)
         (struct-case (clambda-case-info x) 
           [(case-info label args proper)
            (cond
              [proper (= (length rand*) (length args))]
-             [else #|FIXME|# #f])]))
+             [else (>= (length rand*) (- (length args) 1))])]))
       (cond
         [(memp compatible? cases) => car]
         [else #f]))
+    (define (partition args rand*)
+      (cond
+        [(null? (cdr args))
+         (let ([r (car args)])
+           (let ([t* (map (lambda (x) (copy-var r)) rand*)])
+             (values '() t* r)))]
+        [else
+         (let ([x (car args)])
+           (let-values ([(x* t* r) (partition (cdr args) (cdr rand*))])
+             (values (cons x x*) t* r)))]))
     (struct-case proc
       [(clambda g cases cp free name)
        (let ([rand* (app-rand* ctxt)])
@@ -1045,98 +681,121 @@
            [(clambda-case info body)
             (struct-case info
               [(case-info label args proper) 
-               (with-extended-env ((env args) (env args rand*))
-                 (let ([body (E body (app-ctxt ctxt) env ec sc)])
-                   (let ([result (make-let-binding args rand* body sc)])
-                     (set-app-inlined! ctxt #t)
-                     result)))])]
-           [else ((counter-k ec) #f)]))]))
+               (cond
+                 [proper
+                  (with-extended-env ((env args) (env args rand*))
+                    (let ([body (E body (app-ctxt ctxt) env ec sc)])
+                      (let ([result (make-let-binding args rand* body sc)])
+                        (set-app-inlined! ctxt #t)
+                        result)))]
+                 [else 
+                  (let-values ([(x* t* r) (partition args rand*)])
+                    (with-extended-env ((env a*)
+                                        (env (append x* t*) rand*))
+                      (let ([rarg (make-operand 
+                                    (make-funcall (make-primref 'list) t*)
+                                    env ec)])
+                        (with-extended-env ((env b*)
+                                            (env (list r) (list rarg)))
+                          (let ([result
+                                 (make-let-binding a* rand*
+                                   (make-let-binding b* (list rarg)
+                                     (E body (app-ctxt ctxt) env ec sc)
+                                     sc)
+                                   sc)])
+                            (set-app-inlined! ctxt #t)
+                            result)))))])])]
+           [else
+             (E proc 'v env ec sc)]))]))
   ;;;
-  (define* (do-bind lhs* rhs* body ctxt env ec sc)
-    (E (make-funcall 
-         (make-clambda (gensym) 
-           (list
-             (make-clambda-case
-               (make-case-info (gensym) lhs* #t)
-               body))
-           #f #f #f)
-         rhs*)
-       ctxt env ec sc))
+  (define (do-bind lhs* rhs* body ctxt env ec sc)
+    (let ([rand* (map (lambda (x) (make-operand x env ec)) rhs*)])
+      (with-extended-env ((env lhs*) (env lhs* rand*))
+        (residualize-operands
+          (make-let-binding lhs* rand*
+            (E body ctxt env ec sc)
+            sc)
+          rand* sc))))
   ;;;
-  (define* (make-let-binding var* rand* body sc)
-    (define (process1 var rand ef* lhs* rhs*)
+  (define (make-let-binding var* rand* body sc)
+    (define (process1 var rand lhs* rhs*)
       (cond
         [(prelex-residual-referenced? (var-prelex var))
-         (values ef* 
-            (cons var lhs*) 
+         (assert (not (operand-residualize-for-effect rand)))
+         (values
+            (cons var lhs*)
             (cons (score-value-visit-operand! rand sc) rhs*))]
         [(prelex-residual-assigned? (var-prelex var))
-         (values ef*
+         (set-operand-residualize-for-effect! rand #t)
+         (values 
             (cons var lhs*)
             (cons (make-constant (void)) rhs*))]
         [else
          (set-operand-residualize-for-effect! rand #t)
-         (values (cons rand ef*) lhs* rhs*)]))
+         (values lhs* rhs*)]))
     (define (process var* rand*)
       (cond
-        [(null? var*) (values '() '() '())]
+        [(null? var*) (values '() '())]
         [else
          (let ([var (car var*)] [rand (car rand*)])
-           (let-values ([(ef* lhs* rhs*) (process (cdr var*) (cdr rand*))])
-             (process1 var rand ef* lhs* rhs*)))]))
-    (let-values ([(ef* lhs* rhs*) (process var* rand*)])
-      (residualize-operands 
-        (if (null? lhs*) body (make-bind lhs* rhs* body)) 
-        ef*
-        sc)))
+           (let-values ([(lhs* rhs*) (process (cdr var*) (cdr rand*))])
+             (process1 var rand lhs* rhs*)))]))
+    (let-values ([(lhs* rhs*) (process var* rand*)])
+       (if (null? lhs*) body (make-bind lhs* rhs* body))))
   ;;;
-  (define* (fold-prim p ctxt ec sc)
-    ;;; TODO
-    (make-primref p))
+  (define (fold-prim p ctxt ec sc)
+    (define (get-value p ls)
+      (call/cc
+        (lambda (k)
+          (with-exception-handler 
+            (lambda (con) 
+              (decrement ec 10)
+              (k #f))
+            (lambda () 
+              (make-constant (apply (system-value p) ls)))))))
+    (let ([rand* (app-rand* ctxt)])
+      (let ([info (primitive-info p rand*)])
+        (let ([result
+               (or (and (info-effect-free? info)
+                        (ctxt-case (app-ctxt ctxt)
+                          [(e) (make-constant (void))]
+                          [(p) 
+                           (cond
+                             [(info-result-true? info)
+                              (make-constant #t)]
+                             [(info-result-false? info)
+                              (make-constant #f)]
+                             [else #f])]
+                          [else #f]))
+                   (and (info-foldable? info)
+                        (let ([val*
+                               (map (lambda (x) (value-visit-operand! x)) rand*)])
+                          (cond
+                            [(andmap constant? val*)
+                             (get-value p (map constant-value val*))]
+                            [else #f]))))])
+          (if result
+              (begin
+                (decrement ec 1)
+                (for-each
+                  (lambda (x)
+                    (set-operand-residualize-for-effect! x #t))
+                  rand*)
+                (set-app-inlined! ctxt #t)
+                result)
+              (begin
+                (decrement sc 1)
+                (make-primref p)))))))
   ;;;
-  (define* (residualize-ref x sc)
+  (define (residualize-ref x sc)
     (decrement sc 1)
     (set-prelex-residual-referenced?! (var-prelex x) #t)
     x)
   ;;;
-  (define indent-level (make-parameter 0))
-  (define (printf/indent s . args)
-    (let f ([i (indent-level)])
-      (unless (zero? i)
-        (printf " |")
-        (f (- i 1))))
-    (apply printf s args))
-  (define (pretty-print/indent x)
-    (let ([p
-           (open-string-input-port
-             (let-values ([(p e) (open-string-output-port)])
-               (parameterize ([pretty-width 200])
-                 (pretty-print x p))
-               (e)))])
-      (let f ()
-        (let ([x (get-line p)])
-          (unless (eof-object? x)
-            (printf/indent "~a\n" x)
-            (f))))))
-
-  (define* (E^ x ctxt env ec sc)
-     (define (env-list env)
-       (cond
-         [(null? env) '()]
-         [else (append (vector-ref env 0) (env-list (vector-ref env 2)))]))
-     (printf/indent "[ENV: ~s ~s\n" (if (app? ctxt) 'app ctxt) (map unparse (env-list env)))
-     (pretty-print/indent (unparse x))
-     (let ([v 
-            (parameterize ([indent-level (add1 (indent-level))])
-              (E^ x ctxt env ec sc))])
-       (printf/indent "=>\n")
-       (pretty-print/indent (unparse v))
-       (printf/indent "=================================]\n")
-       v))
-  (define* (E x ctxt env ec sc)
+  (define (E x ctxt env ec sc)
     (decrement ec 1)
     (struct-case x
-      [(constant) x]
+      [(constant) (decrement sc 1) x]
       [(var) (E-var x ctxt env ec sc)]
       [(seq e0 e1)
        (mkseq (E e0 'e env ec sc) (E e1 ctxt env ec sc))]
@@ -1169,22 +828,23 @@
          (make-constant (void)))]
       [(funcall rator rand*)
        (E-call rator 
-        (map (lambda (x) (make-operand x env ec)) rand*)
-        env ctxt ec sc)]
+         (map (lambda (x) (make-operand x env ec)) rand*)
+         env ctxt ec sc)]
       [(forcall name rand*)
+       (decrement sc 1)
        (make-forcall name (map (lambda (x) (E x 'v env ec sc)) rand*))]
       [(primref name)
        (ctxt-case ctxt
          [(app) (fold-prim name ctxt ec sc)]
-         [(v) x]
+         [(v) (decrement sc 1) x]
          [else (make-constant #t)])]
       [(clambda g cases cp free name) 
        (ctxt-case ctxt
          [(app) (inline x ctxt env ec sc)]
-         [(p e) (make-constant (void))]
+         [(p e) (make-constant #t)]
          [else
-          (decrement sc 1)
-          (make-clambda (gensym g)
+          (decrement sc 2)
+          (make-clambda (gensym)
             (map 
               (lambda (x)
                 (struct-case x
@@ -1193,7 +853,7 @@
                      [(case-info label args proper) 
                       (with-extended-env ((env args) (env args #f))
                         (make-clambda-case 
-                          (make-case-info (gensym label) args proper)
+                          (make-case-info (gensym) args proper)
                           (E body 'v env ec sc)))])]))
               cases)
             cp free name)])]
@@ -1203,28 +863,28 @@
        (with-extended-env ((env lhs*) (env lhs* #f))
          (for-each
            (lambda (lhs rhs)
-             (assert (not (prelex-operand (var-prelex lhs))))
              (set-prelex-operand! (var-prelex lhs)
                (make-operand rhs env ec)))
             lhs* rhs*)
          (let ([body (E body ctxt env ec sc)])
            (let ([lhs* (remp 
                          (lambda (x)
-                           (not (prelex-residual-referenced?
-                                  (var-prelex x))))
+                           (not (prelex-residual-referenced? (var-prelex x))))
                          lhs*)])
              (cond
                [(null? lhs*) body]
                [else
+                (decrement sc 1)
                 (make-fix lhs* 
                   (map (lambda (x)
-                         (value-visit-operand! 
-                           (prelex-operand (var-prelex x))))
+                         (let ([opnd (prelex-operand (var-prelex x))])
+                           (decrement sc (+ (operand-size opnd) 1))
+                           (value-visit-operand! opnd)))
                        lhs*)
                   body)]))))]
-      [else (error who "invalid expression" caller x)]))
+      [else (error who "invalid expression" x)]))
   (define empty-env '())
-  (define* (lookup x orig-env)
+  (define (lookup x orig-env)
     (define (lookup env)
       (cond
         [(vector? env)
@@ -1235,20 +895,19 @@
              [else (f (cdr lhs*) (cdr rhs*))]))]
         [else x]))
     (lookup orig-env))
-  (define debug-optimizer (make-parameter #f))
+  (define optimize-level 
+    (make-parameter 1
+      (lambda (x)
+        (if (memv x '(0 1 2))
+            x
+            (die 'optimize-level "valid levels are 0, 1, and 2")))))
   (define (source-optimize expr)
-    (prepare expr)
-    (when (debug-optimizer)
-      (newline)
-      (pretty-print (unparse expr)))
-    (let ([expr (E expr 'v empty-env 
-                   (passive-counter)
-                   (passive-counter))])
-      (when (debug-optimizer)
-        (printf "=>\n")
-        (pretty-print (unparse expr))
-        (printf "============================================\n"))
-      expr))
+    (define (source-optimize expr)
+      (prepare expr)
+      (E expr 'v empty-env (passive-counter) (passive-counter)))
+    (case (optimize-level)
+      [(2) (source-optimize expr)]
+      [else expr]))
 )
 
 

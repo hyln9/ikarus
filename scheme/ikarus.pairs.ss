@@ -102,3 +102,11 @@
     [cdaddr   $cdr $car $cdr $cdr]
     [cadddr   $car $cdr $cdr $cdr]
     [cddddr   $cdr $cdr $cdr $cdr]))
+
+
+(library (ikarus system pairs)
+  (export $car $cdr)
+  (import (ikarus))
+  (define $car car)
+  (define $cdr cdr))
+

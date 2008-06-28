@@ -581,3 +581,30 @@
   )
 
 
+(library (ikarus fixnums unsafe)
+  (export $fxzero? $fxadd1 $fxsub1 
+    $fx+ $fx* $fx- $fx= $fx< $fx<= $fx> $fx>=
+    $fxsll $fxsra $fxlogor $fxlogand $fxlognot)
+  (import (ikarus))
+  (define $fxzero? fxzero?)
+  (define $fxadd1 fxadd1)
+  (define $fxsub1 fxsub1)
+  (define $fx+ fx+)
+  (define $fx* fx*)
+  (define $fx- fx-)
+  (define $fx= fx=)
+  (define $fx< fx<)
+  (define $fx<= fx<=)
+  (define $fx> fx>)
+  (define $fx>= fx>=)
+  (define $fxsll fxsll)
+  (define $fxsra fxsra)
+  (define $fxlogor fxlogor)
+  (define $fxlogand fxlogand)
+  (define $fxlognot fxlognot))
+  
+ 
+
+
+
+

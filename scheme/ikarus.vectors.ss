@@ -279,3 +279,11 @@
         (f v ($fxadd1 i) n fill))))
 
   )
+
+
+(library (ikarus system vectors)
+  (export $vector-ref $vector-length)
+  (import (ikarus))
+  (define $vector-ref vector-ref)
+  (define $vector-length vector-length))
+

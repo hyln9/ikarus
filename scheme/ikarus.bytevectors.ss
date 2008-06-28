@@ -999,4 +999,9 @@
 
   )
 
-
+(library (ikarus system bytevectors)
+  (export $bytevector-u8-ref $bytevector-length $make-bytevector)
+  (import (ikarus))
+  (define $bytevector-u8-ref bytevector-u8-ref)
+  (define $bytevector-length bytevector-length)
+  (define $make-bytevector make-bytevector))

@@ -74,6 +74,15 @@
                 (let f ([args (command-line-arguments)])
                   (cond
                     [(null? args) (values '() #f #f '())]
+                    [(string=? (car args) "-O2")
+                     (optimize-level 2)
+                     (f (cdr args))]
+                    [(string=? (car args) "-O1")
+                     (optimize-level 1)
+                     (f (cdr args))]
+                    [(string=? (car args) "-O0")
+                     (optimize-level 0)
+                     (f (cdr args))]
                     [(string=? (car args) "--")
                      (values '() #f #f (cdr args))]
                     [(string=? (car args) "--script")

@@ -286,3 +286,13 @@
       (display (rtd-name x) p)
       (display " rtd>" p)))
   )
+
+
+(library (ikarus systems structs)
+  (export $struct-ref $struct/rtd?)
+  (import (ikarus))
+  (define $struct-ref struct-ref)
+  (define ($struct/rtd? x rtd)
+    (import (ikarus system $structs))
+    ($struct/rtd? x rtd)))
+

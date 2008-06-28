@@ -226,6 +226,11 @@
                                        (err ($car c*))))))
                          (err c2)))))
              (err c1))])))
-
-
 )
+
+(library (ikarus system chars)
+  (export $char->fixnum $fixnum->char)
+  (import (ikarus))
+  (define $char->fixnum char->integer)
+  (define $fixnum->char integer->char))
+

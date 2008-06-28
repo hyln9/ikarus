@@ -557,6 +557,28 @@ static ikptr do_read(ikpcb* pcb, fasl_port* p){
     }
     return x;
   }
+  else if(c == 'i'){
+    ikptr real = do_read(pcb, p);
+    ikptr imag = do_read(pcb, p);
+    ikptr x;
+    if ((tagof(real) == vector_tag) 
+         && (ref(real, -vector_tag) == flonum_tag)){
+      x = ik_unsafe_alloc(pcb, cflonum_size);
+      ref(x, 0) = cflonum_tag;;
+      ref(x, disp_cflonum_real) = real;
+      ref(x, disp_cflonum_imag) = imag;
+    } else {
+      x = ik_unsafe_alloc(pcb, compnum_size);
+      ref(x, 0) = compnum_tag;
+      ref(x, disp_compnum_real) = real;
+      ref(x, disp_compnum_imag) = imag;
+    }
+    x += vector_tag;
+    if(put_mark_index){
+      p->marks[put_mark_index] = x;
+    }
+    return x;
+  }
   else {
     fprintf(stderr, "invalid type '%c' (0x%02x) found in fasl file\n", c, c);
     exit(-1);

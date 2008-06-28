@@ -638,7 +638,7 @@
           (S* rands
               (lambda (s*)
                 (make-asm-instr op
-                  (make-disp (car s*) (cadr s*)) 
+                  (make-disp (car s*) (cadr s*))
                   (caddr s*))))]
          [(fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
                    fl:from-int fl:shuffle bswap!

@@ -14,19 +14,19 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-(library (ikarus base symbols)
+(library (ikarus.symbols)
   (export gensym gensym? gensym->unique-string gensym-prefix
           gensym-count print-gensym string->symbol symbol->string
           getprop putprop remprop property-list
           top-level-value top-level-bound? set-top-level-value!
           symbol-value symbol-bound? set-symbol-value!
-          reset-symbol-proc!)
+          reset-symbol-proc! system-value system-value-gensym)
   (import 
     (ikarus system $symbols)
     (ikarus system $pairs)
     (ikarus system $fx)
     (except (ikarus) gensym gensym? gensym->unique-string
-      gensym-prefix gensym-count print-gensym
+      gensym-prefix gensym-count print-gensym system-value
       string->symbol symbol->string
       getprop putprop remprop property-list
       top-level-value top-level-bound? set-top-level-value!
@@ -222,6 +222,22 @@
         (unless (or (boolean? x) (eq? x 'pretty))
           (die 'print-gensym "not in #t|#f|pretty" x))
         x)))
+
+  (define system-value-gensym (gensym))
+
+  (define (system-value x)
+    (unless (symbol? x)
+      (die 'system-value "not a symbol" x))
+    (cond
+      [(getprop x system-value-gensym) =>
+       (lambda (g)
+         (let ([v ($symbol-value g)])
+           (when ($unbound-object? v)
+             (die 'system-value "not a system symbol" x))
+           v))]
+      [else (die 'system-value "not a system symbol" x)]))
+
+
 
   )
 

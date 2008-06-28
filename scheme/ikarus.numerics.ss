@@ -3699,3 +3699,8 @@
         [else 
          (die 'imag-part "not a number" x)])))
 )
+
+(library (ikarus system flonums)
+  (export $fixnum->flonum)
+  (import (ikarus))
+  (define $fixnum->flonum fixnum->flonum))

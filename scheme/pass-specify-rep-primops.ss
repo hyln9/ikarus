@@ -108,6 +108,19 @@
   [(P x y) (prm '= (T x) (T y))]
   [(E x y) (nop)])
 
+(define (equable-constant? x)
+  (struct-case x 
+    [(constant xv) (equable? xv)]
+    [else #f]))
+
+(define-primop eqv? safe
+  [(P x y) 
+   (if (or (equable-constant? x)
+           (equable-constant? y))
+       (prm '= (T x) (T y))
+       (interrupt))]
+  [(E x y) (nop)])
+
 (define-primop null? safe
   [(P x) (prm '= (T x) (K nil))]
   [(E x) (nop)])
@@ -201,6 +214,44 @@
      [else (interrupt)])]
   [(E x ls) (nop)])
 
+(define-primop memq safe
+  [(P x ls) (cogen-pred-$memq x ls)]
+  [(V x ls) (cogen-value-$memq x ls)]
+  [(E x ls) 
+   (struct-case ls
+     [(constant ls)
+      (cond
+        [(list? ls) (nop)]
+        [else (interrupt)])]
+     [else (interrupt)])])
+
+(define (equable? x)
+  (or (fixnum? x) (not (number? x))))
+
+(define-primop memv safe
+  [(V x ls) 
+   (struct-case ls
+     [(constant lsv)
+      (cond
+        [(and (list? lsv) (andmap equable? lsv))
+         (cogen-value-$memq x ls)]
+        [else (interrupt)])]
+     [else (interrupt)])]
+  [(P x ls) 
+   (struct-case ls
+     [(constant lsv)
+      (cond
+        [(and (list? lsv) (andmap equable? lsv))
+         (cogen-pred-$memq x ls)]
+        [else (interrupt)])]
+     [else (interrupt)])]
+  [(E x ls)
+   (struct-case ls
+     [(constant lsv)
+      (cond
+        [(list? lsv) (nop)]
+        [else (interrupt)])]
+     [else (interrupt)])])
 
 /section)
 
