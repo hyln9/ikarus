@@ -304,8 +304,6 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-clean: clean-am
-
 clean-am: clean-generic mostlyclean-am
 
 distclean: distclean-am
@@ -374,6 +372,9 @@ uninstall-am:
 benchall: 
 	date +"NOW: %Y-%m-%d %H:%M:%S" >>timelog
 	../src/ikarus -b ../scheme/ikarus.boot --r6rs-script benchall.ss 2>>timelog
+	rm -f z*.scm z*.tex
+
+clean:
 	rm -f z*.scm z*.tex
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

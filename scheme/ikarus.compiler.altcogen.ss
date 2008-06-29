@@ -2999,7 +2999,6 @@
                       (parameterize ([exceptions-conc ac])
                         (T body ac))))
              (map Clambda code*))]))
-  (when (assembler-output) (print-code x))
   (Program x))
 
 (define (print-code x)

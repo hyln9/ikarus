@@ -378,7 +378,7 @@ ikarus.config.ss: Makefile last-revision ../config.h
 	echo '(define wordsize $(shell grep SIZEOF_VOID_P ../config.h | sed "s/.*\(.\)/\1/g"))' >>$@
 
 ikarus.boot: $(EXTRA_DIST) ikarus.config.ss
-	../src/ikarus -b ./ikarus.boot.prebuilt --r6rs-script makefile.ss
+	../src/ikarus -b ./ikarus.boot.prebuilt -O2 --r6rs-script makefile.ss
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

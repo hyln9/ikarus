@@ -1,4 +1,4 @@
-#!../src/ikarus -b ikarus.boot -O2 --r6rs-script
+#!../src/ikarus -b ikarus.boot --r6rs-script
 ;;; Ikarus Scheme -- A compiler for R6RS Scheme.
 ;;; Copyright (C) 2006,2007,2008  Abdulaziz Ghuloum
 ;;; 
@@ -17,16 +17,16 @@
 ;;; vim:syntax=scheme
 (import (only (ikarus) import))
 (import (except (ikarus) 
-          assembler-output scc-letrec optimize-cp optimize-level
-          cp0-size-limit cp0-effort-limit))
+          assembler-output optimize-cp optimize-level
+          cp0-size-limit cp0-effort-limit expand/optimize
+          optimizer-output))
 (import (ikarus.compiler))
 (import (except (psyntax system $bootstrap)
                 eval-core 
                 current-primitive-locations
                 compile-core-expr-to-port))
 (import (ikarus.compiler)) ; just for fun
-(optimize-level 1)
-
+(optimize-level 2)
 (pretty-width 160)
 ((pretty-format 'fix) ((pretty-format 'letrec)))
 
@@ -368,8 +368,10 @@
     [interrupt-handler                           i]
     [engine-handler                              i]
     [assembler-output                            i]
+    [optimizer-output                            i]
     [new-cafe                                    i]
     [expand                                      i]
+    [expand/optimize                             i]
     [environment?                                i]
     [time-it                                     i]
     [verbose-timer                               i]
@@ -1432,7 +1434,6 @@
     ;[i/o-would-block-condition?       i]
     ;[i/o-would-block-port             i]
     [ellipsis-map ]
-    [scc-letrec i]
     [optimize-cp i]
     [optimize-level i]
     [cp0-size-limit i]

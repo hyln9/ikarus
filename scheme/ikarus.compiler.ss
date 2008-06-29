@@ -16,9 +16,9 @@
 
 (library (ikarus.compiler)
   (export compile-core-expr-to-port 
-          assembler-output scc-letrec optimize-cp
+          assembler-output optimize-cp
           current-primitive-locations eval-core
-          compile-core-expr
+          compile-core-expr expand/optimize optimizer-output
           cp0-effort-limit cp0-size-limit optimize-level)
   (import 
     (rnrs hashtables)
@@ -31,7 +31,8 @@
         fasl-write scc-letrec optimize-cp
         compile-core-expr-to-port assembler-output
         current-primitive-locations eval-core
-        cp0-size-limit cp0-effort-limit)
+        cp0-size-limit cp0-effort-limit 
+        expand/optimize optimizer-output)
     (ikarus.fasl.write)
     (ikarus.intel-assembler))
 
@@ -106,9 +107,8 @@
 (define-struct code-loc (label))
 (define-struct foreign-label (label))
 (define-struct var 
-   (name assigned referenced 
-         reg-conf frm-conf var-conf reg-move frm-move var-move
-         loc index global-loc))
+   (name reg-conf frm-conf var-conf reg-move frm-move var-move
+         loc index referenced global-loc))
 (define-struct cp-var (idx))
 (define-struct frame-var (idx))
 (define-struct new-frame (base-idx size body))
@@ -152,6 +152,44 @@
 (define-struct asm-instr (op dst src))
 (define-struct disp (s0 s1))
 
+;;; this define-structure definition for compatibility with the
+;;; notation used in Oscar's thesis.
+(define-syntax define-structure
+  (lambda (stx) 
+    (define (fmt ctxt)
+      (lambda (str . args) 
+        (datum->syntax ctxt 
+          (string->symbol 
+            (apply format str (map syntax->datum args))))))
+    (syntax-case stx ()
+      [(_ (name fields ...)) 
+       #'(define-struct name (fields ...))]
+      [(_ (name fields ...) ([others defaults] ...))
+       (with-syntax ([(pred maker (getters ...) (setters ...))
+                      (let ([fmt (fmt #'name)])
+                        (list (fmt "~s?" #'name)
+                              (fmt "make-~s" #'name)
+                              (map (lambda (x) (fmt "~s-~s" #'name x))
+                                   #'(fields ... others ...))
+                              (map (lambda (x) (fmt "set-~s-~s!" #'name x))
+                                   #'(fields ... others ...))))])
+         #'(module (name pred getters ... setters ... maker)
+             (module P (name pred getters ... setters ... maker)
+               (define-struct name (fields ... others ...)))
+             (module (maker)
+               (define (maker fields ...)
+                 (import P)
+                 (maker fields ... defaults ...)))
+             (module (name pred getters ... setters ...)
+               (import P))))])))
+;;;
+(define-structure (prelex name operand)
+  ([source-referenced?   #f]
+   [source-assigned?     #f]
+   [residual-referenced? #f]
+   [residual-assigned?   #f]
+   [global-location      #f]))
+
 (define mkfvar
   (let ([cache '()])
     (lambda (i)
@@ -165,19 +203,19 @@
               fv)])]
         [else (error 'mkfvar "not a fixnum" i)]))))
 
-(define (unique-var x)
-  (make-var (gensym x) #f #f #f #f #f #f #f #f #f #f #f))
+(define (unique-var name)
+  (make-var name #f #f #f #f #f #f #f #f #f #f))
 
 (define (recordize x)
   (define *cookie* (gensym))
   (define (gen-fml* fml*)
     (cond
       [(pair? fml*)
-       (let ([v (unique-var (car fml*))])
+       (let ([v (make-prelex (car fml*) #f)])
          (putprop (car fml*) *cookie* v)
          (cons v (gen-fml* (cdr fml*))))]
       [(symbol? fml*)
-       (let ([v (unique-var fml*)])
+       (let ([v (make-prelex fml* #f)])
          (putprop fml* *cookie* v)
          v)]
       [else '()]))
@@ -208,9 +246,6 @@
              (string? (cadr x)))
         (cadr x)
         (error 'quoted-string "not a quoted string" x)))
-  (define (Var x)
-    (or (getprop x *cookie*) 
-        (error 'recordize "unbound" x)))
   (define (lexical x) 
     (getprop x *cookie*))
   (define (get-fmls x args) 
@@ -261,6 +296,7 @@
             (cond
               [(lexical lhs) => 
                (lambda (var) 
+                 (set-prelex-source-assigned?! var #t)
                  (make-assign var (E rhs lhs)))]
               [else (make-global-set! lhs (E rhs lhs))]))] 
          [(begin)
@@ -293,18 +329,14 @@
               (let ([nlhs* (gen-fml* lhs*)])
                 (for-each 
                   (lambda (lhs loc) 
-                    (set-var-global-loc! lhs loc))
+                    (set-prelex-global-location! lhs loc))
                   nlhs* loc*)
                 (let ([expr (make-rec*bind nlhs* (map E rhs* lhs*)
                                (let f ([lhs* nlhs*] [loc* loc*])
                                  (cond
                                    [(null? lhs*) (E body ctxt)]
                                    [(not (car loc*)) (f (cdr lhs*) (cdr loc*))]
-                                   [else
-                                    (make-seq 
-                                      (make-constant #f)
-                                      ;(make-global-set! (car loc*) (car lhs*))
-                                      (f (cdr lhs*) (cdr loc*)))])))])
+                                   [else (f (cdr lhs*) (cdr loc*))])))])
                   (ungen-fml* lhs*)
                   expr))))]
          [(case-lambda)
@@ -350,15 +382,17 @@
                    [guard-expr (caddr x)]
                    [f (gensym 'f)]
                    [t (gensym 't)]
+                   [t0 (gensym 't)]
                    [x (gensym 'x)])
                (E `((case-lambda 
                       [(,t ,f)
                        (if ((primitive procedure?) ,f)
-                           (begin
-                             (set! ,t (,f ,t))
-                             (case-lambda
-                               [() ,t]
-                               [(,x) (set! ,t (,f ,x))]))
+                           ((case-lambda
+                              [(,t0)
+                               (case-lambda
+                                 [() ,t0]
+                                 [(,x) (set! ,t0 (,f ,x))])])
+                            (,f ,t))
                            ((primitive die)
                               'make-parameter 
                               '"not a procedure"
@@ -383,10 +417,15 @@
                   [else
                    (map (lambda (x) (E x #f)) arg*)]))))])]
       [(symbol? x)
-       (or (lexical x) 
-           (make-funcall 
-             (make-primref 'top-level-value) 
-             (list (make-constant x))))]
+       (cond
+         [(lexical x) =>
+          (lambda (var)
+            (set-prelex-source-referenced?! var #t)
+            var)]
+         [else
+          (make-funcall 
+            (make-primref 'top-level-value) 
+            (list (make-constant x)))])]
       [else (error 'recordize "invalid expression" x)]))
   (E x #f))
 
@@ -402,7 +441,8 @@
     (struct-case x
       [(constant c) `(quote ,c)]
       [(code-loc x) `(code-loc ,x)]
-      [(var x) (string->symbol (format "v:~a" x))]
+      [(var x) (string->symbol (format ":~a" x))]
+      [(prelex name) (string->symbol (format ":~a" x))]
       [(primref x) x]
       [(conditional test conseq altern) 
        `(if ,(E test) ,(E conseq) ,(E altern))]
@@ -495,6 +535,91 @@
        (if (symbol? x) 
            x
            "#<unknown>")]))
+  (E x))
+
+
+(define (unparse-pretty x)
+  (define n 0)
+  (define h (make-eq-hashtable))
+  (define (Var x)
+    (or (hashtable-ref h x #f)
+        (let ([v (string->symbol (format "~a_~a" (prelex-name x) n))])
+          (hashtable-set! h x v)
+          (set! n (+ n 1))
+          v)))
+  (define (map f ls)
+    (cond
+      [(null? ls) '()]
+      [else
+       (let ([a (f (car ls))])
+         (cons a (map f (cdr ls))))]))
+  (define (E-args proper x)
+    (if proper 
+        (map Var x)
+        (let f ([a (car x)] [d (cdr x)])
+          (cond
+            [(null? d) (Var a)]
+            [else 
+             (let ([a (Var a)])
+               (cons a (f (car d) (cdr d))))]))))
+  (define (clambda-clause x)
+    (struct-case x
+      [(clambda-case info body)
+       (let ([args (E-args (case-info-proper info) (case-info-args info)) ])
+         (list args (E body)))]))
+  (define (build-let b* body)
+    (cond
+      [(and (= (length b*) 1)
+            (pair? body)
+            (or (eq? (car body) 'let*)
+                (and (eq? (car body) 'let)
+                     (= (length (cadr body)) 1))))
+       (list 'let* (append b* (cadr body)) (caddr body))]
+      [else 
+       (list 'let b* body)]))
+  (define (E x)
+    (struct-case x
+      [(constant c) `(quote ,c)]
+      [(prelex) (Var x)]
+      [(primref x) x]
+      [(conditional test conseq altern) 
+       (cons 'if (map E (list test conseq altern)))]
+      [(primcall op arg*) (cons op (map E arg*))]
+      [(bind lhs* rhs* body) 
+       (let* ([lhs* (map Var lhs*)]
+              [rhs* (map E rhs*)]
+              [body (E body)])
+         (import (only (ikarus) map))
+         (build-let (map list lhs* rhs*) body))]
+      [(fix lhs* rhs* body)
+       (let* ([lhs* (map Var lhs*)]
+              [rhs* (map E rhs*)]
+              [body (E body)])
+         (import (only (ikarus) map))
+         (list 'letrec (map list lhs* rhs*) body))]
+      [(seq e0 e1) 
+       (cons 'begin
+          (let f ([e0 e0] [e* (list e1)])
+            (struct-case e0
+              [(seq e00 e01)
+               (f e00 (cons e01 e*))]
+              [else
+               (let ([x (E e0)])
+                 (if (null? e*)
+                     (list x)
+                     (cons x (f (car e*) (cdr e*)))))])))]
+      [(clambda g cls* cp free)
+       (let ([cls* (map clambda-clause cls*)])
+         (cond
+           [(= (length cls*) 1) (cons 'lambda (car cls*))]
+           [else (cons 'case-lambda cls*)]))]
+      [(funcall rator rand*) 
+       (let ([rator (E rator)])
+         (cons rator (map E rand*)))]
+      [(forcall rator rand*) `(foreign-call ,rator . ,(map E rand*))]
+      [(assign lhs rhs) `(set! ,(E lhs) ,(E rhs))]
+      [(foreign-label x) `(foreign-label ,x)]
+      [else x]))
   (E x))
 
 (define open-mvcalls (make-parameter #t))
@@ -598,17 +723,18 @@
   (define (call-expr x rand*)
     (cond
       [(clambda? x) (inline x rand*)]
-      [(and (var? x) (not (var-assigned x))) 
+      [(and (prelex? x) (not (prelex-source-assigned? x))) 
        ;;; FIXME: did we do the analysis yet?
        (make-funcall x rand*)]
       [else
-       (let ([t (unique-var 'tmp)])
+       (let ([t (make-prelex 'tmp #f)])
+         (set-prelex-source-referenced?! t #t)
          (make-bind (list t) (list x)
            (make-funcall t rand*)))]))
   (define (Expr x)
     (struct-case x
       [(constant) x]
-      [(var) x]
+      [(prelex) (assert (prelex-source-referenced? x)) x]
       [(primref) x]
       [(bind lhs* rhs* body)
        (make-bind lhs* (map Expr rhs*) (Expr body))]
@@ -636,156 +762,11 @@
       [(forcall rator rand*) 
        (make-forcall rator (map Expr rand*))]
       [(assign lhs rhs)
+       (assert (prelex-source-assigned? lhs))
        (make-assign lhs (Expr rhs))]
       [else (error who "invalid expression" (unparse x))]))
   (Expr x))
 
-
-(define simple-primitives 
-  ;;; primitives that are side-effect-free
-  ;;; FIXME: surely something must go here, no?
-  '())
-
-(define complex-count 0)
-
-(define (optimize-letrec x)
-  (define who 'optimize-letrec)
-  (define (extend-hash lhs* h ref)
-    (for-each (lambda (lhs) (hashtable-set! h lhs #t)) lhs*)
-    (lambda (x)
-      (unless (hashtable-ref h x #f)
-        (hashtable-set! h x #t)
-        (ref x))))
-  (define (E* x* ref comp)
-    (cond
-      [(null? x*) '()]
-      [else
-       (cons (E (car x*) ref comp)
-             (E* (cdr x*) ref comp))]))  
-  (define (do-rhs* i lhs* rhs* ref comp vref vcomp)
-    (cond
-      [(null? rhs*) '()]
-      [else
-       (let ([h (make-eq-hashtable)]
-             [rest (do-rhs* (fxadd1 i) lhs* (cdr rhs*) ref comp vref vcomp)])
-         (let ([ref
-                (lambda (x)
-                  (unless (hashtable-ref h x #f)
-                    (hashtable-set! h x #t)
-                    (ref x)
-                    (when (memq x lhs*)
-                      (vector-set! vref i #t))))]
-               [comp
-                (lambda ()
-                  (vector-set! vcomp i #t)
-                  (comp))])
-           (cons (E (car rhs*) ref comp) rest)))]))
-  (define (partition-rhs* i lhs* rhs* vref vcomp)
-    (cond
-      [(null? lhs*) (values '() '() '() '() '() '())]
-      [else
-       (let-values 
-         ([(slhs* srhs* llhs* lrhs* clhs* crhs*)
-           (partition-rhs* (fxadd1 i) (cdr lhs*) (cdr rhs*) vref vcomp)]
-          [(lhs rhs) (values (car lhs*) (car rhs*))])
-         (cond
-           [(var-assigned lhs) 
-            (values slhs* srhs* llhs* lrhs* (cons lhs clhs*) (cons rhs crhs*))]
-           [(clambda? rhs)
-            (values slhs* srhs* (cons lhs llhs*) (cons rhs lrhs*) clhs* crhs*)]
-           [(or (vector-ref vref i) (vector-ref vcomp i))
-            (values slhs* srhs* llhs* lrhs* (cons lhs clhs*) (cons rhs crhs*))]
-           [else
-            (values (cons lhs slhs*) (cons rhs srhs*) llhs* lrhs* clhs* crhs*)]
-           ))]))
-  (define (do-recbind lhs* rhs* body ref comp letrec?) 
-    (let ([h (make-eq-hashtable)]
-          [vref (make-vector (length lhs*) #f)]
-          [vcomp (make-vector (length lhs*) #f)])
-      (let* ([ref (extend-hash lhs* h ref)]
-             [body (E body ref comp)])
-        (let ([rhs* (do-rhs* 0 lhs* rhs* ref comp vref vcomp)])
-          (let-values ([(slhs* srhs* llhs* lrhs* clhs* crhs*)
-                        (partition-rhs* 0 lhs* rhs* vref vcomp)])
-            ;;; (let ([made-complex 
-            ;;;        (filter (lambda (x) (not (var-assigned x)))
-            ;;;                clhs*)])
-            ;;;   (unless (null? made-complex)
-            ;;;     (set! complex-count 
-            ;;;       (+ complex-count (length made-complex)))
-            ;;;     (printf "COMPLEX (~s) = ~s\n" 
-            ;;;             complex-count 
-            ;;;             (map unparse made-complex))))
-            (let ([void* (map (lambda (x) (make-constant (void))) clhs*)])
-              (make-bind slhs* srhs*
-                (make-bind clhs* void*
-                  (make-fix llhs* lrhs*
-                    (if letrec?
-                        (let ([t* (map (lambda (x) (unique-var 'tmp)) clhs*)])
-                          (make-bind t* crhs*
-                            (build-assign* clhs* t* body)))
-                        (build-assign* clhs* crhs* body)))))))))))
-  (define (build-assign* lhs* rhs* body)
-    (cond
-      [(null? lhs*) body]
-      [else
-       (make-seq
-         (make-assign (car lhs*) (car rhs*))
-         (build-assign* (cdr lhs*) (cdr rhs*) body))]))
-  (define (E x ref comp)
-    (struct-case x
-      [(constant) x]
-      [(var) (ref x) x]
-      [(assign lhs rhs)
-       (set-var-assigned! lhs #t)
-       (ref lhs)
-       (comp)
-       (make-assign lhs (E rhs ref comp))]
-      [(primref) x]
-      [(bind lhs* rhs* body)
-       (let ([rhs* (E* rhs* ref comp)])
-         (let ([h (make-eq-hashtable)])
-           (let ([body (E body (extend-hash lhs* h ref) comp)])
-             (make-bind lhs* rhs* body))))]
-      [(recbind lhs* rhs* body)
-       (if (null? lhs*)
-           (E body ref comp)
-           (do-recbind lhs* rhs* body ref comp #t))]
-      [(rec*bind lhs* rhs* body)
-       (if (null? lhs*)
-           (E body ref comp)
-           (do-recbind lhs* rhs* body ref comp #f))] 
-      [(conditional e0 e1 e2)
-       (make-conditional (E e0 ref comp) (E e1 ref comp) (E e2 ref comp))]
-      [(seq e0 e1) (make-seq (E e0 ref comp) (E e1 ref comp))]
-      [(clambda g cls* cp free name)
-       (make-clambda g
-         (map (lambda (x)
-                (struct-case x
-                  [(clambda-case info body)
-                   (let ([h (make-eq-hashtable)])
-                     (let ([body (E body (extend-hash (case-info-args info) h ref) void)])
-                       (make-clambda-case info body)))]))
-              cls*)
-         cp free name)]
-      [(funcall rator rand*)
-       (let ([rator (E rator ref comp)] [rand* (E* rand* ref comp)])
-         (struct-case rator
-           [(primref op)
-            (unless (memq op simple-primitives)
-              (comp))]
-           [else
-            (comp)])
-         (make-funcall rator rand*))]
-      [(mvcall p c)
-       (let ([p (E p ref comp)] [c (E c ref comp)])
-         (comp)
-         (make-mvcall p c))]
-      [(forcall rator rand*) 
-       (make-forcall rator (E* rand* ref comp))]
-      [else (error who "invalid expression" (unparse x))]))
-  (E x (lambda (x) (error who "free var found" x))
-       void))
 
 #|
 (letrec* (bi ...
@@ -801,8 +782,6 @@
   body)
 |#
 
-
-(define scc-letrec (make-parameter #t))
 
 (define (optimize-letrec/scc x)
   (define who 'optimize-letrec/scc)
@@ -873,17 +852,18 @@
             body
             (make-bind lhs* rhs* body)))
       (define (lambda-binding? x)
-        (and (not (var-assigned (binding-lhs x)))
+        (and (not (prelex-source-assigned? (binding-lhs x)))
              (clambda? (binding-rhs x))))
-      (define (mkset!s b* body) 
+      (define (mkset!s b* body)
         (cond
           [(null? b*) body]
           [else 
            (let* ([b (car b*)]
                   [lhs (binding-lhs b)])
-             (unless (var-assigned lhs) 
+             (unless (prelex-source-assigned? lhs) 
                ;(printf "MADE COMPLEX ~s\n" (unparse lhs))
-               (set-var-assigned! lhs #t))
+               (set-prelex-source-assigned?! lhs 
+                  (or (prelex-global-location lhs) #t)))
              (make-seq
                (make-assign lhs (binding-rhs b))
                (mkset!s (cdr b*) body)))]))
@@ -934,11 +914,11 @@
         [(null? lhs*) '()]
         [else 
          (let ([b (make-binding i (car lhs*) (car rhs*) #f bc '())])
-           (set-var-index! (car lhs*) b)
+           (set-prelex-operand! (car lhs*) b)
            (cons b (make-bindings (cdr lhs*) (cdr rhs*) bc (+ i 1))))]))
     (define (complex? x) 
       (or (binding-complex x) 
-          (var-assigned (binding-lhs x))))
+          (prelex-source-assigned? (binding-lhs x))))
     (define (insert-order-edges b*)
       (define (mark pb b*)
         (unless (null? b*)
@@ -956,7 +936,7 @@
               (insert-order-edges (cdr b*))))))
     (let ([b* (make-bindings lhs* rhs* bc 0)])
       (for-each (lambda (b) (set-binding-rhs! b (E (binding-rhs b) b))) b*)
-      (for-each (lambda (x) (set-var-index! x #f)) lhs*)
+      (for-each (lambda (x) (set-prelex-operand! x #f)) lhs*)
       (let ([body (E body bc)]) 
         (when ordered? (insert-order-edges b*))
         (let ([scc* (get-sccs-in-order b* (map binding-free* b*) b*)])
@@ -977,7 +957,7 @@
       (set-binding-complex! bc #t)
       (mark-complex (binding-prev bc))))
   (define (mark-free var bc)
-    (let ([rb (var-index var)])
+    (let ([rb (prelex-operand var)])
       (when rb
         (let ([lb 
                (let ([pr (binding-prev rb)])
@@ -1008,13 +988,15 @@
   (define (E x bc)
     (struct-case x
       [(constant) x]
-      [(var) 
+      [(prelex) 
+       (assert (prelex-source-referenced? x))
        (mark-free x bc)
-       (when (var-assigned x) 
+       (when (prelex-source-assigned? x)
          (mark-complex bc))
        x]
       [(assign lhs rhs)
-       (set-var-assigned! lhs #t)
+       (assert (prelex-source-assigned? lhs))
+       ;(set-prelex-source-assigned?! lhs #t)
        (mark-free lhs bc)
        (mark-complex bc)
        (make-assign lhs (E rhs bc))]
@@ -1051,760 +1033,7 @@
     ;(pretty-print (unparse x)) 
     x))
 
-
 (include "ikarus.compiler.source-optimizer.ss")
-
-
-(define (uncover-assigned/referenced x)
-  (define who 'uncover-assigned/referenced)
-  (define (Expr* x*)
-    (for-each Expr x*))
-  (define (init-var x)
-    (set-var-assigned! x #f)
-    (set-var-referenced! x (var-global-loc x)))
-  (define (Expr x)
-    (struct-case x
-      [(constant) (void)]
-      [(var) (set-var-referenced! x #t)]
-      [(primref) (void)]
-      [(bind lhs* rhs* body)
-       (for-each init-var lhs*)
-       (begin (Expr body) (Expr* rhs*))]
-      [(fix lhs* rhs* body)
-       (for-each init-var lhs*)
-       (Expr* rhs*)
-       (Expr body)
-       (when (ormap var-assigned lhs*)
-         (error who "a fix lhs is assigned"))]
-      [(conditional test conseq altern)
-       (begin (Expr test) (Expr conseq) (Expr altern))]
-      [(seq e0 e1) (begin (Expr e0) (Expr e1))]
-      [(clambda g cls*)
-       (for-each
-         (lambda (cls)
-           (struct-case cls
-             [(clambda-case info body)
-              (for-each init-var (case-info-args info))
-              (Expr body)]))
-         cls*)]
-      [(primcall rator rand*) (Expr* rand*)]
-      [(funcall rator rand*)
-       (begin (Expr rator) (Expr* rand*))]
-      [(mvcall p c) (begin (Expr p) (Expr c))]
-      [(forcall rator rand*) (Expr* rand*)]
-      [(assign lhs rhs)
-       (set-var-assigned! lhs #t)
-       (Expr rhs)]
-      [else (error who "invalid expression" (unparse x))]))
-  (Expr x)
-  x)
-
-
-
-;;; FIXME URGENT: should handle (+ x k), (- x k) where k is a fixnum
-;;;               also fx+, fx-
-(module (optimize-primcall)
-  (define (optimize-primcall ctxt op rand*)
-    (cond
-      [(getprop op *cookie*) =>
-       (lambda (proc)
-         (proc ctxt op rand* 
-               (lambda () 
-                 (make-funcall (make-primref op) rand*))))]
-      [else
-       (make-funcall (make-primref op) rand*)]))
-  (define (constant-value x k) 
-    (struct-case x 
-      [(constant t) (k t)] ; known
-      [(bind lhs* rhs* body) (constant-value body k)]
-      [(fix lhs* rhs* body) (constant-value body k)]
-      [(seq e0 e1) (constant-value e1 k)]
-      [else #f]))
-  (define (mk-seq e0 e1)  ;;; keep e1 seq-free.
-    (cond
-      [(and (primcall? e0) (eq? (primcall-op e0) 'void)) e1]
-      [(or (constant? e0) (primref? e0)) e1]
-      [(seq? e1)
-       (make-seq (make-seq e0 (seq-e0 e1)) (seq-e1 e1))]
-      [else
-       (make-seq e0 e1)]))
-  (define (equable? x)
-    (if (number? x) (fixnum? x) #t))
-  (define *cookie* (gensym "optimizer-cookie"))
-  (define-syntax set-cases
-    (syntax-rules ()
-      [(_ ctxt op rand* giveup 
-          [(op** ...) b* b** ...] ...)
-       (begin
-         (let ([p (lambda (ctxt op rand* giveup) b* b** ...)])
-           (putprop 'op** *cookie* p) ...
-           (void)) ...)]))
-  (set-cases ctxt op rand* giveup
-    [(eq?)
-     (or (and (fx= (length rand*) 2)
-              (let ([a0 (car rand*)] [a1 (cadr rand*)])
-                (or
-                  (constant-value a0
-                    (lambda (x0)
-                      (constant-value a1
-                        (lambda (x1)
-                          (mk-seq (mk-seq a0 a1)
-                            (make-constant (eq? x0 x1)))))
-                  (and (eq? ctxt 'e)
-                       (mk-seq a0 a1)))))))
-         (giveup))] 
-    [(eqv?)
-     (or (and (fx= (length rand*) 2)
-              (let ([a0 (car rand*)] [a1 (cadr rand*)])
-                (or
-                  (constant-value a0
-                    (lambda (x0)
-                      (or (constant-value a1
-                            (lambda (x1)
-                              (mk-seq (mk-seq a0 a1)
-                                (make-constant (eqv? x0 x1)))))
-                          (and (equable? x0)
-                               (optimize-primcall ctxt 'eq? rand*)))))
-                  (constant-value a1
-                    (lambda (x1)
-                      (and (equable? x1)
-                           (optimize-primcall ctxt 'eq? rand*))))
-                  (and (eq? ctxt 'e)
-                       (mk-seq a0 a1)))))
-         (giveup))]
-    [(memv)
-     (or (and (fx= (length rand*) 2)
-              (let ([a0 (car rand*)] [a1 (cadr rand*)])
-                (constant-value a1
-                  (lambda (ls)
-                    (cond
-                      [(not (list? ls)) #f]
-                      [(eq? ctxt 'e) (mk-seq a0 a1)]
-                      [(constant-value a0
-                         (lambda (x)
-                           (mk-seq (mk-seq a0 a1)
-                             (case ctxt
-                               [(v) (make-constant (memv x ls))]
-                               [else (make-constant
-                                       (if (memv x ls) #t #f))]))))]
-                      [(andmap equable? ls)
-                       (optimize-primcall ctxt 'memq rand*)]
-                      [(fx= (length ls) 1)
-                       (mk-seq a1
-                         (optimize-primcall ctxt 'eqv?
-                            (list a0 (make-constant (car ls)))))]
-                      [else #f])))))
-         (giveup))]
-    [(memq) 
-     (or (and (fx= (length rand*) 2)
-              (let ([a0 (car rand*)] [a1 (cadr rand*)])
-                (constant-value a1
-                  (lambda (ls)
-                    (cond
-                      [(not (list? ls)) #f]
-                      [(eq? ctxt 'e) (make-seq a0 a1)]
-                      [(constant-value a0
-                         (lambda (x)
-                           (mk-seq (mk-seq a0 a1)
-                             (case ctxt
-                               [(v) (make-constant (memq x ls))]
-                               [else (make-constant
-                                       (if (memq x ls) #t #f))]))))]
-                      [(fx= (length ls) 1)
-                       (mk-seq a1
-                         (optimize-primcall ctxt 'eq?
-                           (list a0 (make-constant (car ls)))))]
-                      [else (make-funcall (make-primref '$memq) rand*)])))))
-         (giveup))]
-    [(length) 
-     (or (and (fx= (length rand*) 1)
-              (let ([a0 (car rand*)])
-                (constant-value a0
-                  (lambda (ls)
-                    (cond
-                      [(not (list? ls)) #f]
-                      [(eq? ctxt 'v) (make-constant (length ls))]
-                      [(eq? ctxt 'e) a0]
-                      [else (mk-seq a0 (make-constant #t))])))))
-         (giveup))] 
-    [(list vector)
-     (case ctxt
-       [(v) 
-        (if (null? rand*) 
-            (make-constant 
-              (case op
-                [(list)    '()]
-                [else     '#()]))
-            (giveup))]
-       [else
-        (if (null? rand*)
-            (make-constant #t)
-            (let f ([a (car rand*)] [d (cdr rand*)])
-              (cond
-                [(null? d) (mk-seq a (make-constant #t))]
-                [else
-                 (f (mk-seq a (car d)) (cdr d))])))])]
-    [(cons*)
-     (case ctxt
-       [(e) 
-        (cond
-          [(null? rand*) (giveup)]
-          [else
-           (let f ([a (car rand*)] [d (cdr rand*)])
-             (cond
-               [(null? d) a]
-               [else (f (mk-seq a (car d)) (cdr d))]))])]
-       [(p) 
-        (cond
-          [(null? rand*) (giveup)]
-          [(null? (cdr rand*)) 
-           (let ([a (car rand*)])
-             (or (constant-value a
-                   (lambda (v)
-                     (mk-seq a (make-constant (if v #t #f)))))
-                 a))]
-          [else 
-           (let f ([a (car rand*)] [d (cdr rand*)])
-             (cond
-               [(null? d) (mk-seq a (make-constant #t))]
-               [else (f (mk-seq a (car d)) (cdr d))]))])]
-       [else
-        (cond
-          [(null? rand*) (giveup)]
-          [(null? (cdr rand*)) (car rand*)]
-          [else (giveup)])])] 
-    [(cons)
-     (or (and (fx= (length rand*) 2)
-              (let ([a0 (car rand*)] [a1 (cadr rand*)])
-                (case ctxt
-                  [(e) (mk-seq a0 a1)]
-                  [(p) (mk-seq (mk-seq a0 a1) (make-constant #t))]
-                  [else (giveup)])))
-         (giveup))]
-    [($struct-ref $struct/rtd?)
-     (or (and (fx= (length rand*) 2)
-              (let ([a0 (car rand*)] [a1 (cadr rand*)])
-                (case ctxt
-                  [(e) (mk-seq a0 a1)]
-                  [else 
-                   (or (constant-value a1
-                         (lambda (n1)
-                           (mk-seq a1
-                             (make-funcall (make-primref op)
-                                (list a0 (make-constant n1))))))
-                       (make-funcall (make-primref op) rand*))])))
-         (error 'optimize "invalid operands to primitive"
-            (map unparse rand*) op))]
-    [(void)
-     (or (and (null? rand*)
-              (case ctxt
-                [(p) (make-constant #t)]
-                [else (make-constant (void))]))
-         (giveup))]
-    [(car cdr)
-     (or (and (fx= (length rand*) 1)
-              (let ([a (car rand*)])
-                (constant-value a
-                  (lambda (v)
-                    (and (pair? v)
-                         (mk-seq a
-                           (make-constant
-                             (case op
-                               [(car) (car v)]
-                               [else  (cdr v)]))))))))
-         (giveup))]
-    [(cadr)
-     (or (and (fx= (length rand*) 1)
-              (let ([a (car rand*)])
-                (or (constant-value a
-                      (lambda (v)
-                        (and (pair? v)
-                             (pair? (cdr v))
-                             (mk-seq a
-                               (make-constant
-                                 (cadr v))))))
-                    (make-funcall (make-primref op) rand*))))
-         (giveup))] 
-    [(not null? pair? fixnum? vector? string? char? symbol?
-      eof-object?)
-     (or (and (fx= (length rand*) 1)
-              (let ([a (car rand*)])
-                (case ctxt
-                  [(e) a]
-                  [else
-                   (or (constant-value a
-                         (lambda (v)
-                           (mk-seq a
-                             (make-constant
-                               (case op
-                                 [(not) (not v)]
-                                 [(null?) (null? v)]
-                                 [(pair?) (pair? v)]
-                                 [(fixnum?) (fixnum? v)]
-                                 [(vector?) (vector? v)]
-                                 [(string?) (string? v)]
-                                 [(char?) (char? v)]
-                                 [(symbol?) (symbol? v)]
-                                 [(eof-object?) (eof-object? v)]
-                                 [else 
-                                  (error 'optimize
-                                    "huh ~s" op)])))))
-                       (make-funcall (make-primref op) rand*))])))
-         (giveup))]
-    [($car $cdr)
-     (or (and (fx= (length rand*) 1)
-              (let ([a (car rand*)])
-                (or (constant-value a
-                      (lambda (v)
-                        (if (pair? v)
-                            (make-seq a
-                              (make-constant
-                                (case op
-                                  [($car) (car v)]
-                                  [else   (cdr v)])))
-                            (error 'optimize
-                                   "incorrect arg ~s to ~s"
-                                   v op))))
-                    (giveup))))
-         (error 'optimize "incorrect args to primitive"
-                (map unparse rand*) op))]
-    [(fxadd1 fxsub1)
-     (or (and (fx= (length rand*) 1)
-              (let ([a (car rand*)])
-                (or (constant-value a
-                      (lambda (v)
-                        (and (fixnum? v)
-                             (let ([t 
-                                    (case op
-                                      [(fxadd1) (add1 v)]
-                                      [else     (sub1 v)])])
-                                (and (fixnum? t)
-                                     (mk-seq a 
-                                       (make-constant t)))))))
-                    (make-funcall (make-primref op) rand*))))
-         (giveup))]
-    [(fx+)
-     (or (and (fx= (length rand*) 2)
-              (let ([a0 (car rand*)] [a1 (cadr rand*)])
-                (or (constant-value a1
-                      (lambda (v1)
-                        (and (fixnum? v1)
-                             (or (constant-value a0
-                                   (lambda (v0)
-                                     (and (fixnum? v0)
-                                          (let ([r (+ v0 v1)])
-                                            (and (fixnum? r)
-                                                 (mk-seq (mk-seq a0 a1) 
-                                                   (make-constant r)))))))
-                                 (mk-seq a1 
-                                   (make-funcall (make-primref op) 
-                                     (list a0 (make-constant v1))))))))
-                    (constant-value a0
-                      (lambda (v0)
-                        (and (fixnum? v0)
-                             (mk-seq a0 
-                               (make-funcall (make-primref op)
-                                  (list (make-constant v0) a1))))))
-                    (make-funcall (make-primref op) rand*))))
-         (giveup))]
-    [(-)
-     (or (and (>= (length rand*) 1)
-              (andmap 
-                (lambda (x) 
-                  (constant-value x number?))
-                rand*)
-              (begin 
-                (let ([r (apply - 
-                           (map (lambda (x)
-                                  (constant-value x 
-                                    (lambda (v) v)))
-                                rand*))])
-                  (let f ([rand* rand*])
-                    (cond
-                      [(null? rand*) (make-constant r)]
-                      [else
-                       (mk-seq (car rand*) (f (cdr rand*)))])))))
-         (giveup))]
-    [(+ *)
-     (or (and (>= (length rand*) 0)
-              (andmap 
-                (lambda (x) 
-                  (constant-value x number?))
-                rand*)
-              (begin 
-                (let ([r (apply 
-                           (case op
-                             [(+) +]
-                             [(*) *]
-                             [else (error 'ikarus "BUG: no prim" op)])
-                           (map (lambda (x)
-                                  (constant-value x 
-                                    (lambda (v) v)))
-                                rand*))])
-                  (let f ([rand* rand*])
-                    (cond
-                      [(null? rand*) (make-constant r)]
-                      [else
-                       (mk-seq (car rand*) (f (cdr rand*)))])))))
-         (giveup))]
-    [(expt)
-     (or (and (= (length rand*) 2)
-              (andmap 
-                (lambda (x) 
-                  (constant-value x 
-                    (lambda (v) (or (fixnum? v) (bignum? v)))))
-                rand*)
-              (begin 
-                (let ([r (apply expt 
-                           (map (lambda (x)
-                                  (constant-value x 
-                                    (lambda (v) v)))
-                                rand*))])
-                  (let f ([rand* rand*])
-                    (cond
-                      [(null? rand*) (make-constant r)]
-                      [else
-                       (mk-seq (car rand*) (f (cdr rand*)))])))))
-         (giveup))]
-    ;X; [(fx- fx+ fx*)
-    ;X;  (or (and (fx= (length rand*) 2)
-    ;X;           (let ([a0 (car rand*)] [a1 (cadr rand*)])
-    ;X;             (or (constant-value a1
-    ;X;                   (lambda (v1)
-    ;X;                     (and (fixnum? v1)
-    ;X;                          (or (constant-value a0
-    ;X;                                (lambda (v0)
-    ;X;                                  (and (fixnum? v0)
-    ;X;                                       (let ([r (case op
-    ;X;                                                  [(fx+) (+ v0 v1)]
-    ;X;                                                  [(fx-) (- v0 v1)]
-    ;X;                                                  [(fx*) (* v0 v1)]
-    ;X;                                                  [else (error 'compile "BOO")])])
-    ;X;                                         (and (fixnum? r)
-    ;X;                                               (mk-seq (mk-seq a0 a1)
-    ;X;                                                 (make-constant r)))))))
-    ;X;                              (mk-seq a1 (make-primcall op (list a0 v1)))))))
-    ;X;                 (constant-value a0
-    ;X;                   (lambda (v0)
-    ;X;                     (and (fixnum? v0)
-    ;X;                          (mk-seq a0 (make-primcall op (list v0 a1))))))
-    ;X;                 (make-primcall op (list a0 a1)))))
-    ;X;      (giveup))]
-    ;;; unoptimizables
-    [(error syntax-error $syntax-dispatch $sc-put-cte 
-      apply) 
-     (giveup)]
-    ))
-
-;;; $car $cdr $struct-ref $struct/rtd? 
-;;; expt + * - fx+ fxadd1 fxsub1 
-;;; cons cons* list vector
-;;; length memq memv eq? eqv?
-;;; not null? pair? fixnum? vector? string? char? symbol? eof-object?
-;;; cadr void car cdr 
-
-(define (mk-mvcall p c)
-  (struct-case p
-    [(funcall) (make-mvcall p c)]
-    [(seq e0 e1)
-     (make-seq e0 (mk-mvcall e1 c))]
-    [(bind lhs* rhs* body)
-     (make-bind lhs* rhs* (mk-mvcall body c))]
-    [else (error 'mk-mvcall "invalid producer" (unparse p))]))
-
-
-(define (copy-propagate x)
-  (define who 'copy-propagate)
-  (define the-void (make-constant (void)))
-  (define (known-value x) 
-    (struct-case x 
-      [(constant) x] ; known
-      [(primref)  x] ; known
-      [(bind lhs* rhs* body) (known-value body)]
-      [(fix lhs* rhs* body) (known-value body)]
-      [(seq e0 e1) (known-value e1)]
-      [else #f]))
-    
-  (define (same-values? x y)
-    (cond
-      [(constant? x)
-       (and (constant? y) 
-            (eq? (constant-value x) 
-                 (constant-value y)))]
-      [(primref? x)
-       (and (primref? y)
-            (eq? (primref-name x)
-                 (primref-name y)))]
-      [else #f]))
-  (define (predicate-value x)
-    (struct-case x
-      [(constant t) (if t 't 'f)]
-      [(bind lhs rhs body) (predicate-value body)]
-      [(fix lhs rhs body) (predicate-value body)]
-      [(seq e0 e1) (predicate-value e1)]
-      [else #f]))
-  (define (do-conditional e0 e1 e2 k)
-    (let ([e0 (Pred e0)])
-      (cond
-        [(predicate-value e0) =>
-         (lambda (v)
-           (if (eq? v 't) (k e1) (k e2)))]
-        [else
-         (make-conditional e0 (k e1) (k e2))])))
-  (define (partition-referenced lhs* rhs*)
-    (cond
-      [(null? lhs*) (values '() '() the-void)]
-      [else
-       (let ([lhs (car lhs*)] [rhs (car rhs*)])
-         (let-values ([(lhs* rhs* eff*) 
-                       (partition-referenced
-                           (cdr lhs*) (cdr rhs*))])
-           (cond
-             [(or (var-referenced lhs) (var-global-loc lhs))
-              (values (cons lhs lhs*) (cons rhs rhs*) eff*)]
-             [else
-              (values lhs* rhs* 
-                (mk-seq eff* 
-                  (Effect rhs)))])))]))
-  (define (partition/assign-known lhs* rhs*)
-    (cond
-      [(null? lhs*) (values '() '() the-void)]
-      [else
-       (let ([lhs (car lhs*)] [rhs (car rhs*)])
-         (let-values ([(lhs* rhs* eff*) 
-                       (partition/assign-known
-                           (cdr lhs*) (cdr rhs*))])
-           (cond
-             [(and (not (var-assigned lhs))
-              ;     (not (var-global-loc lhs))
-                   (known-value rhs)) =>
-              (lambda (v)
-                (set-var-referenced! lhs v)
-                (values lhs* rhs* 
-                  (mk-seq eff* 
-                    (cond
-                      [(var-global-loc lhs) =>
-                       (lambda (loc) 
-                         (make-funcall 
-                           (make-primref '$init-symbol-value!) 
-                           (list (make-constant loc) rhs)))]
-                      [else rhs]))))]
-             [else
-              (values (cons lhs lhs*) (cons rhs rhs*) eff*)])))]))
-  (define (do-bind lhs* rhs* body k) 
-    (let-values ([(lhs* rhs* eff0)
-                  (partition-referenced lhs* rhs*)])
-      (let ([rhs* (map Value rhs*)])
-        (let-values ([(lhs* rhs* eff1)
-                      (partition/assign-known lhs* rhs*)])
-          (let ([body
-                 (cond
-                   [(null? lhs*) (k body)]
-                   [else
-                    (make-bind lhs* rhs* (k body))])])
-            (mk-seq eff0 (mk-seq eff1 body)))))))
-  (define (do-fix lhs* rhs* body k) 
-    (let-values ([(lhs* rhs* eff0)
-                  (partition-referenced lhs* rhs*)])
-      (let ([rhs* (map Value rhs*)])
-        (let-values ([(lhs* rhs* eff1)
-                      (partition/assign-known lhs* rhs*)])
-          (let ([body
-                 (cond
-                   [(null? lhs*) (k body)]
-                   [else
-                    (make-fix lhs* rhs* (k body))])])
-            (mk-seq (mk-seq eff0 eff1) body))))))
-  ;(define (do-fix lhs* rhs* body k) 
-  ;  (let-values ([(lhs* rhs* eff*) 
-  ;                (partition-referenced lhs* rhs*)])
-  ;    (cond
-  ;      [(null? lhs*) (k body)]
-  ;      [else
-  ;       (make-fix lhs* (map Value rhs*) (k body))])))
-  (define (mk-seq e0 e1)  ;;; keep e1 seq-free.
-    (cond
-      [(and (primcall? e0) (eq? (primcall-op e0) 'void)) e1]
-      [(or (primref? e0) (constant? e0)) e1]
-      ;[(and (primcall? e1) (eq? (primcall-op e1) 'void)) e0]
-      ;[(or (primref? e1) (constant? e1)) e0]
-      [(seq? e1)
-       (make-seq (make-seq e0 (seq-e0 e1)) (seq-e1 e1))]
-      [else
-       (make-seq e0 e1)]))
-  (define (do-clambda g cls* cp free name)
-    (make-clambda g
-      (map (lambda (cls)
-             (struct-case cls
-               [(clambda-case info body)
-                (make-clambda-case info (Value body))]))
-           cls*)
-      cp free name))
-  (define (MKEffect ctxt)
-    (define (Effect x)
-      (struct-case x
-        [(constant) the-void]
-        [(var)      the-void]
-        [(primref)  the-void]
-        [(bind lhs* rhs* body)
-         (do-bind lhs* rhs* body Effect)]
-        [(fix lhs* rhs* body)
-         (do-fix lhs* rhs* body Effect)]
-        [(conditional e0 e1 e2)
-         (let ([e0 (Pred e0)])
-           (cond
-             [(predicate-value e0) =>
-              (lambda (v)
-                (mk-seq e0 (if (eq? v 't) (Effect e1) (Effect e2))))]
-             [else
-              (make-conditional e0 (Effect e1) (Effect e2))]))]
-        [(seq e0 e1) (mk-seq (Effect e0) (Effect e1))]
-        [(clambda g cls*) the-void]
-        [(primcall rator rand*) 
-         (optimize-primcall ctxt rator (map Value rand*))]
-        [(funcall rator rand*)
-         (let ([rator (Value rator)])
-           (cond
-             [(known-value rator) =>
-              (lambda (v)
-                (struct-case v
-                  [(primref op)
-                   (mk-seq rator
-                      (optimize-primcall ctxt op (map Value rand*)))]
-                  [else
-                   (make-funcall rator (map Value rand*))]))]
-             [else (make-funcall rator (map Value rand*))]))]
-        [(forcall rator rand*) 
-         (make-forcall rator (map Value rand*))]
-        [(mvcall p c)
-         (mk-mvcall (Value p) (Value c))]
-        [(assign lhs rhs)
-         (unless (var-assigned lhs)
-           (error who "var is not assigned" lhs))
-         (if (var-referenced lhs)
-             (make-assign lhs (Value rhs))
-             (Effect rhs))]
-        [else (error who "invalid effect expression" (unparse x))]))
-    Effect)
-  (define Effect (MKEffect 'e))
-  (define (Pred x)
-    (struct-case x
-      [(constant) x]
-      [(var) 
-       (let ([r (var-referenced x)])
-         (cond
-           [(boolean? r) x]
-           [else (Pred r)]))]
-      [(primref) (make-constant #t)]
-      [(bind lhs* rhs* body)
-       (do-bind lhs* rhs* body Pred)]
-      [(fix lhs* rhs* body)
-       (do-fix lhs* rhs* body Pred)]
-      [(conditional e0 e1 e2)
-       (let ([e0 (Pred e0)])
-         (cond
-           [(predicate-value e0) =>
-            (lambda (t0)
-              (mk-seq e0 (if (eq? t0 't) (Pred e1) (Pred e2))))]
-           [else
-            (let ([e1 (Pred e1)] [e2 (Pred e2)])
-              (cond
-                [(predicate-value e1) =>
-                 (lambda (t1)
-                   (cond
-                     [(predicate-value e2) =>
-                      (lambda (t2)
-                        (if (eq? t1 t2)
-                            (mk-seq (make-conditional e0 e1 e2) 
-                                    (make-constant (if (eq? t1 't) #t #f)))
-                            (make-conditional e0 e1 e2)))]
-                     [else (make-conditional e0 e1 e2)]))]
-                [else (make-conditional e0 e1 e2)]))]))]
-      [(seq e0 e1) (mk-seq (Effect e0) (Pred e1))]
-      [(clambda g cls*) (make-constant #t)]
-      [(primcall rator rand*) 
-       (optimize-primcall 'p rator (map Value rand*))]
-      [(funcall rator rand*)
-       (let ([rator (Value rator)])
-         (cond
-           [(known-value rator) =>
-            (lambda (v)
-              (struct-case v
-                [(primref op)
-                 (mk-seq rator
-                    (optimize-primcall 'p op (map Value rand*)))]
-                [else
-                 (make-funcall rator (map Value rand*))]))]
-           [else (make-funcall rator (map Value rand*))]))]
-      [(forcall rator rand*) 
-       (make-forcall rator (map Value rand*))]
-      [(assign lhs rhs)
-       (mk-seq (Effect x) (make-constant #t))]
-      [(mvcall p c)
-       (mk-mvcall (Value p) (Value c))]
-      [else (error who "invalid pred expression" (unparse x))]))
-  (define (Value x)
-    (struct-case x
-      [(constant) x]
-      [(var) 
-       (let ([r (var-referenced x)])
-         (case r
-           [(#t) x]
-           [(#f) (error who "Reference to a var that should not be" x)]
-           [else r]))]
-      [(primref) x]
-      [(bind lhs* rhs* body)
-       (do-bind lhs* rhs* body Value)]
-      [(fix lhs* rhs* body)
-       (do-fix lhs* rhs* body Value)]
-      [(conditional e0 e1 e2)
-       (let ([e0 (Pred e0)])
-         (cond
-           [(predicate-value e0) =>
-            (lambda (t0)
-              (mk-seq e0 (if (eq? t0 't) (Value e1) (Value e2))))]
-           [else
-            (let ([e1 (Value e1)] [e2 (Value e2)])
-              (let ([t1 (known-value e1)] [t2 (known-value e2)])
-                (cond
-                  [(and t1 t2) 
-                   (if (same-values? t1 t2)
-                       (mk-seq (make-conditional e0 e1 e2) t1)
-                       (make-conditional e0 e1 e2))]
-                  [else (make-conditional e0 e1 e2)])))]))]
-      [(seq e0 e1) (mk-seq (Effect e0) (Value e1))]
-      [(clambda g cls* cp free name) 
-       (do-clambda g cls* cp free name)]
-      [(primcall rator rand*) 
-       (optimize-primcall 'v rator (map Value rand*))]
-      [(funcall rator rand*)
-       (let ([rator (Value rator)])
-         (cond
-           [(known-value rator) =>
-            (lambda (v)
-              (struct-case v
-                [(primref op)
-                 (mk-seq rator
-                    (optimize-primcall 'v op (map Value rand*)))]
-                [else
-                 (mk-seq rator
-                   (make-funcall v (map Value rand*)))]))]
-           [else (make-funcall rator (map Value rand*))]))]
-      [(forcall rator rand*) 
-       (make-forcall rator (map Value rand*))]
-      [(assign lhs rhs)
-       (mk-seq (Effect x) the-void)]
-      [(mvcall p c)
-       (mk-mvcall (Value p) (Value c))]
-      [else (error who "invalid value expression" (unparse x))]))
-  (case (optimize-level)
-    [(1)
-     (let ([x (Value x)])
-       ;;; since we messed up the references and assignments here, we
-       ;;; redo them
-       (uncover-assigned/referenced x))]
-    [else x]))
-
 
 (define (rewrite-assignments x)
   (define who 'rewrite-assignments)
@@ -1815,8 +1044,9 @@
        (let ([x (car lhs*)])
          (let-values ([(lhs* a-lhs* a-rhs*) (fix-lhs* (cdr lhs*))])
            (cond
-             [(and (var-assigned x) (not (var-global-loc x)))
-              (let ([t (unique-var 'assignment-tmp)])
+             [(and (prelex-source-assigned? x) (not (prelex-global-location x)))
+              (let ([t (make-prelex 'assignment-tmp #f)])
+                (set-prelex-source-referenced?! t #t)
                 (values (cons t lhs*) (cons x a-lhs*) (cons t a-rhs*)))]
              [else
               (values (cons x lhs*) a-lhs* a-rhs*)])))]))
@@ -1830,12 +1060,12 @@
   (define (Expr x)
     (struct-case x
       [(constant) x]
-      [(var) 
+      [(prelex) 
        (cond
-         [(var-assigned x)
+         [(prelex-source-assigned? x)
           (cond
-            [(var-global-loc x) =>
-             (lambda (loc) 
+            [(prelex-global-location x) =>
+             (lambda (loc)
                (make-funcall 
                  (make-primref '$symbol-value)
                  (list (make-constant loc))))]
@@ -1871,20 +1101,76 @@
       [(funcall rator rand*)
        (make-funcall (Expr rator) (map Expr rand*))]
       [(assign lhs rhs)
-       (unless (var-assigned lhs)
-         (error 'rewrite-assignments "not assigned" lhs x))
        (cond
-         [(var-global-loc lhs) =>
-          (lambda (loc) 
-            (make-funcall (make-primref '$init-symbol-value!)
-              (list (make-constant loc) (Expr rhs))))]
+         [(prelex-source-assigned? lhs) =>
+          (lambda (where)
+            (cond
+              [(symbol? where)
+               (make-funcall (make-primref '$init-symbol-value!)
+                 (list (make-constant where) (Expr rhs)))]
+              [(prelex-global-location lhs) =>
+               (lambda (loc) 
+                 (make-funcall (make-primref '$set-symbol-value!)
+                   (list (make-constant loc) (Expr rhs))))]
+              [else
+               (make-funcall (make-primref '$vector-set!)
+                 (list lhs (make-constant 0) (Expr rhs)))]))]
          [else
-          (make-funcall (make-primref '$vector-set!)
-            (list lhs (make-constant 0) (Expr rhs)))])]
+          (error 'rewrite-assignments "not assigned" lhs x)])]
       [(mvcall p c) (make-mvcall (Expr p) (Expr c))]
       [else (error who "invalid expression" (unparse x))]))
   (Expr x))
 
+(define (introduce-vars x)
+  (define who 'introduce-vars)
+  (define (lookup x)
+    (let ([v (prelex-operand x)])
+      (assert (var? v))
+      v))
+  (define (convert-prelex x)
+    (assert (not (var? (prelex-operand x))))
+    (let ([v (unique-var (prelex-name x))])
+      (set-var-referenced! v (prelex-source-referenced? x))
+      (set-var-global-loc! v (prelex-global-location x))
+      (set-prelex-operand! x v)
+      v))
+  (define (E x)
+    (struct-case x
+      [(constant) x]
+      [(prelex) (lookup x)]
+      [(primref) x]
+      [(bind lhs* rhs* body)
+       (let ([lhs* (map convert-prelex lhs*)])
+         (make-bind lhs* (map E rhs*) (E body)))]
+      [(fix lhs* rhs* body)
+       (let ([lhs* (map convert-prelex lhs*)])
+         (make-fix lhs* (map E rhs*) (E body)))]
+      [(conditional e0 e1 e2)
+       (make-conditional (E e0) (E e1) (E e2))]
+      [(seq e0 e1) (make-seq (E e0) (E e1))]
+      [(clambda g cls* cp free name)
+       (make-clambda g
+         (map
+           (lambda (cls)
+             (struct-case cls
+               [(clambda-case info body)
+                (struct-case info
+                  [(case-info label args proper)
+                   (let ([args (map convert-prelex args)])
+                     (make-clambda-case
+                       (make-case-info label args proper)
+                       (E body)))])]))
+           cls*)
+         cp free name)]
+      [(primcall rator rand*)
+       (make-primcall rator (map E rand*))]
+      [(funcall rator rand*)
+       (make-funcall (E rator) (map E rand*))]
+      [(forcall rator rand*) (make-forcall rator (map E rand*))]
+      [(assign lhs rhs)
+       (make-assign (lookup lhs) (E rhs))]
+      [else (error who "invalid expression" (unparse x))]))
+  (E x))
 
 (define (sanitize-bindings x)
   (define who 'sanitize-bindings)
@@ -2438,6 +1724,7 @@
       v)))
 
 
+
 (begin ;;; DEFINITIONS
   (module (wordsize)
     (include "ikarus.config.ss"))
@@ -2979,17 +2266,21 @@
     [else 
      (printf "    ~s\n" x)]))
 
+(define optimizer-output (make-parameter #f))
+
 (define (compile-core-expr->code p)
   (let* ([p (recordize p)]
          [p (parameterize ([open-mvcalls #f])
               (optimize-direct-calls p))]
-         [p (if (scc-letrec) 
-                (optimize-letrec/scc p)
-                (optimize-letrec p))]
+         [p (optimize-letrec/scc p)]
          [p (source-optimize p)]
-         [p (uncover-assigned/referenced p)]
-         [p (copy-propagate p)] ;;; old optimizer
+         [dummy 
+          (begin
+            (when (optimizer-output)
+               (pretty-print (unparse-pretty p)))
+            #f)]
          [p (rewrite-assignments p)]
+         [p (introduce-vars p)]
          [p (sanitize-bindings p)]
          [p (optimize-for-direct-jumps p)]
          [p (insert-global-assignments p)]
@@ -3042,6 +2333,20 @@
              (set! plocs p) 
              (refresh-cached-labels!))
            (error 'current-primitive-locations "not a procedure" p))])))
+
+(define expand/optimize
+  (case-lambda
+    [(p) (expand/optimize p (interaction-environment))]
+    [(p env)
+     (unless (environment? env)
+       (env 'expand/optimize "not an environment" env))
+     (let-values ([(p lib*) (expand p env)])
+       (let* ([p (recordize p)]
+              [p (parameterize ([open-mvcalls #f])
+                   (optimize-direct-calls p))]
+              [p (optimize-letrec/scc p)]
+              [p (source-optimize p)])
+         (unparse-pretty p)))]))
 
 )
 

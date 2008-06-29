@@ -43,5 +43,5 @@ CLEANFILES=$(nodist_pkglib_DATA) ikarus.config.ss
 MAINTAINERCLEANFILES=last-revision
 
 ikarus.boot: $(EXTRA_DIST) ikarus.config.ss
-	../src/ikarus -b ./ikarus.boot.prebuilt --r6rs-script makefile.ss
+	../src/ikarus -b ./ikarus.boot.prebuilt -O2 --r6rs-script makefile.ss
 

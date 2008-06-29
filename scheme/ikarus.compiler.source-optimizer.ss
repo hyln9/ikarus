@@ -23,42 +23,6 @@
 
 (module (source-optimize optimize-level cp0-effort-limit cp0-size-limit)
   (define who 'source-optimize)
-  ;;; this define-structure definition for compatibility with the
-  ;;; notation used in Oscar's thesis.
-  (define-syntax define-structure
-    (lambda (stx) 
-      (define (fmt ctxt)
-        (lambda (str . args) 
-          (datum->syntax ctxt 
-            (string->symbol 
-              (apply format str (map syntax->datum args))))))
-      (syntax-case stx ()
-        [(_ (name fields ...)) 
-         #'(define-struct name (fields ...))]
-        [(_ (name fields ...) ([others defaults] ...))
-         (with-syntax ([(pred maker (getters ...) (setters ...))
-                        (let ([fmt (fmt #'name)])
-                          (list (fmt "~s?" #'name)
-                                (fmt "make-~s" #'name)
-                                (map (lambda (x) (fmt "~s-~s" #'name x))
-                                     #'(fields ... others ...))
-                                (map (lambda (x) (fmt "set-~s-~s!" #'name x))
-                                     #'(fields ... others ...))))])
-           #'(module (name pred getters ... setters ... maker)
-               (module P (name pred getters ... setters ... maker)
-                 (define-struct name (fields ... others ...)))
-               (module (maker)
-                 (define (maker fields ...)
-                   (import P)
-                   (maker fields ... defaults ...)))
-               (module (name pred getters ... setters ...)
-                 (import P))))])))
-  ;;;
-  (define-structure (prelex operand)
-    ([source-referenced?   #f]
-     [source-assigned?     #f]
-     [residual-referenced? #f]
-     [residual-assigned?   #f]))
   ;;;
   (define-structure (app rand* ctxt)
     ([inlined #f]))
@@ -101,95 +65,49 @@
         (reset-integrated! ctxt))))
   ;;;
   ;;;
-  (module (init-var! var-prelex)
-    (define (init-var! x)
-      (set-var-index! x (make-prelex #f)))
-    (define (var-prelex x)
-      (let ([v (var-index x)])
-        (if (prelex? v)
-            v
-            (error 'var-prelex "not initialized" x)))))
   (module (with-extended-env copy-var)
     (define (copy-var x)
-      (let ([xi (var-prelex x)])
-        (let ([y (unique-var (var-name x))]
-              [yi (make-prelex #f)])
-          (set-var-index! y yi)
-          (set-prelex-source-referenced?! yi
-            (prelex-source-referenced? xi))
-          (set-prelex-source-assigned?! yi
-            (prelex-source-assigned? xi))
-          (let ([loc (var-global-loc x)])
-            (when loc
-              (set-var-global-loc! y loc)
-              (set-prelex-source-referenced?! yi #t)
-              (set-prelex-residual-referenced?! yi #t)))
-          y)))
+      (let ([y (make-prelex (prelex-name x) #f)])
+        (set-prelex-source-referenced?! y
+          (prelex-source-referenced? x))
+        (set-prelex-source-assigned?! y
+          (prelex-source-assigned? x))
+        (let ([loc (prelex-global-location x)])
+          (when loc
+            (set-prelex-global-location! y loc)
+            (set-prelex-source-referenced?! y #t)
+            (set-prelex-residual-referenced?! y #t)))
+        y))
     (define (extend env lhs* rands) 
-      (let ([nlhs* (map copy-var lhs*)])
-        (when rands 
-          (for-each 
-            (lambda (lhs rhs) 
-              (assert (operand? rhs))
-              (set-prelex-operand! (var-prelex lhs) rhs))
-            nlhs* rands))
-        (values (vector lhs* nlhs* env) nlhs*)))
+      (if (null? lhs*)
+          (values env '())
+          (let ([nlhs* (map copy-var lhs*)])
+            (when rands 
+              (for-each 
+                (lambda (lhs rhs) 
+                  (set-prelex-operand! lhs rhs))
+                nlhs* rands))
+            (values (vector lhs* nlhs* env) nlhs*))))
+    (define (copy-back ls)
+      (for-each 
+        (lambda (x)
+          (set-prelex-source-assigned?! x 
+             (prelex-residual-assigned? x))
+          (set-prelex-source-referenced?! x 
+             (prelex-residual-referenced? x)))
+        ls))
     (define-syntax with-extended-env
       (syntax-rules ()
         [(_ ((e2 args2) (e1 args1 rands)) b b* ...)
          (let-values ([(e2 args2) (extend e1 args1 rands)])
-           b b* ...)])))
-  ;;; purpose of prepare:
-  ;;; 1. attach an info struct to every bound variable
-  ;;; 2. set the plref and plset flags to indicate whether
-  ;;;    there is a reference/assignment to the variable.
-  ;;; 3. verify well-formness of the input.
-  (define (prepare x)
-    (define who 'prepare)
-    (define (L x)
-      (for-each 
-        (lambda (x)
-          (struct-case x
-            [(clambda-case info body)
-             (for-each init-var! (case-info-args info))
-             (E body)]))
-        (clambda-cases x)))
-    (define (E x) 
-      (struct-case x 
-        [(constant) (void)]
-        [(var) (set-prelex-source-referenced?! (var-prelex x) #t)]
-        [(primref)  (void)]
-        [(clambda)  (L x)]
-        [(seq e0 e1) (E e0) (E e1)]
-        [(conditional e0 e1 e2) 
-         (E e0) (E e1) (E e2)]
-        [(assign x val) 
-         (set-prelex-source-assigned?! (var-prelex x) #t)
-         (E val)]
-        [(bind lhs* rhs* body)
-         (for-each E rhs*)
-         (for-each init-var! lhs*)
-         (E body)]
-        [(fix lhs* rhs* body)
-         (for-each init-var! lhs*)
-         (for-each L rhs*)
-         (E body)
-         (for-each ;;; sanity check
-           (lambda (x)
-             (assert (not (prelex-source-assigned? (var-prelex x))))) 
-           lhs*)]
-        [(funcall rator rand*) 
-         (for-each E rand*)
-         (E rator)]
-        [(forcall name rand*)
-         (for-each E rand*)]
-        [else (error who "invalid expr in prepare" x)]))
-    (E x))
+           (let ([v (let () b b* ...)])
+             (copy-back args2)
+             v))])))
 
-
-  (define cp0-effort-limit (make-parameter 40))
-  (define cp0-size-limit (make-parameter 7))
-  ;(define cp0-size-limit (make-parameter 0))
+  (define cp0-effort-limit (make-parameter 50))
+  (define cp0-size-limit (make-parameter 8))
+  ;(define cp0-effort-limit (make-parameter 100))
+  ;(define cp0-size-limit (make-parameter 10))
 
 
   (define primitive-info-list
@@ -284,6 +202,7 @@
       [(fxnot _)                   foldable             result-true]
       [(fxadd1 _)                  foldable             result-true]
       [(fxsub1 _)                  foldable             result-true]
+      [(fxzero? _)                 foldable                        ]
       [(fx=? _ . _)                foldable                        ] 
       [(fx<? _ . _)                foldable                        ] 
       [(fx<=? _ . _)               foldable                        ] 
@@ -525,7 +444,7 @@
   (define (simple? x) 
     (struct-case x
       [(constant) #t]
-      [(var)      #t]
+      [(prelex)   #t]
       [(primref)  #t]
       [(clambda)  #t]
       [else       #f]))
@@ -593,14 +512,14 @@
       [(e) (make-constant (void))]
       [else 
        (let ([x (lookup x env)])
-         (let ([opnd (prelex-operand (var-prelex x))])
+         (let ([opnd (prelex-operand x)])
            (if (and opnd (not (operand-inner-pending opnd)))
                (begin
                  (dynamic-wind
                    (lambda () (set-operand-inner-pending! opnd #t))
                    (lambda () (value-visit-operand! opnd))
                    (lambda () (set-operand-inner-pending! opnd #f)))
-                 (if (prelex-source-assigned? (var-prelex x))
+                 (if (prelex-source-assigned? x)
                      (residualize-ref x sc)
                      (copy x opnd ctxt ec sc)))
                (residualize-ref x sc))))]))
@@ -609,10 +528,10 @@
     (let ([rhs (result-expr (operand-value opnd))])
       (struct-case rhs
         [(constant) rhs]
-        [(var)
-         (if (prelex-source-assigned? (var-prelex rhs))
+        [(prelex)
+         (if (prelex-source-assigned? rhs)
              (residualize-ref x sc)
-             (let ([opnd (prelex-operand (var-prelex rhs))])
+             (let ([opnd (prelex-operand rhs)])
                (if (and opnd (operand-value opnd))
                    (copy2 rhs opnd ctxt ec sc)
                    (residualize-ref rhs sc))))]
@@ -720,12 +639,11 @@
   (define (make-let-binding var* rand* body sc)
     (define (process1 var rand lhs* rhs*)
       (cond
-        [(prelex-residual-referenced? (var-prelex var))
-         (assert (not (operand-residualize-for-effect rand)))
+        [(prelex-residual-referenced? var)
          (values
             (cons var lhs*)
             (cons (score-value-visit-operand! rand sc) rhs*))]
-        [(prelex-residual-assigned? (var-prelex var))
+        [(prelex-residual-assigned? var)
          (set-operand-residualize-for-effect! rand #t)
          (values 
             (cons var lhs*)
@@ -789,14 +707,14 @@
   ;;;
   (define (residualize-ref x sc)
     (decrement sc 1)
-    (set-prelex-residual-referenced?! (var-prelex x) #t)
+    (set-prelex-residual-referenced?! x #t)
     x)
   ;;;
   (define (E x ctxt env ec sc)
     (decrement ec 1)
     (struct-case x
       [(constant) (decrement sc 1) x]
-      [(var) (E-var x ctxt env ec sc)]
+      [(prelex) (E-var x ctxt env ec sc)]
       [(seq e0 e1)
        (mkseq (E e0 'e env ec sc) (E e1 ctxt env ec sc))]
       [(conditional e0 e1 e2)
@@ -816,15 +734,15 @@
       [(assign x v)
        (mkseq
          (let ([x (lookup x env)])
-           (let ([xi (var-prelex x)])
-             (cond
-               [(not (prelex-source-referenced? xi))
-                ;;; dead on arrival
-                (E v 'e env ec sc)]
-               [else
-                (decrement sc 1)
-                (set-prelex-residual-assigned?! xi #t)
-                (make-assign x (E v 'v env ec sc))])))
+           (cond
+             [(not (prelex-source-referenced? x))
+              ;;; dead on arrival
+              (E v 'e env ec sc)]
+             [else
+              (decrement sc 1)
+              (set-prelex-residual-assigned?! x
+                (prelex-source-assigned? x))
+              (make-assign x (E v 'v env ec sc))]))
          (make-constant (void)))]
       [(funcall rator rand*)
        (E-call rator 
@@ -863,13 +781,12 @@
        (with-extended-env ((env lhs*) (env lhs* #f))
          (for-each
            (lambda (lhs rhs)
-             (set-prelex-operand! (var-prelex lhs)
-               (make-operand rhs env ec)))
+             (set-prelex-operand! lhs (make-operand rhs env ec)))
             lhs* rhs*)
          (let ([body (E body ctxt env ec sc)])
            (let ([lhs* (remp 
                          (lambda (x)
-                           (not (prelex-residual-referenced? (var-prelex x))))
+                           (not (prelex-residual-referenced? x)))
                          lhs*)])
              (cond
                [(null? lhs*) body]
@@ -877,24 +794,23 @@
                 (decrement sc 1)
                 (make-fix lhs* 
                   (map (lambda (x)
-                         (let ([opnd (prelex-operand (var-prelex x))])
+                         (let ([opnd (prelex-operand x)])
                            (decrement sc (+ (operand-size opnd) 1))
                            (value-visit-operand! opnd)))
                        lhs*)
                   body)]))))]
-      [else (error who "invalid expression" x)]))
+      [else
+       (error who "invalid expression" x)]))
   (define empty-env '())
-  (define (lookup x orig-env)
-    (define (lookup env)
-      (cond
-        [(vector? env)
-         (let f ([lhs* (vector-ref env 0)] [rhs* (vector-ref env 1)])
-           (cond
-             [(null? lhs*) (lookup (vector-ref env 2))]
-             [(eq? x (car lhs*)) (car rhs*)]
-             [else (f (cdr lhs*) (cdr rhs*))]))]
-        [else x]))
-    (lookup orig-env))
+  (define (lookup x env)
+    (cond
+      [(vector? env)
+       (let f ([lhs* (vector-ref env 0)] [rhs* (vector-ref env 1)])
+         (cond
+           [(null? lhs*) (lookup x (vector-ref env 2))]
+           [(eq? x (car lhs*)) (car rhs*)]
+           [else (f (cdr lhs*) (cdr rhs*))]))]
+      [else x]))
   (define optimize-level 
     (make-parameter 1
       (lambda (x)
@@ -903,10 +819,12 @@
             (die 'optimize-level "valid levels are 0, 1, and 2")))))
   (define (source-optimize expr)
     (define (source-optimize expr)
-      (prepare expr)
       (E expr 'v empty-env (passive-counter) (passive-counter)))
     (case (optimize-level)
       [(2) (source-optimize expr)]
+      [(1) 
+       (parameterize ([cp0-size-limit 0])
+         (source-optimize expr))]
       [else expr]))
 )
 

@@ -8,8 +8,8 @@
     fpsum gcbench #|gcold|# graphs lattice matrix maze mazefun mbrot
     nbody nboyer nqueens ntakl nucleic paraffins parsing perm9 peval
     pi pnpoly primes puzzle quicksort ray sboyer scheme simplex
-    slatex string sum sum1 sumfp sumloop tail tak takl trav1 trav2
-    triangl wc))
+    slatex string sum sum1 sumfp sumloop sumloop2 tail tak takl 
+    trav1 trav2 triangl wc))
 
 ;(define all-benchmarks
 ;  '(cat tail wc slatex))

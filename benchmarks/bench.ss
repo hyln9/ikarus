@@ -2,9 +2,10 @@
 
 (import (ikarus))
 (optimize-level 2)
-;(cp0-effort-limit 1000)
-;(cp0-size-limit 100)
-;(debug-optimizer #t)
+;(cp0-effort-limit 100)
+;(cp0-size-limit 10)
+;(optimizer-output #t)
+(pretty-width 200)
 (define (run name)
   (let ([proc (time-it (format "compile-~a" name) 
                 (lambda ()

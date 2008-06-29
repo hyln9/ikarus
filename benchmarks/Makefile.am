@@ -71,3 +71,5 @@ benchall:
 	../src/ikarus -b ../scheme/ikarus.boot --r6rs-script benchall.ss 2>>timelog
 	rm -f z*.scm z*.tex
 
+clean:
+	rm -f z*.scm z*.tex
