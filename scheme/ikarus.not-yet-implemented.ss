@@ -4,7 +4,7 @@
     angle make-polar 
     bitwise-copy-bit-field bitwise-reverse-bit-field
     bitwise-rotate-bit-field bitwise-if fxreverse-bit-field
-    fxrotate-bit-field bytevector->string string->bytevector
+    fxrotate-bit-field 
     make-custom-binary-input/output-port
     make-custom-textual-input/output-port
     open-file-input/output-port output-port-buffer-mode
@@ -20,7 +20,7 @@
     angle make-polar 
     bitwise-copy-bit-field bitwise-reverse-bit-field
     bitwise-rotate-bit-field bitwise-if fxreverse-bit-field
-    fxrotate-bit-field bytevector->string string->bytevector
+    fxrotate-bit-field 
     make-custom-binary-input/output-port
     make-custom-textual-input/output-port
     open-file-input/output-port output-port-buffer-mode
@@ -56,7 +56,6 @@
 
   (not-yet 
     ;;; should be implemented
-    bytevector->string string->bytevector
     string-downcase string-titlecase string-upcase
     angle make-polar 
     bitwise-if

@@ -16,9 +16,11 @@
 
 (library (ikarus transcoders)
   (export string->utf8 utf8->string string->utf16 string->utf32
-          utf16->string utf32->string)
+          utf16->string utf32->string string->bytevector
+          bytevector->string)
   (import (except (ikarus) string->utf8 utf8->string string->utf16
-                  utf16->string string->utf32 utf32->string)
+                  utf16->string string->utf32 utf32->string
+                  string->bytevector bytevector->string)
           (ikarus system $strings)
           (ikarus system $bytevectors)
           (ikarus system $fx)
@@ -584,4 +586,26 @@
         [(bv endianness em?)
          ($utf32->string bv endianness em?)])))
 
-  )
+
+  (define (bytevector->string bv t)
+    (define who 'bytevector->string)
+    (unless (bytevector? bv)
+      (die who "not a bytevector" bv))
+    (unless (transcoder? t)
+      (die who "not a transcoder" t))
+    (call-with-port (open-bytevector-input-port bv t)
+      (lambda (tcip)
+        (let ([r (get-string-all tcip)])
+          (if (eof-object? r) "" r)))))
+
+  (define (string->bytevector str t)
+    (define who 'string->bytevector)
+    (unless (string? str)
+      (die who "not a string" str))
+    (unless (transcoder? t)
+      (die who "not a transcoder" t))
+    (call-with-bytevector-output-port
+      (lambda (tcop)
+        (put-string tcop str))
+      t))
+)
