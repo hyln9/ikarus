@@ -1007,6 +1007,8 @@
       ;;; returns #t if port is eof, #f otherwise
       (unless (input-port? p) 
         (die who "not an input port" p))
+      (when ($port-closed? p)
+        (die who "port is closed" p))
       (let ([tr ($port-transcoder p)])
         (unless tr 
           (die who "not a textual port" p))
