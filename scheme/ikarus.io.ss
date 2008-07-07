@@ -1592,11 +1592,12 @@
 
   (define (call-with-port p proc)
     (if (port? p) 
-        (if (procedure? proc) 
-            (dynamic-wind
-              void
+        (if (procedure? proc)
+            (call-with-values
               (lambda () (proc p))
-              (lambda () (close-port p)))
+              (lambda vals
+                (close-port p)
+                (apply values vals)))
             (die 'call-with-port "not a procedure" proc))
         (die 'call-with-port "not a port" p)))
 
