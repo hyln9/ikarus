@@ -70,26 +70,29 @@ description:
           (with-exception-handler
             (lambda (con)
               (reset-input-port! (console-input-port))
-              (flush-output-port (console-output-port))
-              (display "Unhandled exception\n" (console-error-port))
-              (print-condition con (console-error-port))
               (k (void)))
             (lambda ()
-              (display-prompt 0)
-              (let ([x (my-read k)])
-                (cond
-                  [(eof-object? x) 
-                   (newline (console-output-port))
-                   (escape-k (void))]
-                  [else
-                   (call-with-values
-                     (lambda () (eval-proc x))
-                     (lambda v*
-                       (unless (andmap (lambda (v) (eq? v (void))) v*)
-                         (for-each
-                           (lambda (v)
-                             (pretty-print v (console-output-port)))
-                           v*))))]))))))
+              (with-exception-handler
+                (lambda (con)
+                  (flush-output-port (console-output-port))
+                  (display "Unhandled exception\n" (console-error-port))
+                  (print-condition con (console-error-port)))
+                (lambda ()
+                  (display-prompt 0)
+                  (let ([x (my-read k)])
+                    (cond
+                      [(eof-object? x) 
+                       (newline (console-output-port))
+                       (escape-k (void))]
+                      [else
+                       (call-with-values
+                         (lambda () (eval-proc x))
+                         (lambda v*
+                           (unless (andmap (lambda (v) (eq? v (void))) v*)
+                             (for-each
+                               (lambda (v)
+                                 (pretty-print v (console-output-port)))
+                               v*))))]))))))))
       (wait eval-proc escape-k)))
 
   (define do-new-cafe
