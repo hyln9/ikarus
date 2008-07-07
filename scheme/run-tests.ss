@@ -23,6 +23,7 @@
         (tests bytevectors)
         (tests strings)
         (tests hashtables)
+        (tests numerics)
         ;(tests numbers)
         (tests bignums)
         (tests fixnums)
@@ -53,7 +54,6 @@
   (printf "[exact-integer-sqrt] Happy Happy Joy Joy\n"))
 
 (test-bitwise-op)
-
 (test-parse-flonums)
 (test-case-folding)
 (test-reader)
@@ -67,7 +67,6 @@
 (test-div-and-mod)
 (test-bignums)
 (test-bignum-length)
-
 (test-fxcarry)
 (test-lists)
 (test-hashtables)
@@ -82,4 +81,5 @@
 (test-io)
 (test-sorting)
 (test-fasl)
+(test-numerics)
 (printf "Happy Happy Joy Joy\n")

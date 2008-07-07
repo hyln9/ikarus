@@ -2644,20 +2644,12 @@
 
   (define ($ratnum-round x)
     (let ([n ($ratnum-n x)] [d ($ratnum-d x)])
-      (let-values ([(q r) (quotient+remainder n d)])
-        (let ([r2 (+ r r)]) 
-          (if (> n 0) 
-              (cond
-                [(< r2 d) q]
-                [(> r2 d) (+ q 1)]
-                [else
-                 (if (even? q) q (+ q 1))])
-              (let ([r2 (- r2)])
-                (cond
-                  [(< r2 d) q]
-                  [(< r2 d) (- q 1)]
-                  [else
-                   (if (even? q) q (- q 1))])))))))
+      (let-values ([(q r) (div-and-mod n d)])
+        (let ([r2 (+ r r)])
+          (cond
+            [(< r2 d) q]
+            [(> r2 d) (+ q 1)]
+            [else (if (even? q) q (+ q 1))])))))
 
   (define ($ratnum-truncate x)
     (let ([n ($ratnum-n x)] [d ($ratnum-d x)])
