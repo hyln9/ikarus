@@ -106,9 +106,6 @@
 
   (define cp0-effort-limit (make-parameter 50))
   (define cp0-size-limit (make-parameter 8))
-  ;(define cp0-effort-limit (make-parameter 100))
-  ;(define cp0-size-limit (make-parameter 10))
-
 
   (define primitive-info-list
     '(

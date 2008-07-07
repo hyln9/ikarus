@@ -1309,8 +1309,6 @@
                               (cond
                                 [(fx>= bytes 0) bytes]
                                 [(fx= bytes EAGAIN-error-code)
-                                 ;(raise-continuable 
-                                 ;  (make-i/o-would-block-condition port))
                                  (call/cc 
                                    (lambda (k) 
                                      (add-io-event fd k 'r)
@@ -1351,8 +1349,6 @@
                               (cond
                                 [(fx>= bytes 0) bytes]
                                 [(fx= bytes EAGAIN-error-code)
-                                 ;(raise-continuable 
-                                 ;  (make-i/o-would-block-condition port))
                                  (call/cc 
                                    (lambda (k)
                                      (add-io-event fd k 'w)

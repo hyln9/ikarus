@@ -67,6 +67,13 @@
   (define (mkfuncall op arg*)
     (import primops)
     (struct-case op
+      [(known x t)
+       (struct-case x
+         [(primref name)
+          (if (primop? name)
+              (make-primcall name arg*)
+              (make-funcall op arg*))]
+         [else (make-funcall op arg*)])]
       [(primref name)
        (cond
          [(primop? name)
@@ -74,6 +81,10 @@
          [else (make-funcall op arg*)])]
       [else (make-funcall op arg*)]))
   ;;;
+  (define (A x)
+    (struct-case x
+      [(known x t) (make-known (Expr x) t)]
+      [else (Expr x)]))
   (define (Expr x)
     (struct-case x
       [(constant) x]
@@ -91,11 +102,9 @@
       [(forcall op arg*)
        (make-forcall op (map Expr arg*))]
       [(funcall rator arg*)
-       (mkfuncall (Expr rator) (map Expr arg*))]
+       (mkfuncall (A rator) (map A arg*))]
       [(jmpcall label rator arg*)
        (make-jmpcall label (Expr rator) (map Expr arg*))]
-      [(mvcall rator k)
-       (make-mvcall (Expr rator) (Clambda k))]
       [else (error who "invalid expr" x)]))
   ;;;
   (define (ClambdaCase x)
@@ -142,6 +151,10 @@
           [(closure code free* well-known?) 
            (make-closure code (map Var free*) well-known?)]))
       (make-fix lhs* (map handle-closure rhs*) body))
+    (define (A x)
+      (struct-case x
+        [(known x t) (make-known (Expr x) t)]
+        [else (Expr x)]))
     (define (Expr x)
       (struct-case x
         [(constant) x]
@@ -159,15 +172,13 @@
          (let ([t (unique-var 'tmp)])
            (Expr (make-fix (list t) (list x) t)))]
         [(primcall op arg*)
-         (make-primcall op (map Expr arg*))]
+         (make-primcall op (map A arg*))]
         [(forcall op arg*)
          (make-forcall op (map Expr arg*))]
         [(funcall rator arg*)
-         (make-funcall (Expr rator) (map Expr arg*))]
+         (make-funcall (A rator) (map A arg*))]
         [(jmpcall label rator arg*)
          (make-jmpcall label (Expr rator) (map Expr arg*))]
-        [(mvcall rator k)
-         (make-mvcall (Expr rator) (Clambda k))]
         [else (error who "invalid expr" x)]))
     Expr)
   ;;;
@@ -208,20 +219,28 @@
 
 (define (insert-engine-checks x)
   (define who 'insert-engine-checks)
+  (define (known-primref? x)
+    (struct-case x
+      [(known x t) (known-primref? x)]
+      [(primref)   #t]
+      [else #f]))
+  (define (A x)
+    (struct-case x
+      [(known x t) (Expr x)]
+      [else (Expr x)]))
   (define (Expr x) 
     (struct-case x
       [(constant)                 #f]
       [(var)                      #f]
       [(primref)                  #f]
       [(jmpcall label rator arg*) #t]
-      [(mvcall rator k)           #t] 
       [(funcall rator arg*)
-       (if (primref? rator) (ormap Expr arg*) #t)]
+       (if (known-primref? rator) (ormap A arg*) #t)]
       [(bind lhs* rhs* body)      (or (ormap Expr rhs*) (Expr body))]
       [(fix lhs* rhs* body)       (Expr body)]
       [(conditional e0 e1 e2)     (or (Expr e0) (Expr e1) (Expr e2))]
       [(seq e0 e1)                (or (Expr e0) (Expr e1))]
-      [(primcall op arg*)         (ormap Expr arg*)]
+      [(primcall op arg*)         (ormap A arg*)]
       [(forcall op arg*)          (ormap Expr arg*)]
       [else (error who "invalid expr" x)]))
   (define (Main x)
@@ -245,6 +264,10 @@
 
 (define (insert-stack-overflow-check x)
   (define who 'insert-stack-overflow-check)
+  (define (A x)
+    (struct-case x
+      [(known x t) (NonTail x)]
+      [else (NonTail x)]))
   (define (NonTail x)
     (struct-case x
       [(constant)                 #f]
@@ -257,8 +280,9 @@
       [(fix lhs* rhs* body)   (NonTail body)]
       [(conditional e0 e1 e2) (or (NonTail e0) (NonTail e1) (NonTail e2))]
       [(seq e0 e1)            (or (NonTail e0) (NonTail e1))]
-      [(primcall op arg*)     (ormap NonTail arg*)]
+      [(primcall op arg*)     (ormap A arg*)]
       [(forcall op arg*)      (ormap NonTail arg*)]
+      [(known x t v) (NonTail x)]
       [else (error who "invalid expr" x)]))
   (define (Tail x) 
     (struct-case x
@@ -294,58 +318,6 @@
       [(codes code* body)
        (make-codes (map Clambda code*) (Main body))]))
   (Program x))
-
-
-
-(define (insert-dummy-type-annotations x)
-  (define who 'insert-dummy-type-annotations)
-  (define (Closure x)
-    (struct-case x
-      [(closure code free*) 
-       x]
-       ;(make-closure (Expr code) (map Var free*))]
-      [else (error who "not a closure" x)]))
-  (define (Expr x)
-    (struct-case x
-      [(constant i) 
-       (make-known x 'constant i)]
-      [(var)      x]
-      [(primref op) 
-       (make-known x 'primitive op)]
-      [(bind lhs* rhs* body)
-       (make-bind lhs* (map Expr rhs*) (Expr body))]
-      [(fix lhs* rhs* body)
-       (make-fix lhs* (map Closure rhs*) (Expr body))]
-      [(conditional e0 e1 e2)
-       (make-conditional (Expr e0) (Expr e1) (Expr e2))]
-      [(seq e0 e1)
-       (make-seq (Expr e0) (Expr e1))]
-      [(primcall op arg*)         
-       (make-primcall op (map Expr arg*))]
-      [(forcall op arg*)
-       (make-forcall op (map Expr arg*))]
-      [(funcall rator arg*)
-       (make-funcall (Expr rator) (map Expr arg*))]
-      [(jmpcall label rator arg*) 
-       (make-jmpcall label (Expr rator) (map Expr arg*))]
-      [(mvcall rator k)
-       (make-mvcall (Expr rator) (Expr k))]
-      [else (error who "invalid expr" x)]))
-  (define (ClambdaCase x)
-    (struct-case x
-      [(clambda-case info body)
-       (make-clambda-case info (Expr body))]))
-  (define (Clambda x)
-    (struct-case x
-      [(clambda label case* cp free* name)
-       (make-clambda label (map ClambdaCase case*) cp free* name)]))
-  (define (Program x)
-    (struct-case x 
-      [(codes code* body)
-       (make-codes (map Clambda code*) (Expr body))]))
-  (Program x))
-
-
 
 (include "pass-specify-rep.ss")
 
@@ -392,6 +364,7 @@
        (do-bind lhs* rhs* (S body k))]
       [(seq e0 e1)
        (make-seq (E e0) (S e1 k))]
+      [(known x) (S x k)]
       [else
        (cond
          [(or (constant? x) (symbol? x)) (k x)]
@@ -604,6 +577,7 @@
        (make-shortcut 
           (V d body)
           (V d handler))] 
+      [(known x) (V d x)]
       [else 
        (if (symbol? x) 
            (make-set d x)
@@ -3012,7 +2986,6 @@
          [x (eliminate-fix x)]
          [x (insert-engine-checks x)]
          [x (insert-stack-overflow-check x)]
-         ;[x (insert-dummy-type-annotations x)]
          [x (specify-representation x)]
          [x (impose-calling-convention/evaluation-order x)]
          [x (time-it "frame" (lambda () (assign-frame-sizes x)))]

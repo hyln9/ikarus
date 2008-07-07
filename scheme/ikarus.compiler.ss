@@ -19,7 +19,8 @@
           assembler-output optimize-cp
           current-primitive-locations eval-core
           compile-core-expr expand/optimize optimizer-output
-          cp0-effort-limit cp0-size-limit optimize-level)
+          cp0-effort-limit cp0-size-limit optimize-level 
+          perform-tag-analysis tag-analysis-output)
   (import 
     (rnrs hashtables)
     (ikarus system $fx)
@@ -32,7 +33,8 @@
         compile-core-expr-to-port assembler-output
         current-primitive-locations eval-core
         cp0-size-limit cp0-effort-limit 
-        expand/optimize optimizer-output)
+        expand/optimize optimizer-output
+        tag-analysis-output perform-tag-analysis)
     (ikarus.fasl.write)
     (ikarus.intel-assembler))
 
@@ -139,7 +141,7 @@
 (define-struct assign (lhs rhs))
 (define-struct mvcall (producer consumer))
 
-(define-struct known (expr type value))
+(define-struct known (expr type))
 
 (define-struct shortcut (body handler))
 
@@ -440,9 +442,10 @@
   (define (E x)
     (struct-case x
       [(constant c) `(quote ,c)]
+      [(known x t) `(known ,(E x) ,(T:description t))]
       [(code-loc x) `(code-loc ,x)]
       [(var x) (string->symbol (format ":~a" x))]
-      [(prelex name) (string->symbol (format ":~a" x))]
+      [(prelex name) (string->symbol (format ":~a" name))]
       [(primref x) x]
       [(conditional test conseq altern) 
        `(if ,(E test) ,(E conseq) ,(E altern))]
@@ -1121,6 +1124,8 @@
       [else (error who "invalid expression" (unparse x))]))
   (Expr x))
 
+(include "ikarus.compiler.tag-annotation-analysis.ss")
+
 (define (introduce-vars x)
   (define who 'introduce-vars)
   (define (lookup x)
@@ -1134,6 +1139,10 @@
       (set-var-global-loc! v (prelex-global-location x))
       (set-prelex-operand! x v)
       v))
+  (define (A x)
+    (struct-case x
+      [(known x t) (make-known (E x) t)]
+      [else (E x)]))
   (define (E x)
     (struct-case x
       [(constant) x]
@@ -1163,9 +1172,9 @@
            cls*)
          cp free name)]
       [(primcall rator rand*)
-       (make-primcall rator (map E rand*))]
+       (make-primcall rator (map A rand*))]
       [(funcall rator rand*)
-       (make-funcall (E rator) (map E rand*))]
+       (make-funcall (A rator) (map A rand*))]
       [(forcall rator rand*) (make-forcall rator (map E rand*))]
       [(assign lhs rhs)
        (make-assign (lookup lhs) (E rhs))]
@@ -1192,6 +1201,10 @@
     (if (null? lhs*) 
         (Expr body)
         (make-fix lhs* (map CLambda rhs*) (Expr body))))
+  (define (A x)
+    (struct-case x
+      [(known x t) (make-known (Expr x) t)]
+      [else (Expr x)]))
   (define (Expr x)
     (struct-case x
       [(constant) x]
@@ -1217,11 +1230,21 @@
       [(forcall op rand*)
        (make-forcall op (map Expr rand*))]
       [(funcall rator rand*)
-       (make-funcall (Expr rator) (map Expr rand*))]
+       (make-funcall (A rator) (map A rand*))]
       [(mvcall p c) (make-mvcall (Expr p) (Expr c))]
       [else (error who "invalid expression" (unparse x))]))
   (Expr x))
 
+
+(define (untag x)
+  (struct-case x 
+    [(known x t) (values x t)]
+    [else        (values x #f)]))
+
+(define (tag x t)
+  (if t
+      (make-known x t)
+      x))
 
 (define (optimize-for-direct-jumps x)
   (define who 'optimize-for-direct-jumps)
@@ -1252,20 +1275,24 @@
                  (cond
                    [proper
                     (if (fx= n (length fml*))
-                        (make-jmpcall label rator rand*)
+                        (make-jmpcall label (strip rator) (map strip rand*))
                         (f (cdr cls*)))]
                    [else
                     (if (fx<= (length (cdr fml*)) n)
-                        (make-jmpcall label rator
+                        (make-jmpcall label (strip rator)
                            (let f ([fml* (cdr fml*)] [rand* rand*])
                              (cond
                                [(null? fml*) 
                                 ;;; FIXME: construct list afterwards
                                 (list (make-funcall (make-primref 'list) rand*))]
                                [else
-                                (cons (car rand*)
+                                (cons (strip (car rand*))
                                       (f (cdr fml*) (cdr rand*)))])))
                         (f (cdr cls*)))])])]))])))
+  (define (strip x)
+    (struct-case x
+      [(known x t) x]
+      [else x]))
   (define (CLambda x)
     (struct-case x
       [(clambda g cls* cp free name) 
@@ -1277,6 +1304,14 @@
                    (make-clambda-case info (Expr body))]))
               cls*)
          cp free name)]))
+  (define (A x)
+    (struct-case x
+      [(known x t) (make-known (Expr x) t)]
+      [else (Expr x)]))
+  (define (A- x)
+    (struct-case x
+      [(known x t) (Expr x)]
+      [else (Expr x)])) 
   (define (Expr x)
     (struct-case x
       [(constant) x]
@@ -1296,19 +1331,18 @@
       [(forcall op rand*)
        (make-forcall op (map Expr rand*))]
       [(funcall rator rand*)
-       (let ([rator (Expr rator)])
+       (let-values ([(rator t) (untag (A rator))])
          (cond
            [(and (var? rator) (bound-var rator)) =>
             (lambda (c)
-              (optimize c rator (map Expr rand*)))]
+              (optimize c rator (map A rand*)))]
            [(and (primref? rator)
                  (eq? (primref-name rator) '$$apply))
-            (make-jmpcall (sl-apply-label) 
-                          (Expr (car rand*))
-                          (map Expr (cdr rand*)))]
+            (make-jmpcall (sl-apply-label)
+                          (A- (car rand*))
+                          (map A- (cdr rand*)))]
            [else
-            (make-funcall rator (map Expr rand*))]))]
-      [(mvcall p c) (make-mvcall (Expr p) (Expr c))]
+            (make-funcall (tag rator t) (map A rand*))]))]
       [else (error who "invalid expression" (unparse x))]))
   (Expr x))
 
@@ -1335,6 +1369,10 @@
              (list (make-constant loc) (car lhs*)))
            (global-assign (cdr lhs*) body)))]
       [else (global-assign (cdr lhs*) body)]))
+  (define (A x)
+    (struct-case x
+      [(known x t) (make-known (Expr x) t)]
+      [else (Expr x)]))
   (define (Expr x)
     (struct-case x
       [(constant) x]
@@ -1367,11 +1405,14 @@
       [(forcall op rand*)
        (make-forcall op (map Expr rand*))]
       [(funcall rator rand*)
-       (make-funcall (Expr rator) (map Expr rand*))]
-      [(mvcall p c) (make-mvcall (Expr p) (Expr c))]
+       (make-funcall (A rator) (map A rand*))]
       [(jmpcall label rator rand*)
        (make-jmpcall label (Expr rator) (map Expr rand*))]
       [else (error who "invalid expression" (unparse x))]))
+  (define (AM x)
+    (struct-case x
+      [(known x t) (make-known (Main x) t)]
+      [else (Main x)]))
   (define (Main x)
     (struct-case x
       [(constant) x]
@@ -1397,8 +1438,7 @@
       [(forcall op rand*)
        (make-forcall op (map Main rand*))]
       [(funcall rator rand*)
-       (make-funcall (Main rator) (map Main rand*))]
-      [(mvcall p c) (make-mvcall (Main p) (Main c))]
+       (make-funcall (AM rator) (map AM rand*))]
       [(jmpcall label rator rand*)
        (make-jmpcall label (Main rator) (map Main rand*))]
       [else (error who "invalid expression" (unparse x))]))
@@ -1448,6 +1488,19 @@
               free
               #f)
             free))]))
+  (define (A x)
+    (struct-case x
+      [(known x t) 
+       (let-values ([(x free) (Expr x)])
+         (values (make-known x t) free))]
+      [else (Expr x)]))
+  (define (A* x*)
+    (cond
+      [(null? x*) (values '() '())]
+      [else
+       (let-values ([(a a-free) (A (car x*))]
+                    [(d d-free) (A* (cdr x*))])
+         (values (cons a d) (union a-free d-free)))]))
   (define (Expr ex)
     (struct-case ex
       [(constant) (values ex '())]
@@ -1486,19 +1539,25 @@
        (let-values ([(rand* rand*-free) (Expr* rand*)])
          (values (make-forcall op rand*)  rand*-free))]
       [(funcall rator rand*)
-       (let-values ([(rator rat-free) (Expr rator)]
-                    [(rand* rand*-free) (Expr* rand*)])
-         (values (make-funcall rator rand*) 
+       (let-values ([(rator rat-free) (A rator)]
+                    [(rand* rand*-free) (A* rand*)])
+         (values (make-funcall rator rand*)
                  (union rat-free rand*-free)))]
       [(jmpcall label rator rand*)
        (let-values ([(rator rat-free)
-                     (if (and (optimize-cp) (var? rator))
-                         (values rator (singleton rator))
-                         (Expr rator))]
-                    [(rand* rand*-free) (Expr* rand*)])
+                     (if (optimize-cp) (Rator rator) (Expr rator))]
+                    [(rand* rand*-free)
+                     (A* rand*)])
          (values (make-jmpcall label rator rand*) 
-                 (union rat-free rand*-free)))] 
+                 (union rat-free rand*-free)))]
       [else (error who "invalid expression" ex)]))
+  (define (Rator x)
+    (struct-case x
+      [(var) (values x (singleton x))]
+      ;[(known x t)
+      ; (let-values ([(x free) (Rator x)])
+      ;   (values (make-known x t) free))]
+      [else (Expr x)]))
   (let-values ([(prog free) (Expr prog)])
     (unless (null? free) 
       (error 'convert-closures "free vars encountered in program"
@@ -1696,6 +1755,10 @@
                 y)]
              [else y]))]
         [else x])))
+  (define (A x)
+    (struct-case x
+      [(known x t) (make-known (E x) t)]
+      [else (E x)]))
   (define (E x)
     (struct-case x
       [(constant) x]
@@ -1707,7 +1770,7 @@
        (make-conditional (E test) (E conseq) (E altern))]
       [(seq e0 e1)           (make-seq (E e0) (E e1))]
       [(forcall op rand*)    (make-forcall op (map E rand*))]
-      [(funcall rator rand*) (make-funcall (E rator) (map E rand*))]
+      [(funcall rator rand*) (make-funcall (A rator) (map A rand*))]
       [(jmpcall label rator rand*)
        (make-jmpcall label (E rator) (map E rand*))]
       [else (error who "invalid expression" (unparse x))]))
@@ -2267,6 +2330,7 @@
      (printf "    ~s\n" x)]))
 
 (define optimizer-output (make-parameter #f))
+(define perform-tag-analysis (make-parameter #f))
 
 (define (compile-core-expr->code p)
   (let* ([p (recordize p)]
@@ -2280,6 +2344,9 @@
                (pretty-print (unparse-pretty p)))
             #f)]
          [p (rewrite-assignments p)]
+         [p (if (perform-tag-analysis)
+                (introduce-tags p)
+                p)]
          [p (introduce-vars p)]
          [p (sanitize-bindings p)]
          [p (optimize-for-direct-jumps p)]

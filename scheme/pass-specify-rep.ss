@@ -44,7 +44,6 @@
   )
 
 (module (specify-representation)
-  ;(import object-representation)
   (import primops)
   (define-struct PH
     (interruptable? p-handler p-handled? v-handler v-handled? e-handler e-handled?))
@@ -108,6 +107,14 @@
                      (prm '!= (make-no-interrupt-call x args) (K bool-f))
                      (make-shortcut body h)))]
              [else (error 'with-interrupt-handler "invalid context" ctxt)])))]))
+  (define (copy-tag orig new)
+    (struct-case orig
+      [(known _ t) (make-known new t)]
+      [else new]))
+  (define (remove-tag x)
+    (struct-case x
+      [(known expr t) expr]
+      [else x]))
   (define-syntax with-tmp
     (lambda (x)
       (syntax-case x ()
@@ -116,7 +123,7 @@
            #'(let ([lhs* rhs*] ...)
                (let ([n* (unique-var 'lhs*)] ...)
                  (make-bind (list n* ...) (list lhs* ...)
-                    (let ([lhs* n*] ...)
+                    (let ([lhs* (copy-tag lhs* n*)] ...)
                       (seq* b b* ...))))))])))
   ;;; if ctxt is V:
   ;;;   if cogen-value, then V
@@ -140,11 +147,17 @@
          (let-values ([(lhs* rhs* arg*) (S* (cdr ls))])
            (let ([a (car ls)])
              (struct-case a
-               [(known expr type v)
-                (let ([tmp (unique-var 'tmp)])
-                  (values (cons tmp lhs*)
-                          (cons (V expr) rhs*)
-                          (cons (make-known tmp type v) arg*)))]
+               [(known expr type)
+                (struct-case expr
+                  [(constant i)
+                   ;;; erase known tag
+                   (values lhs* rhs* (cons expr arg*))]
+                  [else
+                   ;(printf "known ~s ~s\n" type expr)
+                   (let ([tmp (unique-var 'tmp)])
+                     (values (cons tmp lhs*)
+                             (cons (V expr) rhs*)
+                             (cons (make-known tmp type) arg*)))])]
                [(constant i)
                 (values lhs* rhs* (cons a arg*))]
                [else
@@ -353,7 +366,7 @@
 
   (define (V x) ;;; erase known values
     (struct-case x 
-      [(known x type value)
+      [(known x t)
        (unknown-V x)]
       [else (unknown-V x)]))
 
@@ -439,43 +452,59 @@
       [else (error 'cogen-E "invalid effect expr" x)]))
 
   (define (Function x)
-    (define (nonproc x)
-      (with-tmp ([x (V x)])
-        (make-shortcut
-          (make-seq
-            (make-conditional
-              (tag-test x closure-mask closure-tag)
-              (prm 'nop)
-              (prm 'interrupt))
-            x)
-          (V (make-funcall (make-primref 'error)
-               (list (K 'apply) (K "not a procedure") x))))))
-    (struct-case x
-       [(primcall op args)
+    (define (Function x check?)
+      (define (nonproc x check?)
         (cond
-          [(and (eq? op 'top-level-value)
-                (= (length args) 1)
-                (struct-case (car args)
-                  [(constant t) 
-                   (and (symbol? t) t)]
-                  [else #f])) =>
-           (lambda (sym)
-             (record-symbol-call! sym)
-             (reset-symbol-proc! sym)
-             (prm 'mref (T (K sym))
-                  (K (- disp-symbol-record-proc symbol-ptag))))]
-          [else (nonproc x)])]
-       [(primref op) (V x)]
-       [else (nonproc x)]))
+          [check?
+           (with-tmp ([x (V x)])
+             (make-shortcut
+               (make-seq
+                 (make-conditional
+                   (tag-test x closure-mask closure-tag)
+                   (prm 'nop)
+                   (prm 'interrupt))
+                 x)
+               (V (make-funcall (make-primref 'error)
+                    (list (K 'apply) (K "not a procedure") x)))))]
+          [else
+           (V x)]))
+      (struct-case x
+         [(primcall op args)
+          (cond
+            [(and (eq? op 'top-level-value)
+                  (= (length args) 1)
+                  (let f ([x (car args)])
+                    (struct-case x
+                      [(constant x) 
+                       (and (symbol? x) x)]
+                      [(known x t) (f x)]
+                      [else #f]))) =>
+             (lambda (sym)
+               (reset-symbol-proc! sym)
+               (prm 'mref (T (K sym))
+                    (K (- disp-symbol-record-proc symbol-ptag))))]
+            [else (nonproc x check?)])]
+         [(primref op) (V x)]
+         [(known x t v)
+          (cond
+            [(eq? (T:procedure? t) 'yes)
+             ;(record-optimization 'procedure x)
+             (Function x #f)]
+            [else (Function x check?)])]
+         [else (nonproc x check?)]))
+    (Function x #t))
 
 
-  (define encountered-symbol-calls '())
-  (define (record-symbol-call! x)
-    
-    (unless (memq x encountered-symbol-calls)
-      (set! encountered-symbol-calls 
-        (cons x encountered-symbol-calls))))
 
+  (define record-optimization^
+    (let ([h (make-eq-hashtable)])
+      (lambda (what expr)
+        (let ([n (hashtable-ref h what 0)])
+          (hashtable-set! h what (+ n 1))
+          (printf "optimize ~a[~s]: ~s\n" what n (unparse expr))))))
+  (define-syntax record-optimization
+    (syntax-rules ()
+      [(_ what expr) (void)]))
 
   ;;;========================================================================
   ;;;
@@ -491,7 +520,8 @@
     (struct-case x
       [(var) x]
       [(constant i) (constant-rep x)]
-      [(known expr type val) (T expr)]
+      [(known expr type)
+       (make-known (T expr) type)]
       [else (error 'cogen-T "invalid" (unparse x))]))
 
   (define (ClambdaCase x)

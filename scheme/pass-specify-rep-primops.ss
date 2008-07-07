@@ -39,11 +39,6 @@
     (tag-test (prm 'mref x (K (- ptag))) smask stag)
     (make-constant #f)))
 
-(define (safe-ref x disp mask tag)
-  (seq*
-    (interrupt-unless (tag-test x mask tag))
-    (prm 'mref x (K (- disp tag)))))
-
 (define (dirty-vector-set address)
   (define shift-bits 2)
   (prm 'mset 
@@ -59,8 +54,13 @@
      (if (or (fixnum? t) (immediate? t))
          (prm 'nop)
          (dirty-vector-set addr))]
+    [(known x t)
+     (cond
+       [(eq? (T:immediate? t) 'yes)
+        (record-optimization 'smart-dirty-vec t)
+        (nop)]
+       [else (smart-dirty-vector-set addr x)])]
     [else (dirty-vector-set addr)]))
-
 
 (define (slow-mem-assign v x i)
   (with-tmp ([t (prm 'int+ x (K i))])
@@ -74,6 +74,12 @@
      (if (or (fixnum? t) (immediate? t))
          (prm 'mset x (K i) (T v))
          (slow-mem-assign v x i))]
+    [(known expr t)
+     (cond
+       [(eq? (T:immediate? t) 'yes)
+        (record-optimization 'mem-assign v)
+        (prm 'mset x (K i) (T expr))]
+       [else (slow-mem-assign expr x i)])]
     [else (slow-mem-assign v x i)]))
 
 (define (align-code unknown-amt known-amt)
@@ -111,6 +117,7 @@
 (define (equable-constant? x)
   (struct-case x 
     [(constant xv) (equable? xv)]
+    [(known x t) (equable-constant? x)]
     [else #f]))
 
 (define-primop eqv? safe
@@ -151,7 +158,8 @@
   [(E x) (nop)])
 
 (define-primop boolean? safe
-  [(P x) (tag-test (T x) bool-mask bool-tag)]
+  [(P x) 
+   (tag-test (T x) bool-mask bool-tag)]
   [(E x) (nop)])
 
 (define-primop bwp-object? safe
@@ -195,6 +203,8 @@
                   (prm '= x (T (K (car ls))))
                   (K #t)
                   (f (cdr ls)))])))])]
+     [(known expr t) 
+      (cogen-pred-$memq x expr)]
      [else (interrupt)])]
   [(V x ls)
    (struct-case ls
@@ -211,6 +221,8 @@
                   (prm '= x (T (K (car ls))))
                   (T (K ls))
                   (f (cdr ls)))])))])]
+     [(known expr t) 
+      (cogen-value-$memq x expr)]
      [else (interrupt)])]
   [(E x ls) (nop)])
 
@@ -223,6 +235,7 @@
       (cond
         [(list? ls) (nop)]
         [else (interrupt)])]
+     [(known) (error 'translate "memq")]
      [else (interrupt)])])
 
 (define (equable? x)
@@ -236,6 +249,7 @@
         [(and (list? lsv) (andmap equable? lsv))
          (cogen-value-$memq x ls)]
         [else (interrupt)])]
+     [(known) (error 'translate "memv")]
      [else (interrupt)])]
   [(P x ls) 
    (struct-case ls
@@ -244,6 +258,7 @@
         [(and (list? lsv) (andmap equable? lsv))
          (cogen-pred-$memq x ls)]
         [else (interrupt)])]
+     [(known) (error 'translate "memv")]
      [else (interrupt)])]
   [(E x ls)
    (struct-case ls
@@ -251,6 +266,7 @@
       (cond
         [(list? lsv) (nop)]
         [else (interrupt)])]
+     [(known) (error 'translate "memv")]
      [else (interrupt)])])
 
 /section)
@@ -258,7 +274,8 @@
 (section ;;; pairs 
 
 (define-primop pair? safe
-  [(P x) (tag-test (T x) pair-mask pair-tag)]
+  [(P x)
+   (tag-test (T x) pair-mask pair-tag)]
   [(E x) (nop)])
 
 (define-primop cons safe
@@ -290,29 +307,41 @@
      (prm 'mset x (K (- disp-cdr pair-tag)) (T v))
      (smart-dirty-vector-set x v))])
 
+(define (assert-pair x)
+  (struct-case x
+    [(known x t)
+     (case (T:pair? t)
+       [(yes) (record-optimization 'assert-pair x) (nop)]
+       [(no)  (interrupt)]
+       [else  (assert-pair x)])]
+    [else
+     (interrupt-unless (tag-test x pair-mask pair-tag))]))
+
 (define-primop car safe
   [(V x)
-   (safe-ref (T x) disp-car pair-mask pair-tag)]
-  [(E x)
-   (interrupt-unless (tag-test (T x) pair-mask pair-tag))])
+   (with-tmp ([x (T x)])
+     (assert-pair x)
+     (prm 'mref x (K (- disp-car pair-tag))))]
+  [(E x) (assert-pair (T x))])
 
 (define-primop cdr safe
   [(V x)
-   (safe-ref (T x) disp-cdr pair-mask pair-tag)]
-  [(E x)
-   (interrupt-unless (tag-test (T x) pair-mask pair-tag))])
+   (with-tmp ([x (T x)])
+     (assert-pair x)
+     (prm 'mref x (K (- disp-cdr pair-tag))))]
+  [(E x) (assert-pair (T x))])
 
 (define-primop set-car! safe
   [(E x v)
    (with-tmp ([x (T x)])
-     (interrupt-unless (tag-test x pair-mask pair-tag))
+     (assert-pair x)
      (prm 'mset x (K (- disp-car pair-tag)) (T v))
      (smart-dirty-vector-set x v))])
 
 (define-primop set-cdr! safe
   [(E x v)
    (with-tmp ([x (T x)])
-     (interrupt-unless (tag-test x pair-mask pair-tag))
+     (assert-pair x)
      (prm 'mset x (K (- disp-cdr pair-tag)) (T v))
      (smart-dirty-vector-set x v))])
 
@@ -322,7 +351,7 @@
     [(null? ls) (T val)]
     [else 
      (with-tmp ([x (expand-cxr val (cdr ls))]) 
-       (interrupt-unless (tag-test x pair-mask pair-tag))
+       (assert-pair x)
        (prm 'mref x 
           (case (car ls) 
             [(a)  (K (- disp-car pair-tag))]
@@ -408,25 +437,60 @@
 (section ;;; vectors
   (section ;;; helpers
     (define (vector-range-check x idx)
-      (define (check-fx i)
-        (seq*
-           (interrupt-unless (tag-test (T x) vector-mask vector-tag))
-           (with-tmp ([len (cogen-value-$vector-length x)])
-             (interrupt-unless (prm 'u< (K (* i wordsize)) len))
-             (interrupt-unless-fixnum len))))
-      (define (check-? idx)
-        (seq*
-          (interrupt-unless (tag-test (T x) vector-mask vector-tag))
+      (define (check-non-vector x idx)
+        (define (check-fx idx)
+          (seq*
+             (interrupt-unless (tag-test (T x) vector-mask vector-tag))
+             (with-tmp ([len (cogen-value-$vector-length x)])
+               (interrupt-unless (prm 'u< (T idx) len))
+               (interrupt-unless-fixnum len))))
+        (define (check-? idx)
+          (seq*
+            (interrupt-unless (tag-test (T x) vector-mask vector-tag))
+            (with-tmp ([len (cogen-value-$vector-length x)])
+              (interrupt-unless (prm 'u< (T idx) len))
+              (with-tmp ([t (prm 'logor len (T idx))])
+                (interrupt-unless-fixnum t)))))
+        (struct-case idx
+          [(constant i)
+           (if (and (fixnum? i) (fx>= i 0)) 
+               (check-fx idx)
+               (check-? idx))]
+          [(known idx idx-t)
+           (case (T:fixnum? idx-t)
+             [(yes) (check-fx idx)]
+             [(maybe) (vector-range-check x idx)]
+             [else
+              (printf "vector check with mismatch index tag ~s" idx-t)
+              (vector-range-check x idx)])]
+          [else (check-? idx)]))
+      (define (check-vector x idx)
+        (define (check-fx idx)
           (with-tmp ([len (cogen-value-$vector-length x)])
-            (interrupt-unless (prm 'u< (T idx) len))
-            (with-tmp ([t (prm 'logor len (T idx))])
-              (interrupt-unless-fixnum t)))))
-      (struct-case idx
-        [(constant i)
-         (if (and (fixnum? i) (fx>= i 0)) 
-             (check-fx i)
-             (check-? idx))]
-        [else (check-? idx)]))
+            (interrupt-unless (prm 'u< (T idx) len))))
+        (define (check-? idx)
+          (seq*
+            (interrupt-unless-fixnum (T idx)) 
+            (with-tmp ([len (cogen-value-$vector-length x)])
+              (interrupt-unless (prm 'u< (T idx) len)))))
+        (struct-case idx
+          [(constant i)
+           (if (and (fixnum? i) (fx>= i 0)) 
+               (check-fx idx)
+               (check-? idx))]
+          [(known idx idx-t)
+           (case (T:fixnum? idx-t)
+             [(yes) (check-fx idx)]
+             [(no)  (interrupt)]
+             [else  (check-vector x idx)])]
+          [else (check-? idx)])) 
+      (struct-case x
+        [(known x t)
+         (case (T:vector? t)
+           [(yes) (record-optimization 'check-vector x) (check-vector x idx)]
+           [(no) (interrupt)]
+           [else (check-non-vector x idx)])]
+        [else (check-non-vector x idx)]))
     /section)
 
 (define-primop vector? unsafe
@@ -437,29 +501,30 @@
   [(V len)
    (struct-case len
      [(constant i)
-      (unless (fixnum? i) (interrupt))
-      (with-tmp ([v (prm 'alloc
-                        (K (align (+ (* i wordsize) disp-vector-data)))
-                        (K vector-tag))])
-          (prm 'mset v 
-               (K (- disp-vector-length vector-tag))
-               (K (* i fx-scale)))
-          v)]
+      (if (fixnum? i)
+          (interrupt)
+          (with-tmp ([v (prm 'alloc
+                            (K (align (+ (* i wordsize) disp-vector-data)))
+                            (K vector-tag))])
+              (prm 'mset v 
+                   (K (- disp-vector-length vector-tag))
+                   (K (* i fx-scale)))
+              v))]
+     [(known expr t)
+      (cogen-value-$make-vector expr)]
      [else
       (with-tmp ([alen (align-code (T len) disp-vector-data)])
         (with-tmp ([v (prm 'alloc alen (K vector-tag))])
-            (prm 'mset v (K (- disp-vector-length vector-tag)) (T len))
-            v))])]
+          (prm 'mset v (K (- disp-vector-length vector-tag)) (T len))
+          v))])]
   [(P len) (K #t)]
   [(E len) (nop)])
 
 (define-primop make-vector safe
   [(V len) 
-   (with-tmp ([x (make-forcall "ikrt_make_vector1" (list (T len)))]) 
+   (with-tmp ([x (make-forcall "ikrt_make_vector1" (list (T len)))])
       (interrupt-when (prm '= x (K 0)))
       x)])
-
-
 
 (define-primop $vector-ref unsafe
   [(V x i)
@@ -470,6 +535,8 @@
              (fx>= i 0)
              (prm 'mref (T x) 
                   (K (+ (* i wordsize) (- disp-vector-data vector-tag)))))]
+       [(known i t)
+        (cogen-value-$vector-ref x i)]
        [else #f])
      (prm 'mref (T x) 
         (prm 'int+ (T i) (K (- disp-vector-data vector-tag)))))]
@@ -482,16 +549,30 @@
 
 (define-primop vector-length safe
   [(V x)
-   (seq*
-     (interrupt-unless (tag-test (T x) vector-mask vector-tag))
-     (with-tmp ([t (cogen-value-$vector-length x)])
-       (interrupt-unless-fixnum t)
-       t))]
+   (struct-case x
+     [(known x t)
+      (case (T:vector? t)
+        [(yes) (record-optimization 'vector-length x) (cogen-value-$vector-length x)]
+        [(no)  (interrupt)]
+        [else  (cogen-value-vector-length x)])]
+     [else
+      (seq*
+        (interrupt-unless (tag-test (T x) vector-mask vector-tag))
+        (with-tmp ([t (cogen-value-$vector-length x)])
+          (interrupt-unless-fixnum t)
+          t))])]
   [(E x)
-   (seq*
-     (interrupt-unless (tag-test (T x) vector-mask vector-tag))
-     (with-tmp ([t (cogen-value-$vector-length x)])
-       (interrupt-unless-fixnum t)))]
+   (struct-case x
+     [(known x t)
+      (case (T:vector? t)
+        [(yes) (record-optimization 'vector-length x) (nop)]
+        [(no)  (interrupt)]
+        [else  (cogen-effect-vector-length x)])]
+     [else
+      (seq*
+        (interrupt-unless (tag-test (T x) vector-mask vector-tag))
+        (with-tmp ([t (cogen-value-$vector-length x)])
+          (interrupt-unless-fixnum t)))])]
   [(P x) 
    (seq* (cogen-effect-vector-length x) (K #t))])
 
@@ -512,6 +593,8 @@
       (mem-assign v (T x) 
          (+ (* i wordsize)
             (- disp-vector-data vector-tag)))]
+     [(known i t)
+      (cogen-effect-$vector-set! x i v)]
      [else
       (mem-assign v 
          (prm 'int+ (T x) (T i))
@@ -558,6 +641,7 @@
       (prm 'mref (T x)
          (K (+ (- disp-closure-data closure-tag)
                (* i wordsize))))]
+     [(known) (error 'translate "$cpref")]
      [else (interrupt)])])
 
 /section)
@@ -635,6 +719,7 @@
             (interrupt-when (cogen-pred-$unbound-object? v))
             v)
           (interrupt))]
+     [(known) (error 'translate "top-level-value")]
      [else
       (with-tmp ([x (T x)])
         (interrupt-unless (cogen-pred-symbol? x))
@@ -648,6 +733,7 @@
           (with-tmp ([v (cogen-value-$symbol-value x)])
             (interrupt-when (cogen-pred-$unbound-object? v)))
           (interrupt))]
+     [(known) (error 'translate "top-level-value")]
      [else
       (with-tmp ([x (T x)])
         (interrupt-unless (cogen-pred-symbol? x))
@@ -659,7 +745,6 @@
   [(E x v)
    (with-tmp ([x (T x)] [v (T v)])
      (prm 'mset x (K (- disp-symbol-record-proc symbol-ptag)) v)
-     ;(prm 'mset x (K (- disp-symbol-error-function symbol-tag)) v)
      (dirty-vector-set x))])
 
 
@@ -737,11 +822,13 @@
     [(constant a)
      (unless (fixnum? a) (interrupt))
      (prm 'int* (T b) (K a))]
+    [(known a t) (cogen-value-$fx* a b)]
     [else
      (struct-case b
        [(constant b)
         (unless (fixnum? b) (interrupt))
         (prm 'int* (T a) (K b))]
+       [(known b t) (cogen-value-$fx* a b)]
        [else
         (prm 'int* (T a) (prm 'sra (T b) (K fx-shift)))])])]
   [(P x y) (K #t)]
@@ -778,6 +865,7 @@
      [(constant i) 
       (unless (fixnum? i) (interrupt))
       (prm 'sll (T x) (K i))]
+     [(known i t) (cogen-value-$fxsll x i)]
      [else 
       (prm 'sll (T x) (prm 'sra (T i) (K fx-shift)))])]
   [(P x i) (K #t)]
@@ -791,6 +879,7 @@
       (prm 'logand 
            (prm 'sra (T x) (K (if (> i 31) 31 i)))
            (K (* -1 fx-scale)))]
+     [(known i t) (cogen-value-$fxsra x i)]
      [else 
       (with-tmp ([i (prm 'sra (T i) (K fx-shift))])
         (with-tmp ([i (make-conditional
@@ -880,6 +969,7 @@
              (K (+ i (- disp-bignum-data record-tag))))
            (K 255))
         (K fx-shift))]
+     [(known i t) (cogen-value-$bignum-byte-ref s i)]
      [else
       (prm 'sll
         (prm 'srl ;;; FIXME: bref
@@ -950,6 +1040,7 @@
              (K (+ (- 7 i) (- disp-flonum-data record-tag))))
            (K 255))
         (K fx-shift))]
+     [(known) (error 'translate "$flonum-u8-ref")]
      [else (interrupt)])]
   [(P s i) (K #t)]
   [(E s i) (nop)])
@@ -971,6 +1062,7 @@
       (prm 'bset/h (T x)
          (K (+ (- 7 i) (- disp-flonum-data vector-tag)))
             (prm 'sll (T v) (K (- 8 fx-shift))))]
+     [(known) (error 'translate "$flonum-set!")]
      [else (interrupt)])])
 
 (define-primop $fixnum->flonum unsafe
@@ -992,6 +1084,13 @@
         (if (flonum? v) 
             (check-flonums (cdr ls) code)
             (interrupt))]
+       [(known x t)
+        (case (T:flonum? t)
+          [(yes)
+           (record-optimization 'check-flonum x)
+           (check-flonums (cdr ls) code)]
+          [(no) (interrupt)]
+          [else (check-flonums (cons x (cdr ls)) code)])]
        [else
         (check-flonums (cdr ls) 
           (with-tmp ([x (T (car ls))])
@@ -1188,116 +1287,107 @@
 
 (section ;;; generic arithmetic
 
-(define (non-fixnum? x)
-  (struct-case x
-    [(constant i) (not (fixnum? i))]
-    [else #f]))
 
-(define (or* a a*)
-  (cond
-    [(null? a*) a]
-    [(constant? (car a*)) (or* a (cdr a*))]
-    [else (or* (prm 'logor a (T (car a*))) (cdr a*))]))
 
 (define (assert-fixnums a a*)
-  (cond
-    [(constant? a) 
-     (if (null? a*) 
-         (nop)
-         (assert-fixnums (car a*) (cdr a*)))]
-    [else
-     (interrupt-unless 
-       (tag-test (or* (T a) a*) fx-mask fx-tag))]))
+  (define (or* a a*)
+    (cond
+      [(null? a*) a]
+      [else (or* (prm 'logor a (T (car a*))) (cdr a*))]))
+  (define (known-fixnum? x)
+    (struct-case x
+      [(constant i) (fixnum? i)]
+      [(known x t) 
+       (case (T:fixnum? t)
+         [(yes) (record-optimization 'assert-fixnum x) #t]
+         [else  #f])]
+      [else #f]))
+  (define (known-non-fixnum? x)
+    (struct-case x
+      [(constant i) (not (fixnum? i))]
+      [(known x t) (eq? (T:fixnum? t) 'no)]
+      [else #f]))
+  (let-values ([(fx* others) (partition known-fixnum? (cons a a*))])
+    (let-values ([(nfx* others) (partition known-non-fixnum?  others)])
+      (cond
+        [(not (null? nfx*)) (interrupt)]
+        [(null? others)     (nop)]
+        [else
+         (interrupt-unless 
+           (tag-test (or* (T (car others)) (cdr others)) fx-mask fx-tag))]))))
 
 (define (fixnum-fold-p op a a*)
-  (cond
-    [(or (non-fixnum? a) (ormap non-fixnum? a*)) (interrupt)]
-    [else
-     (seq*
-       (assert-fixnums a a*)
-       (let f ([a a] [a* a*])
-         (cond
-           [(null? a*) (K #t)]
-           [else
-            (let ([b (car a*)])
-              (make-conditional
-                (prm op (T a) (T b))
-                (f b (cdr a*))
-                (K #f)))])))]))
-
-(define (fixnum-fold-e a a*)
-  (cond
-    [(or (non-fixnum? a) (ormap non-fixnum? a*)) (interrupt)]
-    [else (assert-fixnums a a*)]))
+  (seq*
+    (assert-fixnums a a*)
+    (let f ([a a] [a* a*])
+      (cond
+        [(null? a*) (K #t)]
+        [else
+         (let ([b (car a*)])
+           (make-conditional
+             (prm op (T a) (T b))
+             (f b (cdr a*))
+             (K #f)))]))))
 
 (define-primop = safe
   [(P) (interrupt)]
   [(P a . a*) (fixnum-fold-p '= a a*)]
   [(E) (interrupt)]
-  [(E a . a*) (fixnum-fold-e a a*)])
+  [(E a . a*) (assert-fixnums a a*)])
 
 (define-primop < safe
   [(P) (interrupt)]
   [(P a . a*) (fixnum-fold-p '< a a*)]
   [(E) (interrupt)]
-  [(E a . a*) (fixnum-fold-e a a*)])
+  [(E a . a*) (assert-fixnums a a*)])
 
 (define-primop <= safe
   [(P) (interrupt)]
   [(P a . a*) (fixnum-fold-p '<= a a*)]
   [(E) (interrupt)]
-  [(E a . a*) (fixnum-fold-e a a*)])
+  [(E a . a*) (assert-fixnums a a*)])
 
 (define-primop > safe
   [(P) (interrupt)]
   [(P a . a*) (fixnum-fold-p '> a a*)]
   [(E) (interrupt)]
-  [(E a . a*) (fixnum-fold-e a a*)])
+  [(E a . a*) (assert-fixnums a a*)])
 
 (define-primop >= safe
   [(P) (interrupt)]
   [(P a . a*) (fixnum-fold-p '>= a a*)]
   [(E) (interrupt)]
-  [(E a . a*) (fixnum-fold-e a a*)])
+  [(E a . a*) (assert-fixnums a a*)])
 
 (define-primop - safe
   [(V a) 
-   (cond
-     [(non-fixnum? a) (interrupt)]
-     [else
-      (interrupt)
-      (seq*
-        (assert-fixnums a '())
-        (prm 'int-/overflow (K 0) (T a)))])]
+   (interrupt)
+   (seq*
+     (assert-fixnums a '())
+     (prm 'int-/overflow (K 0) (T a)))]
   [(V a . a*)
-   (cond
-     [(or (non-fixnum? a) (ormap non-fixnum? a*)) (interrupt)]
-     [else
-      (interrupt)
-      (seq*
-        (assert-fixnums a a*)
-        (let f ([a (T a)] [a* a*])
-          (cond
-            [(null? a*) a]
-            [else
-             (f (prm 'int-/overflow a (T (car a*))) (cdr a*))])))])]
+   (interrupt)
+   (seq*
+     (assert-fixnums a a*)
+     (let f ([a (T a)] [a* a*])
+       (cond
+         [(null? a*) a]
+         [else
+          (f (prm 'int-/overflow a (T (car a*))) (cdr a*))])))]
   [(P a . a*) (seq* (assert-fixnums a a*) (K #t))]
   [(E a . a*) (assert-fixnums a a*)])
 
 (define-primop + safe
   [(V) (K 0)]
   [(V a . a*)
-   (cond
-     [(or (non-fixnum? a) (ormap non-fixnum? a*)) (interrupt)]
-     [else
-      (interrupt)
-      (seq*
-        (assert-fixnums a a*)
-        (let f ([a (T a)] [a* a*])
-          (cond
-            [(null? a*) a]
-            [else
-             (f (prm 'int+/overflow a (T (car a*))) (cdr a*))])))])]
+   (interrupt)
+   (seq*
+     (assert-fixnums a a*)
+     (let f ([a (T a)] [a* a*])
+       (cond
+         [(null? a*) a]
+         [else
+          (f (prm 'int+/overflow a (T (car a*))) (cdr a*))])))]
   [(P) (K #t)]
   [(P a . a*) (seq* (assert-fixnums a a*) (K #t))]
   [(E) (nop)]
@@ -1314,27 +1404,34 @@
   [(V x) (cogen-value-+ x (K -1))])
 
 
+(define (cogen-binary-* a b)
+  (define (cogen-*-non-constants a b)
+    (interrupt)
+    (with-tmp ([a (T a)] [b (T b)])
+      (assert-fixnum a)
+      (assert-fixnum b)
+      (prm 'int*/overflow a 
+        (prm 'sra b (K fx-shift)))))
+  (define (cogen-*-constant a b)
+    (struct-case a
+      [(constant ak)
+       (if (fx? ak)
+           (begin
+             (interrupt)
+             (with-tmp ([b (T b)])
+                (assert-fixnum b)
+                (prm 'int*/overflow a b)))
+           (interrupt))]
+      [(known x t) (cogen-*-constant x b)]
+      [else #f]))
+  (or (cogen-*-constant a b)
+      (cogen-*-constant b a)
+      (cogen-*-non-constants a b)))
+
+
 (define-primop * safe
   [(V) (K (fxsll 1 fx-shift))]
-  [(V a b) 
-   (struct-case a
-     [(constant ak) 
-      (cond
-        [(fx? ak)
-         (with-tmp ([b (T b)])
-           (assert-fixnum b)
-           (prm 'int*/overflow b a))]
-        [else (interrupt)])]
-     [else 
-      (struct-case b
-        [(constant bk)
-         (cond
-           [(fx? bk) 
-            (with-tmp ([a (T a)])
-              (assert-fixnum a)
-              (prm 'int*/overflow a b))]
-           [else (interrupt)])]
-        [else (interrupt)])])]
+  [(V a b) (cogen-binary-* a b)]
   [(P) (K #t)]
   [(P a . a*) (seq* (assert-fixnums a a*) (K #t))]
   [(E) (nop)]
@@ -1343,17 +1440,14 @@
 (define-primop bitwise-and safe
   [(V) (K (fxsll -1 fx-shift))]
   [(V a . a*)
-   (cond
-     [(or (non-fixnum? a) (ormap non-fixnum? a*)) (interrupt)]
-     [else
-      (interrupt)
-      (seq*
-        (assert-fixnums a a*)
-        (let f ([a (T a)] [a* a*])
-          (cond
-            [(null? a*) a]
-            [else
-             (f (prm 'logand a (T (car a*))) (cdr a*))])))])]
+   (interrupt)
+   (seq*
+     (assert-fixnums a a*)
+     (let f ([a (T a)] [a* a*])
+       (cond
+         [(null? a*) a]
+         [else
+          (f (prm 'logand a (T (car a*))) (cdr a*))])))]
   [(P) (K #t)]
   [(P a . a*) (seq* (assert-fixnums a a*) (K #t))]
   [(E) (nop)]
@@ -1367,37 +1461,14 @@
   [(V x y) (cogen-value-- x y)])
 
 (define-primop fx* safe
-  [(V a b) 
-   (struct-case a
-     [(constant ak) 
-      (cond
-        [(fx? ak)
-         (with-tmp ([b (T b)])
-           (assert-fixnum b)
-           (prm 'int*/overflow b a))]
-        [else (interrupt)])]
-     [else 
-      (struct-case b
-        [(constant bk)
-         (cond
-           [(fx? bk) 
-            (with-tmp ([a (T a)])
-              (assert-fixnum a)
-              (prm 'int*/overflow a b))]
-           [else (interrupt)])]
-        [else 
-         (with-tmp ([a (T a)] [b (T b)])
-           (assert-fixnum a)
-           (assert-fixnum b)
-           (prm 'int*/overflow 
-             (prm 'sra a (K fx-shift)) b))])])])
+  [(V a b) (cogen-binary-* a b)])
 
 (define-primop zero? safe
   [(P x)
    (seq*
-     (interrupt-unless (cogen-pred-fixnum? x))
+     (assert-fixnum x)
      (cogen-pred-$fxzero? x))]
-  [(E x) (interrupt-unless (cogen-pred-fixnum? x))])
+  [(E x) (assert-fixnum x)])
 
 
 (define-primop fxarithmetic-shift-left safe
@@ -1444,7 +1515,6 @@
       [else #f])))
 
 
-
 (define-primop div safe
   [(V x n) 
    (struct-case n 
@@ -1459,6 +1529,7 @@
                (K fx-shift))))]
         [else
          (interrupt)])]
+     [(known) (error 'translate "div")]
      [else (interrupt)])])
 
 (define-primop quotient safe
@@ -1479,6 +1550,7 @@
                (prm 'sra (T x) (K 1))
                (K (fxsll -1 fx-shift)))))
          (interrupt))]
+    [(known expr t) (cogen-value-quotient x expr)]
     [else (interrupt)])])
 
 /section)
@@ -1507,6 +1579,8 @@
                          (K vector-tag))])
         (prm 'mset t (K (- disp-struct-rtd vector-tag)) (T rtd))
         t)]
+     [(known expr t)
+      (cogen-value-$make-struct rtd expr)]
      [else
       (with-tmp ([ln (align-code len disp-struct-data)])
         (with-tmp ([t (prm 'alloc ln (K vector-tag))])
@@ -1594,71 +1668,74 @@
   [(P x) (K #t)]
   [(E x) (nop)])
 
-(define (non-char? x)
-  (struct-case x
-    [(constant i) (not (char? i))]
-    [else #f]))
 
 (define (assert-chars a a*)
-  (cond
-    [(constant? a) 
-     (if (null? a*) 
-         (nop)
-         (assert-chars (car a*) (cdr a*)))]
-    [else
-     (interrupt-unless 
-       (tag-test (or* (T a) a*) char-mask char-tag))]))
+  (define (or* a a*)
+    (cond
+      [(null? a*) a]
+      [else (or* (prm 'logor a (T (car a*))) (cdr a*))]))
+  (define (known-char? x)
+    (struct-case x
+      [(constant i) (char? i)]
+      [(known x t) (eq? (T:char? t) 'yes)]
+      [else #f]))
+  (define (known-non-char? x)
+    (struct-case x
+      [(constant i) (not (char? i))]
+      [(known x t) (eq? (T:char? t) 'no)]
+      [else #f]))
+  (let-values ([(fx* others) (partition known-char? (cons a a*))])
+    (let-values ([(nfx* others) (partition known-non-char?  others)])
+      (cond
+        [(not (null? nfx*)) (interrupt)]
+        [(null? others)     (nop)]
+        [else
+         (interrupt-unless 
+           (tag-test (or* (T (car others)) (cdr others)) char-mask char-tag))]))))
 
 (define (char-fold-p op a a*)
-  (cond
-    [(or (non-char? a) (ormap non-char? a*)) (interrupt)]
-    [else
-     (seq*
-       (assert-chars a a*)
-       (let f ([a a] [a* a*])
-         (cond
-           [(null? a*) (K #t)]
-           [else
-            (let ([b (car a*)])
-              (make-conditional
-                (prm op (T a) (T b))
-                (f b (cdr a*))
-                (K #f)))])))]))
+  (seq*
+    (assert-chars a a*)
+    (let f ([a a] [a* a*])
+      (cond
+        [(null? a*) (K #t)]
+        [else
+         (let ([b (car a*)])
+           (make-conditional
+             (prm op (T a) (T b))
+             (f b (cdr a*))
+             (K #f)))]))))
 
-(define (char-fold-e a a*)
-  (cond
-    [(or (non-char? a) (ormap non-char? a*)) (interrupt)]
-    [else (assert-chars a a*)]))
 
 (define-primop char=? safe
   [(P) (interrupt)]
   [(P a . a*) (char-fold-p '= a a*)]
   [(E) (interrupt)]
-  [(E a . a*) (char-fold-e a a*)])
+  [(E a . a*) (assert-chars a a*)])
 
 (define-primop char<? safe
   [(P) (interrupt)]
   [(P a . a*) (char-fold-p '< a a*)]
   [(E) (interrupt)]
-  [(E a . a*) (char-fold-e a a*)])
+  [(E a . a*) (assert-chars a a*)])
 
 (define-primop char<=? safe
   [(P) (interrupt)]
   [(P a . a*) (char-fold-p '<= a a*)]
   [(E) (interrupt)]
-  [(E a . a*) (char-fold-e a a*)])
+  [(E a . a*) (assert-chars a a*)])
 
 (define-primop char>? safe
   [(P) (interrupt)]
   [(P a . a*) (char-fold-p '> a a*)]
   [(E) (interrupt)]
-  [(E a . a*) (char-fold-e a a*)])
+  [(E a . a*) (assert-chars a a*)])
 
 (define-primop char>=? safe
   [(P) (interrupt)]
   [(P a . a*) (char-fold-p '>= a a*)]
   [(E) (interrupt)]
-  [(E a . a*) (char-fold-e a a*)])
+  [(E a . a*) (assert-chars a a*)])
 
 /section)
 
@@ -1683,6 +1760,8 @@
              (K (+ n (- disp-bytevector-data bytevector-tag)))
              (K 0))
          s)]
+     [(known expr t)
+      (cogen-value-$make-bytevector expr)]
      [else
       (with-tmp ([s (prm 'alloc 
                       (align-code 
@@ -1937,6 +2016,8 @@
              (K (- disp-string-length string-tag))
              (K (* n fx-scale)))
          s)]
+     [(known expr) 
+      (cogen-value-$make-string expr)]
      [else
       (with-tmp ([s (prm 'alloc 
                       (align-code (T n) disp-string-data)
@@ -1973,15 +2054,27 @@
   [(P s i) (K #t)]
   [(E s i) (nop)])
 
-(define (assert-fixnum x)
-  (struct-case x
-    [(constant i) 
-     (if (fixnum? i) (nop) (interrupt))]
-    [else (interrupt-unless (cogen-pred-fixnum? x))]))
+(define assert-fixnum 
+  (case-lambda 
+    [(x)
+     (struct-case x
+       [(constant i) 
+        (if (fixnum? i) (nop) (interrupt))]
+       [(known expr t)
+        (case (T:fixnum? t)
+          [(yes) (nop)]
+          [(no)  (interrupt)]
+          [else  (assert-fixnum expr)])]
+       [else (interrupt-unless (cogen-pred-fixnum? x))])]))
 
 (define (assert-string x)
   (struct-case x
     [(constant s) (if (string? s) (nop) (interrupt))]
+    [(known expr t)
+     (case (T:string? t)
+       [(yes) (record-optimization 'assert-string x) (nop)]
+       [(no)  (interrupt)]
+       [else  (assert-string expr)])]
     [else (interrupt-unless (cogen-pred-string? x))]))
 
 (define-primop string-ref safe
@@ -2002,7 +2095,6 @@
      (assert-fixnum i)
      (assert-string s)
      (interrupt-unless (prm 'u< (T i) (cogen-value-$string-length s))))])
-
 
 (define-primop $string-set! unsafe
   [(E x i c)

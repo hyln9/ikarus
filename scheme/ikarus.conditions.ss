@@ -72,13 +72,6 @@
           &i/o-encoding-rcd &no-infinities-rtd &no-infinities-rcd
           &no-nans-rtd &no-nans-rcd
           &interrupted-rtd &interrupted-rcd 
-
-
-          &i/o-would-block-rtd
-          &i/o-would-block-rcd
-          make-i/o-would-block-condition
-          i/o-would-block-condition?
-          i/o-would-block-port
           )
   (import
     (rnrs records inspection)
@@ -131,11 +124,6 @@
           i/o-encoding-error? i/o-encoding-error-char
           no-infinities-violation? make-no-infinities-violation
           no-nans-violation? make-no-nans-violation
-          
-          &i/o-would-block
-          make-i/o-would-block-condition
-          i/o-would-block-condition?
-          i/o-would-block-port
           ))
   
   (define-record-type &condition 
@@ -343,10 +331,6 @@
   ;;; ikarus-specific conditions
   (define-condition-type &interrupted &serious
     make-interrupted-condition interrupted-condition?)
-
-  (define-condition-type &i/o-would-block &condition
-    make-i/o-would-block-condition i/o-would-block-condition?
-    (port i/o-would-block-port))
 
   (define print-condition 
     (let ()

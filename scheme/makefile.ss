@@ -19,7 +19,7 @@
 (import (except (ikarus) 
           assembler-output optimize-cp optimize-level
           cp0-size-limit cp0-effort-limit expand/optimize
-          optimizer-output))
+          optimizer-output tag-analysis-output perform-tag-analysis))
 (import (ikarus.compiler))
 (import (except (psyntax system $bootstrap)
                 eval-core 
@@ -27,6 +27,7 @@
                 compile-core-expr-to-port))
 (import (ikarus.compiler)) ; just for fun
 (optimize-level 2)
+(perform-tag-analysis #t)
 (pretty-width 160)
 ((pretty-format 'fix) ((pretty-format 'letrec)))
 
@@ -1414,8 +1415,6 @@
     [&no-nans-rcd]
     [&interrupted-rtd]
     [&interrupted-rcd]
-    [&i/o-would-block-rtd]
-    [&i/o-would-block-rcd]
     [tcp-connect                      i]
     [udp-connect                      i]
     [tcp-connect-nonblocking          i]
@@ -1429,15 +1428,13 @@
     [input-socket-buffer-size         i]
     [output-socket-buffer-size        i]
 
-    ;[&i/o-would-block                 i]
-    ;[make-i/o-would-block-condition   i]
-    ;[i/o-would-block-condition?       i]
-    ;[i/o-would-block-port             i]
     [ellipsis-map ]
     [optimize-cp i]
     [optimize-level i]
     [cp0-size-limit i]
     [cp0-effort-limit i]
+    [tag-analysis-output i]
+    [perform-tag-analysis i]
   ))
 
 (define (macro-identifier? x) 
