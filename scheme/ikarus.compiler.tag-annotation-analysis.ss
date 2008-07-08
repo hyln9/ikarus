@@ -25,18 +25,7 @@
   #;
   (define primitive-return-types 
     '(
-      [length                fixnum]
-      [bytevector-length     fixnum]
-      [bytevector-u8-ref     fixnum]
-      [bytevector-s8-ref     fixnum]
-      [bytevector-u16-ref    fixnum]
-      [bytevector-s16-ref    fixnum]
-      [bytevector-u16-native-ref    fixnum]
-      [bytevector-s16-native-ref    fixnum]
-      [fixnum-width          fixnum]
-      [greatest-fixnum       fixnum]
-      [least-fixnum          fixnum]
-      [=                     boolean]
+     [=                     boolean]
       [<                     boolean]
       [<=                    boolean]
       [>                     boolean]
@@ -305,17 +294,30 @@
        (inject T:object T:vector T:fixnum)]
       [(vector-set!)
        (inject T:void T:vector T:fixnum T:object)]
+      [(length)
+       (inject T:fixnum (T:or T:null T:pair))]
+      [(bytevector-length)
+       (inject T:fixnum T:bytevector)]
       [(integer->char)
        (inject T:char T:fixnum)]
       [(char->integer)
        (inject T:fixnum T:char)]
+      [(bytevector-u8-ref bytevector-s8-ref 
+        bytevector-u16-native-ref bytevector-s16-native-ref)
+       (inject T:fixnum T:bytevector T:fixnum)]
+      [(bytevector-u16-ref bytevector-s16-ref)
+       (inject T:fixnum T:bytevector T:fixnum T:symbol)]
+      [(bytevector-u8-set! bytevector-s8-set! 
+        bytevector-u16-native-set! bytevector-s16-native-set!)
+       (inject T:void T:bytevector T:fixnum T:fixnum)]
+      [(bytevector-u16-set! bytevector-s16-set!)
+       (inject T:void T:bytevector T:fixnum T:fixnum T:symbol)]
       [(fx+         fx-         fx*         fxadd1      fxsub1
         fxquotient  fxremainder fxmodulo    fxsll       fxsra
         fxand       fxdiv       fxdiv0      fxif        fxior
         fxlength    fxmax       fxmin       fxmod       fxmod0
         fxnot       fxxor       fxlogand    fxlogor     fxlognot
-        fxlogxor    fxlogand    fxlogand    fxlogand    fxlogand
-        fxlogand    fxlogand)
+        fxlogxor)
        (inject* T:fixnum T:fixnum)]
       [(fx= fx< fx<= fx> fx>= fx=? fx<? fx<=? fx>? fx>=?
         fxeven? fxodd? fxnegative? fxpositive? fxzero?
@@ -343,9 +345,10 @@
         enum-set-indexer    
         make-guardian)
        (return T:procedure)]
+      [(fixnum-width greatest-fixnum least-fixnum)
+       (return T:fixnum)]
       [else
        (return T:object)]))
-      
  
 
   ;;;
@@ -429,6 +432,6 @@
            [else T:object]))]))
   (let-values ([(x env t) (V x empty-env)])
     (when (tag-analysis-output)
-      (pretty-print (unparse x)))
+      (pretty-print (unparse-pretty x)))
     x))
 

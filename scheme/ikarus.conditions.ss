@@ -128,6 +128,7 @@
   
   (define-record-type &condition 
     (nongenerative))
+
   (define &condition-rtd (record-type-descriptor &condition))
   (define &condition-rcd (record-constructor-descriptor &condition))
   
@@ -135,7 +136,7 @@
     (nongenerative)
     (fields (immutable components))
     (sealed #t)
-    (opaque #t))
+    (opaque #f))
 
   (define (condition? x)
     (or (&condition? x)

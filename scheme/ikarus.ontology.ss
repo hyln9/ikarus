@@ -217,7 +217,7 @@
                (let* ([ls '()]
                       [ls
                        (case (predname* x)
-                         [(yes) (cons '(name* yes) ls)]
+                         [(yes) (cons 'name* ls)]
                          [else  ls])]
                       ...)
                  ls))
@@ -231,7 +231,8 @@
   [immediate     (exclusive fixnum boolean null char void)]
   [obj-truth     (exclusive false non-false)]
   [obj-tag       (exclusive procedure string vector pair null
-                            boolean char number void other-object)]
+                            boolean char number void bytevector 
+                            symbol other-object)]
   [boolean       (exclusive true false)]
   [number        (inclusive number-tag number-size number-exactness)]
   [number-size   (exclusive negative zero positive)]
