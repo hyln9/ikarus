@@ -585,6 +585,7 @@
       [(constant c) `(quote ,c)]
       [(prelex) (Var x)]
       [(primref x) x]
+      [(known x t) `(known ,(E x) ,(T:description t))]
       [(conditional test conseq altern) 
        (cons 'if (map E (list test conseq altern)))]
       [(primcall op arg*) (cons op (map E arg*))]

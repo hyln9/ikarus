@@ -15,8 +15,8 @@
 
 
 (library (ikarus trace)
-  (export make-traced-procedure) 
-  (import (except (ikarus) make-traced-procedure))
+  (export make-traced-procedure make-traced-macro) 
+  (import (except (ikarus) make-traced-procedure make-traced-macro))
 
   (define k* '())
   
@@ -31,6 +31,7 @@
       (display-prefix k* #t)
       (write v)
       (newline)))
+
 
   (define make-traced-procedure
     (case-lambda
@@ -68,7 +69,19 @@
                                 (f (cdr v*))))))
                         (newline)
                         (apply values v*))))
-                  (lambda () (set! k* (cdr k*))))]))))])))
+                  (lambda () (set! k* (cdr k*))))]))))]))
+  
+  (define make-traced-macro
+    (lambda (name x)
+      (cond
+        [(procedure? x) 
+         (make-traced-procedure name x)]
+        [(variable-transformer? x)
+         (make-variable-transformer
+           (make-traced-procedure name 
+             (variable-transformer-procedure x)
+             syntax->datum))]
+        [else x]))))
 
 
 #!eof

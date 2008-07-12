@@ -1359,6 +1359,66 @@
   [(E) (interrupt)]
   [(E a . a*) (assert-fixnums a a*)])
 
+(define-primop fx= safe
+  [(P) (interrupt)]
+  [(P a . a*) (fixnum-fold-p '= a a*)]
+  [(E) (interrupt)]
+  [(E a . a*) (assert-fixnums a a*)])
+
+(define-primop fx< safe
+  [(P) (interrupt)]
+  [(P a . a*) (fixnum-fold-p '< a a*)]
+  [(E) (interrupt)]
+  [(E a . a*) (assert-fixnums a a*)])
+
+(define-primop fx<= safe
+  [(P) (interrupt)]
+  [(P a . a*) (fixnum-fold-p '<= a a*)]
+  [(E) (interrupt)]
+  [(E a . a*) (assert-fixnums a a*)])
+
+(define-primop fx> safe
+  [(P) (interrupt)]
+  [(P a . a*) (fixnum-fold-p '> a a*)]
+  [(E) (interrupt)]
+  [(E a . a*) (assert-fixnums a a*)])
+
+(define-primop fx>= safe
+  [(P) (interrupt)]
+  [(P a . a*) (fixnum-fold-p '>= a a*)]
+  [(E) (interrupt)]
+  [(E a . a*) (assert-fixnums a a*)])
+
+(define-primop fx=? safe
+  [(P) (interrupt)]
+  [(P a . a*) (fixnum-fold-p '= a a*)]
+  [(E) (interrupt)]
+  [(E a . a*) (assert-fixnums a a*)])
+
+(define-primop fx<? safe
+  [(P) (interrupt)]
+  [(P a . a*) (fixnum-fold-p '< a a*)]
+  [(E) (interrupt)]
+  [(E a . a*) (assert-fixnums a a*)])
+
+(define-primop fx<=? safe
+  [(P) (interrupt)]
+  [(P a . a*) (fixnum-fold-p '<= a a*)]
+  [(E) (interrupt)]
+  [(E a . a*) (assert-fixnums a a*)])
+
+(define-primop fx>? safe
+  [(P) (interrupt)]
+  [(P a . a*) (fixnum-fold-p '> a a*)]
+  [(E) (interrupt)]
+  [(E a . a*) (assert-fixnums a a*)])
+
+(define-primop fx>=? safe
+  [(P) (interrupt)]
+  [(P a . a*) (fixnum-fold-p '>= a a*)]
+  [(E) (interrupt)]
+  [(E a . a*) (assert-fixnums a a*)])
+
 (define-primop - safe
   [(V a) 
    (interrupt)
