@@ -124,6 +124,8 @@
           i/o-encoding-error? i/o-encoding-error-char
           no-infinities-violation? make-no-infinities-violation
           no-nans-violation? make-no-nans-violation
+          
+          interrupted-condition? make-interrupted-condition 
           ))
   
   (define-record-type &condition 

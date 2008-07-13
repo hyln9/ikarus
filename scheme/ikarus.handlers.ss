@@ -36,7 +36,6 @@
   (define interrupt-handler
     (make-parameter
       (lambda ()
-        (import (ikarus system interrupts))
         ; FIXME
         ;(set-port-output-index! (console-output-port) 0)
         (raise-continuable
