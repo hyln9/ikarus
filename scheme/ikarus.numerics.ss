@@ -3619,10 +3619,10 @@
 
 (library (ikarus complex-numbers)
   (export make-rectangular $make-rectangular
-          real-part imag-part magnitude)
+          real-part imag-part angle magnitude)
   (import 
     (except (ikarus)
-      make-rectangular real-part imag-part magnitude)
+      make-rectangular real-part imag-part angle magnitude)
     (except (ikarus system $compnums) $make-rectangular))
 
   (define ($make-rectangular r i)
@@ -3666,6 +3666,35 @@
            (sqrt (+ (* r r) (* i i))))]
         [else 
          (die 'magnitude "not a number" x)])))
+
+  (define angle
+    (lambda (x)
+      (import (ikarus system $bignums) (ikarus system $ratnums))
+      (define PI (acos -1))
+      (cond
+        [(fixnum? x)
+         (if (fx>? x 0)
+             0
+             (if (fx<? x 0)
+                 PI
+                 (die 'angle "undefined for 0")))]
+        [(bignum? x)
+         (if ($bignum-positive? x) 0 PI)]
+        [(ratnum? x)
+         (let ([n ($ratnum-n x)])
+           (if (> n 0) 0 PI))]
+        [(flonum? x)
+         (atan 0.0 x)]
+        [(compnum? x)
+         (let ([r ($compnum-real x)]
+               [i ($compnum-imag x)])
+           (atan i r))]
+        [(cflonum? x)
+         (let ([r ($cflonum-real x)]
+               [i ($cflonum-imag x)])
+           (atan i r))]
+        [else 
+         (die 'angle "not a number" x)])))
 
   (define real-part
     (lambda (x)
