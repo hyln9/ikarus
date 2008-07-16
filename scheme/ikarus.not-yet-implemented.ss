@@ -1,7 +1,6 @@
 
 (library (ikarus not-yet-implemented)
   (export 
-    make-polar 
     bitwise-copy-bit-field bitwise-reverse-bit-field
     bitwise-rotate-bit-field bitwise-if fxreverse-bit-field
     fxrotate-bit-field 
@@ -17,7 +16,6 @@
     string-upcase)
 
   (import (except (ikarus) 
-    make-polar 
     bitwise-copy-bit-field bitwise-reverse-bit-field
     bitwise-rotate-bit-field bitwise-if fxreverse-bit-field
     fxrotate-bit-field 
@@ -57,7 +55,6 @@
   (not-yet 
     ;;; should be implemented
     string-downcase string-titlecase string-upcase
-    make-polar 
     bitwise-if
     bitwise-rotate-bit-field bitwise-copy-bit-field bitwise-reverse-bit-field
     fxreverse-bit-field fxrotate-bit-field 

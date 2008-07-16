@@ -239,6 +239,7 @@
     (test "-0e-0" -0.0)
     (test "#d-0e-10-0e-0i" (make-rectangular -0.0 -0.0))
     (test "-0.i" (make-rectangular 0.0 -0.0))
+    (test "#d#e-0.0f-0-.0s-0i" 0)
 
     )
 

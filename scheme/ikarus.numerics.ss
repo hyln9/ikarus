@@ -3620,11 +3620,11 @@
 
 
 (library (ikarus complex-numbers)
-  (export make-rectangular $make-rectangular
+  (export make-rectangular $make-rectangular make-polar
           real-part imag-part angle magnitude)
   (import 
-    (except (ikarus)
-      make-rectangular real-part imag-part angle magnitude)
+    (except (ikarus) make-rectangular make-polar
+          real-part imag-part angle magnitude)
     (except (ikarus system $compnums) $make-rectangular))
 
   (define ($make-rectangular r i)
@@ -3654,6 +3654,16 @@
           ($make-rectangular r (inexact i))]
          [else (err r)])]
       [else (err i)]))
+
+  (define (make-polar mag angle)
+    (define who 'make-polar)
+    (unless (number? mag)
+      (die who "not a number" mag))
+    (unless (number? angle)
+      (die who "not a number" angle))
+    (make-rectangular 
+      (* mag (cos angle))
+      (* mag (sin angle))))
 
   (define magnitude
     (lambda (x)

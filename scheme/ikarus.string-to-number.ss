@@ -205,7 +205,7 @@
       [(#\i)
        (let ([real (do-dec-sn/ex sn ex (* ac (expt 10 exp)))])
          (next im:done (make-rectangular 0.0 real)))]
-      [(#\e)
+      [(#\e #\E #\s #\S #\f #\F #\d #\D #\l #\L)
        (if (fx=? r 10)
            (next exponent r ex sn ac exp)
            (fail))])
@@ -218,7 +218,7 @@
       [(#\i)
        (let ([imag (do-dec-sn/ex sn ex (* ac (expt 10 exp)))])
          (next im:done (make-rectangular real imag)))]
-      [(#\e)
+      [(#\e #\E #\s #\S #\f #\F #\d #\D #\l #\L)
        (next im:exponent r real ex sn ac exp)])
 
     (digit+ (r ex sn ac)
@@ -238,7 +238,7 @@
          (next im:sign r real ex -1))]
       [(#\i)
        (next im:done (make-rectangular 0 (do-sn/ex sn ex ac)))]
-      [(#\e)
+      [(#\e #\E #\s #\S #\f #\F #\d #\D #\l #\L)
        (if (fx=? r 10) 
            (next exponent r ex sn ac 0)
            (fail))])
@@ -252,12 +252,12 @@
            (fail))]
       [(#\/)
        (next im:ratio r real ex sn ac)]
-      [(#\e)
+      [(#\i)
+       (next im:done (make-rectangular real (do-sn/ex sn ex ac)))]
+      [(#\e #\E #\s #\S #\f #\F #\d #\D #\l #\L)
        (if (fx=? r 10)
            (next im:exponent r real ex sn ac 0)
-           (fail))]
-      [(#\i)
-       (next im:done (make-rectangular real (do-sn/ex sn ex ac)))])
+           (fail))])
 
     (sign-i (r ex sn)
       [(eof)
