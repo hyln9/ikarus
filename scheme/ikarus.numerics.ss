@@ -1589,7 +1589,8 @@
       (cond
         [(eqv? x 1) "+"]
         [(eqv? x -1) "-"]
-        [(< x 0) ($number->string x r)]
+        [(or (< x 0) (and (flonum? x) (not (flzero? (atan 0.0 x)))))
+         ($number->string x r)]
         [else (string-append "+" ($number->string x r))]))
     (define $number->string
       (lambda (x r)
@@ -2316,6 +2317,7 @@
       (cond
         [(fixnum? x) (eq? x 0)]
         [(bignum? x) #f]
+        [(ratnum? x) #f]
         [(flonum? x)
          (or ($fl= x 0.0) ($fl= x -0.0))]
         [else 
@@ -3628,7 +3630,9 @@
   (define ($make-rectangular r i)
     ;;; should be called with 2 exacts or two inexacts
     (if (flonum? i) 
-        (if (fl=? i 0.0) r ($make-cflonum r i))
+        (if (and (fl=? i 0.0) (fl=? (atan 0.0 i) 0.0))
+            r
+            ($make-cflonum r i))
         (if (eqv? i 0) r ($make-compnum r i))))
 
   (define (make-rectangular r i)
