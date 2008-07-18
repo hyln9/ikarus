@@ -51,7 +51,7 @@
 (define (smart-dirty-vector-set addr what)
   (struct-case what
     [(constant t) 
-     (if (or (fixnum? t) (immediate? t))
+     (if (or (fx? t) (immediate? t))
          (prm 'nop)
          (dirty-vector-set addr))]
     [(known x t)
@@ -71,7 +71,7 @@
 (define (mem-assign v x i)
   (struct-case v
     [(constant t) 
-     (if (or (fixnum? t) (immediate? t))
+     (if (or (fx? t) (immediate? t))
          (prm 'mset x (K i) (T v))
          (slow-mem-assign v x i))]
     [(known expr t)
@@ -239,7 +239,7 @@
      [else (interrupt)])])
 
 (define (equable? x)
-  (or (fixnum? x) (not (number? x))))
+  (or (fx? x) (not (number? x))))
 
 (define-primop memv safe
   [(V x ls) 
@@ -453,7 +453,7 @@
                 (interrupt-unless-fixnum t)))))
         (struct-case idx
           [(constant i)
-           (if (and (fixnum? i) (fx>= i 0)) 
+           (if (and (fx? i) (>= i 0)) 
                (check-fx idx)
                (check-? idx))]
           [(known idx idx-t)
@@ -475,7 +475,7 @@
               (interrupt-unless (prm 'u< (T idx) len)))))
         (struct-case idx
           [(constant i)
-           (if (and (fixnum? i) (fx>= i 0)) 
+           (if (and (fx? i) (>= i 0)) 
                (check-fx idx)
                (check-? idx))]
           [(known idx idx-t)
@@ -501,7 +501,7 @@
   [(V len)
    (struct-case len
      [(constant i)
-      (if (fixnum? i)
+      (if (and (fx? i) #f)
           (interrupt)
           (with-tmp ([v (prm 'alloc
                             (K (align (+ (* i wordsize) disp-vector-data)))
@@ -531,7 +531,7 @@
    (or 
      (struct-case i
        [(constant i) 
-        (and (fixnum? i) 
+        (and (fx? i) 
              (fx>= i 0)
              (prm 'mref (T x) 
                   (K (+ (* i wordsize) (- disp-vector-data vector-tag)))))]
@@ -589,7 +589,7 @@
   [(E x i v)
    (struct-case i
      [(constant i) 
-      (unless (fixnum? i) (interrupt)) 
+      (unless (fx? i) (interrupt))
       (mem-assign v (T x) 
          (+ (* i wordsize)
             (- disp-vector-data vector-tag)))]
@@ -637,7 +637,7 @@
   [(V x i) 
    (struct-case i
      [(constant i) 
-      (unless (fixnum? i) (interrupt))
+      (unless (fx? i) (interrupt))
       (prm 'mref (T x)
          (K (+ (- disp-closure-data closure-tag)
                (* i wordsize))))]
@@ -863,7 +863,7 @@
   [(V x i)
    (struct-case i
      [(constant i) 
-      (unless (fixnum? i) (interrupt))
+      (unless (fx? i) (interrupt))
       (prm 'sll (T x) (K i))]
      [(known i t) (cogen-value-$fxsll x i)]
      [else 
@@ -875,17 +875,20 @@
   [(V x i)
    (struct-case i
      [(constant i) 
-      (unless (fixnum? i) (interrupt))
+      (unless (fx? i) (interrupt))
       (prm 'logand 
-           (prm 'sra (T x) (K (if (> i 31) 31 i)))
+           (prm 'sra (T x) 
+                (K (if (< i (* wordsize 8))
+                       i
+                       (- (* wordsize 8) 1))))
            (K (* -1 fx-scale)))]
      [(known i t) (cogen-value-$fxsra x i)]
      [else 
       (with-tmp ([i (prm 'sra (T i) (K fx-shift))])
         (with-tmp ([i (make-conditional
-                        (prm '< i (K 32))
+                        (prm '< i (K (* 8 wordsize)))
                         i
-                        (K 31))])
+                        (K (- (* 8 wordsize) 1)))])
            (prm 'logand
                 (prm 'sra (T x) i)
                 (K (* -1 fx-scale)))))])]
@@ -1296,7 +1299,7 @@
       [else (or* (prm 'logor a (T (car a*))) (cdr a*))]))
   (define (known-fixnum? x)
     (struct-case x
-      [(constant i) (fixnum? i)]
+      [(constant i) (fx? i)]
       [(known x t) 
        (case (T:fixnum? t)
          [(yes) (record-optimization 'assert-fixnum x) #t]
@@ -1304,7 +1307,7 @@
       [else #f]))
   (define (known-non-fixnum? x)
     (struct-case x
-      [(constant i) (not (fixnum? i))]
+      [(constant i) (not (fx? i))]
       [(known x t) (eq? (T:fixnum? t) 'no)]
       [else #f]))
   (let-values ([(fx* others) (partition known-fixnum? (cons a a*))])
@@ -1872,7 +1875,7 @@
   [(V s i)
    (struct-case i
      [(constant i)
-      (unless (fixnum? i) (interrupt))
+      (unless (fx? i) (interrupt))
       (prm 'sra
         (prm 'sll
           (prm 'logand 

@@ -114,8 +114,8 @@ next_gen_tag[generation_count] = {
 };
 
 static ikptr
-meta_alloc_extending(int size, gc_t* gc, int meta_id){
-  int mapsize = align_to_next_page(size);
+meta_alloc_extending(long int size, gc_t* gc, int meta_id){
+  long int mapsize = align_to_next_page(size);
   if(mapsize < extension_amount[meta_id]){
     mapsize = extension_amount[meta_id];
   }
@@ -151,7 +151,7 @@ meta_alloc_extending(int size, gc_t* gc, int meta_id){
 
 
 static inline ikptr
-meta_alloc(int size, gc_t* gc, int meta_id){
+meta_alloc(long int size, gc_t* gc, int meta_id){
   assert(size == align(size));
   meta_t* meta = &gc->meta[meta_id];
   ikptr ap = meta->ap;
@@ -252,12 +252,12 @@ gc_alloc_new_data(int size, gc_t* gc){
 }
 
 static inline ikptr 
-gc_alloc_new_code(int size, gc_t* gc){
+gc_alloc_new_code(long int size, gc_t* gc){
   assert(size == align(size));
   if(size < pagesize){
     return meta_alloc(size, gc, meta_code);
   } else {
-    int memreq = align_to_next_page(size);
+    long int memreq = align_to_next_page(size);
     ikptr mem = ik_mmap_code(memreq, gc->collect_gen, gc->pcb);
     gc->segment_vector = gc->pcb->segment_vector;
     qupages_t* p = ik_malloc(sizeof(qupages_t));
@@ -374,7 +374,6 @@ extern void verify_integrity(ikpcb* pcb, char*);
 
 ikpcb* 
 ik_collect(unsigned long int mem_req, ikpcb* pcb){
-//  fprintf(stderr, "ik_collect\n");
 #ifndef NDEBUG
   verify_integrity(pcb, "entry");
 #endif
@@ -481,8 +480,6 @@ ik_collect(unsigned long int mem_req, ikpcb* pcb){
 #ifndef NDEBUG
   fprintf(stderr, "collect done\n");
 #endif
-
-
 
 
   /* delete all old heap pages */
@@ -755,22 +752,22 @@ add_code_entry(gc_t* gc, ikptr entry){
   if(ref(x,0) == forward_ptr){
     return ref(x,wordsize) + off_code_data;
   }
-  int idx = page_index(x);
+  long int idx = page_index(x);
   unsigned int t = gc->segment_vector[idx];
   int gen = t & gen_mask;
   if(gen > gc->collect_gen){
     return entry;
   }
-  int code_size = unfix(ref(x, disp_code_code_size));
+  long int code_size = unfix(ref(x, disp_code_code_size));
   ikptr reloc_vec = ref(x, disp_code_reloc_vector);
   ikptr freevars = ref(x, disp_code_freevars);
   ikptr annotation = ref(x, disp_code_annotation);
-  int required_mem = align(disp_code_data + code_size);
+  long int required_mem = align(disp_code_data + code_size);
   if(required_mem >= pagesize){
     int new_tag = gc->collect_gen_tag;
-    int idx = page_index(x);
+    long int idx = page_index(x);
     gc->segment_vector[idx] = new_tag | code_mt;
-    int i;
+    long int i;
     for(i=pagesize, idx++; i<required_mem; i+=pagesize, idx++){
       gc->segment_vector[idx] = new_tag | data_mt;
     }
@@ -811,10 +808,10 @@ static void collect_stack(gc_t* gc, ikptr top, ikptr end){
     ikptr rp = ref(top, 0);
     long int rp_offset = unfix(ref(rp, disp_frame_offset));
     if(DEBUG_STACK){
-      fprintf(stderr, "rp_offset=%ld\n", (long)rp_offset);
+      fprintf(stderr, "rp_offset=%ld\n", rp_offset);
     }
     if(rp_offset <= 0){
-      fprintf(stderr, "invalid rp_offset %ld\n", (long)rp_offset);
+      fprintf(stderr, "invalid rp_offset %ld\n", rp_offset);
       exit(-1);
     }
     /* since the return point is alive, we need to find the code
@@ -891,7 +888,7 @@ static void collect_stack(gc_t* gc, ikptr top, ikptr end){
       for(i=0; i<bytes_in_mask; i++, fp-=8){
         unsigned char m = mask[i];
 #if DEBUG_STACK
-        fprintf(stderr, "m[%d]=0x%x\n", i, m);
+        fprintf(stderr, "m[%ld]=0x%x\n", i, m);
 #endif
         if(m & 0x01) { fp[-0] = add_object(gc, fp[-0], "frame0"); }
         if(m & 0x02) { fp[-1] = add_object(gc, fp[-1], "frame1"); }
@@ -1334,9 +1331,9 @@ relocate_new_code(ikptr x, gc_t* gc){
 #endif
       obj = add_object(gc, obj, "reloc3");
       ikptr displaced_object = obj + obj_off;
-      ikptr next_word = code + code_off + wordsize;
+      long int next_word = code + code_off + 4;
       ikptr relative_distance = displaced_object - (long int)next_word;
-      ref(next_word, -wordsize) = relative_distance;
+      *((int*)(code+code_off)) = relative_distance;
       p += (3*wordsize);
     }
     else if(tag == 1){

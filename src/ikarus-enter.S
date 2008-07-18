@@ -67,10 +67,8 @@ _ik_asm_enter:
   .byte 0
   .byte 0
 L_multivalue_label: # FIXME
-  .long 0           # 2 longs 
-  .long 0           # for return address
-  .byte 0
-  .byte 0
+  .quad  L_multivalue_underflow
+  .quad 0
 L_call:
   call *%rax         # goooooooo
   # now we're back
@@ -91,6 +89,7 @@ L_do_underflow:
   mov -40(%rsp),  %r14     # restore
   mov -48(%rsp),  %r15     # restore
   ret      # back to C, which handled the underflow
+multivalue_underflow:
 L_multivalue_underflow:
   add $8, %rsp
   jmp L_do_underflow
@@ -109,10 +108,21 @@ _ik_asm_reenter:
   # scheme stack is second arg  8(%esp)    %rsi
   # pcb is the first arg        4(%esp)    %rdi
   # return point is at          0(%esp)
+
+  mov %rbp,  -8(%rsp)      # preserve
+  mov %rbx,  -16(%rsp)     # preserve
+  mov %r12,  -24(%rsp)     # preserve
+  mov %r13,  -32(%rsp)     # preserve
+  mov %r14,  -40(%rsp)     # preserve
+  mov %r15,  -48(%rsp)     # preserve
+
   movq %rdx, %rax        # third arg -> argc
   movq %rsi, %rbx        # second arg -> rbx  (scheme stack)
   movq %rdi, %rsi        # first arg -> pcb
   movq 0(%rsi), %rbp     # allocation pointer is at 0(pcb)
+
+
+  subq $64, %rsp         # for alignment
   movq %rsp, 48(%rsi)    # save esp in pcb->system_stack
   movq %rbx, %rsp        # load scheme stack from rbx
   cmpq $-8, %rax
@@ -120,10 +130,8 @@ _ik_asm_reenter:
   movq -8(%rsp), %rax
   ret
 L_multi_reentry:
-  movq $0, %rax
-  movq %rax, 0(%rax)
   movq 0(%rsp), %rbx
-  jmp *-9(%rbx)
+  jmp *-18(%rbx)
 
 
 .align 8

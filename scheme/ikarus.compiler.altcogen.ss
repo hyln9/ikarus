@@ -2369,12 +2369,13 @@
         [else (error who "invalid effect" (unparse x))]))
     (define (check-disp-arg x k)
       (cond
-        [(mem? x) 
+        [(small-operand? x)
+         (k x)]
+        [else
          (let ([u (mku)])
            (make-seq
              (E (make-asm-instr 'move u x))
-             (k u)))]
-        [else (k x)]))
+             (k u)))]))
     (define (check-disp x k)
       (struct-case x 
         [(disp a b)
@@ -2564,7 +2565,7 @@
       [(constant i) 
        (unless (fixnum? i)
          (error who "invalid R/cl" x))
-       (fxlogand i 31)]
+       (fxlogand i (- (* wordsize 8) 1))]
       [else
        (if (eq? x ecx)
            '%cl

@@ -18,11 +18,16 @@
 (import 
   (ikarus.compiler)
   (match)
-  (except (ikarus) scc-letrec  optimize-cp optimize-level assembler-output))
+  (except (ikarus) perform-tag-analysis tag-analysis-output
+          cp0-effort-limit cp0-size-limit expand/optimize 
+          optimizer-output
+          optimize-cp optimize-level assembler-output))
+
 
 (define (compile1 x)
   (let ([p (open-file-output-port "test64.fasl" (file-options no-fail))])
-    (parameterize ([assembler-output #t])
+    (parameterize ([optimize-level 0]
+                   [assembler-output #t])
       (compile-core-expr-to-port x p))
     (close-output-port p)))
 

@@ -239,8 +239,8 @@ ik_mmap(int size){
 #endif
   memset(mem, -1, mapsize);
 #ifndef NDEBUG
-  fprintf(stderr, "MMAP 0x%08x .. 0x%08x\n", (int)mem,
-      ((int)(mem))+mapsize-1);
+  fprintf(stderr, "MMAP 0x%016lx .. 0x%016lx\n", (long int)mem,
+      ((long int)(mem))+mapsize-1);
 #endif
   return (ikptr)(long)mem;
 }
@@ -492,7 +492,7 @@ void ik_error(ikptr args){
 
 void ik_stack_overflow(ikpcb* pcb){
 #ifndef NDEBUG
-  fprintf(stderr, "entered ik_stack_overflow pcb=0x%08x\n", (int)pcb);
+  fprintf(stderr, "entered ik_stack_overflow pcb=0x%016lx\n", (long int)pcb);
 #endif
   set_segment_type(pcb->stack_base, pcb->stack_size, data_mt, pcb);
   

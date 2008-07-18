@@ -2442,7 +2442,10 @@
     (lambda (x)
       (cond
         [(flonum? x) (foreign-call "ikrt_fl_sin" x)]
-        [(fixnum? x) (foreign-call "ikrt_fx_sin" x)]
+        [(fixnum? x) 
+         (if (fx=? x 0)
+             0
+             (foreign-call "ikrt_fx_sin" x))]
         [(number? x) (sin (inexact x))]
         [else (die 'sin "not a number" x)])))
 
@@ -2450,7 +2453,10 @@
     (lambda (x)
       (cond
         [(flonum? x) (foreign-call "ikrt_fl_cos" x)]
-        [(fixnum? x) (foreign-call "ikrt_fx_cos" x)]
+        [(fixnum? x) 
+         (if (fx=? x 0)
+             1
+             (foreign-call "ikrt_fx_cos" x))]
         [(number? x) (cos (inexact x))]
         [else (die 'cos "not a number" x)])))
 
@@ -2458,7 +2464,10 @@
     (lambda (x)
       (cond
         [(flonum? x) (foreign-call "ikrt_fl_tan" x)]
-        [(fixnum? x) (foreign-call "ikrt_fx_tan" x)]
+        [(fixnum? x) 
+         (if (fx=? x 0)
+             0
+             (foreign-call "ikrt_fx_tan" x))]
         [(number? x) (tan (inexact x))]
         [else (die 'tan "not a number" x)])))
 

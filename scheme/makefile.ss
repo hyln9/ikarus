@@ -1433,7 +1433,6 @@
     [register-callback                i]
     [input-socket-buffer-size         i]
     [output-socket-buffer-size        i]
-
     [ellipsis-map ]
     [optimize-cp i]
     [optimize-level i]

@@ -433,10 +433,11 @@
       (cond
        [(fxzero? x) (write-char #\0 p)]
        [(fx< x 0)
-        (write-char #\- p)
-        (if (fx= x -536870912)
-            (write-char* "536870912" p)
-            (loop (fx- 0 x) p))]
+        (write-char* (fixnum->string x) p)]
+        ;(write-char #\- p)
+        ;(if (fx= x -536870912)
+        ;    (write-char* "536870912" p)
+        ;    (loop (fx- 0 x) p))]
        [else (loop x p)])))
   
   (define write-char*

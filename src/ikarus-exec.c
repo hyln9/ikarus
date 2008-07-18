@@ -25,7 +25,7 @@
 typedef struct {
   ikptr tag;
   ikptr top;
-  int size;
+  long int size;
   ikptr next;
 } cont;
 
