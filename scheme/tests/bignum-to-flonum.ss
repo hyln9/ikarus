@@ -16,11 +16,11 @@
 
   (define (testnum x) 
     (define precision 53)
-    (assert (bignum? x)) 
+    ;(assert (bignum? x)) 
     (let ([fl (inexact x)])
       (let ([n (if (> x 0) x (- x))])
         (let ([bits (bitwise-length n)])
-          (printf "bits = ~s\n" bits)
+          (printf "bits(~s) = ~s\n" n bits)
           (cond
             [(<= bits precision) 
              (unless (= x (exact fl))

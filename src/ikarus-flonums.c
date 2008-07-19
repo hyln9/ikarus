@@ -238,9 +238,7 @@ ikrt_fx_log(ikptr x, ikpcb* pcb){
 
 
 ikptr
-ikrt_fixnum_to_flonum(ikptr x, ikpcb* pcb){
-  ikptr r = ik_unsafe_alloc(pcb, flonum_size) + vector_tag;
-  ref(r, -vector_tag) = (ikptr)flonum_tag;
+ikrt_fixnum_to_flonum(ikptr x, ikptr r, ikpcb* pcb){
   flonum_data(r) = unfix(x);
   return r;
 }

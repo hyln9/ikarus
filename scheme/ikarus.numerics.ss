@@ -3470,13 +3470,25 @@
     (define (pos-fxbitcount n)
       ;;; nifty parrallel count from:
       ;;; http://infolab.stanford.edu/~manku/bitcount/bitcount.html
-      (let ([m0 #x15555555]
-            [m1 #x13333333]
-            [m2 #x0f0f0f0f])
-        (let* ([n ($fx+ ($fxlogand n m0) ($fxlogand ($fxsra n 1) m0))]
-               [n ($fx+ ($fxlogand n m1) ($fxlogand ($fxsra n 2) m1))]
-               [n ($fx+ ($fxlogand n m2) ($fxlogand ($fxsra n 4) m2))])
-          ($fxmodulo n 255))))
+      (case (fixnum-width)
+        [(30)
+         (let ([m0 #x15555555]
+               [m1 #x13333333]
+               [m2 #x0f0f0f0f])
+           (let* ([n ($fx+ ($fxlogand n m0) ($fxlogand ($fxsra n 1) m0))]
+                  [n ($fx+ ($fxlogand n m1) ($fxlogand ($fxsra n 2) m1))]
+                  [n ($fx+ ($fxlogand n m2) ($fxlogand ($fxsra n 4) m2))])
+             ($fxmodulo n 255)))]
+        [else
+         (let ([m0 #x0555555555555555]
+               [m1 #x0333333333333333]
+               [m2 #x0f0f0f0f0f0f0f0f]
+               [m3 #x00ff00ff00ff00ff])
+           (let* ([n ($fx+ ($fxlogand n m0) ($fxlogand ($fxsra n 1) m0))]
+                  [n ($fx+ ($fxlogand n m1) ($fxlogand ($fxsra n 2) m1))]
+                  [n ($fx+ ($fxlogand n m2) ($fxlogand ($fxsra n 4) m2))]
+                  [n ($fx+ ($fxlogand n m3) ($fxlogand ($fxsra n 8) m3))])
+             ($fxmodulo n 255)))]))
     (define ($fxbitcount n)
       (if ($fx< n 0)
           (fxlognot (pos-fxbitcount (fxlognot n)))
@@ -3510,15 +3522,24 @@
         [else (die 'bitwise-bit-count "not an exact integer" n)])))
   
   (define (fxlength x) 
+    (define (fxlength32 x)
+      (let ([fl ($fixnum->flonum x)])
+         (let ([sbe ($fxlogor 
+                      ($fxsll ($flonum-u8-ref fl 0) 4)
+                      ($fxsra ($flonum-u8-ref fl 1) 4))])
+           (cond
+             [($fx= sbe 0) 0]
+             [else ($fx- sbe 1022)]))))
+    (define (fxlength64 x)
+      (if ($fx> x #x7FFFFFFF)
+          ($fx+ 31 (fxlength32 ($fxsra x 31)))
+          (fxlength32 x)))
     (if (fixnum? x) 
-        (let ([fl ($fixnum->flonum
-                    (if ($fx< x 0) ($fxlognot x) x))])
-          (let ([sbe ($fxlogor 
-                       ($fxsll ($flonum-u8-ref fl 0) 4)
-                       ($fxsra ($flonum-u8-ref fl 1) 4))])
-            (cond
-              [($fx= sbe 0) 0]
-              [else ($fx- sbe 1022)])))
+        (case (fixnum-width)
+          [(30)
+           (fxlength32 (if ($fx< x 0) ($fxlognot x) x))]
+          [else
+           (fxlength64 (if ($fx< x 0) ($fxlognot x) x))])
         (die 'fxlength "not a fixnum" x)))
 
   (define (fxbit-set? x i)

@@ -374,6 +374,7 @@ extern void verify_integrity(ikpcb* pcb, char*);
 
 ikpcb* 
 ik_collect(unsigned long int mem_req, ikpcb* pcb){
+//  fprintf(stderr, "ik_collect ...\n");
 #ifndef NDEBUG
   verify_integrity(pcb, "entry");
 #endif
@@ -562,7 +563,7 @@ ik_collect(unsigned long int mem_req, ikpcb* pcb){
   }
  
 
-//  fprintf(stderr, "ik_collect\n");
+  //fprintf(stderr, "ik_collect done\n");
   return pcb;
 }
 

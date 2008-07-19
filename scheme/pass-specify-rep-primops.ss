@@ -1070,13 +1070,19 @@
 
 (define-primop $fixnum->flonum unsafe
   [(V fx) 
-   (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
-     (prm 'mset x (K (- vector-tag)) (K flonum-tag))
-     (prm 'fl:from-int
-          (K 0) ; dummy
-          (prm 'sra (T fx) (K fx-shift)))
-     (prm 'fl:store x (K (- disp-flonum-data vector-tag)))
-     x)])
+   (case wordsize
+     [(4)
+      (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
+        (prm 'mset x (K (- vector-tag)) (K flonum-tag))
+        (prm 'fl:from-int
+             (K 0) ; dummy
+             (prm 'sra (T fx) (K fx-shift)))
+        (prm 'fl:store x (K (- disp-flonum-data vector-tag)))
+        x)]
+     [else 
+      (with-tmp ([f (cogen-value-$make-flonum)])
+        (make-forcall "ikrt_fixnum_to_flonum" (list (T fx) f)))])])
+
 
 (define (check-flonums ls code)
   (cond

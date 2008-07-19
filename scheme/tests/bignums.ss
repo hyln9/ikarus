@@ -200,10 +200,6 @@
     (test #x-1000000000000001))
 
 
-
-
-
-
   (define (test-bitwise-bit-count)
     (define (test n)
       (define (pos-count-bits n)
@@ -219,13 +215,15 @@
             [bc1 (count-bits n)])
         (unless (= bc0 bc1)
           (error 'test-bitcount "failed/expected/got" n bc1 bc0))))
-    (define (test-fx n)
+    (define (test-fx count n inc)
       (when (fixnum? n) 
-        (when (zero? (fxlogand n #x7FFFFFF))
+        (when (zero? (fxlogand count #xFFFF))
           (printf "bitwise-bit-count ~s\n" n))
         (test n)
-        (test-fx (+ n 512))))
-    (test-fx (least-fixnum))
+        (test-fx (+ count 1) (+ n inc) inc)))
+    (if (= (fixnum-width) 30)
+        (test-fx 0 (least-fixnum) #xFF)
+        (test-fx 0 (least-fixnum) #xFF00000000))
     (test 28472347823493290482390849023840928390482309480923840923840983)
     (test -847234234903290482390849023840928390482309480923840923840983))
 

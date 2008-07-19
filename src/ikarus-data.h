@@ -206,7 +206,7 @@ ikptr ik_unsafe_alloc(ikpcb* pcb, int size);
 ikptr ik_safe_alloc(ikpcb* pcb, int size);
 
 #define IK_HEAP_EXT_SIZE  (32 * 4096)
-#define IK_HEAPSIZE       (1024 * ((wordsize==4)?1:16) * 4096) /* 4/8 MB */
+#define IK_HEAPSIZE       (1024 * ((wordsize==4)?1:32) * 4096) /* 4/8 MB */
 
 #define wordsize ((int)(sizeof(ikptr)))
 #define wordshift ((wordsize == 4)?2:3)

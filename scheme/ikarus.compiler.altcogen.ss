@@ -2348,13 +2348,11 @@
                    [else x]))])]
            [(fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
              fl:load-single fl:store-single) 
-            (cond
-              [(mem? a) 
-               (let ([u (mku)])
-                 (make-seq
-                   (E (make-asm-instr 'move u a))
-                   (E (make-asm-instr op u b))))]
-              [else x])]
+            (check-disp-arg a
+              (lambda (a)
+                (check-disp-arg b
+                  (lambda (b)
+                    (make-asm-instr op a b)))))]
            [(fl:from-int fl:shuffle) x]
            [else (error who "invalid effect op" op)])]
         [(primcall op rands) 

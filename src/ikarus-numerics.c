@@ -1825,7 +1825,7 @@ ikrt_bnfx_modulo(ikptr x, ikptr y /*, ikpcb* pcb */){
 
 
 static int
-limb_length(unsigned int n){
+limb_length(unsigned long int n){
   int i=0;
   while(n != 0){
     n = n >> 1;
@@ -1844,7 +1844,7 @@ ikrt_bignum_length(ikptr x){
   int n0 = limb_length(last);
   if(((unsigned long int) fst) & bignum_sign_mask){
     /* negative */
-    if (last == (mp_limb_t)(1<<(n0-1))){
+    if (last == (mp_limb_t)(1L<<(n0-1))){
       /* single bit set in last limb */
       int i;
       for(i=0; i<(sn-1); i++){
@@ -1966,47 +1966,37 @@ ikrt_bignum_to_flonum64(ikptr bn, ikptr more_bits, ikptr fl){
   double pos_result;
   if(limb_count == 1){
     pos_result = sp[0];
-  } else if (limb_count == 2){
-    mp_limb_t lo = sp[0];
-    mp_limb_t hi = sp[1];
-    pos_result = hi;
-    pos_result = pos_result * 4294967296.0;
-    pos_result = pos_result + lo;
   } else {
     mp_limb_t hi = sp[limb_count-1];
-    mp_limb_t mi = sp[limb_count-2];
     int bc = limb_size(hi);
-    if(bc < 32){
-      mp_limb_t lo = sp[limb_count-3];
-      hi = (hi << (32-bc)) | (mi >> bc);
-      mi = (mi << (32-bc)) | (lo >> bc);
+    if(bc < 64){
+      mp_limb_t mi = sp[limb_count-2];
+      hi = (hi << (64-bc)) | (mi >> bc);
     }
-    /* now hi has 32 full bits, and mi has 32 full bits */
-    mp_limb_t mask = ((1<<(64-PRECISION)) - 1);
-    if((mi & mask) == ((mask+1)>>1)){
+    /* now hi has 64 full bits */
+    mp_limb_t mask = ((1L<<(64-PRECISION)) - 1);
+    if((hi & mask) == ((mask+1)>>1)){
       /* exactly at break point */
-      if(((sp[limb_count-3] << (32-bc)) == 0) &&
-          all_zeros(sp, sp+limb_count-4) &&
+      if(((sp[limb_count-2] << (64-bc)) == 0) &&
+          all_zeros(sp, sp+limb_count-3) &&
           (more_bits == 0)){
-        if(mi & (1<<(64-PRECISION))){
+        if(hi & (1L<<(64-PRECISION))){
           /* odd number, round to even */
-          mi = mi | mask;
+          hi = hi | mask;
         }
       } else {
         /* round up */
-        mi = mi | mask;
+        hi = hi | mask;
       }
-    } else if ((mi & mask) > ((mask+1)>>1)){
+    } else if ((hi & mask) > ((mask+1)>>1)){
       /* also round up */
-      mi = mi | mask;
+      hi = hi | mask;
     } else {
       /* keep it to round down */
     }
     pos_result = hi;
-    pos_result = pos_result * 4294967296.0;
-    pos_result = pos_result + mi;
     int bignum_bits = bc + (mp_bits_per_limb * (limb_count-1));
-    int exponent = bignum_bits - (2 * mp_bits_per_limb);
+    int exponent = bignum_bits - mp_bits_per_limb;
     while(exponent){
       pos_result *= 2.0;
       exponent -= 1;
