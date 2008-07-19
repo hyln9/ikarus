@@ -90,44 +90,74 @@
         (char->integer x)
         (die who "unexpected eof inside a fasl object")))
 
-  (define (read-fixnum p)
+  (define (read-u32 p)
     (let* ([c0 (read-u8 p)]
            [c1 (read-u8 p)]
            [c2 (read-u8 p)]
            [c3 (read-u8 p)])
-      (cond
-        [(fx<= c3 127)
-         (fxlogor (fxlogor (fxsra c0 2) (fxsll c1 6))
-                  (fxlogor (fxsll c2 14) (fxsll c3 22)))]
-        [else
-         (let ([c0 (fxlogand #xFF (fxlognot c0))]
-               [c1 (fxlogand #xFF (fxlognot c1))]
-               [c2 (fxlogand #xFF (fxlognot c2))]
-               [c3 (fxlogand #xFF (fxlognot c3))])
-           (fx- -1 
-             (fxlogor (fxlogor (fxsra c0 2) 
-                               (fxsll c1 6))
-                      (fxlogor (fxsll c2 14) 
-                               (fxsll c3 22)))))])))
+      (bitwise-ior c0 (sll c1 8) (sll c2 16) (sll c3 24))))
+    
+  (define (read-fixnum p)
+    (case (fixnum-width)
+      [(30)
+       (let* ([c0 (read-u8 p)]
+              [c1 (read-u8 p)]
+              [c2 (read-u8 p)]
+              [c3 (read-u8 p)])
+         (cond
+           [(fx<= c3 127)
+            (fxlogor (fxlogor (fxsra c0 2) (fxsll c1 6))
+                     (fxlogor (fxsll c2 14) (fxsll c3 22)))]
+           [else
+            (let ([c0 (fxlogand #xFF (fxlognot c0))]
+                  [c1 (fxlogand #xFF (fxlognot c1))]
+                  [c2 (fxlogand #xFF (fxlognot c2))]
+                  [c3 (fxlogand #xFF (fxlognot c3))])
+              (fx- -1 
+                (fxlogor (fxlogor (fxsra c0 2) 
+                                  (fxsll c1 6))
+                         (fxlogor (fxsll c2 14) 
+                                  (fxsll c3 22)))))]))]
+      [else
+       (let* ([u0 (read-u32 p)]
+              [u1 (read-u32 p)])
+         (if (<= u1 #x7FFFFFF)
+             (sra (bitwise-ior u0 (sll u1 32)) 3)
+             (let ([u0 (fxlogand #xFFFFFFFF (fxlognot u0))]
+                   [u1 (fxlogand #xFFFFFFFF (fxlognot u1))])
+               (fx- -1 
+                  (fxlogor (fxsra u0 3) (fxsll u1 29))))))]))
+
   (define (read-int p)
-    (let* ([c0 (char->int (read-u8-as-char p))]
-           [c1 (char->int (read-u8-as-char p))]
-           [c2 (char->int (read-u8-as-char p))]
-           [c3 (char->int (read-u8-as-char p))])
-      (cond
-        [(fx<= c3 127)
-         (fxlogor (fxlogor c0 (fxsll c1 8))
-                  (fxlogor (fxsll c2 16) (fxsll c3 24)))]
-        [else
-         (let ([c0 (fxlogand #xFF (fxlognot c0))]
-               [c1 (fxlogand #xFF (fxlognot c1))]
-               [c2 (fxlogand #xFF (fxlognot c2))]
-               [c3 (fxlogand #xFF (fxlognot c3))])
-           (fx- -1 
-             (fxlogor (fxlogor c0 
-                               (fxsll c1 8))
-                      (fxlogor (fxsll c2 16) 
-                               (fxsll c3 24)))))]))) 
+    (case (fixnum-width)
+      [(30)
+       (let* ([c0 (char->int (read-u8-as-char p))]
+              [c1 (char->int (read-u8-as-char p))]
+              [c2 (char->int (read-u8-as-char p))]
+              [c3 (char->int (read-u8-as-char p))])
+         (cond
+           [(fx<= c3 127)
+            (fxlogor (fxlogor c0 (fxsll c1 8))
+                     (fxlogor (fxsll c2 16) (fxsll c3 24)))]
+           [else
+            (let ([c0 (fxlogand #xFF (fxlognot c0))]
+                  [c1 (fxlogand #xFF (fxlognot c1))]
+                  [c2 (fxlogand #xFF (fxlognot c2))]
+                  [c3 (fxlogand #xFF (fxlognot c3))])
+              (fx- -1 
+                (fxlogor (fxlogor c0 
+                                  (fxsll c1 8))
+                         (fxlogor (fxsll c2 16) 
+                                  (fxsll c3 24)))))]))]
+      [else
+       (let* ([u0 (read-u32 p)]
+              [u1 (read-u32 p)])
+         (if (<= u1 #x7FFFFFF)
+             (bitwise-ior u0 (sll u1 32))
+             (let ([u0 (fxlogand #xFFFFFFFF (fxlognot u0))]
+                   [u1 (fxlogand #xFFFFFFFF (fxlognot u1))])
+               (- -1 (bitwise-ior u0 (sll u1 32))))))]))
+
   (define (do-read p)
     (define marks (make-vector 1 #f))
     (define (max x y)
@@ -380,7 +410,9 @@
       (assert-eq? (read-u8-as-char p) #\I)
       (assert-eq? (read-u8-as-char p) #\K)
       (assert-eq? (read-u8-as-char p) #\0)
-      (assert-eq? (read-u8-as-char p) #\1)
+      (case (fixnum-width)
+        [(30) (assert-eq? (read-u8-as-char p) #\1)]
+        [else (assert-eq? (read-u8-as-char p) #\2)])
       (let ([v (do-read p)])
         (unless (port-eof? p)
           (printf "port did not reach eof\n"))

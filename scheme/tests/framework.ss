@@ -9,7 +9,7 @@
          (lambda ()
            (let ([p p0] [e e0])
              (unless (p e)
-               (error 'test-all "~s failed, got ~s" 
+               (error 'test-all "failed" 
                       '(p0 e0) e))) 
            ...
            (printf "[~s: ~s] Happy Happy Joy Joy\n" 

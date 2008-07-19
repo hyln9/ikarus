@@ -28,7 +28,7 @@
 
   (define-record-type enum
     (fields g univ values)
-    (opaque #t) (sealed #t)
+    (opaque #f) (sealed #t)
     (nongenerative))
   
   (define (remove-dups ls)
@@ -64,18 +64,22 @@
           [else #f]))))
   
   (define (enum-set-constructor x)
-    (unless (enum? x) 
+    (unless (enum? x)
       (die 'enum-set-constructor "not an enumeration" x))
-    (lambda (ls) 
+    (lambda (ls)
       (unless (and (list? ls) (for-all symbol? ls))
         (die 'enum-set-constructor "not a list of symbols" ls))
-      (for-each 
-        (lambda (s) 
+      (for-each
+        (lambda (s)
           (unless (memq s (enum-univ x))
             (die 'enum-set-constructor "not in the universe" s x)))
         ls)
-      (make-enum (enum-g x) (enum-univ x) 
-        (remove-dups ls))))
+      (let ([idx (enum-set-indexer x)])
+        (make-enum (enum-g x) (enum-univ x)
+          (map car
+            (list-sort (lambda (a b) (< (cdr a) (cdr b)))
+              (map (lambda (x) (cons x (idx x)))
+                   ls)))))))
     
   (define (enum-set->list x)
     (unless (enum? x) 

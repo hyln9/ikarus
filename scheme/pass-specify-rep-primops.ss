@@ -41,11 +41,9 @@
 
 (define (dirty-vector-set address)
   (define shift-bits 2)
-  (prm 'mset 
-     (prm 'int+
-          (prm 'mref pcr (K pcb-dirty-vector))
-          (prm 'sll (prm 'srl address (K pageshift)) (K shift-bits)))
-     (K 0)
+  (prm 'mset32 
+     (prm 'mref pcr (K pcb-dirty-vector))
+     (prm 'sll (prm 'srl address (K pageshift)) (K shift-bits))
      (K dirty-word)))
 
 (define (smart-dirty-vector-set addr what)
@@ -1062,9 +1060,10 @@
      [(constant i)
       (unless (and (fixnum? i) (fx<= 0 i) (fx<= i 7))
         (interrupt))
-      (prm 'bset/h (T x)
+      (prm 'bset
+         (T x)
          (K (+ (- 7 i) (- disp-flonum-data vector-tag)))
-            (prm 'sll (T v) (K (- 8 fx-shift))))]
+         (prm 'sra (T v) (K fx-shift)))]
      [(known) (error 'translate "$flonum-set!")]
      [else (interrupt)])])
 
@@ -1967,19 +1966,30 @@
 
 (define-primop $bytevector-ieee-double-nonnative-ref unsafe
   [(V bv i)
-   (let ([bvoff (- disp-bytevector-data bytevector-tag)]
-         [floff (- disp-flonum-data vector-tag)])
-     (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
-       (prm 'mset x (K (- vector-tag)) (K flonum-tag))
-       (with-tmp ([t (prm 'int+ (T bv) 
-                        (prm 'sra (T i) (K fx-shift)))])
-         (with-tmp ([x0 (prm 'mref t (K bvoff))])
-           (prm 'bswap! x0 x0)
-           (prm 'mset x (K (+ floff wordsize)) x0))
-         (with-tmp ([x0 (prm 'mref t (K (+ bvoff wordsize)))])
-           (prm 'bswap! x0 x0)
-           (prm 'mset x (K floff) x0)))
-       x))])
+   (case wordsize
+     [(4)
+      (let ([bvoff (- disp-bytevector-data bytevector-tag)]
+            [floff (- disp-flonum-data vector-tag)])
+        (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
+          (prm 'mset x (K (- vector-tag)) (K flonum-tag))
+          (with-tmp ([t (prm 'int+ (T bv) 
+                           (prm 'sra (T i) (K fx-shift)))])
+            (with-tmp ([x0 (prm 'mref t (K bvoff))])
+              (prm 'bswap! x0 x0)
+              (prm 'mset x (K (+ floff wordsize)) x0))
+            (with-tmp ([x0 (prm 'mref t (K (+ bvoff wordsize)))])
+              (prm 'bswap! x0 x0)
+              (prm 'mset x (K floff) x0)))
+          x))]
+     [else
+      (let ([bvoff (- disp-bytevector-data bytevector-tag)]
+            [floff (- disp-flonum-data vector-tag)])
+        (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
+          (prm 'mset x (K (- vector-tag)) (K flonum-tag))
+          (with-tmp ([x0 (prm 'mref (T bv) (K bvoff))])
+            (prm 'bswap! x0 x0)
+            (prm 'mset x (K floff) x0))
+          x))])])
 
 
 (define-primop $bytevector-ieee-double-native-set! unsafe
@@ -2021,7 +2031,7 @@
          (with-tmp ([x0 (prm 'mref t (K bvoff))])
            (prm 'bswap! x0 x0)
            (prm 'mset x (K floff) x0)))
-       (prm 'fl:load-single x (K floff))
+       (prm 'fl:load-single x (K (+ floff (- wordsize 4))))
        (prm 'fl:single->double)
        (prm 'fl:store x (K floff))
        x))])
@@ -2041,16 +2051,26 @@
 
 (define-primop $bytevector-ieee-double-nonnative-set! unsafe
   [(E bv i x)
-   (let ([bvoff (- disp-bytevector-data bytevector-tag)]
-         [floff (- disp-flonum-data vector-tag)])
-     (with-tmp ([t (prm 'int+ (T bv)
-                      (prm 'sra (T i) (K fx-shift)))])
-       (with-tmp ([x0 (prm 'mref (T x) (K floff))])
-         (prm 'bswap! x0 x0)
-         (prm 'mset t (K (+ bvoff wordsize)) x0))
-       (with-tmp ([x0 (prm 'mref (T x) (K (+ floff wordsize)))])
-         (prm 'bswap! x0 x0)
-         (prm 'mset t (K bvoff) x0))))])
+   (case wordsize
+     [(4)
+      (let ([bvoff (- disp-bytevector-data bytevector-tag)]
+            [floff (- disp-flonum-data vector-tag)])
+        (with-tmp ([t (prm 'int+ (T bv)
+                         (prm 'sra (T i) (K fx-shift)))])
+          (with-tmp ([x0 (prm 'mref (T x) (K floff))])
+            (prm 'bswap! x0 x0)
+            (prm 'mset t (K (+ bvoff wordsize)) x0))
+          (with-tmp ([x0 (prm 'mref (T x) (K (+ floff wordsize)))])
+            (prm 'bswap! x0 x0)
+            (prm 'mset t (K bvoff) x0))))]
+     [else
+      (let ([bvoff (- disp-bytevector-data bytevector-tag)]
+            [floff (- disp-flonum-data vector-tag)])
+        (with-tmp ([t (prm 'int+ (T bv)
+                         (prm 'sra (T i) (K fx-shift)))])
+          (with-tmp ([x0 (prm 'mref (T x) (K floff))])
+            (prm 'bswap! x0 x0)
+            (prm 'mset t (K bvoff) x0))))])])
 
 (define-primop $bytevector-ieee-single-nonnative-set! unsafe
   [(E bv i x)
@@ -2062,9 +2082,15 @@
        (with-tmp ([t (prm 'int+ (T bv)
                         (prm 'sra (T i) (K fx-shift)))])
          (prm 'fl:store-single t (K bvoff))
-         (with-tmp ([x0 (prm 'mref t (K bvoff))])
-           (prm 'bswap! x0 x0)
-           (prm 'mset t (K bvoff) x0)))))])
+         (case wordsize
+           [(4)
+            (with-tmp ([x0 (prm 'mref t (K bvoff))])
+              (prm 'bswap! x0 x0)
+              (prm 'mset t (K bvoff) x0))]
+           [else
+            (with-tmp ([x0 (prm 'mref32 t (K bvoff))])
+              (prm 'bswap! x0 x0)
+              (prm 'mset32 t (K bvoff) (prm 'sra x0 (K 32))))]))))])
 /section)
 
 (section ;;; strings

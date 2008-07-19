@@ -2574,23 +2574,14 @@
   (define exact-integer-sqrt
     (lambda (x)
       (define who 'exact-integer-sqrt)
-      (define (fxsqrt x i k) 
-        (let ([j ($fxsra ($fx+ i k) 1)])
-          (let ([j^2 ($fx* j j)])
-             (if ($fx> j^2 x)
-                 (fxsqrt x i j)
-                 (if ($fx= i j) 
-                     (values j ($fx- x j^2))
-                     (fxsqrt x j k))))))
       (cond
         [(fixnum? x) 
          (cond
-           [($fx< x 0) (die who "invalid argument" x)]
            [($fx= x 0) (values 0 0)]
-           [($fx< x 4) (values 1 ($fx- x 1))]
-           [($fx< x 9) (values 2 ($fx- x 4))]
-           [($fx< x 46340) (fxsqrt x 3 ($fxsra x 1))]
-           [else           (fxsqrt x 215 23171)])]
+           [($fx< x 0) (die who "invalid argument" x)]
+           [else
+            (let ([s (foreign-call "ikrt_exact_fixnum_sqrt" x)])
+              (values s ($fx- x ($fx* s s))))])]
         [(bignum? x) 
          (cond
            [($bignum-positive? x) 

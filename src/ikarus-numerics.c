@@ -35,7 +35,7 @@
 // #define most_positive_fixnum 0x1FFFFFFF
 // #define most_negative_fixnum 0x20000000
 
-#define max_digits_per_limb 10
+#define max_digits_per_limb ((wordsize==4)?10:20)
 
 #ifdef NDEBUG
 #define verify_bignum(x,caller) (x)
@@ -2073,6 +2073,15 @@ ikrt_bignum_to_flonum(ikptr bn, ikptr more_bits, ikptr fl){
     flonum_data(fl) = pos_result;
   }
   return fl;
+}
+
+ikptr 
+ikrt_exact_fixnum_sqrt(ikptr fx /*, ikpcb* pcb*/){
+  mp_limb_t x = unfix(fx);
+  mp_limb_t s;
+  mp_limb_t r;
+  mpn_sqrtrem(&s, &r, &x, 1);
+  return fix(s);
 }
 
 ikptr
