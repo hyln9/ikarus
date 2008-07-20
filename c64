@@ -1,7 +1,5 @@
 #!/usr/bin/env sh
 
-cp configure.64.ac configure.ac  && \
-autoconf && \
 ./configure CFLAGS="-m64 -g -I/Users/ikarus/.opt64/include" \
   LDFLAGS="-m64 -g -L/Users/ikarus/.opt64/lib" \
 && make clean \

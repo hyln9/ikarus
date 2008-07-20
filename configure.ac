@@ -13,9 +13,8 @@ AM_PROG_AS
 AC_PROG_CC
 AM_PROG_CC_C_O
 
-CFLAGS="$CFLAGS -DNDEBUG -O3 -Wall -m32"
-CCASFLAGS="$CCASFLAGS -m32"
-LDFLAGS="$LDFLAGS -m32"
+
+CFLAGS="$CFLAGS -DNDEBUG -O3 -Wall"
 
 case "$target_os" in
   *linux*)
@@ -29,12 +28,7 @@ case "$target_os" in
     ;;
   esac
 
-
 AC_CHECK_SIZEOF(void *)
-# remember to enable before release.
-if (test $ac_cv_sizeof_void_p != 4); then
-  AC_MSG_ERROR([Ikarus can only run in 32-bit mode.])
-fi
 
 # Checks for libraries.
 AC_SEARCH_LIBS(dlsym, dl,, [AC_MSG_ERROR([Cannot find libdl])])

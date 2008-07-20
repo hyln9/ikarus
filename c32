@@ -1,7 +1,5 @@
 #!/usr/bin/env sh
 
-cp configure.32.ac configure.ac  && \
-autoconf && \
 ./configure --prefix=/Users/ikarus/.opt CFLAGS=-m32 LDFLAGS=-m32 \
 && make clean \
 && make

@@ -1,7 +1,8 @@
 
 nodist_pkglib_DATA=ikarus.boot
 
-EXTRA_DIST=ikarus.boot.prebuilt ikarus.enumerations.ss \
+EXTRA_DIST=ikarus.boot.4.prebuilt ikarus.boot.8.prebuilt \
+  ikarus.enumerations.ss \
   ikarus.exceptions.ss ikarus.apply.ss ikarus.bytevectors.ss \
   ikarus.cafe.ss ikarus.chars.ss ikarus.code-objects.ss \
   ikarus.codecs.ss ikarus.collect.ss ikarus.command-line.ss \
@@ -33,16 +34,18 @@ revno = "$(shell sed 's/ .*//' ../.bzr/branch/last-revision 2>/dev/null)"
 last-revision: $(shell ls ../.bzr/branch/last-revision 2>/dev/null) 
 	echo $(revno) >$@
 
+sizeofvoidp = $(shell grep SIZEOF_VOID_P ../config.h | sed "s/.*\(.\)/\1/g")
+
 ikarus.config.ss: Makefile last-revision ../config.h
 	echo '(define ikarus-version "$(PACKAGE_VERSION)")' >$@
 	echo '(define ikarus-revision "$(shell cat last-revision)")' >>$@
 	echo '(define ikarus-lib-dir "$(pkglibdir)")' >>$@
-	echo '(define wordsize $(shell grep SIZEOF_VOID_P ../config.h | sed "s/.*\(.\)/\1/g"))' >>$@
+	echo '(define wordsize $(sizeofvoidp))' >>$@
 
 
 CLEANFILES=$(nodist_pkglib_DATA) ikarus.config.ss
 MAINTAINERCLEANFILES=last-revision
 
 ikarus.boot: $(EXTRA_DIST) ikarus.config.ss
-	../src/ikarus -b ./ikarus.boot.prebuilt --r6rs-script makefile.ss
+	../src/ikarus -b ./ikarus.boot.$(sizeofvoidp).prebuilt --r6rs-script makefile.ss
 

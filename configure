@@ -4479,9 +4479,8 @@ fi
 
 
 
-CFLAGS="$CFLAGS -DNDEBUG -O3 -Wall -m32"
-CCASFLAGS="$CCASFLAGS -m32"
-LDFLAGS="$LDFLAGS -m32"
+
+CFLAGS="$CFLAGS -DNDEBUG -O3 -Wall"
 
 case "$target_os" in
   *linux*)
@@ -4494,7 +4493,6 @@ case "$target_os" in
     LDFLAGS="-Wl,-E -Wl,--export-all-symbols $LDFLAGS"
     ;;
   esac
-
 
 
 ac_ext=c
@@ -5538,12 +5536,6 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-# remember to enable before release.
-if (test $ac_cv_sizeof_void_p != 4); then
-  { { echo "$as_me:$LINENO: error: Ikarus can only run in 32-bit mode." >&5
-echo "$as_me: error: Ikarus can only run in 32-bit mode." >&2;}
-   { (exit 1); exit 1; }; }
-fi
 
 # Checks for libraries.
 { echo "$as_me:$LINENO: checking for library containing dlsym" >&5
