@@ -2097,9 +2097,9 @@
              "https://bugs.launchpad.net/ikarus/+filebug")
            (make-irritants-condition (list op)))))]))
 
-(define (primref-loc op)
-  (mem (fx- disp-symbol-record-proc record-tag) 
-       (obj (primref->symbol op))))
+;(define (primref-loc op)
+;  (mem (fx- disp-symbol-record-proc record-tag) 
+;       (obj (primref->symbol op))))
 
 
 
@@ -2210,7 +2210,9 @@
           (movl cpr (mem (fx- 0 wordsize) fpr)) ; first arg
           (negl eax)
           (movl eax (mem (fx- 0 (fx* 2 wordsize)) fpr))
-          (movl (primref-loc '$incorrect-args-error-handler) cpr)
+          (movl (obj (primref->symbol '$incorrect-args-error-handler)) cpr)
+          (movl (mem (- disp-symbol-record-proc record-tag) cpr) cpr)
+          ;(movl (primref-loc '$incorrect-args-error-handler) cpr)
           (movl (int (argc-convention 2)) eax)
           (tail-indirect-cpr-call))))
     SL_invalid_args]
@@ -2228,7 +2230,9 @@
       (list
         (list 0
           (label SL_multiple_values_error_rp)
-          (movl (primref-loc '$multiple-values-error) cpr)
+          (movl (obj (primref->symbol '$multiple-values-error)) cpr)
+          (movl (mem (- disp-symbol-record-proc record-tag) cpr) cpr)
+          ;(movl (primref-loc '$multiple-values-error) cpr)
           (tail-indirect-cpr-call))))
     SL_multiple_values_error_rp]
    [(sl-values-label)
@@ -2256,7 +2260,9 @@
         (list 0
           (label SL_nonprocedure)
           (movl cpr (mem (fx- 0 wordsize) fpr)) ; first arg
-          (movl (primref-loc '$apply-nonprocedure-error-handler) cpr)
+          (movl (obj (primref->symbol '$apply-nonprocedure-error-handler)) cpr)
+          (movl (mem (- disp-symbol-record-proc record-tag) cpr) cpr)
+          ;(movl (primref-loc '$apply-nonprocedure-error-handler) cpr)
           (movl (int (argc-convention 1)) eax)
           (tail-indirect-cpr-call))))
     SL_nonprocedure]

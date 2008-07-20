@@ -2896,7 +2896,9 @@
            (addl eax eax) ; double the number of args
            (movl eax (mem (fx* -2 wordsize) fpr)) ; pass it as first arg
            (movl (int (argc-convention 1)) eax) ; setup argc
-           (movl (primref-loc 'do-vararg-overflow) cpr) ; load handler
+           (movl (obj (primref->symbol 'do-vararg-overflow)) cpr)
+           (movl (mem (- disp-symbol-record-proc record-tag) cpr) cpr)
+           ;(movl (primref-loc 'do-vararg-overflow) cpr) ; load handler
            (compile-call-frame 0 '#() '(int 0) (indirect-cpr-call))
            (popl eax)     ; pop framesize and drop it
            (popl eax)     ; reload argc
