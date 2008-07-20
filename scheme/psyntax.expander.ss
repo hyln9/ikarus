@@ -1328,7 +1328,7 @@
           (syntax-match x* (else)
             [() 
              (let ([g (gensym)])
-               (values `(,g (lambda () (raise ,con))) g))]
+               (values `(,g (lambda () (raise-continuable ,con))) g))]
             [([else e e* ...])
              (values `(begin ,e ,@e*) #f)]
             [(cls . cls*) 
