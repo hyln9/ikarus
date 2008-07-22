@@ -818,13 +818,13 @@
   [(V a b) 
    (struct-case a
     [(constant a)
-     (unless (fixnum? a) (interrupt))
+     (unless (fx? a) (interrupt))
      (prm 'int* (T b) (K a))]
     [(known a t) (cogen-value-$fx* a b)]
     [else
      (struct-case b
        [(constant b)
-        (unless (fixnum? b) (interrupt))
+        (unless (fx? b) (interrupt))
         (prm 'int* (T a) (K b))]
        [(known b t) (cogen-value-$fx* a b)]
        [else
@@ -963,7 +963,7 @@
   [(V s i)
    (struct-case i
      [(constant i)
-      (unless (fixnum? i) (interrupt))
+      (unless (fx? i) (interrupt))
       (prm 'sll
         (prm 'logand 
            (prm 'mref (T s)
@@ -1033,7 +1033,7 @@
   [(V s i)
    (struct-case i
      [(constant i)
-      (unless (and (fixnum? i) (fx<= 0 i) (fx<= i 7))
+      (unless (and (fx? i) (fx<= 0 i) (fx<= i 7))
         (interrupt))
       (prm 'sll
         (prm 'logand 
@@ -1058,7 +1058,7 @@
   [(E x i v)
    (struct-case i
      [(constant i)
-      (unless (and (fixnum? i) (fx<= 0 i) (fx<= i 7))
+      (unless (and (fx? i) (fx<= 0 i) (fx<= i 7))
         (interrupt))
       (prm 'bset
          (T x)
@@ -1544,7 +1544,7 @@
    (struct-case n 
      [(constant i) 
       (cond
-        [(and (fixnum? i)
+        [(and (fx? i)
               (>= i 0)
               (< i (- (* wordsize 8) fx-shift)))
          (with-tmp ([x (T x)])
@@ -1588,7 +1588,7 @@
    (struct-case n 
      [(constant i) 
       (cond
-        [(and (fixnum? i) (> i 0) (log2 i)) =>
+        [(and (fx? i) (> i 0) (log2 i)) =>
          (lambda (bits) 
            (seq* 
              (interrupt-unless (cogen-pred-fixnum? x))
@@ -1641,7 +1641,7 @@
   [(V rtd len)
    (struct-case len
      [(constant i) 
-      (unless (fixnum? i) (interrupt))
+      (unless (fx? i) (interrupt))
       (with-tmp ([t (prm 'alloc
                          (K (align (+ (* i wordsize) disp-struct-data)))
                          (K vector-tag))])
@@ -1817,7 +1817,7 @@
   [(V n)
    (struct-case n
      [(constant n)
-      (unless (fixnum? n) (interrupt))
+      (unless (fx? n) (interrupt))
       (with-tmp ([s (prm 'alloc 
                       (K (align (+ n 1 disp-bytevector-data)))
                       (K bytevector-tag))])
@@ -1857,7 +1857,7 @@
   [(V s i)
    (struct-case i
      [(constant i)
-      (unless (fixnum? i) (interrupt))
+      (unless (fx? i) (interrupt))
       (prm 'sll
         (prm 'logand 
            (prm 'bref (T s)
@@ -1906,10 +1906,10 @@
   [(E x i c)
    (struct-case i
      [(constant i) 
-      (unless (fixnum? i) (interrupt))
+      (unless (fx? i) (interrupt))
       (struct-case c
         [(constant c)
-         (unless (fixnum? c) (interrupt))
+         (unless (fx? c) (interrupt))
          (prm 'bset/c (T x)
               (K (+ i (- disp-bytevector-data bytevector-tag)))
               (K (cond
@@ -1923,7 +1923,7 @@
      [else
       (struct-case c
         [(constant c)
-         (unless (fixnum? c) (interrupt))
+         (unless (fx? c) (interrupt))
          (prm 'bset/c (T x) 
               (prm 'int+ 
                    (prm 'sra (T i) (K fx-shift))
@@ -2103,7 +2103,7 @@
   [(V n)
    (struct-case n
      [(constant n)
-      (unless (fixnum? n) (interrupt))
+      (unless (fx? n) (interrupt))
       (with-tmp ([s (prm 'alloc 
                       (K (align (+ (* n wordsize) disp-string-data)))
                       (K string-tag))])
@@ -2134,7 +2134,7 @@
   [(V s i)
    (struct-case i
      [(constant i)
-      (unless (fixnum? i) (interrupt))
+      (unless (fx? i) (interrupt))
       (prm 'mref32 (T s)
         (K (+ (* i char-size) 
               (- disp-string-data string-tag))))]
@@ -2154,7 +2154,7 @@
     [(x)
      (struct-case x
        [(constant i) 
-        (if (fixnum? i) (nop) (interrupt))]
+        (if (fx? i) (nop) (interrupt))]
        [(known expr t)
         (case (T:fixnum? t)
           [(yes) (nop)]
@@ -2195,7 +2195,7 @@
   [(E x i c)
    (struct-case i
      [(constant i) 
-      (unless (fixnum? i) (interrupt))
+      (unless (fx? i) (interrupt))
       (prm 'mset32 (T x) 
          (K (+ (* i char-size) 
                (- disp-string-data string-tag)))

@@ -191,8 +191,8 @@ gc_alloc_new_large_ptr(int size, gc_t* gc){
 
 static inline void 
 enqueue_large_ptr(ikptr mem, int size, gc_t* gc){
-  int i = page_index(mem);
-  int j = page_index(mem+size-1);
+  long int i = page_index(mem);
+  long int j = page_index(mem+size-1);
   while(i<=j){
     gc->segment_vector[i] = 
       pointers_mt | large_object_tag | gc->collect_gen_tag;
