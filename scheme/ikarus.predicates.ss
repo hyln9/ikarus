@@ -247,26 +247,48 @@
               (= (imag-part x) (imag-part y)))]
         [else #f])))
 
-  (define boolean=?
-    (lambda (x y) 
-      (if (sys:boolean? x)
-          (if (sys:eq? x y) 
-              #t
-              (if (sys:boolean? y) 
-                  #f
-                  (die 'boolean=? "not a boolean" y)))
-          (die 'boolean=? "not a boolean" x))))
-
-
-  (define symbol=?
-    (lambda (x y) 
-      (if (sys:symbol? x)
-          (if (sys:eq? x y) 
-              #t
-              (if (sys:symbol? y) 
-                  #f
-                  (die 'symbol=? "not a symbol" y)))
-          (die 'symbol=? "not a symbol" x))))
+  
+  (define-syntax define-pred
+    (syntax-rules ()
+      [(_ name pred? msg)
+       (begin
+         (define (err x) (die 'name msg x))
+         (define (g rest)
+           (if (sys:pair? rest)
+               (let ([a (car rest)])
+                 (if (pred? a)
+                     (g (cdr rest))
+                     (err a)))
+               #f))
+         (define (f x rest)
+           (if (sys:pair? rest)
+               (let ([a (car rest)])
+                 (if (sys:eq? x a)
+                     (f x (cdr rest))
+                     (if (pred? a)
+                         (g (cdr rest))
+                         (err a))))
+               #t))
+         (define name
+           (case-lambda
+             [(x y) 
+              (if (pred? x)
+                  (if (sys:eq? x y) 
+                      #t
+                      (if (pred? y) 
+                          #f
+                          (err y)))
+                  (err x))]
+             [(x y z . rest)
+              (if (pred? x)
+                  (if (sys:eq? x y)
+                      (if (sys:eq? x z)
+                          (f x rest)
+                          (if (pred? z) #f (err z)))
+                      (if (pred? y) #f (err y)))
+                  (err x))])))]))
+  (define-pred symbol=? sys:symbol? "not a symbol")
+  (define-pred boolean=? sys:boolean? "not a boolean")
 
   (module (equal?)
     (define vector-loop
