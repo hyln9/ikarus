@@ -1177,21 +1177,12 @@
     (import UNSAFE)
     (define (get-u8-byte-mode p who start) 
       (when ($port-closed? p) (die who "port is closed" p))
-      (let* ([bv ($port-buffer p)]
-             [n (bytevector-length bv)])
-        (let ([j (($port-read! p) bv 0 n)])
-          (unless (fixnum? j)
-            (die who "invalid return value from read! procedure" j))
-          (cond
-            [(fx> j 0) 
-             (unless (fx<= j n)
-               (die who "read! returned a value out of range" j))
-             ($set-port-index! p start) 
-             ($set-port-size! p j)
-             (bytevector-u8-ref bv 0)]
-            [(fx= j 0) (eof-object)]
-            [else 
-             (die who "read! returned a value out of range" j)]))))
+      (let ([cnt (refill-bv-buffer p who)])
+        (cond
+          [(eqv? cnt 0) (eof-object)]
+          [else 
+           ($set-port-index! p start)
+           (bytevector-u8-ref ($port-buffer p) 0)])))
     (define (slow-get-u8 p who start) 
       (assert-binary-input-port p who)
       ($set-port-attrs! p fast-get-byte-tag)
