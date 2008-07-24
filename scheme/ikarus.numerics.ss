@@ -321,11 +321,18 @@
         (foreign-call "ikrt_fl_acos" x)
         (die 'flacos "not a flonum" x)))
 
-  (define (flatan x)
-    (if (flonum? x) 
-        (foreign-call "ikrt_fl_atan" x)
-        (die 'flatan "not a flonum" x)))
-
+  (define flatan 
+    (case-lambda
+      [(x)
+       (if (flonum? x) 
+           (foreign-call "ikrt_fl_atan" x)
+           (die 'flatan "not a flonum" x))]
+      [(x y)
+       (if (flonum? x)
+           (if (flonum? y)
+               (foreign-call "ikrt_atan2" x y)
+               (die 'flatan "not a flonum" y))
+           (die 'flatan "not a flonum" x))]))
 
   (define (flfloor x)
     (define (ratnum-floor x)
@@ -1477,25 +1484,25 @@
            x 
            (die 'flmin "not a flonum" x))]))
 
-  (define exact->inexact
-    (lambda (x)
-      (cond
-        [(fixnum? x) ($fixnum->flonum x)]
-        [(bignum? x) (bignum->flonum x)]
-        [(ratnum? x) (ratnum->flonum x)]
-        [else
-         (die 'exact->inexact 
-                "not an exact number" x)])))
+  (define (->inexact x who)
+    (cond
+      [(fixnum? x) ($fixnum->flonum x)]
+      [(bignum? x) (bignum->flonum x)]
+      [(ratnum? x) (ratnum->flonum x)]
+      [(flonum? x) x]
+      [(compnum? x) 
+       (make-rectangular 
+         (->inexact (real-part x))
+         (->inexact (imag-part x)))]
+      [(cflonum? x) x]
+      [else
+       (die who "not a number" x)]))
 
-  (define inexact
-    (lambda (x)
-      (cond
-        [(fixnum? x) ($fixnum->flonum x)]
-        [(bignum? x) (bignum->flonum x)]
-        [(ratnum? x) (ratnum->flonum x)]
-        [(flonum? x) x]
-        [else
-         (die 'inexact "not a number" x)])))
+  (define (exact->inexact x)
+    (->inexact x 'exact->inexact))
+
+  (define (inexact x)
+    (->inexact x 'inexact))
 
   (define real->flonum
     (lambda (x)
@@ -2044,16 +2051,36 @@
   (flcmp flfl<= flfx<= fxfl<= flbn<= bnfl<= $fl<=)
   (flcmp flfl>= flfx>= fxfl>= flbn>= bnfl>= $fl>=)
 
-  (define-syntax flrt= (syntax-rules () [(_ x y) (= (inexact->exact x) y)]))
-  (define-syntax rtfl= (syntax-rules () [(_ x y) (= x (inexact->exact y))]))
-  (define-syntax flrt<  (syntax-rules () [(_ x y) (< (inexact->exact x) y)]))
-  (define-syntax rtfl<  (syntax-rules () [(_ x y) (< x (inexact->exact y))]))
-  (define-syntax flrt<= (syntax-rules () [(_ x y) (<= (inexact->exact x) y)]))
-  (define-syntax rtfl<= (syntax-rules () [(_ x y) (<= x (inexact->exact y))]))
-  (define-syntax flrt>  (syntax-rules () [(_ x y) (> (inexact->exact x) y)]))
-  (define-syntax rtfl>  (syntax-rules () [(_ x y) (> x (inexact->exact y))]))
-  (define-syntax flrt>= (syntax-rules () [(_ x y) (>= (inexact->exact x) y)]))
-  (define-syntax rtfl>= (syntax-rules () [(_ x y) (>= x (inexact->exact y))]))
+  (define-syntax cmp-ex/in
+    (syntax-rules ()
+      [(_ pred)
+       (syntax-rules ()
+         [(_ ex in) 
+          (let ([x ex] [y in])
+            (if ($flonum-rational? y)
+                (pred x (exact y))
+                (pred (inexact x) y)))])]))
+  (define-syntax cmp-in/ex
+    (syntax-rules ()
+      [(_ pred)
+       (syntax-rules ()
+         [(_ in ex) 
+          (let ([x in] [y ex])
+            (if ($flonum-rational? x)
+                (pred (exact x) y)
+                (pred x (inexact y))))])]))
+
+  (define-syntax flrt=  (cmp-in/ex =))
+  (define-syntax rtfl=  (cmp-ex/in =))
+  (define-syntax flrt<  (cmp-in/ex <))
+  (define-syntax rtfl<  (cmp-ex/in <))
+  (define-syntax flrt<= (cmp-in/ex <=))
+  (define-syntax rtfl<= (cmp-ex/in <=))
+  (define-syntax flrt>  (cmp-in/ex >))
+  (define-syntax rtfl>  (cmp-ex/in >))
+  (define-syntax flrt>= (cmp-in/ex >=))
+  (define-syntax rtfl>= (cmp-ex/in >=))
+
   (define (exrt< x y) (< (* x ($ratnum-d y)) ($ratnum-n y)))
   (define (rtex< x y) (< ($ratnum-n x) (* y ($ratnum-d x))))
   (define (rtrt< x y) (< (* ($ratnum-n x) ($ratnum-d y)) (* ($ratnum-n y) ($ratnum-d x))))
@@ -2616,8 +2643,7 @@
     (cond
       [(flonum? x) 
        ;;; optimize for integer flonums
-       (let ([e (or ($flonum->exact x)
-                    (die 'floor "number has no real value" x))])
+       (let ([e ($flonum->exact x)])
          (cond
            [(ratnum? e) 
             (exact->inexact (ratnum-floor e))] 
@@ -2634,8 +2660,7 @@
     (cond
       [(flonum? x) 
        ;;; optimize for integer flonums
-       (let ([e (or ($flonum->exact x)
-                    (die 'ceiling "number has no real value" x))])
+       (let ([e ($flonum->exact x)])
          (cond
            [(ratnum? e) (exact->inexact (ratnum-ceiling e))] 
            [else x]))]
@@ -3417,16 +3442,16 @@
         (lambda (x)
           (define (fst n)
             (cond
-              [(zero? n) 0]
-              [(even? n) (fst (bitwise-arithmetic-shift-right n 1))]
+              [(odd? n) 0]
               [else (+ 1 (fst (bitwise-arithmetic-shift-right n 1)))]))
           (u8-list->bytevector
-            (let f ([i 0])
-              (cond
-                [(= i 256) '()]
-                [else (cons (fst i) (f (+ i 1)))])))))
+            (cons 0 #| not used |#
+              (let f ([i 1])
+                (cond
+                  [(= i 256) '()]
+                  [else (cons (fst i) (f (+ i 1)))]))))))
       (define bv (make-first-bit-set-bytevector))
-      ($fx+ i ($bytevector-u8-ref bv i)))
+      ($fx+ i ($bytevector-u8-ref bv x)))
     (define ($fxloop x i)
       (let ([y ($fxlogand x 255)])
         (if ($fx= y 0)
@@ -3605,7 +3630,7 @@
                                          ($fxsub1 ($fxsll 1 i))
                                          ($fxsub1 ($fxsll 1 j)))])
                                   ($fxlogor
-                                    ($fxlogand m b)
+                                    ($fxlogand m ($fxsll b i))
                                     ($fxlogand ($fxlognot m) x)))
                                 (die who "not a fixnum" b))
                             (if ($fx<= 0 j)
