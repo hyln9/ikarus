@@ -250,8 +250,10 @@
             [(procedure? get-position) 
              (let ([pos (get-position)])
                (if (or (fixnum? pos) (bignum? pos))
-                   (+ pos index)
-                   (error who "invalid returned value from getter" p)))]
+                   (if (input-port? p)
+                       (- pos (- ($port-size p) index))
+                       (+ pos index))
+                   (die who "invalid returned value from get-position" p)))]
             [(eqv? get-position #f)
              (+ (vector-ref pos-vec 0) index)]
             [else 
