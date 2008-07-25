@@ -2599,10 +2599,12 @@
   
   (define file-options-macro
     (lambda (x)
+      (define (valid-option? x)
+        (and (id? x) (memq (id->sym x) '(no-fail no-create no-truncate))))
       (syntax-match x ()
         ((_ opt* ...)
-         (and (for-all id? opt*) (file-options-spec (map id->sym opt*)))
-         (bless `(quote ,(file-options-spec (map id->sym opt*))))))))
+         (for-all valid-option? opt*)
+         (bless `(make-file-options ',opt*))))))
 
   (define symbol-macro
     (lambda (x set)

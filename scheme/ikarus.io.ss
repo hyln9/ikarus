@@ -1376,16 +1376,12 @@
         [else fh])))
   
   (define (open-output-file-handle filename file-options who)
-    (let ([opt (case file-options
-                 [(fo:default)                       0]
-                 [(fo:no-create)                     1]
-                 [(fo:no-fail)                       2]
-                 [(fo:no-fail/no-create)             3]
-                 [(fo:no-truncate)                   4]
-                 [(fo:no-truncate/no-create)         5]
-                 [(fo:no-truncate/no-fail)           6]
-                 [(fo:no-truncate/no-fail/no-create) 7]
-                 [else (die who "invalid file option" file-options)])])
+    (define (opt->num x)
+      (bitwise-ior
+        (if (enum-set-member? 'no-create x)   1 0)
+        (if (enum-set-member? 'no-fail x)     2 0)
+        (if (enum-set-member? 'no-truncate x) 4 0)))
+    (let ([opt (opt->num file-options)])
       (let ([fh (foreign-call "ikrt_open_output_fd"
                    (string->utf8 filename)
                    opt)])

@@ -17,14 +17,16 @@
   (export make-enumeration enum-set-universe enum-set-indexer
     enum-set-constructor enum-set->list enum-set-member?
     enum-set-subset? enum-set=? enum-set-union enum-set-difference
-    enum-set-intersection enum-set-complement enum-set-projection)
+    enum-set-intersection enum-set-complement enum-set-projection
+    make-file-options)
   (import 
     (except (ikarus)
       make-enumeration enum-set-universe enum-set-indexer
       enum-set-constructor enum-set->list enum-set-member?
       enum-set-subset? enum-set=? enum-set-union enum-set-difference
       enum-set-intersection enum-set-complement
-      enum-set-projection))
+      enum-set-projection
+      make-file-options))
 
   (define-record-type enum
     (fields g univ values)
@@ -217,6 +219,12 @@
                         (make-enum g u (combine u s))))))
             (die 'enum-set-projection "not an enumeration" x2))
         (die 'enum-set-projection "not an enumeration" x1)))
+
+  (define make-file-options
+    (enum-set-constructor
+      (make-enumeration 
+        '(no-create no-fail no-truncate))))
+
 )
 
 #!eof

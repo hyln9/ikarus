@@ -876,66 +876,177 @@
             (die 'bytevector-ieee-single-native-set! "invalid index" i))
         (die 'bytevector-ieee-single-native-set! "not a bytevector" bv)))
 
+  (define ($bytevector-ieee-double-ref/little x i)
+    (import (ikarus system $flonums))
+    (let ([y ($make-flonum)])
+      ($flonum-set! y 0 ($bytevector-u8-ref x i))
+      ($flonum-set! y 1 ($bytevector-u8-ref x ($fx+ i 1)))
+      ($flonum-set! y 2 ($bytevector-u8-ref x ($fx+ i 2)))
+      ($flonum-set! y 3 ($bytevector-u8-ref x ($fx+ i 3)))
+      ($flonum-set! y 4 ($bytevector-u8-ref x ($fx+ i 4)))
+      ($flonum-set! y 5 ($bytevector-u8-ref x ($fx+ i 5)))
+      ($flonum-set! y 6 ($bytevector-u8-ref x ($fx+ i 6)))
+      ($flonum-set! y 7 ($bytevector-u8-ref x ($fx+ i 7)))
+      y))
+
+  (define ($bytevector-ieee-double-set!/little x i y)
+    (import (ikarus system $flonums))
+    ($bytevector-set! x i          ($flonum-u8-ref y 0))
+    ($bytevector-set! x ($fx+ i 1) ($flonum-u8-ref y 1))
+    ($bytevector-set! x ($fx+ i 2) ($flonum-u8-ref y 2))
+    ($bytevector-set! x ($fx+ i 3) ($flonum-u8-ref y 3))
+    ($bytevector-set! x ($fx+ i 4) ($flonum-u8-ref y 4))
+    ($bytevector-set! x ($fx+ i 5) ($flonum-u8-ref y 5))
+    ($bytevector-set! x ($fx+ i 6) ($flonum-u8-ref y 6))
+    ($bytevector-set! x ($fx+ i 7) ($flonum-u8-ref y 7)))
+
+  (define ($bytevector-ieee-double-ref/big x i)
+    (import (ikarus system $flonums))
+    (let ([y ($make-flonum)])
+      ($flonum-set! y 7 ($bytevector-u8-ref x i))
+      ($flonum-set! y 6 ($bytevector-u8-ref x ($fx+ i 1)))
+      ($flonum-set! y 5 ($bytevector-u8-ref x ($fx+ i 2)))
+      ($flonum-set! y 4 ($bytevector-u8-ref x ($fx+ i 3)))
+      ($flonum-set! y 3 ($bytevector-u8-ref x ($fx+ i 4)))
+      ($flonum-set! y 2 ($bytevector-u8-ref x ($fx+ i 5)))
+      ($flonum-set! y 1 ($bytevector-u8-ref x ($fx+ i 6)))
+      ($flonum-set! y 0 ($bytevector-u8-ref x ($fx+ i 7)))
+      y))
+
+  (define ($bytevector-ieee-double-set!/big x i y)
+    (import (ikarus system $flonums))
+    ($bytevector-set! x i          ($flonum-u8-ref y 7))
+    ($bytevector-set! x ($fx+ i 1) ($flonum-u8-ref y 6))
+    ($bytevector-set! x ($fx+ i 2) ($flonum-u8-ref y 5))
+    ($bytevector-set! x ($fx+ i 3) ($flonum-u8-ref y 4))
+    ($bytevector-set! x ($fx+ i 4) ($flonum-u8-ref y 3))
+    ($bytevector-set! x ($fx+ i 5) ($flonum-u8-ref y 2))
+    ($bytevector-set! x ($fx+ i 6) ($flonum-u8-ref y 1))
+    ($bytevector-set! x ($fx+ i 7) ($flonum-u8-ref y 0)))
+
+  (define ($bytevector-ieee-single-ref/little x i)
+    (let ([bv (make-bytevector 4)])
+      ($bytevector-set! bv 0 ($bytevector-u8-ref x i))
+      ($bytevector-set! bv 1 ($bytevector-u8-ref x ($fx+ i 1)))
+      ($bytevector-set! bv 2 ($bytevector-u8-ref x ($fx+ i 2)))
+      ($bytevector-set! bv 3 ($bytevector-u8-ref x ($fx+ i 3)))
+      ($bytevector-ieee-single-native-ref bv 0)))
+
+  (define ($bytevector-ieee-single-ref/big x i)
+    (let ([bv (make-bytevector 4)])
+      ($bytevector-set! bv 3 ($bytevector-u8-ref x i))
+      ($bytevector-set! bv 2 ($bytevector-u8-ref x ($fx+ i 1)))
+      ($bytevector-set! bv 1 ($bytevector-u8-ref x ($fx+ i 2)))
+      ($bytevector-set! bv 0 ($bytevector-u8-ref x ($fx+ i 3)))
+      ($bytevector-ieee-single-native-ref bv 0)))
+
+  (define ($bytevector-ieee-single-set!/little x i v)
+    (let ([bv (make-bytevector 4)])
+      ($bytevector-ieee-single-native-set! bv 0 v)
+      ($bytevector-set! x i          ($bytevector-u8-ref bv 0))
+      ($bytevector-set! x ($fx+ i 1) ($bytevector-u8-ref bv 1))
+      ($bytevector-set! x ($fx+ i 2) ($bytevector-u8-ref bv 2))
+      ($bytevector-set! x ($fx+ i 3) ($bytevector-u8-ref bv 3))))
+
+  (define ($bytevector-ieee-single-set!/big x i v)
+    (let ([bv (make-bytevector 4)])
+      ($bytevector-ieee-single-native-set! bv 0 v)
+      ($bytevector-set! x i          ($bytevector-u8-ref bv 3))
+      ($bytevector-set! x ($fx+ i 1) ($bytevector-u8-ref bv 2))
+      ($bytevector-set! x ($fx+ i 2) ($bytevector-u8-ref bv 1))
+      ($bytevector-set! x ($fx+ i 3) ($bytevector-u8-ref bv 0))))
+
   (define (bytevector-ieee-double-ref bv i endianness) 
+    (define who 'bytevector-ieee-double-ref)
     (if (bytevector? bv) 
-        (if (and (fixnum? i) 
-                 ($fx>= i 0)
-                 ($fxzero? ($fxlogand i 7))
-                 ($fx< i ($bytevector-length bv)))
-            (case endianness
-              [(little) ($bytevector-ieee-double-native-ref bv i)]
-              [(big) ($bytevector-ieee-double-nonnative-ref bv i)]
-              [else (die 'bytevector-ieee-double-ref 
-                      "invalid endianness" endianness)])
-            (die 'bytevector-ieee-double-ref "invalid index" i))
-        (die 'bytevector-ieee-double-ref "not a bytevector" bv)))
+        (if (and (fixnum? i) ($fx>= i 0))
+            (let ([len ($bytevector-length bv)])
+              (if (and ($fxzero? ($fxlogand i 7)) ($fx< i len))
+                  (case endianness
+                    [(little) ($bytevector-ieee-double-native-ref bv i)]
+                    [(big) ($bytevector-ieee-double-nonnative-ref bv i)]
+                    [else (die who "invalid endianness" endianness)])
+                  (if ($fx<= i ($fx- len 8))
+                      (case endianness
+                        [(little)
+                         ($bytevector-ieee-double-ref/little bv i)]
+                        [(big)
+                         ($bytevector-ieee-double-ref/big bv i)]
+                        [else (die who "invalid endianness" endianness)])
+                      (die who "invalid index" i))))
+            (die who "invalid index" i))
+        (die who "not a bytevector" bv)))
 
   (define (bytevector-ieee-single-ref bv i endianness) 
+    (define who 'bytevector-ieee-single-ref)
     (if (bytevector? bv) 
-        (if (and (fixnum? i) 
-                 ($fx>= i 0)
-                 ($fxzero? ($fxlogand i 3))
-                 ($fx< i ($bytevector-length bv)))
-            (case endianness
-              [(little) ($bytevector-ieee-single-native-ref bv i)]
-              [(big) ($bytevector-ieee-single-nonnative-ref bv i)]
-              [else (die 'bytevector-ieee-single-ref 
-                      "invalid endianness" endianness)])
-            (die 'bytevector-ieee-single-ref "invalid index" i))
-        (die 'bytevector-ieee-single-ref "not a bytevector" bv)))
+        (if (and (fixnum? i) ($fx>= i 0))
+            (let ([len ($bytevector-length bv)])
+              (if (and ($fxzero? ($fxlogand i 3)) ($fx< i len))
+                  (case endianness
+                    [(little) ($bytevector-ieee-single-native-ref bv i)]
+                    [(big) ($bytevector-ieee-single-nonnative-ref bv i)]
+                    [else (die who "invalid endianness" endianness)])
+                  (if ($fx<= i ($fx- len 4))
+                      (case endianness
+                        [(little)
+                         ($bytevector-ieee-single-ref/little bv i)]
+                        [(big)
+                         ($bytevector-ieee-single-ref/big bv i)]
+                        [else (die who "invalid endianness" endianness)])
+                      (die who "invalid index" i))))
+            (die who "invalid index" i))
+        (die who "not a bytevector" bv)))
 
   (define (bytevector-ieee-double-set! bv i x endianness) 
+    (define who 'bytevector-ieee-double-set!)
     (if (bytevector? bv) 
-        (if (and (fixnum? i) 
-                 ($fx>= i 0)
-                 ($fxzero? ($fxlogand i 7))
-                 ($fx< i ($bytevector-length bv)))
-            (if (flonum? x)
-                (case endianness
-                  [(little) ($bytevector-ieee-double-native-set! bv i x)]
-                  [(big) ($bytevector-ieee-double-nonnative-set! bv i x)]
-                  [else (die 'bytevector-ieee-double-set! 
-                          "invalid endianness" endianness)])
-                (die 'bytevector-ieee-double-set! "not a flonum" x))
-            (die 'bytevector-ieee-double-set! "invalid index" i))
-        (die 'bytevector-ieee-double-set! "not a bytevector" bv)))
+        (if (flonum? x)
+            (if (and (fixnum? i) ($fx>= i 0))
+                (let ([len ($bytevector-length bv)])
+                  (if (and ($fxzero? ($fxlogand i 7)) ($fx< i len))
+                      (case endianness
+                        [(little) ($bytevector-ieee-double-native-set! bv i x)]
+                        [(big) ($bytevector-ieee-double-nonnative-set! bv i x)]
+                        [else
+                         (die who "invalid endianness" endianness)])
+                      (if ($fx<= i ($fx- len 8))
+                          (case endianness
+                            [(little)
+                             ($bytevector-ieee-double-set!/little bv i x)]
+                            [(big)
+                             ($bytevector-ieee-double-set!/big bv i x)]
+                            [else
+                             (die who "invalid endianness" endianness)])
+                          (die who "invalid index" i))))
+               (die who "invalid index" i))
+            (die who "not a flonum" x))
+        (die who "not a bytevector" bv)))
 
   (define (bytevector-ieee-single-set! bv i x endianness) 
+    (define who 'bytevector-ieee-single-set!)
     (if (bytevector? bv) 
-        (if (and (fixnum? i) 
-                 ($fx>= i 0)
-                 ($fxzero? ($fxlogand i 3))
-                 ($fx< i ($bytevector-length bv)))
-            (if (flonum? x)
-                (case endianness
-                  [(little) ($bytevector-ieee-single-native-set! bv i x)]
-                  [(big) ($bytevector-ieee-single-nonnative-set! bv i x)]
-                  [else (die 'bytevector-ieee-single-set! 
-                          "invalid endianness" endianness)])
-                (die 'bytevector-ieee-single-set! "not a flonum" x))
-            (die 'bytevector-ieee-single-set! "invalid index" i))
-        (die 'bytevector-ieee-single-set! "not a bytevector" bv)))
-
+        (if (flonum? x)
+            (if (and (fixnum? i) ($fx>= i 0))
+                (let ([len ($bytevector-length bv)])
+                  (if (and ($fxzero? ($fxlogand i 3)) ($fx< i len))
+                      (case endianness
+                        [(little) ($bytevector-ieee-single-native-set! bv i x)]
+                        [(big) ($bytevector-ieee-single-nonnative-set! bv i x)]
+                        [else
+                         (die who "invalid endianness" endianness)])
+                      (if ($fx<= i ($fx- len 4))
+                          (case endianness
+                            [(little)
+                             ($bytevector-ieee-single-set!/little bv i x)]
+                            [(big)
+                             ($bytevector-ieee-single-set!/big bv i x)]
+                            [else
+                             (die who "invalid endianness" endianness)])
+                          (die who "invalid index" i))))
+               (die who "invalid index" i))
+            (die who "not a flonum" x))
+        (die who "not a bytevector" bv)))
 
   (define ($bytevector-ref/64 bv i who decoder endianness)
     (if (bytevector? bv) 

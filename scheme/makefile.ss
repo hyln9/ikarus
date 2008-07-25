@@ -1333,7 +1333,7 @@
     [syntax-error                                i]
     [$transcoder->data                           $transc]
     [$data->transcoder                           $transc]
-    [file-options-spec                           i]
+    [make-file-options                           i]
     ;;;
     [port-id               i]
     [read-annotated        i]
