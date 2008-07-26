@@ -340,9 +340,7 @@
 
   (define (fllog x)
     (if (flonum? x)
-        (if ($fl>= x 0.0) 
-            (foreign-call "ikrt_fl_log" x)
-            (die 'fllog "argument should not be negative" x))
+        (foreign-call "ikrt_fl_log" x)
         (die 'fllog "not a flonum" x)))
 
   (define (flexpt x y)
@@ -2379,7 +2377,10 @@
                [(ratnum? n) 
                 ($make-ratnum (expt ($ratnum-n n) m) (expt ($ratnum-d n) m))]
                [else (fxexpt n m)])
-             (/ 1 (expt n (- m))))]
+             (let ([v (expt n (- m))])
+               (if (eq? v 0)
+                   0
+                   (/ 1 v))))]
         [(bignum? m) 
          (cond
            [(eq? n 0) 0]

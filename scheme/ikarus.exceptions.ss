@@ -68,9 +68,7 @@
          (make-error)
          (if who (make-who-condition who) (condition))
          (make-message-condition msg)
-         (if (null? irritants) 
-             (condition)
-             (make-irritants-condition irritants)))))
+         (make-irritants-condition irritants))))
 
   (define (assertion-violation who msg . irritants) 
     (unless (string? msg) 
@@ -80,9 +78,7 @@
          (make-assertion-violation)
          (if who (make-who-condition who) (condition))
          (make-message-condition msg)
-         (if (null? irritants) 
-             (condition)
-             (make-irritants-condition irritants)))))
+         (make-irritants-condition irritants))))
 
   (define die assertion-violation)
   
