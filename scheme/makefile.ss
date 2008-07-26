@@ -495,6 +495,8 @@
     [$fxsra                                      $fx]
     [$fxquotient                                 $fx]
     [$fxmodulo                                   $fx]
+    [$int-quotient                               $fx]
+    [$int-remainder                              $fx]
     [$fxlogxor                                   $fx]
     [$fxlogor                                    $fx]
     [$fxlognot                                   $fx]

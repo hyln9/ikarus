@@ -1632,6 +1632,15 @@
                 (string-append 
                   ($number->string xr r) (imag xi r) "i")]))]
           [else (die 'number->string "not a number" x)])))
+    (define do-warn
+      (lambda ()
+        (set! do-warn values)
+        (raise-continuable
+          (condition
+            (make-warning)
+            (make-who-condition 'number->string)
+            (make-message-condition 
+              "precision argument is not supported")))))
     (define number->string
       (case-lambda
         [(x) ($number->string x 10)]
@@ -1640,8 +1649,8 @@
            (die 'number->string "invalid radix" r))
          ($number->string x r)]
         [(x r precision)
-         (die 'number->string 
-            "BUG: precision is not supported yet")])))
+         ;(do-warn)
+         (number->string x r)])))
 
   (define modulo
     (lambda (n m)
@@ -2412,8 +2421,9 @@
         [(fixnum? x) 
          (cond
            [(fixnum? y)
-            (values (fxquotient x y)
-                    (fxremainder x y))]
+            (if (eq? y -1)
+                (values (- x) 0)
+                (values (fxquotient x y) (fxremainder x y)))]
            [(bignum? y) (values 0 x)]
            [(flonum? y) 
             (let ([v ($flonum->exact y)])
@@ -3235,6 +3245,7 @@
       [(and (fixnum? n) (fixnum? m)) 
        (cond
          [(eq? m 0) (error 'div "division by 0")]
+         [(eq? m -1) (- n)]
          [else 
           (let ([d0 ($fxquotient n m)])
             (if ($fx>= n ($fx* d0 m))

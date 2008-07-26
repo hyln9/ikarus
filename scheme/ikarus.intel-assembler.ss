@@ -682,7 +682,7 @@
    [(idivl dst)
     (cond
       [(reg? dst)                       (CR* #xF7 '/7 dst ac)]
-      [(mem? dst)                         (CR* #xF7 '/7 dst ac)]
+      [(mem? dst)                       (CR* #xF7 '/7 dst ac)]
       [else (die who "invalid" instr)])]
    [(pushl dst)
     (cond

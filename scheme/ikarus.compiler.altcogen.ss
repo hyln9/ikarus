@@ -534,7 +534,7 @@
             (S (cadr rands)
                (lambda (s)
                  (make-asm-instr op d s))))]
-         [(remainder)
+         [(int-quotient)
           (S* rands
               (lambda (rands)
                 (seq* 
@@ -542,7 +542,7 @@
                   (make-asm-instr 'cltd edx eax)
                   (make-asm-instr 'idiv eax (cadr rands))
                   (make-set d eax))))]
-         [(quotient) 
+         [(int-remainder) 
           (S* rands
               (lambda (rands)
                 (seq* 
@@ -2308,9 +2308,12 @@
             (unless (symbol? a) 
               (error who "invalid arg to idiv"))
             (cond
-              [(disp? b)
-               (error who "invalid arg to idiv" b)]
-              [else x])]
+              [(or (var? b) (symbol? b)) x]
+              [else 
+               (let ([u (mku)])
+                 (make-seq
+                   (E (make-asm-instr 'move u b))
+                   (E (make-asm-instr 'idiv a u))))])]
            [(sll sra srl sll/overflow)
             (unless (or (constant? b)
                         (eq? b ecx))

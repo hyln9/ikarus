@@ -896,18 +896,24 @@
 (define-primop $fxquotient unsafe
   [(V a b) 
    (with-tmp ([b (T b)]) ;;; FIXME: why is quotient called remainder?
-    (prm 'sll (prm 'remainder (T a) b) (K fx-shift)))]
+    (prm 'sll (prm 'int-quotient (T a) b) (K fx-shift)))]
   [(P a b) (K #t)]
   [(E a b) (nop)])
 
+(define-primop $int-quotient unsafe
+  [(V a b)
+   (prm 'sll (prm 'int-quotient (T a) (T b)) (K fx-shift))])
+
+(define-primop $int-remainder unsafe
+  [(V a b) (prm 'int-remainder (T a))])
 
 (define-primop $fxmodulo unsafe
   [(V a b)
-   (with-tmp ([b (T b)]) ;;; FIXME: why is modulo called quotient?
+   (with-tmp ([b (T b)]) 
      (with-tmp ([c (prm 'logand b 
                       (prm 'sra (prm 'logxor b (T a))
                          (K (sub1 (* 8 wordsize)))))])
-       (prm 'int+ c (prm 'quotient (T a) b))))]
+       (prm 'int+ c (prm 'int-remainder (T a) b))))]
   [(P a b) (K #t)]
   [(E a b) (nop)])
 

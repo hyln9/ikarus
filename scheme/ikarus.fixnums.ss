@@ -171,7 +171,11 @@
         (die 'fxquotient "not a fixnum" y))
       (when ($fxzero? y)
         (die 'fxquotient "zero dividend" y))
-      ($fxquotient x y))) 
+      (if (eq? y -1)
+          (if (eq? x (least-fixnum))
+              (die 'fxquotient "overflow" x y)
+              ($fx- 0 x))
+          ($fxquotient x y))))
   
   (define fxremainder
     (lambda (x y) 

@@ -40,7 +40,10 @@
     (test +3 -7/11)
     (test -3 -7/11)
 
-
+    (test (least-fixnum) -1)
+    (test (least-fixnum) 1)
+    (test (greatest-fixnum) -1)
+    (test (greatest-fixnum) 1)
 
 
     )
