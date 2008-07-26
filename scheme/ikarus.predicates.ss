@@ -105,7 +105,11 @@
           (sys:ratnum? x))))
 
   (define real-valued?
-    (lambda (x) (real? x)))
+    (lambda (x) 
+      (cond
+        [(real? x) #t]
+        [(cflonum? x) (fl=? ($cflonum-imag x) 0.0)]
+        [else #f])))
 
   (define rational?
     (lambda (x) 
@@ -117,7 +121,13 @@
         [else #f])))
 
   (define rational-valued? 
-    (lambda (x) (rational? x)))
+    (lambda (x) 
+      (cond
+        [(rational? x) #t]
+        [(cflonum? x) 
+         (and (fl=? ($cflonum-imag x) 0.0) 
+              ($flonum-rational? ($cflonum-real x)))]
+        [else #f])))
 
   (define integer? 
     (lambda (x) 
@@ -129,7 +139,14 @@
         [else #f])))
 
   (define integer-valued? 
-    (lambda (x) (integer? x)))
+    (lambda (x) 
+      (cond
+        [(integer? x) #t]
+        [(cflonum? x)
+         (and (fl=? ($cflonum-imag x) 0.0) 
+              ($flonum-integer? ($cflonum-real x)))]
+        [else #f])))
+
 
   (define exact?
     (lambda (x) 

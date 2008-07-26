@@ -560,14 +560,14 @@
               (binary+ y ($compnum-real x))
               (inexact ($compnum-imag x)))]
            [(cflonum? y)
-            ($make-rectangular 
+            ($make-cflonum 
               (binary+ ($compnum-real x) ($cflonum-real y))
               (binary+ ($compnum-imag x) ($cflonum-imag y)))]
            [else (err '+ y)])]
         [(cflonum? x)
          (cond
            [(cflonum? y)
-            ($make-rectangular 
+            ($make-cflonum 
               (binary+ ($cflonum-real x) ($cflonum-real y))
               (binary+ ($cflonum-imag x) ($cflonum-imag y)))]
            [(flonum? y) 
@@ -579,7 +579,7 @@
               (binary+ ($compnum-real x) y)
               ($compnum-imag x))]
            [(compnum? y) 
-            ($make-rectangular 
+            ($make-cflonum 
               (binary+ ($cflonum-real x) ($compnum-real y)) 
               (binary+ ($cflonum-imag x) ($compnum-imag y)))]
            [else (err '+ y)])]
@@ -758,7 +758,7 @@
               (binary- ($compnum-real x) ($compnum-real y))
               (binary- ($compnum-imag x) ($compnum-imag y)))]
            [(cflonum? y)
-            ($make-rectangular 
+            ($make-cflonum 
               (binary- ($compnum-real x) ($cflonum-real y))
               (binary- ($compnum-imag x) ($cflonum-imag y)))]
            [else
@@ -770,7 +770,7 @@
                ($fl- ($cflonum-real x) y)
                ($cflonum-imag x))]
            [(cflonum? y)
-            ($make-rectangular 
+            ($make-cflonum 
               (binary- ($cflonum-real x) ($cflonum-real y))
               (binary- ($cflonum-imag x) ($cflonum-imag y)))]
            [(or (fixnum? y) (bignum? y) (ratnum? y))
@@ -778,7 +778,7 @@
                (binary- ($cflonum-real x) y)
                ($cflonum-imag x))]
            [(compnum? y)
-            ($make-rectangular 
+            ($make-cflonum 
               (binary- ($cflonum-real x) ($compnum-real y))
               (binary- ($cflonum-imag x) ($compnum-imag y)))]
            [else
@@ -803,7 +803,7 @@
               (binary* x ($compnum-real y))
               (binary* x ($compnum-imag y)))]
            [(cflonum? y) 
-            ($make-rectangular
+            ($make-cflonum
               (binary* x ($cflonum-real y))
               (binary* x ($cflonum-imag y)))]
            [else (err '* y)])]
@@ -822,7 +822,7 @@
               (binary* x ($compnum-real y))
               (binary* x ($compnum-imag y)))] 
            [(cflonum? y) 
-            ($make-rectangular
+            ($make-cflonum
               (binary* x ($cflonum-real y))
               (binary* x ($cflonum-imag y)))] 
            [else (err '* y)])]
@@ -831,7 +831,7 @@
            [(flonum? y)
             ($fl* x y)]
            [(cflonum? y) 
-            ($make-rectangular
+            ($make-cflonum
               ($fl* x ($cflonum-real y))
               ($fl* x ($cflonum-imag y)))]
            [(fixnum? y)
@@ -841,7 +841,7 @@
            [(ratnum? y) 
             (binary/ (binary* x ($ratnum-n y)) ($ratnum-d y))]
            [(compnum? y) 
-            ($make-rectangular
+            ($make-cflonum
               (binary* x ($compnum-real y))
               (binary* x ($compnum-imag y)))]
            [else (err '* y)])]
@@ -855,14 +855,18 @@
               (binary* x ($compnum-real y))
               (binary* x ($compnum-imag y)))]
            [(cflonum? y)
-            ($make-rectangular
+            ($make-cflonum
               (binary* x ($cflonum-real y))
               (binary* x ($cflonum-imag y)))]
            [else (binary* y x)])]
         [(compnum? x) 
          (cond
-           [(or (fixnum? y) (bignum? y) (ratnum? y) (flonum? y)) 
+           [(or (fixnum? y) (bignum? y) (ratnum? y)) 
             ($make-rectangular
+              (binary* ($compnum-real x) y)
+              (binary* ($compnum-imag x) y))]
+           [(flonum? y)
+            ($make-cflonum
               (binary* ($compnum-real x) y)
               (binary* ($compnum-imag x) y))]
            [(compnum? y)
@@ -870,7 +874,7 @@
                   [r1 ($compnum-real y)]
                   [i0 ($compnum-imag x)]
                   [i1 ($compnum-imag y)])
-              ($make-rectangular
+              (make-rectangular
                 (- (* r0 r1) (* i0 i1))
                 (+ (* r0 i1) (* i0 r1))))]
            [(cflonum? y)
@@ -878,14 +882,14 @@
                   [r1 ($cflonum-real y)]
                   [i0 ($compnum-imag x)]
                   [i1 ($cflonum-imag y)])
-              ($make-rectangular
+              (make-rectangular
                 (- (* r0 r1) (* i0 i1))
                 (+ (* r0 i1) (* i0 r1))))]
            [else (err '* y)])]
         [(cflonum? x) 
          (cond
            [(flonum? y)
-            ($make-rectangular
+            ($make-cflonum
               ($fl* ($cflonum-real x) y)
               ($fl* ($cflonum-imag x) y))]
            [(cflonum? y)
@@ -893,11 +897,11 @@
                   [r1 ($cflonum-real y)]
                   [i0 ($cflonum-imag x)]
                   [i1 ($cflonum-imag y)])
-              ($make-rectangular
+              ($make-cflonum
                 ($fl- ($fl* r0 r1) ($fl* i0 i1))
                 ($fl+ ($fl* r0 i1) ($fl* i0 r1))))]
            [(or (fixnum? y) (bignum? y) (ratnum? y)) 
-            ($make-rectangular
+            ($make-cflonum
               (binary* ($compnum-real x) y)
               (binary* ($compnum-imag x) y))]
            [(compnum? y)
@@ -905,7 +909,7 @@
                   [r1 ($compnum-real y)]
                   [i0 ($compnum-imag x)]
                   [i1 ($compnum-imag y)])
-              ($make-rectangular
+              (make-rectangular
                 (- (* r0 r1) (* i0 i1))
                 (+ (* r0 i1) (* i0 r1))))]
            [else (err '* y)])]
@@ -1115,13 +1119,13 @@
         (let ([yr (real-part y)]
               [yi (imag-part y)])
           (let ([denom (+ (* yr yr) (* yi yi))])
-            ($make-rectangular 
+            (make-rectangular 
               (binary/ (* x yr) denom)
               (binary/ (* (- x) yi) denom)))))
       (define (compx/y x y) 
         (let ([xr (real-part x)]
               [xi (imag-part x)])
-          ($make-rectangular 
+          (make-rectangular 
             (binary/ xr y)
             (binary/ xi y))))
       (define (compx/compy x y) 
@@ -1130,7 +1134,7 @@
               [yr (real-part y)]
               [yi (imag-part y)])
           (let ([denom (+ (* yr yr) (* yi yi))])
-            ($make-rectangular 
+            (make-rectangular 
               (binary/ (+ (* xr yr) (* xi yi)) denom)
               (binary/ (- (* xi yr) (* xr yi)) denom)))))
       (cond
@@ -3672,12 +3676,10 @@
     (except (ikarus system $compnums) $make-rectangular))
 
   (define ($make-rectangular r i)
-    ;;; should be called with 2 exacts or two inexacts
-    (if (flonum? i) 
-        (if (and (fl=? i 0.0) (fl=? (atan 0.0 i) 0.0))
-            r
-            ($make-cflonum r i))
-        (if (eqv? i 0) r ($make-compnum r i))))
+    ;;; should be called with 2 exacts 
+    (if (eqv? i 0)
+        r
+        ($make-compnum r i)))
 
   (define (make-rectangular r i)
     (define who 'make-rectangular)
@@ -3686,16 +3688,17 @@
     (cond
       [(flonum? i) 
        (cond
-         [(flonum? r) ($make-rectangular r i)]
+         [(flonum? r) ($make-cflonum r i)]
          [(or (fixnum? r) (bignum? r) (ratnum? r))
-          ($make-rectangular (inexact r) i)]
+          ($make-cflonum (inexact r) i)]
          [else (err r)])]
+      [(eqv? i 0) (if (number? r) r (err r))]
       [(or (fixnum? i) (bignum? i) (ratnum? i))
        (cond
          [(or (fixnum? r) (bignum? r) (ratnum? r))
           ($make-rectangular r i)]
          [(flonum? r)
-          ($make-rectangular r (inexact i))]
+          ($make-cflonum r (inexact i))]
          [else (err r)])]
       [else (err i)]))
 
@@ -3772,7 +3775,7 @@
         [(fixnum? x) 0]
         [(bignum? x) 0]
         [(ratnum? x) 0]
-        [(flonum? x) 0.0]
+        [(flonum? x) 0]
         [(compnum? x) ($compnum-imag x)]
         [(cflonum? x) ($cflonum-imag x)]
         [else 
