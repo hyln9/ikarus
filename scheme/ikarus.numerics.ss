@@ -2543,15 +2543,15 @@
   (define sqrt
     (lambda (x)
       (cond
-        [(flonum? x) (foreign-call "ikrt_fl_sqrt" x)]
+        [(flonum? x) 
+         (if ($fl< x 0.0)
+             (make-rectangular 0.0
+               (foreign-call "ikrt_fl_sqrt" ($fl- 0.0 x)))
+             (foreign-call "ikrt_fl_sqrt" x))]
         [(fixnum? x)
          (cond
            [($fx< x 0)
-            (let-values ([(s r) (exact-integer-sqrt (- x))])
-              (cond
-                [(eq? r 0) ($make-rectangular 0 s)]
-                [else 
-                 (error 'sqrt "inexact complex numbers not supported yet")]))]
+            (make-rectangular 0 (sqrt (- x)))]
            [else
             (let-values ([(s r) (exact-integer-sqrt x)])
               (cond
@@ -2576,11 +2576,7 @@
                           (inexact s))]
                      [else v]))]))]
            [else
-            (let-values ([(s r) (exact-integer-sqrt (- x))])
-              (cond
-                [(eq? r 0) (make-rectangular 0 s)]
-                [else 
-                 (error 'sqrt "inexact complex numbers not supported yet")]))])]
+            (make-rectangular 0 (sqrt (- x)))])]
         [(ratnum? x)
          ;;; FIXME: incorrect as per bug 180170
          (/ (sqrt ($ratnum-n x)) (sqrt ($ratnum-d x)))]
