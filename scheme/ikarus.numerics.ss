@@ -2731,21 +2731,24 @@
            [($fx= x 1) 0]
            [($fx= x 0) (die 'log "undefined around 0")]
            [($fx> x 0) (foreign-call "ikrt_fx_log" x)]
-           [else (die 'log "negative argument" x)])]
+           [else (make-rectangular (log (- x)) (acos -1))])]
         [(flonum? x)
          (cond
-           [(>= x 0) (foreign-call "ikrt_fl_log" x)]
-           [else (die 'log "negative argument" x)])]
+           [(fl>=? x 0.0) (foreign-call "ikrt_fl_log" x)]
+           [else 
+            (make-rectangular 
+              (log (fl- 0.0 x))
+              (acos -1))])]
         [(bignum? x) 
-         (unless ($bignum-positive? x) 
-           (die 'log "negative argument" x))
-         (let ([v (log (inexact x))])
-           (cond
-             [(infinite? v)
-              (let-values ([(s r) (exact-integer-sqrt x)])
-                ;;; could the [dropped] residual ever affect the answer?
-                (fl* 2.0 (log s)))]
-             [else v]))]
+         (if ($bignum-positive? x)
+             (let ([v (log (inexact x))])
+               (cond
+                 [(infinite? v)
+                  (let-values ([(s r) (exact-integer-sqrt x)])
+                    ;;; could the [dropped] residual ever affect the answer?
+                    (fl* 2.0 (log s)))]
+                 [else v]))
+             (make-rectangular (log (- x)) (acos -1)))]
         [(ratnum? x) 
          ;;; FIXME: incorrect as per bug 180170
          (- (log (numerator x)) (log (denominator x)))]
@@ -3129,7 +3132,7 @@
        (if (flfinite? x)
            (cond
              [(flonum? eps) 
-              (if (flfinite? eps) (go x eps) +nan.0)]
+              (if (flfinite? eps) (go x eps) +0.0)]
              [(or (fixnum? eps) (bignum? eps) (ratnum? eps))
               (go x eps)]
              [else (die who "not a number" eps)])
@@ -3142,7 +3145,7 @@
       [(or (fixnum? x) (bignum? x) (ratnum? x))
        (cond
          [(flonum? eps) 
-          (if (flfinite? eps) (go x eps) +nan.0)]
+          (if (flfinite? eps) (go x eps) +0.0)]
          [(or (fixnum? eps) (bignum? eps) (ratnum? eps))
           (go x eps)]
          [else (die who "not a number" eps)])]
@@ -3430,7 +3433,7 @@
           fxlength
           fxbit-set?
           fxcopy-bit
-          fxcopy-bit-field
+          fxcopy-bit-field fxrotate-bit-field
           fxbit-field)
   (import 
     (ikarus system $fx)
@@ -3442,7 +3445,7 @@
       fxlength
       fxbit-set?
       fxcopy-bit
-      fxcopy-bit-field
+      fxcopy-bit-field fxrotate-bit-field
       fxbit-field))
 
   (module (bitwise-first-bit-set fxfirst-bit-set)
@@ -3651,6 +3654,36 @@
                 (die who "index out of range" i))
             (die who "not a fixnum" i))
         (die who "not a fixnum" x)))
+
+  (define ($fxrotate-bit-field x i j c w)
+    (let ([m ($fxsll ($fxsub1 ($fxsll 1 w)) i)])
+      (let ([x0 ($fxlogand x m)])
+        (let ([lt ($fxsll x0 c)] [rt ($fxsra x0 ($fx- w c))])
+          (let ([x0 ($fxlogand ($fxlogor lt rt) m)])
+            ($fxlogor x0 ($fxlogand x ($fxlognot m))))))))
+
+  (define (fxrotate-bit-field x i j c)
+    (define who 'fxrotate-bit-field)
+    (if (fixnum? x)
+        (if (fixnum? i)
+            (if ($fx>= i 0)
+                (if (fixnum? j) 
+                    (if ($fx< j (fixnum-width))
+                        (let ([w ($fx- j i)])
+                          (if ($fx>= w 0)
+                              (if (fixnum? c)
+                                  (if (and ($fx>= c 0) ($fx< c w))
+                                      ($fxrotate-bit-field x i j c w)
+                                      (die who "count is invalid" c))
+                                  (die who "count is not a fixnum" c))
+                              (die who "field width is negative" i j)))
+                        (die who "end index is out of range" j))
+                    (die who "end index is not a fixnum" j))
+                (die who "start index is out of range" i))
+            (die who "start index is not a fixnum" i))
+        (die who "not a fixnum" x)))
+
+                    
 
   (define (fxbit-field x i j)
     (define who 'fxbit-field)
