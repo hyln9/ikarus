@@ -54,9 +54,13 @@
         (die 'top-level-value "not a symbol" x))
       (let ([v ($symbol-value x)])
         (when ($unbound-object? v)
-          (die 'eval "unbound variable" 
-            (string->symbol
-              (symbol->string x))))
+          (raise
+            (condition
+              (make-undefined-violation)
+              (make-who-condition 'eval)
+              (make-message-condition "unbound variable")
+              (make-irritants-condition 
+                (list (string->symbol (symbol->string x)))))))
         v)))
 
   (define top-level-bound?
@@ -104,12 +108,8 @@
           (if (procedure? v)
               v
               (lambda args
-                (let ([v ($symbol-value x)])
-                  (if ($unbound-object? v)
-                      (die 'eval "unbound variable" 
-                        (string->symbol
-                          (symbol->string x)))
-                      (die 'apply "not a procedure" v)))))))))
+                (die 'apply "not a procedure" 
+                  (top-level-value x))))))))
 
   (define string->symbol
     (lambda (x)
