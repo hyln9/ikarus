@@ -634,6 +634,7 @@
     [apply                                       i r ba se]
     [asin                                        i r ba se]
     [assert                                      i r ba]
+    [assertion-error                             ]
     [assertion-violation                         i r ba]
     [atan                                        i r ba se]
     [boolean=?                                   i r ba]

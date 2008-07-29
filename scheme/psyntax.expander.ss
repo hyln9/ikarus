@@ -30,7 +30,7 @@
           compile-r6rs-top-level boot-library-expand 
           null-environment scheme-report-environment
           interaction-environment
-          ellipsis-map)
+          ellipsis-map assertion-error)
   (import
     (except (rnrs)
       environment environment? identifier?
@@ -1435,8 +1435,10 @@
     (lambda (stx)
       (syntax-match stx ()
         ((_ expr)
-         (bless `(unless ,expr
-                   (assertion-violation 'assert "assertion failed" ',expr)))))))
+         (let ([pos (or (expression-position stx)
+                        (expression-position expr))])
+           (bless 
+             `(unless ,expr (assertion-error ',expr ',pos))))))))
   
   (define endianness-macro
     (lambda (stx)
@@ -3843,20 +3845,32 @@
               (assertion-violation 'bound-identifier=? "not an identifier" y))
           (assertion-violation 'bound-identifier=? "not an identifier" x))))
   
-  (define (extract-position-condition x)
+  (define (make-source-condition x)
     (define-condition-type &source-information &condition
       make-source-condition source-condition?
       (file-name source-filename)
       (character source-character))
-    (if (stx? x) 
-        (let ([x (stx-expr x)])
-          (if (annotation? x)
-              (let ([src (annotation-source x)])
-                (if (pair? src) 
-                    (make-source-condition (car src) (cdr src))
-                    (condition)))
-              (condition)))
+    (if (pair? x)
+        (make-source-condition (car x) (cdr x))
         (condition)))
+
+  (define (extract-position-condition x)
+    (make-source-condition (expression-position x)))
+
+  (define (expression-position x)
+    (and (stx? x)
+         (let ([x (stx-expr x)])
+           (and (annotation? x)
+                (annotation-source x)))))
+
+  (define (assertion-error expr pos)
+    (raise
+      (condition
+        (make-assertion-violation)
+        (make-who-condition 'assert)
+        (make-message-condition "assertion failed")
+        (make-irritants-condition (list expr))
+        (make-source-condition pos))))
 
   (define syntax-error
     (lambda (x . args)
