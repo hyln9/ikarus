@@ -325,7 +325,15 @@
 (define return-value-register '%eax)
 (define cp-register '%edi)
 (define all-registers 
-  '(%eax %edi %ebx %edx %ecx))
+  (case wordsize
+    [(4) '(%eax %edi %ebx %edx %ecx)]
+    [else '(%eax %edi %ebx %edx %ecx %r8 %r9 %r10 %r11)]))
+
+(define non-8bit-registers 
+  (case wordsize
+    [(4) '(%edi)]
+    [else '(%edi %r8 %r9 %r10 %r11)]))
+
 (define argc-register '%eax)
 
 ;;; apr = %ebp
@@ -339,10 +347,6 @@
                [%ecx 4] [%esi 5] [%esp 6] [%ebp 7])) 
      => cadr]
     [else (error 'register-index "not a register" x)]))
-
-
-(define non-8bit-registers 
-  '(%edi))
 
 (define (impose-calling-convention/evaluation-order x)
   (define who 'impose-calling-convention/evaluation-order)

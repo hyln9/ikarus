@@ -449,12 +449,10 @@
             (lambda (a0 a1)
               (cond
                 [(and (imm? a0) (reg32? a1))
-                 (error 'REC+RM "not here 1")
                  (if (reg-requires-REX? a1) 
                      (REX.R #b101 ac)
                      (REX.R #b100 ac))]
                 [(and (imm? a1) (reg32? a0))
-                 (error 'REC+RM "not here 2")
                  (if (reg-requires-REX? a0)
                      (REX.R #b101 ac)
                      (REX.R #b100 ac))]
