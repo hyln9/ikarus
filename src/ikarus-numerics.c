@@ -1492,11 +1492,11 @@ copy_bits_shifting_right(mp_limb_t* src, mp_limb_t* dst, int n, int m){
 }
 
 static void
-copy_bits_shifting_left(unsigned long int* src, unsigned long int* dst, int n, int m){
-  unsigned long int carry = 0;
-  long int i;
+copy_bits_shifting_left(mp_limb_t* src, mp_limb_t* dst, int n, int m){
+  mp_limb_t carry = 0;
+  int i;
   for(i=0; i<n; i++){
-    unsigned long int b = src[i];
+    mp_limb_t b = src[i];
     dst[i] = (b << m) | carry;
     carry = b >> (mp_bits_per_limb-m);
   }
@@ -1630,11 +1630,11 @@ ikrt_bignum_shift_left(ikptr x, ikptr y, ikpcb* pcb){
     pcb->root0 = &x;
     ikptr r = ik_safe_alloc(pcb, align(disp_bignum_data + limb_count * wordsize));
     pcb->root0 = 0;
-    unsigned int* s = (unsigned int*)(long)(r+disp_bignum_data);
+    mp_limb_t* s = (mp_limb_t*)(r+disp_bignum_data);
     bzero(s, whole_limb_shift*wordsize);
     copy_bits_shifting_left(
-        (unsigned long int*)(long)(x+off_bignum_data),
-        (unsigned long int*)(long)(s+whole_limb_shift),
+        (mp_limb_t*)(x+off_bignum_data),
+        (mp_limb_t*)(s+whole_limb_shift),
         n,
         bit_shift);
     return normalize_bignum(limb_count, bnfst_negative(fst), r);
