@@ -209,7 +209,7 @@
            (let ([code (read-code #f m)])
              (if m (vector-ref marks m) ($code->closure code)))]
           [(#\<) 
-           (let ([cm (read-int p)])
+           (let ([cm (read-u32 p)])
              (unless (fx< cm (vector-length marks))
                (die who "invalid mark" m))
              (let ([code (vector-ref marks cm)])
@@ -217,7 +217,7 @@
                  (when m (put-mark m proc))
                  proc)))]
           [(#\>)
-           (let ([cm (read-int p)])
+           (let ([cm (read-u32 p)])
              (assert-eq? (read-u8-as-char p) #\x)
              (let ([code (read-code cm m)])
                (if m (vector-ref marks m) ($code->closure code))))]
@@ -314,10 +314,10 @@
           [(#\C) (integer->char (read-int p))]
           [(#\c) (read-u8-as-char p)]
           [(#\>)
-           (let ([m (read-int p)])
+           (let ([m (read-u32 p)])
              (read/mark m))]
           [(#\<)
-           (let ([m (read-int p)])
+           (let ([m (read-u32 p)])
              (unless (fx< m (vector-length marks))
                (die who "invalid mark" m))
              (or (vector-ref marks m)
@@ -401,7 +401,7 @@
                (when m (put-mark m x))
                x))]
           [else
-           (die who "Unexpected char as a fasl object header" h)])))
+           (die who "Unexpected char as a fasl object header" h p)])))
     (read))
   (define $fasl-read
     (lambda (p)

@@ -5,12 +5,27 @@
 
   (define (test x)
     (printf "test-fasl ~s\n" x)
+    (let ([y (deserialize (serialize x))])
+      (unless (equal? x y)
+        (error 'test-fasl "failed/expected" y x))))
+  
+  (define (serialize x)
     (let-values ([(p e) (open-bytevector-output-port)])
       (fasl-write x p)
-      (let ([bv (e)])
-        (let ([y (fasl-read (open-bytevector-input-port bv))])
-          (unless (equal? x y)
-            (error 'test-fasl "failed/expected" y x))))))
+      (e)))
+  (define (deserialize x)
+    (fasl-read (open-bytevector-input-port x)))
+
+  (define (test-cycle)
+    (let ([x (cons 1 2)])
+      (set-car! x x)
+      (set-cdr! x x)
+      (printf "test-fasl ~s\n" x)
+      (let ([x (deserialize (serialize x))])
+        (assert (pair? x))
+        (assert (eq? x (car x)))
+        (assert (eq? x (cdr x))))))
+
 
   (define (test-fasl) 
     (test 12)
@@ -30,7 +45,8 @@
     (test -2389478923749872389723894/23498739874892379482374)
     (test 127487384734.4)
     (test (make-rectangular 12 13))
-    (test (make-rectangular 12.0 13.0)))
+    (test (make-rectangular 12.0 13.0))
+    (test-cycle))
 
 )
 

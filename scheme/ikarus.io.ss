@@ -404,7 +404,7 @@
        (fxior textual-output-port-bits fast-u8-text-tag)]
       [(eq? 'utf-8-codec (transcoder-codec x))
        (fxior textual-output-port-bits fast-u7-text-tag)]
-      [else textual-output-port-bits]))
+      [else (die who "unsupported codec" (transcoder-codec x))]))
 
   (define open-bytevector-input-port
     (case-lambda
