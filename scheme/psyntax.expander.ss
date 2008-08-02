@@ -2066,42 +2066,28 @@
   (define incorrect-usage-macro
     (lambda (e) (stx-error e "incorrect usage of auxiliary keyword")))
   
-  (define parameterize-transformer ;;; go away
-    (lambda (e r mr)
+  (define parameterize-macro
+    (lambda (e)
       (syntax-match e ()
-        ((_ () b b* ...)
-         (chi-internal (cons b b*) r mr))
+        ((_ () b b* ...) 
+         (bless `(begin ,b . ,b*)))
         ((_ ((olhs* orhs*) ...) b b* ...)
-         (let ((lhs* (map (lambda (x) (gen-lexical 'lhs)) olhs*))
-               (rhs* (map (lambda (x) (gen-lexical 'rhs)) olhs*))
-               (t*   (map (lambda (x) (gen-lexical 't)) olhs*))
-               (swap (gen-lexical 'swap)))
-           (build-let no-source
-             (append lhs* rhs*)
-             (append (chi-expr* olhs* r mr) (chi-expr* orhs* r mr))
-             (build-let no-source
-               (list swap)
-               (list (build-lambda no-source '()
-                       (build-sequence no-source
-                         (map (lambda (t lhs rhs)
-                                (build-let no-source
-                                  (list t)
-                                  (list (build-application no-source
-                                          (build-lexical-reference no-source lhs)
-                                          '()))
-                                  (build-sequence no-source
-                                    (list (build-application no-source
-                                            (build-lexical-reference no-source lhs)
-                                            (list (build-lexical-reference no-source rhs)))
-                                          (build-lexical-assignment no-source rhs
-                                            (build-lexical-reference no-source t))))))
-                              t* lhs* rhs*))))
-               (build-application no-source
-                 (build-primref no-source 'dynamic-wind)
-                 (list (build-lexical-reference no-source swap)
-                       (build-lambda no-source '()
-                         (chi-internal (cons b b*) r mr))
-                       (build-lexical-reference no-source swap))))))))))
+         (let ((lhs* (generate-temporaries olhs*))
+               (rhs* (generate-temporaries orhs*)))
+           (bless
+             `((lambda ,(append lhs* rhs*)
+                 (let ([swap (lambda () 
+                               ,@(map (lambda (lhs rhs)
+                                        `(let ([t (,lhs)])
+                                           (,lhs ,rhs)
+                                           (set! ,rhs t)))
+                                      lhs* rhs*))])
+                   (dynamic-wind 
+                     swap
+                     (lambda () ,b . ,b*)
+                     swap)))
+               ,@(append olhs* orhs*))))))))
+
   
   (define foreign-call-transformer
     (lambda (e r mr)
@@ -2598,7 +2584,6 @@
         ((if)                     if-transformer)
         ((when)                   when-transformer)
         ((unless)                 unless-transformer)
-        ((parameterize)           parameterize-transformer)
         ((foreign-call)           foreign-call-transformer)
         ((syntax-case)            syntax-case-transformer)
         ((syntax)                 syntax-transformer)
@@ -2661,6 +2646,7 @@
            ((trace-let-syntax)      trace-let-syntax-macro)
            ((trace-letrec-syntax)   trace-letrec-syntax-macro)
            ((define-condition-type) define-condition-type-macro)
+           ((parameterize)          parameterize-macro)
            ((include-into)          include-into-macro)
            ((eol-style)
             (lambda (x) 

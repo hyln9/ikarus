@@ -327,12 +327,12 @@
 (define all-registers 
   (case wordsize
     [(4) '(%eax %edi %ebx %edx %ecx)]
-    [else '(%eax %edi %ebx %edx %ecx %r8 %r9 %r10 %r11)]))
+    [else '(%eax %edi %ebx %edx %ecx %r8 %r9 %r10 %r11 %r14 %r15)]))
 
 (define non-8bit-registers 
   (case wordsize
     [(4) '(%edi)]
-    [else '(%edi %r8 %r9 %r10 %r11)]))
+    [else '(%edi %r8 %r9 %r10 %r11 %r14 %r15)]))
 
 (define argc-register '%eax)
 
