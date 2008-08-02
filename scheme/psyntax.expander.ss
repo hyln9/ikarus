@@ -990,26 +990,18 @@
              (stx-error e "invalid type"))
            (chi-expr (cadr (binding-value b)) r mr))))))
 
-  (define when-transformer ;;; go away
-    (lambda (e r mr)
+  (define when-macro
+    (lambda (e)
       (syntax-match e ()
-        ((_ test e e* ...)
-         (build-conditional no-source
-           (chi-expr test r mr)
-           (build-sequence no-source
-             (chi-expr* (cons e e*) r mr))
-           (build-void))))))
+        [(_ test e e* ...)
+         (bless `(if ,test (begin ,e . ,e*)))])))
 
-  (define unless-transformer ;;; go away
-    (lambda (e r mr)
+  (define unless-macro
+    (lambda (e)
       (syntax-match e ()
-        ((_ test e e* ...)
-         (build-conditional no-source
-           (chi-expr test r mr)
-           (build-void)
-           (build-sequence no-source
-             (chi-expr* (cons e e*) r mr)))))))
-  
+        [(_ test e e* ...)
+         (bless `(if (not ,test) (begin ,e . ,e*)))])))
+
   (define if-transformer
     (lambda (e r mr)
       (syntax-match e ()
@@ -1024,46 +1016,27 @@
            (chi-expr e1 r mr)
            (build-void))))))
  
-  (define case-transformer ;;; go away
-    (lambda (e r mr)
-      (define build-one
-        (lambda (t cls rest)
-          (syntax-match cls ()
-            (((d* ...) e e* ...)
-             (build-conditional no-source
-               (build-application no-source
-                 (build-primref no-source 'memv)
-                 (list t (build-data no-source (stx->datum d*))))
-               (build-sequence no-source
-                 (chi-expr* (cons e e*) r mr))
-               rest))
-            (else (stx-error e)))))
-      (define build-last
-        (lambda (t cls)
-          (syntax-match cls ()
-            (((d* ...) e e* ...)
-             (build-one t cls (build-void)))
-            ((else-kwd x x* ...)
-             (if (and (id? else-kwd)
-                      (free-id=? else-kwd (scheme-stx 'else)))
-                 (build-sequence no-source
-                   (chi-expr* (cons x x*) r mr))
-                 (stx-error e)))
-            (else (stx-error e)))))
+  (define case-macro
+    (lambda (e)
+      (define (build-last cls)
+        (syntax-match cls (else)
+          [(else e e* ...) `(begin ,e . ,e*)]
+          [_ (build-one cls '(if #f #f))]))
+      (define (build-one cls k)
+        (syntax-match cls ()
+          [((d* ...) e e* ...) 
+           `(if (memv t ',d*) (begin ,e . ,e*) ,k)]))
       (syntax-match e ()
         ((_ expr)
-         (build-sequence no-source
-           (list (chi-expr expr r mr) (build-void))))
+         (bless `(let ([t ,expr]) (if #f #f))))
         ((_ expr cls cls* ...)
-         (let ((t (gen-lexical 't)))
-           (build-let no-source
-              (list t) (list (chi-expr expr r mr))
-              (let f ((cls cls) (cls* cls*))
-                (cond
-                  ((null? cls*) (build-last t cls))
-                  (else
-                   (build-one t cls
-                     (f (car cls*) (cdr cls*))))))))))))
+         (bless 
+           `(let ([t ,expr])
+              ,(let f ([cls cls] [cls* cls*])
+                 (if (null? cls*) 
+                     (build-last cls)
+                     (build-one cls (f (car cls*) (cdr cls*)))))))))))
+
   
   (define quote-transformer
     (lambda (e r mr)
@@ -2580,10 +2553,7 @@
         ((case-lambda)            case-lambda-transformer)
         ((letrec)                 letrec-transformer)
         ((letrec*)                letrec*-transformer)
-        ((case)                   case-transformer)
         ((if)                     if-transformer)
-        ((when)                   when-transformer)
-        ((unless)                 unless-transformer)
         ((foreign-call)           foreign-call-transformer)
         ((syntax-case)            syntax-case-transformer)
         ((syntax)                 syntax-transformer)
@@ -2633,6 +2603,9 @@
            ((quasiquote)            quasiquote-macro)
            ((quasisyntax)           quasisyntax-macro)
            ((with-syntax)           with-syntax-macro)
+           ((when)                  when-macro)
+           ((unless)                unless-macro)
+           ((case)                  case-macro)
            ((identifier-syntax)     identifier-syntax-macro)
            ((time)                  time-macro)
            ((delay)                 delay-macro)

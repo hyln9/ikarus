@@ -707,6 +707,18 @@
     (set-prelex-residual-referenced?! x #t)
     x)
   ;;;
+  (define (build-conditional e0 e1 e2)
+    (or (struct-case e0
+          [(funcall rator rand*) 
+           (struct-case rator 
+             [(primref op) 
+              (and (eq? op 'not)
+                   (= (length rand*) 1)
+                   (build-conditional (car rand*) e2 e1))]
+             [else #f])]
+          [else #f])
+        (make-conditional e0 e1 e2)))
+         
   (define (E x ctxt env ec sc)
     (decrement ec 1)
     (struct-case x
@@ -727,7 +739,7 @@
                     (mkseq e0 e1)
                     (begin 
                       (decrement sc 1)
-                      (make-conditional e0 e1 e2)))))]))]
+                      (build-conditional e0 e1 e2)))))]))]
       [(assign x v)
        (mkseq
          (let ([x (lookup x env)])
