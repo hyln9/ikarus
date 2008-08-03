@@ -2337,7 +2337,7 @@
      (printf "    ~s\n" x)]))
 
 (define optimizer-output (make-parameter #f))
-(define perform-tag-analysis (make-parameter #f))
+(define perform-tag-analysis (make-parameter #t))
 
 (define (compile-core-expr->code p)
   (let* ([p (recordize p)]

@@ -28,197 +28,177 @@
       enum-set-projection
       make-file-options))
 
-  (define-record-type enum
-    (fields g univ values)
-    (opaque #f) (sealed #t)
+  (define-record-type enum-type
+    (fields id mask symbol->index-hashtable index->symbol-vector)
+    (sealed #t)
+    (opaque #t)
     (nongenerative))
-  
-  (define (remove-dups ls)
-    (cond
-      [(null? ls) '()]
-      [else (cons (car ls) (remq (car ls) (cdr ls)))]))
 
+  (define-record-type enum-set
+    (fields type bits)
+    (sealed #t)
+    (nongenerative))
 
   (define (make-enumeration ls) 
     (unless (and (list? ls) (for-all symbol? ls))
       (die 'make-enumeration "not a list of symbols" ls))
-    (let ([u (remove-dups ls)])
-      (make-enum (gensym) u u)))
+    (let ([h (make-eq-hashtable)] [v (list->vector ls)])
+      (let f ([i 0] [n (vector-length v)])
+        (cond
+          [(= i n) 
+           (let ([mask (sub1 (sll 1 n))])
+             (let ([t (make-enum-type (gensym) mask h v)])
+               (make-enum-set t mask)))]
+          [else 
+           (hashtable-set! h (vector-ref v i) i)
+           (f (+ i 1) n)]))))
   
   (define (enum-set-universe x)
-    (unless (enum? x) 
-      (die 'enum-set-universe "not an enumeration" x))
-    (let ([u (enum-univ x)])
-      (make-enum (enum-g x) u u)))
+    (unless (enum-set? x) 
+      (die 'enum-set-universe "not an enum set" x))
+    (make-enum-set (enum-set-type x) -1))
   
   (define (enum-set-indexer x)
-    (unless (enum? x) 
-      (die 'enum-set-indexer "not an enumeration" x))
-    (lambda (s)
-      (unless (symbol? s) 
-        (die 'enum-set-indexer "not a symbol" s))
-      (let f ([s s] [i 0] [ls (enum-univ x)])
-        (cond
-          [(pair? ls) 
-           (if (eq? s (car ls)) 
-               i
-               (f s (+ i 1) (cdr ls)))]
-          [else #f]))))
+    (unless (enum-set? x) 
+      (die 'enum-set-indexer "not an enum set" x))
+    (let ([h (enum-type-symbol->index-hashtable (enum-set-type x))])
+      (lambda (s)
+        (unless (symbol? s) 
+          (die 'enum-set-indexer "not a symbol" s))
+        (hashtable-ref h s #f))))
   
   (define (enum-set-constructor x)
-    (unless (enum? x)
-      (die 'enum-set-constructor "not an enumeration" x))
-    (lambda (ls)
-      (unless (and (list? ls) (for-all symbol? ls))
-        (die 'enum-set-constructor "not a list of symbols" ls))
-      (for-each
-        (lambda (s)
-          (unless (memq s (enum-univ x))
-            (die 'enum-set-constructor "not in the universe" s x)))
-        ls)
-      (let ([idx (enum-set-indexer x)])
-        (make-enum (enum-g x) (enum-univ x)
-          (map car
-            (list-sort (lambda (a b) (< (cdr a) (cdr b)))
-              (map (lambda (x) (cons x (idx x)))
-                   ls)))))))
-    
+    (unless (enum-set? x)
+      (die 'enum-set-constructor "not an enum set" x))
+    (let ([t (enum-set-type x)])
+      (let ([h (enum-type-symbol->index-hashtable t)])
+        (lambda (ls)
+          (unless (list? ls) (die 'enum-set-constructor "not a list" ls))
+          (let f ([ls ls] [n 0])
+            (cond
+              [(null? ls) (make-enum-set t n)]
+              [else
+               (f (cdr ls) 
+                  (bitwise-ior n
+                    (sll 1
+                      (or (hashtable-ref h (car ls) #f)
+                          (die 'enum-set-constructor 
+                               "not in universe" 
+                               (car ls) t)))))]))))))
+   
   (define (enum-set->list x)
-    (unless (enum? x) 
-      (die 'enum-set->list "not an enumeration" x))
-    (let ([idx (enum-set-indexer x)]
-          [ls (enum-values x)])
-      (map car
-        (list-sort (lambda (a b) (< (cdr a) (cdr b)))
-          (map (lambda (x) (cons x (idx x)))
-               ls)))))
-  
+    (unless (enum-set? x) 
+      (die 'enum-set->list "not an enum set" x))
+    (let ([v (enum-type-index->symbol-vector (enum-set-type x))])
+      (let ([n (vector-length v)])
+        (let f ([bits (enum-set-bits x)] [i 0])
+          (if (eqv? bits 0)
+              '()
+              (if (even? bits)
+                  (f (sra bits 1) (+ i 1))
+                  (cons (vector-ref v i)
+                    (f (sra bits 1) (+ i 1)))))))))
+
+
+  (define (enum-set-andmap proc x)
+    (let ([v (enum-type-index->symbol-vector (enum-set-type x))])
+      (let ([n (vector-length v)])
+        (let f ([bits (enum-set-bits x)] [i 0])
+          (if (= bits 0)
+              #t
+              (if (even? bits)
+                  (f (sra bits 1) (+ i 1))
+                  (and (proc (vector-ref v i))
+                       (f (sra bits 1) (+ i 1)))))))))
+
   (define (enum-set-member? s x) 
-    (if (enum? x)
-        (if (memq s (enum-values x))
-            #t
-            (if (symbol? s) 
-                #f 
-                (die 'enum-set-member? "not a symbol" s)))
-        (die 'enum-set-member? "not an enumeration" x)))
+    (unless (enum-set? x) 
+      (die 'enum-set-member? "not an enum set" x))
+    (let ([h (enum-type-symbol->index-hashtable (enum-set-type x))])
+      (let ([idx (hashtable-ref h s #f)])
+        (cond
+          [idx (bitwise-bit-set? (enum-set-bits x) idx)]
+          [(symbol? s) #f]
+          [else (die 'enum-set-member? "not a symbol" s)]))))
   
   (define (enum-set-subset? x1 x2) 
-    (define (subset? s1 s2) 
-      (or (null? s1) 
-          (and (memq (car s1) s2)
-               (subset? (cdr s1) s2))))
-    (if (enum? x1) 
-        (if (enum? x2) 
-            (and (subset? (enum-values x1) (enum-values x2))
-                 (or (eq? (enum-g x1) (enum-g x2))
-                     (subset? (enum-univ x1) (enum-univ x2))))
-            (die 'enum-set-subset? "not an enumeration" x2))
-        (die 'enum-set-subset? "not an enumeration" x1)))
+    (unless (enum-set? x1) 
+      (die 'enum-set-subset? "not an enum set" x1))
+    (unless (enum-set? x2) 
+      (die 'enum-set-subset? "not an enum set" x2))
+    (let ([t1 (enum-set-type x1)] [t2 (enum-set-type x2)])
+      (if (or (eq? t1 t2) (eq? (enum-type-id t1) (enum-type-id t2)))
+          (let ([b1 (enum-set-bits x1)] [b2 (enum-set-bits x2)])
+            (= (bitwise-and b1 b2) b1))
+          (and (enum-set-andmap (lambda (s) (enum-set-member? s x2)) x1)
+               (let ([u2 (enum-set-universe x2)])
+                 (enum-set-andmap (lambda (s) (enum-set-member? s u2))
+                   (enum-set-universe x1)))))))
   
+
   (define (enum-set=? x1 x2) 
-    (define (subset? s1 s2) 
-      (or (null? s1) 
-          (and (memq (car s1) s2)
-               (subset? (cdr s1) s2))))
-    (if (enum? x1) 
-        (if (enum? x2) 
-            (and (subset? (enum-values x1) (enum-values x2))
-                 (subset? (enum-values x2) (enum-values x1))
-                 (or (eq? (enum-g x1) (enum-g x2))
-                     (and (subset? (enum-univ x1) (enum-univ x2))
-                          (subset? (enum-univ x2) (enum-univ x1)))))
-            (die 'enum-set=? "not an enumeration" x2))
-        (die 'enum-set=? "not an enumeration" x1)))
+    (unless (enum-set? x1) 
+      (die 'enum-set=? "not an enum set" x1))
+    (unless (enum-set? x2) 
+      (die 'enum-set=? "not an enum set" x2))
+    (let ([t1 (enum-set-type x1)] [t2 (enum-set-type x2)])
+      (if (or (eq? t1 t2) (eq? (enum-type-id t1) (enum-type-id t2)))
+          (= (enum-set-bits x1) (enum-set-bits x2))
+          (and (enum-set-andmap (lambda (s) (enum-set-member? s x2)) x1)
+               (enum-set-andmap (lambda (s) (enum-set-member? s x1)) x2)
+               (let ([u1 (enum-set-universe x1)] [u2 (enum-set-universe x2)])
+                 (and 
+                   (enum-set-andmap (lambda (s) (enum-set-member? s u2)) u1)
+                   (enum-set-andmap (lambda (s) (enum-set-member? s u1)) u2)))))))
   
   (define (enum-set-op x1 x2 who combine)
-    (if (enum? x1) 
-        (if (enum? x2) 
-            (let ([g (enum-g x1)] [u (enum-univ x1)])
-              (if (eq? g (enum-g x2))
-                  (make-enum g u (combine u (enum-values x1) (enum-values x2)))
-                  (die who 
-                    "enum sets have different enumeration types" x1 x2)))
-            (die who "not an enumeration" x2))
-        (die who "not an enumeration" x1)))
+    (unless (enum-set? x1) 
+      (die who "not an enum set" x1))
+    (unless (enum-set? x2) 
+      (die who "not an enum set" x2))
+    (let ([t1 (enum-set-type x1)] [t2 (enum-set-type x2)])
+      (if (or (eq? t1 t2) (eq? (enum-type-id t1) (enum-type-id t2)))
+          (make-enum-set t1 (combine (enum-set-bits x1) (enum-set-bits x2)))
+          (die who "enum sets have different enumeration types" x1 x2))))
   
   (define (enum-set-union x1 x2)
-    (define (union u s1 s2) 
-      (if (pair? s1) 
-          (if (pair? s2) 
-              (let ([x (car u)])
-                (if (eq? x (car s1))
-                    (cons x 
-                      (union (cdr u) (cdr s1) 
-                        (if (eq? x (car s2)) (cdr s2) s2)))
-                    (if (eq? x (car s2)) 
-                        (cons x (union (cdr u) s1 (cdr s2)))
-                        (union (cdr u) s1 s2))))
-              s1)
-          s2))
-    (enum-set-op x1 x2 'enum-set-union union))
+    (enum-set-op x1 x2 'enum-set-union bitwise-ior))
   
   (define (enum-set-intersection x1 x2)
-    (define (intersection u s1 s2) 
-      (if (pair? s1) 
-          (if (pair? s2) 
-              (let ([x (car u)])
-                (if (eq? x (car s1))
-                    (if (eq? x (car s2)) 
-                        (cons x (intersection (cdr u) (cdr s1) (cdr s2)))
-                        (intersection (cdr u) (cdr s1) s2))
-                    (intersection (cdr u) s1
-                      (if (eq? x (car s2)) (cdr s2) s2))))
-              '())
-          '()))
-    (enum-set-op x1 x2 'enum-set-intersection intersection))
+    (enum-set-op x1 x2 'enum-set-intersection bitwise-and))
   
   (define (enum-set-difference x1 x2)
-    (define (difference u s1 s2) 
-      (if (pair? s1) 
-          (if (pair? s2)
-              (let ([x (car u)])
-                (if (eq? x (car s1))
-                    (if (eq? x (car s2)) 
-                        (difference (cdr u) (cdr s1) (cdr s2))
-                        (cons x (difference (cdr u) (cdr s1) s2)))
-                    (difference (cdr u) s1
-                      (if (eq? x (car s2)) (cdr s2) s2))))
-              s1)
-          '()))
-    (enum-set-op x1 x2 'enum-set-difference difference))
+    (enum-set-op x1 x2 'enum-set-difference 
+      (lambda (n1 n2) (bitwise-and n1 (bitwise-not n2)))))
   
   (define (enum-set-complement x)
-    (define (complement u s) 
-      (if (pair? s) 
-          (let ([x (car u)])
-            (if (eq? x (car s)) 
-                (complement (cdr u) (cdr s))
-                (cons x (complement (cdr u) s))))
-          u))
-    (if (enum? x) 
-        (let ([g (enum-g x)] [u (enum-univ x)])
-           (make-enum g u (complement u (enum-values x))))
-        (die 'enum-set-complement "not an enumeration" x)))
+    (define who 'enum-set-complement)
+    (unless (enum-set? x) 
+      (die who "not an enum set" x))
+    (let ([t (enum-set-type x)])
+      (make-enum-set t
+        (bitwise-and 
+          (enum-type-mask t)
+          (bitwise-not (enum-set-bits x))))))
   
   (define (enum-set-projection x1 x2)
-    (define (combine u s) 
-      (if (pair? u)
-          (let ([x (car u)])
-            (if (memq x s) 
-                (cons x (combine (cdr u) s))
-                (combine (cdr u) s)))
-          '()))
-    (if (enum? x1)
-        (if (enum? x2) 
-            (let ([g (enum-g x2)])
-              (if (eq? g (enum-g x1))
-                  x1
-                  (let ([u (enum-univ x2)] [s (enum-values x1)])
-                    (if (null? s) 
-                        (make-enum g u '())
-                        (make-enum g u (combine u s))))))
-            (die 'enum-set-projection "not an enumeration" x2))
-        (die 'enum-set-projection "not an enumeration" x1)))
+    (define who 'enum-set-projection)
+    (unless (enum-set? x1) (die who "not an enum set" x1))
+    (unless (enum-set? x2) (die who "not an enum set" x2))
+    (let ([t1 (enum-set-type x1)] [t2 (enum-set-type x2)])
+      (let ([h (enum-type-symbol->index-hashtable t2)]
+            [v (enum-type-index->symbol-vector t1)])
+        (let f ([in-bits (enum-set-bits x1)] [i 0] [out-bits 0])
+          (if (= in-bits 0)
+              (make-enum-set t2 out-bits)
+              (if (even? in-bits)
+                  (f (sra in-bits 1) (+ i 1) out-bits)
+                  (let ([idx (hashtable-ref h (vector-ref v i) #f)])
+                    (if idx
+                        (f (sra in-bits 1) (+ i 1) 
+                           (bitwise-ior out-bits (sll 1 idx)))
+                        (f (sra in-bits 1) (+ i 1)
+                           out-bits)))))))))
 
   (define make-file-options
     (enum-set-constructor
@@ -227,74 +207,3 @@
 
 )
 
-#!eof
-
-(define (trace-equal? x y) (equal? x y))
-
-(assert 
-  (trace-equal? 
-    (let* ([e (make-enumeration '(red green blue))]
-           [i (enum-set-indexer e)])
-      (list (i 'red) (i 'green) (i 'blue) (i 'yellow)))
-    '(0 1 2 #f)))
-
-(assert 
-  (trace-equal? 
-    (let* ([e (make-enumeration '(red green blue))]
-           [c (enum-set-constructor e)])
-      (enum-set->list (c '(blue red))))
-    '(red blue)))
-
-(assert 
-  (trace-equal? 
-    (let* ([e (make-enumeration '(red green blue))]
-           [c (enum-set-constructor e)])
-      (list 
-        (enum-set-member? 'blue (c '(red blue)))
-        (enum-set-member? 'green (c '(red blue)))
-        (enum-set-subset? (c '(red blue)) e)
-        (enum-set-subset? (c '(red blue)) (c '(blue red)))
-        (enum-set-subset? (c '(red blue)) (c '(red)))
-        (enum-set=? (c '(red blue)) (c '(blue red)))))
-    '(#t #f #t #t #f #t)))
-
-(assert 
-  (trace-equal? 
-    (let* ([e (make-enumeration '(red green blue))]
-           [c (enum-set-constructor e)])
-      (list 
-        (enum-set->list (enum-set-union (c '(blue)) (c '(red))))
-        (enum-set->list (enum-set-intersection (c '(red green)) (c '(red blue))))
-        (enum-set->list (enum-set-difference (c '(red green)) (c '(red blue))))
-        (enum-set->list (enum-set-complement (c '(red))))))
-    '((red blue) (red) (green) (green blue))))
-
-(assert 
-  (trace-equal? 
-    (let* ([e1 (make-enumeration '(red green blue black))]
-           [e2 (make-enumeration '(red black white))])
-      (enum-set->list (enum-set-projection e1 e2)))
-    '(red black)))
-
-
-#!eof
-(define-condition-type &c &condition
-  make-c c?
-  (x c-x))
-
-(pretty-print (make-c 'hello))
-(assert (c? (make-c 'hello)))
-(assert (condition? (make-c 'hello)))
-
-(pretty-print (record-type-descriptor &no-nans))
-
-(assert (no-nans-violation? (make-no-nans-violation)))
-
-(pretty-print 
-  (condition
-    (condition
-      ((record-constructor (record-constructor-descriptor &message))
-       "Hello")
-      (condition)
-      (condition (make-message-condition "hi"))
-      (make-message-condition "there"))))

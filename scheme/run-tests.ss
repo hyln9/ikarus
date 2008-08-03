@@ -17,6 +17,7 @@
 
 
 (import (ikarus)
+        (tests enums)
         (tests bitwise-op)
         (tests reader)
         (tests lists)
@@ -82,4 +83,5 @@
 (test-sorting)
 (test-fasl)
 (test-numerics)
+(test-enums)
 (printf "Happy Happy Joy Joy\n")
