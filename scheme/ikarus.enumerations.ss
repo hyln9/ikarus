@@ -56,7 +56,8 @@
   (define (enum-set-universe x)
     (unless (enum-set? x) 
       (die 'enum-set-universe "not an enum set" x))
-    (make-enum-set (enum-set-type x) -1))
+    (let ([t (enum-set-type x)])
+      (make-enum-set (enum-set-type x) (enum-type-mask t))))
   
   (define (enum-set-indexer x)
     (unless (enum-set? x) 
