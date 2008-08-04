@@ -338,10 +338,19 @@
         (foreign-call "ikrt_fl_exp" x ($make-flonum))
         (die 'flexp "not a flonum" x)))
 
-  (define (fllog x)
-    (if (flonum? x)
-        (foreign-call "ikrt_fl_log" x)
-        (die 'fllog "not a flonum" x)))
+  (define fllog
+    (case-lambda
+      [(x)
+       (if (flonum? x)
+           (foreign-call "ikrt_fl_log" x)
+           (die 'fllog "not a flonum" x))]
+      [(x y)
+       (if (flonum? x)
+           (if (flonum? y)
+               (fl/ (foreign-call "ikrt_fl_log" x)
+                    (foreign-call "ikrt_fl_log" y))
+               (die 'fllog "not a flonum" y))
+           (die 'fllog "not a flonum" x))]))
 
   (define (flexpt x y)
     (if (flonum? x)

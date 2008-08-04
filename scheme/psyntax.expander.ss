@@ -3262,10 +3262,11 @@
         (else (cons (car ls) (remove-dups (cdr ls))))))
     (define (parse-library-name spec)
       (define (subversion? x) 
-        (and (integer? x) (exact? x) (>= x 0)))
+        (let ([x (syntax->datum x)])
+          (and (integer? x) (exact? x) (>= x 0))))
       (define (subversion-pred x*) 
         (syntax-match x* ()
-          [n (subversion? (syntax->datum n))
+          [n (subversion? n)
            (lambda (x) (= x (syntax->datum n)))]
           [(p? sub* ...) (eq? (syntax->datum p?) 'and)
            (let ([p* (map subversion-pred sub*)])
@@ -3280,9 +3281,10 @@
              (lambda (x) 
                (not (p x))))]
           [(p? n) 
-           (and (eq? (syntax->datum p?) '<=) (subversion? (syntax->datum n)))
+           (and (eq? (syntax->datum p?) '<=) (subversion? n))
            (lambda (x) (<= x (syntax->datum n)))]
-          [(p? n) (and (eq? (syntax->datum p?) '>=) (subversion? n))
+          [(p? n) 
+           (and (eq? (syntax->datum p?) '>=) (subversion? n))
            (lambda (x) (>= x (syntax->datum n)))]
           [_ (syntax-violation 'import "invalid sub-version spec" spec x*)]))
       (define (version-pred x*)
