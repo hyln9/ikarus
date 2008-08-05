@@ -1,8 +1,8 @@
 
 (library (ikarus not-yet-implemented)
   (export 
-    bitwise-copy-bit-field bitwise-reverse-bit-field
-    bitwise-rotate-bit-field bitwise-if fxreverse-bit-field
+    bitwise-reverse-bit-field
+    bitwise-rotate-bit-field fxreverse-bit-field
     make-custom-binary-input/output-port
     make-custom-textual-input/output-port
     open-file-input/output-port output-port-buffer-mode
@@ -15,8 +15,8 @@
     string-upcase)
 
   (import (except (ikarus) 
-    bitwise-copy-bit-field bitwise-reverse-bit-field
-    bitwise-rotate-bit-field bitwise-if fxreverse-bit-field
+    bitwise-reverse-bit-field
+    bitwise-rotate-bit-field fxreverse-bit-field
     make-custom-binary-input/output-port
     make-custom-textual-input/output-port
     open-file-input/output-port output-port-buffer-mode
@@ -53,8 +53,7 @@
   (not-yet 
     ;;; should be implemented
     string-downcase string-titlecase string-upcase
-    bitwise-if
-    bitwise-rotate-bit-field bitwise-copy-bit-field bitwise-reverse-bit-field
+    bitwise-rotate-bit-field bitwise-reverse-bit-field
     fxreverse-bit-field 
     ;;; not top priority at the moment
     make-eqv-hashtable make-hashtable equal-hash

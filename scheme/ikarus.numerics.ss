@@ -370,10 +370,10 @@
 (library (ikarus generic-arithmetic)
   (export + - * / zero? = < <= > >= add1 sub1 quotient remainder
           modulo even? odd? bitwise-and bitwise-not bitwise-ior
-          bitwise-xor
+          bitwise-xor bitwise-if
           bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left 
           bitwise-arithmetic-shift 
-          bitwise-length
+          bitwise-length bitwise-copy-bit-field 
           bitwise-copy-bit bitwise-bit-field
           positive? negative? expt gcd lcm numerator denominator
           exact-integer-sqrt
@@ -398,10 +398,10 @@
             remainder modulo even? odd? quotient+remainder number->string 
             bitwise-arithmetic-shift-right bitwise-arithmetic-shift-left
             bitwise-arithmetic-shift 
-            bitwise-length
+            bitwise-length bitwise-copy-bit-field 
             bitwise-copy-bit bitwise-bit-field
             positive? negative? bitwise-and bitwise-not bitwise-ior
-            bitwise-xor
+            bitwise-xor bitwise-if
             expt gcd lcm numerator denominator
             exact->inexact inexact floor ceiling round log
             exact-integer-sqrt min max abs real->flonum
@@ -1001,6 +1001,29 @@
       [(fixnum? x) ($fxlognot x)]
       [(bignum? x) (foreign-call "ikrt_bnlognot" x)]
       [else (die 'bitwise-not "invalid argument" x)]))
+
+  (define (bitwise-if x y z)
+    (define who 'bitwise-if)
+    (define (err x) (die who "not an exact integer" x))
+    (unless (or (fixnum? x) (bignum? x)) (err x))
+    (unless (or (fixnum? y) (bignum? y)) (err y))
+    (unless (or (fixnum? z) (bignum? z)) (err z))
+    (bitwise-ior 
+      (bitwise-and x y)
+      (bitwise-and (bitwise-not x) z)))
+
+  (define (bitwise-copy-bit-field x i j n)
+    (define who 'bitwise-copy-bit-field)
+    (define (err x) (die who "not an exact integer" x))
+    (define (err2 x) (die who "index must be nonnegative" x))
+    (define (err3 x y) (die who "indices must be in nondescending order" x y))
+    (unless (or (fixnum? x) (bignum? x)) (err x))
+    (unless (or (fixnum? i) (bignum? i)) (err i))
+    (unless (or (fixnum? j) (bignum? j)) (err j))
+    (unless (or (fixnum? n) (bignum? n)) (err n))
+    (when (< i 0) (err2 i))
+    (when (< j i) (err3 i j))
+    (bitwise-if (sll (sub1 (sll 1 (- j i))) i) (sll n i) x))
 
   (define -
     (case-lambda
