@@ -104,7 +104,8 @@
       (memq c '(#\! #\$ #\% #\& #\* #\/ #\: #\< #\= #\> #\? #\^ #\_ #\~))))
   (define subsequent?
     (lambda (c)
-      (or (initial? c) (digit? c) (special-subsequent? c))))
+      (or (initial? c) (digit? c) (special-subsequent? c)
+          (memq (char-general-category c) '(Nd Mc Me)))))
   (define special-subsequent?
     (lambda (c)
       (memq c '(#\+ #\- #\. #\@))))
