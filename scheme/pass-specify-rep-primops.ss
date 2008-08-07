@@ -1560,7 +1560,9 @@
               (let f ([i i]) 
                 (cond
                   [(zero? i) x]
-                  [else (prm 'sll/overflow (f (- i 1)) (K 1))]))]
+                  [else
+                   (interrupt)
+                   (prm 'sll/overflow (f (- i 1)) (K 1))]))]
              [else 
               (with-tmp ([x2 (prm 'sll x (K i))])
                 (interrupt-unless (prm '= (prm 'sra x2 (K i)) x))

@@ -90,25 +90,23 @@
     (lambda (c)
       (or (and ($char<= #\a c) ($char<= c #\z))
           (and ($char<= #\A c) ($char<= c #\Z)))))
-  (define af? 
-    (lambda (c)
-      (or (and ($char<= #\a c) ($char<= c #\f))
-          (and ($char<= #\A c) ($char<= c #\F)))))
-  (define af->num
-    (lambda (c)
-      (if (and ($char<= #\a c) ($char<= c #\f))
-          (fx+ 10 (fx- ($char->fixnum c) ($char->fixnum #\a)))
-          (fx+ 10 (fx- ($char->fixnum c) ($char->fixnum #\A))))))
   (define special-initial?
     (lambda (c)
       (memq c '(#\! #\$ #\% #\& #\* #\/ #\: #\< #\= #\> #\? #\^ #\_ #\~))))
-  (define subsequent?
-    (lambda (c)
-      (or (initial? c) (digit? c) (special-subsequent? c)
-          (memq (char-general-category c) '(Nd Mc Me)))))
   (define special-subsequent?
     (lambda (c)
       (memq c '(#\+ #\- #\. #\@))))
+  (define subsequent?
+    (lambda (c)
+      (cond
+        [($char<= c ($fixnum->char 127))
+         (or (letter? c)
+             (digit? c)
+             (special-initial? c) 
+             (special-subsequent? c))]
+        [else 
+          (or (unicode-printable-char? c)
+              (memq (char-general-category c) '(Nd Mc Me)))])))
   (define tokenize-identifier
     (lambda (ls p)
       (let ([c (peek-char p)])
