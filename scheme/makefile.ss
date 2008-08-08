@@ -1034,6 +1034,7 @@
     [enum-set-universe                           i r en]
     [enum-set=?                                  i r en]
     [make-enumeration                            i r en]
+    [enum-set?                                   i]
     [environment                                 i ev]
     [eval                                        i ev se]
     [raise                                       i r ex]

@@ -18,7 +18,7 @@
     enum-set-constructor enum-set->list enum-set-member?
     enum-set-subset? enum-set=? enum-set-union enum-set-difference
     enum-set-intersection enum-set-complement enum-set-projection
-    make-file-options)
+    make-file-options enum-set?)
   (import 
     (except (ikarus)
       make-enumeration enum-set-universe enum-set-indexer
@@ -26,7 +26,7 @@
       enum-set-subset? enum-set=? enum-set-union enum-set-difference
       enum-set-intersection enum-set-complement
       enum-set-projection
-      make-file-options))
+      make-file-options enum-set?))
 
   (define-record-type enum-type
     (fields id mask symbol->index-hashtable index->symbol-vector)
