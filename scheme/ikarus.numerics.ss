@@ -1174,6 +1174,7 @@
            [(fixnum? y) ($fl/ x ($fixnum->flonum y))]
            [(bignum? y) ($fl/ x (bignum->flonum y))]
            [(ratnum? y) ($fl/ x (ratnum->flonum y))]
+           [(or (cflonum? y) (compnum? y)) (x/compy x y)]
            [else (err '/ y)])]
         [(fixnum? x)
          (cond
@@ -2756,42 +2757,48 @@
         [else x])))
 
   (define log
-    (lambda (x)
-      (cond
-        [(fixnum? x) 
-         (cond
-           [($fx= x 1) 0]
-           [($fx= x 0) (die 'log "undefined around 0")]
-           [($fx> x 0) (foreign-call "ikrt_fx_log" x)]
-           [else (make-rectangular (log (- x)) (acos -1))])]
-        [(flonum? x)
-         (cond
-           [(fl>=? x 0.0) (foreign-call "ikrt_fl_log" x)]
-           [else 
-            (make-rectangular 
-              (log (fl- 0.0 x))
-              (acos -1))])]
-        [(bignum? x) 
-         (if ($bignum-positive? x)
-             (let ([v (log (inexact x))])
-               (cond
-                 [(infinite? v)
-                  (let-values ([(s r) (exact-integer-sqrt x)])
-                    ;;; could the [dropped] residual ever affect the answer?
-                    (fl* 2.0 (log s)))]
-                 [else v]))
-             (make-rectangular (log (- x)) (acos -1)))]
-        [(ratnum? x) 
-         ;;; FIXME: incorrect as per bug 180170
-         (- (log (numerator x)) (log (denominator x)))]
-        [(or (compnum? x) (cflonum? x))
-         (let ([e 2.718281828459045])
-           (define (ln x) (/ (log x) (log e)))
-           (let ([xr (real-part x)] [xi (imag-part x)])
+    (case-lambda 
+      [(x)
+       (cond
+         [(fixnum? x) 
+          (cond
+            [($fx= x 1) 0]
+            [($fx= x 0) (die 'log "undefined around 0")]
+            [($fx> x 0) (foreign-call "ikrt_fx_log" x)]
+            [else (make-rectangular (log (- x)) (acos -1))])]
+         [(flonum? x)
+          (cond
+            [(fl>=? x 0.0) (foreign-call "ikrt_fl_log" x)]
+            [else 
              (make-rectangular 
-               (/ (ln (+ (* xr xr) (* xi xi))) 2)
-               (atan xi xr))))]
-        [else (die 'log "not a number" x)])))
+               (log (fl- 0.0 x))
+               (acos -1))])]
+         [(bignum? x) 
+          (if ($bignum-positive? x)
+              (let ([v (log (inexact x))])
+                (cond
+                  [(infinite? v)
+                   (let-values ([(s r) (exact-integer-sqrt x)])
+                     ;;; could the [dropped] residual ever affect the answer?
+                     (fl* 2.0 (log s)))]
+                  [else v]))
+              (make-rectangular (log (- x)) (acos -1)))]
+         [(ratnum? x) 
+          ;;; FIXME: incorrect as per bug 180170
+          (- (log (numerator x)) (log (denominator x)))]
+         [(or (compnum? x) (cflonum? x))
+          (let ([e 2.718281828459045])
+            (define (ln x) (/ (log x) (log e)))
+            (let ([xr (real-part x)] [xi (imag-part x)])
+              (make-rectangular 
+                (/ (ln (+ (* xr xr) (* xi xi))) 2)
+                (atan xi xr))))]
+         [else (die 'log "not a number" x)])]
+      [(x y)
+       (let ([ly (log y)])
+         (if (eqv? ly 0) 
+             (die 'log "invalid arguments" x y)
+             (/ (log x) ly)))]))
 
   (define (random n) 
     (if (fixnum? n) 
