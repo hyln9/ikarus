@@ -34,90 +34,7 @@
 void register_handlers();
 void register_alt_stack();
 
-void ikarus_usage_short(){
-  fprintf(stderr, "ikarus -h for more help\n");
-}
-
-void ikarus_usage(){
-  static char* helpstring = 
-"\n\
-Options for running ikarus scheme:\n\
-\n  ikarus -h\n\
-    Prints this help message then exits.\n\
-\n  ikarus [-b <bootfile>] --r6rs-script <scriptfile> opts ...\n\
-    Starts ikarus in r6rs-script mode.  The script file is treated\n\
-    as an R6RS-script.  The options opts ... can be obtained using\n\
-    the \"command-line\" procedure in the (rnrs programs) library.\n\
-\n  ikarus [-b <bootfile>] <file> ... [-- opts ...]\n\
-    Starts ikarus in interactive mode.  Each of the files is first\n\
-    loaded into the interaction environment before the interactive\n\
-    repl is started.  The options opts can be obtained using the\n\
-    \"command-line\" procedure.\n\
-  \n\
-  If the option [-b <bootfile>] is provided, the bootfile is used\n\
-  as the system's initial boot file from which the environment is\n\
-  initialized.  If the -b option is not supplied, the default boot\n\
-  file is used.  The current default boot file location is\n\
-  \"%s\".\n\
-  Consult the Ikarus Scheme User's Guide for more details.\n\n";
-  fprintf(stderr, helpstring, BOOTFILE);
-}
-
-
 ikpcb* the_pcb;
-
-/* get_option
-   
-   takes pointers to argc and argv and looks for the first
-   option matching opt.  If one exists, it removes it from the argv
-   list, updates argc, and returns a pointer to the option value.
-   returns null if option is not found.
-   */
-char* 
-get_option(char* opt, int argc, char** argv){
-  int i;
-  for(i=1; i<argc; i++){
-    if(strcmp(opt, argv[i]) == 0){
-      if((i+1) < argc){
-        char* rv = argv[i+1];
-        int j;
-        for(j=i+2; j<argc; j++, i++){
-          argv[i] = argv[j];
-        }
-        return rv;
-      } 
-      else {
-        fprintf(stderr, 
-                "ikarus error: option %s requires a value, none provided\n",
-                opt);
-        ikarus_usage_short();
-        exit(-1);
-      }
-    }
-    else if(strcmp("--", argv[i]) == 0){
-      return 0;
-    }
-  }
-  return 0;
-}
-
-int
-get_option0(char* opt, int argc, char** argv){
-  int i;
-  for(i=1; i<argc; i++){
-    if(strcmp(opt, argv[i]) == 0){
-      int j;
-      for(j=i+1; j<argc; j++, i++){
-          argv[i] = argv[j];
-        }
-      return 1;
-    } 
-    else if(strcmp("--", argv[i]) == 0){
-      return 0;
-    }
-  }
-  return 0;
-}
 
 
 int
@@ -129,23 +46,13 @@ file_exists(char* filename){
 
 extern int cpu_has_sse2();
 
-int main(int argc, char** argv){
+int ikarus_main(int argc, char** argv, char* boot_file){
   if(! cpu_has_sse2()){
     fprintf(stderr, "Ikarus Scheme cannot run on your computer because\n");
     fprintf(stderr, "your CPU does not support the SSE2 instruction set.\n");
     fprintf(stderr, "Refer to the Ikarus Scheme User's Guide for the\n");
     fprintf(stderr, "minimum hardware requirements.\n");
     exit(-1);
-  }
-  if(get_option0("-h", argc, argv)){
-    ikarus_usage();
-    exit(0);
-  }
-  char* boot_file = get_option("-b", argc, argv);
-  if(boot_file){
-    argc -= 2;
-  } else {
-    boot_file = BOOTFILE;
   }
   if(sizeof(mp_limb_t) != sizeof(long int)){
     fprintf(stderr, "ERROR: limb size does not match\n");

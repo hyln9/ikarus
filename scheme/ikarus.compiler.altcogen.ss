@@ -332,7 +332,7 @@
 (define non-8bit-registers 
   (case wordsize
     [(4) '(%edi)]
-    [else '(%edi %r8 %r9 %r10 %r11 %r14 %r15)]))
+    [else '(%edi)]))
 
 (define argc-register '%eax)
 
@@ -2562,7 +2562,9 @@
       [else (error who "invalid reg/h" x)]))
   (define (reg/l x)
     (cond
-      [(assq x '([%eax %al] [%ebx %bl] [%ecx %cl] [%edx %dl]))
+      [(assq x '([%eax %al] [%ebx %bl] [%ecx %cl] [%edx %dl]
+                 [%r8 %r8l] [%r9 %r9l] [%r10 %r10l] [%r11 %r11l]
+                 [%r12 %r12l] [%r13 %r13l] [%r14 %r14l] [%r15 %r15l]))
        => cadr]
       [else (error who "invalid reg/l" x)])) 
   (define (R/cl x)

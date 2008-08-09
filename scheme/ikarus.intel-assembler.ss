@@ -80,6 +80,15 @@
     [xmm5  xmm    5  #f]
     [xmm6  xmm    6  #f]
     [xmm7  xmm    7  #f]
+    [%r8l    8    0  #t]
+    [%r9l    8    1  #t]
+    [%r10l   8    2  #t]
+    [%r11l   8    3  #t]
+    [%r12l   8    4  #t]
+    [%r13l   8    5  #t]
+    [%r14l   8    6  #t]
+    [%r15l   8    7  #t]
+
     ))
   
 (define register-index
@@ -457,10 +466,13 @@
                      (REX.R #b101 ac)
                      (REX.R #b100 ac))]
                 [(and (reg32? a0) (reg32? a1))
-                 (error 'REC+RM "not here 3")
-                 (if (or (reg-requires-REX? a0) (reg-requires-REX? a1))
-                     (error 'REX+RM "unhandled4" a0 a1)
-                     (error 'REX+RM "unhandleda" a1))]
+                 (if (reg-requires-REX? a0) 
+                     (if (reg-requires-REX? a1)
+                         (REX.R #b111 ac)
+                         (REX.R #b110 ac))
+                     (if (reg-requires-REX? a1)
+                         (REX.R #b101 ac)
+                         (REX.R #b100 ac)))]
                 [(and (imm? a0) (imm? a1)) 
                  (error 'REC+RM "not here 4")
                  (error 'REX+RM "unhandledb" a1)]

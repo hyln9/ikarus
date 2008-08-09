@@ -46,7 +46,7 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_ikarus_OBJECTS = ikarus-collect.$(OBJEXT) ikarus-exec.$(OBJEXT) \
+am__objects_1 = ikarus-collect.$(OBJEXT) ikarus-exec.$(OBJEXT) \
 	ikarus-fasl.$(OBJEXT) ikarus-flonums.$(OBJEXT) \
 	ikarus-main.$(OBJEXT) ikarus-numerics.$(OBJEXT) \
 	ikarus-print.$(OBJEXT) ikarus-runtime.$(OBJEXT) \
@@ -56,10 +56,11 @@ am_ikarus_OBJECTS = ikarus-collect.$(OBJEXT) ikarus-exec.$(OBJEXT) \
 	cpu_has_sse2.$(OBJEXT) ikarus-io.$(OBJEXT) \
 	ikarus-process.$(OBJEXT) ikarus-getaddrinfo.$(OBJEXT) \
 	ikarus-errno.$(OBJEXT)
+am_ikarus_OBJECTS = $(am__objects_1) ikarus.$(OBJEXT)
 nodist_ikarus_OBJECTS =
 ikarus_OBJECTS = $(am_ikarus_OBJECTS) $(nodist_ikarus_OBJECTS)
 ikarus_LDADD = $(LDADD)
-am_scheme_script_OBJECTS = scheme-script.$(OBJEXT)
+am_scheme_script_OBJECTS = $(am__objects_1) scheme-script.$(OBJEXT)
 scheme_script_OBJECTS = $(am_scheme_script_OBJECTS)
 scheme_script_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I. -I$(top_builddir)@am__isrc@
@@ -177,15 +178,16 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-ikarus_SOURCES = ikarus-collect.c ikarus-exec.c ikarus-fasl.c \
+SRCS = ikarus-collect.c ikarus-exec.c ikarus-fasl.c \
   ikarus-flonums.c ikarus-main.c ikarus-numerics.c ikarus-print.c \
   ikarus-runtime.c ikarus-symbol-table.c ikarus-verify-integrity.c \
   ikarus-weak-pairs.c ikarus-winmmap.c ikarus-data.h \
   ikarus-winmmap.h ikarus-enter.S cpu_has_sse2.S ikarus-io.c \
   ikarus-process.c ikarus-getaddrinfo.h ikarus-getaddrinfo.c \
-  ikarus-errno.c
+  ikarus-errno.c ikarus-main.h 
 
-scheme_script_SOURCES = scheme-script.c
+ikarus_SOURCES = $(SRCS) ikarus.c
+scheme_script_SOURCES = $(SRCS) scheme-script.c
 nodist_ikarus_SOURCES = bootfileloc.h
 BUILT_SOURCES = bootfileloc.h
 CLEANFILES = bootfileloc.h
@@ -277,6 +279,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-verify-integrity.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-weak-pairs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-winmmap.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scheme-script.Po@am__quote@
 
 .S.o:

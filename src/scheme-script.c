@@ -15,35 +15,46 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <unistd.h>
+
+
+#include "ikarus-main.h"
+#include "bootfileloc.h"
+#include <stdio.h>
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
-#include <string.h>
-#include "bootfileloc.h"
+
+void ikarus_usage_short(){
+  fprintf(stderr, "scheme-script <script-name> arguments ...\n");
+}
+
+void ikarus_usage(){
+  static char* helpstring = 
+  "Usage: \n\
+  scheme-script <script-name> arguments ...\n\
+  \n\
+  Runs the file <script-name> as a Scheme script, passing\n\
+  arguments ... as (command-line)\n\
+  \n\
+  Consult the Ikarus Scheme User's Guide for more details.\n\n";
+  fprintf(stderr, helpstring);
+}
 
 int main(int argc, char** argv){
-  if(argc >= 2){
-    char** a = calloc(argc+2, sizeof(char*));
-    if(! a) {
-      fprintf(stderr, "Error in scheme-script: cannot calloc\n");
-      exit(-1);
-    }
-    a[0] = EXEFILE;
-    a[1] = "--r6rs-script";
-    int i;
-    for(i=1; i<argc; i++){
-      a[i+1] = argv[i];
-    }
-    a[argc+1] = 0;
-    execv(EXEFILE, a);
-    fprintf(stderr, "Error executing ikarus from scheme-script: %s\n",
-        strerror(errno));
-    exit(-1);
-  } else {
-    fprintf(stderr, 
-      "Error in scheme-script: you must provide a script name as an argument\n");
+  if(argc < 2) {
+    ikarus_usage();
     exit(-1);
   }
+  char* boot_file = BOOTFILE;
+  char** args = calloc(sizeof(char*), argc+1);
+  args[0] = argv[0];
+  args[1] = "--r6rs-script";
+  args[2] = argv[1];
+  int i;
+  for(i=1; i<argc; i++){
+    args[i+1] = argv[i];
+  }
+  return ikarus_main(argc+1, args, boot_file);
 }
+
 
