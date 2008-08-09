@@ -39,7 +39,7 @@
 
 
 (define (hex->num x)
-  (read (open-input-string (format "#x~a" x))))
+  (read (open-string-input-port (format "#x~a" x))))
 
 (define data-case
   (lambda (fields)
@@ -51,7 +51,7 @@
         (define (f x)
           (if (string=? x "") 0 (- (hex->num x) n)))
         ;#(UC LC TC FC string-FC)
-        (cons n (vector (f uc) (f lc) (f tc) #f 0))))))
+        (cons n (vector (f uc) (f lc) (f tc) #f 0 (f uc) (f lc) (f tc)))))))
 
 (define (remove-dups ls)
   (let f ([ls ls] [last #f]) 
@@ -133,6 +133,37 @@
                   (convert-full-fold-fields (cdr ls)))))]
            [else (convert-full-fold-fields (cdr ls))])))]))
 
+(define-struct spcase (lc tc uc))
+
+(define (convert-special-casing ls)
+  (cond
+    [(null? ls) '()]
+    [else
+     (let ([fields (car ls)])
+       (cond
+         [(or (<= (length fields) 4)
+              (= 0 (string-length (remove-spaces (list-ref fields 4)))))
+          (let ([n (hex->num (remove-spaces (car fields)))])
+            (define (field-data str)
+              (let ([c* (map hex->num 
+                          (map remove-spaces
+                            (split (remove-spaces str))))])
+                (if (= (length c*) 1)
+                    (- (car c*) n)
+                    (improperize (map integer->char c*)))))
+            (cons
+              (cons n
+                (make-spcase
+                  (field-data (list-ref fields 1))
+                  (field-data (list-ref fields 2))
+                  (field-data (list-ref fields 3))))
+              (convert-special-casing (cdr ls))))]
+         [else (convert-special-casing (cdr ls))]))]))
+
+(define (with-output-to-file* file thunk)
+  (when (file-exists? file) (delete-file file))
+  (with-output-to-file file thunk))
+
 (let ([ls 
        ;;; get initial table
        (compute-foldcase
@@ -146,18 +177,31 @@
           [(assq n ls) => 
            (lambda (p) 
              (vector-set! (cdr p) 4 chars))]
-          [else (error #f "~s is not there" n)])))
+          [else (error #f "not there" n)])))
     (convert-full-fold-fields
       (get-unicode-data "UNIDATA/CaseFolding.txt")))
+  (for-each
+    (lambda (x)
+      (let ([n (car x)] [cases (cdr x)])
+        (cond
+          [(assq n ls) =>
+           (lambda (p)
+             (let ([v (cdr p)])
+               (vector-set! (cdr p) 5 (spcase-uc cases))
+               (vector-set! (cdr p) 6 (spcase-lc cases))
+               (vector-set! (cdr p) 7 (spcase-tc cases))))]
+          [else (error #f "not here" n)])))
+    (convert-special-casing
+      (get-unicode-data "UNIDATA/SpecialCasing.txt")))
   ;;; done
   (let ([ls (remove-dups ls)])
     (define (p name idx) 
       (pretty-print 
         `(define ,name 
            ',(list->vector (map (lambda (x) (vector-ref (cdr x) idx)) ls)))))
-    (parameterize ([print-unicode #f]) 
+    (parameterize ([print-unicode #f] [pretty-width 80]) 
       (let ([v0 (list->vector (map car ls))])
-        (with-output-to-file "unicode-char-cases.ss"
+        (with-output-to-file* "unicode-char-cases.ss"
           (lambda ()
             (display license)
             (printf ";;; DO NOT EDIT\n;;; automatically generated\n")
@@ -168,8 +212,10 @@
             (p 'char-titlecase-adjustment-vector 2)
             (p 'char-foldcase-adjustment-vector 3)
             (p 'string-foldcase-adjustment-vector 4)
-            )
-          'replace)))))
+            (p 'string-upcase-adjustment-vector 5)
+            (p 'string-downcase-adjustment-vector 6)
+            (p 'string-titlecase-adjustment-vector 7)
+            ))))))
     
 
 (printf "Happy Happy Joy Joy\n")

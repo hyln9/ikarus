@@ -10,9 +10,9 @@
     set-port-position!  make-eqv-hashtable
     hashtable-hash-function make-hashtable
     hashtable-equivalence-function equal-hash
-    string-downcase string-normalize-nfc string-normalize-nfd
+    string-normalize-nfc string-normalize-nfd
     string-normalize-nfkc string-normalize-nfkd string-titlecase
-    string-upcase)
+    )
 
   (import (except (ikarus) 
     bitwise-reverse-bit-field
@@ -24,9 +24,9 @@
     set-port-position!  make-eqv-hashtable
     hashtable-hash-function make-hashtable
     hashtable-equivalence-function equal-hash
-    string-downcase string-normalize-nfc string-normalize-nfd
+    string-normalize-nfc string-normalize-nfd
     string-normalize-nfkc string-normalize-nfkd string-titlecase
-    string-upcase))
+    ))
   
   (define-syntax not-yet
     (syntax-rules ()
@@ -52,7 +52,7 @@
 
   (not-yet 
     ;;; should be implemented
-    string-downcase string-titlecase string-upcase
+    string-titlecase 
     bitwise-rotate-bit-field bitwise-reverse-bit-field
     fxreverse-bit-field 
     ;;; not top priority at the moment

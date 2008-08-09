@@ -25,7 +25,8 @@
     char-ci>? char-ci>=?  string-ci=?  string-ci<?  string-ci<=?
     string-ci>?  string-ci>=?  string-foldcase char-general-category
     char-alphabetic?  char-numeric?  char-whitespace?
-    char-upper-case?  char-lower-case?  char-title-case?  )
+    char-upper-case?  char-lower-case?  char-title-case?  
+    string-upcase string-downcase)
 
   (import 
     (ikarus system $fx)
@@ -40,7 +41,8 @@
       string-ci=?  string-ci<?  string-ci<=?  string-ci>?
       string-ci>=?  string-foldcase char-general-category
       char-alphabetic?  char-numeric?  char-whitespace?
-      char-upper-case?  char-lower-case?  char-title-case?  ))
+      char-upper-case?  char-lower-case?  char-title-case?  
+      string-upcase string-downcase))
 
   (include "unicode/unicode-char-cases.ss")
   (include "unicode/unicode-charinfo.ss")
@@ -229,7 +231,7 @@
            (char-ci-loop x x* char>=? 'char-ci>=?)
            (die 'char-ci>=? "not a char" x))]))
                
-  (define ($string-foldcase str)
+  (define ($string-change-case str adjustment-vector)
     (define (extend-length str ac) 
       (define (chars ac n)
         (cond
@@ -270,7 +272,7 @@
           [else
            (let* ([cn ($char->fixnum ($string-ref str i))])
              (let ([n/ls
-                    (vector-ref string-foldcase-adjustment-vector
+                    (vector-ref adjustment-vector
                       (binary-search cn charcase-search-vector))])
                (cond
                  [(fixnum? n/ls)
@@ -280,10 +282,23 @@
                   (f str dst (fxadd1 i) n 
                      (cons (cons i n/ls) ac))])))]))))
 
+  (define ($string-foldcase str)
+    ($string-change-case str string-foldcase-adjustment-vector))
+
   (define (string-foldcase str)
     (if (string? str)
         ($string-foldcase str)
         (die 'string-foldcase "not a string" str)))
+
+  (define (string-upcase x)
+    (if (string? x)
+        ($string-change-case x string-upcase-adjustment-vector)
+        (die 'string-upcase "not a string" x)))
+
+  (define (string-downcase x)
+    (if (string? x)
+        ($string-change-case x string-downcase-adjustment-vector)
+        (die 'string-downcase "not a string" x)))
 
   ;;; FIXME: case-insensitive comparison procedures are slow.
 
