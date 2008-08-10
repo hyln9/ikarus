@@ -405,9 +405,10 @@
                 (write-char c p)]
                [($fx< b 127)
                 (write-char c p)]
-               [(unicode-printable-char? c) 
+               [(print-unicode) 
                 (write-char c p)]
-               [else (write-inline-hex b p)]))
+               [else
+                (write-inline-hex b p)]))
            (loop x (fxadd1 i) n p)))) 
       (write-char #\" p)
       (loop x 0 (string-length x) p)
