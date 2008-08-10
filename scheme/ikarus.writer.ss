@@ -28,7 +28,6 @@
     (ikarus system $bytevectors)
     (ikarus system $transcoders)
     (only (ikarus.pretty-formats) get-fmt)
-    ;(only (ikarus unicode-data) unicode-printable-char?) 
     (except (ikarus) 
       write display format printf fprintf print-error print-unicode print-graph
       put-datum))
@@ -285,6 +284,10 @@
                   ($fxlogand mask
                     ($bytevector-u8-ref map j))))))))
 
+  (define initial-categories 
+    '(Lu Ll Lt Lm Lo Mn Nl No Pd Pc Po Sc Sm Sk So Co))
+  (define subsequent-categories
+    '(Nd Mc Me))
 
   (define (write-subsequent* str i j p)
     (unless ($fx= i j) 
@@ -295,7 +298,10 @@
            (write-char c p)]
           [($fx< b 128) 
            (write-inline-hex b p)]
-          [(unicode-printable-char? c)
+          [(and (print-unicode) 
+             (let ([cat (char-general-category c)])
+               (or (memq cat initial-categories)
+                   (memq cat subsequent-categories))))
            (write-char c p)]
           [else 
            (write-inline-hex b p)]))
@@ -315,7 +321,9 @@
                [(in-map? b0 initials-map) 
                 (write-char c0 p)]
                [($fx< b0 128) (write-inline-hex b0 p)]
-               [(unicode-printable-char? c0) (write-char c0 p)]
+               [(and (print-unicode) 
+                  (memq (char-general-category c0) initial-categories))
+                (write-char c0 p)]
                [else (write-inline-hex b0 p)])
              (write-subsequent* str 1 n p))]))))
 
