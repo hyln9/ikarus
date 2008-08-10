@@ -632,7 +632,6 @@ ikrt_directory_list(ikptr filename, ikpcb* pcb){
     de = readdir(dir);
     if(de == NULL){
       pcb->root0 = 0;
-      pcb->root1 = 0;
       ikptr retval = (errno ? ik_errno_to_code() : ac);
       closedir(dir);
       return retval;
@@ -644,6 +643,7 @@ ikrt_directory_list(ikptr filename, ikpcb* pcb){
     memcpy((char*)(bv+off_bytevector_data), de->d_name, len+1);
     pcb->root1 = &bv;
     ikptr p = ik_safe_alloc(pcb, pair_size) + pair_tag;
+    pcb->root1 = 0;
     ref(p, off_car) = bv;
     ref(p, off_cdr) = ac;
     ac = p;
