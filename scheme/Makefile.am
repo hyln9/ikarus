@@ -26,7 +26,8 @@ EXTRA_DIST=ikarus.boot.4.prebuilt ikarus.boot.8.prebuilt \
   unicode/unicode-char-cases.ss unicode/unicode-charinfo.ss \
   ikarus.io.ss ikarus.time-and-date.ss ikarus.not-yet-implemented.ss \
   ikarus.string-to-number.ss ikarus.compiler.source-optimizer.ss \
-  ikarus.compiler.tag-annotation-analysis.ss ikarus.ontology.ss
+  ikarus.compiler.tag-annotation-analysis.ss ikarus.ontology.ss \
+  ikarus.reader.annotated.ss
  
 all: $(nodist_pkglib_DATA)
 

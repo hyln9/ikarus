@@ -24,7 +24,9 @@
   (define (annotated-port file-name)
     (open-string-input-port/id
       (with-input-from-file file-name 
-        (lambda () (get-string-all (current-input-port))))
+        (lambda () 
+          (let ([x (get-string-all (current-input-port))])
+            (if (eof-object? x) "" x))))
       file-name))
 
   (define (read-library-source-file file-name)
