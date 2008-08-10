@@ -74,7 +74,6 @@
     "ikarus.numerics.ss"
     "ikarus.conditions.ss"
     "ikarus.guardians.ss"
-    "ikarus.command-line.ss"
     "ikarus.codecs.ss"
     "ikarus.bytevectors.ss"
     "ikarus.posix.ss"
@@ -104,6 +103,7 @@
     "ikarus.sort.ss"
     "ikarus.promises.ss"
     "ikarus.enumerations.ss"
+    "ikarus.command-line.ss"
     "ikarus.not-yet-implemented.ss"
     "ikarus.main.ss"
     ))

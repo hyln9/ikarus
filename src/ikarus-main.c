@@ -70,17 +70,12 @@ int ikarus_main(int argc, char** argv, char* boot_file){
     while(i > 0){
       char* s = argv[i];
       int n = strlen(s);
-      ikptr str = ik_unsafe_alloc(pcb, align(n*string_char_size+disp_string_data+1))
-                + string_tag;
-      ref(str, off_string_length) = fix(n);
-      {
-        int i;
-        for(i=0; i<n; i++){
-          string_set(str, i, integer_to_char(s[i]));
-        }
-      }
+      ikptr bv = ik_unsafe_alloc(pcb, align(disp_bytevector_data+n+1)) 
+                 + bytevector_tag;
+      ref(bv, off_bytevector_length) = fix(n);
+      memcpy((char*)(bv+off_bytevector_data), s, n+1);
       ikptr p = ik_unsafe_alloc(pcb, pair_size);
-      ref(p, disp_car) = str;
+      ref(p, disp_car) = bv;
       ref(p, disp_cdr) = arg_list;
       arg_list = p+pair_tag;
       i--;

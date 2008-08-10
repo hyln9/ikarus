@@ -22,10 +22,16 @@
 
   (define (command-line) (command-line-arguments))
   (define command-line-arguments
-    (make-parameter ($arg-list)
+    (make-parameter 
+      (map (lambda (x) 
+             (cond
+               [(string? x)  x]
+               [(bytevector? x) (utf8->string x)]
+               [else (die 'command-line "invalid" x)]))
+           ($arg-list))
       (lambda (x)
         (if (and (list? x) (andmap string? x))
             x
             (die 'command-list 
-              "invalid command-line-arguments ~s\n" x))))))
+              "invalid command-line-arguments" x))))))
 
