@@ -1401,9 +1401,9 @@
            [else
             (f (max a b) (car ls) (cdr ls))]))]
       [(x) 
-       (if (number? x) 
-           x 
-           (die 'max "not a number" x))]))
+       (cond
+         [(or (fixnum? x) (bignum? x) (ratnum? x) (flonum? x)) x]
+         [else (die 'max "not a number" x)])]))
 
   (define min
     (case-lambda
@@ -1464,9 +1464,9 @@
            [else
             (f (min a b) (car ls) (cdr ls))]))]
       [(x) 
-       (if (number? x) 
-           x 
-           (die 'min "not a number" x))]))
+       (cond
+         [(or (fixnum? x) (bignum? x) (ratnum? x) (flonum? x)) x]
+         [else (die 'min "not a number" x)])]))
 
   (define (abs x)
     (cond
@@ -2388,6 +2388,9 @@
         [(ratnum? x) #f]
         [(flonum? x)
          (or ($fl= x 0.0) ($fl= x -0.0))]
+        [(cflonum? x) 
+         (and ($fl= ($cflonum-real x) 0.0) ($fl= ($cflonum-imag x) 0.0))]
+        [(compnum? x) #f]
         [else 
          (die 'zero? "not a number" x)])))
 
@@ -2512,6 +2515,78 @@
         [(ratnum? x) (negative? ($ratnum-n x))]
         [else (die 'negative? "not a number" x)])))
 
+  (define sinh
+    (lambda (x)
+      (define who 'sinh)
+      (cond
+        [(flonum? x) (foreign-call "ikrt_fl_sinh" x)]
+        [(or (fixnum? x) (bignum? x) (ratnum? x))
+         (sinh (inexact x))]
+        [(number? x) (error who "not implemented" x)]
+        [else (die who "not a number" x)])))
+
+  (define cosh
+    (lambda (x)
+      (define who 'cosh)
+      (cond
+        [(flonum? x) (foreign-call "ikrt_fl_cosh" x)]
+        [(or (fixnum? x) (bignum? x) (ratnum? x))
+         (cosh (inexact x))]
+        [(number? x) (error who "not implemented" x)]
+        [else (die who "not a number" x)])))
+
+  (define tanh
+    (lambda (x)
+      (define who 'tanh)
+      (cond
+        [(flonum? x) (foreign-call "ikrt_fl_tanh" x)]
+        [(or (fixnum? x) (bignum? x) (ratnum? x))
+         (tanh (inexact x))]
+        [(number? x) (error who "not implemented" x)]
+        [else (die who "not a number" x)])))
+
+  (define asinh
+    (lambda (x)
+      (define who 'asinh)
+      (cond
+        [(flonum? x) (foreign-call "ikrt_fl_asinh" x)]
+        [(or (fixnum? x) (bignum? x) (ratnum? x))
+         (asinh (inexact x))]
+        [(number? x) (error who "not implemented" x)]
+        [else (die who "not a number" x)])))
+
+  (define acosh
+    (lambda (x)
+      (define who 'acosh)
+      (cond
+        [(flonum? x) 
+         (cond
+           [($fl>= x 1.0) (foreign-call "ikrt_fl_acosh" x)]
+           [($fl>= x -1.0)
+            (make-rectangular 0 (atan (sqrt (- 1 (* x x))) x))]
+           [($fl< x -1.0)
+            (make-rectangular (acosh (- x)) PI)]
+           [else +nan.0])]
+        [(or (fixnum? x) (bignum? x) (ratnum? x))
+         (acosh (inexact x))]
+        [(number? x) (error who "not implemented" x)]
+        [else (die who "not a number" x)])))
+
+  (define atanh
+    (lambda (x)
+      (define who 'atanh)
+      (cond
+        [(flonum? x) (foreign-call "ikrt_fl_atanh" x)]
+        [(or (fixnum? x) (bignum? x) (ratnum? x))
+         (atanh (inexact x))]
+        [(number? x) (error who "not implemented" x)]
+        [else (die who "not a number" x)])))
+
+
+
+
+
+
   (define sin
     (lambda (x)
       (cond
@@ -2520,6 +2595,11 @@
          (if (fx=? x 0)
              0
              (foreign-call "ikrt_fx_sin" x))]
+        [(or (cflonum? x) (compnum? x))
+         (let ([r (real-part x)] [i (imag-part x)])
+           (make-rectangular 
+             (* (sin r) (cosh i))
+             (* (cos r) (sinh i))))]
         [(number? x) (sin (inexact x))]
         [else (die 'sin "not a number" x)])))
 
@@ -2531,6 +2611,11 @@
          (if (fx=? x 0)
              1
              (foreign-call "ikrt_fx_cos" x))]
+        [(or (cflonum? x) (compnum? x))
+         (let ([r (real-part x)] [i (imag-part x)])
+           (make-rectangular 
+             (* (cos r) (cosh i))
+             (* (sin r) (sinh i))))]
         [(number? x) (cos (inexact x))]
         [else (die 'cos "not a number" x)])))
 
@@ -2542,22 +2627,50 @@
          (if (fx=? x 0)
              0
              (foreign-call "ikrt_fx_tan" x))]
+        [(or (cflonum? x) (compnum? x))
+         (let ([r (real-part x)] [i (imag-part x)])
+           (make-rectangular
+             (/ (sin (* 2 r)) 
+                (+ (cos (* 2 r)) (cosh (* 2 i))))
+             (/ (tanh (* 2 i))
+                (+ 1 (/ (cos (* 2 r)) (cosh (* 2 i)))))))]
         [(number? x) (tan (inexact x))]
         [else (die 'tan "not a number" x)])))
+
+  (module (PI PI/2)
+    (import (ikarus))
+    (define PI (acos -1))
+    (define PI/2 (/ PI 2)))
 
   (define asin
     (lambda (x)
       (cond
-        [(flonum? x) (foreign-call "ikrt_fl_asin" x)]
-        [(fixnum? x) (foreign-call "ikrt_fx_asin" x)]
+        [(flonum? x) 
+         (cond
+           [($fl> x 1.0)
+            (make-rectangular PI/2 (acosh x))]
+           [($fl< x -1.0)
+            (make-rectangular (- PI/2) (- (acosh x)))]
+           [else
+            (foreign-call "ikrt_fl_asin" x)])]
+        [(or (cflonum? x) (compnum? x)) 
+         (error 'asin "not implemented for complex arguments")]
         [(number? x) (asin (inexact x))]
         [else (die 'asin "not a number" x)])))
 
   (define acos
     (lambda (x)
       (cond
-        [(flonum? x) (foreign-call "ikrt_fl_acos" x)]
-        [(fixnum? x) (foreign-call "ikrt_fx_acos" x)]
+        [(flonum? x)
+         (cond
+           [($fl> x 1.0)
+            (make-rectangular 0 (acosh x))]
+           [($fl< x -1.0)
+            (make-rectangular PI (- (acosh (- x))))]
+           [else
+            (foreign-call "ikrt_fl_acos" x)])] 
+        [(or (cflonum? x) (compnum? x)) 
+         (error 'acos "not implemented for complex arguments")]
         [(number? x) (acos (inexact x))]
         [else (die 'acos "not a number" x)])))
 
@@ -3784,10 +3897,10 @@
 
   (define (make-polar mag angle)
     (define who 'make-polar)
-    (unless (number? mag)
-      (die who "not a number" mag))
-    (unless (number? angle)
-      (die who "not a number" angle))
+    (unless (real? mag)
+      (die who "not a real number" mag))
+    (unless (real? angle)
+      (die who "not a real number" angle))
     (make-rectangular 
       (* mag (cos angle))
       (* mag (sin angle))))

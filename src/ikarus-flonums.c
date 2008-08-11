@@ -41,10 +41,6 @@ ikrt_flfl_expt(ikptr a, ikptr b, ikptr z){
   return z;
 }
 
-
-
-
-
 ikptr
 ikrt_bytevector_to_flonum(ikptr x, ikpcb* pcb){
   double v = strtod((char*)(long)x+off_bytevector_data, NULL);
@@ -53,7 +49,6 @@ ikrt_bytevector_to_flonum(ikptr x, ikpcb* pcb){
   flonum_data(r) = v;
   return r;
 }
-
 
 ikptr
 ikrt_fl_plus(ikptr x, ikptr y,ikpcb* pcb){
@@ -151,9 +146,6 @@ ikrt_atan2(ikptr y, ikptr x, ikpcb* pcb){
   return r;
 }
 
-
-
-
 ikptr
 ikrt_fl_sqrt(ikptr x, ikpcb* pcb){
   ikptr r = ik_unsafe_alloc(pcb, flonum_size) + vector_tag;
@@ -169,7 +161,6 @@ ikrt_fl_log(ikptr x, ikpcb* pcb){
   flonum_data(r) = log(flonum_data(x));
   return r;
 }
-
 
 ikptr
 ikrt_fx_sin(ikptr x, ikpcb* pcb){
@@ -220,13 +211,62 @@ ikrt_fx_atan(ikptr x, ikpcb* pcb){
 }
 
 ikptr
+ikrt_fl_sinh(ikptr x, ikpcb* pcb){
+  ikptr r = ik_unsafe_alloc(pcb, flonum_size) + vector_tag;
+  ref(r, -vector_tag) = (ikptr)flonum_tag;
+  flonum_data(r) = sinh(flonum_data(x));
+  return r;
+}
+
+ikptr
+ikrt_fl_cosh(ikptr x, ikpcb* pcb){
+  ikptr r = ik_unsafe_alloc(pcb, flonum_size) + vector_tag;
+  ref(r, -vector_tag) = (ikptr)flonum_tag;
+  flonum_data(r) = cosh(flonum_data(x));
+  return r;
+}
+
+ikptr
+ikrt_fl_tanh(ikptr x, ikpcb* pcb){
+  ikptr r = ik_unsafe_alloc(pcb, flonum_size) + vector_tag;
+  ref(r, -vector_tag) = (ikptr)flonum_tag;
+  flonum_data(r) = tanh(flonum_data(x));
+  return r;
+}
+
+ikptr
+ikrt_fl_asinh(ikptr x, ikpcb* pcb){
+  ikptr r = ik_unsafe_alloc(pcb, flonum_size) + vector_tag;
+  ref(r, -vector_tag) = (ikptr)flonum_tag;
+  flonum_data(r) = asinh(flonum_data(x));
+  return r;
+}
+
+ikptr
+ikrt_fl_acosh(ikptr x, ikpcb* pcb){
+  ikptr r = ik_unsafe_alloc(pcb, flonum_size) + vector_tag;
+  ref(r, -vector_tag) = (ikptr)flonum_tag;
+  flonum_data(r) = acosh(flonum_data(x));
+  return r;
+}
+
+ikptr
+ikrt_fl_atanh(ikptr x, ikpcb* pcb){
+  ikptr r = ik_unsafe_alloc(pcb, flonum_size) + vector_tag;
+  ref(r, -vector_tag) = (ikptr)flonum_tag;
+  flonum_data(r) = atanh(flonum_data(x));
+  return r;
+}
+
+
+
+ikptr
 ikrt_fx_sqrt(ikptr x, ikpcb* pcb){
   ikptr r = ik_unsafe_alloc(pcb, flonum_size) + vector_tag;
   ref(r, -vector_tag) = (ikptr)flonum_tag;
   flonum_data(r) = sqrt(unfix(x));
   return r;
 }
-
 
 ikptr
 ikrt_fx_log(ikptr x, ikpcb* pcb){
@@ -235,7 +275,6 @@ ikrt_fx_log(ikptr x, ikpcb* pcb){
   flonum_data(r) = log(unfix(x));
   return r;
 }
-
 
 ikptr
 ikrt_fixnum_to_flonum(ikptr x, ikptr r, ikpcb* pcb){
