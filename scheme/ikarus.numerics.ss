@@ -3266,7 +3266,7 @@
          (let ([n (numerator x)] [d (denominator x)]
                [n^ (numerator y)] [d^ (denominator y)])
            (- (simplest^ (- n^) d^ (- n) d)))]
-        [else 1]))
+        [else 0]))
     (define (simplest^ n d n^ d^)
       (let-values ([(q r) (div-and-mod n d)])
         (if (= r 0) 
