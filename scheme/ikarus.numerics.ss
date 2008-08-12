@@ -382,6 +382,7 @@
           exact->inexact inexact floor ceiling round log fl=? fl<? fl<=? fl>?
           fl>=? fl+ fl- fl* fl/ flsqrt flmin flzero? flnegative?
           sin cos tan asin acos atan sqrt exp
+          sinh cosh tanh asinh acosh atanh
           flmax random
           error@add1 error@sub1)
   (import 
@@ -408,6 +409,7 @@
             fl=? fl<? fl<=? fl>? fl>=? fl+ fl- fl* fl/ flsqrt flmin
             flzero? flnegative? sra sll exp
             sin cos tan asin acos atan sqrt truncate fltruncate
+            sinh cosh tanh asinh acosh atanh
             flmax random))
 
   (define (bignum->flonum x)
@@ -2522,7 +2524,11 @@
         [(flonum? x) (foreign-call "ikrt_fl_sinh" x)]
         [(or (fixnum? x) (bignum? x) (ratnum? x))
          (sinh (inexact x))]
-        [(number? x) (error who "not implemented" x)]
+        [(or (compnum? x) (cflonum? x))
+         (let ([r (real-part x)] [i (imag-part x)])
+           (make-rectangular
+             (* (sinh r) (cos i))
+             (* (cosh r) (sin i))))]
         [else (die who "not a number" x)])))
 
   (define cosh
@@ -2532,7 +2538,11 @@
         [(flonum? x) (foreign-call "ikrt_fl_cosh" x)]
         [(or (fixnum? x) (bignum? x) (ratnum? x))
          (cosh (inexact x))]
-        [(number? x) (error who "not implemented" x)]
+        [(or (compnum? x) (cflonum? x))
+         (let ([r (real-part x)] [i (imag-part x)])
+           (make-rectangular
+             (* (cosh r) (cos i))
+             (* (sinh r) (sin i))))]
         [else (die who "not a number" x)])))
 
   (define tanh
@@ -2542,7 +2552,13 @@
         [(flonum? x) (foreign-call "ikrt_fl_tanh" x)]
         [(or (fixnum? x) (bignum? x) (ratnum? x))
          (tanh (inexact x))]
-        [(number? x) (error who "not implemented" x)]
+        [(or (compnum? x) (cflonum? x))
+         (let ([r (real-part x)] [i (imag-part x)])
+           (let ([rr (* 2 r)] [ii (* 2 i)])
+             (let ([cos2i (cos ii)] [cosh2r (cosh rr)])
+               (make-rectangular
+                 (/ (tanh rr) (+ 1 (/ cos2i cosh2r)))
+                 (/ (sin ii) (+ cosh2r cos2i))))))]
         [else (die who "not a number" x)])))
 
   (define asinh
@@ -2552,7 +2568,22 @@
         [(flonum? x) (foreign-call "ikrt_fl_asinh" x)]
         [(or (fixnum? x) (bignum? x) (ratnum? x))
          (asinh (inexact x))]
-        [(number? x) (error who "not implemented" x)]
+        [(or (cflonum? x) (compnum? x)) 
+         (let ([x (real-part x)] [y (imag-part x)])
+           (cond
+             [(= x 0) 
+              (let ([v (asin y)])
+                (make-rectangular (imag-part v) (real-part v)))]
+             [else
+              (let* ([z^2 (+ (* x x) (* y y))]
+                     [z^2-1 (- z^2 1)]
+                     [z^2-1^2 (* z^2-1 z^2-1)]
+                     [y^2 (* y y)]
+                     [q (sqrt (+ z^2-1^2 (* 4 y^2)))])
+                (define (sgn x) (if (< x 0) -1 1))
+                (make-rectangular
+                  (* 0.5 (sgn x) (acosh (+ q z^2)))
+                  (* 0.5 (sgn y) (acos (- q z^2)))))]))]
         [else (die who "not a number" x)])))
 
   (define acosh
@@ -2569,23 +2600,37 @@
            [else +nan.0])]
         [(or (fixnum? x) (bignum? x) (ratnum? x))
          (acosh (inexact x))]
-        [(number? x) (error who "not implemented" x)]
+        [(or (cflonum? x) (compnum? x)) 
+         (let ([x (real-part x)] [y (imag-part x)])
+           (cond
+             [(= x 0) (+ (asinh y) (make-rectangular 0 PI/2))]
+             [else
+              (let* ([z^2 (+ (* x x) (* y y))]
+                     [z^2-1 (- z^2 1)]
+                     [z^2-1^2 (* z^2-1 z^2-1)]
+                     [y^2 (* y y)]
+                     [q (sqrt (+ z^2-1^2 (* 4 y^2)))])
+                (define (sgn x) (if (< x 0) -1 1))
+                (+ (* 0.5 (sgn x) (acosh (+ q z^2)))
+                   (* 0.5i (sgn y)
+                      (- PI (* (sgn x) (acos (- q z^2)))))))]))]
         [else (die who "not a number" x)])))
 
   (define atanh
     (lambda (x)
       (define who 'atanh)
       (cond
-        [(flonum? x) (foreign-call "ikrt_fl_atanh" x)]
+        [(flonum? x) 
+         (cond
+           [(and (fl<=? x 1.0) (fl>=? x -1.0))
+            (foreign-call "ikrt_fl_atanh" x)]
+           [else
+            (- (atanh (fl/ 1.0 x))
+               (if (fl<? x 0.0) (* -i PI/2) (* +i PI/2)))])]
         [(or (fixnum? x) (bignum? x) (ratnum? x))
          (atanh (inexact x))]
         [(number? x) (error who "not implemented" x)]
         [else (die who "not a number" x)])))
-
-
-
-
-
 
   (define sin
     (lambda (x)
@@ -2650,11 +2695,23 @@
            [($fl> x 1.0)
             (make-rectangular PI/2 (acosh x))]
            [($fl< x -1.0)
-            (make-rectangular (- PI/2) (- (acosh x)))]
+            (make-rectangular (- PI/2) (- (acosh (- x))))]
            [else
             (foreign-call "ikrt_fl_asin" x)])]
         [(or (cflonum? x) (compnum? x)) 
-         (error 'asin "not implemented for complex arguments")]
+         (let ([x (real-part x)] [y (imag-part x)])
+           (cond
+             [(= x 0) (make-rectangular 0 (asinh y))]
+             [else
+              (let* ([z^2 (+ (* x x) (* y y))]
+                     [z^2-1 (- z^2 1)]
+                     [z^2-1^2 (* z^2-1 z^2-1)]
+                     [y^2 (* y y)]
+                     [q (sqrt (+ z^2-1^2 (* 4 y^2)))])
+                (define (sgn x) (if (< x 0) -1 1))
+                (make-rectangular
+                  (* 0.5 (sgn x) (acos (- q z^2)))
+                  (* 0.5 (sgn y) (acosh (+ q z^2)))))]))]
         [(number? x) (asin (inexact x))]
         [else (die 'asin "not a number" x)])))
 
@@ -2670,7 +2727,7 @@
            [else
             (foreign-call "ikrt_fl_acos" x)])] 
         [(or (cflonum? x) (compnum? x)) 
-         (error 'acos "not implemented for complex arguments")]
+         (- PI/2 (asin x))]
         [(number? x) (acos (inexact x))]
         [else (die 'acos "not a number" x)])))
 
