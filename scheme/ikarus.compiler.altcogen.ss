@@ -276,11 +276,11 @@
       [(funcall rator arg*)       #t]
       [(jmpcall label rator arg*) #t]
       [(mvcall rator k)           #t] 
+      [(primcall op arg*)     #t] ;;; (ormap A arg*)] PUNT!!! FIXME!
       [(bind lhs* rhs* body)  (or (ormap NonTail rhs*) (NonTail body))]
       [(fix lhs* rhs* body)   (NonTail body)]
       [(conditional e0 e1 e2) (or (NonTail e0) (NonTail e1) (NonTail e2))]
       [(seq e0 e1)            (or (NonTail e0) (NonTail e1))]
-      [(primcall op arg*)     (ormap A arg*)]
       [(forcall op arg*)      (ormap NonTail arg*)]
       [(known x t v) (NonTail x)]
       [else (error who "invalid expr" x)]))
@@ -310,7 +310,7 @@
       [(clambda label case* cp free* name)
        (make-clambda label (map ClambdaCase case*) cp free* name)]))
   (define (Main x)
-    (if (Tail x) 
+    (if (Tail x)
         (insert-check x) 
         x))
   (define (Program x)

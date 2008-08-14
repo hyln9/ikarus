@@ -2339,7 +2339,7 @@
   [(E) 
    (make-shortcut 
      (make-conditional 
-       (make-primcall '< 
+       (make-primcall 'u< 
          (list esp (make-primcall 'mref
                      (list pcr (make-constant pcb-frame-redline)))))
        (make-primcall 'interrupt '())
