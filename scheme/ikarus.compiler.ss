@@ -2286,14 +2286,12 @@
               (cmpl (int closure-tag) ebx)
               (jne (label (sl-nonprocedure-error-label)))
               (movl (int (argc-convention 0)) eax)
-              ;(subl (int (fx* wordsize 2)) fpr)
               (compile-call-frame
                  3
                  '#(#b110)
                  (label-address L_cwv_multi_rp)
                  (indirect-cpr-call))
               ;;; one value returned
-              ;(addl (int (fx* wordsize 2)) fpr)
               (movl (mem (fx* -2 wordsize) fpr) ebx) ; consumer
               (movl ebx cpr)
               (movl eax (mem (fx- 0 wordsize) fpr))

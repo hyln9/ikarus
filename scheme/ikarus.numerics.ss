@@ -2704,11 +2704,11 @@
              [(= x 0) (make-rectangular 0 (asinh y))]
              [else
               (let* ([z^2 (+ (* x x) (* y y))]
-                     [z^2-1 (- z^2 1)]
+                     [z^2-1 (- z^2 1.0)]
                      [z^2-1^2 (* z^2-1 z^2-1)]
                      [y^2 (* y y)]
-                     [q (sqrt (+ z^2-1^2 (* 4 y^2)))])
-                (define (sgn x) (if (< x 0) -1 1))
+                     [q (sqrt (+ z^2-1^2 (* 4.0 y^2)))])
+                (define (sgn x) (if (< x 0) -1.0 1.0))
                 (make-rectangular
                   (* 0.5 (sgn x) (acos (- q z^2)))
                   (* 0.5 (sgn y) (acosh (+ q z^2)))))]))]

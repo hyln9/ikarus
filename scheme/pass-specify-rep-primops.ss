@@ -1832,7 +1832,7 @@
          (prm 'mset s
              (K (- disp-bytevector-length bytevector-tag))
              (K (* n fx-scale)))
-         (prm 'bset/c s
+         (prm 'bset s
              (K (+ n (- disp-bytevector-data bytevector-tag)))
              (K 0))
          s)]
@@ -1847,7 +1847,7 @@
           (prm 'mset s
             (K (- disp-bytevector-length bytevector-tag))
             (T n))
-          (prm 'bset/c s
+          (prm 'bset s
                (prm 'int+ 
                     (prm 'sra (T n) (K fx-shift))
                     (K (- disp-bytevector-data bytevector-tag)))
@@ -1918,7 +1918,7 @@
       (struct-case c
         [(constant c)
          (unless (fx? c) (interrupt))
-         (prm 'bset/c (T x)
+         (prm 'bset (T x)
               (K (+ i (- disp-bytevector-data bytevector-tag)))
               (K (cond
                    [(<= -128 c 127) c]
@@ -1932,7 +1932,7 @@
       (struct-case c
         [(constant c)
          (unless (fx? c) (interrupt))
-         (prm 'bset/c (T x) 
+         (prm 'bset (T x) 
               (prm 'int+ 
                    (prm 'sra (T i) (K fx-shift))
                    (K (- disp-bytevector-data bytevector-tag)))

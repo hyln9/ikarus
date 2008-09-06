@@ -2043,7 +2043,7 @@
     (lambda (e)
       (syntax-match e ()
         ((_ () b b* ...) 
-         (bless `(begin ,b . ,b*)))
+         (bless `(let () ,b . ,b*)))
         ((_ ((olhs* orhs*) ...) b b* ...)
          (let ((lhs* (generate-temporaries olhs*))
                (rhs* (generate-temporaries orhs*)))

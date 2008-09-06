@@ -276,7 +276,7 @@
       [(funcall rator arg*)       #t]
       [(jmpcall label rator arg*) #t]
       [(mvcall rator k)           #t] 
-      [(primcall op arg*)     #t] ;;; (ormap A arg*)] PUNT!!! FIXME!
+      [(primcall op arg*)     (ormap A arg*)] ;PUNT!!! FIXME!
       [(bind lhs* rhs* body)  (or (ormap NonTail rhs*) (NonTail body))]
       [(fix lhs* rhs* body)   (NonTail body)]
       [(conditional e0 e1 e2) (or (NonTail e0) (NonTail e1) (NonTail e2))]
@@ -529,7 +529,7 @@
          [(bref) 
           (S* rands
               (lambda (rands)
-                (make-asm-instr 'move-byte d 
+                (make-asm-instr 'load8 d 
                   (make-disp (car rands) (cadr rands)))))]
          [(logand logxor logor int+ int- int*
                   int-/overflow int+/overflow int*/overflow)
@@ -612,7 +612,7 @@
        (do-bind lhs* rhs* (E e))]
       [(primcall op rands)
        (case op
-         [(mset bset bset/c mset32)
+         [(mset bset mset32)
           (S* rands
               (lambda (s*)
                 (make-asm-instr op
@@ -835,7 +835,7 @@
 
 (module ListySet 
   (make-empty-set set-member? set-add set-rem set-difference set-union
-   empty-set?
+   empty-set? singleton
    set->list list->set)
   (define-struct set (v))
   (define (make-empty-set) (make-set '()))
@@ -849,6 +849,8 @@
   (define (set->list s)
     (unless (set? s) (error 'set->list "not a set" s))
     (set-v s))
+  (define (singleton x)
+    (make-set (list x)))
   (define (set-add x s)
     ;(unless (fixnum? x) (error 'set-add "not a fixnum" x))
     (unless (set? s) (error 'set-add "not a set" s))
@@ -886,7 +888,7 @@
       [else (cons (car s1) (union (cdr s1) s2))])))
 
 (module IntegerSet
-  (make-empty-set set-member? set-add set-rem set-difference
+  (make-empty-set set-member? set-add singleton set-rem set-difference
    set-union empty-set? set->list list->set)
   ;;; 
   (begin
@@ -920,6 +922,9 @@
              (f (cdr s) (fxsra i 1) j))]
         [(eq? i 0) (eq? j (fxlogand s j))]
         [else #f])))
+  ;;;
+  (define (singleton n)
+    (set-add n (make-empty-set)))
   ;;;
   (define (set-add n s)
     (unless (fixnum? n) (error 'set-add "not a fixnum" n))
@@ -1332,7 +1337,7 @@
             (union-nfvs ns1 ns2)))]
       [(asm-instr op d s)
        (case op
-         [(move move-byte load32)
+         [(move load8 load32)
           (cond
             [(reg? d)
              (cond
@@ -1512,7 +1517,7 @@
          [(cltd) 
           (mark-reg/vars-conf! edx vs)
           (R s vs (rem-reg edx rs) fs ns)]
-         [(mset mset32 bset bset/c 
+         [(mset mset32 bset 
            fl:load fl:store fl:add! fl:sub! fl:mul! fl:div! fl:from-int
            fl:shuffle fl:load-single fl:store-single) 
           (R* (list s d) vs rs fs ns)]
@@ -1708,14 +1713,14 @@
          (make-conditional (P e0) (E e1) (E e2))]
         [(asm-instr op d s)
          (case op
-           [(move move-byte load32) 
+           [(move load8 load32) 
             (let ([d (R d)] [s (R s)])
               (cond
                 [(eq? d s) 
                  (make-primcall 'nop '())]
                 [else
                  (make-asm-instr op d s)]))]
-           [(logand logor logxor int+ int- int* mset bset mset32 bset/c 
+           [(logand logor logxor int+ int- int* mset bset mset32 
               sll sra srl bswap!
               cltd idiv int-/overflow int+/overflow int*/overflow
               fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
@@ -1909,7 +1914,7 @@
     (define (R x)
       (struct-case x
         [(constant) (make-empty-set)]
-        [(var) (list->set (list x))]
+        [(var) (singleton x)]
         [(disp s0 s1) (set-union (R s0) (R s1))]
         [(fvar) (make-empty-set)]
         [(code-loc) (make-empty-set)]
@@ -1929,7 +1934,7 @@
             (let ([s (set-rem d s)])
               (set-for-each (lambda (y) (add-edge! g d y)) s)
               (set-union (R v) s))]
-           [(move-byte)
+           [(load8)
             (let ([s (set-rem d s)])
               (set-for-each (lambda (y) (add-edge! g d y)) s)
               (when (var? d)
@@ -1948,8 +1953,6 @@
             (let ([s (set-rem d s)])
               (set-for-each (lambda (y) (add-edge! g d y)) s)
               (set-union (set-union (R v) (R d)) s))]
-           [(bset/c)
-            (set-union (set-union (R v) (R d)) s)]
            [(bset)
             (when (var? v)
               (for-each (lambda (r) (add-edge! g v r))
@@ -2230,7 +2233,7 @@
         [(asm-instr op a b) 
          (case op
            [(logor logxor logand int+ int- int* move 
-                   move-byte load32 
+                   load8 load32 
                    int-/overflow int+/overflow int*/overflow)
             (cond
               [(and (eq? op 'move) (eq? a b)) 
@@ -2323,7 +2326,7 @@
                         (eq? b ecx))
               (error who "invalid shift" b))
             x]
-           [(mset mset32 bset bset/c ) 
+           [(mset mset32 bset) 
             (cond
               [(not (small-operand? b))
                (let ([u (mku)])
@@ -2609,33 +2612,27 @@
                (label-address (sl-mv-ignore-rp-label))))
          (cond
            [(string? target) ;; foreign call
-            (cons* ;`(subl ,(* (fxsub1 size) wordsize) ,fpr)
-                   `(movl (foreign-label "ik_foreign_call") %ebx)
+            (cons* `(movl (foreign-label "ik_foreign_call") %ebx)
                    (compile-call-frame 
                       size
                       mask
                       (rp-label value)
                       `(call %ebx))
-                   ;`(addl ,(* (fxsub1 size) wordsize) ,fpr)
                    ac)]
            [target ;;; known call
-            (cons* ;`(subl ,(* (fxsub1 size) wordsize) ,fpr)
-                   (compile-call-frame 
+            (cons* (compile-call-frame 
                       size
                       mask
                       (rp-label value)
                       `(call (label ,target)))
-                   ;`(addl ,(* (fxsub1 size) wordsize) ,fpr)
                    ac)]
            [else
-            (cons* ;`(subl ,(* (fxsub1 size) wordsize) ,fpr)
-                   (compile-call-frame 
+            (cons* (compile-call-frame 
                       size
                       mask
                       (rp-label value)
                       `(call (disp ,(fx- disp-closure-code closure-tag)
                                    ,cp-register)))
-                   ;`(addl ,(* (fxsub1 size) wordsize) ,fpr)
                    ac)]))]
       [(asm-instr op d s)
        (case op
@@ -2650,12 +2647,11 @@
           (if (eq? d s)
               ac
               (cons `(movl ,(R s) ,(R d)) ac))]
-         [(move-byte) 
+         [(load8) 
           (if (eq? d s)
               ac
               (cons `(movb ,(R/l s) ,(R/l d)) ac))]
-         [(bset/c) (cons `(movb ,(BYTE s) ,(R d)) ac)]
-         [(bset)   (cons `(movb ,(reg/l s) ,(R d)) ac)]
+         [(bset) (cons `(movb ,(R/l s) ,(R d)) ac)]
          [(sll)  (cons `(sall ,(R/cl s) ,(R d)) ac)]
          [(sra)  (cons `(sarl ,(R/cl s) ,(R d)) ac)]
          [(srl)  (cons `(shrl ,(R/cl s) ,(R d)) ac)]
