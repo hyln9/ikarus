@@ -27,7 +27,7 @@ EXTRA_DIST=ikarus.boot.4.prebuilt ikarus.boot.8.prebuilt \
   ikarus.io.ss ikarus.time-and-date.ss ikarus.not-yet-implemented.ss \
   ikarus.string-to-number.ss ikarus.compiler.source-optimizer.ss \
   ikarus.compiler.tag-annotation-analysis.ss ikarus.ontology.ss \
-  ikarus.reader.annotated.ss
+  ikarus.reader.annotated.ss ikarus.pointers.ss
  
 all: $(nodist_pkglib_DATA)
 

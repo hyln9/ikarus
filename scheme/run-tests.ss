@@ -39,6 +39,7 @@
         (tests case-folding)
         (tests sorting)
         (tests fasl)
+        (tests pointers)
         )
 
 (define (test-exact-integer-sqrt)
@@ -84,4 +85,5 @@
 (test-fasl)
 (test-numerics)
 (test-enums)
+(test-pointers)
 (printf "Happy Happy Joy Joy\n")

@@ -1239,6 +1239,14 @@ add_object_proc(gc_t* gc, ikptr x) {
       ref(y, disp_cflonum_imag-vector_tag) = add_object(gc, im, "imag");
       return y;
     }
+    else if(fst == pointer_tag){
+      ikptr y = gc_alloc_new_data(pointer_size, gc) + vector_tag;
+      ref(y, -vector_tag) = pointer_tag;
+      ref(y, wordsize-vector_tag) = ref(x, wordsize-vector_tag);
+      ref(x, -vector_tag) = forward_ptr;
+      ref(x, wordsize-vector_tag) = y;
+      return y;
+    }
     else {
       fprintf(stderr, "unhandled vector with fst=0x%016lx\n",
                (long int)fst);

@@ -391,6 +391,12 @@
           (write-positive-hex-fx b p))
       (write-char #\; p)))
 
+  (define (write-hex x n p)
+    (define s "0123456789ABCDEF")
+    (unless (zero? n)
+      (write-hex (sra x 4) (- n 1) p)
+      (write-char (string-ref s (bitwise-and x #xF)) p)))
+
   (define write-string-escape
     (lambda (x p)
       (define loop 
@@ -604,6 +610,13 @@
          (write-char* "#<transcoder " p)
          (let ([n ($transcoder->data x)])
            (write-char* (number->string n) p))
+         (write-char* ">" p)]
+        [(pointer? x) 
+         (write-char* "#<pointer #x" p)
+         (write-hex 
+           (pointer->integer x)
+           (if (<= (fixnum-width) 32) 8 16)
+           p)
          (write-char* ">" p)]
         [else 
          (write-char* "#<unknown>" p)

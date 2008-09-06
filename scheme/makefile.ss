@@ -104,6 +104,7 @@
     "ikarus.promises.ss"
     "ikarus.enumerations.ss"
     "ikarus.command-line.ss"
+    "ikarus.pointers.ss"
     "ikarus.not-yet-implemented.ss"
     "ikarus.main.ss"
     ))
@@ -1450,6 +1451,9 @@
     [cp0-effort-limit i]
     [tag-analysis-output i]
     [perform-tag-analysis i]
+    [pointer? i]
+    [pointer->integer i]
+    [integer->pointer i]
   ))
 
 (define (macro-identifier? x) 
