@@ -33,6 +33,9 @@ AC_CHECK_SIZEOF(void *)
 # Checks for libraries.
 AC_SEARCH_LIBS(dlsym, dl,, [AC_MSG_ERROR([Cannot find libdl])])
 AC_SEARCH_LIBS(cos, m,, [AC_MSG_ERROR([Cannot find libm])])
+AC_SEARCH_LIBS(nanosleep, rt,, [AC_MSG_ERROR([Cannot find nanosleep])])
+AC_SEARCH_LIBS(socket, socket,, [AC_MSG_ERROR([Cannot find socket])])
+
 
 # Checks for header files.
 AC_HEADER_STDC
