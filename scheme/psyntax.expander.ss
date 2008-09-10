@@ -19,7 +19,7 @@
 ;;; DEALINGS IN THE SOFTWARE. 
 
 (library (psyntax expander)
-  (export identifier? syntax-dispatch environment environment?
+  (export identifier? syntax-dispatch 
           eval expand generate-temporaries free-identifier=?
           bound-identifier=? datum->syntax syntax-error
           syntax-violation
@@ -30,7 +30,8 @@
           compile-r6rs-top-level boot-library-expand 
           null-environment scheme-report-environment
           interaction-environment
-          ellipsis-map assertion-error)
+          ellipsis-map assertion-error 
+          environment environment? environment-symbols)
   (import
     (except (rnrs)
       environment environment? identifier?
@@ -688,8 +689,8 @@
              (case type
                ((lexical core-prim macro macro! global local-macro
                  local-macro! global-macro global-macro!
-                 displaced-lexical syntax import $module $core-rtd
-                 library mutable)
+                 displaced-lexical syntax import export $module
+                 $core-rtd library mutable)
                 (values type (binding-value b) id))
                (else (values 'other #f #f))))))
         ((syntax-pair? e)
@@ -704,7 +705,7 @@
                    ((define define-syntax core-macro begin macro
                       macro! local-macro local-macro! global-macro
                       global-macro! module library set! let-syntax 
-                      letrec-syntax import $core-rtd)
+                      letrec-syntax import export $core-rtd)
                     (values type (binding-value b) id))
                    (else
                     (values 'call #f #f))))
@@ -2760,6 +2761,7 @@
                  ((module)        "a module definition")
                  ((library)       "a library definition")
                  ((import)        "an import declaration")
+                 ((export)        "an export declaration")
                  (else            "a non-expression"))
                " was found where an expression was expected")))
           ((mutable) 
@@ -2913,10 +2915,10 @@
   (define chi-internal
     (lambda (e* r mr)
       (let ((rib (make-empty-rib)))
-        (let-values (((e* r mr lex* rhs* mod** kwd*)
+        (let-values (((e* r mr lex* rhs* mod** kwd* _exp*)
                       (chi-body* (map (lambda (x) (add-subst rib x))
                                       (syntax->list e*))
-                         r mr '() '() '() '() rib #f)))
+                         r mr '() '() '() '() '() rib #f)))
            (when (null? e*)
              (stx-error e* "no expression in body"))
            (let* ((init* 
@@ -2967,8 +2969,8 @@
       (let-values (((name exp-id* e*) (parse-module e)))
         (let* ((rib (make-empty-rib))
                (e* (map (lambda (x) (add-subst rib x)) (syntax->list e*))))
-          (let-values (((e* r mr lex* rhs* mod** kwd*)
-                        (chi-body* e* r mr lex* rhs* mod** kwd* rib #f)))
+          (let-values (((e* r mr lex* rhs* mod** kwd* _exp*)
+                        (chi-body* e* r mr lex* rhs* mod** kwd* '() rib #f)))
               (let ((exp-lab*
                      (vector-map
                        (lambda (x)
@@ -2998,9 +3000,9 @@
                               mod** kwd*)))))))))
 
   (define chi-body*
-    (lambda (e* r mr lex* rhs* mod** kwd* rib top?)
+    (lambda (e* r mr lex* rhs* mod** kwd* exp* rib top?)
       (cond
-        ((null? e*) (values e* r mr lex* rhs* mod** kwd*))
+        ((null? e*) (values e* r mr lex* rhs* mod** kwd* exp*))
         (else
          (let ((e (car e*)))
            (let-values (((type value kwd) (syntax-type e r)))
@@ -3015,7 +3017,7 @@
                       (chi-body* (cdr e*)
                          (add-lexical lab lex r) mr
                          (cons lex lex*) (cons rhs rhs*)
-                         mod** kwd* rib top?))))
+                         mod** kwd* exp* rib top?))))
                  ((define-syntax)
                   (let-values (((id rhs) (parse-define-syntax e)))
                     (when (bound-id-member? id kwd*)
@@ -3026,7 +3028,7 @@
                         (let ((b (make-eval-transformer expanded-rhs)))
                           (chi-body* (cdr e*)
                              (cons (cons lab b) r) (cons (cons lab b) mr)
-                             lex* rhs* mod** kwd* rib top?)))))
+                             lex* rhs* mod** kwd* exp* rib top?)))))
                  ((let-syntax letrec-syntax)
                   (syntax-match e ()
                     ((_ ((xlhs* xrhs*) ...) xbody* ...)
@@ -3046,37 +3048,43 @@
                          (append (map (lambda (x) (add-subst xrib x)) xbody*) (cdr e*))
                          (append (map cons xlab* xb*) r)
                          (append (map cons xlab* xb*) mr)
-                         lex* rhs* mod** kwd* rib top?)))))
+                         lex* rhs* mod** kwd* exp* rib top?)))))
                  ((begin)
                   (syntax-match e ()
                     ((_ x* ...)
                      (chi-body* (append x* (cdr e*))
-                        r mr lex* rhs* mod** kwd* rib top?))))
+                        r mr lex* rhs* mod** kwd* exp* rib top?))))
                  ((global-macro global-macro!)
                   (chi-body*
                      (cons (add-subst rib (chi-global-macro value e)) 
                            (cdr e*))
-                     r mr lex* rhs* mod** kwd* rib top?))
+                     r mr lex* rhs* mod** kwd* exp* rib top?))
                  ((local-macro local-macro!)
                   (chi-body*
                      (cons (add-subst rib (chi-local-macro value e))
                            (cdr e*))
-                     r mr lex* rhs* mod** kwd* rib top?))
+                     r mr lex* rhs* mod** kwd* exp* rib top?))
                  ((macro macro!)
                   (chi-body*
                      (cons (add-subst rib (chi-macro value e))
                            (cdr e*))
-                     r mr lex* rhs* mod** kwd* rib top?))
+                     r mr lex* rhs* mod** kwd* exp* rib top?))
                  ((module)
                   (let-values (((lex* rhs* m-exp-id* m-exp-lab* r mr mod** kwd*)
                                 (chi-internal-module e r mr lex* rhs* mod** kwd*)))
                     (vector-for-each
                       (lambda (id lab) (extend-rib! rib id lab))
                       m-exp-id* m-exp-lab*)
-                    (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* rib top?)))
+                    (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* exp* rib top?)))
                  ((library) 
                   (library-expander (stx->datum e))
-                  (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* rib top?))
+                  (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* exp* rib top?))
+                 ((export)
+                  (syntax-match e ()
+                    ((_ exp-decl* ...) 
+                     (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* 
+                                (append exp-decl* exp*) rib top?))))
+
                  ((import)
                   (let ()
                     (define (module-import? e)
@@ -3115,14 +3123,14 @@
                       (vector-for-each
                         (lambda (id lab) (extend-rib! rib id lab))
                         id* lab*)))
-                  (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* rib top?))
+                  (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* exp* rib top?))
                  (else
                   (if top?
                       (chi-body* (cdr e*) r mr
                           (cons (gen-lexical 'dummy) lex*)
                           (cons (cons 'top-expr e) rhs*)
-                          mod** kwd* rib top?)
-                      (values e* r mr lex* rhs* mod** kwd*)))))))))))
+                          mod** kwd* exp* rib top?)
+                      (values e* r mr lex* rhs* mod** kwd* exp*)))))))))))
   
   (define (expand-transformer expr r)
     (let ((rtc (make-collector)))
@@ -3139,27 +3147,25 @@
         expanded-rhs)))
 
   (define (parse-exports exp*)
-    (define (idsyn? x) (symbol? (syntax->datum x)))
     (let f ((exp* exp*) (int* '()) (ext* '()))
       (cond
         ((null? exp*)
-         (let ((id* (map (lambda (x) (make-stx x top-mark* '() '())) ext*)))
-           (unless (valid-bound-ids? id*)
-             (syntax-violation 'export "invalid exports" 
-                (find-dups id*))))
+         (unless (valid-bound-ids? ext*)
+           (syntax-violation 'export "invalid exports" 
+              (find-dups ext*)))
          (values (map syntax->datum int*) (map syntax->datum ext*)))
         (else
          (syntax-match (car exp*) ()
            ((rename (i* e*) ...)
             (begin
               (unless (and (eq? (syntax->datum rename) 'rename)
-                           (for-all idsyn? i*)
-                           (for-all idsyn? e*))
+                           (for-all id? i*)
+                           (for-all id? e*))
                 (syntax-violation 'export "invalid export specifier" (car exp*)))
               (f (cdr exp*) (append i* int*) (append e* ext*))))
            (ie
             (begin
-              (unless (idsyn? ie)
+              (unless (id? ie)
                 (syntax-violation 'export "invalid export" ie))
               (f (cdr exp*) (cons ie int*) (cons ie ext*)))))))))
 
@@ -3456,16 +3462,16 @@
 
   (define chi-library-internal
     (lambda (e* rib top?)
-      (let-values (((e* r mr lex* rhs* mod** _kwd*)
-                    (chi-body* e* '() '() '() '() '() '() rib top?)))
+      (let-values (((e* r mr lex* rhs* mod** _kwd* exp*)
+                    (chi-body* e* '() '() '() '() '() '() '() rib top?)))
         (values (append (apply append (reverse mod**)) e*)
-           r mr (reverse lex*) (reverse rhs*)))))
+           r mr (reverse lex*) (reverse rhs*) exp*))))
   
 
   (define chi-interaction-expr
     (lambda (e rib r)
-      (let-values (((e* r mr lex* rhs* mod** _kwd*)
-                    (chi-body* (list e) r r '() '() '() '() rib #t)))
+      (let-values (((e* r mr lex* rhs* mod** _kwd* _exp*)
+                    (chi-body* (list e) r r '() '() '() '() '() rib #t)))
         (let ([e* (expand-interaction-rhs*/init* 
                     (reverse lex*) (reverse rhs*) 
                     (append (apply append (reverse mod**)) e*)
@@ -3477,23 +3483,24 @@
              (values e r))))))
 
   (define library-body-expander
-    (lambda (exp* imp* b* top?)
+    (lambda (main-exp* imp* b* top?)
       (define itc (make-collector))
       (parameterize ((imp-collector itc)
                      (top-level-context #f))
-        (let-values (((exp-int* exp-ext*) (parse-exports exp*)))
-          (let-values (((subst-names subst-labels)
-                        (parse-import-spec* imp*)))
-            (let ((rib (make-top-rib subst-names subst-labels)))
-              (let ((b* (map (lambda (x) 
-                               (make-stx x top-mark* (list rib) '()))
-                             b*))
-                    (rtc (make-collector))
-                    (vtc (make-collector)))
-                (parameterize ((inv-collector rtc)
-                               (vis-collector vtc))
-                  (let-values (((init* r mr lex* rhs*)
-                                (chi-library-internal b* rib top?)))
+        (let-values (((subst-names subst-labels)
+                      (parse-import-spec* imp*)))
+          (let ((rib (make-top-rib subst-names subst-labels)))
+            (define (wrap x) (make-stx x top-mark* (list rib) '()))
+            (let ((b* (map wrap b*))
+                  (main-exp* (map wrap main-exp*))
+                  (rtc (make-collector))
+                  (vtc (make-collector)))
+              (parameterize ((inv-collector rtc)
+                             (vis-collector vtc))
+                (let-values (((init* r mr lex* rhs* internal-exp*)
+                              (chi-library-internal b* rib top?)))
+                  (let-values (((exp-int* exp-ext*)
+                                (parse-exports (append main-exp* internal-exp*))))
                     (seal-rib! rib)
                     (let* ((init* (chi-expr* init* r mr))
                            (rhs* (chi-rhs* rhs* r mr)))
@@ -3580,6 +3587,11 @@
   (define environment?
     (lambda (x) (or (env? x) (interaction-env? x))))
   
+  (define (environment-symbols x)
+    (if (env? x)
+        (vector->list (env-names x))
+        (assertion-violation 'environment-symbols "not an environment" x)))
+
   ;;; This is R6RS's environment.  It parses the import specs 
   ;;; and constructs an env record that can be used later by 
   ;;; eval and/or expand.

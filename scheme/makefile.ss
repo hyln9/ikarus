@@ -116,6 +116,7 @@
     [library             (library)]
     [begin               (begin)]
     [import              (import)]
+    [export              (export)]
     [set!                (set!)]
     [let-syntax          (let-syntax)]
     [letrec-syntax       (letrec-syntax)]
@@ -279,6 +280,7 @@
 (define identifier->library-map
   '(
     [import                                      i]
+    [export                                      i]
     [foreign-call                                i]
     [type-descriptor                             i]
     [parameterize                                i parameters]
@@ -378,6 +380,7 @@
     [expand                                      i]
     [expand/optimize                             i]
     [environment?                                i]
+    [environment-symbols                         i]
     [time-it                                     i]
     [verbose-timer                               i]
     [current-time                                i]
