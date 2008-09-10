@@ -3084,7 +3084,6 @@
                     ((_ exp-decl* ...) 
                      (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* 
                                 (append exp-decl* exp*) rib top?))))
-
                  ((import)
                   (let ()
                     (define (module-import? e)
@@ -3588,9 +3587,12 @@
     (lambda (x) (or (env? x) (interaction-env? x))))
   
   (define (environment-symbols x)
-    (if (env? x)
-        (vector->list (env-names x))
-        (assertion-violation 'environment-symbols "not an environment" x)))
+    (cond
+      [(env? x) (vector->list (env-names x))]
+      [(interaction-env? x) 
+       (map values (rib-sym* (interaction-env-rib x)))]
+      [else
+       (assertion-violation 'environment-symbols "not an environment" x)]))
 
   ;;; This is R6RS's environment.  It parses the import specs 
   ;;; and constructs an env record that can be used later by 
