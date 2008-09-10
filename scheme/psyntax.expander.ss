@@ -3153,7 +3153,7 @@
          (unless (valid-bound-ids? ext*)
            (syntax-violation 'export "invalid exports" 
               (find-dups ext*)))
-         (values (map syntax->datum int*) (map syntax->datum ext*)))
+         (values (map syntax->datum ext*) int*))
         (else
          (syntax-match (car exp*) ()
            ((rename (i* e*) ...)
@@ -3499,14 +3499,14 @@
                              (vis-collector vtc))
                 (let-values (((init* r mr lex* rhs* internal-exp*)
                               (chi-library-internal b* rib top?)))
-                  (let-values (((exp-int* exp-ext*)
+                  (let-values (((exp-name* exp-id*)
                                 (parse-exports (append main-exp* internal-exp*))))
                     (seal-rib! rib)
                     (let* ((init* (chi-expr* init* r mr))
                            (rhs* (chi-rhs* rhs* r mr)))
                       (unseal-rib! rib)
                       (let ((loc* (map gen-global lex*))
-                            (export-subst (make-export-subst exp-int* exp-ext* rib)))
+                            (export-subst (make-export-subst exp-name* exp-id*)))
                         (define errstr
                           "attempt to export mutated variable")
                         (let-values (((export-env global* macro*)
@@ -3733,15 +3733,14 @@
             lex*+loc*
             init*)))))
   
-  (define (make-export-subst int* ext* rib)
+  (define (make-export-subst name* id*)
     (map
-      (lambda (int ext)
-        (let* ((id (make-stx int top-mark* (list rib) '()))
-               (label (id->label id)))
+      (lambda (name id)
+        (let ((label (id->label id)))
           (unless label
             (stx-error id "cannot export unbound identifier"))
-          (cons ext label)))
-      int* ext*))
+          (cons name label)))
+      name* id*))
   
   (define (make-export-env/macros lex* loc* r)
     (define (lookup x)
