@@ -271,6 +271,7 @@
     [$stack      (ikarus system $stack)                #f     #t]
     [$interrupts (ikarus system $interrupts)           #f     #t]
     [$io         (ikarus system $io)                   #f     #t]
+    [$for        (ikarus system $foreign)              #f     #f]
     [$all        (psyntax system $all)                 #f     #t]
     [$boot       (psyntax system $bootstrap)           #f     #t]
     [ne          (psyntax null-environment-5)          #f     #f]
@@ -1454,9 +1455,15 @@
     [cp0-effort-limit i]
     [tag-analysis-output i]
     [perform-tag-analysis i]
-    [pointer? i]
-    [pointer->integer i]
-    [integer->pointer i]
+    [pointer?         $for]
+    [pointer->integer $for]
+    [integer->pointer $for]
+    [dlopen           $for]
+    [dlerror          $for]
+    [dlclose          $for]
+    [dlsym            $for]
+    [malloc           $for]
+    [free             $for]
   ))
 
 (define (macro-identifier? x) 

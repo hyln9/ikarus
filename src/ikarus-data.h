@@ -407,6 +407,8 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define page_index(x) (((unsigned long int)(x)) >> pageshift)
 
 #define pointer_tag           ((ikptr) 0x107)
+#define disp_pointer_data     (1 * wordsize)
 #define pointer_size          (2 * wordsize)
+#define off_pointer_data      (disp_pointer_data - vector_tag)
 
 #endif
