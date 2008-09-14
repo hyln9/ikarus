@@ -63,18 +63,11 @@ ERROR: the gmp.h header file), and LDFLAGS=-L</path/to/lib> (containing
 ERROR: libgmp.so) if libgmp is installed in a non-standard location.
 ERROR: libgmp can be obtained from <http://gmplib.org>. ])])
 
-# check that gmp exports mpn_mul
-# unfortunately, gmp.h defines mpn_mul as a macro
-# that expands to __gmpn_mul on my machine.
-AC_CHECK_LIB(gmp,__gmpn_mul,,[AC_MSG_ERROR([
-ERROR: your version of libgmp does not contain a binding for
-ERROR: some of the primitives that ikarus uses.  This is most
-ERROR: likely to happen if your version of gmp was compiled
-ERROR: in 64-bit mode, while ikarus expects needs the 32-bit
-ERROR: version.  Refer to the following bug report for details
-    https://bugs.launchpad.net/ikarus/+bug/159235 
-])])
-
+# AC_ARG_ENABLE(libffi,
+#   [  --enable-libffi     enable support for libffi.],
+#   AC_DEFINE(ENABLE_LIBFFI, 1, [adds support for libffi]))
+# AC_CHECK_HEADERS([libffi.h])
+# AC_HAVE_LIBRARY([ffi])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

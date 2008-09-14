@@ -43,20 +43,23 @@
         (if (< n 0) 
             '()
             (cons (sll 1 n) (one-bit-combinations n)))))
-    (define (two-bit-combinations n)
+    (define (or* ls1 ls2)
       (apply append
         (map 
           (lambda (n1)
             (map 
               (lambda (n2)
                 (bitwise-ior n1 n2))
-              (one-bit-combinations n)))
-          (one-bit-combinations n))))
+              ls2))
+          ls1)))
     (let ([n (min bits n)])
-      (append 
-        (list 0)
-        (one-bit-combinations n)
-        (two-bit-combinations n))))
+      (let* ([ls1 (one-bit-combinations n)]
+             [ls2 (or* ls1 ls1)]
+             [ls3 (or* ls2 ls1)])
+        (append 
+          (list 0 (sub1 (sll 1 (- n 1))) (sub1 (sll 1 n))) 
+          ls1 ls2 ls3))))
+          
 
 
 
