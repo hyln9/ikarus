@@ -35,7 +35,7 @@ ikrt_pointer_to_int(ikptr x, ikpcb* pcb) {
   }
 }
 
-static ikptr
+ikptr
 make_pointer(long int x, ikpcb* pcb) {
   ikptr r = ik_safe_alloc(pcb, pointer_size);
   ref(r, 0) = pointer_tag;
@@ -152,7 +152,7 @@ ikrt_ref_ushort(ikptr p, ikptr off /*, ikpcb* pcb*/) {
   return fix(*((unsigned short*)(((long)ref(p, off_pointer_data)) + unfix(off))));
 }
 
-static ikptr
+ikptr
 s_to_number(signed long n, ikpcb* pcb) {
   ikptr fx = fix(n);
   if (unfix(fx) == n) {
@@ -172,7 +172,7 @@ s_to_number(signed long n, ikpcb* pcb) {
   return bn+vector_tag;
 }
   
-static ikptr
+ikptr
 u_to_number(unsigned long n, ikpcb* pcb) {
   unsigned long mxn = ((unsigned long)-1)>>(fx_shift+1);
   if (n <= mxn) {
@@ -183,6 +183,15 @@ u_to_number(unsigned long n, ikpcb* pcb) {
   ref(bn, disp_bignum_data) = (ikptr)n;
   return bn+vector_tag;
 }
+
+ikptr
+d_to_number(double n, ikpcb* pcb) {
+  ikptr x = ik_safe_alloc(pcb, flonum_size) + vector_tag;
+  ref(x, -vector_tag) = flonum_tag;
+  flonum_data(x) = n;
+  return x;
+}
+
 
 
 ikptr
@@ -221,7 +230,7 @@ ikrt_ref_ulong(ikptr p, ikptr off , ikpcb* pcb) {
   return u_to_number(r, pcb);
 }
 
-static long
+long
 extract_num(ikptr x) {
   if (is_fixnum(x)) {
     return unfix(x);

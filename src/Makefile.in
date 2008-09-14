@@ -55,7 +55,8 @@ am__objects_1 = ikarus-collect.$(OBJEXT) ikarus-exec.$(OBJEXT) \
 	ikarus-winmmap.$(OBJEXT) ikarus-enter.$(OBJEXT) \
 	cpu_has_sse2.$(OBJEXT) ikarus-io.$(OBJEXT) \
 	ikarus-process.$(OBJEXT) ikarus-getaddrinfo.$(OBJEXT) \
-	ikarus-errno.$(OBJEXT) ikarus-pointers.$(OBJEXT)
+	ikarus-errno.$(OBJEXT) ikarus-pointers.$(OBJEXT) \
+	ikarus-ffi.$(OBJEXT)
 am_ikarus_OBJECTS = $(am__objects_1) ikarus.$(OBJEXT)
 nodist_ikarus_OBJECTS =
 ikarus_OBJECTS = $(am_ikarus_OBJECTS) $(nodist_ikarus_OBJECTS)
@@ -185,7 +186,7 @@ SRCS = ikarus-collect.c ikarus-exec.c ikarus-fasl.c \
   ikarus-weak-pairs.c ikarus-winmmap.c ikarus-data.h \
   ikarus-winmmap.h ikarus-enter.S cpu_has_sse2.S ikarus-io.c \
   ikarus-process.c ikarus-getaddrinfo.h ikarus-getaddrinfo.c \
-  ikarus-errno.c ikarus-main.h ikarus-pointers.c
+  ikarus-errno.c ikarus-main.h ikarus-pointers.c ikarus-ffi.c
 
 ikarus_SOURCES = $(SRCS) ikarus.c
 scheme_script_SOURCES = $(SRCS) scheme-script.c
@@ -268,6 +269,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-errno.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-exec.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-fasl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-ffi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-flonums.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-getaddrinfo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ikarus-io.Po@am__quote@

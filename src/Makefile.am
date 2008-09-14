@@ -7,7 +7,7 @@ SRCS = ikarus-collect.c ikarus-exec.c ikarus-fasl.c \
   ikarus-weak-pairs.c ikarus-winmmap.c ikarus-data.h \
   ikarus-winmmap.h ikarus-enter.S cpu_has_sse2.S ikarus-io.c \
   ikarus-process.c ikarus-getaddrinfo.h ikarus-getaddrinfo.c \
-  ikarus-errno.c ikarus-main.h ikarus-pointers.c
+  ikarus-errno.c ikarus-main.h ikarus-pointers.c ikarus-ffi.c
 
 ikarus_SOURCES = $(SRCS) ikarus.c
 scheme_script_SOURCES = $(SRCS) scheme-script.c

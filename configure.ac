@@ -63,11 +63,23 @@ ERROR: the gmp.h header file), and LDFLAGS=-L</path/to/lib> (containing
 ERROR: libgmp.so) if libgmp is installed in a non-standard location.
 ERROR: libgmp can be obtained from <http://gmplib.org>. ])])
 
-# AC_ARG_ENABLE(libffi,
-#   [  --enable-libffi     enable support for libffi.],
-#   AC_DEFINE(ENABLE_LIBFFI, 1, [adds support for libffi]))
-# AC_CHECK_HEADERS([libffi.h])
-# AC_HAVE_LIBRARY([ffi])
+AC_ARG_ENABLE(libffi,
+  [  --enable-libffi     enable support for libffi.],
+  AC_DEFINE(ENABLE_LIBFFI, 1, [adds support for libffi]))
+AC_CHECK_HEADERS([ffi.h],,
+  if test "$enable_libffi" = "yes"; then
+    AC_MSG_ERROR([ffi.h cannot be found.
+Please specify the location of the header file using
+  ./configure CFLAGS=-I<path/to/ffi.h>   <other-options ...>
+])
+  fi)
+AC_CHECK_LIB(ffi,ffi_call,,
+  if test "$enable_libffi" = "yes"; then
+    AC_MSG_ERROR([libffi cannot be found.
+Please specify the location of the library file using
+  ./configure LDFLAGS=-L<path/to/libffi.ld|dylib|so|etc.>  <other-options ...>
+])
+  fi)
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

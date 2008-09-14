@@ -4,7 +4,8 @@
           dlopen dlerror dlclose dlsym malloc free
           pointer-ref-char pointer-ref-short pointer-ref-int pointer-ref-long
           pointer-ref-uchar pointer-ref-ushort pointer-ref-uint pointer-ref-ulong
-          pointer-set-char pointer-set-short pointer-set-int pointer-set-long)
+          pointer-set-char pointer-set-short pointer-set-int pointer-set-long
+          ffi-prep-cif)
   (import 
     (except (ikarus) 
       pointer? 
@@ -117,6 +118,42 @@
   (define-setter pointer-set-short  "ikrt_set_short")
   (define-setter pointer-set-int    "ikrt_set_int")
   (define-setter pointer-set-long   "ikrt_set_long")
+
+  ;;; libffi interface
+
+  (define (ffi-prep-cif rtype argtypes)
+    (define who 'ffi-prep-cif)
+    (define (convert x)
+      (case x 
+        [(void)       1]
+        [(uint8)      2]
+        [(sint8)      3]
+        [(uint16)     4]
+        [(sint16)     5]
+        [(uint32)     6]
+        [(sint32)     7]
+        [(uint64)     8]
+        [(sint64)     9]
+        [(float)     10]
+        [(double)    11]
+        [(pointer)   12]
+        [else (die who "invalid type" x)]))
+    (unless (list? argtypes) 
+      (die who "arg types is not a list" argtypes))
+    (let ([argtypes-n (vector-map convert (list->vector argtypes))]
+          [rtype-n (convert rtype)])
+      (let ([cif (or (foreign-call "ikrt_ffi_prep_cif" rtype-n argtypes-n)
+                     (die who "failed to initialize" rtype argtypes))])
+        (lambda (cfun)
+          (define data (vector cif cfun argtypes-n rtype-n))
+          (unless (pointer? cfun) 
+            (die 'ffi "not a pointer" cfun))
+          (lambda args
+            (let ([argsvec (list->vector args)])
+              (unless (= (vector-length argsvec) 
+                         (vector-length argtypes-n))
+                (error 'ffi "args mismatch" argtypes args))
+              (foreign-call "ikrt_ffi_call" data argsvec)))))))
 
   )
 
