@@ -1476,7 +1476,8 @@
     [pointer-set-short  $for]
     [pointer-set-int    $for]
     [pointer-set-long   $for]
-    [ffi-prep-cif       $for]
+    [make-ffi           $for]
+    [make-callback      $for]
 
   ))
 

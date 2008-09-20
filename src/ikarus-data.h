@@ -121,6 +121,10 @@ typedef struct ik_ptr_page{
   ikptr ptr[ik_ptr_page_size];
 } ik_ptr_page;
 
+typedef struct callback_locative{
+  ikptr data;
+  struct callback_locative* next;
+} callback_locative;
 
 typedef struct ikpcb{
   /* the first locations may be accessed by some     */
@@ -140,6 +144,7 @@ typedef struct ikpcb{
   ikptr   collect_key;                  /* offset = 48 */
   /* the rest are not used by any scheme code        */
   /* they only support the runtime system (gc, etc.) */
+  callback_locative* callbacks;
   ikptr* root0;
   ikptr* root1;
   unsigned int* segment_vector; 

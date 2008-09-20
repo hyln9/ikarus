@@ -5,7 +5,7 @@
           pointer-ref-char pointer-ref-short pointer-ref-int pointer-ref-long
           pointer-ref-uchar pointer-ref-ushort pointer-ref-uint pointer-ref-ulong
           pointer-set-char pointer-set-short pointer-set-int pointer-set-long
-          ffi-prep-cif)
+          make-ffi make-callback)
   (import 
     (except (ikarus) 
       pointer? 
@@ -138,22 +138,40 @@
         [(double)    11]
         [(pointer)   12]
         [else (die who "invalid type" x)]))
-    (unless (list? argtypes) 
+    (unless (list? argtypes)
       (die who "arg types is not a list" argtypes))
     (let ([argtypes-n (vector-map convert (list->vector argtypes))]
           [rtype-n (convert rtype)])
-      (let ([cif (or (foreign-call "ikrt_ffi_prep_cif" rtype-n argtypes-n)
-                     (die who "failed to initialize" rtype argtypes))])
-        (lambda (cfun)
-          (define data (vector cif cfun argtypes-n rtype-n))
-          (unless (pointer? cfun) 
-            (die 'ffi "not a pointer" cfun))
-          (lambda args
-            (let ([argsvec (list->vector args)])
-              (unless (= (vector-length argsvec) 
-                         (vector-length argtypes-n))
-                (error 'ffi "args mismatch" argtypes args))
-              (foreign-call "ikrt_ffi_call" data argsvec)))))))
+      (values (or (foreign-call "ikrt_ffi_prep_cif" rtype-n argtypes-n)
+                  (die who "failed to initialize" rtype argtypes))
+              argtypes-n
+              rtype-n)))
+
+  (define (make-ffi rtype argtypes)
+    (define who 'make-ffi)
+    (let-values ([(cif argtypes-n rtype-n)
+                  (ffi-prep-cif rtype argtypes)])
+      (lambda (cfun)
+        (define data (vector cif cfun argtypes-n rtype-n))
+        (unless (pointer? cfun) 
+          (die 'ffi "not a pointer" cfun))
+        (lambda args
+          (let ([argsvec (list->vector args)])
+            (unless (= (vector-length argsvec) 
+                       (vector-length argtypes-n))
+              (error 'ffi "args mismatch" argtypes args))
+            (foreign-call "ikrt_ffi_call" data argsvec))))))
+
+  (define (make-callback rtype argtypes)
+    (let-values ([(cif argtypes-n rtype-n)
+                  (ffi-prep-cif rtype argtypes)])
+      (lambda (proc)
+        (define who 'make-callback)
+        (define data (vector cif proc argtypes-n rtype-n))
+        (unless (procedure? proc)
+          (die who "not a procedure"))
+        (or (foreign-call "ikrt_prepare_callback" data)
+            (die who "cannot prepare foreign callback")))))
 
   )
 

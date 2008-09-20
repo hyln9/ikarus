@@ -181,16 +181,16 @@
           [(and (memq sym (rib-sym* rib))
                 (find sym mark* sym* (rib-mark** rib) (rib-label* rib)))
            =>
-           (lambda (p) 
+           (lambda (p)
              (unless (eq? label (car p))
                (cond
                  [(top-level-context)
-                  ;;; override label
+                  ;;; XXX override label
                   (set-car! p label)]
                  [else
                   ;;; signal an error if the identifier was already
                   ;;; in the rib.
-                  (stx-error id "cannot redefine")])))]
+                  (stx-error id "multiple definitions of identifier")])))]
           [else
            (set-rib-sym*! rib (cons sym sym*))
            (set-rib-mark**! rib (cons mark* (rib-mark** rib)))
@@ -3121,8 +3121,8 @@
                                       (library-import e))))
                       (vector-for-each
                         (lambda (id lab) (extend-rib! rib id lab))
-                        id* lab*)))
-                  (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* exp* rib top?))
+                        id* lab*))
+                    (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* exp* rib top?)))
                  (else
                   (if top?
                       (chi-body* (cdr e*) r mr
@@ -3630,7 +3630,8 @@
                  (rtc (make-collector))
                  (vtc (make-collector)))
                (let ((x
-                      (parameterize ((inv-collector rtc)
+                      (parameterize ((top-level-context #f)
+                                     (inv-collector rtc)
                                      (vis-collector vtc)
                                      (imp-collector itc))
                          (chi-expr x '() '()))))
