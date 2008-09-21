@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <strings.h>
 
+#undef DEBUG_FFI
+
 static void*
 alloc(size_t n, int m) {
   void* x = calloc(n, m);
@@ -126,10 +128,103 @@ ikrt_ffi_prep_cif(ikptr rtptr, ikptr argstptr, ikpcb* pcb) {
   }
 }
 
+/* FIXME: handle stack overflow */
+
+        
+
+ikptr
+ikrt_seal_scheme_stack(ikpcb* pcb) {
+  #if 0
+           |              |
+           |              |
+           |              |
+           |              |
+           +--------------+
+           |   underflow  |  <--------- new frame pointer
+           +--------------+
+           | return point |  <--------- old frame pointer, new frame base
+           +--------------+
+           |      .       |
+           |      .       |
+           |      .       |
+           |              |
+           +--------------+
+           |   underflow  |  <--------- old frame base 
+           +--------------+
+  #endif
+  ikptr frame_base = pcb->frame_base;
+  ikptr frame_pointer = pcb->frame_pointer;
+#ifdef DEBUG_FFI
+  fprintf(stderr, "old base=0x%016lx  fp=0x%016lx\n", pcb->frame_base,
+      pcb->frame_pointer);
+#endif
+  if ((frame_base - wordsize) != frame_pointer) {
+    ikptr underflow_handler = ref(frame_base, -wordsize);
+    cont* k = (cont*) pcb->next_k;
+    cont* nk = (cont*) ik_unsafe_alloc(pcb, sizeof(cont));
+    nk->tag = k->tag;
+    nk->next = (ikptr) k;
+    nk->top = frame_pointer;
+#ifdef DEBUG_FFI
+    fprintf(stderr, "rp=0x%016lx\n",
+        ref(frame_pointer, 0));
+#endif
+    nk->size = frame_base - frame_pointer - wordsize;
+#ifdef DEBUG_FFI
+    fprintf(stderr, "frame size=%ld\n", nk->size);
+#endif
+    pcb->next_k = vector_tag + (ikptr)nk;
+    pcb->frame_base = frame_pointer;
+    pcb->frame_pointer = frame_pointer - wordsize;
+#ifdef DEBUG_FFI
+    fprintf(stderr, "new base=0x%016lx  fp=0x%016lx\n", pcb->frame_base,
+        pcb->frame_pointer);
+    fprintf(stderr, "uf=0x%016lx\n", underflow_handler);
+#endif
+    ref(pcb->frame_pointer, 0) = underflow_handler;
+  } else {
+#ifdef DEBUG_FFI
+    fprintf(stderr, "already sealed\n");
+#endif
+  }
+  return void_object;
+}
+
+ikptr
+ikrt_call_back(ikptr proc, ikpcb* pcb) {
+  ikrt_seal_scheme_stack(pcb);
+  ikptr old_k = pcb->next_k;
+  pcb->next_k = 0;
+  ikptr entry_point = ref(proc, off_closure_code);
+  ikptr system_stack = pcb->system_stack;
+#ifdef DEBUG_FFI
+  fprintf(stderr, "system_stack = 0x%016lx\n", pcb->system_stack);
+#endif
+  ikptr code_ptr = entry_point - off_code_data;
+  ikptr rv = ik_exec_code(pcb, code_ptr, 0, proc); 
+#ifdef DEBUG_FFI
+  fprintf(stderr, "system_stack = 0x%016lx\n", pcb->system_stack);
+#endif
+  ikptr rv2 = ref(pcb->frame_pointer, -2*wordsize);
+#ifdef DEBUG_FFI
+  fprintf(stderr, "rv=0x%016lx   0x%016lx\n", rv, rv2);
+#endif
+  pcb->next_k = old_k;
+  pcb->frame_pointer = pcb->frame_base - wordsize;
+#ifdef DEBUG_FFI
+  fprintf(stderr, "rp=0x%016lx\n", ref(pcb->frame_pointer, 0));
+#endif
+  pcb->system_stack = system_stack;
+  return rv2;
+}
+
 
 
 ikptr
 ikrt_ffi_call(ikptr data, ikptr argsvec, ikpcb* pcb)  {
+
+  ikrt_seal_scheme_stack(pcb);
+
   ikptr cifptr  = ref(data, off_vector_data + 0 * wordsize);
   ikptr funptr  = ref(data, off_vector_data + 1 * wordsize);
   ikptr typevec = ref(data, off_vector_data + 2 * wordsize);
@@ -151,6 +246,11 @@ ikrt_ffi_call(ikptr data, ikptr argsvec, ikpcb* pcb)  {
   for(i=0; i<n; i++){
     free(avalues[i]);
   }
+#ifdef DEBUG_FFI
+  fprintf(stderr, "DONE WITH CALL, RV=0x%016lx 0x%016lx\n", 
+      (long)val,
+      ref(pcb->frame_pointer, -2*wordsize));
+#endif
   free(avalues);
   free(rvalue);
   return val;
@@ -179,6 +279,7 @@ ffi_status ffi_prep_closure_loc (
 
 */
 
+extern ikpcb* the_pcb;
 static void 
 generic_callback(ffi_cif *cif, void *ret, void **args, void *user_data){
   /* convert args according to cif to scheme values */
@@ -191,8 +292,28 @@ generic_callback(ffi_cif *cif, void *ret, void **args, void *user_data){
   ikptr argtypes_conv = ref(data, off_vector_data + 2 * wordsize);
   ikptr rtype_conv = ref(data, off_vector_data + 3 * wordsize);
 
-  fprintf(stderr, "in generic_callback\n");
-  exit(-1);
+  ikpcb* pcb = the_pcb;
+  ikptr old_system_stack = pcb->system_stack; /* preserve */
+  ikptr old_next_k = pcb->next_k;             /* preserve */
+  pcb->next_k = 0;
+  ikptr code_entry = ref(proc, off_closure_code);
+  ikptr code_ptr = code_entry - off_code_data;
+  ikptr frame_pointer = pcb->frame_pointer;
+  ikptr frame_base = pcb->frame_base;
+  if ((frame_base - wordsize) != frame_pointer) {
+    fprintf(stderr, "ikarus internal error: INVALID FRAME LAYOUT 0x%016lx .. 0x%016lx\n", 
+        frame_base, frame_pointer);
+    exit(-1);
+  }
+  ref(frame_pointer, -2*wordsize) = fix(*((int*)args[0]));
+  ikptr rv = ik_exec_code(pcb, code_ptr, fix(-1), proc); 
+  ikptr rv2 = ref(pcb->frame_pointer, -2*wordsize);
+#ifdef DEBUG_FFI
+  fprintf(stderr, "and back with rv=0x%016lx  0x%016lx!\n", rv, rv2);
+#endif
+  pcb->system_stack = old_system_stack;
+  pcb->next_k = old_next_k;
+  *((ikptr*)ret) = unfix(rv2);
   return;
 }
 
@@ -228,9 +349,9 @@ ikrt_prepare_callback(ikptr data, ikpcb* pcb){
 }
 
 int ho (int(*f)(int), int n) {
-  fprintf(stderr, "HO HO 0x%016lx!\n", (long)f);
+ // fprintf(stderr, "HO HO 0x%016lx!\n", (long)f);
   int n0 = f(n);
-  fprintf(stderr, "GOT N0\n");
+ // fprintf(stderr, "GOT N0\n");
   return n0 + f(n);
 }
 
@@ -238,9 +359,9 @@ int ho (int(*f)(int), int n) {
 int ho2 (ikptr fptr, ikptr nptr) {
   int (*f)(int) =  (int(*)(int)) ref(fptr, off_pointer_data);
   int n = unfix(nptr);
-  fprintf(stderr, "HO2 HO2 0x%016lx!\n", (long)f);
+ // fprintf(stderr, "HO2 HO2 0x%016lx!\n", (long)f);
   int n0 = f(n);
-  fprintf(stderr, "GOT N0\n");
+ // fprintf(stderr, "GOT N0\n");
   return n0 + f(n);
 }
 
@@ -260,8 +381,8 @@ void hello_world(int n) {
 
 #else
 ikptr ikrt_ffi_prep_cif()    { return false_object; }
-ikrt_ffi_call()              { return false_object; }
-ikrt ikrt_prepare_callback() { return false_object; }
+ikptr ikrt_ffi_call()              { return false_object; }
+ikptr ikrt_prepare_callback() { return false_object; }
 #endif
 
 

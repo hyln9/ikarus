@@ -110,7 +110,7 @@ void ik_fasl_load(ikpcb* pcb, char* fasl_file){
       }
       close(fd);
     }
-    ikptr val = ik_exec_code(pcb, v);
+    ikptr val = ik_exec_code(pcb, v, 0, 0);
     if(val != void_object){
       ik_print(val);
     }

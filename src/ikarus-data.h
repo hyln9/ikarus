@@ -174,6 +174,16 @@ typedef struct ikpcb{
   struct timeval collect_rtime; 
 } ikpcb;
 
+typedef struct {
+  ikptr tag;
+  ikptr top;
+  long int size;
+  ikptr next;
+} cont;
+
+
+
+
 ikpcb* ik_collect(unsigned long int, ikpcb*);
 void ikarus_usage_short(void);
 
@@ -195,7 +205,7 @@ void ik_free_symbol_table(ikpcb* pcb);
 void ik_fasl_load(ikpcb* pcb, char* filename);
 void ik_relocate_code(ikptr);
 
-ikptr ik_exec_code(ikpcb* pcb, ikptr code_ptr);
+ikptr ik_exec_code(ikpcb* pcb, ikptr code_ptr, ikptr argcount, ikptr cp);
 void ik_print(ikptr x);
 void ik_fprint(FILE*, ikptr x);
 
@@ -204,7 +214,7 @@ ikptr ikrt_strings_to_gensym(ikptr, ikptr,  ikpcb*);
 
 ikptr ik_cstring_to_symbol(char*, ikpcb*);
 
-ikptr ik_asm_enter(ikpcb*, ikptr code_object, ikptr arg);
+ikptr ik_asm_enter(ikpcb*, ikptr code_object, ikptr arg, ikptr cp);
 ikptr ik_asm_reenter(ikpcb*, ikptr code_object, ikptr val);
 ikptr ik_underflow_handler(ikpcb*);
 ikptr ik_unsafe_alloc(ikpcb* pcb, int size);

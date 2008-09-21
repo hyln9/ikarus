@@ -34,8 +34,8 @@
 void register_handlers();
 void register_alt_stack();
 
-ikpcb* the_pcb;
 
+ikpcb* the_pcb;
 
 int
 file_exists(char* filename){

@@ -22,25 +22,24 @@
 #include <assert.h>
 #include <string.h>
 
-typedef struct {
-  ikptr tag;
-  ikptr top;
-  long int size;
-  ikptr next;
-} cont;
 
+#undef DEBUG_EXEC 
 
-ikptr ik_exec_code(ikpcb* pcb, ikptr code_ptr){
-  ikptr argc = ik_asm_enter(pcb, code_ptr+off_code_data,0);
+ikptr ik_exec_code(ikpcb* pcb, ikptr code_ptr, ikptr argcount, ikptr cp){
+  ikptr argc = ik_asm_enter(pcb, code_ptr+off_code_data, argcount, cp);
   ikptr next_k =  pcb->next_k;
   while(next_k){
     cont* k = (cont*)(long)(next_k - vector_tag);
     ikptr top = k->top;
     ikptr rp = ref(top, 0);
     long int framesize = (long int) ref(rp, disp_frame_size);
+#ifdef DEBUG_EXEC
+    fprintf(stderr, "exec framesize=0x%016lx  ksize=%ld  rp=0x%016lx\n", 
+        framesize, k->size, rp);
+#endif
     if(framesize <= 0){
       fprintf(stderr, "invalid framesize %ld\n", framesize);
-      exit(-1);
+      exit(-10);
     }
     if(framesize < k->size){
       cont* nk = (cont*)(long)ik_unsafe_alloc(pcb, sizeof(cont));
@@ -53,6 +52,14 @@ ikptr ik_exec_code(ikpcb* pcb, ikptr code_ptr){
       /* record side effect */
       unsigned long int idx = ((unsigned long int)(&k->next)) >> pageshift;
       ((unsigned int*)(long)(pcb->dirty_vector))[idx] = -1;
+    } else if (framesize > k->size) {
+      fprintf(stderr, 
+              "ikarus internal error: invalid framesize %ld, expected %ld or less\n",
+          framesize, k->size);
+      long int offset = ref(rp, disp_frame_offset);
+      fprintf(stderr, "rp = 0x%016lx\n", rp);
+      fprintf(stderr, "rp offset = %ld\n", offset);
+      exit(-10);
     }
     pcb->next_k = k->next;
     ikptr fbase = pcb->frame_base - wordsize;

@@ -47,32 +47,31 @@ _ik_asm_enter:
   mov %r14,  -40(%rsp)     # preserve
   mov %r15,  -48(%rsp)     # preserve
 
+  # closure pointer is the 4th arg, or %rcx
+  # argcount is the third arg, or %rdx
   # code is the second arg, or  %rsi
   # pcb is the first arg, or    %rdi
   # return point is at       0(%rsp)
 
-  mov %rsi, %rax     # move code pointer to %rax
+  mov %rdx, %rax     # set up arg count
+  mov %rsi, %rdx     # move code pointer to %rdx
   mov %rdi, %rsi     # move pcb into pcb-register (%rsi)
+  mov %rcx, %rdi     # move closure pointer into cpr
   mov 0(%rsi), %rbp  # allocation pointer is at 0(pcb)
   sub $64, %rsp         # 64 for alignment
   mov %rsp, 48(%rsi)    # save esp in pcb->system_stack
   mov 16(%rsi), %rsp    # load scheme stack from pcb->frame_pinter
   jmp L_call
-  .byte 0
-  .byte 0
-  .byte 0
-  .byte 0
-  .byte 0
-  .byte 0
-  .byte 0
-  .byte 0
+  .quad 8
+  .quad 0
 L_multivalue_label: # FIXME
   .quad  L_multivalue_underflow
   .quad 0
 L_call:
-  call *%rax         # goooooooo
+  call *%rdx         # goooooooo
   # now we're back
 ik_underflow_handler:
+_ik_underflow_handler:
   mov %rax, -16(%rsp)   # store the return value
   mov $-8, %rax         # set rvcount = 1
 L_do_underflow:
@@ -209,32 +208,29 @@ L_back:
 .align 8
 ik_asm_enter:
 _ik_asm_enter:
-  # ignored value is the third arg 12(%esp)
+  # closure pointer is the 4th arg, 16(%esp)
+  # argcount is the third arg, or 12(%esp)
   # code is the second arg  8(%esp)
   # pcb is the first arg    4(%esp)
   # return point is at      0(%esp)
+  movl 12(%esp), %eax    # arg count
+  movl 16(%esp), %edi    # closure pointer
   movl %esi, -4(%esp)    #  preserve
   movl %ebp, -8(%esp)    #  preserve
   movl 4(%esp), %esi   
   movl 0(%esi), %ebp     # allocation pointer is at 0(pcb)
-  movl %esp, %eax
+  movl %esp, %ecx
   subl $16, %esp         # 24 for alignment
   movl %esp, 24(%esi)    # save esp in pcb->system_stack
   movl 8(%esi), %esp     # load scheme stack from pcb->frame_pinter
   jmp L_call
-  .byte 0
-  .byte 0
-  .byte 0
-  .byte 0
-  .byte 0
-  .byte 0
-  .byte 0
-  .byte 0
+  .long 4
+  .long 0
   .long  L_multivalue_underflow
   .byte 0
   .byte 0
 L_call:
-  call *8(%eax)         # goooooooo
+  call *8(%ecx)         # goooooooo
   # now we're back
 ik_underflow_handler:
   movl %eax, -8(%esp)   # store the return value

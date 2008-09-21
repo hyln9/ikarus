@@ -2354,7 +2354,8 @@
   [(P)
    (prm '= (prm 'int+
                 (prm 'mref pcr (K pcb-frame-base)) 
-                (K (- wordsize))) fpr)])
+                (K (- wordsize))) 
+        fpr)])
 
 (define-primop $current-frame unsafe
   [(V) (prm 'mref pcr (K pcb-next-continuation))])
