@@ -6650,11 +6650,10 @@ ac_cv_lib_gmp=ac_cv_lib_gmp_main
 # Check whether --enable-libffi was given.
 if test "${enable_libffi+set}" = set; then
   enableval=$enable_libffi;
-cat >>confdefs.h <<\_ACEOF
-#define ENABLE_LIBFFI 1
-_ACEOF
-
 fi
+
+
+if test "$enable_libffi" = "yes"; then
 
 
 for ac_header in ffi.h
@@ -6804,8 +6803,7 @@ as_val=`eval 'as_val=${'$as_ac_Header'}
 _ACEOF
 
 else
-  if test "$enable_libffi" = "yes"; then
-    { { $as_echo "$as_me:$LINENO: error: ffi.h cannot be found.
+  { { $as_echo "$as_me:$LINENO: error: ffi.h cannot be found.
 Please specify the location of the header file using
   ./configure CFLAGS=-I<path/to/ffi.h>   <other-options ...>
 " >&5
@@ -6814,10 +6812,10 @@ Please specify the location of the header file using
   ./configure CFLAGS=-I<path/to/ffi.h>   <other-options ...>
 " >&2;}
    { (exit 1); exit 1; }; }
-  fi
 fi
 
 done
+
 
 
 { $as_echo "$as_me:$LINENO: checking for ffi_call in -lffi" >&5
@@ -6893,8 +6891,7 @@ _ACEOF
   LIBS="-lffi $LIBS"
 
 else
-  if test "$enable_libffi" = "yes"; then
-    { { $as_echo "$as_me:$LINENO: error: libffi cannot be found.
+  { { $as_echo "$as_me:$LINENO: error: libffi cannot be found.
 Please specify the location of the library file using
   ./configure LDFLAGS=-L<path/to/libffi.ld|dylib|so|etc.>  <other-options ...>
 " >&5
@@ -6903,9 +6900,16 @@ Please specify the location of the library file using
   ./configure LDFLAGS=-L<path/to/libffi.ld|dylib|so|etc.>  <other-options ...>
 " >&2;}
    { (exit 1); exit 1; }; }
-  fi
 fi
 
+
+
+cat >>confdefs.h <<\_ACEOF
+#define ENABLE_LIBFFI 1
+_ACEOF
+
+
+fi
 
 # Checks for typedefs, structures, and compiler characteristics.
 { $as_echo "$as_me:$LINENO: checking for an ANSI C-conforming const" >&5

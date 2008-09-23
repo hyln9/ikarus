@@ -319,6 +319,7 @@ generic_callback(ffi_cif *cif, void *ret, void **args, void *user_data){
 
 ikptr
 ikrt_prepare_callback(ikptr data, ikpcb* pcb){
+#if FFI_CLOSURES
   ikptr cifptr = ref(data, off_vector_data + 0 * wordsize);
   void* codeloc;
   ffi_closure* closure = ffi_closure_alloc(sizeof(ffi_closure), &codeloc);
@@ -346,6 +347,9 @@ ikrt_prepare_callback(ikptr data, ikpcb* pcb){
   ref(p, 0) = pointer_tag;
   ref(p, wordsize) = (ikptr) codeloc;
   return p+vector_tag;
+#else
+  return false_object
+#endif
 }
 
 int ho (int(*f)(int), int n) {
