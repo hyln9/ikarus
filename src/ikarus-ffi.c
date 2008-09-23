@@ -49,29 +49,28 @@ alloc_room_for_type(int n){
 
 extern long extract_num(ikptr x);
 
-static void*
-scheme_to_ffi_value_cast(int n, ikptr p) {
-  void* r = alloc_room_for_type(n);
+static void
+scheme_to_ffi_value_cast(int n, ikptr p, void* r) {
   switch (n & 0xF) {
-    case  1: { free(r);  return NULL; }
+    case  1: {  return; }
     case  2: // ffi_type_uint8;
     case  3:
-     { *((char*)r) = extract_num(p); return r; }
+     { *((char*)r) = extract_num(p); return; }
     case  4: // ffi_type_uint16;
     case  5: 
-     { *((short*)r) = extract_num(p); return r; }
+     { *((short*)r) = extract_num(p); return; }
     case  6: //  ffi_type_uint32;
     case  7: 
-     { *((int*)r) = extract_num(p); return r; }
+     { *((int*)r) = extract_num(p); return; }
     case  8: // ffi_type_uint64;
     case  9: 
-     { *((long*)r) = extract_num(p); return r; }
+     { *((long*)r) = extract_num(p); return; }
     case 10: //return &ffi_type_float;
-     { *((float*)r) = flonum_data(p); return r; }
+     { *((float*)r) = flonum_data(p); return; }
     case 11: //return &ffi_type_double;
-     { *((double*)r) = flonum_data(p); return r; }
+     { *((double*)r) = flonum_data(p); return; }
     case 12: //return &ffi_type_pointer;
-     { *((void**)r) = (void*)ref(p, off_pointer_data); return r; }
+     { *((void**)r) = (void*)ref(p, off_pointer_data); return; }
     default: 
       fprintf(stderr, "INVALID ARG %d", n);
       exit(-1);
@@ -269,10 +268,12 @@ ikrt_ffi_call(ikptr data, ikptr argsvec, ikpcb* pcb)  {
   for(i=0; i<n; i++){
     ikptr t = ref(typevec, off_vector_data + i * wordsize);
     ikptr v = ref(argsvec, off_vector_data + i * wordsize);
-    avalues[i] = scheme_to_ffi_value_cast(unfix(t), v);
+    void* p = alloc_room_for_type(unfix(t));
+    avalues[i] = p;
+    scheme_to_ffi_value_cast(unfix(t), v, p);
   }
   avalues[n] = NULL;
-  void* rvalue = alloc_room_for_type(unfix(rtype));;
+  void* rvalue = alloc_room_for_type(unfix(rtype));
   ffi_call(cif, fn, rvalue, avalues);
   ikptr val = ffi_to_scheme_value_cast(unfix(rtype), rvalue, pcb);
   for(i=0; i<n; i++){
@@ -332,18 +333,25 @@ generic_callback(ffi_cif *cif, void *ret, void **args, void *user_data){
   ikptr proc   = ref(data, off_vector_data + 1 * wordsize);
   ikptr argtypes_conv = ref(data, off_vector_data + 2 * wordsize);
   ikptr rtype_conv = ref(data, off_vector_data + 3 * wordsize);
+  ikptr n = unfix(ref(argtypes_conv, off_vector_length));
 
   ikpcb* pcb = the_pcb;
   ikptr code_entry = ref(proc, off_closure_code);
   ikptr code_ptr = code_entry - off_code_data;
 
   pcb->frame_pointer = pcb->frame_base;
-  ref(pcb->frame_pointer, -2*wordsize) = fix(*((int*)args[0]));
-  ikptr rv = ik_exec_code(pcb, code_ptr, fix(-1), proc); 
+  int i;
+  for(i = 0; i < n; i++){
+    ikptr argt = ref(argtypes_conv, off_vector_data + i*wordsize);
+    void* argp = args[i];
+    ref(pcb->frame_pointer, -2*wordsize - i*wordsize) = 
+      ffi_to_scheme_value_cast(unfix(argt), argp, pcb);
+  }
+  ikptr rv = ik_exec_code(pcb, code_ptr, fix(-n), proc); 
 #ifdef DEBUG_FFI
   fprintf(stderr, "and back with rv=0x%016lx!\n", rv);
 #endif
-  *((ikptr*)ret) = unfix(rv);
+  scheme_to_ffi_value_cast(unfix(rtype_conv), rv, ret);
   return;
 }
 
@@ -398,6 +406,55 @@ int ho2 (ikptr fptr, ikptr nptr) {
  // fprintf(stderr, "GOT N0\n");
   return n0 + f(n);
 }
+
+
+int test_I_I (int(*f)(int), int n0) {
+  return f(n0);
+}
+
+int test_I_II (int(*f)(int,int), int n0, int n1) {
+  return f(n0,n1);
+}
+
+int test_I_III (int(*f)(int,int,int), int n0, int n1, int n2) {
+  return f(n0,n1,n2);
+}
+
+int add_I_I(int n0) {
+  return n0;
+}
+int add_I_II(int n0, int n1) {
+  return n0+n1;
+}
+int add_I_III(int n0, int n1, int n2) {
+  return n0+n1+n2;
+}
+
+
+
+
+double test_D_D (double(*f)(double), double n0) {
+  return f(n0);
+}
+
+double test_D_DD (double(*f)(double,double), double n0, double n1) {
+  return f(n0,n1);
+}
+
+double test_D_DDD (double(*f)(double,double,double), double n0, double n1, double n2) {
+  return f(n0,n1,n2);
+}
+
+double add_D_D(double n0) {
+  return n0;
+}
+double add_D_DD(double n0, double n1) {
+  return n0+n1;
+}
+double add_D_DDD(double n0, double n1, double n2) {
+  return n0+n1+n2;
+}
+
 
 
 
