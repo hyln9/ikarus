@@ -30,6 +30,9 @@ ikptr ik_exec_code(ikpcb* pcb, ikptr code_ptr, ikptr argcount, ikptr cp){
   ikptr next_k =  pcb->next_k;
   while(next_k){
     cont* k = (cont*)(long)(next_k - vector_tag);
+    if (k->tag == system_continuation_tag) {
+      break;
+    }
     ikptr top = k->top;
     ikptr rp = ref(top, 0);
     long int framesize = (long int) ref(rp, disp_frame_size);

@@ -211,10 +211,12 @@ ikptr
 ikrt_call_back(ikptr proc, ikpcb* pcb) {
   ikrt_seal_scheme_stack(pcb);
 
-  ikptr old_k = pcb->next_k;
-  pcb->next_k = 0;
+  ikptr sk = ik_unsafe_alloc(pcb, system_continuation_size);
+  ref(sk, 0) = system_continuation_tag;
+  ref(sk, disp_system_continuation_top) = pcb->system_stack;
+  ref(sk, disp_system_continuation_next) = pcb->next_k;
+  pcb->next_k = sk + vector_tag;
   ikptr entry_point = ref(proc, off_closure_code);
-  ikptr system_stack = pcb->system_stack;
 #ifdef DEBUG_FFI
   fprintf(stderr, "system_stack = 0x%016lx\n", pcb->system_stack);
 #endif
@@ -227,12 +229,18 @@ ikrt_call_back(ikptr proc, ikpcb* pcb) {
 #ifdef DEBUG_FFI
   fprintf(stderr, "rv=0x%016lx\n", rv);
 #endif
-  pcb->next_k = old_k;
+  sk = pcb->next_k - vector_tag;
+  if (ref(sk, 0) != system_continuation_tag) {
+    fprintf(stderr, "ikarus internal error: invalid system cont\n");
+    exit(-1);
+  }
+  pcb->next_k = ref(sk, disp_system_continuation_next);
+  ref(sk, disp_system_continuation_next) = pcb->next_k;
+  pcb->system_stack = ref(sk, disp_system_continuation_top);
   pcb->frame_pointer = pcb->frame_base - wordsize;
 #ifdef DEBUG_FFI
   fprintf(stderr, "rp=0x%016lx\n", ref(pcb->frame_pointer, 0));
 #endif
-  pcb->system_stack = system_stack;
   return rv;
 }
 
@@ -242,9 +250,12 @@ ikptr
 ikrt_ffi_call(ikptr data, ikptr argsvec, ikpcb* pcb)  {
 
   ikrt_seal_scheme_stack(pcb);
-  ikptr old_k = pcb->next_k;
-  pcb->next_k = 0;
-  ikptr system_stack = pcb->system_stack;
+  ikptr sk = ik_unsafe_alloc(pcb, system_continuation_size);
+  ref(sk, 0) = system_continuation_tag;
+  ref(sk, disp_system_continuation_top) = pcb->system_stack;
+  ref(sk, disp_system_continuation_next) = pcb->next_k;
+  pcb->next_k = sk + vector_tag;
+
 
   ikptr cifptr  = ref(data, off_vector_data + 0 * wordsize);
   ikptr funptr  = ref(data, off_vector_data + 1 * wordsize);
@@ -272,9 +283,17 @@ ikrt_ffi_call(ikptr data, ikptr argsvec, ikpcb* pcb)  {
 #endif
   free(avalues);
   free(rvalue);
+
   pcb->frame_pointer = pcb->frame_base - wordsize;
-  pcb->next_k = old_k;
-  pcb->system_stack = system_stack;
+
+  sk = pcb->next_k - vector_tag;
+  if (ref(sk, 0) != system_continuation_tag) {
+    fprintf(stderr, "ikarus internal error: invalid system cont\n");
+    exit(-1);
+  }
+  pcb->next_k = ref(sk, disp_system_continuation_next);
+  pcb->system_stack = ref(sk, disp_system_continuation_top);
+
   return val;
 }
 
@@ -315,28 +334,15 @@ generic_callback(ffi_cif *cif, void *ret, void **args, void *user_data){
   ikptr rtype_conv = ref(data, off_vector_data + 3 * wordsize);
 
   ikpcb* pcb = the_pcb;
-  ikptr old_system_stack = pcb->system_stack; /* preserve */
-  ikptr old_next_k = pcb->next_k;             /* preserve */
-  pcb->next_k = 0;
   ikptr code_entry = ref(proc, off_closure_code);
   ikptr code_ptr = code_entry - off_code_data;
-  ikptr frame_pointer = pcb->frame_pointer;
-  ikptr frame_base = pcb->frame_base;
-  /*
-  if ((frame_base - wordsize) != frame_pointer) {
-    fprintf(stderr, "ikarus internal error: INVALID FRAME LAYOUT 0x%016lx .. 0x%016lx\n", 
-        frame_base, frame_pointer);
-    exit(-1);
-  }
-  */
+
   pcb->frame_pointer = pcb->frame_base;
   ref(pcb->frame_pointer, -2*wordsize) = fix(*((int*)args[0]));
   ikptr rv = ik_exec_code(pcb, code_ptr, fix(-1), proc); 
 #ifdef DEBUG_FFI
   fprintf(stderr, "and back with rv=0x%016lx!\n", rv);
 #endif
-  pcb->system_stack = old_system_stack;
-  pcb->next_k = old_next_k;
   *((ikptr*)ret) = unfix(rv);
   return;
 }

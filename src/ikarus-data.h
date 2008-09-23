@@ -355,6 +355,12 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 #define disp_continuation_next  (3 * wordsize)
 #define continuation_size       (4 * wordsize)
 
+#define system_continuation_tag         ((ikptr) 0x11F)
+#define disp_system_continuation_top     (1 * wordsize)
+#define disp_system_continuation_next    (2 * wordsize)
+#define disp_system_continuation_unused  (3 * wordsize)
+#define system_continuation_size         (4 * wordsize)
+
 #define off_continuation_top   (disp_continuation_top  - vector_tag) 
 #define off_continuation_size  (disp_continuation_size - vector_tag)
 #define off_continuation_next  (disp_continuation_next - vector_tag)

@@ -10,11 +10,17 @@
 (define foradd1 
   ((make-callback 'sint32 '(sint32)) 
      (trace-lambda add1 (n) 
+       (printf "collecting ...\n")
+       (collect)
+       (printf "collecting done\n")
        (add1 n))))
 
 (define foradd1^
   ((make-callback 'sint32 '(sint32))
      (lambda (n) 
+       (printf "collecting ...\n")
+       (collect)
+       (printf "collecting done\n")
        (add1 n))))
 
 (define-syntax assert^

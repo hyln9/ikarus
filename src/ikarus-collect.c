@@ -329,6 +329,7 @@ static ikptr add_object_proc(gc_t* gc, ikptr x);
 #endif
 
 static void collect_stack(gc_t*, ikptr top, ikptr base);
+static void collect_locatives(gc_t*, callback_locative*);
 static void collect_loop(gc_t*);
 static void fix_weak_pointers(gc_t*);
 static void gc_add_tconcs(gc_t*);
@@ -419,6 +420,7 @@ ik_collect(unsigned long int mem_req, ikpcb* pcb){
   scan_dirty_pages(&gc);
 
   collect_stack(&gc, pcb->frame_pointer, pcb->frame_base - wordsize);
+  collect_locatives(&gc, pcb->callbacks);
   pcb->next_k = add_object(&gc, pcb->next_k, "next_k"); 
   pcb->symbol_table = add_object(&gc, pcb->symbol_table, "symbol_table"); 
   pcb->gensym_table = add_object(&gc, pcb->gensym_table, "gensym_table"); 
@@ -790,6 +792,13 @@ add_code_entry(gc_t* gc, ikptr entry){
   }
 }
 
+static void 
+collect_locatives(gc_t* gc, callback_locative* loc) {
+  while(loc) {
+    loc->data = add_object(gc, loc->data, "locative");
+    loc = loc->next;
+  }
+}
 
 #define DEBUG_STACK 0
 
@@ -1156,6 +1165,18 @@ add_object_proc(gc_t* gc, ikptr x) {
 #if accounting
       continuation_count++;
 #endif
+      return y;
+    }
+    else if(fst == system_continuation_tag) {
+      ikptr y = gc_alloc_new_data(system_continuation_size, gc) + vector_tag;
+      ikptr top = ref(x, disp_system_continuation_top - vector_tag);
+      ikptr next = ref(x, disp_system_continuation_next - vector_tag);
+      ref(x, -vector_tag) = forward_ptr;
+      ref(x, wordsize-vector_tag) = y;
+      ref(y, -vector_tag) = fst;
+      ref(y, disp_system_continuation_top - vector_tag) = top;
+      ref(y, disp_system_continuation_next - vector_tag) =
+        add_object(gc, next, "next_k");
       return y;
     }
     else if(tagof(fst) == pair_tag){
