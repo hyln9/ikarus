@@ -795,16 +795,17 @@ add_code_entry(gc_t* gc, ikptr entry){
 
 static void collect_stack(gc_t* gc, ikptr top, ikptr end){
   if(DEBUG_STACK){
-    fprintf(stderr, "collecting stack from 0x%016lx .. 0x%016lx\n", 
-        (long) top, (long) end);
+    fprintf(stderr, "collecting stack (size=%ld) from 0x%016lx .. 0x%016lx\n", 
+        (long)end - (long)top, (long) top, (long) end);
   }
   while(top < end){
     if(DEBUG_STACK){
-      fprintf(stderr, "collecting frame at 0x%016lx: ", (long) top);
+      fprintf(stderr, "collecting frame at 0x%016lx: \n", (long) top);
     }
     ikptr rp = ref(top, 0);
     long int rp_offset = unfix(ref(rp, disp_frame_offset));
     if(DEBUG_STACK){
+      fprintf(stderr, "rp=0x%016lx\n", rp);
       fprintf(stderr, "rp_offset=%ld\n", rp_offset);
     }
     if(rp_offset <= 0){
