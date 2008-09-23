@@ -160,9 +160,7 @@
             (unless (= (vector-length argsvec) 
                        (vector-length argtypes-n))
               (error 'ffi "args mismatch" argtypes args))
-            (call/cc 
-              (lambda (k)
-                (foreign-call "ikrt_ffi_call" data argsvec))))))))
+            (foreign-call "ikrt_ffi_call" data argsvec))))))
 
   (define (make-callback rtype argtypes)
     (let-values ([(cif argtypes-n rtype-n)

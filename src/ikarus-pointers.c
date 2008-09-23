@@ -235,6 +235,7 @@ extract_num(ikptr x) {
   if (is_fixnum(x)) {
     return unfix(x);
   } else {
+    if (x == void_object) { return 0; }
     if(bnfst_negative(ref(x, -vector_tag))){
       return (long)(-ref(x, wordsize-vector_tag));
     } else {
