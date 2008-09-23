@@ -102,20 +102,6 @@
     (lambda (state)
       (format #t "visibility callback ~s ~%" state)))
 
-(define (f32vector . lst)
-  (define-syntax f32set!
-    (syntax-rules ()
-      ((_ bv n value)
-       (bytevector-ieee-single-native-set! bv (* n 4) value))))
-  (let ((bv (make-bytevector (* (length lst) 4))))
-    (let loop ((i 0) (lst lst))
-      (cond ((null? lst) 
-             (u8-list->bytevector (rnrs:reverse (bytevector->u8-list bv))))
-        (else
-         (f32set! bv i (car lst))
-         (loop (+ i 1) (cdr lst)))))))
-
-#;
   (define f32vector
     (lambda lst
       (define-syntax f32set!

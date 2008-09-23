@@ -23,8 +23,7 @@
        (bytevector-ieee-single-native-set! bv (* n 4) value))))
   (let ((bv (make-bytevector (* (length lst) 4))))
     (let loop ((i 0) (lst lst))
-      (cond ((null? lst) 
-             (u8-list->bytevector (reverse (bytevector->u8-list bv))))
+      (cond ((null? lst) bv)
         (else
          (f32set! bv i (car lst))
          (loop (+ i 1) (cdr lst)))))))

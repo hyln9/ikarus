@@ -173,22 +173,12 @@
   (define (bytevector->blob bv)
     (let ([n (bytevector-length bv)])
       (let ([p (malloc n)])
-        (let f ([i 0] [j (- n 1)])
-          (unless (= i n)
-            (pointer-set-char p i (bytevector-u8-ref bv j))
-            (f (+ i 1) (- j 1))))
-        p)))
-
-
-  #;
-  (define (bytevector->blob bv)
-    (let ([n (bytevector-length bv)])
-      (let ([p (malloc n)])
         (let f ([i 0])
           (unless (= i n)
             (pointer-set-char p i (bytevector-u8-ref bv i))
             (f (+ i 1))))
         p)))
+
 
 
   (define (object->long x)
