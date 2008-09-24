@@ -88,17 +88,21 @@
        (check-byte* who (string->utf8 x))]
       [else (die who "not a char*" x)]))
       
+  (define pointer-size
+    (cond
+      [(<= (fixnum-width) 32) 4]
+      [else                   8]))
 
   (define (check-char** who x)
     (cond
       [(and (vector? x) (vector-andmap string? x))
        (let ([n (vector-length x)])
-         (let ([p (malloc (* n 4))])
+         (let ([p (malloc (* n pointer-size))])
            (let f ([i 0])
              (cond
                [(= i n) p]
                [else
-                (pointer-set-int p (* i 4)
+                (pointer-set-int p (* i pointer-size)
                   (pointer->integer (check-char* who (vector-ref x i))))
                 (f (+ i 1))]))))]
       [else (die who "not a char**" x)]))
@@ -233,7 +237,7 @@
       (syntax-case x ()
         [(_ function-name argnum argtype argval)
          (begin
-           (printf "syntax ~s\n" (syntax->datum x))
+           ;(printf "syntax ~s\n" (syntax->datum x))
            #'(void))])))
 
 )
