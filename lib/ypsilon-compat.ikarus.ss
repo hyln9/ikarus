@@ -17,7 +17,7 @@
 
   (define (ypsilon:format what str . args)
     (cond
-      [(eq? what #f) 
+      [(eq? what #t) 
        (apply printf str args)]
       [else 
        (apply format str args)]))
@@ -177,6 +177,31 @@
          (syntax-violation 'c-function "invalid argument type"
                            #'form #'arg-type)])))
 
+
+  (define (char*->string who x)
+    (define (strlen x)
+      (let f ([i 0])
+        (cond
+          [(= 0 (pointer-ref-uchar x i)) i]
+          [else (f (+ i 1))])))
+    (let ([n (strlen x)])
+      (let ([s (make-string n)])
+        (let f ([i 0])
+          (if (= i n) 
+              s
+              (begin
+                (string-set! s i (integer->char (pointer-ref-uchar x i)))
+                (f (+ i 1))))))))
+
+  (define-syntax convert-return
+    (lambda (x)
+      (syntax-case x (char*)
+        [(_ form foreign-name val char*)
+         #'(char*->string 'foreign-name val)]
+        [(_ form foreign-name val other) 
+         #'val])))
+
+
   (define-syntax convert-type
     (lambda (x)
       (define ls
@@ -230,7 +255,7 @@
              (lambda (t* ...)
                (let ([t* (convert-arg x foreign-name t* arg-type*)] ...)
                  (let ([v (callout t* ...)])
-                   v)))))])))
+                   (convert-return x foreign-name v return-type))))))])))
 
   (define-syntax c-argument
     (lambda (x)

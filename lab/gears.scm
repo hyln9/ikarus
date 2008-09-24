@@ -273,15 +273,11 @@
   
   (glEnable GL_NORMALIZE)
 
-  ;; glGetString dose not works correctly.
-  (if (string? (glGetString GL_RENDERER))
-      (begin
-    (newline)
-    (format #t "GL_RENDERER   = ~s~%" (glGetString GL_RENDERER))
-    (format #t "GL_VERSION    = ~s~%" (glGetString GL_VERSION))
-    (format #t "GL_VENDOR     = ~s~%" (glGetString GL_VENDOR))
-    (format #t "GL_EXTENSIONS = ~s~%" (glGetString GL_EXTENSIONS))
-    (newline)))
+  (format #t "GL_RENDERER   = ~s~%" (glGetString GL_RENDERER))
+  (format #t "GL_VERSION    = ~s~%" (glGetString GL_VERSION))
+  (format #t "GL_VENDOR     = ~s~%" (glGetString GL_VENDOR))
+  (format #t "GL_EXTENSIONS = ~s~%" (glGetString GL_EXTENSIONS))
+  (newline)
   ;;*** OpenGL END ***
   )
 
