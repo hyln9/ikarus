@@ -175,7 +175,7 @@
           glutLeaveGameMode
           glutGameModeGet)
 
-  (import (rnrs) (core) (ffi))
+  (import (rnrs) (ypsilon-compat))
 
   (define libGLUT (cond (on-darwin  (load-shared-object "GLUT.framework/GLUT"))
                         (on-windows (load-shared-object "glut32.dll"))

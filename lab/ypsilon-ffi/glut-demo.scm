@@ -9,7 +9,8 @@
 ;;   Linux:   libGL.so.1 libglut.so.3    
 
 
-(import (core) (gl) (glut) 
+(import (gl) (glut) 
+        (ypsilon-compat)
         (rename (except (rnrs) angle display) 
                 (reverse rnrs:reverse))
         (rnrs programs))

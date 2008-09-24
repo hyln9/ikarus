@@ -1236,7 +1236,7 @@
           glMultiTexCoord4sARB
           glMultiTexCoord4svARB)
 
-  (import (rnrs) (core) (ffi))
+  (import (rnrs) (ypsilon-compat))
 
   (define libGL (cond (on-darwin  (load-shared-object "OpenGL.framework/OpenGL"))
                       (on-windows (load-shared-object "opengl32.dll"))

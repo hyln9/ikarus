@@ -1,4 +1,4 @@
-#!/usr/bin/env ypsilon
+#!/usr/bin/env ikarus --r6rs-script
 ;;
 ;; 3-D gear wheels.  This program is in the public domain.
 ;;
@@ -10,7 +10,7 @@
 ;; Port to Scheme/Gauche(GLUT) by YOKOTA Hiroshi
 ;; Port to Ypsilon by YOKOTA Hiroshi
 
-(import (core) (rnrs) (rnrs programs) (gl) (glut))
+(import (ypsilon-compat) (rnrs) (rnrs programs) (gl) (glut))
 
 ;; These constant values are not defined in Ypsilon yet
 (define pi 3.14159265358979323846)
