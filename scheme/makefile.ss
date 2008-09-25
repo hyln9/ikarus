@@ -1478,6 +1478,7 @@
     [pointer-set-long   $for]
     [make-ffi           $for]
     [make-callback      $for]
+    [host-info            i]
 
   ))
 

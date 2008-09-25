@@ -19,9 +19,11 @@
 ;;; libraries within the compiler itself.
 
 (library (ikarus startup)
-  (export print-greeting init-library-path)
-  (import (ikarus))
+  (export print-greeting init-library-path host-info)
+  (import (except (ikarus) host-info))
   (include "ikarus.config.ss")
+
+  (define (host-info) target)
   
   (define (print-greeting)
     (printf "Ikarus Scheme version ~a\n" 

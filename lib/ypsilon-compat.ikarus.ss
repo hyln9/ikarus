@@ -25,9 +25,7 @@
 
   (define (architecture-feature what)
     (case what
-      [(operating-system) "darwin"]
-      [(alignof:int)             4]
-      [(sizeof:int)              4]
+      [(operating-system) (host-info)]
       [else (error 'architecture-feature "invalid args" what)]))
 
   (define (string-contains text s)
