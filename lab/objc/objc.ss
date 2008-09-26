@@ -4,6 +4,7 @@
     define-framework
     define-class
     define-object
+    string->char*
     $)
   (import 
     (ikarus)
@@ -65,8 +66,35 @@
            (bytevector-u8-set! bv i (pointer-ref-uchar x i))
            (f (+ i 1))])))))
 
+(define (bv->char* x)
+  (let ([n (bytevector-length x)])
+    (let ([p (malloc (+ n 1))])
+      (pointer-set-char p n 0)
+      (let f ([i 0])
+        (cond
+          [(= i n) p]
+          [else
+           (pointer-set-char p i (bytevector-s8-ref x i))
+           (f (+ i 1))])))))
+
+(define (bv->u8* x)
+  (let ([n (bytevector-length x)])
+    (let ([p (malloc n)])
+      (let f ([i 0])
+        (cond
+          [(= i n) p]
+          [else
+           (pointer-set-char p i (bytevector-s8-ref x i))
+           (f (+ i 1))])))))
+
+
 (define (char*->string x)
   (utf8->string (char*->bv x)))
+
+(define (string->char* x)
+  (let ([bv (string->utf8 x)])
+    (bv->char* bv)))
+
 
 (define-syntax check
   (syntax-rules ()
@@ -293,6 +321,7 @@
              [(#\f) (values 'float (+ i 1))]
              [(#\i) (values 'int (+ i 1))]
              [(#\I) (values 'uint (+ i 1))]
+             [(#\S) (values 'ushort (+ i 1))]
              [(#\c) (values 'char (+ i 1))]
              [(#\{) ;;; struct
               (let ([i (scan (+ i 1) #\=)])
@@ -307,7 +336,12 @@
                                      (let-values ([(i ls) (f i)])
                                        (values i (cons x ls)))])))])
                   (values (list->vector ls) i)))]
-             [(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+             [(#\*) (values 'char* (+ i 1))]
+             [(#\^) 
+              (let-values ([(t i) (parse (+ i 1))])
+                (values (cons 'pointer t) i))]
+             [(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9 
+               #\r)
               (values 'skip (+ i 1))]
              [else (error who "invalid char" c str)]))]))
     (define (cons/skip x y)
@@ -324,6 +358,7 @@
   (cond
     [(vector? x) 
      (vector-map objc-type->ikarus-type x)]
+    [(pair? x) 'pointer]
     [else
      (case x 
        [(selector) 'pointer]
@@ -333,6 +368,7 @@
        [(uint)     'uint32]
        [(int)      'sint32]
        [(char)     'sint8]
+       [(char*)    'pointer]
        [else (error 'objc-type->ikarus-type "invalid type" x)])]))
 
 
@@ -352,6 +388,14 @@
           (error 'convert-outgoing "length mismatch" x t))
         (vector-map convert-outgoing t x)]
        [else (error 'convert-output "not a vector" x)])]
+    [(and (pair? t) (eq? (car t) 'pointer))
+     (case (cdr t)
+       [(ushort) 
+        (cond
+          [(string? x) 
+           (bv->u8* (string->utf16 x 'little))]
+          [else (error 'convert-output "cannot convert to ushort*" x)])]
+       [else (error 'convert-output "dunno how to convert" t)])]
     [else
      (case t
        [(selector)
@@ -374,6 +418,10 @@
           [(or (fixnum? x) (bignum? x)) x]
           [(boolean? x) (if x 1 0)]
           [else (error 'convert-output "cannot convert to int" x)])]
+       [(char*) 
+        (cond
+          [(string? x) (string->char* x)]
+          [else (error 'convert-output "cannot convert to char*" x)])]
        [else (error 'convert-outgoing "invalid type" t)])]))
 
 
