@@ -93,8 +93,11 @@
 (check = (test_D_DDD S_add_D_DDD 12.0 13.0 14.0) (+ 12.0 13.0 14.0))
 
 
+(define RectArea 
+  ((make-ffi 'float '(#(#(float float) #(float float))))
+   (dlsym self "test_area_F_R")))
 
-
+(check = (RectArea '#(#(0.0 0.0) #(10.0 10.0))) 100.0)
 
 
 

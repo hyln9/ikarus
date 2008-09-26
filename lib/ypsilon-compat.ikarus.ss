@@ -2,7 +2,7 @@
 (library (ypsilon-compat)
   (export on-windows on-darwin on-linux on-freebsd on-posix
           load-shared-object c-argument c-function 
-          microsecond usleep
+          microsecond usleep library-pointer
           (rename (ypsilon:format format)))
   (import 
     (ikarus system $foreign)
@@ -19,8 +19,9 @@
     (cond
       [(eq? what #t) 
        (apply printf str args)]
-      [else 
-       (apply format str args)]))
+      [(eq? what #f) 
+       (apply format str args)]
+      [else (error 'ypsion:format "invalid what" what)]))
 
 
   (define (architecture-feature what)
@@ -148,7 +149,10 @@
          (define (name* . args) (error 'name* "not implemented"))
          ...)]))
 
-  (todo check-void* )
+  (define (check-void* who x)
+    (cond
+      [(pointer? x) x]
+      [else (die who "not a void*" x)]))
 
   (define-syntax convert-arg
     (lambda (x)
@@ -235,7 +239,7 @@
     (unless (library? lib) (die who "not a library" lib))
     (or (dlsym (library-pointer lib) (symbol->string name))
       (error who 
-        (format #f "cannot find object ~a in library ~a" 
+        (format "cannot find object ~a in library ~a" 
                 name (library-name lib)))))
 
 

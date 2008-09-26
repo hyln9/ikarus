@@ -19,61 +19,121 @@ alloc(size_t n, int m) {
   return x;
 }
 
+static ffi_type* scheme_to_ffi_type_cast(ikptr nptr);
 
 static ffi_type* 
-scheme_to_ffi_type_cast(int n){
-  switch (n & 0xF) {
-    case  1: return &ffi_type_void;
-    case  2: return &ffi_type_uint8;
-    case  3: return &ffi_type_sint8;
-    case  4: return &ffi_type_uint16;
-    case  5: return &ffi_type_sint16;
-    case  6: return &ffi_type_uint32;
-    case  7: return &ffi_type_sint32;
-    case  8: return &ffi_type_uint64;
-    case  9: return &ffi_type_sint64;
-    case 10: return &ffi_type_float;
-    case 11: return &ffi_type_double;
-    case 12: return &ffi_type_pointer;
-    default: 
-      fprintf(stderr, "INVALID ARG %d", n);
-      exit(-1);
+scheme_to_ffi_record_type_cast(ikptr vec){
+  ikptr lenptr = ref(vec, -vector_tag);
+  if (! is_fixnum(lenptr)) {
+    fprintf(stderr, "NOT A VECTOR 0x%016lx\n", vec);
+    exit(-1);
+  }
+  long n = unfix(lenptr);
+  ffi_type* t = alloc(sizeof(ffi_type), 1);
+  ffi_type** ts = alloc(sizeof(ffi_type*), n+1);
+  t->size = 0;
+  t->alignment = 0;
+  t->type = FFI_TYPE_STRUCT;
+  t->elements = ts;
+  long i;
+  for(i=0; i<n; i++){
+    ts[i] = scheme_to_ffi_type_cast(ref(vec, off_vector_data + i*wordsize)); 
+  }
+  ts[n] = 0;
+  return t;
+}
+
+static ffi_type* 
+scheme_to_ffi_type_cast(ikptr nptr){
+  if (tagof(nptr) == vector_tag) {
+    return scheme_to_ffi_record_type_cast(nptr);
+  } else if (is_fixnum(nptr)) {
+    long n = unfix(nptr);
+    switch (n & 0xF) {
+      case  1: return &ffi_type_void;
+      case  2: return &ffi_type_uint8;
+      case  3: return &ffi_type_sint8;
+      case  4: return &ffi_type_uint16;
+      case  5: return &ffi_type_sint16;
+      case  6: return &ffi_type_uint32;
+      case  7: return &ffi_type_sint32;
+      case  8: return &ffi_type_uint64;
+      case  9: return &ffi_type_sint64;
+      case 10: return &ffi_type_float;
+      case 11: return &ffi_type_double;
+      case 12: return &ffi_type_pointer;
+      default: 
+        fprintf(stderr, "INVALID ARG %ld", n);
+        exit(-1);
+    }
+  } else {
+    fprintf(stderr, "INVALID ARG %ld", nptr);
+    exit(-1);
   }
 }
 
 static void* 
-alloc_room_for_type(int n){
-  ffi_type* t = scheme_to_ffi_type_cast(n);
+alloc_room_for_type(ffi_type* t){
   return alloc(t->size, 1);
 }
 
 extern long extract_num(ikptr x);
 
+static void scheme_to_ffi_value_cast(ffi_type*, ikptr, ikptr, void*);
+
 static void
-scheme_to_ffi_value_cast(int n, ikptr p, void* r) {
-  switch (n & 0xF) {
-    case  1: {  return; }
-    case  2: // ffi_type_uint8;
-    case  3:
-     { *((char*)r) = extract_num(p); return; }
-    case  4: // ffi_type_uint16;
-    case  5: 
-     { *((short*)r) = extract_num(p); return; }
-    case  6: //  ffi_type_uint32;
-    case  7: 
-     { *((int*)r) = extract_num(p); return; }
-    case  8: // ffi_type_uint64;
-    case  9: 
-     { *((long*)r) = extract_num(p); return; }
-    case 10: //return &ffi_type_float;
-     { *((float*)r) = flonum_data(p); return; }
-    case 11: //return &ffi_type_double;
-     { *((double*)r) = flonum_data(p); return; }
-    case 12: //return &ffi_type_pointer;
-     { *((void**)r) = (void*)ref(p, off_pointer_data); return; }
-    default: 
-      fprintf(stderr, "INVALID ARG %d", n);
-      exit(-1);
+scheme_to_ffi_record_value_cast(ffi_type* t, ikptr nptr, ikptr p, void* r) {
+  if (t->type != FFI_TYPE_STRUCT) {
+    fprintf(stderr, "not a struct type\n");
+    exit(-1);
+  }
+  ffi_type** ts = t->elements;
+  char* buf = r;
+  ikptr lenptr = ref(nptr, off_vector_length);
+  int n = unfix(lenptr);
+  int i;
+  for(i=0; i<n; i++) {
+    ffi_type* at = ts[i];
+    ikptr argt = ref(nptr, off_vector_data + i*wordsize);
+    ikptr arg = ref(p, off_vector_data + i*wordsize);
+    scheme_to_ffi_value_cast(at, argt, arg, buf);
+    buf += at->size;
+  }
+}
+
+static void
+scheme_to_ffi_value_cast(ffi_type* t, ikptr nptr, ikptr p, void* r) {
+  if (tagof(nptr) == vector_tag) {
+    scheme_to_ffi_record_value_cast(t, nptr, p, r);
+  } else if (is_fixnum(nptr)) {
+    long n = unfix(nptr);
+    switch (n & 0xF) {
+      case  1: {  return; }
+      case  2: // ffi_type_uint8;
+      case  3:
+       { *((char*)r) = extract_num(p); return; }
+      case  4: // ffi_type_uint16;
+      case  5: 
+       { *((short*)r) = extract_num(p); return; }
+      case  6: //  ffi_type_uint32;
+      case  7: 
+       { *((int*)r) = extract_num(p); return; }
+      case  8: // ffi_type_uint64;
+      case  9: 
+       { *((long*)r) = extract_num(p); return; }
+      case 10: //return &ffi_type_float;
+       { *((float*)r) = flonum_data(p); return; }
+      case 11: //return &ffi_type_double;
+       { *((double*)r) = flonum_data(p); return; }
+      case 12: //return &ffi_type_pointer;
+       { *((void**)r) = (void*)ref(p, off_pointer_data); return; }
+      default: 
+        fprintf(stderr, "INVALID ARG %ld", n);
+        exit(-1);
+    }
+  } else {
+    fprintf(stderr, "INVALID TYPE  0x%016lx\n", nptr);
+    exit(-1);
   }
 }
 
@@ -112,10 +172,10 @@ ikrt_ffi_prep_cif(ikptr rtptr, ikptr argstptr, ikpcb* pcb) {
   int i;
   for(i=0; i<nargs; i++){
     ikptr argt = ref(argstptr, off_vector_data + i*wordsize);
-    argtypes[i] = scheme_to_ffi_type_cast(unfix(argt));
+    argtypes[i] = scheme_to_ffi_type_cast(argt);
   }
   argtypes[nargs] = NULL;
-  ffi_type* rtype = scheme_to_ffi_type_cast(unfix(rtptr));
+  ffi_type* rtype = scheme_to_ffi_type_cast(rtptr);
   ffi_status s = ffi_prep_cif(cif, abi, nargs, rtype, argtypes);
   if (s == FFI_OK) {
     ikptr r = ik_safe_alloc(pcb, pointer_size);
@@ -266,14 +326,15 @@ ikrt_ffi_call(ikptr data, ikptr argsvec, ikpcb* pcb)  {
   void** avalues = alloc(sizeof(void*), n+1);
   int i;
   for(i=0; i<n; i++){
-    ikptr t = ref(typevec, off_vector_data + i * wordsize);
+    ffi_type* t = cif->arg_types[i];
+    ikptr at = ref(typevec, off_vector_data + i * wordsize);
     ikptr v = ref(argsvec, off_vector_data + i * wordsize);
-    void* p = alloc_room_for_type(unfix(t));
+    void* p = alloc_room_for_type(t);
     avalues[i] = p;
-    scheme_to_ffi_value_cast(unfix(t), v, p);
+    scheme_to_ffi_value_cast(t, at, v, p);
   }
   avalues[n] = NULL;
-  void* rvalue = alloc_room_for_type(unfix(rtype));
+  void* rvalue = alloc_room_for_type(cif->rtype);
   ffi_call(cif, fn, rvalue, avalues);
   ikptr val = ffi_to_scheme_value_cast(unfix(rtype), rvalue, pcb);
   for(i=0; i<n; i++){
@@ -351,7 +412,7 @@ generic_callback(ffi_cif *cif, void *ret, void **args, void *user_data){
 #ifdef DEBUG_FFI
   fprintf(stderr, "and back with rv=0x%016lx!\n", rv);
 #endif
-  scheme_to_ffi_value_cast(unfix(rtype_conv), rv, ret);
+  scheme_to_ffi_value_cast(cif->rtype, rtype_conv, rv, ret);
   return;
 }
 
@@ -432,6 +493,21 @@ int add_I_III(int n0, int n1, int n2) {
 
 
 
+struct Point{
+  float x;
+  float y;
+};
+
+struct Rect{
+  struct Point tl;
+  struct Point br;
+};
+
+float test_area_F_R(struct Rect r) {
+  float dx = r.br.x - r.tl.x;
+  float dy = r.br.y - r.tl.y;
+  return dx * dy;
+}
 
 double test_D_D (double(*f)(double), double n0) {
   return f(n0);

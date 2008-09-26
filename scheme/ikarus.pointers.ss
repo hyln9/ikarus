@@ -124,20 +124,23 @@
   (define (ffi-prep-cif rtype argtypes)
     (define who 'ffi-prep-cif)
     (define (convert x)
-      (case x 
-        [(void)       1]
-        [(uint8)      2]
-        [(sint8)      3]
-        [(uint16)     4]
-        [(sint16)     5]
-        [(uint32)     6]
-        [(sint32)     7]
-        [(uint64)     8]
-        [(sint64)     9]
-        [(float)     10]
-        [(double)    11]
-        [(pointer)   12]
-        [else (die who "invalid type" x)]))
+      (cond
+        [(vector? x) (vector-map convert x)]
+        [else
+         (case x 
+           [(void)       1]
+           [(uint8)      2]
+           [(sint8)      3]
+           [(uint16)     4]
+           [(sint16)     5]
+           [(uint32)     6]
+           [(sint32)     7]
+           [(uint64)     8]
+           [(sint64)     9]
+           [(float)     10]
+           [(double)    11]
+           [(pointer)   12]
+           [else (die who "invalid type" x)])]))
     (unless (list? argtypes)
       (die who "arg types is not a list" argtypes))
     (let ([argtypes-n (vector-map convert (list->vector argtypes))]
