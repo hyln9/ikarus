@@ -6,6 +6,11 @@
     define-object
     string->char*
     get-selector
+    get-class-list
+    get-class
+    class-methods
+    class-name
+    method-name
     $)
   (import 
     (ikarus)
@@ -124,10 +129,7 @@
 
 (define (method-name x)
   (check 'method-name method? x)
-  (string-append 
-    (selector-name (method-selector x))
-    "  "
-    (method-types x)))
+  (selector-name (method-selector x)))
 
 
 
@@ -377,7 +379,8 @@
 
 (define (convert-incoming t x)
   (case t
-    [(object) (make-object x)]
+    [(object) 
+     (if (nil? x) #f (make-object x))]
     [(char)   x]
     [(void)   (void)]
     [else (error 'convert-incoming "invalid type" t)]))
@@ -412,6 +415,7 @@
           [(lazy-object? x) 
            (pointer-ref (lazy-object-ptr x) 0)]
           [(class? x) (class-ptr x)]
+          [(not x)    (integer->pointer 0)]
           [else (error 'convert-output "cannot convert to object" x)])]
        [(float) 
         (cond

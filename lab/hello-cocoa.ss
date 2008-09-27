@@ -2,11 +2,6 @@
 
 (import (ikarus) (objc) (Cocoa) (Cocoa helpers))
 
-(define (nsstring x)
-  [$ [$ NSString alloc]
-     initWithCharactersNoCopy: x
-     length: (string-length x)
-     freeWhenDone: #t])
 
 (define pool [$ [$ NSAutoreleasePool alloc] init])
 
@@ -67,6 +62,7 @@
 
 [$ win setTitle: (nsstring "Hello Ikarus")]
 [$ win makeKeyAndOrderFront: win]
+;[$ win setAlphaValue: 0.5] ; cute
 
 [$ NSApp run]
 [$ pool release]

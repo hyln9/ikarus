@@ -1,6 +1,6 @@
 (library (Cocoa helpers)
-  (export make-app)
-  (import (ikarus) (ikarus system $foreign))
+  (export make-app nsstring)
+  (import (ikarus) (Cocoa) (objc) (ikarus system $foreign))
 
   (define (make-app)
     (define kProcessTransformToForegroundApplication 1)
@@ -19,6 +19,14 @@
       (transform-process-type p kProcessTransformToForegroundApplication)
       (set-front-process p)
       (free p)))
+
+
+  (define (nsstring x)
+    [$ [$ NSString alloc]
+       initWithCharactersNoCopy: x
+       length: (string-length x)
+       freeWhenDone: #t])
+
 )
 
 
