@@ -5,12 +5,12 @@
     define-class
     define-object
     string->char*
+    get-selector
     $)
   (import 
     (ikarus)
     (ikarus system $foreign)
-    (except (ypsilon-compat) format)
-    )
+    (except (ypsilon-compat) format))
 
 (define ptrsize 4)
 
@@ -79,13 +79,15 @@
 
 (define (bv->u8* x)
   (let ([n (bytevector-length x)])
-    (let ([p (malloc n)])
-      (let f ([i 0])
-        (cond
-          [(= i n) p]
-          [else
-           (pointer-set-char p i (bytevector-s8-ref x i))
-           (f (+ i 1))])))))
+    (if (= n 0)
+        (integer->pointer 0)
+        (let ([p (malloc n)])
+          (let f ([i 0])
+            (cond
+              [(= i n) p]
+              [else
+               (pointer-set-char p i (bytevector-s8-ref x i))
+               (f (+ i 1))]))))))
 
 
 (define (char*->string x)
@@ -301,7 +303,7 @@
       (error 'symbol->selector "undefined selector" x)))
 
 
-(define (make-signature str)
+(define (make-signature method-name str)
   (define who 'make-signature)
   (let ([n (string-length str)])
     (define (scan i c)
@@ -376,6 +378,7 @@
 (define (convert-incoming t x)
   (case t
     [(object) (make-object x)]
+    [(char)   x]
     [(void)   (void)]
     [else (error 'convert-incoming "invalid type" t)]))
 
@@ -401,6 +404,7 @@
        [(selector)
         (cond
           [(selector? x) (selector-ptr x)]
+          [(not x)       (integer->pointer 0)]
           [else (error 'convert-output "not a selector" x)])]
        [(object) 
         (cond
@@ -449,7 +453,7 @@
              [else (error 'send-message "not an object" x)])])
       (unless method
         (error 'send-message "undefined method" method-name))
-      (let ([sig (make-signature (method-types method))]
+      (let ([sig (make-signature method-name (method-types method))]
             [mptr (method-pointer method)])
         (call-with-sig sig mptr (cons* x selector args))))))
 

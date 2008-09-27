@@ -16,6 +16,8 @@
     (define-class NSWindow)
     (define-class NSApplication)
     (define-class NSString)
+    (define-class NSMenu)
+    (define-class NSMenuItem)
     (define-object NSApp Cocoa)
     
     (define NSBorderlessWindowMask         #b000000000)
@@ -48,5 +50,19 @@
     (define NSMacOSRomanStringEncoding 30)
     (define NSProprietaryStringEncoding 65536)  ;  /* Installation-specific encoding */
     
+    (define NSAlphaShiftKeyMask (sll 1 16))
+    (define NSShiftKeyMask (sll 1 17))
+    (define NSControlKeyMask (sll 1 18))
+    (define NSAlternateKeyMask (sll 1 19))
+    (define NSCommandKeyMask (sll 1 20))
+    (define NSNumericPadKeyMask (sll 1 21))
+    (define NSHelpKeyMask (sll 1 22))
+    (define NSFunctionKeyMask (sll 1 23))
+    (define NSDeviceIndependentModifierFlagsMask #xffff0000)
+
+
   ))
+
+
+
 

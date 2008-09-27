@@ -34,8 +34,9 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 subdir = lib
-DIST_COMMON = $(dist_libstreams_DATA) $(dist_pkglib_DATA) \
-	$(srcdir)/Makefile.am $(srcdir)/Makefile.in
+DIST_COMMON = $(dist_libCocoa_DATA) $(dist_libstreams_DATA) \
+	$(dist_pkglib_DATA) $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -51,11 +52,13 @@ am__vpath_adj = case $$p in \
     *) f=$$p;; \
   esac;
 am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
-am__installdirs = "$(DESTDIR)$(libstreamsdir)" \
-	"$(DESTDIR)$(pkglibdir)"
+am__installdirs = "$(DESTDIR)$(libCocoadir)" \
+	"$(DESTDIR)$(libstreamsdir)" "$(DESTDIR)$(pkglibdir)"
+dist_libCocoaDATA_INSTALL = $(INSTALL_DATA)
 dist_libstreamsDATA_INSTALL = $(INSTALL_DATA)
 dist_pkglibDATA_INSTALL = $(INSTALL_DATA)
-DATA = $(dist_libstreams_DATA) $(dist_pkglib_DATA)
+DATA = $(dist_libCocoa_DATA) $(dist_libstreams_DATA) \
+	$(dist_pkglib_DATA)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -160,8 +163,11 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 libstreamsdir = $(pkglibdir)/streams
 dist_libstreams_DATA = streams/primitive.ss streams/derived.ss
+libCocoadir = $(pkglibdir)/Cocoa
+dist_libCocoa_DATA = Cocoa/helpers.ss
 dist_pkglib_DATA = streams.ss match.ss pregexp.ss gl.ss glut.ss \
-                 ypsilon-compat.ikarus.ss ypsilon-compat.ypsilon.ss
+  ypsilon-compat.ikarus.ss ypsilon-compat.ypsilon.ss \
+  objc.ss Cocoa.ss 
 
 all: all-am
 
@@ -195,6 +201,23 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
+install-dist_libCocoaDATA: $(dist_libCocoa_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(libCocoadir)" || $(MKDIR_P) "$(DESTDIR)$(libCocoadir)"
+	@list='$(dist_libCocoa_DATA)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f=$(am__strip_dir) \
+	  echo " $(dist_libCocoaDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(libCocoadir)/$$f'"; \
+	  $(dist_libCocoaDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(libCocoadir)/$$f"; \
+	done
+
+uninstall-dist_libCocoaDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_libCocoa_DATA)'; for p in $$list; do \
+	  f=$(am__strip_dir) \
+	  echo " rm -f '$(DESTDIR)$(libCocoadir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(libCocoadir)/$$f"; \
+	done
 install-dist_libstreamsDATA: $(dist_libstreams_DATA)
 	@$(NORMAL_INSTALL)
 	test -z "$(libstreamsdir)" || $(MKDIR_P) "$(DESTDIR)$(libstreamsdir)"
@@ -266,7 +289,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(libstreamsdir)" "$(DESTDIR)$(pkglibdir)"; do \
+	for dir in "$(DESTDIR)$(libCocoadir)" "$(DESTDIR)$(libstreamsdir)" "$(DESTDIR)$(pkglibdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -311,7 +334,7 @@ info: info-am
 
 info-am:
 
-install-data-am: install-dist_libstreamsDATA
+install-data-am: install-dist_libCocoaDATA install-dist_libstreamsDATA
 
 install-dvi: install-dvi-am
 
@@ -345,21 +368,23 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-dist_libstreamsDATA uninstall-dist_pkglibDATA
+uninstall-am: uninstall-dist_libCocoaDATA \
+	uninstall-dist_libstreamsDATA uninstall-dist_pkglibDATA
 
 .MAKE: install-am install-strip
 
 .PHONY: all all-am check check-am clean clean-generic distclean \
 	distclean-generic distdir dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am \
-	install-dist_libstreamsDATA install-dist_pkglibDATA \
-	install-dvi install-dvi-am install-exec install-exec-am \
-	install-html install-html-am install-info install-info-am \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-generic pdf pdf-am ps ps-am uninstall \
-	uninstall-am uninstall-dist_libstreamsDATA \
+	install-dist_libCocoaDATA install-dist_libstreamsDATA \
+	install-dist_pkglibDATA install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-generic pdf \
+	pdf-am ps ps-am uninstall uninstall-am \
+	uninstall-dist_libCocoaDATA uninstall-dist_libstreamsDATA \
 	uninstall-dist_pkglibDATA
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
