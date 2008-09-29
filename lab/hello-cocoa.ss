@@ -2,6 +2,11 @@
 
 (import (ikarus) (objc) (Cocoa) (Cocoa helpers))
 
+(define-class NSTableView)
+(define-class NSTableColumn)
+(define-class NSColor)
+(define-class NSButton)
+(define-class NSImageView)
 
 (define pool [$ [$ NSAutoreleasePool alloc] init])
 
@@ -55,14 +60,33 @@
 
 (define win 
   [$ [$ NSWindow alloc]
-     initWithContentRect: '#(#(50 50) #(600 400))
+     initWithContentRect: '#(#(400 500) #(400 500))
      styleMask: style
      backing: backing
      defer: #f])
 
 [$ win setTitle: (nsstring "Hello Ikarus")]
+;[$ win setAlphaValue: 3/4] ; cute
+
+#; ; button test
+(let ([btn [$ [$ NSButton alloc] init]])
+  [$ btn setTitle: (nsstring "Quit")]
+  [$ btn setTarget: NSApp]
+  [$ btn setAction: (get-selector "terminate:")]
+  [$ win setContentView: btn])
+
+#;
+(let ([table [$ [$ NSTableView alloc] init]])
+  [$ table setBackgroundColor: [$ NSColor blueColor]]
+  (printf "~s\n" [$ table headerView])
+
+  (let ([col [$ [$ NSTableColumn alloc] init]])
+    [$ table addTableColumn: col]
+    [$ [$ col headerCell] setStringValue: (nsstring "header")])
+  [$ win setContentView: table]
+  [$ win setDelegate: table])
+
 [$ win makeKeyAndOrderFront: win]
-;[$ win setAlphaValue: 0.5] ; cute
 
 [$ NSApp run]
 [$ pool release]
