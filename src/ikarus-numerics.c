@@ -744,10 +744,10 @@ ikrt_bnbnminus(ikptr x, ikptr y, ikpcb* pcb){
       n1 = ylimbs; n2 = xlimbs; s1 = y; s2 = x;
     }
     pcb->root0 = &s1;
-    pcb->root0 = &s2;
+    pcb->root1 = &s2;
     ikptr res = ik_safe_alloc(pcb, align(disp_bignum_data + (n1+1)*wordsize));
     pcb->root0 = 0;
-    pcb->root0 = 0;
+    pcb->root1 = 0;
     mp_limb_t carry = 
       mpn_add((mp_limb_t*)(long)(res+disp_bignum_data),
               (mp_limb_t*)(long)(s1-vector_tag+disp_bignum_data),
@@ -799,10 +799,11 @@ ikrt_bnbnminus(ikptr x, ikptr y, ikpcb* pcb){
     }
     /* |s1| > |s2| */
     pcb->root0 = &s1;
-    pcb->root0 = &s2;
+    pcb->root1 = &s2;
     ikptr res = ik_safe_alloc(pcb, align(disp_bignum_data + n1 * wordsize));
+    bzero((void*)res+disp_bignum_data, n1*wordsize);
     pcb->root0 = 0;
-    pcb->root0 = 0;
+    pcb->root1 = 0;
     long int burrow = 
       mpn_sub((mp_limb_t*)(long)(res + disp_bignum_data),
               (mp_limb_t*)(long)(s1 - vector_tag + disp_bignum_data),
@@ -1785,10 +1786,10 @@ ikrt_bnfxdivrem(ikptr x, ikptr y, ikpcb* pcb){
     rem = fix(rv);
   }
   pcb->root0 = &quot;
-  pcb->root0 = &rem;
+  pcb->root1 = &rem;
   ikptr p = ik_safe_alloc(pcb, pair_size);
   pcb->root0 = 0;
-  pcb->root0 = 0;
+  pcb->root1 = 0;
   ref(p, disp_car) = quot;
   ref(p, disp_cdr) = rem;
   return p+pair_tag;
