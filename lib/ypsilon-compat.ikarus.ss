@@ -54,6 +54,9 @@
   (define-record-type library (fields name pointer))
 
   (define (load-shared-object libname) 
+    (unless (string? libname)
+      (error 'load-shared-object "library name must be a string"
+             libname))
     (make-library libname
       (or (dlopen libname)
           (error 'load-shared-object (dlerror) libname))))
@@ -184,7 +187,7 @@
     (define (strlen x)
       (let f ([i 0])
         (cond
-          [(= 0 (pointer-ref-uchar x i)) i]
+          [(= 0 (pointer-ref-unsigned-char x i)) i]
           [else (f (+ i 1))])))
     (let ([n (strlen x)])
       (let ([s (make-string n)])
@@ -192,7 +195,8 @@
           (if (= i n) 
               s
               (begin
-                (string-set! s i (integer->char (pointer-ref-uchar x i)))
+                (string-set! s i 
+                  (integer->char (pointer-ref-unsigned-char x i)))
                 (f (+ i 1))))))))
 
   (define-syntax convert-return
@@ -213,7 +217,7 @@
           [double  double]
           [void*   pointer]
           [byte*   pointer]
-          [int     sint32]))
+          [int     signed-int]))
       (define (valid x)
         (cond
           [(and (list? x) (= (length x) 3) (eq? (car x) 'c-callback))
@@ -250,7 +254,7 @@
          (with-syntax ([x x]
                        [(t* ...) (generate-temporaries #'(arg-type* ...))])
          #'(let ([callout 
-                   ((make-ffi 
+                   ((make-callout 
                       (convert-type return-type)
                       (list (convert-type arg-type*) ...))
                     (lookup-shared-object lib 'foreign-name))])

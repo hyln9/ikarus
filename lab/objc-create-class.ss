@@ -14,4 +14,13 @@
         1
         (* n [$ self fact: (sub1 n)]))))
 
+(class-add-class-method IKFact 'fact:ac: 'int '(class selector int int)
+  (trace-lambda fact (self sel n ac)
+    (if (zero? n)
+        ac
+        [$ self fact: (sub1 n) ac: (* n ac)])))
+
 (printf "(fact 5) = ~s\n" [$ IKFact fact: 5])
+
+(printf "(fact 5) = ~s\n" [$ IKFact fact: 5 ac: 1])
+

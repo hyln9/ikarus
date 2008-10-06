@@ -4,15 +4,15 @@
 
   (define (make-app)
     (define kProcessTransformToForegroundApplication 1)
-    (define self (dlopen #f))
+    (define self (dlopen))
     (define get-current-process
-      ((make-ffi 'void '(pointer))
+      ((make-callout 'void '(pointer))
        (dlsym self "GetCurrentProcess")))
     (define transform-process-type
-      ((make-ffi 'void '(pointer sint32)) 
+      ((make-callout 'void '(pointer signed-int)) 
        (dlsym self "TransformProcessType")))
     (define set-front-process
-      ((make-ffi 'void '(pointer)) 
+      ((make-callout 'void '(pointer)) 
        (dlsym self "SetFrontProcess")))
     (let ([p (malloc 16)])
       (get-current-process p)

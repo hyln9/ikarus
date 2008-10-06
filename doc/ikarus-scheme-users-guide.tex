@@ -2065,7 +2065,7 @@ displayed.
        no collections
        0 ms elapsed cpu time, including 0 ms collecting
        0 ms elapsed real time, including 0 ms collecting
-       56 bytes allocated
+       24 bytes allocated
    1
    2
    3
@@ -2075,9 +2075,685 @@ displayed.
        no collections
        0 ms elapsed cpu time, including 0 ms collecting
        0 ms elapsed real time, including 0 ms collecting
-       32 bytes allocated
+       0 bytes allocated
    12
 \end{verbatim}
+
+\chapter{\label{chapter:foreign}The \texttt{(ikarus foreign)} Library}
+
+This chapter describes the facilities through which Ikarus
+interfaces with the host operating system and other external
+libraries.  The facilities of the \texttt{(ikarus~foreign)}
+library give the Scheme program unrestricted access to the computer
+memory, allowing one to allocate, access, modify, and free memory as
+needed.  The facilities also allow the Scheme program to \emph{call
+out} to system procedures as well as allow the native procedures to
+\emph{call back} into Scheme.  
+
+This chapter is organized as follows: Section~\ref{sec:ffi-overview}
+gives an overview of the basic concepts such as shared libraries,
+external symbols, foreign data types, pointers, and procedures.
+Section~\ref{sec:ffi-memory} describes the primitives that
+\texttt{(ikarus~foreign)} provides for direct manipulation of
+memory.  Section~\ref{sec:ffi-procedures} deals with loading
+external libraries and calling out to native library procedures and
+calling back into Scheme.  To demonstrate the usefulness of the
+foreign facilities, Ikarus ships with two libraries that also serve
+as extended examples for using the system.
+Section~\ref{sec:ffi-opengl} describes The OpenGL library
+\texttt{(ikarus~opengl)} which allows the programmer to produce 2D
+and 3D computer graphics.  Section~\ref{sec:ffi-objc} describes the
+\texttt{(ikarus~objc)} which allows the programmer to access
+libraries and frameworks written in the Objective-C programming
+language and thus provides full access to the Mac OS X system
+(e.g.,~making graphical user interfaces with Cocoa and drawing
+graphics with Quartz all from Scheme).
+
+Ikarus version \texttt{0.0.4} is the first version of Ikarus to
+support the described foreign interfaces.
+\newpage
+
+\section{\label{sec:ffi-overview}Overview}
+
+In order to make full use of the computer, it is important for a
+programming environment (e.g., Ikarus Scheme) to facilitate access
+to the underlying architecture on which it runs.  The underlying
+architecture includes the API provided by the host operating system
+kernel (e.g., Linux), the system libraries (e.g., \texttt{libc}),
+and other site-installed libraries (e.g., \texttt{sqlite3}).
+Providing direct access to such API from within Scheme allows the
+programmer to write Scheme libraries that have few or no
+dependencies on external programs (such as \texttt{C} development
+toolchain).  When dealing with system libraries, the programmer
+must have a thorough understanding of many aspects of the targetted 
+system.  This section attempts to provide answers to many questions
+that are frequently encountered when interfacing to external
+libraries.
+
+
+\section{Memory management}
+
+Ikarus Scheme is a managed environment.  Like in many programming
+environments, Ikarus manages its own memory.  Scheme objects are
+allocated in a special memory region (the Scheme heap) and have
+type-specific object layout that allows the run time system to
+distinguish object types and allows the garbage collector to locate
+all potentially live objects and reclaim the memory of dead objects.
+Scheme objects are also \emph{opaque} in the sense that the data
+structures used to represent Scheme objects (e.g., pairs) are not
+exposed to the programmer, who can only interact with objects
+through an interface (e.g., \texttt{car}, \texttt{cdr}).  
+
+Unmanaged environments, such as the operating system on which Ikarus
+runs, require that the programmer manages the allocation and
+deallocation of system resources herself.  Memory regions, file
+handles, external devices, the screen, etc., are all examples of
+resources whose management must be coordinated among the different
+parts of the system, and this becomes the responsibility of the
+programmer who is wiring the different subsystems together.
+
+Memory, from a system's point of view, is \emph{transparent}.  A
+pointer is an integer denoting an address of memory.  This memory
+address may contain a value that requires interpretation.  At the
+lowest-level, each byte of memory contains eight bits, each of which
+may be toggled on or off.  A level higher, contiguous sequences of
+bytes are grouped together and are interpreted as integers, floating
+point numbers, or pointers to other memory addresses.  These are the
+basic data types that are often interpreted atomically.  Yet a level
+higher, groups of basic types form data structures such as arrays,
+linked lists, trees, and so on.  Objects, as found in
+object-oriented programming languages, are at an even higher level
+of abstraction since they are treated as opaque references that
+retain state and know how to respond to messages.
+
+The procedures in the \texttt{(ikarus~foreign)} library are meant to
+provide a way to interface with the low level memory operations such
+as setting and getting bytes from specific locations in memory.
+Although they do not provide high-level operations, the basic
+procdures make implementing high-level operations (such as the
+Objective-C system presented in Chapter~\ref{chapter:objc})
+possible.  Programmers are encouraged to define their own
+abstractions that are most suitable for the specific target library
+rather than using the low-level operations directly.  This results
+in writing more robust and more easily maintainable libraries.  To
+put it more boldly: \textbf{Do not sprinkle your code with low-level
+memory operations}.
+
+
+\section{\label{sec:ffi-memory}Memory operations}
+
+\defun{malloc}{procedure}
+\texttt{(malloc n)}
+
+The \texttt{malloc} procedure allocates \texttt{n} bytes of memory
+and returns a pointer to the allocated memory.  The \texttt{malloc}
+Scheme procedure is implemented using the host-provided
+\texttt{malloc} system procedure (often found in \texttt{libc}).
+The number of bytes, \texttt{n}, must be a positive exact integer.  
+
+\begin{verbatim}
+   > (malloc 10)
+   #<pointer #x00300320>
+   > (malloc 10000)
+   #<pointer #x01800400>
+\end{verbatim}
+
+\newpage
+\defun{free}{procedure}
+\texttt{(free p)}
+
+The \texttt{free} procedure takes a pointer and frees the memory
+region at the given address.  The memory region must be allocated
+with \texttt{malloc}, \texttt{calloc}, or a similar system
+procedure.  Once freed, memory operations on the given address are
+invalid and may cause the system to crash at unpredictable times.
+Ikarus cannot check for such errors since the memory may be freed by
+procedures that are external to Ikarus.
+
+
+
+\defun{pointer->integer}{procedure}
+\texttt{(pointer->integer p)}
+
+The procedure \texttt{pointer->integer} converts the value of the
+pointer \texttt{p} to an exact integer value.  The result may be a
+fixnum or a bignum depending on the pointer.
+
+\defun{integer->pointer}{procedure}
+\texttt{(integer->pointer n)}
+
+The procedure \texttt{integer->pointer} converts the exact integer
+\texttt{n} to a pointer value.  The lower 32 bits (or 64 bits on
+64-bit systems) of the value of \texttt{n} are significant in
+computing the pointer value.  It is guaranteed that 
+\texttt{(integer->pointer (pointer->integer p))} points to the same
+address as \texttt{p}.
+
+\defun{pointer?}{procedure}
+\texttt{(pointer? x)}
+
+The predicate \texttt{pointer?} returns \texttt{\#t} if the value
+of \texttt{x} is a pointer, and returns \texttt{\#f} otherwise.
+
+\BoxedText{Note:}{The result of calling the procedures
+\texttt{eq?}, \texttt{eqv?} and \texttt{equal?} on pointer values is
+unspecified.}
+
+
+\newpage
+
+\defun{pointer-set-char}{procedure}
+\texttt{(pointer-set-char p i n)}
+
+The procedure \texttt{pointer-set-char} sets a single byte of memory
+located at offset \texttt{i} from the pointer \texttt{p} to the
+value of \texttt{n}.  The pointer \texttt{p} must be a valid
+pointer.  The index \texttt{i} must be an exact integer.  The value
+of \texttt{n} must be an exact integer.  Only the 8 lowermost
+bits of \texttt{n} are used in the operation and the remaining bits
+are ignored.
+
+\defun{pointer-set-short}{procedure}
+\texttt{(pointer-set-short p i n)}
+
+The procedure \texttt{pointer-set-char} sets two bytes located at
+offset \texttt{i} and \texttt{(+ i 1)} to the 16 lowermost bits of
+the exact integer \texttt{n}.  Note that the offset \texttt{i} is a
+byte offset; \texttt{pointer-set-short} does not perform any pointer
+arithmetic such as scaling the offset by the size of the memory
+location.
+
+
+\defun{pointer-set-int}{procedure}
+\texttt{(pointer-set-int p i n)}
+
+The procedure \texttt{pointer-set-int} sets four bytes located at
+offset \texttt{i} to \texttt{(+ i 3)} to the 32 lowermost bits of
+the exact integer \texttt{n}.  Like \texttt{pointer-set-short},
+\texttt{pointer-set-int} does not scale the offset \texttt{i}.
+
+
+\defun{pointer-set-long}{procedure}
+\texttt{(pointer-set-long p i n)}
+ 
+On 64-bit systems, the procedure \texttt{pointer-set-long} sets
+eight bytes located at offset \texttt{i} to \texttt{(+ i 7)} to the
+64 lowermost bits of the exact integer \texttt{n}.  Like the
+previous procedures, \texttt{pointer-set-long} does not scale the
+offset \texttt{i}.  On 32-bit systems, \texttt{pointer-set-long}
+performs the same task as \texttt{pointer-set-int}.
+
+
+\defun{pointer-set-float}{procedure}
+\texttt{(pointer-set-float p i fl)}
+
+The procedure \texttt{pointer-set-float} converts the Scheme
+floating point number \texttt{fl} (represented in Ikarus as an
+IEEE-754 double precision floating point number) to a float (an
+IEEE-754 single precision floating point number) and stores the
+result in the four bytes at offset \texttt{i} of the pointer
+\texttt{p}.
+
+\defun{pointer-set-double}{procedure}
+\texttt{(pointer-set-double p i fl)}
+
+The procedure \texttt{pointer-set-double} stores the double
+precision IEEE-754 floating point value of the Scheme flonum
+\texttt{fl} in the eight bytes at offset \texttt{i} of the pointer
+\texttt{p}.
+
+\defun{pointer-set-pointer}{procedure}
+\texttt{(pointer-set-pointer p i pv)}
+ 
+On 64-bit systems, the procedure \texttt{pointer-set-pointer} sets
+eight bytes located at offset \texttt{i} to \texttt{(+ i 7)} to the
+64-bit pointer value of \texttt{pv}.  On 32-bit systems, the
+procedure \texttt{pointer-set-pointer} sets four bytes located at
+offset \texttt{i} to \texttt{(+ i 3)} to the 32-bit pointer value of
+\texttt{pv}.  Like the previous procedures,
+\texttt{pointer-set-pointer} does not scale the offset \texttt{i}. 
+
+
+
+\defun{pointer-ref-signed-char}{procedure}
+\texttt{(pointer-ref-signed-char p i)}
+
+The procedure \texttt{pointer-ref-signed-char} loads a single byte located
+at offset \texttt{i} from the pointer \texttt{p} and returns an
+exact integer representing the sign-extended integer value of that
+byte. The resulting value is in the range of $[-128, 127]$ inclusive.
+
+\defun{pointer-ref-unsigned-char}{procedure}
+\texttt{(pointer-ref-unsigned-char p i)}
+
+The procedure \texttt{pointer-ref-unsigned-char} loads a single byte
+located at offset \texttt{i} from the pointer \texttt{p} and returns
+an exact integer representing the unsigned integer value of that
+byte.  The resulting value is in the range $[0, 255]$ inclusive.
+
+
+The following example shows the difference between
+\texttt{pointer-ref-signed-char} and
+\texttt{pointer-ref-unsigned-char}.
+
+
+\begin{verbatim}
+   > (let ([p (malloc 3)])
+       (pointer-set-char p 0 #b01111111)
+       (pointer-set-char p 1 #b10000000)
+       (pointer-set-char p 2 #b11111111)
+       (let ([result
+              (list (pointer-ref-signed-char p 0)
+                    (pointer-ref-signed-char p 1)
+                    (pointer-ref-signed-char p 2)
+                    (pointer-ref-unsigned-char p 0)
+                    (pointer-ref-unsigned-char p 1)
+                    (pointer-ref-unsigned-char p 2))])
+         (free p)
+         result))
+   (127 -128 -1 127 128 255)
+\end{verbatim}
+
+\defun{pointer-ref-signed-short}{procedure}
+\texttt{(pointer-ref-signed-short p i)}
+
+The procedure \texttt{pointer-ref-signed-short} loads two bytes
+located at offsets \texttt{i} and \texttt{(+ i 1)} from the pointer
+\texttt{p} and returns an exact integer representing the
+sign-extended
+integer value of the sequence.  The resulting value is in the range
+$[-32768, 32767]$ inclusive.
+
+\defun{pointer-ref-unsigned-short}{procedure}
+\texttt{(pointer-ref-unsigned-short p i)}
+
+The procedure \texttt{pointer-ref-unsigned-short} loads two bytes
+located at offsets \texttt{i} and \texttt{(+ i 1)} from the pointer
+\texttt{p} and returns an exact integer representing the unsigned
+integer value of the sequence.  The resulting value is in the range
+$[0, 65535]$ inclusive.
+
+\newpage
+\defun{pointer-ref-signed-int}{procedure}
+\texttt{(pointer-ref-signed-int p i)}
+
+The procedure \texttt{pointer-ref-signed-int} loads four bytes
+starting at offset \texttt{i} of pointer \texttt{p} and returns an
+exact integer in the range of $[-2^{31},2^{31}-1]$ inclusive.
+
+
+\defun{pointer-ref-unsigned-int}{procedure}
+\texttt{(pointer-ref-unsigned-int p i)}
+
+The procedure \texttt{pointer-ref-unsigned-int} loads four bytes
+starting at offset \texttt{i} of pointer \texttt{p} and returns an
+exact integer in the range of $[0,2^{32}-1]$ inclusive.
+
+
+\defun{pointer-ref-signed-long}{procedure}
+\texttt{(pointer-ref-signed-long p i)}
+
+On 64-bit systems, the procedure \texttt{pointer-ref-signed-long}
+loads eight bytes starting at offset \texttt{i} of pointer
+\texttt{p} and returns an integer in the range of
+$[-2^{63},2^{63}-1]$ inclusive.  On 32-bit systems, the procedure
+\texttt{pointer-ref-signed-long} performs the same task as
+\texttt{pointer-ref-signed-int}. 
+
+
+\defun{pointer-ref-unsigned-long}{procedure}
+\texttt{(pointer-ref-unsigned-long p i)}
+
+On 64-bit systems, the procedure \texttt{pointer-ref-unsigned-long}
+loads eight bytes starting at offset \texttt{i} of pointer
+\texttt{p} and returns an integer in the range of
+$[0,2^{64}-1]$ inclusive.  On 32-bit systems, the procedure
+\texttt{pointer-ref-unsigned-long} performs the same task as
+\texttt{pointer-ref-unsigned-int}. 
+
+
+\defun{pointer-ref-float}{procedure}
+\texttt{(pointer-ref-float p i)}
+
+The procedure \texttt{pointer-ref-float} returns the four-byte
+float (represented as IEEE-754 single precision floating point
+number) stored at offset \texttt{i} of the pointer \texttt{p}.
+The value is extended to an IEEE-754 double precision floating
+point number that Ikarus uses to represent inexact numbers.
+
+\defun{pointer-ref-double}{procedure}
+\texttt{(pointer-ref-double p i)}
+
+The procedure \texttt{pointer-ref-double} returns the eight-byte
+float (represented as IEEE-754 double precision floating point
+number) stored at offset \texttt{i} of the pointer \texttt{p}.
+
+
+\defun{pointer-ref-pointer}{procedure}
+\texttt{(pointer-ref-pointer p i)}
+
+The procedure \texttt{pointer-ref-pointer} returns the pointer
+stored at offset \texttt{i} from the pointer \texttt{p}.  The size
+of the pointer (also the number of bytes loaded) depends on the
+architecture: it is 4 bytes on 32-bit systems and 8 bytes on 64-bit
+systems.
+ 
+\section{\label{sec:foreign-objects}Accessing foreign objects from
+Scheme}
+
+
+\defun{dlopen}{procedure}
+\texttt{(dlopen)}\\
+\texttt{(dlopen library-name)}\\
+\texttt{(dlopen library-name lazy? global?)}
+
+The procedure \texttt{dlopen} takes a string \texttt{library-name}
+represented a system library and calls the system procedure
+\texttt{dlopen} which dynamically loads the given library into the
+running process.  The name of the library is system-dependent and
+must include the appropriate suffix (e.g., \texttt{*.so} on Linux,
+\texttt{*.dylib} on Darwin and \texttt{*.dll} on Cygwin).  The
+\texttt{library-name} may include a full path which identifies the
+location of the library, or may be just the name of the library in
+which case the system will lookup the library name using the
+\texttt{LD\_LIBRARY\_PATH} environment variable.
+
+The argument \texttt{lazy?} specifies how library dependencies are
+loaded.  If true, \texttt{dlopen} delays the resolution and loading
+of dependent libraries until they are actually used.  If false, all
+library dependencies are loaded before the call to \texttt{dlopen}
+returns.
+
+The argument \texttt{global?} specifies how the scope of the symbols
+exported from the loaded library.  If true, all exported symbols
+become part of the running image, and subsequent \texttt{dlsym}
+calls may not need to specify the library from which the symbol is
+loaded.  If false, the exported symbols are not global and the
+library pointer needs to be specified for \texttt{dlsym}.
+
+Calling \texttt{(dlopen library-name)} is equivalent to
+\texttt{(dlopen library-name \#f \#f)}.  Calling \texttt{(dlopen)}
+without arguments returns a pointer to the current process.
+
+If succesful, \texttt{dlopen} returns a pointer to the external
+library which can be used subsequently by \texttt{dlsym} and
+\texttt{dlclose}.  If the library cannot be loaded, \texttt{dlopen}
+returns \texttt{\#f} and the procedure \texttt{dlerror} can be used
+to obtain the cause of the failure.
+
+Consult the \texttt{dlopen(3)} page in your system manual for
+further details.
+
+\defun{dlclose}{procedure}
+\texttt{(dlclose library-pointer)}
+
+The procedure \texttt{dlclose} is a wrapped around the system
+procedure with the same name.  It receives a library pointer
+(e.g.,~one obtained from \texttt{dlopen}) and releases the resources
+loaded from that library.  Closing a library renders all symbols and
+static data structures that the library exports invalid and the
+program may crash or corrupt its memory if such symbols are used
+after a library is closed.
+
+Most system implementations of dynamic loading  employ reference
+counting for \texttt{dlopen} and \texttt{dlclose} in that library
+resources are not freed until the number of calls to
+\texttt{dlclose} matches the number of calls to \texttt{dlopen}.
+
+The procedure \texttt{dlclose} returns a boolean value indicating
+whether the success status of the operation.  If \texttt{dlclose}
+returns \texttt{\#f}, the procedure \texttt{dlerror} can be used to
+obtain the cause of the error.
+
+Consult the \texttt{dlclose(3)} page in your system manual for
+further details.
+
+\defun{dlerror}{procedure}
+\texttt{(dlerror)}
+
+If any of the dynamic loading operations (i.e., \texttt{dlopen},
+\texttt{dlclose}, \texttt{dlsym}) fails, the cause of the error can
+be obtained by calling \texttt{dlerror} which returns a string
+describing the error.  The procedure \texttt{dlerror} returns
+\texttt{\#f} if there was no dynamic loading error.
+
+Consult the \texttt{dlerror(3)} page in your system manual for
+further details.
+
+\defun{dlsym}{procedure}
+\texttt{(dlsym library-pointer string)}
+
+The procedure \texttt{dlsym} takes a library pointer (e.g., one
+obtained by a call to \texttt{dlopen}) and a string representing the
+name of a symbol that the library exports and returns a pointer to
+the location of that symbol in memory.  If \texttt{dlsym} fails, it
+returns \texttt{\#f} and the cause of the error can be obtained
+using the procedure \texttt{dlerror}.
+
+Consult the \texttt{dlsym(3)} page in your system manual for
+further details.
+
+
+\section{\label{sec:callout}Calling out to foreign procedures}
+
+Ikarus provides the means to call out from Scheme to foreign
+procedures.  This allows the programmers to extend Ikarus to access
+system-specific facilities that is available on the host machine.  
+
+In order to call out to a foreign procedure, one must provide two
+pieces of information: the signature of the foreign procedure (e.g.,
+its type declaration if it is a \texttt{C} procedure) and the
+address of the procedure in memory.  The address of the procedure
+can be easily obtained using \texttt{dlsym} if the name of the
+procedure and its exporting library are known.  The signature of the
+procedure cannot, in general, be obtained dynamically, and therefore
+must be hard coded into the program.
+
+The signature of the foreign procedure is required for proper
+linkeage between the Scheme system and the foreign system.  Using
+the signature, Ikarus determines how Scheme values are converted
+into native values, and where (e.g., in which registers and stack
+slots) to put these arguments.  The signature also determines where
+the returned values are placed and how they are converted from the
+system data types to the corresponding Scheme data types.
+
+A procedure's signature is composed of two parts: the return type
+and the parameter types.  The return type is a symbol that can be
+any one of the type specifiers listed in
+Figure~\ref{fig:foreign-types}, page~\pageref{fig:foreign-types}.
+The parameter types is a list of type specifier symbols.  The symbol
+\texttt{void} can appear as a return type but cannot appear as a
+parameter type.
+
+
+
+\defun{make-callout}{procedure}
+\texttt{((make-callout return-type parameter-types) native-pointer)}
+
+The procedure \texttt{make-callout} is the primary facility for
+making foreign procedures callable from Scheme.  It works as
+follows.  First, \texttt{make-callout} receives two arguments
+denoting the signature of the procedure to be called.  It prepares a
+bridge that converts from Scheme's calling conventions and data
+structures to their foreign counterparts.  It returns a procedure
+$p_1$.  Second, the procedure $p_1$ accepts a pointer to a foreign
+procedure (e.g., one obtained from \texttt{dlsym}) and returns a
+Scheme procedure $p_2$ that encapsulates the foreign procedure.  The
+final procedure $p_2$ can be called with as many arguments as the
+ones specified in the \texttt{parameter-types}.  The parameters
+supplies to $p_2$ must match the types supplied as the
+\texttt{parameter-types} according to the ``Valid Scheme types''
+column in the table in Figure~\ref{fig:foreign-types}.  The
+procedure $p_2$ converts the parameters from Scheme types to native
+types, calls the foreign procedure, obtains the result, and converts
+it to the appropriate Scheme value (depending on the
+\texttt{return-type}).
+
+The interface of \texttt{make-callout} is broken down into three
+stages in order to accomodate common usage patterns.  Often types, a
+function signature can be used by many foreign procedures and
+therefore, \texttt{make-callout} can be called once per signature
+and each signature can be used multiple times.  Similarly,
+separating the foreign procedure preparation from parameter passing
+allows for preparing the foreign procedure once and calling it many
+times. 
+
+The types listed in Figure~\ref{fig:foreign-types} are restricted to
+basic types and provide no automatic conversion from composite
+Scheme data structures (such as strings, symbols, vectors, and
+lists) to native types.  The restriction is intentional in order for
+Ikarus to avoid making invalid assumptions about the memory
+management of the targeted library.  For example, while Ikarus
+\emph{can} convert a Scheme string to a native byte array (e.g.,
+using \texttt{string->bytevector} to decode the string, then using
+\texttt{malloc} to allocate a temporary buffer, and copying the
+bytes from the bytevector to the allocated memory), it cannot decide
+when this allocated byte array is no longer needed and should be
+freed.  This knowledge is library-dependent and is often
+procedure-dependent.  Therefore, Ikarus leaves it to the programmer
+to manage all memory related issues.
+
+Outgoing parameters to foreign procedures are checked against the
+declared types.  For example, if a callback is prepared to expect a
+parameter of type \texttt{signed-int}, only exact integers are
+allowed to be passed out.  For integer types, only a fixed number of
+bits is used and the remaining bits are ignored.  For floating point
+types, the argument is checked to be a Scheme flonum.  No implicit
+conversion between exact and inexact numbers is performed.
+{
+\begin{figure}[b!]
+\begin{center}
+\begin{tabular}{@{}llll@{}}
+\hline
+Type specifier & Size  & Valid Scheme types & Corresponding \texttt{C} types\\
+\hline 
+\texttt{signed-char} & 1 byte & exact integer & \texttt{char}\\
+\texttt{unsigned-char} & 1 byte & exact integer & \texttt{unsigned char}\\
+\texttt{signed-short} & 2 bytes & exact integer & \texttt{short}\\
+\texttt{unsigned-short} & 2 bytes & exact integer & \texttt{unsigned short}\\
+\texttt{signed-int} & 4 bytes & exact integer & \texttt{int}\\
+\texttt{unsigned-int} & 4 bytes & exact integer & \texttt{unsigned int}\\
+\texttt{signed-long} & 4/8 bytes & exact integer & \texttt{long}\\
+\texttt{unsigned-long} & 4/8 bytes & exact integer & \texttt{unsigned long}\\
+\texttt{float} & 4 bytes & flonum & \texttt{float}\\
+\texttt{double} & 8 bytes & flonum & \texttt{double}\\
+\texttt{pointer} & 4/8 bytes & pointer & 
+\texttt{void*}, \texttt{char*}, \texttt{int*}, \texttt{int**}, \\
+&&& \texttt{int(*)(int,int,int)}, etc. \\
+\texttt{void} & -- & -- & \texttt{void}\\
+\hline
+\end{tabular}
+\end{center}
+\caption{\label{fig:foreign-types}The above table lists valid type
+specifiers that can be used in callout and callback signatures.  
+Specifiers with ``4/8 bytes'' have size that depends on the system:
+it is 4 bytes on 32-bit systems and 8 bytes on 64-bit systems.  The
+\texttt{void} specifier can only be used as a return value
+specifier to mean ``no useful value is returned''.}
+\end{figure}
+}
+
+
+The following example illustrates the use of the
+\texttt{make-callout} procedure in combination with \texttt{dlopen}
+and \texttt{dlsym}.  The session was run on a 32-bit Ikarus running
+under Mac OS X 10.4.  First, the \texttt{libc.dylib} foreign library
+is loaded and is bound to the variable \texttt{libc}.  Next, we
+obtain a pointer to the \texttt{atan} foreign procedure that is
+defined in \texttt{libc}.  The native procedure \texttt{atan} takes
+a \texttt{double} as an argument and returns a \texttt{double} and
+that's the signature that we use for \texttt{make-callout}.
+Finally, we call the foreign procedure interface with one argument,
+\texttt{1.0}, which is a flonum and thus matches the required
+parameter type.  The native procedure returns a \texttt{double}
+value which is converted to the Scheme flonum with value
+\texttt{0.7853981633974483}.
+
+\begin{verbatim}
+   > (import (ikarus foreign))
+   > (define libc (dlopen "libc.dylib"))
+   > libc
+   #<pointer #x00100770>
+   > (define libc-atan-ptr (dlsym libc "atan"))
+   > libc-atan-ptr
+   #<pointer #x9006CB1F>
+   > (define libc-atan 
+       ((make-callout 'double '(double)) libc-atan-ptr))
+   > libc-atan
+   #<procedure>
+   > (libc-atan 1.0)
+   0.7853981633974483
+   > (libc-atan 1)
+   Unhandled exception
+    Condition components:
+       1. &assertion
+       2. &who: callout-procedure
+       3. &message: "argument does not match type double"
+       4. &irritants: (1)
+\end{verbatim}
+
+
+\section{\label{sec:callback}Calling back to Scheme}
+
+In order to provide full interoperability with native procedures,
+Ikarus allows native procedures to call back into Scheme just as it
+allows Scheme to call out to native procedures.  This is important
+for many system libraries that provide graphical user interfaces
+with event handling (e.g., Cocoa, GTK+, GLUT, etc.), database
+engines (e.g., libsqlite, libmysql, etc.), among others.
+
+The native calling site for the call back is compiled with a
+specific callback signature encoding the expected parameter types
+and return type.  Therefore, a Scheme procedure used for a call back
+must be wrapped with a proper adapter that converts the incoming
+parameters from native format to Scheme values as well as convert
+the value that the Scheme procedure returns back to native format.
+The signature format is similar to the one used for call outs (see
+Figure~\ref{fig:foreign-types} on page~\pageref{fig:foreign-types} for
+details).
+
+
+\defun{make-callback}{procedure}
+\texttt{((make-callback return-type parameter-types) scheme-procedure)}
+
+The procedure \texttt{make-callback} is similar to the procedure
+\texttt{make-callout} except that it provides a bridge from native
+procedures back into Scheme.  While the procedure
+\texttt{make-callout} takes a native pointer and returns a Scheme
+procedure, \texttt{make-callback} takes a Scheme procedure and
+returns a native pointer.  The native pointer can be called by
+foreign procedures.  The native parameters are converted to Scheme
+data (according to \texttt{parameter-types}), the Scheme procedure
+is called with these parameters, and the returned value is converted
+back into native format (according to \texttt{return-type}) before
+control returns to the native call site.
+
+
+Note that the native procedure pointer obtained from
+\texttt{make-callback} is indistinguishable from other native
+procedures that are obtained using \texttt{dlsym} or similar means.
+In particular, such native pointers can be used as arguments to
+\texttt{make-callout} resulting in a Scheme procedure that calls out
+to the native procedure that in turn calls back into Scheme.  The
+following segment illustrates a very inefficient way of extracting
+the lowermost 32 bits from an exact integer.
+
+\begin{verbatim}
+   > (format "~x"
+       (((make-callout 'unsigned-int '(unsigned-int))
+         ((make-callback 'unsigned-int '(unsigned-int)) 
+          values))
+        #xfedcba09876543210fedcba09876543210))
+   "76543210"
+\end{verbatim}
+
+\BoxedText{Caveat emptor:}{Preparing each call out and call back
+procedure leaks a small amount of memory.  This is because the
+system cannot track such pointers that go into native code
+(which may retain such pointers indefinitely).  Use judiciously.}
+
+% \chapter{\label{chapter:objc}The \texttt{(ikarus~objc)} Library}
+% \newpage
 
 \chapter{\label{chapter:contributed}Contributed Libraries}
 
@@ -2166,7 +2842,15 @@ following lines:
    export IKARUS_LIBRARY_PATH
 \end{verbatim}
 
+
 \newpage
+
+
+\section{\label{sec:aux-opengl}\texttt{(gl)} and \texttt{(glut)}}
+FIXME
+\newpage
+
+
 \section{\texttt{(srfi *)}}
 
 Ported by: Derick Eddington
@@ -2253,15 +2937,14 @@ URL: \url{https://launchpad.net/r6rs-clos}
 
 
 \rnrs{6}-clos is a port of tiny-clos to the latest
-(6$^{\textrm{th}}$) revision
-of the language standard for scheme. It uses the library
-system that is new in \rnrs{6} to structure the code based on
-functionality (bootstrap of core classes and generic functions,
-actual implementation of the standard protocols, class layout
-and slot access \ldots).
+(6$^{\mathrm{th}}$) revision of the language standard for scheme. It
+uses the library system that is new in \rnrs{6} to structure the
+code based on functionality (bootstrap of core classes and generic
+functions, actual implementation of the standard protocols, class
+layout and slot access \ldots).
 
-The homepage for now is \url{https://launchpad.net/r6rs-clos},
-where my current development branch can be found.
+The homepage for now is \url{https://launchpad.net/r6rs-clos}, where
+my current development branch can be found.
 
 % Currently the code in my repository will only work with the
 % 0.0.2 release of Ikarus and uses a private copy of two
@@ -2313,77 +2996,48 @@ To load both stream libraries, say:
 \chapter{Missing Features}
 
 Ikarus does not fully conform to \rnrs{6} yet.  Although it
-implements more than 94\% of \rnrs{6}'s macros and procedures, some
-are still missing.  This section summarizes the set of missing
-features and procedures.  
+implements most of \rnrs{6}'s macros and procedures, some are still
+missing.  This section summarizes the set of missing features and
+procedures.
 
 
 \begin{itemize}
-\item Numeric tower is complete except for complex numbers.\\
-  Consequences: \\
-  -- Reader does not recognize complex number notation
-    (e.g.~\texttt{5-7i}).\\
-  -- Procedures that may construct complex numbers from non-complex
-    arguments may signal an error or return an incorrect value
-    (e.g., \texttt{(sqrt~-1)} should return \verb|+i| instead
-    of signaling an error).
 \item The procedure \texttt{equal?}\ may not terminate on
 \texttt{equal?}\ infinite (circular) input.
 \item \texttt{number->string} does not accept the third argument
 (precision).  Similarly, \texttt{string->number} and the reader do
 not recognize the \texttt{|p} notation. 
-\end{itemize}
-\newpage
-\section{List of missing \rnrs{6} procedures}
 
-The following procedures are missing from \texttt{(rnrs base)}:
+
+\item The following procedures are missing from \texttt{(rnrs unicode)}:
 \begin{Verbatim}
-angle make-polar make-rectangular
-\end{Verbatim}
-
-% magnitude 
-% string->utf16     
-% string->utf32 
-% utf16->string
-% utf32->string
-
-
-The following procedures are missing from \texttt{(rnrs unicode)}:
-\begin{Verbatim}
-string-downcase   string-titlecase   string-upcase    
+string-titlecase
 string-normalize-nfc      string-normalize-nfd 
 string-normalize-nfkc     string-normalize-nfkd   
 \end{Verbatim}
 
 
-The following procedures are missing from \texttt{(rnrs arithmetic
+\item The following procedures are missing from \texttt{(rnrs arithmetic
 bitwise)}:
 \begin{Verbatim}
-bitwise-ior  bitwise-xor  bitwise-if  bitwise-copy-bit-field      
 bitwise-reverse-bit-field bitwise-rotate-bit-field 
 \end{Verbatim}
-% bitwise-bit-field  
-% bitwise-copy-bit 
-% bitwise-length  
 
-The following procedures are missing from \texttt{(rnrs arithmetic
+\item The following procedures are missing from \texttt{(rnrs arithmetic
 fixnum)}:
 \begin{Verbatim}
 fxreverse-bit-field   fxrotate-bit-field   
 \end{Verbatim}
 
 
-The following procedures are missing from \texttt{(rnrs hashtables)}:
+\item The following procedures are missing from \texttt{(rnrs hashtables)}:
 \begin{Verbatim}
 make-eqv-hashtable         make-hashtable           equal-hash
 hashtable-hash-function    hashtable-equivalence-function 
 \end{Verbatim}
 
-
-
-The following procedures are missing from \texttt{(rnrs io ports)}:
+\item The following procedures are missing from \texttt{(rnrs io ports)}:
 \begin{Verbatim}
-string->bytevector                  bytevector->string
 port-has-port-position?             port-position
 port-has-set-port-position!?        set-port-position!
 make-custom-binary-input/output-port    
@@ -2391,31 +3045,7 @@ make-custom-textual-input/output-port
 open-file-input/output-port
 \end{Verbatim}
 
-
-% get-bytevector-some
-% call-with-bytevector-output-port  
-% call-with-string-output-port
-% binary-port?
-% textual-port? 
-% port-eof?
-% call-with-port 
-% lookahead-char  
-% lookahead-u8
-% get-bytevector-all
-% get-bytevector-some  
-% get-string-all
-% make-custom-binary-input-port         
-% make-custom-binary-output-port        
-% make-custom-textual-input-port    
-% make-custom-textual-output-port
-% open-bytevector-input-port  
-% open-bytevector-output-port 
-% open-file-input-port  
-% open-file-output-port    
-% transcoded-port 
-% port-transcoder
-% put-bytevector 
-% output-port-buffer-mode 
+\end{itemize}
 
 
 

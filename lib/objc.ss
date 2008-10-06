@@ -61,7 +61,7 @@
 
 (define (pointer-ref addr offset)
   (assert (pointer? addr))
-  (integer->pointer (pointer-ref-long addr offset)))
+  (integer->pointer (pointer-ref-signed-long addr offset)))
 
 (define (offset? x) (or (fixnum? x) (bignum? x)))
 
@@ -75,7 +75,7 @@
 (define (char*len x)
   (let f ([i 0])
     (cond
-      [(zero? (pointer-ref-uchar x i)) i]
+      [(zero? (pointer-ref-unsigned-char x i)) i]
       [else (f (+ i 1))])))
 
 (define (char*->bv x)
@@ -85,7 +85,7 @@
         (cond
           [(= i n) bv]
           [else
-           (bytevector-u8-set! bv i (pointer-ref-uchar x i))
+           (bytevector-u8-set! bv i (pointer-ref-unsigned-char x i))
            (f (+ i 1))])))))
 
 (define (bv->char* x)
@@ -183,7 +183,7 @@
 
 (define (class-instance-size x)
   (check 'class-instance-size class? x)
-  (pointer-ref-long (class-ptr x) objc-class-instance-size-offset))
+  (pointer-ref-signed-long (class-ptr x) objc-class-instance-size-offset))
 
 (define (ivar-name x)
   (check 'ivar-name ivar? x)
@@ -195,14 +195,14 @@
 
 (define (ivar-offset x)
   (check 'ivar-offset ivar? x)
-  (pointer-ref-int (ivar-ptr x) (* 2 ptrsize)))
+  (pointer-ref-signed-int (ivar-ptr x) (* 2 ptrsize)))
 
 (define (class-ivars x)
   (check 'class-ivars class? x)
   (let ([p (pointer-ref (class-ptr x) objc-class-ivars-offset)])
     (if (nil? p)
         '()
-        (let ([n (pointer-ref-long p 0)])
+        (let ([n (pointer-ref-signed-long p 0)])
           (let f ([i 0] [off objc-ivarlist-ivars-offset])
             (if (= i n)
                 '()
@@ -312,11 +312,11 @@
           (cond
             [(assq what alist) => cadr]
             [else (error 'class-is? "invalid what" what)])])
-    (= mask (bitwise-and mask (pointer-ref-long (class-ptr x) (* ptrsize 4))))))
+    (= mask (bitwise-and mask (pointer-ref-signed-long (class-ptr x) (* ptrsize 4))))))
 
 (define (class-methods x)
   (define (methods x)
-    (let ([n (pointer-ref-int x ptrsize)]
+    (let ([n (pointer-ref-signed-int x ptrsize)]
           [array (integer->pointer (+ (pointer->integer x) (* 2 ptrsize)))])
       (let f ([i 0])
         (if (= i n)
@@ -354,7 +354,7 @@
                      (cons
                        (make-class
                          (integer->pointer
-                           (pointer-ref-long buffer (* ptrsize i))))
+                           (pointer-ref-signed-long buffer (* ptrsize i))))
                        ac)))))))))
 
 (define (nil? x)
@@ -569,9 +569,9 @@
        [(class)    'pointer]
        [(void)     'void]
        [(float)    'float]
-       [(uint)     'uint32]
-       [(int)      'sint32]
-       [(char)     'sint8]
+       [(uint)     'unsigned-int]
+       [(int)      'signed-int]
+       [(char)     'signed-char]
        [(char*)    'pointer]
        [else (error 'objc-type->ikarus-type "invalid type" x)])]))
 
@@ -643,7 +643,7 @@
   (let ([rtype (car sig)] [argtypes (cdr sig)])
     (unless (= (length args) (length argtypes))
       (error 'call-with-sig "incorrect number of args" args argtypes))
-    (let ([ffi (make-ffi
+    (let ([ffi (make-callout
                  (objc-type->ikarus-type rtype)
                  (map objc-type->ikarus-type argtypes))])
       (let ([proc (ffi mptr)])

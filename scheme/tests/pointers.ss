@@ -90,7 +90,7 @@
                  (let ([m (getter p 0)])
                    (free p)
                    m))])
-          (unless (= n m) 
+          (unless (= n m)
             (error 'test "failed" getter setter n m))))
       combinations))
 
@@ -115,14 +115,14 @@
     (for-each check-combinations '(8 16 32 64))
 
     (test-pointer-values)
-    (test-ref/set 'char   (s*  8) pointer-ref-char   pointer-set-char)
-    (test-ref/set 'short  (s* 16) pointer-ref-short  pointer-set-short)
-    (test-ref/set 'int    (s* 32) pointer-ref-int    pointer-set-int)
-    (test-ref/set 'long   (s* 64) pointer-ref-long   pointer-set-long)
-    (test-ref/set 'uchar  (u*  8) pointer-ref-uchar  pointer-set-char)
-    (test-ref/set 'ushort (u* 16) pointer-ref-ushort pointer-set-short)
-    (test-ref/set 'uint   (u* 32) pointer-ref-uint   pointer-set-int)
-    (test-ref/set 'ulong  (u* 64) pointer-ref-ulong  pointer-set-long)
+    (test-ref/set 'char   (s*  8) pointer-ref-signed-char    pointer-set-char)
+    (test-ref/set 'short  (s* 16) pointer-ref-signed-short   pointer-set-short)
+    (test-ref/set 'int    (s* 32) pointer-ref-signed-int     pointer-set-int)
+    (test-ref/set 'long   (s* 64) pointer-ref-signed-long    pointer-set-long)
+    (test-ref/set 'uchar  (u*  8) pointer-ref-unsigned-char  pointer-set-char)
+    (test-ref/set 'ushort (u* 16) pointer-ref-unsigned-short pointer-set-short)
+    (test-ref/set 'uint   (u* 32) pointer-ref-unsigned-int   pointer-set-int)
+    (test-ref/set 'ulong  (u* 64) pointer-ref-unsigned-long  pointer-set-long)
     )
 
 
