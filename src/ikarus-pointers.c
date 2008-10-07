@@ -92,6 +92,10 @@ ikrt_dlerror(ikpcb* pcb) {
   return bv+bytevector_tag;
 }
 
+#ifndef RTLD_LOCAL
+#define RTLD_LOCAL 0 /* for cygwin, possibly incorrect */
+#endif
+
 ikptr
 ikrt_dlopen(ikptr x, ikptr load_lazy, ikptr load_global, ikpcb* pcb) {
   int flags = 

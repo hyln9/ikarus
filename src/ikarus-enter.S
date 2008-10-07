@@ -217,10 +217,11 @@ _ik_asm_enter:
   movl 16(%esp), %edi    # closure pointer
   movl %esi, -4(%esp)    #  preserve
   movl %ebp, -8(%esp)    #  preserve
+  movl %edi, -12(%esp)   #  preserve
   movl 4(%esp), %esi   
   movl 0(%esi), %ebp     # allocation pointer is at 0(pcb)
   movl %esp, %ecx
-  subl $16, %esp         # 24 for alignment
+  subl $16, %esp         # 16 for alignment
   movl %esp, 24(%esi)    # save esp in pcb->system_stack
   movl 8(%esi), %esp     # load scheme stack from pcb->frame_pinter
   jmp L_call
@@ -242,6 +243,7 @@ L_do_underflow:
   addl $16, %esp        # 24 for alignment (>= 16)
   movl -4(%esp), %esi   # restore callee-save registers
   movl -8(%esp), %ebp   #
+  movl -12(%esp), %edi  # 
   ret                   # back to C, which handled the underflow
 L_multivalue_underflow:
   addl $4, %esp
@@ -257,8 +259,9 @@ _ik_asm_reenter:
   # return point is at          0(%esp)
   movl 12(%esp), %eax
   movl  8(%esp), %ebx
-  movl %esi, -4(%esp)
-  movl %ebp, -8(%esp)
+  movl %esi, -4(%esp)    #  preserve
+  movl %ebp, -8(%esp)    #  preserve
+  movl %edi, -12(%esp)   #  preserve
   movl 4(%esp), %esi   
   movl 0(%esi), %ebp     # allocation pointer is at 0(pcb)
   subl $16, %esp         # 24 for alignment
