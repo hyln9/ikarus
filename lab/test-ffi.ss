@@ -20,22 +20,22 @@
 (define hosym (dlsym self "ho"))
 
 (define ho 
-  ((make-callout 'signed-int '(pointer signed-int)) hosym))
+  ((make-c-callout 'signed-int '(pointer signed-int)) hosym))
 
 (define traced-foradd1 
-  ((make-callback 'signed-int '(signed-int)) 
+  ((make-c-callback 'signed-int '(signed-int)) 
      (trace-lambda add1 (n) 
        (collect)
        (add1 n))))
 
 (define foradd1
-  ((make-callback 'signed-int '(signed-int))
+  ((make-c-callback 'signed-int '(signed-int))
      (lambda (n) 
        (collect)
        (add1 n))))
 
 (define foradd1-by-foreign-call
-  ((make-callback 'signed-int '(signed-int))
+  ((make-c-callback 'signed-int '(signed-int))
      (trace-lambda foradd1-by-foreign-call (n) 
        (/ (ho traced-foradd1 n) 2))))
 
@@ -46,11 +46,11 @@
 
 
 (define test_I_I 
-  ((make-callout 'signed-int '(pointer signed-int)) (dlsym self "test_I_I")))
+  ((make-c-callout 'signed-int '(pointer signed-int)) (dlsym self "test_I_I")))
 (define test_I_II
-  ((make-callout 'signed-int '(pointer signed-int signed-int)) (dlsym self "test_I_II")))
+  ((make-c-callout 'signed-int '(pointer signed-int signed-int)) (dlsym self "test_I_II")))
 (define test_I_III
-  ((make-callout 'signed-int '(pointer signed-int signed-int signed-int)) (dlsym self "test_I_III")))
+  ((make-c-callout 'signed-int '(pointer signed-int signed-int signed-int)) (dlsym self "test_I_III")))
 
 (define C_add_I_I (dlsym self "add_I_I"))
 (define C_add_I_II (dlsym self "add_I_II"))
@@ -60,10 +60,10 @@
 (check = (test_I_II C_add_I_II 12 13) (+ 12 13))
 (check = (test_I_III C_add_I_III 12 13 14) (+ 12 13 14))
 
-(define S_add_I_I ((make-callback 'signed-int '(signed-int)) +))
-(define S_add_I_II ((make-callback 'signed-int '(signed-int
+(define S_add_I_I ((make-c-callback 'signed-int '(signed-int)) +))
+(define S_add_I_II ((make-c-callback 'signed-int '(signed-int
                                                   signed-int)) +))
-(define S_add_I_III ((make-callback 'signed-int '(signed-int
+(define S_add_I_III ((make-c-callback 'signed-int '(signed-int
                                                    signed-int
                                                    signed-int)) +))
 
@@ -73,11 +73,11 @@
 
 
 (define test_D_D 
-  ((make-callout 'double '(pointer double)) (dlsym self "test_D_D")))
+  ((make-c-callout 'double '(pointer double)) (dlsym self "test_D_D")))
 (define test_D_DD
-  ((make-callout 'double '(pointer double double)) (dlsym self "test_D_DD")))
+  ((make-c-callout 'double '(pointer double double)) (dlsym self "test_D_DD")))
 (define test_D_DDD
-  ((make-callout 'double '(pointer double double double)) (dlsym self "test_D_DDD")))
+  ((make-c-callout 'double '(pointer double double double)) (dlsym self "test_D_DDD")))
 
 (define C_add_D_D (dlsym self "add_D_D"))
 (define C_add_D_DD (dlsym self "add_D_DD"))
@@ -87,9 +87,9 @@
 (check = (test_D_DD C_add_D_DD 12.0 13.0) (+ 12.0 13.0))
 (check = (test_D_DDD C_add_D_DDD 12.0 13.0 14.0) (+ 12.0 13.0 14.0))
 
-(define S_add_D_D ((make-callback 'double '(double)) +))
-(define S_add_D_DD ((make-callback 'double '(double double)) +))
-(define S_add_D_DDD ((make-callback 'double '(double double double)) +))
+(define S_add_D_D ((make-c-callback 'double '(double)) +))
+(define S_add_D_DD ((make-c-callback 'double '(double double)) +))
+(define S_add_D_DDD ((make-c-callback 'double '(double double double)) +))
 
 (check = (test_D_D S_add_D_D 12.0) (+ 12.0))
 (check = (test_D_DD S_add_D_DD 12.0 13.0) (+ 12.0 13.0))
@@ -97,7 +97,7 @@
 
 
 (define RectArea 
-  ((make-callout 'float '(#(#(float float) #(float float))))
+  ((make-c-callout 'float '(#(#(float float) #(float float))))
    (dlsym self "test_area_F_R")))
 
 (check = (RectArea '#(#(0.0 0.0) #(10.0 10.0))) 100.0)

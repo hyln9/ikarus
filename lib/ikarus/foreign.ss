@@ -1,17 +1,29 @@
 
 (library (ikarus foreign)
 
-  (export malloc free pointer-set-char pointer-set-short
-          pointer-set-int pointer-set-long pointer-set-pointer
-          pointer-set-float pointer-set-double
-          pointer-ref-signed-char pointer-ref-signed-short
-          pointer-ref-signed-int pointer-ref-signed-long
-          pointer-ref-unsigned-char pointer-ref-unsigned-short
-          pointer-ref-unsigned-int pointer-ref-unsigned-long
-          pointer-ref-pointer pointer-ref-float pointer-ref-double
+  (export 
+          pointer-set-c-char!
+          pointer-set-c-short!
+          pointer-set-c-int!
+          pointer-set-c-long!
+          pointer-set-c-pointer!
+          pointer-set-c-float!
+          pointer-set-c-double!
+          pointer-ref-c-signed-char
+          pointer-ref-c-signed-short
+          pointer-ref-c-signed-int
+          pointer-ref-c-signed-long
+          pointer-ref-c-unsigned-char 
+          pointer-ref-c-unsigned-short
+          pointer-ref-c-unsigned-int
+          pointer-ref-c-unsigned-long
+          pointer-ref-c-pointer
+          pointer-ref-c-float 
+          pointer-ref-c-double
+          malloc free 
           pointer->integer integer->pointer pointer? dlopen dlsym
           dlclose dlerror
-          make-callout make-callback)
+          make-c-callout make-c-callback)
 
   (import (ikarus system $foreign)))
 

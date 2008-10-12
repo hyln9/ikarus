@@ -61,7 +61,7 @@
 
 (define (pointer-ref addr offset)
   (assert (pointer? addr))
-  (integer->pointer (pointer-ref-signed-long addr offset)))
+  (pointer-ref-c-pointer addr offset))
 
 (define (offset? x) (or (fixnum? x) (bignum? x)))
 
@@ -70,12 +70,12 @@
   (check who pointer? addr)
   (check who pointer? val)
   (check who offset? offset)
-  (pointer-set-long addr offset (pointer->integer val)))
+  (pointer-set-c-pointer! addr offset val))
 
 (define (char*len x)
   (let f ([i 0])
     (cond
-      [(zero? (pointer-ref-unsigned-char x i)) i]
+      [(zero? (pointer-ref-c-unsigned-char x i)) i]
       [else (f (+ i 1))])))
 
 (define (char*->bv x)
@@ -85,18 +85,18 @@
         (cond
           [(= i n) bv]
           [else
-           (bytevector-u8-set! bv i (pointer-ref-unsigned-char x i))
+           (bytevector-u8-set! bv i (pointer-ref-c-unsigned-char x i))
            (f (+ i 1))])))))
 
 (define (bv->char* x)
   (let ([n (bytevector-length x)])
     (let ([p (malloc (+ n 1))])
-      (pointer-set-char p n 0)
+      (pointer-set-c-char! p n 0)
       (let f ([i 0])
         (cond
           [(= i n) p]
           [else
-           (pointer-set-char p i (bytevector-s8-ref x i))
+           (pointer-set-c-char! p i (bytevector-s8-ref x i))
            (f (+ i 1))])))))
 
 (define (bv->u8* x)
@@ -108,7 +108,7 @@
             (cond
               [(= i n) p]
               [else
-               (pointer-set-char p i (bytevector-s8-ref x i))
+               (pointer-set-c-char! p i (bytevector-s8-ref x i))
                (f (+ i 1))]))))))
 
 (define (char*->string x)
@@ -183,7 +183,7 @@
 
 (define (class-instance-size x)
   (check 'class-instance-size class? x)
-  (pointer-ref-signed-long (class-ptr x) objc-class-instance-size-offset))
+  (pointer-ref-c-signed-long (class-ptr x) objc-class-instance-size-offset))
 
 (define (ivar-name x)
   (check 'ivar-name ivar? x)
@@ -195,14 +195,14 @@
 
 (define (ivar-offset x)
   (check 'ivar-offset ivar? x)
-  (pointer-ref-signed-int (ivar-ptr x) (* 2 ptrsize)))
+  (pointer-ref-c-signed-int (ivar-ptr x) (* 2 ptrsize)))
 
 (define (class-ivars x)
   (check 'class-ivars class? x)
   (let ([p (pointer-ref (class-ptr x) objc-class-ivars-offset)])
     (if (nil? p)
         '()
-        (let ([n (pointer-ref-signed-long p 0)])
+        (let ([n (pointer-ref-c-signed-long p 0)])
           (let f ([i 0] [off objc-ivarlist-ivars-offset])
             (if (= i n)
                 '()
@@ -223,7 +223,7 @@
            [class (malloc objc-class-struct-size)]
            [meta  (malloc objc-class-struct-size)])
       ;;; init meta class
-      (pointer-set-long meta objc-class-info-offset CLS_META)
+      (pointer-set-c-long! meta objc-class-info-offset CLS_META)
       (pointer-set meta objc-class-name-offset (string->char* name))
       (pointer-set meta objc-class-methodlists-offset
         (malloc objc-methodlist-methods-offset))
@@ -232,14 +232,14 @@
       (pointer-set meta objc-class-isa-offset
         (pointer-ref (class-ptr root-class) objc-class-isa-offset))
       ;;; init class
-      (pointer-set-long class objc-class-info-offset CLS_CLASS)
+      (pointer-set-c-long! class objc-class-info-offset CLS_CLASS)
       (pointer-set class objc-class-name-offset (string->char* name))
       (pointer-set class objc-class-methodlists-offset
         (malloc objc-methodlist-methods-offset))
       (pointer-set class objc-class-superclass-offset
         (class-ptr super-class))
       (pointer-set class objc-class-ivars-offset ivars-ptr)
-      (pointer-set-long class objc-class-instance-size-offset instance-size)
+      (pointer-set-c-long! class objc-class-instance-size-offset instance-size)
       ;;; wire up
       (pointer-set class objc-class-isa-offset meta)
       (when intern? (objc_addClass class))
@@ -251,7 +251,7 @@
   (check who procedure? proc)
   (let ([type (make-objc-type (cons rtype argtypes))])
     (let ([callback
-           (make-callback
+           (make-c-callback
              (objc-type->ikarus-type rtype)
              (map objc-type->ikarus-type argtypes))])
       (let ([imp (callback
@@ -260,7 +260,7 @@
                        (apply proc (map convert-incoming argtypes args)))))])
         (let ([p (malloc (+ objc-methodlist-methods-offset
                             objc-method-size))])
-          (pointer-set-int p objc-methodlist-count-offset 1)
+          (pointer-set-c-int! p objc-methodlist-count-offset 1)
           (pointer-set p
             (+ objc-methodlist-methods-offset objc-method-sel-offset)
             (selector-ptr
@@ -312,11 +312,11 @@
           (cond
             [(assq what alist) => cadr]
             [else (error 'class-is? "invalid what" what)])])
-    (= mask (bitwise-and mask (pointer-ref-signed-long (class-ptr x) (* ptrsize 4))))))
+    (= mask (bitwise-and mask (pointer-ref-c-signed-long (class-ptr x) (* ptrsize 4))))))
 
 (define (class-methods x)
   (define (methods x)
-    (let ([n (pointer-ref-signed-int x ptrsize)]
+    (let ([n (pointer-ref-c-signed-int x ptrsize)]
           [array (integer->pointer (+ (pointer->integer x) (* 2 ptrsize)))])
       (let f ([i 0])
         (if (= i n)
@@ -330,7 +330,7 @@
   (when (class-is? x 'method-array)
     (error 'class-methods "BUG: not yet for method arrays"))
   (let ([iterator (malloc ptrsize)])
-    (pointer-set-long iterator 0 0)
+    (pointer-set-c-long! iterator 0 0)
     (let f ()
       (let ([methodlist (class_nextMethodList (class-ptr x) iterator)])
         (cond
@@ -354,7 +354,7 @@
                      (cons
                        (make-class
                          (integer->pointer
-                           (pointer-ref-signed-long buffer (* ptrsize i))))
+                           (pointer-ref-c-signed-long buffer (* ptrsize i))))
                        ac)))))))))
 
 (define (nil? x)
@@ -475,7 +475,7 @@
     (define count (length ivars))
     (define p
       (malloc (+ objc-ivarlist-ivars-offset (* count objc-ivar-size))))
-    (pointer-set-int p objc-ivarlist-count-offset count)
+    (pointer-set-c-int! p objc-ivarlist-count-offset count)
     (let f ([ivars ivars]
             [poff objc-ivarlist-ivars-offset]
             [ivaroff (class-instance-size super-class)])
@@ -489,7 +489,7 @@
                  (string->char* (symbol->string name)))
                (pointer-set p (+ poff objc-ivar-type-offset)
                  (string->char* ivar-type))
-               (pointer-set-int p (+ poff objc-ivar-offset-offset) ivaroff)
+               (pointer-set-c-int! p (+ poff objc-ivar-offset-offset) ivaroff)
                (f (cdr ivars)
                   (+ poff objc-ivar-size)
                   (+ ivaroff ivar-size)))))])))
@@ -643,7 +643,7 @@
   (let ([rtype (car sig)] [argtypes (cdr sig)])
     (unless (= (length args) (length argtypes))
       (error 'call-with-sig "incorrect number of args" args argtypes))
-    (let ([ffi (make-callout
+    (let ([ffi (make-c-callout
                  (objc-type->ikarus-type rtype)
                  (map objc-type->ikarus-type argtypes))])
       (let ([proc (ffi mptr)])

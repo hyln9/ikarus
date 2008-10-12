@@ -2,19 +2,25 @@
 (library (ikarus.pointers)
   (export pointer? integer->pointer pointer->integer 
           dlopen dlerror dlclose dlsym malloc free
-          pointer-ref-signed-char 
-          pointer-ref-signed-short
-          pointer-ref-signed-int 
-          pointer-ref-signed-long
-          pointer-ref-unsigned-char
-          pointer-ref-unsigned-short 
-          pointer-ref-unsigned-int 
-          pointer-ref-unsigned-long
-          pointer-set-char pointer-set-short pointer-set-int pointer-set-long
-          pointer-set-pointer pointer-ref-pointer
-          pointer-set-float pointer-ref-float
-          pointer-set-double pointer-ref-double
-          make-callout make-callback)
+          pointer-ref-c-signed-char 
+          pointer-ref-c-signed-short
+          pointer-ref-c-signed-int 
+          pointer-ref-c-signed-long
+          pointer-ref-c-unsigned-char
+          pointer-ref-c-unsigned-short 
+          pointer-ref-c-unsigned-int 
+          pointer-ref-c-unsigned-long
+          pointer-ref-c-float
+          pointer-ref-c-double
+          pointer-ref-c-pointer
+          pointer-set-c-char!
+          pointer-set-c-short!
+          pointer-set-c-int!
+          pointer-set-c-long!
+          pointer-set-c-pointer!
+          pointer-set-c-float!
+          pointer-set-c-double! 
+          make-c-callout make-c-callback)
   (import 
     (except (ikarus) 
       pointer? 
@@ -120,25 +126,25 @@
 
   (define (int? x) (or (fixnum? x) (bignum? x)))
 
-  (define-getter pointer-ref-signed-char    "ikrt_ref_char")
-  (define-getter pointer-ref-signed-short   "ikrt_ref_short")
-  (define-getter pointer-ref-signed-int     "ikrt_ref_int")
-  (define-getter pointer-ref-signed-long    "ikrt_ref_long")
-  (define-getter pointer-ref-unsigned-char  "ikrt_ref_uchar")
-  (define-getter pointer-ref-unsigned-short "ikrt_ref_ushort")
-  (define-getter pointer-ref-unsigned-int   "ikrt_ref_uint")
-  (define-getter pointer-ref-unsigned-long  "ikrt_ref_ulong")
-  (define-getter pointer-ref-float          "ikrt_ref_float")
-  (define-getter pointer-ref-double         "ikrt_ref_double")
-  (define-getter pointer-ref-pointer        "ikrt_ref_pointer")
+  (define-getter pointer-ref-c-signed-char    "ikrt_ref_char")
+  (define-getter pointer-ref-c-signed-short   "ikrt_ref_short")
+  (define-getter pointer-ref-c-signed-int     "ikrt_ref_int")
+  (define-getter pointer-ref-c-signed-long    "ikrt_ref_long")
+  (define-getter pointer-ref-c-unsigned-char  "ikrt_ref_uchar")
+  (define-getter pointer-ref-c-unsigned-short "ikrt_ref_ushort")
+  (define-getter pointer-ref-c-unsigned-int   "ikrt_ref_uint")
+  (define-getter pointer-ref-c-unsigned-long  "ikrt_ref_ulong")
+  (define-getter pointer-ref-c-float          "ikrt_ref_float")
+  (define-getter pointer-ref-c-double         "ikrt_ref_double")
+  (define-getter pointer-ref-c-pointer        "ikrt_ref_pointer")
 
-  (define-setter pointer-set-char    int?     "ikrt_set_char")
-  (define-setter pointer-set-short   int?     "ikrt_set_short")
-  (define-setter pointer-set-int     int?     "ikrt_set_int")
-  (define-setter pointer-set-long    int?     "ikrt_set_long")
-  (define-setter pointer-set-float   flonum?  "ikrt_set_float")
-  (define-setter pointer-set-double  flonum?  "ikrt_set_double")
-  (define-setter pointer-set-pointer pointer? "ikrt_set_pointer")
+  (define-setter pointer-set-c-char!    int?     "ikrt_set_char")
+  (define-setter pointer-set-c-short!   int?     "ikrt_set_short")
+  (define-setter pointer-set-c-int!     int?     "ikrt_set_int")
+  (define-setter pointer-set-c-long!    int?     "ikrt_set_long")
+  (define-setter pointer-set-c-float!   flonum?  "ikrt_set_float")
+  (define-setter pointer-set-c-double!  flonum?  "ikrt_set_double")
+  (define-setter pointer-set-c-pointer! pointer? "ikrt_set_pointer")
 
   ;;; libffi interface
 
@@ -202,8 +208,8 @@
               argtypes-n
               rtype-n)))
 
-  (define (make-callout rtype argtypes)
-    (define who 'make-callout)
+  (define (make-c-callout rtype argtypes)
+    (define who 'make-c-callout)
     (let-values ([(cif argtypes-n rtype-n)
                   (ffi-prep-cif rtype argtypes)])
       (let* ([argtypes-vec (list->vector argtypes)]
@@ -228,11 +234,11 @@
                 checkers argtypes-vec argsvec)
               (foreign-call "ikrt_ffi_call" data argsvec)))))))
 
-  (define (make-callback rtype argtypes)
+  (define (make-c-callback rtype argtypes)
     (let-values ([(cif argtypes-n rtype-n)
                   (ffi-prep-cif rtype argtypes)])
       (lambda (proc)
-        (define who 'make-callback)
+        (define who 'make-c-callback)
         (unless (procedure? proc)
           (die who "not a procedure"))
         (let ([proc 

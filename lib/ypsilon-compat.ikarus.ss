@@ -80,7 +80,7 @@
              (cond
                [(= i n) p]
                [else
-                (pointer-set-int p (* i 4) (vector-ref x i))
+                (pointer-set-c-int! p (* i 4) (vector-ref x i))
                 (f (+ i 1))]))))]
       [else (die who "not an int*" x)]))
 
@@ -104,7 +104,7 @@
              (cond
                [(= i n) p]
                [else
-                (pointer-set-int p (* i pointer-size)
+                (pointer-set-c-int! p (* i pointer-size)
                   (pointer->integer (check-char* who (vector-ref x i))))
                 (f (+ i 1))]))))]
       [else (die who "not a char**" x)]))
@@ -114,12 +114,12 @@
       [(bytevector? x)
        (let ([n (bytevector-length x)])
          (let ([p (malloc (+ n 1))])
-           (pointer-set-char p n 0)
+           (pointer-set-c-char! p n 0)
            (let f ([i 0])
              (cond
                [(= i n) p]
                [else
-                (pointer-set-char p i (bytevector-u8-ref x i))
+                (pointer-set-c-char! p i (bytevector-u8-ref x i))
                 (f (+ i 1))]))))]
       [else (die who "not a byte*" x)]))
   
@@ -139,7 +139,7 @@
         [(_ foreign-name val return-type (arg-type* ...))
          #'(let ([t val])
              (if (procedure? t)
-                 ((make-callback
+                 ((make-c-callback
                     (convert-type return-type)
                     (list (convert-type arg-type*) ...))
                   t)
@@ -187,7 +187,7 @@
     (define (strlen x)
       (let f ([i 0])
         (cond
-          [(= 0 (pointer-ref-unsigned-char x i)) i]
+          [(= 0 (pointer-ref-c-unsigned-char x i)) i]
           [else (f (+ i 1))])))
     (let ([n (strlen x)])
       (let ([s (make-string n)])
@@ -196,7 +196,7 @@
               s
               (begin
                 (string-set! s i 
-                  (integer->char (pointer-ref-unsigned-char x i)))
+                  (integer->char (pointer-ref-c-unsigned-char x i)))
                 (f (+ i 1))))))))
 
   (define-syntax convert-return
@@ -254,7 +254,7 @@
          (with-syntax ([x x]
                        [(t* ...) (generate-temporaries #'(arg-type* ...))])
          #'(let ([callout 
-                   ((make-callout 
+                   ((make-c-callout 
                       (convert-type return-type)
                       (list (convert-type arg-type*) ...))
                     (lookup-shared-object lib 'foreign-name))])

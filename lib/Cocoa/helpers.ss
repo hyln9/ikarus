@@ -6,13 +6,13 @@
     (define kProcessTransformToForegroundApplication 1)
     (define self (dlopen))
     (define get-current-process
-      ((make-callout 'void '(pointer))
+      ((make-c-callout 'void '(pointer))
        (dlsym self "GetCurrentProcess")))
     (define transform-process-type
-      ((make-callout 'void '(pointer signed-int)) 
+      ((make-c-callout 'void '(pointer signed-int)) 
        (dlsym self "TransformProcessType")))
     (define set-front-process
-      ((make-callout 'void '(pointer)) 
+      ((make-c-callout 'void '(pointer)) 
        (dlsym self "SetFrontProcess")))
     (let ([p (malloc 16)])
       (get-current-process p)

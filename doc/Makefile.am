@@ -18,5 +18,8 @@ all:
 
 docs: ikarus-scheme-users-guide.pdf
 
+fast:
+	$(TEX) ikarus-scheme-users-guide
+
 clean: 
 	rm -f *.aux *.log *.toc *.out *.idx *.ind *.ilg *.blg *.bbl

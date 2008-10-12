@@ -2242,10 +2242,10 @@ unspecified.}
 
 \newpage
 
-\defun{pointer-set-char}{procedure}
-\texttt{(pointer-set-char p i n)}
+\defun{pointer-set-c-char!}{procedure}
+\texttt{(pointer-set-c-char! p i n)}
 
-The procedure \texttt{pointer-set-char} sets a single byte of memory
+The procedure \texttt{pointer-set-c-char!} sets a single byte of memory
 located at offset \texttt{i} from the pointer \texttt{p} to the
 value of \texttt{n}.  The pointer \texttt{p} must be a valid
 pointer.  The index \texttt{i} must be an exact integer.  The value
@@ -2253,186 +2253,186 @@ of \texttt{n} must be an exact integer.  Only the 8 lowermost
 bits of \texttt{n} are used in the operation and the remaining bits
 are ignored.
 
-\defun{pointer-set-short}{procedure}
-\texttt{(pointer-set-short p i n)}
+\defun{pointer-set-c-short!}{procedure}
+\texttt{(pointer-set-c-short! p i n)}
 
-The procedure \texttt{pointer-set-char} sets two bytes located at
+The procedure \texttt{pointer-set-c-char!!} sets two bytes located at
 offset \texttt{i} and \texttt{(+ i 1)} to the 16 lowermost bits of
 the exact integer \texttt{n}.  Note that the offset \texttt{i} is a
-byte offset; \texttt{pointer-set-short} does not perform any pointer
+byte offset; \texttt{pointer-set-c-short!} does not perform any pointer
 arithmetic such as scaling the offset by the size of the memory
 location.
 
 
-\defun{pointer-set-int}{procedure}
-\texttt{(pointer-set-int p i n)}
+\defun{pointer-set-c-int!}{procedure}
+\texttt{(pointer-set-c-int! p i n)}
 
-The procedure \texttt{pointer-set-int} sets four bytes located at
+The procedure \texttt{pointer-set-c-int!} sets four bytes located at
 offset \texttt{i} to \texttt{(+ i 3)} to the 32 lowermost bits of
-the exact integer \texttt{n}.  Like \texttt{pointer-set-short},
-\texttt{pointer-set-int} does not scale the offset \texttt{i}.
+the exact integer \texttt{n}.  Like \texttt{pointer-set-c-short!},
+\texttt{pointer-set-c-int!} does not scale the offset \texttt{i}.
 
 
-\defun{pointer-set-long}{procedure}
-\texttt{(pointer-set-long p i n)}
+\defun{pointer-set-c-long!}{procedure}
+\texttt{(pointer-set-c-long! p i n)}
  
-On 64-bit systems, the procedure \texttt{pointer-set-long} sets
+On 64-bit systems, the procedure \texttt{pointer-set-c-long!} sets
 eight bytes located at offset \texttt{i} to \texttt{(+ i 7)} to the
 64 lowermost bits of the exact integer \texttt{n}.  Like the
-previous procedures, \texttt{pointer-set-long} does not scale the
-offset \texttt{i}.  On 32-bit systems, \texttt{pointer-set-long}
-performs the same task as \texttt{pointer-set-int}.
+previous procedures, \texttt{pointer-set-c-long!} does not scale the
+offset \texttt{i}.  On 32-bit systems, \texttt{pointer-set-c-long!}
+performs the same task as \texttt{pointer-set-c-int!}.
 
 
-\defun{pointer-set-float}{procedure}
-\texttt{(pointer-set-float p i fl)}
+\defun{pointer-set-c-float!}{procedure}
+\texttt{(pointer-set-c-float! p i fl)}
 
-The procedure \texttt{pointer-set-float} converts the Scheme
+The procedure \texttt{pointer-set-c-float!} converts the Scheme
 floating point number \texttt{fl} (represented in Ikarus as an
 IEEE-754 double precision floating point number) to a float (an
 IEEE-754 single precision floating point number) and stores the
 result in the four bytes at offset \texttt{i} of the pointer
 \texttt{p}.
 
-\defun{pointer-set-double}{procedure}
-\texttt{(pointer-set-double p i fl)}
+\defun{pointer-set-c-double!}{procedure}
+\texttt{(pointer-set-c-double! p i fl)}
 
-The procedure \texttt{pointer-set-double} stores the double
+The procedure \texttt{pointer-set-c-double!} stores the double
 precision IEEE-754 floating point value of the Scheme flonum
 \texttt{fl} in the eight bytes at offset \texttt{i} of the pointer
 \texttt{p}.
 
-\defun{pointer-set-pointer}{procedure}
-\texttt{(pointer-set-pointer p i pv)}
+\defun{pointer-set-c-pointer!}{procedure}
+\texttt{(pointer-set-c-pointer! p i pv)}
  
-On 64-bit systems, the procedure \texttt{pointer-set-pointer} sets
+On 64-bit systems, the procedure \texttt{pointer-set-c-pointer!} sets
 eight bytes located at offset \texttt{i} to \texttt{(+ i 7)} to the
 64-bit pointer value of \texttt{pv}.  On 32-bit systems, the
-procedure \texttt{pointer-set-pointer} sets four bytes located at
+procedure \texttt{pointer-set-c-pointer!} sets four bytes located at
 offset \texttt{i} to \texttt{(+ i 3)} to the 32-bit pointer value of
 \texttt{pv}.  Like the previous procedures,
-\texttt{pointer-set-pointer} does not scale the offset \texttt{i}. 
+\texttt{pointer-set-c-pointer!} does not scale the offset \texttt{i}. 
 
 
 
-\defun{pointer-ref-signed-char}{procedure}
-\texttt{(pointer-ref-signed-char p i)}
+\defun{pointer-ref-c-signed-char}{procedure}
+\texttt{(pointer-ref-c-signed-char p i)}
 
-The procedure \texttt{pointer-ref-signed-char} loads a single byte located
+The procedure \texttt{pointer-ref-c-signed-char} loads a single byte located
 at offset \texttt{i} from the pointer \texttt{p} and returns an
 exact integer representing the sign-extended integer value of that
 byte. The resulting value is in the range of $[-128, 127]$ inclusive.
 
-\defun{pointer-ref-unsigned-char}{procedure}
-\texttt{(pointer-ref-unsigned-char p i)}
+\defun{pointer-ref-c-unsigned-char}{procedure}
+\texttt{(pointer-ref-c-unsigned-char p i)}
 
-The procedure \texttt{pointer-ref-unsigned-char} loads a single byte
+The procedure \texttt{pointer-ref-c-unsigned-char} loads a single byte
 located at offset \texttt{i} from the pointer \texttt{p} and returns
 an exact integer representing the unsigned integer value of that
 byte.  The resulting value is in the range $[0, 255]$ inclusive.
 
 
 The following example shows the difference between
-\texttt{pointer-ref-signed-char} and
-\texttt{pointer-ref-unsigned-char}.
+\texttt{pointer-ref-c-signed-char} and
+\texttt{pointer-ref-c-unsigned-char}.
 
 
 \begin{verbatim}
    > (let ([p (malloc 3)])
-       (pointer-set-char p 0 #b01111111)
-       (pointer-set-char p 1 #b10000000)
-       (pointer-set-char p 2 #b11111111)
+       (pointer-set-c-char! p 0 #b01111111)
+       (pointer-set-c-char! p 1 #b10000000)
+       (pointer-set-c-char! p 2 #b11111111)
        (let ([result
-              (list (pointer-ref-signed-char p 0)
-                    (pointer-ref-signed-char p 1)
-                    (pointer-ref-signed-char p 2)
-                    (pointer-ref-unsigned-char p 0)
-                    (pointer-ref-unsigned-char p 1)
-                    (pointer-ref-unsigned-char p 2))])
+              (list (pointer-ref-c-signed-char p 0)
+                    (pointer-ref-c-signed-char p 1)
+                    (pointer-ref-c-signed-char p 2)
+                    (pointer-ref-c-unsigned-char p 0)
+                    (pointer-ref-c-unsigned-char p 1)
+                    (pointer-ref-c-unsigned-char p 2))])
          (free p)
          result))
    (127 -128 -1 127 128 255)
 \end{verbatim}
 
-\defun{pointer-ref-signed-short}{procedure}
-\texttt{(pointer-ref-signed-short p i)}
+\defun{pointer-ref-c-signed-short}{procedure}
+\texttt{(pointer-ref-c-signed-short p i)}
 
-The procedure \texttt{pointer-ref-signed-short} loads two bytes
+The procedure \texttt{pointer-ref-c-signed-short} loads two bytes
 located at offsets \texttt{i} and \texttt{(+ i 1)} from the pointer
 \texttt{p} and returns an exact integer representing the
 sign-extended
 integer value of the sequence.  The resulting value is in the range
 $[-32768, 32767]$ inclusive.
 
-\defun{pointer-ref-unsigned-short}{procedure}
-\texttt{(pointer-ref-unsigned-short p i)}
+\defun{pointer-ref-c-unsigned-short}{procedure}
+\texttt{(pointer-ref-c-unsigned-short p i)}
 
-The procedure \texttt{pointer-ref-unsigned-short} loads two bytes
+The procedure \texttt{pointer-ref-c-unsigned-short} loads two bytes
 located at offsets \texttt{i} and \texttt{(+ i 1)} from the pointer
 \texttt{p} and returns an exact integer representing the unsigned
 integer value of the sequence.  The resulting value is in the range
 $[0, 65535]$ inclusive.
 
 \newpage
-\defun{pointer-ref-signed-int}{procedure}
-\texttt{(pointer-ref-signed-int p i)}
+\defun{pointer-ref-c-signed-int}{procedure}
+\texttt{(pointer-ref-c-signed-int p i)}
 
-The procedure \texttt{pointer-ref-signed-int} loads four bytes
+The procedure \texttt{pointer-ref-c-signed-int} loads four bytes
 starting at offset \texttt{i} of pointer \texttt{p} and returns an
 exact integer in the range of $[-2^{31},2^{31}-1]$ inclusive.
 
 
-\defun{pointer-ref-unsigned-int}{procedure}
-\texttt{(pointer-ref-unsigned-int p i)}
+\defun{pointer-ref-c-unsigned-int}{procedure}
+\texttt{(pointer-ref-c-unsigned-int p i)}
 
-The procedure \texttt{pointer-ref-unsigned-int} loads four bytes
+The procedure \texttt{pointer-ref-c-unsigned-int} loads four bytes
 starting at offset \texttt{i} of pointer \texttt{p} and returns an
 exact integer in the range of $[0,2^{32}-1]$ inclusive.
 
 
-\defun{pointer-ref-signed-long}{procedure}
-\texttt{(pointer-ref-signed-long p i)}
+\defun{pointer-ref-c-signed-long}{procedure}
+\texttt{(pointer-ref-c-signed-long p i)}
 
-On 64-bit systems, the procedure \texttt{pointer-ref-signed-long}
+On 64-bit systems, the procedure \texttt{pointer-ref-c-signed-long}
 loads eight bytes starting at offset \texttt{i} of pointer
 \texttt{p} and returns an integer in the range of
 $[-2^{63},2^{63}-1]$ inclusive.  On 32-bit systems, the procedure
-\texttt{pointer-ref-signed-long} performs the same task as
-\texttt{pointer-ref-signed-int}. 
+\texttt{pointer-ref-c-signed-long} performs the same task as
+\texttt{pointer-ref-c-signed-int}. 
 
 
-\defun{pointer-ref-unsigned-long}{procedure}
-\texttt{(pointer-ref-unsigned-long p i)}
+\defun{pointer-ref-c-unsigned-long}{procedure}
+\texttt{(pointer-ref-c-unsigned-long p i)}
 
-On 64-bit systems, the procedure \texttt{pointer-ref-unsigned-long}
+On 64-bit systems, the procedure \texttt{pointer-ref-c-unsigned-long}
 loads eight bytes starting at offset \texttt{i} of pointer
 \texttt{p} and returns an integer in the range of
 $[0,2^{64}-1]$ inclusive.  On 32-bit systems, the procedure
-\texttt{pointer-ref-unsigned-long} performs the same task as
-\texttt{pointer-ref-unsigned-int}. 
+\texttt{pointer-ref-c-unsigned-long} performs the same task as
+\texttt{pointer-ref-c-unsigned-int}. 
 
 
-\defun{pointer-ref-float}{procedure}
-\texttt{(pointer-ref-float p i)}
+\defun{pointer-ref-c-float}{procedure}
+\texttt{(pointer-ref-c-float p i)}
 
-The procedure \texttt{pointer-ref-float} returns the four-byte
+The procedure \texttt{pointer-ref-c-float} returns the four-byte
 float (represented as IEEE-754 single precision floating point
 number) stored at offset \texttt{i} of the pointer \texttt{p}.
 The value is extended to an IEEE-754 double precision floating
 point number that Ikarus uses to represent inexact numbers.
 
-\defun{pointer-ref-double}{procedure}
-\texttt{(pointer-ref-double p i)}
+\defun{pointer-ref-c-double}{procedure}
+\texttt{(pointer-ref-c-double p i)}
 
-The procedure \texttt{pointer-ref-double} returns the eight-byte
+The procedure \texttt{pointer-ref-c-double} returns the eight-byte
 float (represented as IEEE-754 double precision floating point
 number) stored at offset \texttt{i} of the pointer \texttt{p}.
 
 
-\defun{pointer-ref-pointer}{procedure}
-\texttt{(pointer-ref-pointer p i)}
+\defun{pointer-ref-c-pointer}{procedure}
+\texttt{(pointer-ref-c-pointer p i)}
 
-The procedure \texttt{pointer-ref-pointer} returns the pointer
+The procedure \texttt{pointer-ref-c-pointer} returns the pointer
 stored at offset \texttt{i} from the pointer \texttt{p}.  The size
 of the pointer (also the number of bytes loaded) depends on the
 architecture: it is 4 bytes on 32-bit systems and 8 bytes on 64-bit
@@ -2567,12 +2567,12 @@ parameter type.
 
 
 
-\defun{make-callout}{procedure}
-\texttt{((make-callout return-type parameter-types) native-pointer)}
+\defun{make-c-callout}{procedure}
+\texttt{((make-c-callout return-type parameter-types) native-pointer)}
 
-The procedure \texttt{make-callout} is the primary facility for
+The procedure \texttt{make-c-callout} is the primary facility for
 making foreign procedures callable from Scheme.  It works as
-follows.  First, \texttt{make-callout} receives two arguments
+follows.  First, \texttt{make-c-callout} receives two arguments
 denoting the signature of the procedure to be called.  It prepares a
 bridge that converts from Scheme's calling conventions and data
 structures to their foreign counterparts.  It returns a procedure
@@ -2589,10 +2589,10 @@ types, calls the foreign procedure, obtains the result, and converts
 it to the appropriate Scheme value (depending on the
 \texttt{return-type}).
 
-The interface of \texttt{make-callout} is broken down into three
+The interface of \texttt{make-c-callout} is broken down into three
 stages in order to accomodate common usage patterns.  Often types, a
 function signature can be used by many foreign procedures and
-therefore, \texttt{make-callout} can be called once per signature
+therefore, \texttt{make-c-callout} can be called once per signature
 and each signature can be used multiple times.  Similarly,
 separating the foreign procedure preparation from parameter passing
 allows for preparing the foreign procedure once and calling it many
@@ -2655,14 +2655,14 @@ specifier to mean ``no useful value is returned''.}
 
 
 The following example illustrates the use of the
-\texttt{make-callout} procedure in combination with \texttt{dlopen}
+\texttt{make-c-callout} procedure in combination with \texttt{dlopen}
 and \texttt{dlsym}.  The session was run on a 32-bit Ikarus running
 under Mac OS X 10.4.  First, the \texttt{libc.dylib} foreign library
 is loaded and is bound to the variable \texttt{libc}.  Next, we
 obtain a pointer to the \texttt{atan} foreign procedure that is
 defined in \texttt{libc}.  The native procedure \texttt{atan} takes
 a \texttt{double} as an argument and returns a \texttt{double} and
-that's the signature that we use for \texttt{make-callout}.
+that's the signature that we use for \texttt{make-c-callout}.
 Finally, we call the foreign procedure interface with one argument,
 \texttt{1.0}, which is a flonum and thus matches the required
 parameter type.  The native procedure returns a \texttt{double}
@@ -2678,7 +2678,7 @@ value which is converted to the Scheme flonum with value
    > libc-atan-ptr
    #<pointer #x9006CB1F>
    > (define libc-atan 
-       ((make-callout 'double '(double)) libc-atan-ptr))
+       ((make-c-callout 'double '(double)) libc-atan-ptr))
    > libc-atan
    #<procedure>
    > (libc-atan 1.0)
@@ -2713,14 +2713,14 @@ Figure~\ref{fig:foreign-types} on page~\pageref{fig:foreign-types} for
 details).
 
 
-\defun{make-callback}{procedure}
-\texttt{((make-callback return-type parameter-types) scheme-procedure)}
+\defun{make-c-callback}{procedure}
+\texttt{((make-c-callback return-type parameter-types) scheme-procedure)}
 
-The procedure \texttt{make-callback} is similar to the procedure
-\texttt{make-callout} except that it provides a bridge from native
+The procedure \texttt{make-c-callback} is similar to the procedure
+\texttt{make-c-callout} except that it provides a bridge from native
 procedures back into Scheme.  While the procedure
-\texttt{make-callout} takes a native pointer and returns a Scheme
-procedure, \texttt{make-callback} takes a Scheme procedure and
+\texttt{make-c-callout} takes a native pointer and returns a Scheme
+procedure, \texttt{make-c-callback} takes a Scheme procedure and
 returns a native pointer.  The native pointer can be called by
 foreign procedures.  The native parameters are converted to Scheme
 data (according to \texttt{parameter-types}), the Scheme procedure
@@ -2730,18 +2730,18 @@ control returns to the native call site.
 
 
 Note that the native procedure pointer obtained from
-\texttt{make-callback} is indistinguishable from other native
+\texttt{make-c-callback} is indistinguishable from other native
 procedures that are obtained using \texttt{dlsym} or similar means.
-In particular, such native pointers can be used as arguments to
-\texttt{make-callout} resulting in a Scheme procedure that calls out
+In particular, such native pointers can be passed to
+\texttt{make-c-callout} resulting in a Scheme procedure that calls out
 to the native procedure that in turn calls back into Scheme.  The
 following segment illustrates a very inefficient way of extracting
 the lowermost 32 bits from an exact integer.
 
 \begin{verbatim}
    > (format "~x"
-       (((make-callout 'unsigned-int '(unsigned-int))
-         ((make-callback 'unsigned-int '(unsigned-int)) 
+       (((make-c-callout 'unsigned-int '(unsigned-int))
+         ((make-c-callback 'unsigned-int '(unsigned-int)) 
           values))
         #xfedcba09876543210fedcba09876543210))
    "76543210"
