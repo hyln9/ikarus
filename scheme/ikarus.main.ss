@@ -72,7 +72,7 @@
 (library (ikarus main)
   (export)
   (import (ikarus)
-          (ikarus startup)
+          (except (ikarus startup) host-info)
           (only (ikarus load) load-r6rs-top-level))
   (init-library-path)
   (let-values ([(files script script-type args)

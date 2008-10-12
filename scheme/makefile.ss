@@ -271,7 +271,7 @@
     [$stack      (ikarus system $stack)                #f     #t]
     [$interrupts (ikarus system $interrupts)           #f     #t]
     [$io         (ikarus system $io)                   #f     #t]
-    [$for        (ikarus system $foreign)              #f     #f]
+    [$for        (ikarus system $foreign)              #f     #t]
     [$all        (psyntax system $all)                 #f     #t]
     [$boot       (psyntax system $bootstrap)           #f     #t]
     [ne          (psyntax null-environment-5)          #f     #f]
@@ -1484,7 +1484,7 @@
     [pointer-ref-double         $for]
     [make-callout               $for]
     [make-callback              $for]
-    [host-info            i]
+    [host-info                     i]
 
   ))
 

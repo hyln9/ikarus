@@ -27,6 +27,7 @@
     (ikarus system $symbols)
     (ikarus system $bytevectors)
     (ikarus system $transcoders)
+    (only (ikarus system $foreign) pointer? pointer->integer)
     (only (ikarus.pretty-formats) get-fmt)
     (except (ikarus) 
       write display format printf fprintf print-error print-unicode print-graph

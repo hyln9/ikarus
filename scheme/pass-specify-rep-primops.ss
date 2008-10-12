@@ -233,7 +233,8 @@
       (cond
         [(list? ls) (nop)]
         [else (interrupt)])]
-     [(known) (error 'translate "memq")]
+     [(known expr t)
+      (cogen-effect-memq x expr)]
      [else (interrupt)])])
 
 (define (equable? x)
@@ -247,7 +248,8 @@
         [(and (list? lsv) (andmap equable? lsv))
          (cogen-value-$memq x ls)]
         [else (interrupt)])]
-     [(known) (error 'translate "memv")]
+     [(known expr t)
+      (cogen-value-memv x expr)]
      [else (interrupt)])]
   [(P x ls) 
    (struct-case ls
@@ -256,7 +258,8 @@
         [(and (list? lsv) (andmap equable? lsv))
          (cogen-pred-$memq x ls)]
         [else (interrupt)])]
-     [(known) (error 'translate "memv")]
+     [(known expr t)
+      (cogen-pred-memv x expr)]
      [else (interrupt)])]
   [(E x ls)
    (struct-case ls
@@ -264,7 +267,8 @@
       (cond
         [(list? lsv) (nop)]
         [else (interrupt)])]
-     [(known) (error 'translate "memv")]
+     [(known expr t)
+      (cogen-effect-memv x expr)]
      [else (interrupt)])])
 
 /section)
@@ -639,7 +643,8 @@
       (prm 'mref (T x)
          (K (+ (- disp-closure-data closure-tag)
                (* i wordsize))))]
-     [(known) (error 'translate "$cpref")]
+     [(known expr t)
+      (cogen-value-$cpref x expr)]
      [else (interrupt)])])
 
 /section)
@@ -717,7 +722,8 @@
             (interrupt-when (cogen-pred-$unbound-object? v))
             v)
           (interrupt))]
-     [(known) (error 'translate "top-level-value")]
+     [(known expr t)
+      (cogen-value-top-level-value expr)]
      [else
       (with-tmp ([x (T x)])
         (interrupt-unless (cogen-pred-symbol? x))
@@ -731,7 +737,8 @@
           (with-tmp ([v (cogen-value-$symbol-value x)])
             (interrupt-when (cogen-pred-$unbound-object? v)))
           (interrupt))]
-     [(known) (error 'translate "top-level-value")]
+     [(known expr t)
+      (cogen-effect-top-level-value expr)]
      [else
       (with-tmp ([x (T x)])
         (interrupt-unless (cogen-pred-symbol? x))
@@ -1047,7 +1054,8 @@
              (K (+ (- 7 i) (- disp-flonum-data record-tag))))
            (K 255))
         (K fx-shift))]
-     [(known) (error 'translate "$flonum-u8-ref")]
+     [(known expr t) 
+      (cogen-value-$flonum-u8-ref s expr)]
      [else (interrupt)])]
   [(P s i) (K #t)]
   [(E s i) (nop)])
@@ -1070,7 +1078,8 @@
          (T x)
          (K (+ (- 7 i) (- disp-flonum-data vector-tag)))
          (prm 'sra (T v) (K fx-shift)))]
-     [(known) (error 'translate "$flonum-set!")]
+     [(known expr t) 
+      (cogen-effect-$flonum-set! x expr v)]
      [else (interrupt)])])
 
 (define-primop $fixnum->flonum unsafe
@@ -1605,7 +1614,8 @@
                (K fx-shift))))]
         [else
          (interrupt)])]
-     [(known) (error 'translate "div")]
+     [(known expr t)
+      (cogen-value-div x expr)]
      [else (interrupt)])])
 
 (define-primop quotient safe
