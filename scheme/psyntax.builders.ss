@@ -141,8 +141,18 @@
                      vars val-exps)
                 (list body-exp)))))))))
   (define build-library-letrec*
-    (lambda (ae vars locs val-exps body-exp)
-      `(library-letrec* ,(map list vars locs val-exps) ,body-exp)))
+    (lambda (ae top? vars locs val-exps body-exp)
+      (if-wants-library-letrec*
+        `(library-letrec* ,(map list vars locs val-exps) ,body-exp)
+        (build-letrec* ae vars val-exps 
+          (if top? 
+              body-exp
+              (build-sequence ae
+                (cons body-exp
+                  (map (lambda (var loc) 
+                         (build-global-assignment ae loc var))
+                     vars locs))))))))
+
 
   )
 

@@ -21,8 +21,13 @@
 (library (psyntax config)
   (export if-wants-define-record if-wants-define-struct 
           if-wants-case-lambda
-          if-wants-letrec* if-wants-global-defines)
+          if-wants-letrec* if-wants-global-defines
+          if-wants-library-letrec*
+          base-of-interaction-library)
   (import (rnrs))
+
+  (define (base-of-interaction-library) '(ikarus))
+
   (define-syntax define-option
     (syntax-rules ()
       ((_ name #t) 
@@ -34,6 +39,7 @@
          (syntax-rules ()
            ((_ sk fk) fk))))))
   
+
   (define-option if-wants-define-record  #t)
   (define-option if-wants-define-struct  #t)
   ;;; define-record is an ikarus-specific extension.
@@ -61,6 +67,9 @@
   ;;; If the implementation has built-in support for
   ;;; efficient letrec* (ikarus, chez), then this option
   ;;; should be enabled.  Disabling the option expands
-  ;;; (letrec* ([lhs* rhs*] ...) body) into
-  ;;; (let ([lhs* #f] ...) (set! lhs* rhs*) ... body)
+  ;;; (letrec* ((lhs* rhs*) ...) body) into
+  ;;; (let ((lhs* #f) ...) (set! lhs* rhs*) ... body)
+
+  (define-option if-wants-library-letrec* #t)
+
 )
