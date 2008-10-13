@@ -153,9 +153,9 @@
                    ($fx<= 0 i)
                    ($fx< i ($fxsub1 ($bytevector-length x)))
                    ($fxzero? ($fxlogand i 1)))
-              ($fxlogor
-                ($fxsll ($bytevector-u8-ref x i) 8)
-                ($bytevector-u8-ref x ($fxadd1 i)))
+              ($fxlogor ;;; little
+                ($bytevector-u8-ref x i) 
+                ($fxsll ($bytevector-u8-ref x ($fxadd1 i)) 8))
               (die 'bytevector-u16-native-ref "invalid index" i))
           (die 'bytevector-u16-native-ref "not a bytevector" x))))
 
@@ -170,9 +170,9 @@
                        ($fx<= 0 i)
                        ($fx< i ($fxsub1 ($bytevector-length x)))
                        ($fxzero? ($fxlogand i 1)))
-                  (begin
-                    ($bytevector-set! x i ($fxsra n 8)) 
-                    ($bytevector-set! x ($fxadd1 i) n))
+                  (begin ;;; little
+                    ($bytevector-set! x i n)
+                    ($bytevector-set! x ($fxadd1 i) ($fxsra n 8)))
                   (die 'bytevector-u16-native-set! "invalid index" i))
               (die 'bytevector-u16-native-set! "invalid value" n))
           (die 'bytevector-u16-native-set! "not a bytevector" x))))
@@ -187,9 +187,9 @@
                        ($fx<= 0 i)
                        ($fx< i ($fxsub1 ($bytevector-length x)))
                        ($fxzero? ($fxlogand i 1)))
-                  (begin
-                    ($bytevector-set! x i ($fxsra n 8)) 
-                    ($bytevector-set! x ($fxadd1 i) n))
+                  (begin ;;; little
+                    ($bytevector-set! x i n) 
+                    ($bytevector-set! x ($fxadd1 i) ($fxsra n 8)))
                   (die 'bytevector-s16-native-set! "invalid index" i))
               (die 'bytevector-s16-native-set! "invalid value" n))
           (die 'bytevector-s16-native-set! "not a bytevector" x))))
@@ -201,9 +201,9 @@
                    ($fx<= 0 i)
                    ($fx< i ($fxsub1 ($bytevector-length x)))
                    ($fxzero? ($fxlogand i 1)))
-              ($fxlogor
-                ($fxsll ($bytevector-s8-ref x i) 8)
-                ($bytevector-u8-ref x ($fxadd1 i)))
+              ($fxlogor ;;; little
+                ($bytevector-u8-ref x i)
+                ($fxsll ($bytevector-s8-ref x ($fxadd1 i)) 8))
               (die 'bytevector-s16-native-ref "invalid index" i))
           (die 'bytevector-s16-native-ref "not a bytevector" x))))
 

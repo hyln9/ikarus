@@ -78,7 +78,7 @@
           (combinations n)))))
 
 
-  (define (test-ref/set type combinations getter setter)
+  (define (t-ref/set type combinations getter setter)
     (printf "testing memory access (~s combination for type ~s)\n" 
             (length combinations)
             type)
@@ -115,14 +115,14 @@
     (for-each check-combinations '(8 16 32 64))
 
     (test-pointer-values)
-    (test-ref/set 'char   (s*  8) pointer-ref-signed-char    pointer-set-char)
-    (test-ref/set 'short  (s* 16) pointer-ref-signed-short   pointer-set-short)
-    (test-ref/set 'int    (s* 32) pointer-ref-signed-int     pointer-set-int)
-    (test-ref/set 'long   (s* 64) pointer-ref-signed-long    pointer-set-long)
-    (test-ref/set 'uchar  (u*  8) pointer-ref-unsigned-char  pointer-set-char)
-    (test-ref/set 'ushort (u* 16) pointer-ref-unsigned-short pointer-set-short)
-    (test-ref/set 'uint   (u* 32) pointer-ref-unsigned-int   pointer-set-int)
-    (test-ref/set 'ulong  (u* 64) pointer-ref-unsigned-long  pointer-set-long)
+    (t-ref/set 'char   (s*  8) pointer-ref-c-signed-char    pointer-set-c-char!)
+    (t-ref/set 'short  (s* 16) pointer-ref-c-signed-short   pointer-set-c-short!)
+    (t-ref/set 'int    (s* 32) pointer-ref-c-signed-int     pointer-set-c-int!)
+    (t-ref/set 'long   (s* 64) pointer-ref-c-signed-long    pointer-set-c-long!)
+    (t-ref/set 'uchar  (u*  8) pointer-ref-c-unsigned-char  pointer-set-c-char!)
+    (t-ref/set 'ushort (u* 16) pointer-ref-c-unsigned-short pointer-set-c-short!)
+    (t-ref/set 'uint   (u* 32) pointer-ref-c-unsigned-int   pointer-set-c-int!)
+    (t-ref/set 'ulong  (u* 64) pointer-ref-c-unsigned-long  pointer-set-c-long!)
     )
 
 
