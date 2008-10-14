@@ -253,6 +253,16 @@
                      (f (fxadd1 i)))))
                (when m (put-mark m str))
                str))]
+          [(#\S) ;;; unicode string
+           (let ([n (read-int p)])
+             (let ([str (make-string n)])
+               (let f ([i 0])
+                 (unless (fx= i n)
+                   (let ([c (integer->char (read-int p))])
+                     (string-set! str i c)
+                     (f (fxadd1 i)))))
+               (when m (put-mark m str))
+               str))]
           [(#\M) ;;; symbol
            (let ([str (read)])
              (let ([sym (string->symbol str)])

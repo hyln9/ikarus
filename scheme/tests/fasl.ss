@@ -46,6 +46,7 @@
     (test 127487384734.4)
     (test (make-rectangular 12 13))
     (test (make-rectangular 12.0 13.0))
+    (test (string #\x3bb))
     (test-cycle))
 
 )
