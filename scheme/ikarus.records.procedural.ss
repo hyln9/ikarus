@@ -447,11 +447,11 @@
         (car (vector-ref (rtd-fields rtd) k)))))
 
   (set-rtd-printer! (type-descriptor rtd)
-    (lambda (x p) 
+    (lambda (x p wr) 
       (display (format "#<record-type-descriptor ~s>" (rtd-name x)) p)))
 
   (set-rtd-printer! (type-descriptor rcd)
-    (lambda (x p) 
+    (lambda (x p wr) 
       (display (format "#<record-constructor-descriptor ~s>"
                        (rtd-name (rcd-rtd x))) p)))
                   

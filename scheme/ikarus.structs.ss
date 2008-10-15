@@ -279,7 +279,7 @@
   (set-rtd-fields! (base-rtd) '(name fields length printer symbol))
   (set-rtd-name! (base-rtd) "base-rtd")
   ($set-rtd-printer! (base-rtd)
-    (lambda (x p)
+    (lambda (x p wr)
       (unless (rtd? x)
         (die 'struct-type-printer "not an rtd"))
       (display "#<" p)
