@@ -17,7 +17,8 @@
 (library (ikarus writer)
 
   (export write display format printf fprintf print-error
-          print-unicode print-graph put-datum traverse)
+          print-unicode print-graph put-datum traverse
+          traversal-helpers)
 
   (import 
     (rnrs hashtables)
@@ -39,42 +40,57 @@
     (make-parameter #t))
 
 
-;;; association list in hash table is one of the following forms:
-;;;
-;;; a fixnum: 
-(define cyclic-bit         #b001)
-(define shared-bit         #b010)
-(define marked-bit         #b100)
-(define mark-shift         3)
-;;;
-;;; or a pair of a fixnum (above) and a cache:
-(define-struct cache (string object next))
-(define (cyclic-set? b) 
-  (fx= (fxand b cyclic-bit) cyclic-bit))
-(define (shared-set? b)
-  (fx= (fxand b shared-bit) shared-bit))
-(define (mark-set? b)
-  (fx= (fxand b marked-bit) marked-bit))
-             
-(define (set-mark! x h n)
-  (let ([b (hashtable-ref h x #f)])
-    (cond
-      [(fixnum? b) 
-       (hashtable-set! h x 
-         (fxior (fxsll n mark-shift) marked-bit b))]
-      [else
-       (set-car! b 
-         (fxior (fxsll n mark-shift) marked-bit (car b)))])))
+(module traversal-helpers
+  (cyclic-set? shared-set? mark-set? set-mark! set-shared! shared?
+               shared-bit cyclic-bit marked-bit mark-shift
+               make-cache cache-string cache-object cache-next)
+  ;;; association list in hash table is one of the following forms:
+  ;;;
+  ;;; a fixnum: 
+  (define cyclic-bit         #b001)
+  (define shared-bit         #b010)
+  (define marked-bit         #b100)
+  (define mark-shift         3)
+  ;;;
+  ;;; or a pair of a fixnum (above) and a cache:
+  (define-struct cache (string object next))
+  (define (cyclic-set? b) 
+    (fx= (fxand b cyclic-bit) cyclic-bit))
+  (define (shared-set? b)
+    (fx= (fxand b shared-bit) shared-bit))
+  (define (mark-set? b)
+    (fx= (fxand b marked-bit) marked-bit))
+               
+  (define (set-mark! x h n)
+    (let ([b (hashtable-ref h x #f)])
+      (cond
+        [(fixnum? b) 
+         (hashtable-set! h x 
+           (fxior (fxsll n mark-shift) marked-bit b))]
+        [else
+         (set-car! b 
+           (fxior (fxsll n mark-shift) marked-bit (car b)))])))
 
-(define (shared? x h)
-  (cond
-    [(hashtable-ref h x #f) =>
-     (lambda (b) 
-       (if (fixnum? b) 
-           (shared-set? b)
-           (let ([b (car b)])
-             (shared-set? b))))]
-    [else #f]))
+  (define (set-shared! x h)
+    (let ([b (hashtable-ref h x #f)])
+      (cond
+        [(fixnum? b) 
+         (hashtable-set! h x (fxior shared-bit b))]
+        [else
+         (set-car! b (fxior shared-bit (car b)))])))
+  
+  (define (shared? x h)
+    (cond
+      [(hashtable-ref h x #f) =>
+       (lambda (b) 
+         (if (fixnum? b) 
+             (shared-set? b)
+             (let ([b (car b)])
+               (shared-set? b))))]
+      [else #f])))
+(import traversal-helpers)
+
+
 (define (cannot-happen)
   (error 'ikarus-writer "internal error"))
 

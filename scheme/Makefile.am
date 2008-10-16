@@ -14,7 +14,8 @@ EXTRA_DIST=ikarus.boot.4.prebuilt ikarus.boot.8.prebuilt \
   ikarus.lists.ss ikarus.load.ss ikarus.main.ss \
   ikarus.multiple-values.ss ikarus.numerics.ss \
   ikarus.pairs.ss ikarus.posix.ss ikarus.predicates.ss \
-  ikarus.pretty-print.ss ikarus.promises.ss ikarus.reader.ss \
+  ikarus.pretty-print.ss ikarus.pretty-formats.ss \
+  ikarus.promises.ss ikarus.reader.ss \
   ikarus.records.procedural.ss ikarus.conditions.ss \
   ikarus.singular-objects.ss ikarus.sort.ss ikarus.strings.ss \
   ikarus.structs.ss ikarus.symbols.ss ikarus.timer.ss ikarus.trace.ss \

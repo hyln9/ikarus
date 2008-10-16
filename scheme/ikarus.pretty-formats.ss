@@ -55,6 +55,7 @@
   (set-fmt! 'let-values '(_ (0 [e 0 e] ...) tab e tab e* ...))
   (set-fmt! 'cond '(_ tab [0 e ...] ...))
   (set-fmt! 'define '(_ name tab e ...))
+  (set-fmt! 'set! '(_ name tab e))
   (set-fmt! 'case-lambda 
      '(_ tab [0 e ...] ...))
   (set-fmt! 'struct-case 
