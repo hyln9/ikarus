@@ -49,8 +49,6 @@
     (test-eqv -0.0 0.0 #f)
     (test-eqv -0.0 -0.0 #t))
 
-
-
   (define (test-exact-integer-sqrt)
     (define (f i j inc)
       (when (< i j)
@@ -67,4 +65,5 @@
   (define (run-tests)
     (test-rounding)
     (test-exact-integer-sqrt)
-    #;(test-eqv)))
+    (test-eqv))
+  )
