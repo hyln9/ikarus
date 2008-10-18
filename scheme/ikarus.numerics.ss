@@ -1268,7 +1268,7 @@
                          (quotient y g))))]))]
            [(flonum? y) ($fl/ (bignum->flonum x) y)]
            [(ratnum? y) 
-            (binary/ (binary* x ($ratnum-n y)) ($ratnum-d y))]
+            (binary/ (binary* x ($ratnum-d y)) ($ratnum-n y))]
            [(or (compnum? y) (cflonum? y)) (x/compy x y)]
            [else (err '/ y)])]
         [(ratnum? x)

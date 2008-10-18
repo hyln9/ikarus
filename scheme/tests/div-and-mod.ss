@@ -4,8 +4,14 @@
   (import (ikarus))
 
   (define (run-tests)
+    (test-/)
     (test-div-and-mod)
     (test-div0-and-mod0))
+
+
+  (define (test-/)
+    (assert (= (/ 536870912 1/4) 2147483648)))
+
 
   (define (test-div-and-mod)
     (define (test x1 x2)
