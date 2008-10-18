@@ -1,7 +1,15 @@
 
 (library (tests bignum-to-flonum)
-  (export test-bignum-to-flonum test-bignum->flonum)
+  (export run-tests)
   (import (ikarus) (tests framework))
+
+
+  (define (run-tests)
+    (test-bignum-to-flonum)
+    (test-bignum->flonum))
+
+
+
   (define (t x s)
     (let ([fl (format "~a" (exact->inexact x))])
       (unless (string=? s fl)

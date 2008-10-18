@@ -1,22 +1,21 @@
 
 (library (tests numerics)
-  (export test-numerics)
+  (export run-tests)
   (import (ikarus))
 
-  (define (test-round x)
-    (let ([rx (round x)])
-      (unless (integer? rx)
-        (error 'test-round "not an integer result for" x rx))
-      (let ([diff (abs (- (abs x) (abs rx)))])
-        (cond
-          [(= diff 1/2) 
-           (unless (even? rx)
-             (error 'test-round "non-even rounding for" x rx))]
-          [else
-           (unless (< diff 1/2)
-             (error 'test-round "rounding the wrong way for" x rx))]))))
-
-  (define (test-numerics)
+  (define (test-rounding)
+    (define (test-round x)
+      (let ([rx (round x)])
+        (unless (integer? rx)
+          (error 'test-round "not an integer result for" x rx))
+        (let ([diff (abs (- (abs x) (abs rx)))])
+          (cond
+            [(= diff 1/2) 
+             (unless (even? rx)
+               (error 'test-round "non-even rounding for" x rx))]
+            [else
+             (unless (< diff 1/2)
+               (error 'test-round "rounding the wrong way for" x rx))]))))
     (test-round -251/100)
     (test-round -250/100)
     (test-round -249/100)
@@ -36,4 +35,36 @@
     (test-round -349/100)
     (test-round +351/100)
     (test-round +350/100)
-    (test-round +349/100)))
+    (test-round +349/100))
+
+  (define (test-eqv)
+    (define (test-eqv x y result)
+      (unless (eqv? (eqv? x y) result) 
+        (error 'test-eqv "failed" x y result)))
+    (test-eqv 0 0 #t)
+    (test-eqv 0.0 0 #f)
+    (test-eqv 0 0.0 #f)
+    (test-eqv 0.0 0.0 #t)
+    (test-eqv 0.0 -0.0 #f)
+    (test-eqv -0.0 0.0 #f)
+    (test-eqv -0.0 -0.0 #t))
+
+
+
+  (define (test-exact-integer-sqrt)
+    (define (f i j inc)
+      (when (< i j)
+        (let-values ([(s r) (exact-integer-sqrt i)])
+          (unless (and (= (+ (* s s) r) i)
+                       (< i (* (+ s 1) (+ s 1))))
+            (error 'exact-integer-sqrt "wrong result" i))
+          (f (+ i inc) j inc))))
+    (f 0 10000 1)
+    (f 0 536870911 10000)
+    (f 0 536870911000 536870911))
+
+
+  (define (run-tests)
+    (test-rounding)
+    (test-exact-integer-sqrt)
+    #;(test-eqv)))

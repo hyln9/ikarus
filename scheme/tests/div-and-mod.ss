@@ -1,7 +1,11 @@
 
 (library (tests div-and-mod)
-  (export test-div-and-mod test-div0-and-mod0)
+  (export run-tests)
   (import (ikarus))
+
+  (define (run-tests)
+    (test-div-and-mod)
+    (test-div0-and-mod0))
 
   (define (test-div-and-mod)
     (define (test x1 x2)

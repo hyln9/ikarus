@@ -1,5 +1,5 @@
-(library (tests bitwise-op)
-  (export test-bitwise-op)
+(library (tests bitwise)
+  (export run-tests)
   (import (ikarus) (tests framework))
 
 
@@ -78,7 +78,7 @@
     )
 
 
-  (define (test-bitwise-op)
+  (define (run-tests)
     (test-base-cases)
     (test-other-cases)))
 

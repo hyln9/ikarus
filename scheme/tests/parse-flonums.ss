@@ -1,6 +1,6 @@
 
 (library (tests parse-flonums)
-  (export test-parse-flonums)
+  (export run-tests)
   (import (ikarus))
   
   (define file "tests/rn100")
@@ -83,7 +83,7 @@
                 (reverse ac)
                 (f (cons x ac))))))))
 
-  (define (test-parse-flonums)
+  (define (run-tests)
     (define who 'test-parse-flonums)
     (define failed #f)
     (define idx 0)

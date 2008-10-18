@@ -1,9 +1,11 @@
 (library (tests hashtables)
-  (export test-hashtables)
+  (export run-tests)
   (import 
     (ikarus)
     (rnrs hashtables)
     (tests framework))
+
+  (define (run-tests) (test-hashtables))
 
   (define-tests test-hashtables
     [values

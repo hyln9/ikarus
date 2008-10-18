@@ -3,8 +3,11 @@
 ;;; assume reader which loads this file can only read signed integers.
 
 (library (tests string-to-number)
-  (export test-string-to-number)
+  (export run-tests)
   (import (ikarus) (tests framework))
+
+  (define (run-tests)
+    (test-string-to-number))
 
   (define (test string expected)
     (define (equal-results? x y)

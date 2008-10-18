@@ -1,6 +1,8 @@
 (library (tests lists)
-  (export test-lists)
+  (export run-tests)
   (import (ikarus) (tests framework))
+
+  (define (run-tests) (test-lists))
 
   (define-tests test-lists
     [values (equal? (for-all even? '(1 2 3 4)) #f)]

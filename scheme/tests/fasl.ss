@@ -1,6 +1,6 @@
 
 (library (tests fasl)
-  (export test-fasl)
+  (export run-tests)
   (import (ikarus) (tests framework))
 
   (define (test x)
@@ -27,7 +27,7 @@
         (assert (eq? x (cdr x))))))
 
 
-  (define (test-fasl) 
+  (define (run-tests) 
     (test 12)
     (test -12)
     (test (greatest-fixnum))

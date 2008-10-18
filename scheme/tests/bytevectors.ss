@@ -1,6 +1,6 @@
 
 (library (tests bytevectors)
-  (export test-bytevectors)
+  (export run-tests)
   (import (ikarus) (tests framework))
 
   (define (not-bytevector? x) 
@@ -380,8 +380,11 @@
          (bytevector-u8-set! bv (- sz 1) 73)
          (collect)
          ($bytevector-u8-ref bv (- sz 1))))]
-
-    ))
+    )
+  
+  (define (run-tests)
+    (test-bytevectors))
+  )
 
 
 

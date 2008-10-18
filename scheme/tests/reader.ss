@@ -1,5 +1,5 @@
 (library (tests reader)
-  (export test-reader test-char-syntax)
+  (export run-tests)
   (import (ikarus) (tests framework))
 
   (define t
@@ -98,6 +98,12 @@
      (read (open-string-input-port "#\\space"))]
     [(lambda (x) (= (char->integer x) #x7F)) 
      (read (open-string-input-port "#\\delete"))])
+
+
+  (define (run-tests)
+    (test-char-syntax)
+    (test-reader))
+
 
   )
 

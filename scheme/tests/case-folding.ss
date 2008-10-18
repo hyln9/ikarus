@@ -1,6 +1,6 @@
 
 (library (tests case-folding)
-  (export test-case-folding)
+  (export run-tests)
   (import (ikarus))
 
   (define case-fold-mapping
@@ -1027,7 +1027,7 @@
         (test-strings (string (car x)) (list->string (cdr x))))
       case-fold-mapping))
 
-  (define (test-case-folding)
+  (define (run-tests)
     (test-char-by-char)
     (test-strings 
        (list->string (map car case-fold-mapping))

@@ -1,7 +1,14 @@
 (library (tests bignums)
-  (export test-bignums test-bignum-conversion test-bitwise-bit-count 
-          test-bignum-length)
+  (export run-tests)
   (import (ikarus) (tests framework))
+
+
+  (define (run-tests)
+    (test-bignums)
+    (test-bignum-conversion)
+    (test-bitwise-bit-count)
+    (test-bignum-length))
+
 
   (define (test-bignum-conversion)
     (define (test x) 

@@ -1,7 +1,7 @@
 
 (library (tests io)
-  (export test-io)
-  (import (ikarus))
+  (export run-tests)
+  (import (ikarus)(tests framework))
 
 
 (define-syntax test
@@ -522,13 +522,21 @@
   ;(test 'utf16 (utf-16-codec) string->utf16)
   (test 'utf8 (utf-8-codec) string->utf8))
 
+  (define-tests test-input-ports
+    [eof-object?
+     (get-line (open-string-input-port ""))]
+    [(lambda (x) (equal? x "abcd"))
+     (get-line (open-string-input-port "abcd"))]
+    [(lambda (x) (equal? x ""))
+     (get-line (open-string-input-port "\nabcd"))]
+    [(lambda (x) (equal? x "abcd"))
+     (get-line (open-string-input-port "abcd\nefg"))])
 
-(define (test-io)
+(define (run-tests)
   (test-custom-binary-input-ports)
   (test-custom-binary-output-ports)
   (run-exhaustive-tests)
   (test-input-files)
-  (test-partial-reads))
+  (test-partial-reads)
+  (test-input-ports))
 )
-;(run-interactive-tests)
-

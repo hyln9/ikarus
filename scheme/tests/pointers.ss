@@ -1,6 +1,6 @@
 
 (library (tests pointers)
-  (export test-pointers)
+  (export run-tests)
   (import (ikarus) (ikarus system $foreign))
 
   (define bits 
@@ -111,7 +111,7 @@
     (for-each check (u* n) (s* n)))
   
 
-  (define (test-pointers)
+  (define (run-tests)
     (for-each check-combinations '(8 16 32 64))
 
     (test-pointer-values)

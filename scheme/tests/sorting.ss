@@ -1,6 +1,6 @@
 
 (library (tests sorting)
-  (export test-sorting)
+  (export run-tests)
   (import (ikarus))
 
   (define (permutations ls)
@@ -99,7 +99,7 @@
     (test '(1 2 3 4 5 6 7))
     (test '(1 2 3 4 5 6 7 8)))
   
-  (define (test-sorting)
+  (define (run-tests)
     (test-permutations) 
     (test-vector-sort) 
     (test-list-sort)))

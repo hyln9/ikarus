@@ -1,7 +1,11 @@
 
 (library (tests fldiv-and-mod)
-  (export test-fldiv-and-mod test-fldiv0-and-mod0)
+  (export run-tests)
   (import (ikarus))
+
+  (define (run-tests)
+    (test-fldiv-and-mod)
+    (test-fldiv0-and-mod0))
 
 
   (define (test-fldiv-and-mod)

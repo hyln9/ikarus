@@ -1,6 +1,8 @@
 (library (tests strings)
-  (export test-strings)
+  (export run-tests)
   (import (ikarus) (tests framework))
+
+  (define (run-tests) (test-strings))
 
   (define-tests test-strings
     [values

@@ -15,10 +15,10 @@
 
 
 (library (tests enums)
-  (export test-enums)
+  (export run-tests)
   (import (ikarus))
     
-  (define (test-enums)
+  (define (run-tests)
     (define (trace-equal? x y) (equal? x y))
     (assert 
       (trace-equal? 
