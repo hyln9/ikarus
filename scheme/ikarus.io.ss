@@ -1416,8 +1416,7 @@
          transcoder
          #t
          'open-file-input-port)]))
-
-
+ 
   (define open-file-output-port
     (case-lambda
       [(filename) 
@@ -1427,20 +1426,21 @@
       [(filename file-options buffer-mode) 
        (open-file-output-port filename file-options buffer-mode #f)]
       [(filename file-options buffer-mode transcoder)
+       (define who 'open-file-output-port)
        (unless (string? filename)
-         (die 'open-file-output-port "invalid filename" filename))
+         (die who "invalid filename" filename))
        ; FIXME: file-options ignored
-       ; FIXME: buffer-mode ignored
+       ; FIXME: line-buffered output ports are not handled
        (unless (or (not transcoder) (transcoder? transcoder)) 
-         (die 'open-file-output-port "invalid transcoder" transcoder))
-       (fh->output-port
-         (open-output-file-handle filename file-options 
-            'open-file-output-port)
-         filename
-         output-file-buffer-size
-         transcoder
-         #t
-         'open-file-output-port)]))
+         (die who "invalid transcoder" transcoder))
+       (let ([buffer-size 
+              (case buffer-mode
+                [(none) 1]
+                [(block line) output-file-buffer-size]
+                [else (die who "invalid buffer mode" buffer-mode)])])
+         (fh->output-port
+           (open-output-file-handle filename file-options who)
+           filename buffer-size transcoder #t who))]))
 
   (define (open-output-file filename)
     (unless (string? filename)
@@ -1565,7 +1565,7 @@
   (define *the-error-port* 
     (make-parameter
       (transcoded-port 
-        (fh->output-port 2 '*stderr* output-file-buffer-size #f #f #f)
+        (fh->output-port 2 '*stderr* 1 #f #f #f)
         (native-transcoder))))
 
   (define console-output-port
