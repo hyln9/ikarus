@@ -164,7 +164,7 @@
        (or (char? x) (die 'char-ci=? "not a char" x))]
       [(x . x*) 
        (if (char? x) 
-           (char-ci-loop x x* char=? 'char-ci=?)
+           (char-ci-loop ($fold x) x* = 'char-ci=?)
            (die 'char-ci=? "not a char" x))]))
 
   (define char-ci<? 
@@ -180,7 +180,7 @@
        (or (char? x) (die 'char-ci<? "not a char" x))]
       [(x . x*) 
        (if (char? x) 
-           (char-ci-loop x x* char<? 'char-ci<?)
+           (char-ci-loop ($fold x) x* < 'char-ci<?)
            (die 'char-ci<? "not a char" x))]))
 
   (define char-ci<=? 
@@ -196,7 +196,7 @@
        (or (char? x) (die 'char-ci<=? "not a char" x))]
       [(x . x*) 
        (if (char? x) 
-           (char-ci-loop x x* char<=? 'char-ci<=?)
+           (char-ci-loop ($fold x) x* <= 'char-ci<=?)
            (die 'char-ci<=? "not a char" x))]))
 
   (define char-ci>? 
@@ -212,7 +212,7 @@
        (or (char? x) (die 'char-ci>? "not a char" x))]
       [(x . x*) 
        (if (char? x) 
-           (char-ci-loop x x* char>? 'char-ci>?)
+           (char-ci-loop ($fold x) x* > 'char-ci>?)
            (die 'char-ci>? "not a char" x))]))
   
   (define char-ci>=? 
@@ -228,7 +228,7 @@
        (or (char? x) (die 'char-ci>=? "not a char" x))]
       [(x . x*) 
        (if (char? x) 
-           (char-ci-loop x x* char>=? 'char-ci>=?)
+           (char-ci-loop ($fold x) x* >= 'char-ci>=?)
            (die 'char-ci>=? "not a char" x))]))
                
   (define ($string-change-case str adjustment-vector)
