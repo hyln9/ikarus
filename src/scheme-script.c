@@ -49,7 +49,6 @@ int main(int argc, char** argv){
   char** args = calloc(sizeof(char*), argc+1);
   args[0] = argv[0];
   args[1] = "--r6rs-script";
-  args[2] = argv[1];
   int i;
   for(i=1; i<argc; i++){
     args[i+1] = argv[i];

@@ -53,70 +53,21 @@ Options for running ikarus scheme:\n\
   fprintf(stderr, helpstring, BOOTFILE);
 }
 
-
-/* get_option
-   
-   takes pointers to argc and argv and looks for the first
-   option matching opt.  If one exists, it removes it from the argv
-   list, updates argc, and returns a pointer to the option value.
-   returns null if option is not found.
-   */
-char* 
-get_option(char* opt, int argc, char** argv){
-  int i;
-  for(i=1; i<argc; i++){
-    if(strcmp(opt, argv[i]) == 0){
-      if((i+1) < argc){
-        char* rv = argv[i+1];
-        int j;
-        for(j=i+2; j<argc; j++, i++){
-          argv[i] = argv[j];
-        }
-        return rv;
-      } 
-      else {
-        fprintf(stderr, 
-                "ikarus error: option %s requires a value, none provided\n",
-                opt);
-        ikarus_usage_short();
-        exit(-1);
-      }
-    }
-    else if(strcmp("--", argv[i]) == 0){
-      return 0;
-    }
-  }
-  return 0;
-}
-
-int
-get_option0(char* opt, int argc, char** argv){
-  int i;
-  for(i=1; i<argc; i++){
-    if(strcmp(opt, argv[i]) == 0){
-      int j;
-      for(j=i+1; j<argc; j++, i++){
-          argv[i] = argv[j];
-        }
-      return 1;
-    } 
-    else if(strcmp("--", argv[i]) == 0){
-      return 0;
-    }
-  }
-  return 0;
-}
-
 int main(int argc, char** argv){
-  if(get_option0("-h", argc, argv)){
+  char* boot_file = BOOTFILE;
+  if (((argc >= 2) && (strcmp(argv[1], "-h") == 0)) ||
+      ((argc == 2) && (strcmp(argv[1], "-b") == 0))) {
     ikarus_usage();
     exit(0);
   }
-  char* boot_file = get_option("-b", argc, argv);
-  if(boot_file){
+
+  if ((argc >= 3) && (strcmp(argv[1], "-b") == 0)){
+    boot_file = argv[2];
+    int i;
+    for(i=3; i<=argc; i++){
+      argv[i-2] = argv[i];
+    }
     argc -= 2;
-  } else {
-    boot_file = BOOTFILE;
   }
   return ikarus_main(argc, argv, boot_file);
 }

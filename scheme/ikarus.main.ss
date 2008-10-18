@@ -115,12 +115,19 @@
                     [else
                      (let-values ([(f* script script-type a*) (f (cdr args))])
                        (values (cons (car args) f*) script script-type a*))]))])
+    (define (assert-null files who)
+      (unless (null? files)
+        (apply die 'ikarus
+          (format "load files not allowed for ~a" who)
+          files)))
     (cond
       [(eq? script-type 'r6rs-script)
+       (assert-null files "--r6rs-script")
        (command-line-arguments (cons script args))
        (load-r6rs-top-level script 'run)
        (exit 0)]
       [(eq? script-type 'compile)
+       (assert-null files "--compile-dependencies")
        (command-line-arguments (cons script args))
        (load-r6rs-top-level script 'compile)
        (exit 0)]
