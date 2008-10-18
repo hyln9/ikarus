@@ -132,6 +132,9 @@
       input-socket-buffer-size output-socket-buffer-size
       ))
 
+  ;(define-syntax assert* (identifier-syntax assert))
+  (define-syntax assert* (syntax-rules () [(_ . x) (void)]))
+
   (module UNSAFE  
     (fx< fx<= fx> fx>= fx= fx+ fx-
      fxior fxand fxsra fxsll
@@ -1854,91 +1857,28 @@
   (module (put-char write-char put-string)
     (import UNSAFE)
     (define (put-char-utf8-mode p b who) 
+      (define (put-byte! p b who)
+        (let ([i ($port-index p)] [j ($port-size p)])
+          (assert* (fx< i j))
+          (bytevector-u8-set! ($port-buffer p) i b)
+          (let ([i (fx+ i 1)])
+            ($set-port-index! p i)
+            (when (fx= i j) (flush-output-port p)))))
       (cond
-        [(fx< b 128) 
-         (flush-output-port p) 
-         (let ([i ($port-index p)] [j ($port-size p)])
-           (cond
-             [(fx< i j) 
-              (bytevector-u8-set! ($port-buffer p) i b) 
-              ($set-port-index! p (fx+ i 1))]
-             [else
-              (die who "insufficient space on port" p)]))]
-        [(fx<= b #x7FF) 
-         (let ([i ($port-index p)] 
-               [j ($port-size p)]
-               [buf ($port-buffer p)])
-           (cond
-             [(fx< (fx+ i 1) j) 
-              (bytevector-u8-set! buf i 
-                (fxior #b11000000 (fxsra b 6)))
-              (bytevector-u8-set! buf (fx+ i 1) 
-                (fxior #b10000000 (fxand b #b111111)))
-              ($set-port-index! p (fx+ i 2))]
-             [else 
-              (flush-output-port p) 
-              (put-char-utf8-mode p b who)]))]
-        [(fx<= b #xFFFF) 
-         (let ([i ($port-index p)] 
-               [j ($port-size p)]
-               [buf ($port-buffer p)])
-           (cond
-             [(fx< (fx+ i 2) j) 
-              (bytevector-u8-set! buf i 
-                (fxior #b11100000 (fxsra b 12)))
-              (bytevector-u8-set! buf (fx+ i 1) 
-                (fxior #b10000000 (fxand (fxsra b 6) #b111111)))
-              (bytevector-u8-set! buf (fx+ i 2) 
-                (fxior #b10000000 (fxand b #b111111)))
-              ($set-port-index! p (fx+ i 3))]
-             [else 
-              (flush-output-port p) 
-              (put-char-utf8-mode p b who)]))]
+        [(fx< b 128)
+         (put-byte! p b who)]
+        [(fx<= b #x7FF)
+         (put-byte! p (fxior #b11000000 (fxsra b 6)) who)
+         (put-byte! p (fxior #b10000000 (fxand b #b111111)) who)]
+        [(fx<= b #xFFFF)
+         (put-byte! p (fxior #b11100000 (fxsra b 12)) who)
+         (put-byte! p (fxior #b10000000 (fxand (fxsra b 6) #b111111)) who)
+         (put-byte! p (fxior #b10000000 (fxand b #b111111)) who)]
         [else
-         (let ([i ($port-index p)] 
-               [j ($port-size p)]
-               [buf ($port-buffer p)])
-           (cond
-             [(fx< (fx+ i 3) j) 
-              (bytevector-u8-set! buf i 
-                (fxior #b11110000 (fxsra b 18)))
-              (bytevector-u8-set! buf (fx+ i 1)
-                (fxior #b10000000 (fxand (fxsra b 12) #b111111)))
-              (bytevector-u8-set! buf (fx+ i 2)
-                (fxior #b10000000 (fxand (fxsra b 6) #b111111)))
-              (bytevector-u8-set! buf (fx+ i 3) 
-                (fxior #b10000000 (fxand b #b111111)))
-              ($set-port-index! p (fx+ i 4))]
-             [else 
-              (flush-output-port p) 
-              (put-char-utf8-mode p b who)]))]))
-    (define (put-char-latin-mode p b who) 
-      (cond
-        [(fx< b 256) 
-         (flush-output-port p)
-         (let ([i ($port-index p)] [j ($port-size p)])
-           (cond
-             [(fx< i j) 
-              (bytevector-u8-set! ($port-buffer p) i b)
-              ($set-port-index! p (fx+ i 1))]
-             [else 
-              (die who "insufficient space in port" p)]))]
-        [else
-         (case (transcoder-error-handling-mode (port-transcoder p))
-           [(ignore) (void)]
-           [(replace) (put-char p #\?)]
-           [(raise) 
-            (raise (make-i/o-encoding-error p (integer->char b)))]
-           [else (die who "BUG: invalid die handling mode" p)])]))
-    (define (put-char-char-mode p c who)
-      (flush-output-port p)
-      (let ([i ($port-index p)] [j ($port-size p)])
-        (cond
-          [(fx< i j) 
-           (string-set! ($port-buffer p) i c)
-           ($set-port-index! p (fx+ i 1))]
-          [else 
-           (die who "insufficient space in port" p)])))
+         (put-byte! p (fxior #b11110000 (fxsra b 18)) who)
+         (put-byte! p (fxior #b10000000 (fxand (fxsra b 12) #b111111)) who)
+         (put-byte! p (fxior #b10000000 (fxand (fxsra b 6) #b111111)) who)
+         (put-byte! p (fxior #b10000000 (fxand b #b111111)) who)]))
     ;;;
     (define write-char
       (case-lambda
@@ -1961,32 +1901,46 @@
       (let ([m ($port-fast-attrs p)])
         (cond
           [(eq? m fast-put-utf8-tag)
-           (let ([i ($port-index p)])
+           (let ([i ($port-index p)] [j ($port-size p)])
+             (assert* (fx< i j))
              (let ([b (char->integer c)])
                (cond
-                 [(and (fx< i ($port-size p)) (fx< b 128))
+                 [(fx< b 128)
                   (bytevector-u8-set! ($port-buffer p) i b)
-                  ($set-port-index! p (fx+ i 1))]
+                  (let ([i (fx+ i 1)])
+                    ($set-port-index! p i)
+                    (when (fx= i j) (flush-output-port p)))]
                  [else
                   (put-char-utf8-mode p b who)])))]
           [(eq? m fast-put-char-tag)
-           (let ([i ($port-index p)])
-             (cond
-               [(fx< i ($port-size p))
-                ($set-port-index! p (fx+ i 1))
-                (string-set! ($port-buffer p) i c)]
-               [else
-                (put-char-char-mode p c who)]))]
+           (let ([i ($port-index p)] [j ($port-size p)])
+             (assert* (fx< i j))
+             (string-set! ($port-buffer p) i c)
+             (let ([i (fx+ i 1)])
+               ($set-port-index! p i)
+               (when (fx= i j) (flush-output-port p))))]
           [(eq? m fast-put-latin-tag)
-           (let ([i ($port-index p)])
+           (let ([i ($port-index p)] [j ($port-size p)])
+             (assert* (fx< i j))
              (let ([b (char->integer c)])
                (cond
-                 [(and (fx< i ($port-size p)) (fx< b 256))
+                 [(fx< b 256)
                   (bytevector-u8-set! ($port-buffer p) i b)
-                  ($set-port-index! p (fx+ i 1))]
+                  (let ([i (fx+ i 1)])
+                    ($set-port-index! p i)
+                    (when (fx= i j) (flush-output-port p)))]
                  [else
-                  (put-char-latin-mode p b who)])))]
-          [else 
+                  (case (transcoder-error-handling-mode (port-transcoder p))
+                    [(ignore) (void)]
+                    [(replace)
+                     (bytevector-u8-set! ($port-buffer p) i (char->integer #\?))
+                     (let ([i (fx+ i 1)])
+                       ($set-port-index! p i)
+                       (when (fx= i j) (flush-output-port p)))]
+                    [(raise)
+                     (raise (make-i/o-encoding-error p c))]
+                    [else (die who "BUG: invalid error handling mode" p)])])))]
+          [else
            (if (output-port? p)
                (if (textual-port? p) 
                    (if (port-closed? p)
@@ -2014,26 +1968,6 @@
        
   (module (put-u8 put-bytevector)
     (import UNSAFE)
-    (define (put-u8-byte-mode p b who)
-      (let ([write! ($port-write! p)])
-        (let ([i ($port-index p)] 
-              [buf ($port-buffer p)])
-          (let ([bytes (write! buf 0 i)])
-            (when (or (not (fixnum? bytes))
-                      (fx< bytes 0)
-                      (fx> bytes i))
-              (die who "write! returned an invalid value" bytes))
-            (cond
-              [(fx= bytes i) 
-               (bytevector-u8-set! buf 0 b)
-               ($set-port-index! p 1)]
-              [(fx= bytes 0) 
-               (die who "could not write bytes to sink")]
-              [else
-               (let ([i (fx- i bytes)])
-                 (bytevector-copy! buf bytes buf 0 i)
-                 (bytevector-u8-set! buf i b)
-                 ($set-port-index! p (fx+ i 1)))])))))
     ;;;
     (define (put-u8 p b)
       (define who 'put-u8)
@@ -2041,13 +1975,12 @@
       (let ([m ($port-fast-attrs p)])
         (cond
           [(eq? m fast-put-byte-tag)
-           (let ([i ($port-index p)])
-             (cond
-               [(fx< i ($port-size p))
-                ($set-port-index! p (fx+ i 1))
-                (bytevector-u8-set! ($port-buffer p) i b)]
-               [else
-                (put-u8-byte-mode p b who)]))]
+           (let ([i ($port-index p)] [j ($port-size p)])
+             (assert* (fx< i j))
+             (bytevector-u8-set! ($port-buffer p) i b)
+             (let ([i (fx+ i 1)])
+               ($set-port-index! p i)
+               (when (fx= i j) (flush-output-port p))))]
           [else 
            (if (output-port? p)
                (die who "not a binary port" p)
@@ -2062,13 +1995,15 @@
       (let ([m ($port-fast-attrs p)])
         (cond
           [(eq? m fast-put-byte-tag)
-           (let ([idx ($port-index p)])
-             (let ([room (fx- ($port-size p) idx)])
+           (let ([idx ($port-index p)] [j ($port-size p)])
+             (let ([room (fx- j idx)])
                (cond
                  [(fx>= room c)
                   ;; hurray
-                  ($set-port-index! p (fx+ idx c))
-                  (copy! bv ($port-buffer p) i idx c)]
+                  (copy! bv ($port-buffer p) i idx c)
+                  (let ([idx (fx+ idx c)])
+                    ($set-port-index! p idx)
+                    (when (fx= idx j) (flush-output-port p)))]
                  [else
                   ($set-port-index! p (fx+ idx room))
                   (copy! bv ($port-buffer p) i idx room)
