@@ -244,13 +244,12 @@
           [(null? x*) env]
           [else (extend (car x*) (car t*)
                   (extend* (cdr x*) (cdr t*) env))]))
-      (cond
-        [(= (length rand-t*) (length rand*))
-         (values (make-funcall (make-primref op) rand*)
-                 (extend* rand* rand-t* env)
-                 ret-t)]
-        [else
-         (error 'apply-primcall "invalid extesion" op rand*)]))
+      (values 
+        (make-funcall (make-primref op) rand*)
+        (if (= (length rand-t*) (length rand*))
+            (extend* rand* rand-t* env)
+            env) ;;; incorrect number of args
+        ret-t))
     (define (inject* ret-t arg-t)
       (define (extend* x* env)
         (define (extend x t env)
