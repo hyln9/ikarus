@@ -206,6 +206,8 @@
   (define fast-char-text-tag       #b00000000010000)
   (define fast-u7-text-tag         #b00000000100000)
   (define fast-u8-text-tag         #b00000001100000)
+  (define fast-u16be-text-tag      #b00000010000000)
+  (define fast-u16le-text-tag      #b00000100000000)
   (define r6rs-mode-tag            #b01000000000000)
   (define closed-port-tag          #b10000000000000)
 
@@ -219,13 +221,15 @@
   (define fast-get-char-tag        #b00000000010101)
   (define fast-get-utf8-tag        #b00000000100101)
   (define fast-get-latin-tag       #b00000001100101)
+  (define fast-get-utf16be-tag     #b00000010000101)
+  (define fast-get-utf16le-tag     #b00000100000101)
 
   (define fast-put-byte-tag        #b00000000001010)
   (define fast-put-char-tag        #b00000000010110)
   (define fast-put-utf8-tag        #b00000000100110)
   (define fast-put-latin-tag       #b00000001100110)
 
-  (define fast-attrs-mask          #xFFF)
+  (define fast-attrs-mask          #b111111111111)
   (define-syntax $port-fast-attrs
     (identifier-syntax
       (lambda (x) 
@@ -750,11 +754,6 @@
        (die 'close-output-port "not an output port" p))
     ($close-port p))
 
-  ;(define-rrr port-has-port-position?)
-  ;(define-rrr port-position)
-  ;(define-rrr port-has-set-port-position!?)
-  ;(define-rrr set-port-position!)
-
   (define (refill-bv-buffer p who)
     (when ($port-closed? p) (die who "port is closed" p))
     (let ([bv ($port-buffer p)] [i ($port-index p)] [j ($port-size p)])
@@ -1019,14 +1018,27 @@
           (die who "not a textual port" p))
         (case (transcoder-codec tr)
           [(utf-8-codec)
-           ;;;
            ($set-port-attrs! p 
              (fxior textual-input-port-bits fast-u7-text-tag))
            (eof-object? (advance-bom p who '(#xEF #xBB #xBF)))]
+          [(utf-16-codec)
+           (let ([be? (advance-bom p who '(#xFE #xFF))])
+             (case be?
+               [(#t) 
+                ($set-port-attrs! p 
+                  (fxior textual-input-port-bits fast-u16be-text-tag))
+                #f]
+               [(#f)
+                (let ([le? (advance-bom p who '(#xFF #xFE))])
+                  (case le?
+                    [(#t #f) ;;; little by default
+                     ($set-port-attrs! p 
+                       (fxior textual-input-port-bits fast-u16le-text-tag))
+                     #f]
+                    [else #t]))]
+               [else #t]))]
           [else 
-           (die 'slow-get-char
-              "BUG: codec not handled"
-              (transcoder-codec tr))])))
+           (die who "BUG: codec not handled" (transcoder-codec tr))])))
     ;;;
     (define (lookahead-char-char-mode p who)
       (let ([str ($port-buffer p)]
@@ -1073,6 +1085,8 @@
                   (bytevector-u8-ref ($port-buffer p) i))]
                [else
                 (get-char-latin-mode p who 0)]))]
+          [(eq? m fast-get-utf16le-tag) (peek-utf16 p who 'little)]
+          [(eq? m fast-get-utf16be-tag) (peek-utf16 p who 'big)]
           [else 
            (if (speedup-input-port p who)
                (eof-object)
@@ -1094,47 +1108,120 @@
             [else
              ($set-port-index! p 1) 
              (string-ref str 0)]))))
+    (define (peek-utf16 p who endianness)
+      (define integer->char/invalid
+        (lambda (n)
+          (cond
+            [(fx<= n #xD7FF)   (integer->char n)]
+            [(fx< n  #xE000)   #\xFFFD]
+            [(fx<= n #x10FFFF) (integer->char n)]
+            [else               #\xFFFD])))
+      (let ([i ($port-index p)])
+        (cond
+          [(fx<= (fx+ i 2) ($port-size p))
+           (let ([w1 (bytevector-u16-ref ($port-buffer p) i endianness)])
+             (cond
+               [(or (fx< w1 #xD800) (fx> w1 #xDFFF))
+                (integer->char/invalid w1)]
+               [(not (and (fx<= #xD800 w1) (fx<= w1 #xDBFF)))
+                #\xFFFD]
+               [(fx<= (+ i 4) ($port-size p))
+                (let ([w2 (bytevector-u16-ref 
+                            ($port-buffer p) (+ i 2) endianness)])
+                  (cond
+                    [(not (and (fx<= #xDC00 w2) (fx<= w2 #xDFFF)))
+                     #\xFFFD]
+                    [else 
+                     (integer->char/invalid
+                       (fx+ #x10000
+                         (fxlogor
+                           (fxsll (fxand w1 #x3FF) 10)
+                           (fxand w2 #x3FF))))]))]
+               [else 
+                (let ([bytes (refill-bv-buffer p who)])
+                  (cond
+                    [(fx= bytes 0)
+                      #\xFFFD]
+                    [else
+                     (peek-utf16 p who endianness)]))]))]
+          [(fx< i ($port-size p))
+           (let ([bytes (refill-bv-buffer p who)])
+             (cond
+               [(fx= bytes 0)
+                #\xFFFD]
+               [else (peek-utf16 p who endianness)]))]
+          [else 
+           (let ([bytes (refill-bv-buffer p who)])
+             (if (fx= bytes 0)
+                 (eof-object)
+                 (peek-utf16 p who endianness)))])))
+    (define (get-utf16 p who endianness)
+      (define (invalid p who endianness n)
+        (case (transcoder-error-handling-mode (port-transcoder p))
+          [(ignore) (do-get-char p who endianness)]
+          [(replace) #\xFFFD]
+          [(raise)
+           (raise (make-i/o-decoding-error p n))]
+          [else (die who "BUG: invalid error handling mode" p)]))
+      (define (integer->char/invalid p who endianness n)
+        (cond
+          [(fx<= n #xD7FF)   (integer->char n)]
+          [(fx< n  #xE000)   (invalid p who endianness n)]
+          [(fx<= n #x10FFFF) (integer->char n)]
+          [else              (invalid p who endianness n)]))
+      (let ([i ($port-index p)])
+        (cond
+          [(fx<= (fx+ i 2) ($port-size p))
+           (let ([w1 (bytevector-u16-ref ($port-buffer p) i endianness)])
+             (cond
+               [(or (fx< w1 #xD800) (fx> w1 #xDFFF))
+                ($set-port-index! p (fx+ i 2))
+                (integer->char/invalid p who endianness w1)]
+               [(not (and (fx<= #xD800 w1) (fx<= w1 #xDBFF)))
+                ($set-port-index! p (fx+ i 2))
+                (invalid p who endianness w1)]
+               [(fx<= (+ i 4) ($port-size p))
+                (let ([w2 (bytevector-u16-ref 
+                            ($port-buffer p) (+ i 2) endianness)])
+                  (cond
+                    [(not (and (fx<= #xDC00 w2) (fx<= w2 #xDFFF)))
+                     ($set-port-index! p (fx+ i 2))
+                     (invalid p who endianness w1)]
+                    [else 
+                     ($set-port-index! p (fx+ i 4))
+                     (integer->char/invalid p who endianness
+                       (fx+ #x10000
+                         (fxlogor
+                           (fxsll (fxand w1 #x3FF) 10)
+                           (fxand w2 #x3FF))))]))]
+               [else 
+                (let ([bytes (refill-bv-buffer p who)])
+                  (cond
+                    [(fx= bytes 0)
+                     ($set-port-index! p ($port-size p))
+                     (invalid p who endianness w1)]
+                    [else
+                     (get-utf16 p who endianness)]))]))]
+          [(fx< i ($port-size p))
+           (let ([bytes (refill-bv-buffer p who)])
+             (cond
+               [(fx= bytes 0)
+                ($set-port-index! p ($port-size p))
+                (invalid p who endianness 
+                  (bytevector-u8-ref ($port-buffer p) ($port-index p)))]
+               [else (get-utf16 p who endianness)]))]
+          [else 
+           (let ([bytes (refill-bv-buffer p who)])
+             (if (fx= bytes 0)
+                 (eof-object)
+                 (get-utf16 p who endianness)))])))
+    (define (get-char p) 
+      (do-get-char p 'get-char))
     (define read-char
       (case-lambda
-        [(p) 
-         (define who 'read-char)
-         (let ([m ($port-fast-attrs p)])
-           (cond
-             [(eq? m fast-get-utf8-tag)
-              (let ([i ($port-index p)])
-                (cond
-                  [(fx< i ($port-size p))
-                   (let ([b (bytevector-u8-ref ($port-buffer p) i)])
-                     (cond
-                       [(fx< b 128) 
-                        ($set-port-index! p (fx+ i 1))
-                        (integer->char b)]
-                       [else (get-char-utf8-mode p who)]))]
-                  [else
-                   (get-char-utf8-mode p who)]))]
-             [(eq? m fast-get-char-tag)
-              (let ([i ($port-index p)])
-                (cond
-                  [(fx< i ($port-size p))
-                   ($set-port-index! p (fx+ i 1))
-                   (string-ref ($port-buffer p) i)]
-                  [else (get-char-char-mode p who)]))]
-             [(eq? m fast-get-latin-tag)
-              (let ([i ($port-index p)])
-                (cond
-                  [(fx< i ($port-size p))
-                   ($set-port-index! p (fx+ i 1))
-                   (integer->char 
-                     (bytevector-u8-ref ($port-buffer p) i))]
-                  [else
-                   (get-char-latin-mode p who 1)]))]
-             [else 
-              (if (speedup-input-port p who)
-                  (eof-object)
-                  (get-char p))]))]
-        [() (read-char (current-input-port))]))
-    (define (get-char p)
-      (define who 'get-char)
+        [(p) (do-get-char p 'read-char)]
+        [() (do-get-char (current-input-port) 'read-char)]))
+    (define (do-get-char p who)
       (let ([m ($port-fast-attrs p)])
         (cond
           [(eq? m fast-get-utf8-tag)
@@ -1165,10 +1252,12 @@
                   (bytevector-u8-ref ($port-buffer p) i))]
                [else
                 (get-char-latin-mode p who 1)]))]
+         [(eq? m fast-get-utf16le-tag) (get-utf16 p who 'little)]
+         [(eq? m fast-get-utf16be-tag) (get-utf16 p who 'big)]
           [else 
            (if (speedup-input-port p who)
                (eof-object)
-               (get-char p))]))))
+               (do-get-char p who))]))))
 
   ;;; ----------------------------------------------------------
   (define (assert-binary-input-port p who)

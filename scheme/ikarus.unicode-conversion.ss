@@ -355,7 +355,7 @@
 ;;;      of W1. Terminate.
 ;;;
 ;;;   2) Determine if W1 is between 0xD800 and 0xDBFF. If not, the sequence
-;;;      is in die and no valid character can be obtained using W1.
+;;;      is in error and no valid character can be obtained using W1.
 ;;;      Terminate.
 ;;;
 ;;;   3) If there is no W2 (that is, the sequence ends with W1), or if W2
@@ -410,7 +410,7 @@
         [(str) 
          (unless (string? str)
            (die 'string->utf16 "not a string" str))
-         ($string->utf16 str 'big)]
+         ($string->utf16 str (native-endianness))]
         [(str endianness)
          (unless (string? str)
            (die 'string->utf16 "not a string" str))
@@ -458,7 +458,7 @@
              [(or (fx< w1 #xD800) (fx> w1 #xDFFF))
               (string-set! str n (integer->char/invalid w1))
               (fill bv endianness str (+ i 2) len (+ n 1))]
-             [(not (fx<= #xD800 w1 #xDBFF)) ;;; die sequence
+             [(not (fx<= #xD800 w1 #xDBFF)) ;;; error sequence
               (string-set! str n #\xFFFD)
               (fill bv endianness str (+ i 2) len (+ n 1))]
              [(<= (+ i 4) (bytevector-length bv))
@@ -466,7 +466,7 @@
                 (cond
                   [(not (<= #xDC00 w2 #xDFFF)) 
                    ;;; do we skip w2 also?
-                   ;;; I won't.  Just w1 is an die
+                   ;;; I won't.  Just w1 is an error
                    (string-set! str n #\xFFFD)
                    (fill bv endianness str (+ i 2) len (+ n 1))]
                   [else 
@@ -477,7 +477,7 @@
                                   (fxlogand w2 #x3FF)))))
                    (fill bv endianness str (+ i 4) len (+ n 1))]))]
              [else 
-              ;;; die again
+              ;;; error again
               (string-set! str n #\xFFFD)
               (fill bv endianness str (+ i 2) len (+ n 1))]))]))
     (define (decode bv endianness start)
@@ -531,7 +531,7 @@
         [(str) 
          (unless (string? str)
            (die who "not a string" str))
-         ($string->utf32 str 'big)]
+         ($string->utf32 str (native-endianness))]
         [(str endianness)
          (unless (string? str)
            (die who "not a string" str))

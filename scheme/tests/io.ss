@@ -202,6 +202,16 @@
         (make-transcoder (utf-8-codec) 'none 'raise))
       128)))
 
+(define (make-utf8-bytevector-range1) 
+  (u8-list->bytevector
+    (let f ([i 0] [j #x7F])
+      (cond
+        [(> i j) '()]
+        [else 
+         (cons* i (f (+ i 1) j))]))))
+
+
+
 (define (make-utf8-bytevector-range2) 
   (u8-list->bytevector
     (let f ([i #x80] [j #x7FF])
@@ -235,6 +245,15 @@
                 (fxior #b10000000 (fxand (fxsra i 6) #b111111))
                 (fxior #b10000000 (fxand i #b111111))
                 (f (+ i 1) j))]))))
+
+(define (make-utf8-string-range1)
+  (list->string
+    (let f ([i 0] [j #x7F])
+      (cond
+        [(> i j) '()]
+        [else 
+         (cons (integer->char i)
+               (f (+ i 1) j))]))))
 
 (define (make-utf8-string-range2)
   (list->string
@@ -276,7 +295,16 @@
         [(char=? x (string-ref str i))
          (f (+ i 1))]
         [else 
-         (error #f "mismatch" x (string-ref str i) i)]))))
+         (error #f 
+           (format 
+             "mismatch at index ~a, got char ~a (code #x~x), \
+              expected char ~a (code #x~x)"
+               i
+               x
+               (char->integer x) 
+               (string-ref str i)
+               (char->integer (string-ref str i))))]))))
+
 
 (define (test-port-string-peeking-output p str) 
   (let f ([i 0])
@@ -294,7 +322,66 @@
         [else 
          (error #f "mismatch" x (string-ref str i) i)]))))
 
+
+(define (invalid-code? n) (not (valid-code? n)))
+(define (valid-code? n)
+  (cond
+    [(< n 0)       #f]
+    [(<= n #xD7FF) #t]
+    [(<  n #xE000) #f]
+    [(<= n #x10FFFF) #t]
+    [else (error 'valid-code? "out of range" n)]))
+
+
+
+(define (make-u16le-bv min max)
+  (u8-list->bytevector
+    (let f ([i min])
+      (cond
+        [(> i max) '()]
+        [(invalid-code? i) (f (+ i 1))]
+        [(< i #x10000)
+         (cons* 
+           (fxand i #xFF)
+           (fxsra i 8)
+           (f (+ i 1)))]
+        [else
+         (let ([ii (fx- i #x10000)])
+           (let ([w1 (fxior #xD800 (fxand #x3FF (fxsra ii 10)))]
+                 [w2 (fxior #xDC00 (fxand #x3FF ii))])
+             (cons* 
+               (fxand w1 #xFF)
+               (fxsra w1 8)
+               (fxand w2 #xFF)
+               (fxsra w2 8)
+               (f (+ i 1)))))]))))
+
+(define (make-string-slice min max)
+  (list->string
+    (let f ([i min])
+      (cond
+        [(> i max) '()]
+        [(invalid-code? i) (f (+ i 1))]
+        [else (cons (integer->char i) (f (+ i 1)))]))))
+
+
+(define (make-u16le-range1)
+  (make-u16le-bv 0 #x7FFF))
+(define (make-u16le-range2)
+  (make-u16le-bv #x8000 #x10FFFF))
+(define (make-utf16-string-range1)
+  (make-string-slice 0 #x7FFF))
+(define (make-utf16-string-range2)
+  (make-string-slice #x8000 #x10FFFF))
+
 (define (run-exhaustive-tests)
+  
+  (test "utf8 range 1"
+    (test-port-string-output
+      (open-bytevector-input-port (make-utf8-bytevector-range1)
+        (make-transcoder (utf-8-codec) 'none 'raise))
+      (make-utf8-string-range1)))
+
   (test "utf8 range 2"
     (test-port-string-output
       (open-bytevector-input-port (make-utf8-bytevector-range2)
@@ -312,7 +399,28 @@
       (open-bytevector-input-port (make-utf8-bytevector-range4)
         (make-transcoder (utf-8-codec) 'none 'raise))
       (make-utf8-string-range4)))
-  
+
+
+  (test "utf16 range 1"
+    (test-port-string-output
+      (open-bytevector-input-port (make-u16le-range1)
+        (make-transcoder (utf-16-codec) 'none 'raise))
+      (make-utf16-string-range1)))
+
+
+  (test "utf16 range 2"
+    (test-port-string-output
+      (open-bytevector-input-port (make-u16le-range2)
+        (make-transcoder (utf-16-codec) 'none 'raise))
+      (make-utf16-string-range2)))
+
+
+  (test "utf8 peek range 1"
+    (test-port-string-peeking-output
+      (open-bytevector-input-port (make-utf8-bytevector-range1)
+        (make-transcoder (utf-8-codec) 'none 'raise))
+      (make-utf8-string-range1)))
+
   (test "utf8 peek range 2"
     (test-port-string-peeking-output
       (open-bytevector-input-port (make-utf8-bytevector-range2)
@@ -330,7 +438,24 @@
       (open-bytevector-input-port (make-utf8-bytevector-range4)
         (make-transcoder (utf-8-codec) 'none 'raise))
       (make-utf8-string-range4)))
+
+  (test "utf16 peek range 1"
+    (test-port-string-peeking-output
+      (open-bytevector-input-port (make-u16le-range1)
+        (make-transcoder (utf-16-codec) 'none 'raise))
+      (make-utf16-string-range1)))
+
+  (test "utf16 peek range 2"
+    (test-port-string-peeking-output
+      (open-bytevector-input-port (make-u16le-range2)
+        (make-transcoder (utf-16-codec) 'none 'raise))
+      (make-utf16-string-range2)))
   
+  (test "utf8 range 1 string"
+    (test-port-string-output
+      (open-string-input-port (make-utf8-string-range1))
+      (make-utf8-string-range1)))
+
   (test "utf8 range 2 string"
     (test-port-string-output
       (open-string-input-port (make-utf8-string-range2))
@@ -509,18 +634,27 @@
                1]))
           #f #f #f)
         transcoder)))
-  (define (test name codec conv)
+  (define (test name codec s->bv bv->s)
     (printf "testing partial reads for ~s codec ... " name)
     (let ([s (make-test-string)])
+      (assert (string=? s (bv->s (s->bv s))))
       (let ([r (call-with-port 
-                 (make-slow-input-port (conv s) 
+                 (make-slow-input-port (s->bv s)
                    (make-transcoder codec 
                      (eol-style none) (error-handling-mode raise)))
                  get-string-all)])
-        (assert (string=? r s))))
+        (unless (string=? r s)
+          (if (= (string-length r) (string-length s))
+              (error #f "test failed")
+              (error #f "length mismatch" 
+                     (string-length s) (string-length r))))))
     (printf "ok\n"))
-  ;(test 'utf16 (utf-16-codec) string->utf16)
-  (test 'utf8 (utf-8-codec) string->utf8))
+  (test 'utf8 (utf-8-codec) 
+        string->utf8 
+        utf8->string)
+  (test 'utf16 (utf-16-codec) 
+        (lambda (x) (string->utf16 x 'little))
+        (lambda (x) (utf16->string x 'little))))
 
   (define-tests test-input-ports
     [eof-object?
