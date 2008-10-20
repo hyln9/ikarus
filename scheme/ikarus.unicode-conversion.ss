@@ -410,7 +410,7 @@
         [(str) 
          (unless (string? str)
            (die 'string->utf16 "not a string" str))
-         ($string->utf16 str (native-endianness))]
+         ($string->utf16 str 'big)]
         [(str endianness)
          (unless (string? str)
            (die 'string->utf16 "not a string" str))
@@ -431,20 +431,20 @@
            (cond
              [(or (fx< w1 #xD800) (fx> w1 #xDFFF))
               (count-size bv endianness (+ i 2) len (+ n 1))]
-             [(not (fx<= #xD800 w1 #xDBFF)) ;;; die sequence
+             [(not (fx<= #xD800 w1 #xDBFF)) ;;; error sequence
               (count-size bv endianness (+ i 2) len (+ n 1))]
              [(<= (+ i 4) (bytevector-length bv))
               (let ([w2 (bytevector-u16-ref bv (+ i 2) endianness)])
                 (cond
                   [(not (<= #xDC00 w2 #xDFFF)) 
                    ;;; do we skip w2 also?
-                   ;;; I won't.  Just w1 is an die
+                   ;;; I won't.  Just w1 is an error
                    (count-size bv endianness (+ i 2) len (+ n 1))]
                   [else 
                    ;;; 4-byte sequence is ok
                    (count-size bv endianness (+ i 4) len (+ n 1))]))]
              [else 
-              ;;; die again
+              ;;; error again
               (count-size bv endianness (+ i 2) len (+ n 1))]))]))
     (define (fill bv endianness str i len n)
       (cond
@@ -531,7 +531,7 @@
         [(str) 
          (unless (string? str)
            (die who "not a string" str))
-         ($string->utf32 str (native-endianness))]
+         ($string->utf32 str 'big)]
         [(str endianness)
          (unless (string? str)
            (die who "not a string" str))

@@ -140,7 +140,8 @@
      fxior fxand fxsra fxsll
      integer->char char->integer
      string-ref string-set! string-length
-     bytevector-u8-ref bytevector-u8-set!)
+     bytevector-u8-ref bytevector-u8-set!
+     bytevector-u16-ref)
     (import 
       (rename (ikarus system $strings)
         ($string-length string-length)
@@ -163,7 +164,16 @@
         ($fx>      fx>)
         ($fx>=     fx>=)
         ($fx<=     fx<=)
-        ($fx=      fx=))))
+        ($fx=      fx=)))
+    (define (bytevector-u16-ref x i endianness)
+      (case endianness
+        [(little) 
+         (fxlogor (bytevector-u8-ref x i)
+                  (fxsll (bytevector-u8-ref x (fx+ i 1)) 8))]
+        [else
+         (fxlogor (bytevector-u8-ref x (fx+ i 1))
+                  (fxsll (bytevector-u8-ref x i) 8))])))
+
 
   (define (port? x)
     (import (only (ikarus) port?))
