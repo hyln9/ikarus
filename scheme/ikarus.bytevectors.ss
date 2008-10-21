@@ -258,12 +258,12 @@
                    ($fx<= 0 i)
                    ($fx= 0 ($fxlogand i 3))
                    ($fx< i ($fx- ($bytevector-length x) 3)))
-              (+ (sll ($bytevector-u8-ref x i) 24)
+              (+ (sll ($bytevector-u8-ref x ($fx+ i 3)) 24)
                  ($fxlogor
-                   ($fxsll ($bytevector-u8-ref x ($fx+ i 1)) 16)
-                   ($fxlogor 
-                     ($fxsll ($bytevector-u8-ref x ($fx+ i 2)) 8)
-                     ($bytevector-u8-ref x ($fx+ i 3)))))
+                   ($fxsll ($bytevector-u8-ref x ($fx+ i 2)) 16)
+                   ($fxlogor
+                     ($fxsll ($bytevector-u8-ref x ($fx+ i 1)) 8)
+                     ($bytevector-u8-ref x i))))
               (die 'bytevector-u32-native-ref "invalid index" i))
           (die 'bytevector-u32-native-ref "not a bytevector" x))))
 
@@ -299,12 +299,12 @@
                    ($fx<= 0 i)
                    ($fx= 0 ($fxlogand i 3))
                    ($fx< i ($fx- ($bytevector-length x) 3)))
-              (+ (sll ($bytevector-s8-ref x i) 24)
+              (+ (sll ($bytevector-s8-ref x ($fx+ i 3)) 24)
                  ($fxlogor
-                   ($fxsll ($bytevector-u8-ref x ($fx+ i 1)) 16)
-                   ($fxlogor 
-                     ($fxsll ($bytevector-u8-ref x ($fx+ i 2)) 8)
-                     ($bytevector-u8-ref x ($fx+ i 3)))))
+                   ($fxsll ($bytevector-u8-ref x ($fx+ i 2)) 16)
+                   ($fxlogor
+                     ($fxsll ($bytevector-u8-ref x ($fx+ i 1)) 8)
+                     ($bytevector-u8-ref x i))))
               (die 'bytevector-s32-native-ref "invalid index" i))
           (die 'bytevector-s32-native-ref "not a bytevector" x))))
 
