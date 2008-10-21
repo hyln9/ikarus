@@ -3,6 +3,9 @@
 /* adds support for libffi */
 #undef ENABLE_LIBFFI
 
+/* use flat segment and dirty vectors (not used yet) */
+#undef FLAT_TABLES
+
 /* Define to 1 if you have the <assert.h> header file. */
 #undef HAVE_ASSERT_H
 

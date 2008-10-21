@@ -29,6 +29,11 @@ case "$target_os" in
   esac
 
 AC_CHECK_SIZEOF(void *)
+if test "$ac_cv_sizeof_void_p" = 4; then
+   AC_DEFINE(FLAT_TABLES, 1, 
+     [use flat segment and dirty vectors (not used yet)])
+fi
+
 
 # Checks for libraries.
 AC_SEARCH_LIBS(dlsym, dl,, [AC_MSG_ERROR([Cannot find libdl])])

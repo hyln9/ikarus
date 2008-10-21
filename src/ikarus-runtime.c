@@ -50,8 +50,8 @@ extern char **environ;
 #define segment_shift (pageshift+pageshift-2)
 #define segment_index(x) (((unsigned long int)(x)) >> segment_shift)
 
-ikptr ik_mmap(int size);
-void ik_munmap(ikptr mem, int size);
+ikptr ik_mmap(long int size);
+void ik_munmap(ikptr mem, long int size);
 
 static void
 extend_table_maybe(ikptr p, unsigned long int size, ikpcb* pcb){
@@ -120,7 +120,7 @@ set_segment_type(ikptr base, unsigned long int size, unsigned int type, ikpcb* p
 }
 
 void
-ik_munmap_from_segment(ikptr base, unsigned long int size, ikpcb* pcb){
+ik_munmap_from_segment(ikptr base, long int size, ikpcb* pcb){
   assert(base >= pcb->memory_base);
   assert((base+size) <= pcb->memory_end);
   assert(size == align_to_next_page(size));
@@ -158,7 +158,7 @@ ik_munmap_from_segment(ikptr base, unsigned long int size, ikpcb* pcb){
 
 
 ikptr
-ik_mmap_typed(int size, unsigned int type, ikpcb* pcb){
+ik_mmap_typed(long int size, unsigned int type, ikpcb* pcb){
   ikptr p;
   if(size == pagesize) {
     ikpage* s = pcb->cached_pages;
@@ -181,17 +181,17 @@ ik_mmap_typed(int size, unsigned int type, ikpcb* pcb){
 }
 
 ikptr
-ik_mmap_ptr(int size, int gen, ikpcb* pcb){
+ik_mmap_ptr(long int size, int gen, ikpcb* pcb){
   return ik_mmap_typed(size, pointers_mt | gen, pcb);
 }
 
 ikptr
-ik_mmap_data(int size, int gen, ikpcb* pcb){
+ik_mmap_data(long int size, int gen, ikpcb* pcb){
   return ik_mmap_typed(size, data_mt | gen, pcb);
 }
 
 ikptr
-ik_mmap_code(int size, int gen, ikpcb* pcb){
+ik_mmap_code(long int size, int gen, ikpcb* pcb){
   ikptr p = ik_mmap_typed(size, code_mt | gen, pcb);
   if(size > pagesize){
     set_segment_type(p+pagesize, size-pagesize, data_mt|gen, pcb);
@@ -208,7 +208,7 @@ ik_mmap_code(int size, int gen, ikpcb* pcb){
 
 
 ikptr
-ik_mmap_mixed(int size, ikpcb* pcb){
+ik_mmap_mixed(long int size, ikpcb* pcb){
   return ik_mmap_typed(size, mainheap_mt, pcb);
 }
 
@@ -216,7 +216,7 @@ ik_mmap_mixed(int size, ikpcb* pcb){
 
 
 ikptr
-ik_mmap(int size){
+ik_mmap(long int size){
   int pages = (size + pagesize - 1) / pagesize;
   total_allocated_pages += pages;
   int mapsize = pages * pagesize;
@@ -231,7 +231,7 @@ ik_mmap(int size){
       0);
   /* FIXME: check if in range */
   if(mem == MAP_FAILED){
-    fprintf(stderr, "Mapping failed: %s\n", strerror(errno));
+    fprintf(stderr, "Mapping (0x%lx bytes) failed: %s\n", size, strerror(errno));
     exit(-1);
   }
 #else
@@ -246,7 +246,7 @@ ik_mmap(int size){
 }
 
 void
-ik_munmap(ikptr mem, int size){
+ik_munmap(ikptr mem, long int size){
   int pages = (size + pagesize - 1) / pagesize;
   int mapsize = pages * pagesize;
   assert(size == mapsize);

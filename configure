@@ -5606,6 +5606,14 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+if test "$ac_cv_sizeof_void_p" = 4; then
+
+cat >>confdefs.h <<\_ACEOF
+#define FLAT_TABLES 1
+_ACEOF
+
+fi
+
 
 # Checks for libraries.
 { $as_echo "$as_me:$LINENO: checking for library containing dlsym" >&5
