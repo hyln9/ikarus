@@ -7,9 +7,8 @@
     make-custom-textual-input/output-port
     open-file-input/output-port output-port-buffer-mode
     port-has-set-port-position!?
-    set-port-position!  make-eqv-hashtable
-    hashtable-hash-function make-hashtable
-    hashtable-equivalence-function equal-hash
+    set-port-position!  
+    make-eqv-hashtable equal-hash
     string-normalize-nfc string-normalize-nfd
     string-normalize-nfkc string-normalize-nfkd string-titlecase
     )
@@ -21,9 +20,8 @@
     make-custom-textual-input/output-port
     open-file-input/output-port output-port-buffer-mode
     port-has-set-port-position!?
-    set-port-position!  make-eqv-hashtable
-    hashtable-hash-function make-hashtable
-    hashtable-equivalence-function equal-hash
+    set-port-position! 
+    make-eqv-hashtable equal-hash
     string-normalize-nfc string-normalize-nfd
     string-normalize-nfkc string-normalize-nfkd string-titlecase
     ))
@@ -56,8 +54,7 @@
     bitwise-rotate-bit-field bitwise-reverse-bit-field
     fxreverse-bit-field 
     ;;; not top priority at the moment
-    make-eqv-hashtable make-hashtable equal-hash
-    hashtable-hash-function hashtable-equivalence-function
+    make-eqv-hashtable equal-hash
     string-normalize-nfc string-normalize-nfd
     string-normalize-nfkc string-normalize-nfkd 
     ;;; won't be implemented
