@@ -218,6 +218,7 @@
   (define fast-u8-text-tag         #b00000001100000)
   (define fast-u16be-text-tag      #b00000010000000)
   (define fast-u16le-text-tag      #b00000100000000)
+  (define init-u16-text-tag        #b00000110000000)
   (define r6rs-mode-tag            #b01000000000000)
   (define closed-port-tag          #b10000000000000)
 
@@ -238,6 +239,9 @@
   (define fast-put-char-tag        #b00000000010110)
   (define fast-put-utf8-tag        #b00000000100110)
   (define fast-put-latin-tag       #b00000001100110)
+  (define fast-put-utf16be-tag     #b00000010000110)
+  (define fast-put-utf16le-tag     #b00000100000110)
+  (define init-put-utf16-tag       #b00000110000110)
 
   (define fast-attrs-mask          #b111111111111)
   (define-syntax $port-fast-attrs
@@ -421,6 +425,8 @@
        (fxior textual-output-port-bits fast-u8-text-tag)]
       [(eq? 'utf-8-codec (transcoder-codec x))
        (fxior textual-output-port-bits fast-u7-text-tag)]
+      [(eq? 'utf-16-codec (transcoder-codec x))
+       (fxior textual-output-port-bits init-u16-text-tag)]
       [else (die who "unsupported codec" (transcoder-codec x))]))
 
   (define open-bytevector-input-port
@@ -1955,14 +1961,14 @@
   
   (module (put-char write-char put-string)
     (import UNSAFE)
+    (define (put-byte! p b who)
+      (let ([i ($port-index p)] [j ($port-size p)])
+        (assert* (fx< i j))
+        (bytevector-u8-set! ($port-buffer p) i b)
+        (let ([i (fx+ i 1)])
+          ($set-port-index! p i)
+          (when (fx= i j) (flush-output-port p)))))
     (define (put-char-utf8-mode p b who) 
-      (define (put-byte! p b who)
-        (let ([i ($port-index p)] [j ($port-size p)])
-          (assert* (fx< i j))
-          (bytevector-u8-set! ($port-buffer p) i b)
-          (let ([i (fx+ i 1)])
-            ($set-port-index! p i)
-            (when (fx= i j) (flush-output-port p)))))
       (cond
         [(fx< b 128)
          (put-byte! p b who)]
@@ -2039,6 +2045,25 @@
                     [(raise)
                      (raise (make-i/o-encoding-error p c))]
                     [else (die who "BUG: invalid error handling mode" p)])])))]
+          [(eq? m init-put-utf16-tag) 
+           (put-byte! p #xFE who)
+           (put-byte! p #xFF who)
+           ($set-port-attrs! p fast-put-utf16be-tag)
+           (do-put-char p c who)]
+          [(eq? m fast-put-utf16be-tag)
+           (let ([n (char->integer c)])
+             (cond
+               [(fx< n #x10000) 
+                (put-byte! p (fxsra n 8) who)
+                (put-byte! p (fxand n #xFF) who)]
+               [else
+                (let ([u^ (fx- n #x10000)])
+                  (let ([w1 (fxior #xD800 (fxsra u^ 10))])
+                    (put-byte! p (fxsra w1 8) who)
+                    (put-byte! p (fxand w1 #xFF) who))
+                  (let ([w2 (fxior #xDC00 (fxand u^ (- (fxsll 1 10) 1)))])
+                    (put-byte! p (fxsra w2 8) who)
+                    (put-byte! p (fxand w2 #xFF) who)))]))]
           [else
            (if (output-port? p)
                (if (textual-port? p) 
