@@ -426,7 +426,7 @@
       [(eq? 'utf-8-codec (transcoder-codec x))
        (fxior textual-output-port-bits fast-u7-text-tag)]
       [(eq? 'utf-16-codec (transcoder-codec x))
-       (fxior textual-output-port-bits init-u16-text-tag)]
+       (fxior textual-output-port-bits fast-u16be-text-tag)]
       [else (die who "unsupported codec" (transcoder-codec x))]))
 
   (define open-bytevector-input-port
@@ -2045,11 +2045,11 @@
                     [(raise)
                      (raise (make-i/o-encoding-error p c))]
                     [else (die who "BUG: invalid error handling mode" p)])])))]
-          [(eq? m init-put-utf16-tag) 
-           (put-byte! p #xFE who)
-           (put-byte! p #xFF who)
-           ($set-port-attrs! p fast-put-utf16be-tag)
-           (do-put-char p c who)]
+          ;[(eq? m init-put-utf16-tag) 
+          ; (put-byte! p #xFE who)
+          ; (put-byte! p #xFF who)
+          ; ($set-port-attrs! p fast-put-utf16be-tag)
+          ; (do-put-char p c who)]
           [(eq? m fast-put-utf16be-tag)
            (let ([n (char->integer c)])
              (cond
