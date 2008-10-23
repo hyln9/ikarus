@@ -91,19 +91,24 @@
             (assertion-violation 'library-extensions
               "not a list of strings" x)))))
 
-  (define (library-name->file-name x)
+  (define (library-name->file-name ls)
     (let-values (((p extract) (open-string-output-port)))
       (define (display-hex n)
         (cond
           ((<= 0 n 9) (display n p))
-          (else (display 
+          (else (write-char
                   (integer->char 
                     (+ (char->integer #\A)
                        (- n 10)))
                   p))))
-      (let f ((ls x))
-        (unless (null? ls)
-          (display "/" p)
+      (define (main*? x)
+        (and (>= (string-length x) 4)
+             (string=? (substring x 0 4) "main")
+             (for-all (lambda (x) (char=? x #\_)) 
+               (string->list (substring x 4 (string-length x))))))
+      (let f ((x (car ls)) (ls (cdr ls)))
+        (write-char #\/ p)
+        (let ([name (symbol->string x)])
           (for-each
             (lambda (c)
               (cond
@@ -111,15 +116,16 @@
                      (char<=? #\A c #\Z)
                      (char<=? #\0 c #\9)
                      (memv c '(#\- #\. #\_ #\~)))
-                 (display c p))
+                 (write-char c p))
                 (else
-                 (display "%" p)
+                 (write-char #\% p)
                  (let ((n (char->integer c)))
                    (display-hex (quotient n 16))
                    (display-hex (remainder n 16))))))
-            (string->list 
-              (symbol->string (car ls))))
-          (f (cdr ls))))
+            (string->list name))
+          (if (null? ls)
+              (when (main*? name) (write-char #\_ p))
+              (f (car ls) (cdr ls)))))
       (extract)))
 
   (define file-locator
