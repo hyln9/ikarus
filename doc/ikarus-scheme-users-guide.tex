@@ -574,7 +574,7 @@ library or a script.  The same holds for the \texttt{(ikarus)}
 library (chapter~\ref{chapter:ikarus},
 page~\pageref{chapter:ikarus}).
 
-When writing a new library to a file, Ikarus uses a simple mechanism
+When importing a user library, Ikarus uses a simple mechanism
 to map library names to file names.  A library name is converted to
 a file path by joining the library identifiers with a path
 separator, e.g. \verb|"/"|.
@@ -593,10 +593,10 @@ separator, e.g. \verb|"/"|.
 Having mapped a library name to a file path, Ikarus attempts to
 locate that file in one of several locations.  The locations
 attempted depend on two settings: the search path and the file
-prefix set (e.g., \verb|.sls|, \verb|.ss|, \verb|.scm|, etc.).
+extension set (e.g., \verb|.sls|, \verb|.ss|, \verb|.scm|, etc.).
 First, Ikarus attempts to locate the file in the current working
 directory from which Ikarus was invoked.  In the current working
-directory, Ikarus enumerates all file prefixes first before
+directory, Ikarus enumerates all file extensions first before
 searching other locations.  If the file is not found in the current
 directory, Ikarus tries to find it in the Ikarus library directory.
 The Ikarus library directory is determined when Ikarus is installed
@@ -616,14 +616,18 @@ the library file to a place where Ikarus can find it.}
 
 \section{Writing cross-implementation libraries}
 
-When searching for a library, Ikarus appends a prefix (e.g.,
+When searching for a library, Ikarus appends an extension (e.g.,
 \verb|.ss|) to the appropriate file name (e.g., \verb|foo/bar|).
-The initial set of file extensions are: \verb|.ikarus.sls|,
+The initial set of file extensions are: \\
+\verb|/main.ikarus.sls|,
+\verb|/main.ikarus.ss|, \verb|/main.ikarus.scm|,
+\verb|/main.sls|, \verb|/main.ss|, \verb|/main.scm|,
+\verb|.ikarus.sls|,
 \verb|.ikarus.ss|, \verb|.ikarus.scm|,
 \verb|.sls|, \verb|.ss|, and \verb|.scm|.
 
 The list of file extensions are searched sequentially.  As a
-consequence, files ending with the \verb|.ikarus.*| prefixes are
+consequence, files ending with the \verb|.ikarus.*| extensions are
 given precedence over files that have generic Scheme extensions.
 The rationale for this behavior is to facilitate writing
 cross-implementation libraries: ones that take advantage of
@@ -660,6 +664,30 @@ portable for other implementations.
     (newline port)))
 \end{CodeInline}
 
+The \verb|/main.*| extensions serve a different purpose.  Often
+times, a set of libraries are distributed together as a package and
+it is convenient for the programmer to group related files in
+directories.  If a package contains the libraries \verb|(foo)|,
+\verb|(foo core)|, and \verb|(foo compat)|, then putting all such
+library files together in one directory makes it easier to
+package, install, and remove these libraries en masse.  The layout
+of the package would look like:
+
+\DefineVerbatimEnvironment{Code}{Verbatim} 
+ {%baselinestretch=1.1,
+  %frame=single,
+  %framerule=0.5pt,
+  commandchars=\\\{\}}
+
+\begin{Code}
+  foo/README              :              {\textrm{ignored by Ikarus}}
+  foo/COPYING             :
+  foo/main.ss             : (foo)        {\textrm{implementation independent}}
+  foo/core.ss             : (foo core) 
+  foo/compat.ss           : (foo compat) {\textrm{default \rnrs{6} library}}
+  foo/compat.ikarus.ss    :              {\textrm{specific for Ikarus}}
+  foo/compat.mzscheme.ss  :              {\textrm{specific for MzScheme}}
+\end{Code}
 
 \chapter{\rnrs{6} Crash Course}
 

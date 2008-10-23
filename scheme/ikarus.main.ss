@@ -60,11 +60,13 @@
         (append 
           (split (getenv "IKARUS_LIBRARY_PATH"))
           (list ikarus-lib-dir))))
-    (library-extensions 
-      (append
-        (map (lambda (x) (string-append ".ikarus" x))
-             (library-extensions))
-        (library-extensions)))))
+    (let ([prefix
+           (lambda (ext ls)
+             (append (map (lambda (x) (string-append ext x)) ls) ls))])
+      (library-extensions 
+        (prefix "/main" 
+          (prefix ".ikarus"
+            (library-extensions)))))))
 
 
 ;;; Finally, we're ready to evaluate the files and enter the cafe.
