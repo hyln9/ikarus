@@ -98,7 +98,7 @@
           ((<= 0 n 9) (display n p))
           (else (write-char
                   (integer->char 
-                    (+ (char->integer #\A)
+                    (+ (char->integer #\a)
                        (- n 10)))
                   p))))
       (define (main*? x)
@@ -106,26 +106,26 @@
              (string=? (substring x 0 4) "main")
              (for-all (lambda (x) (char=? x #\_)) 
                (string->list (substring x 4 (string-length x))))))
-      (let f ((x (car ls)) (ls (cdr ls)))
+      (let f ((x (car ls)) (ls (cdr ls)) (fst #t))
         (write-char #\/ p)
         (let ([name (symbol->string x)])
           (for-each
-            (lambda (c)
-              (cond
-                ((or (char<=? #\a c #\z)
-                     (char<=? #\A c #\Z)
-                     (char<=? #\0 c #\9)
-                     (memv c '(#\- #\. #\_ #\~)))
-                 (write-char c p))
-                (else
-                 (write-char #\% p)
-                 (let ((n (char->integer c)))
+            (lambda (n)
+              (let ([c (integer->char n)])
+                (cond
+                  ((or (char<=? #\a c #\z)
+                       (char<=? #\A c #\Z)
+                       (char<=? #\0 c #\9)
+                       (memv c '(#\- #\+ #\_)))
+                   (write-char c p))
+                  (else
+                   (write-char #\% p)
                    (display-hex (quotient n 16))
                    (display-hex (remainder n 16))))))
-            (string->list name))
+            (bytevector->u8-list (string->utf8 name)))
           (if (null? ls)
-              (when (main*? name) (write-char #\_ p))
-              (f (car ls) (cdr ls)))))
+              (when (and (not fst) (main*? name)) (write-char #\_ p))
+              (f (car ls) (cdr ls) #f))))
       (extract)))
 
   (define file-locator
