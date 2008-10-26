@@ -119,6 +119,7 @@
          [(char=? c #\\)
           (read-char p)
           (tokenize-backslash ls p)]
+         [(char=? c #\}) ls]
          [else
           (die/p p 'tokenize "invalid identifier syntax" 
             (list->string (reverse (cons c ls))))]))))
