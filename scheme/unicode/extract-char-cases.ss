@@ -1,221 +1,224 @@
-#!/usr/bin/env ikarus --r6rs-script
-;;; Ikarus Scheme -- A compiler for R6RS Scheme.
-;;; Copyright (C) 2006,2007,2008  Abdulaziz Ghuloum
+;;; Copyright (C) 2008  Abdulaziz Ghuloum, R. Kent Dybvig
+;;; Copyright (C) 2006,2007  Abdulaziz Ghuloum
 ;;; 
-;;; This program is free software: you can redistribute it and/or modify
-;;; it under the terms of the GNU General Public License version 3 as
-;;; published by the Free Software Foundation.
+;;; Permission is hereby granted, free of charge, to any person obtaining a
+;;; copy of this software and associated documentation files (the "Software"),
+;;; to deal in the Software without restriction, including without limitation
+;;; the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;;; and/or sell copies of the Software, and to permit persons to whom the
+;;; Software is furnished to do so, subject to the following conditions:
 ;;; 
-;;; This program is distributed in the hope that it will be useful, but
-;;; WITHOUT ANY WARRANTY; without even the implied warranty of
-;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-;;; General Public License for more details.
+;;; The above copyright notice and this permission notice shall be included in
+;;; all copies or substantial portions of the Software.
 ;;; 
-;;; You should have received a copy of the GNU General Public License
-;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+;;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;;; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;;; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+;;; THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;;; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;;; DEALINGS IN THE SOFTWARE. 
 
 (import 
   (ikarus)
   (unicode-data))
 
-(define license 
-'";;; Ikarus Scheme -- A compiler for R6RS Scheme.
-;;; Copyright (C) 2006,2007,2008  Abdulaziz Ghuloum
-;;; 
-;;; This program is free software: you can redistribute it and/or modify
-;;; it under the terms of the GNU General Public License version 3 as
-;;; published by the Free Software Foundation.
-;;; 
-;;; This program is distributed in the hope that it will be useful, but
-;;; WITHOUT ANY WARRANTY; without even the implied warranty of
-;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-;;; General Public License for more details.
-;;; 
-;;; You should have received a copy of the GNU General Public License
-;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+; dropping support for s16 inner vectors for now
+(include "extract-common.ss")
 
-")
+(define ptr-bytes 4)
 
+(define code-point-limit #x110000) ; as of Unicode 5.1
+#;(define table-limit #x30000)
+(define table-limit code-point-limit)
+(define-table (make-table table-ref table-set! table-ref-code)
+  (make-vector vector-ref vector-set!)
+  table-limit #x40 #x40)
 
-(define (hex->num x)
-  (read (open-string-input-port (format "#x~a" x))))
+(define-record-type chardata
+  (fields (immutable ucchar)
+          (immutable lcchar)
+          (immutable tcchar)
+          (mutable fcchar)
+          (mutable ucstr)
+          (mutable lcstr)
+          (mutable tcstr)
+          (mutable fcstr)
+          (immutable decomp-canon)
+          (immutable decomp-compat))
+  (protocol
+    (lambda (new)
+      (lambda (ucchar lcchar tcchar decomp-canon decomp-compat)
+        (new ucchar lcchar tcchar 0 ucchar lcchar tcchar 0
+             decomp-canon decomp-compat)))))
+
+(define (find-cdrec idx ls)
+  (cond
+    [(assq idx ls) => cdr]
+    [else (error 'find-cdrec "~s is missing" idx)]))
 
 (define data-case
   (lambda (fields)
-    (let ([num (car fields)]
-          [uc (list-ref fields uc-index)]
-          [lc (list-ref fields lc-index)]
-          [tc (list-ref fields tc-index)])
-      (let ([n (hex->num num)])
-        (define (f x)
-          (if (string=? x "") 0 (- (hex->num x) n)))
-        ;#(UC LC TC FC string-FC)
-        (cons n (vector (f uc) (f lc) (f tc) #f 0 (f uc) (f lc) (f tc)))))))
-
-(define (remove-dups ls)
-  (let f ([ls ls] [last #f]) 
-    (cond
-      [(null? ls) '()]
-      [(equal? (cdar ls) last) (f (cdr ls) last)]
-      [else
-       (cons (car ls) (f (cdr ls) (cdar ls)))])))
-
-(define (compute-foldcase ls)
-  (define (find-vec idx)
-    (cond
-      [(assq idx ls) => cdr]
-      [else (error 'find-vec "~s is missing" idx)]))
-  (define (upper i)
-    (+ i (vector-ref (find-vec i) 0)))
-  (define (lower i)
-    (+ i (vector-ref (find-vec i) 1)))
-  (define (set-folder! i j)
-    (vector-set! (find-vec i) 3 (- j i)))
-  (for-each 
-    (lambda (x)
-      (let ([idx (car x)] [vec (cdr x)])
-        (vector-set! vec 3 
-          (- (lower (upper idx)) idx))))
-    ls)
-  (for-each
-    (lambda (idx) 
-      (let ([vec (find-vec idx)])
-        (vector-set! vec 3 0)))
-    ;; turkic chars 
-    '(#x130 #x131))
-  ls)
-
-(define uc-index 12)
-(define lc-index 13)
-(define tc-index 14)
-
-
-(define (remove-spaces str)
-  (cond
-    [(= (string-length str) 0) str]
-    [(char=? (string-ref str 0) #\space) 
-     (remove-spaces (substring str 1 (string-length str)))]
-    [else str]))
+    (let ([n (hex->num (car fields))]
+          [uc (list-ref fields 12)]
+          [lc (list-ref fields 13)]
+          [tc (list-ref fields 14)])
+      (define (f x) (if (string=? x "") 0 (- (hex->num x) n)))
+      (cons n (make-chardata (f uc) (f lc) (f tc)
+                (parse-decomp n (list-ref fields 5) #f)
+                (parse-decomp n (list-ref fields 5) #t))))))
 
 (define (split str)
-  (let f ([i 0] [n (string-length str)])
-    (cond
-      [(= i n) (list (substring str 0 n))]
-      [(char=? (string-ref str i) #\space)
-       (cons (substring str 0 i) 
-             (split (substring str (+ i 1) n)))]
-      [else (f (add1 i) n)])))
+  (remove ""
+    (let f ([i 0] [n (string-length str)])
+      (cond
+        [(= i n) (list (substring str 0 n))]
+        [(char=? (string-ref str i) #\space)
+         (cons (substring str 0 i) 
+               (split (substring str (+ i 1) n)))]
+        [else (f (add1 i) n)]))))
 
 (define (improperize ls)
   (cond
     [(null? (cdr ls)) (car ls)]
     [else (cons (car ls) (improperize (cdr ls)))]))
 
-(define (convert-full-fold-fields ls)
-  (cond
-    [(null? ls) '()]
-    [else
-     (let ([fields (car ls)])
-       (let ([cat (remove-spaces (cadr fields))])
-         (cond
-           [(member cat '("C" "F")) 
-            (let ([n (hex->num (remove-spaces (car fields)))])
-              (let ([c* (map hex->num 
-                          (map remove-spaces 
-                            (split 
-                              (remove-spaces (caddr fields)))))])
-                (cons 
-                  (cons n 
-                    (if (= (length c*) 1)
-                        (- (car c*) n)
-                        (improperize (map integer->char c*))))
-                  (convert-full-fold-fields (cdr ls)))))]
-           [else (convert-full-fold-fields (cdr ls))])))]))
+(define (c*->off c* n)
+  (if (= (length c*) 1)
+      (- (car c*) n)
+      (improperize (map integer->char c*))))
 
-(define-struct spcase (lc tc uc))
+(define (codes->off str n)
+  (c*->off (map hex->num (split str)) n))
 
-(define (convert-special-casing ls)
-  (cond
-    [(null? ls) '()]
-    [else
-     (let ([fields (car ls)])
-       (cond
-         [(or (<= (length fields) 4)
-              (= 0 (string-length (remove-spaces (list-ref fields 4)))))
-          (let ([n (hex->num (remove-spaces (car fields)))])
-            (define (field-data str)
-              (let ([c* (map hex->num 
-                          (map remove-spaces
-                            (split (remove-spaces str))))])
-                (if (= (length c*) 1)
-                    (- (car c*) n)
-                    (improperize (map integer->char c*)))))
-            (cons
-              (cons n
-                (make-spcase
-                  (field-data (list-ref fields 1))
-                  (field-data (list-ref fields 2))
-                  (field-data (list-ref fields 3))))
-              (convert-special-casing (cdr ls))))]
-         [else (convert-special-casing (cdr ls))]))]))
+;;; decomposition field looks like:
+;;;    hex-value*
+;;;    <tag> hex-value*
+;;; latter appear to be for compatibility decomposition only
+(define (parse-decomp n str compat?)
+  (let f ([ls (split str)])
+    (cond
+      [(null? ls) 0]
+      [(char=? (string-ref (car ls) 0) #\<)
+       (if compat? (c*->off (map hex->num (cdr ls)) n) 0)]
+      [else (c*->off (map hex->num ls) n)])))
 
-(define (with-output-to-file* file thunk)
-  (when (file-exists? file) (delete-file file))
-  (with-output-to-file file thunk))
+(define (insert-foldcase-data! ls data)
+  (for-each 
+    (lambda (fields)
+      (let ([n (hex->num (car fields))])
+        (let ([cdrec (find-cdrec n ls)]
+              [offset (codes->off (caddr fields) n)])
+          (chardata-fcchar-set! cdrec offset)
+          (chardata-fcstr-set! cdrec offset))))
+    (filter (lambda (fields) (equal? (cadr fields) "C")) data))
+  (for-each 
+    (lambda (fields)
+      (let ([n (hex->num (car fields))])
+        (chardata-fcstr-set!
+          (find-cdrec n ls)
+          (codes->off (caddr fields) n))))
+    (filter (lambda (fields) (equal? (cadr fields) "F")) data)))
 
-(let ([ls 
-       ;;; get initial table
-       (compute-foldcase
-         (map data-case 
-           (get-unicode-data "UNIDATA/UnicodeData.txt")))])
-  ;;; compute the string-foldcase data
+(define (insert-specialcase-data! ls data)
   (for-each
-    (lambda (x) 
-      (let ([n (car x)] [chars (cdr x)])
-        (cond
-          [(assq n ls) => 
-           (lambda (p) 
-             (vector-set! (cdr p) 4 chars))]
-          [else (error #f "not there" n)])))
-    (convert-full-fold-fields
-      (get-unicode-data "UNIDATA/CaseFolding.txt")))
-  (for-each
-    (lambda (x)
-      (let ([n (car x)] [cases (cdr x)])
-        (cond
-          [(assq n ls) =>
-           (lambda (p)
-             (let ([v (cdr p)])
-               (vector-set! (cdr p) 5 (spcase-uc cases))
-               (vector-set! (cdr p) 6 (spcase-lc cases))
-               (vector-set! (cdr p) 7 (spcase-tc cases))))]
-          [else (error #f "not here" n)])))
-    (convert-special-casing
-      (get-unicode-data "UNIDATA/SpecialCasing.txt")))
-  ;;; done
-  (let ([ls (remove-dups ls)])
-    (define (p name idx) 
-      (pretty-print 
-        `(define ,name 
-           ',(list->vector (map (lambda (x) (vector-ref (cdr x) idx)) ls)))))
-    (parameterize ([print-unicode #f] [pretty-width 80]) 
-      (let ([v0 (list->vector (map car ls))])
-        (with-output-to-file* "unicode-char-cases.ss"
-          (lambda ()
-            (display license)
-            (printf ";;; DO NOT EDIT\n;;; automatically generated\n")
-            (printf ";;; ~s entries in table\n" (vector-length v0))
-            (pretty-print `(define charcase-search-vector ',v0))
-            (p 'char-upcase-adjustment-vector 0)
-            (p 'char-downcase-adjustment-vector 1)
-            (p 'char-titlecase-adjustment-vector 2)
-            (p 'char-foldcase-adjustment-vector 3)
-            (p 'string-foldcase-adjustment-vector 4)
-            (p 'string-upcase-adjustment-vector 5)
-            (p 'string-downcase-adjustment-vector 6)
-            (p 'string-titlecase-adjustment-vector 7)
-            ))))))
-    
+    (lambda (fields)
+      (let ([n (hex->num (car fields))])
+        (let ([cdrec (find-cdrec n ls)])
+          (chardata-lcstr-set! cdrec (codes->off (list-ref fields 1) n))
+          (chardata-tcstr-set! cdrec (codes->off (list-ref fields 2) n))
+          (chardata-ucstr-set! cdrec (codes->off (list-ref fields 3) n)))))
+    (filter
+      (lambda (fields) (= 0 (string-length (list-ref fields 4))))
+      data)))
 
-(printf "Happy Happy Joy Joy\n")
+(define verify-identity!
+  (lambda (n cdrec)
+    (define (zeros? . args) (andmap (lambda (x) (eqv? x 0)) args))
+    (unless (zeros? (chardata-ucchar cdrec)
+                    (chardata-lcchar cdrec)
+                    (chardata-tcchar cdrec)
+                    (chardata-fcchar cdrec)
+                    (chardata-ucstr cdrec)
+                    (chardata-lcstr cdrec)
+                    (chardata-tcstr cdrec)
+                    (chardata-fcstr cdrec)
+                    (chardata-decomp-canon cdrec)
+                    (chardata-decomp-compat cdrec))
+      (error 'verify-identity "failed for ~x, ~s" n cdrec))))
+
+(define build-table
+  (lambda (acc ls)
+    (let ([table (make-table 0)])
+      (for-each 
+        (lambda (x)
+          (let ([n (car x)] [cdrec (cdr x)])
+            (unless (< n code-point-limit)
+              (error 'build-table
+                "code point value ~s is at or above declared limit ~s"
+                n code-point-limit))
+            (if (>= n table-limit)
+                (verify-identity! n cdrec)
+                (table-set! table n (acc cdrec)))))
+        ls)
+      (time (commonize* table))
+      table)))
+
+(define (get-composition-exclusions)
+  (map hex->num
+       (map car (get-unicode-data "UNIDATA/CompositionExclusions.txt"))))
+
+(let ([ls (map data-case (get-unicode-data "UNIDATA/UnicodeData.txt"))])
+  (insert-foldcase-data! ls (get-unicode-data "UNIDATA/CaseFolding.txt"))
+  (insert-specialcase-data! ls (get-unicode-data "UNIDATA/SpecialCasing.txt"))
+ ; insert final sigma flag for char-downcase conversion
+  (chardata-lcstr-set! (find-cdrec #x3a3 ls) 'sigma)
+  (with-output-to-file* "unicode-char-cases.ss"
+    (lambda ()
+      (parameterize ([print-graph #t] [print-unicode #f])
+        (pretty-print
+          `(module ($char-upcase $char-downcase $char-titlecase $char-foldcase
+                    $str-upcase $str-downcase $str-titlecase $str-foldcase
+                    $str-decomp-canon $str-decomp-compat $composition-exclusions)
+             (define char-upcase-table ',(build-table chardata-ucchar ls))
+             (define char-downcase-table ',(build-table chardata-lcchar ls))
+             (define char-titlecase-table ',(build-table chardata-tcchar ls))
+             (define char-foldcase-table ',(build-table chardata-fcchar ls))
+             (define string-upcase-table ',(build-table chardata-ucstr ls))
+             (define string-downcase-table ',(build-table chardata-lcstr ls))
+             (define string-titlecase-table ',(build-table chardata-tcstr ls))
+             (define string-foldcase-table ',(build-table chardata-fcstr ls))
+             (define decomp-canon-table ',(build-table chardata-decomp-canon ls))
+             (define decomp-compat-table ',(build-table chardata-decomp-compat ls))
+             (define table-limit ,table-limit)
+             (define code-point-limit ,code-point-limit)
+             (define table-ref ,table-ref-code)
+             (define (charop tbl c)
+               (let ([n (char->integer c)])
+                 (if (and (fx< table-limit code-point-limit)
+                          (fx>= n table-limit))
+                     c
+                     (integer->char (fx+ (table-ref tbl n) n)))))
+             (define (strop tbl c)
+               (let ([n (char->integer c)])
+                 (if (and (fx< table-limit code-point-limit)
+                          (fx>= n table-limit))
+                     c
+                     (let ([x (table-ref tbl n)])
+                       (if (fixnum? x)
+                           (integer->char (fx+ x n))
+                           x)))))
+             (define ($char-upcase c) (charop char-upcase-table c))
+             (define ($char-downcase c) (charop char-downcase-table c))
+             (define ($char-titlecase c) (charop char-titlecase-table c))
+             (define ($char-foldcase c) (charop char-foldcase-table c))
+             (define ($str-upcase c) (strop string-upcase-table c))
+             (define ($str-downcase c) (strop string-downcase-table c))
+             (define ($str-titlecase c) (strop string-titlecase-table c))
+             (define ($str-foldcase c) (strop string-foldcase-table c))
+             (define ($str-decomp-canon c) (strop decomp-canon-table c))
+             (define ($str-decomp-compat c) (strop decomp-compat-table c))
+             (define ($composition-exclusions)
+               ',(get-composition-exclusions))))))))
+
+(printf "Happy Happy Joy Joy ~a\n" (sizeof cache))

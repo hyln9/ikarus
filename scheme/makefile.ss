@@ -69,7 +69,7 @@
     "ikarus.date-string.ss"
     "ikarus.symbols.ss"
     "ikarus.vectors.ss"
-    "ikarus.unicode-data.ss"
+    "ikarus.unicode.ss"
     "ikarus.string-to-number.ss"
     "ikarus.numerics.ss"
     "ikarus.conditions.ss"

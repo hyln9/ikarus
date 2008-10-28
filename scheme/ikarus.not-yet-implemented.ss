@@ -9,8 +9,6 @@
     port-has-set-port-position!?
     set-port-position!  
     make-eqv-hashtable equal-hash
-    string-normalize-nfc string-normalize-nfd
-    string-normalize-nfkc string-normalize-nfkd string-titlecase
     )
 
   (import (except (ikarus) 
@@ -22,8 +20,6 @@
     port-has-set-port-position!?
     set-port-position! 
     make-eqv-hashtable equal-hash
-    string-normalize-nfc string-normalize-nfd
-    string-normalize-nfkc string-normalize-nfkd string-titlecase
     ))
   
   (define-syntax not-yet
@@ -50,13 +46,10 @@
 
   (not-yet 
     ;;; should be implemented
-    string-titlecase 
     bitwise-rotate-bit-field bitwise-reverse-bit-field
     fxreverse-bit-field 
     ;;; not top priority at the moment
     make-eqv-hashtable equal-hash
-    string-normalize-nfc string-normalize-nfd
-    string-normalize-nfkc string-normalize-nfkd 
     ;;; won't be implemented
     make-custom-binary-input/output-port
     make-custom-textual-input/output-port

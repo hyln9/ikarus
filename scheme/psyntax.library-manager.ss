@@ -116,7 +116,7 @@
                   ((or (char<=? #\a c #\z)
                        (char<=? #\A c #\Z)
                        (char<=? #\0 c #\9)
-                       (memv c '(#\- #\+ #\_)))
+                       (memv c '(#\. #\- #\+ #\_)))
                    (write-char c p))
                   (else
                    (write-char #\% p)
