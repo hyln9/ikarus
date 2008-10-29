@@ -489,112 +489,110 @@
 (define $decompose
  ; might should optimize for sequences of ascii characters
   (lambda (s canonical?)
-    (define (canonical<? c1 c2)
-      (fx< ($char-combining-class c1) ($char-combining-class c2)))
-    (define (sort-and-flush comb*)
-      (for-each write-char
-        (list-sort canonical<? (reverse comb*))))
-    (define ($char-decomp c)
-      (if (and (char<=? hangul-sbase c) (char<=? c hangul-slimit))
-          ($hangul-decomp c)
-          (if canonical?
-              ($str-decomp-canon c)
-              ($str-decomp-compat c))))
-    (with-output-to-string
-      (lambda ()
-        (let ([n (string-length s)])
-          (define (push-and-go c* c** i comb*)
-            (if (char? c*)
-                (go c* c** i comb*)
-                (go (car c*) (cons (cdr c*) c**) i comb*)))
-          (define (pop-and-go c** i comb*)
-            (if (null? c**)
-                (if (fx= i n)
+    (let ([n (string-length s)] [ac '()])
+      (define (canonical>? c1 c2)
+        (fx> ($char-combining-class c1) ($char-combining-class c2)))
+      (define (sort-and-flush comb*)
+        (unless (null? comb*)
+          (set! ac (append (list-sort canonical>? comb*) ac))))
+      (define ($char-decomp c)
+        (if (and (char<=? hangul-sbase c) (char<=? c hangul-slimit))
+            ($hangul-decomp c)
+            (if canonical?
+                ($str-decomp-canon c)
+                ($str-decomp-compat c))))
+      (define (push-and-go c* c** i comb*)
+        (if (char? c*)
+            (go c* c** i comb*)
+            (go (car c*) (cons (cdr c*) c**) i comb*)))
+      (define (pop-and-go c** i comb*)
+        (if (null? c**)
+            (if (fx= i n)
+                (sort-and-flush comb*)
+                (go (string-ref s i) '() (fx+ i 1) comb*))
+            (push-and-go (car c**) (cdr c**) i comb*)))
+      (define (go c c** i comb*)
+        (let ([c* ($char-decomp c)])
+          (if (eq? c c*) ; should be eqv?
+              (if (fxzero? ($char-combining-class c))
+                  (begin
                     (sort-and-flush comb*)
-                    (go (string-ref s i) '() (fx+ i 1) comb*))
-                (push-and-go (car c**) (cdr c**) i comb*)))
-          (define (go c c** i comb*)
-            (let ([c* ($char-decomp c)])
-              (if (eq? c c*) ; should be eqv?
-                  (if (fxzero? ($char-combining-class c))
-                      (begin
-                        (sort-and-flush comb*)
-                        (write-char c) 
-                        (pop-and-go c** i '()))
-                      (pop-and-go c** i (cons c comb*)))
-                  (push-and-go c* c** i comb*))))
-          (pop-and-go '() 0 '()))))))
+                    (set! ac (cons c ac))
+                    (pop-and-go c** i '()))
+                  (pop-and-go c** i (cons c comb*)))
+              (push-and-go c* c** i comb*))))
+      (pop-and-go '() 0 '())
+      (list->string (reverse ac)))))
 
 (define $compose
   (let ([comp-table #f])
     (define (lookup-composite c1 c2)
-     ; needs to handle HANGUL
       (hashtable-ref comp-table (cons c1 c2) #f))
+    (define (init!)
+      (set! comp-table
+        (make-hashtable
+          (lambda (x)
+            (fxxor
+              (fxsll (char->integer (car x)) 7)
+              (char->integer (cdr x))))
+          (lambda (x y)
+            (and (char=? (car x) (car y))
+                 (char=? (cdr x) (cdr y))))))
+      (vector-for-each
+        (lambda (c* c) (hashtable-set! comp-table c* c))
+        (car ($composition-pairs))
+        (cdr ($composition-pairs))))
     (lambda (s)
-      (unless comp-table
-        (set! comp-table
-          (make-hashtable
-            (lambda (x)
-              (fxxor
-                (fxsll (char->integer (car x)) 7)
-                (char->integer (cdr x))))
-            (lambda (x y)
-              (and (char=? (car x) (car y))
-                   (char=? (cdr x) (cdr y))))))
-        (vector-for-each
-          (lambda (c* c) (hashtable-set! comp-table c* c))
-          (car ($composition-pairs))
-          (cdr ($composition-pairs))))
-      (with-output-to-string
-        (lambda ()
-          (let ([n (string-length s)])
-            (define (dump c acc)
-              (write-char c)
-              (for-each write-char (reverse acc)))
-            (define (s0 i)
-              (unless (fx= i n)
-                (let ([c (string-ref s i)])
-                  (if (fxzero? ($char-combining-class c))
-                      (s1 (fx+ i 1) c)
-                      (begin (write-char c) (s0 (fx+ i 1)))))))
-            (define (s1 i c)
-              (if (fx= i n)
-                  (write-char c)
-                  (let ([c1 (string-ref s i)])
-                    (cond
-                      [(and (and (char<=? hangul-lbase c) 
-                                 (char<=? c hangul-llimit))
-                            (and (char<=? hangul-vbase c1)
-                                 (char<=? c1 hangul-vlimit)))
-                       (s1 (fx+ i 1)
-                           (let ([lindex (char- c hangul-lbase)]
-                                 [vindex (char- c1 hangul-vbase)])
-                             (integer->char
-                               (fx+ (char->integer hangul-sbase)
-                                    (fx* (fx+ (fx* lindex hangul-vcount) vindex)
-                                         hangul-tcount)))))]
-                      [(and (and (char<=? hangul-sbase c)
-                                 (char<=? c hangul-slimit))
-                            (and (char<=? hangul-tbase c1)
-                                 (char<=? c1 hangul-tlimit))
-                            (let ([sindex (char- c hangul-sbase)])
-                              (fxzero? (fxmod sindex hangul-tcount))))
-                       (let ([tindex (char- c1 hangul-tbase)])
-                         (s1 (fx+ i 1) (integer->char (fx+ (char->integer c) tindex))))]
-                      [else (s2 i c -1 '())]))))
-            (define (s2 i c class acc)
-              (if (fx= i n)
-                  (dump c acc)
-                  (let ([c1 (string-ref s i)])
-                    (let ([class1 ($char-combining-class c1)])
-                      (cond
-                        [(and (fx< class class1) (lookup-composite c c1)) =>
-                         (lambda (c) (s2 (fx+ i 1) c class acc))]
-                        [(fx= class1 0)
-                         (dump c acc)
-                         (s1 (fx+ i 1) c1)]
-                        [else (s2 (fx+ i 1) c class1 (cons c1 acc))])))))
-            (s0 0)))))))
+      (unless comp-table (init!))
+      (let ([ac '()] [n (string-length s)])
+        (define (dump c acc)
+          (set! ac (cons c ac))
+          (unless (null? acc) (set! ac (append acc ac))))
+        (define (s0 i)
+          (unless (fx= i n)
+            (let ([c (string-ref s i)])
+              (if (fxzero? ($char-combining-class c))
+                  (s1 (fx+ i 1) c)
+                  (begin (set! ac (cons c ac)) (s0 (fx+ i 1)))))))
+        (define (s1 i c)
+          (if (fx= i n)
+              (set! ac (cons c ac))
+              (let ([c1 (string-ref s i)])
+                (cond
+                  [(and (and (char<=? hangul-lbase c) 
+                             (char<=? c hangul-llimit))
+                        (and (char<=? hangul-vbase c1)
+                             (char<=? c1 hangul-vlimit)))
+                   (s1 (fx+ i 1)
+                       (let ([lindex (char- c hangul-lbase)]
+                             [vindex (char- c1 hangul-vbase)])
+                         (integer->char
+                           (fx+ (char->integer hangul-sbase)
+                                (fx* (fx+ (fx* lindex hangul-vcount) vindex)
+                                     hangul-tcount)))))]
+                  [(and (and (char<=? hangul-sbase c)
+                             (char<=? c hangul-slimit))
+                        (and (char<=? hangul-tbase c1)
+                             (char<=? c1 hangul-tlimit))
+                        (let ([sindex (char- c hangul-sbase)])
+                          (fxzero? (fxmod sindex hangul-tcount))))
+                   (let ([tindex (char- c1 hangul-tbase)])
+                     (s1 (fx+ i 1) (integer->char (fx+ (char->integer c) tindex))))]
+                  [else (s2 i c -1 '())]))))
+        (define (s2 i c class acc)
+          (if (fx= i n)
+              (dump c acc)
+              (let ([c1 (string-ref s i)])
+                (let ([class1 ($char-combining-class c1)])
+                  (cond
+                    [(and (fx< class class1) (lookup-composite c c1)) =>
+                     (lambda (c) (s2 (fx+ i 1) c class acc))]
+                    [(fx= class1 0)
+                     (dump c acc)
+                     (s1 (fx+ i 1) c1)]
+                    [else (s2 (fx+ i 1) c class1 (cons c1 acc))])))))
+        (s0 0)
+        (list->string (reverse ac))))))
 
 (define-string-op string-normalize-nfd
   (lambda (s) ($decompose s #t)))
