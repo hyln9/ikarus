@@ -167,7 +167,7 @@ ikptr
 ikrt_ffi_prep_cif(ikptr rtptr, ikptr argstptr, ikpcb* pcb) {
   ffi_cif* cif = alloc(sizeof(ffi_cif), 1);
   ffi_abi abi = FFI_DEFAULT_ABI;
-  unsigned int nargs = unfix(ref(argstptr, off_vector_length));
+  int nargs = unfix(ref(argstptr, off_vector_length));
   ffi_type** argtypes = alloc(sizeof(ffi_type*), nargs+1);
   int i;
   for(i=0; i<nargs; i++){
@@ -188,7 +188,7 @@ ikrt_ffi_prep_cif(ikptr rtptr, ikptr argstptr, ikpcb* pcb) {
 }
 
 
-        
+#ifdef DEBUG_FFI        
 static void
 dump_stack(ikpcb* pcb, char* msg) {
   fprintf(stderr, "====================  %s\n", msg);
@@ -201,6 +201,7 @@ dump_stack(ikpcb* pcb, char* msg) {
     p += wordsize;
   }
 }
+#endif
 
 
 /* FIXME: handle stack overflow */
@@ -321,8 +322,8 @@ ikrt_ffi_call(ikptr data, ikptr argsvec, ikpcb* pcb)  {
   ikptr typevec = ref(data, off_vector_data + 2 * wordsize);
   ikptr rtype   = ref(data, off_vector_data + 3 * wordsize);
   ffi_cif* cif = (ffi_cif*) ref(cifptr, off_pointer_data);
-  void* fn = (void*) ref(funptr, off_pointer_data);
-  unsigned int n = unfix(ref(argsvec, off_vector_length));
+  void(*fn)() = (void*) ref(funptr, off_pointer_data);
+  int n = unfix(ref(argsvec, off_vector_length));
   void** avalues = alloc(sizeof(void*), n+1);
   int i;
   for(i=0; i<n; i++){
@@ -394,7 +395,7 @@ generic_callback(ffi_cif *cif, void *ret, void **args, void *user_data){
   ikptr proc   = ref(data, off_vector_data + 1 * wordsize);
   ikptr argtypes_conv = ref(data, off_vector_data + 2 * wordsize);
   ikptr rtype_conv = ref(data, off_vector_data + 3 * wordsize);
-  ikptr n = unfix(ref(argtypes_conv, off_vector_length));
+  int n = unfix(ref(argtypes_conv, off_vector_length));
 
   ikpcb* pcb = the_pcb;
   ikptr code_entry = ref(proc, off_closure_code);

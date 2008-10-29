@@ -801,7 +801,7 @@ ikrt_bnbnminus(ikptr x, ikptr y, ikpcb* pcb){
     pcb->root0 = &s1;
     pcb->root1 = &s2;
     ikptr res = ik_safe_alloc(pcb, align(disp_bignum_data + n1 * wordsize));
-    bzero((void*)res+disp_bignum_data, n1*wordsize);
+    bzero((void*)(res+disp_bignum_data), n1*wordsize);
     pcb->root0 = 0;
     pcb->root1 = 0;
     long int burrow = 

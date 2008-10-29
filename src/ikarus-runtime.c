@@ -50,19 +50,19 @@ extern char **environ;
 #define segment_shift (pageshift+pageshift-2)
 #define segment_index(x) (((unsigned long int)(x)) >> segment_shift)
 
-ikptr ik_mmap(long int size);
-void ik_munmap(ikptr mem, long int size);
+ikptr ik_mmap(unsigned long int size);
+void ik_munmap(ikptr mem, unsigned long int size);
 
 static void
 extend_table_maybe(ikptr p, unsigned long int size, ikpcb* pcb){
   assert(size == align_to_next_page(size));
   ikptr q = p + size;
   if(p < pcb->memory_base){
-    long int new_lo = segment_index(p);
-    long int old_lo = segment_index(pcb->memory_base);
-    long int hi = segment_index(pcb->memory_end);
-    long int new_vec_size = (hi - new_lo) * pagesize;
-    long int old_vec_size = (hi - old_lo) * pagesize;
+    unsigned long int new_lo = segment_index(p);
+    unsigned long int old_lo = segment_index(pcb->memory_base);
+    unsigned long int hi = segment_index(pcb->memory_end);
+    unsigned long int new_vec_size = (hi - new_lo) * pagesize;
+    unsigned long int old_vec_size = (hi - old_lo) * pagesize;
     ikptr v = ik_mmap(new_vec_size);
     bzero((char*)(long)v, new_vec_size - old_vec_size);
     memcpy((char*)(long)(v+new_vec_size-old_vec_size),
@@ -82,11 +82,11 @@ extend_table_maybe(ikptr p, unsigned long int size, ikpcb* pcb){
     pcb->memory_base = (new_lo * segment_size);
   } 
   else if (q > pcb->memory_end){
-    long int lo = segment_index(pcb->memory_base);
-    long int old_hi = segment_index(pcb->memory_end);
-    long int new_hi = segment_index(q+segment_size-1);
-    long int new_vec_size = (new_hi - lo) * pagesize;
-    long int old_vec_size = (old_hi - lo) * pagesize;
+    unsigned long int lo = segment_index(pcb->memory_base);
+    unsigned long int old_hi = segment_index(pcb->memory_end);
+    unsigned long int new_hi = segment_index(q+segment_size-1);
+    unsigned long int new_vec_size = (new_hi - lo) * pagesize;
+    unsigned long int old_vec_size = (old_hi - lo) * pagesize;
     ikptr v = ik_mmap(new_vec_size);
     memcpy((char*)(long)v, 
            (char*)(long)pcb->dirty_vector_base,
@@ -120,7 +120,7 @@ set_segment_type(ikptr base, unsigned long int size, unsigned int type, ikpcb* p
 }
 
 void
-ik_munmap_from_segment(ikptr base, long int size, ikpcb* pcb){
+ik_munmap_from_segment(ikptr base, unsigned long int size, ikpcb* pcb){
   assert(base >= pcb->memory_base);
   assert((base+size) <= pcb->memory_end);
   assert(size == align_to_next_page(size));
@@ -158,7 +158,7 @@ ik_munmap_from_segment(ikptr base, long int size, ikpcb* pcb){
 
 
 ikptr
-ik_mmap_typed(long int size, unsigned int type, ikpcb* pcb){
+ik_mmap_typed(unsigned long int size, unsigned int type, ikpcb* pcb){
   ikptr p;
   if(size == pagesize) {
     ikpage* s = pcb->cached_pages;
@@ -181,34 +181,27 @@ ik_mmap_typed(long int size, unsigned int type, ikpcb* pcb){
 }
 
 ikptr
-ik_mmap_ptr(long int size, int gen, ikpcb* pcb){
+ik_mmap_ptr(unsigned long int size, int gen, ikpcb* pcb){
   return ik_mmap_typed(size, pointers_mt | gen, pcb);
 }
 
 ikptr
-ik_mmap_data(long int size, int gen, ikpcb* pcb){
+ik_mmap_data(unsigned long int size, int gen, ikpcb* pcb){
   return ik_mmap_typed(size, data_mt | gen, pcb);
 }
 
 ikptr
-ik_mmap_code(long int size, int gen, ikpcb* pcb){
+ik_mmap_code(unsigned long int size, int gen, ikpcb* pcb){
   ikptr p = ik_mmap_typed(size, code_mt | gen, pcb);
   if(size > pagesize){
     set_segment_type(p+pagesize, size-pagesize, data_mt|gen, pcb);
   }
-#if 0
-  junk int err = mprotect(p, size, PROT_READ | PROT_WRITE | PROT_EXEC);
-  if(err){
-    fprintf(stderr, "cannot mprotect code: %s\n", strerror(errno));
-    exit(-1);
-  }
-#endif
   return p;
 }
 
 
 ikptr
-ik_mmap_mixed(long int size, ikpcb* pcb){
+ik_mmap_mixed(unsigned long int size, ikpcb* pcb){
   return ik_mmap_typed(size, mainheap_mt, pcb);
 }
 
@@ -216,7 +209,7 @@ ik_mmap_mixed(long int size, ikpcb* pcb){
 
 
 ikptr
-ik_mmap(long int size){
+ik_mmap(unsigned long int size){
   int pages = (size + pagesize - 1) / pagesize;
   total_allocated_pages += pages;
   int mapsize = pages * pagesize;
@@ -246,9 +239,9 @@ ik_mmap(long int size){
 }
 
 void
-ik_munmap(ikptr mem, long int size){
-  int pages = (size + pagesize - 1) / pagesize;
-  int mapsize = pages * pagesize;
+ik_munmap(ikptr mem, unsigned long int size){
+  unsigned long int pages = (size + pagesize - 1) / pagesize;
+  unsigned long int mapsize = pages * pagesize;
   assert(size == mapsize);
   assert(((-pagesize) & (int)mem) == (int)mem);
   total_allocated_pages -= pages;

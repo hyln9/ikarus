@@ -1360,12 +1360,12 @@ relocate_new_code(ikptr x, gc_t* gc){
       ikptr displaced_object = obj + obj_off;
       long int next_word = code + code_off + 4;
       ikptr relative_distance = displaced_object - (long int)next_word;
-      if(relative_distance != (int)relative_distance){
+      if(((long int)relative_distance) != ((long)((int)relative_distance))){
         fprintf(stderr, "relocation error with relative=0x%016lx\n", 
             relative_distance);
         exit(-1);
       }
-      *((int*)(code+code_off)) = relative_distance;
+      *((int*)(code+code_off)) = (int)relative_distance;
       p += (3*wordsize);
     }
     else if(tag == 1){
