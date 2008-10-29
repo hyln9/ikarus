@@ -25,7 +25,13 @@
 
 ; dropping support for s16 inner vectors for now
 (include "extract-common.ss")
-
+(define (iota n)
+  (let f ([n n] [ac '()])
+    (cond
+      [(= n 0) ac]
+      [else
+       (let ([n (- n 1)])
+         (f n (cons n ac)))])))
 (define ptr-bytes 4)
 
 (define code-point-limit #x110000) ; as of Unicode 5.1
@@ -161,12 +167,39 @@
                 (verify-identity! n cdrec)
                 (table-set! table n (acc cdrec)))))
         ls)
-      (time (commonize* table))
+      (commonize* table)
       table)))
 
-(define (get-composition-exclusions)
-  (map hex->num
-       (map car (get-unicode-data "UNIDATA/CompositionExclusions.txt"))))
+(define (get-composition-pairs decomp-canon-table)
+  (define ($str-decomp-canon c) 
+    (define (strop tbl c)
+      (let ([n (char->integer c)])
+        (if (and (fx< table-limit code-point-limit)
+                 (fx>= n table-limit))
+            c
+            (let ([x (table-ref tbl n)])
+              (if (fixnum? x)
+                  (integer->char (fx+ x n))
+                  x)))))
+    (strop decomp-canon-table c))
+  (let ([exclusions 
+         (map hex->num
+           (map car (get-unicode-data
+                      "UNIDATA/CompositionExclusions.txt")))]
+        [pairs '()])
+    (for-each
+      (lambda (i)
+        (unless (and (fx<= #xD800 i) (fx<= i #xDFFF))
+          (unless (memv i exclusions)
+            (let* ([c (integer->char i)]  [c* ($str-decomp-canon c)])
+              (when (pair? c*)
+                (set! pairs (cons (cons c* c) pairs)))))))
+      (iota #x110000))
+    (cons (list->vector (map car pairs))
+          (list->vector (map cdr pairs)))))
+
+             
+
 
 (let ([ls (map data-case (get-unicode-data "UNIDATA/UnicodeData.txt"))])
   (insert-foldcase-data! ls (get-unicode-data "UNIDATA/CaseFolding.txt"))
@@ -179,7 +212,8 @@
         (pretty-print
           `(module ($char-upcase $char-downcase $char-titlecase $char-foldcase
                     $str-upcase $str-downcase $str-titlecase $str-foldcase
-                    $str-decomp-canon $str-decomp-compat $composition-exclusions)
+                    $str-decomp-canon $str-decomp-compat
+                    $composition-pairs)
              (define char-upcase-table ',(build-table chardata-ucchar ls))
              (define char-downcase-table ',(build-table chardata-lcchar ls))
              (define char-titlecase-table ',(build-table chardata-tcchar ls))
@@ -218,7 +252,8 @@
              (define ($str-foldcase c) (strop string-foldcase-table c))
              (define ($str-decomp-canon c) (strop decomp-canon-table c))
              (define ($str-decomp-compat c) (strop decomp-compat-table c))
-             (define ($composition-exclusions)
-               ',(get-composition-exclusions))))))))
+             (define ($composition-pairs)
+               ',(get-composition-pairs 
+                   (build-table chardata-decomp-canon ls)))))))))
 
 (printf "Happy Happy Joy Joy ~a\n" (sizeof cache))

@@ -98,13 +98,6 @@
   (not (fxzero? (fxand x y))))
 (define (char- x y)
   (fx- (char->integer x) (char->integer y)))
-(define (iota n)
-  (let f ([n n] [ac '()])
-    (cond
-      [(= n 0) ac]
-      [else
-       (let ([n (- n 1)])
-         (f n (cons n ac)))])))
 
 (include "unicode/unicode-char-cases.ss")
 (include "unicode/unicode-charinfo.ss")
@@ -180,7 +173,7 @@
        (chars (cdr ac)
          (let f ([p (cdar ac)] [n n])
            (cond
-             [(pair? p) (f (cdr p) (+ n 1))]
+             [(pair? p) (f (cdr p) (fx+ n 1))]
              [else n])))]))
   (define (extend src ac src-len dst-len)
     (let f ([str str] [dst (make-string dst-len)] [i 0] [j 0] [ac (reverse ac)] [sigma* '()])
@@ -212,7 +205,7 @@
         (and (not (fx= i n))
           (or ($char-cased? (string-ref str i))
               (and ($char-case-ignorable? (string-ref str i))
-                   (scan (+ i incr) incr n)))))
+                   (scan (fx+ i incr) incr n)))))
       (and (scan (fx- i 1) -1 -1) (not (scan (fx+ i 1) +1 (string-length str)))))
    ; scanning requires we have some character in place...guess nonfinal sigma
     (for-each (lambda (i) (string-set! str i nonfinal-sigma)) sigma*)
@@ -548,13 +541,10 @@
             (lambda (x y)
               (and (char=? (car x) (car y))
                    (char=? (cdr x) (cdr y))))))
-        (for-each
-          (lambda (i)
-            (unless (and (fx<= #xD800 i) (fx<= i #xDFFF))
-              (unless (memv i ($composition-exclusions))
-                (let* ([c (integer->char i)]  [c* ($str-decomp-canon c)])
-                  (when (pair? c*) (hashtable-set! comp-table c* c))))))
-          (iota #x110000)))
+        (vector-for-each
+          (lambda (c* c) (hashtable-set! comp-table c* c))
+          (car ($composition-pairs))
+          (cdr ($composition-pairs))))
       (with-output-to-string
         (lambda ()
           (let ([n (string-length s)])
@@ -607,23 +597,15 @@
             (s0 0)))))))
 
 (define-string-op string-normalize-nfd
-  (lambda (s)
-   ; need string? check
-    ($decompose s #t)))
+  (lambda (s) ($decompose s #t)))
 
 (define-string-op string-normalize-nfkd
-  (lambda (s)
-   ; need string? check
-    ($decompose s #f)))
+  (lambda (s) ($decompose s #f)))
 
 (define-string-op string-normalize-nfc
-  (lambda (s)
-   ; need string? check
-    ($compose ($decompose s #t))))
+  (lambda (s) ($compose ($decompose s #t))))
 
 (define-string-op string-normalize-nfkc
-  (lambda (s)
-   ; need string? check
-    ($compose ($decompose s #f))))
+  (lambda (s) ($compose ($decompose s #f))))
 
 ))
