@@ -1491,7 +1491,10 @@
         (if (enum-set-member? 'no-create x)   1 0)
         (if (enum-set-member? 'no-fail x)     2 0)
         (if (enum-set-member? 'no-truncate x) 4 0)))
-    (let ([opt (opt->num file-options)])
+    (let ([opt (if (enum-set? file-options)
+                   (opt->num file-options)
+                   (die who "file-options is not an enum set" 
+                        file-options))])
       (let ([fh (foreign-call "ikrt_open_output_fd"
                    (string->utf8 filename)
                    opt)])
@@ -1503,24 +1506,27 @@
     (case-lambda
       [(filename) 
        (open-file-input-port filename (file-options) 'block #f)]
-      [(filename file-options) 
+      [(filename file-options)
        (open-file-input-port filename file-options 'block #f)]
-      [(filename file-options buffer-mode) 
+      [(filename file-options buffer-mode)
        (open-file-input-port filename file-options buffer-mode #f)]
       [(filename file-options buffer-mode transcoder)
+       (define who 'open-file-input-port)
        (unless (string? filename)
-         (die 'open-file-input-port "invalid filename" filename))
-       (unless (or (not transcoder) (transcoder? transcoder)) 
-         (die 'open-file-input-port "invalid transcoder" transcoder))
+         (die who "invalid filename" filename))
+       (unless (enum-set? file-options)
+         (die who "file-options is not an enum set" file-options))
+       (unless (or (not transcoder) (transcoder? transcoder))
+         (die who "invalid transcoder" transcoder))
        ; FIXME: file-options ignored
        ; FIXME: buffer-mode ignored
        (fh->input-port 
-         (open-input-file-handle filename 'open-file-input-port)
+         (open-input-file-handle filename who)
          filename
          input-file-buffer-size
          transcoder
          #t
-         'open-file-input-port)]))
+         who)]))
  
   (define open-file-output-port
     (case-lambda
