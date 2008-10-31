@@ -52,3 +52,5 @@ MAINTAINERCLEANFILES=last-revision
 ikarus.boot: $(EXTRA_DIST) ikarus.config.ss
 	../src/ikarus -b ./ikarus.boot.$(sizeofvoidp).prebuilt --r6rs-script makefile.ss
 
+check: ikarus.boot
+	../src/ikarus -b ikarus.boot --r6rs-script run-tests.ss

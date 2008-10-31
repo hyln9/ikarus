@@ -322,7 +322,7 @@ ikrt_ffi_call(ikptr data, ikptr argsvec, ikpcb* pcb)  {
   ikptr typevec = ref(data, off_vector_data + 2 * wordsize);
   ikptr rtype   = ref(data, off_vector_data + 3 * wordsize);
   ffi_cif* cif = (ffi_cif*) ref(cifptr, off_pointer_data);
-  void(*fn)() = (void*) ref(funptr, off_pointer_data);
+  void(*fn)() = (void (*)()) ref(funptr, off_pointer_data);
   int n = unfix(ref(argsvec, off_vector_length));
   void** avalues = alloc(sizeof(void*), n+1);
   int i;

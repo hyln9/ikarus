@@ -386,6 +386,9 @@ ikarus.config.ss: Makefile last-revision ../config.h
 
 ikarus.boot: $(EXTRA_DIST) ikarus.config.ss
 	../src/ikarus -b ./ikarus.boot.$(sizeofvoidp).prebuilt --r6rs-script makefile.ss
+
+check: ikarus.boot
+	../src/ikarus -b ikarus.boot --r6rs-script run-tests.ss
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
