@@ -31,7 +31,8 @@
           null-environment scheme-report-environment
           interaction-environment
           ellipsis-map assertion-error 
-          environment environment? environment-symbols)
+          environment environment? environment-symbols
+          new-interaction-environment)
   (import
     (except (rnrs)
       environment environment? identifier?
@@ -121,29 +122,25 @@
            ;;; create new label for new binding
            (gensym))))))
 
+  (define (gen-define-label+loc id rib sd?)
+    (if sd?
+        (values (gensym) (gen-lexical id))
+        (let ([env (top-level-context)])
+          (let ((label (gen-top-level-label id rib))
+                (locs (interaction-env-locs env)))
+            (values label
+              (cond
+                ((assq label locs) => cdr)
+                (else 
+                 (let ((loc (gen-lexical id)))
+                   (set-interaction-env-locs! env
+                     (cons (cons label loc) locs))
+                   loc))))))))
 
-  (define (gen-define-label+loc id rib)
-    (cond
-      ((top-level-context) =>
-       (lambda (env)
-         (let ((label (gen-top-level-label id rib))
-               (locs (interaction-env-locs env)))
-           (values label
-             (cond
-               ((assq label locs) => cdr)
-               (else 
-                (let ((loc (gen-lexical id)))
-                  (set-interaction-env-locs! env
-                    (cons (cons label loc) locs))
-                  loc)))))))
-      (else (values (gensym) (gen-lexical id)))))
-
-
-  (define (gen-define-label id rib)
-    (cond
-      ((top-level-context)
-       (gen-top-level-label id rib))
-      (else (gensym))))
+  (define (gen-define-label id rib sd?)
+    (if sd?
+        (gensym)
+        (gen-top-level-label id rib)))
 
 
   ;;; A rib is a record constructed at every lexical contour in the
@@ -166,7 +163,7 @@
   ;;; extensible, or sealed.  An extensible rib looks like:
   ;;;  #<rib list-of-symbols list-of-list-of-marks list-of-labels #f>
   
-  (define (extend-rib! rib id label)
+  (define (extend-rib! rib id label sd?)
     (define (find sym mark* sym* mark** label*)
       (and (pair? sym*)
            (if (and (eq? sym (car sym*)) (same-marks? mark* (car mark**)))
@@ -184,7 +181,7 @@
            (lambda (p)
              (unless (eq? label (car p))
                (cond
-                 ((top-level-context)
+                 ((not sd?) ;(top-level-context)
                   ;;; XXX override label
                   (set-car! p label))
                  (else
@@ -594,8 +591,8 @@
            (lambda (env)
              ;;; fabricate binding
              (let ((rib (interaction-env-rib env)))
-               (let-values (((lab loc_) (gen-define-label+loc id rib)))
-                 (extend-rib! rib id lab)
+               (let-values (((lab _loc) (gen-define-label+loc id rib #f)))
+                 (extend-rib! rib id lab #t) ;;; FIXME
                  lab))))
           (else #f))))
           
@@ -2921,9 +2918,9 @@
     (lambda (e* r mr)
       (let ((rib (make-empty-rib)))
         (let-values (((e* r mr lex* rhs* mod** kwd* _exp*)
-                      (chi-body* (map (lambda (x) (add-subst rib x))
-                                      (syntax->list e*))
-                         r mr '() '() '() '() '() rib #f)))
+                      (chi-body* 
+                        (map (lambda (x) (add-subst rib x)) (syntax->list e*))
+                         r mr '() '() '() '() '() rib #f #t)))
            (when (null? e*)
              (stx-error e* "no expression in body"))
            (let* ((init* 
@@ -2975,7 +2972,7 @@
         (let* ((rib (make-empty-rib))
                (e* (map (lambda (x) (add-subst rib x)) (syntax->list e*))))
           (let-values (((e* r mr lex* rhs* mod** kwd* _exp*)
-                        (chi-body* e* r mr lex* rhs* mod** kwd* '() rib #f)))
+                        (chi-body* e* r mr lex* rhs* mod** kwd* '() rib #f #t)))
               (let ((exp-lab*
                      (vector-map
                        (lambda (x)
@@ -3005,7 +3002,7 @@
                               mod** kwd*)))))))))
 
   (define chi-body*
-    (lambda (e* r mr lex* rhs* mod** kwd* exp* rib top?)
+    (lambda (e* r mr lex* rhs* mod** kwd* exp* rib mix? sd?)
       (cond
         ((null? e*) (values e* r mr lex* rhs* mod** kwd* exp*))
         (else
@@ -3017,23 +3014,24 @@
                   (let-values (((id rhs) (parse-define e)))
                     (when (bound-id-member? id kwd*)
                       (stx-error e "cannot redefine keyword"))
-                    (let-values (((lab lex) (gen-define-label+loc id rib)))
-                      (extend-rib! rib id lab)
+                    (let-values (((lab lex) (gen-define-label+loc id rib sd?)))
+                      (extend-rib! rib id lab sd?)
                       (chi-body* (cdr e*)
                          (add-lexical lab lex r) mr
                          (cons lex lex*) (cons rhs rhs*)
-                         mod** kwd* exp* rib top?))))
+                         mod** kwd* exp* rib mix? sd?))))
                  ((define-syntax)
                   (let-values (((id rhs) (parse-define-syntax e)))
                     (when (bound-id-member? id kwd*)
                       (stx-error e "cannot redefine keyword"))
-                    (let ((lab (gen-define-label id rib))
-                          (expanded-rhs (expand-transformer rhs mr)))
-                        (extend-rib! rib id lab)
+                    (let* ((lab (gen-define-label id rib sd?))
+                           (expanded-rhs (expand-transformer rhs mr)))
+                        (extend-rib! rib id lab sd?)
                         (let ((b (make-eval-transformer expanded-rhs)))
                           (chi-body* (cdr e*)
                              (cons (cons lab b) r) (cons (cons lab b) mr)
-                             lex* rhs* mod** kwd* exp* rib top?)))))
+                             lex* rhs* mod** kwd* exp* rib
+                             mix? sd?)))))
                  ((let-syntax letrec-syntax)
                   (syntax-match e ()
                     ((_ ((xlhs* xrhs*) ...) xbody* ...)
@@ -3053,42 +3051,50 @@
                          (append (map (lambda (x) (add-subst xrib x)) xbody*) (cdr e*))
                          (append (map cons xlab* xb*) r)
                          (append (map cons xlab* xb*) mr)
-                         lex* rhs* mod** kwd* exp* rib top?)))))
+                         lex* rhs* mod** kwd* exp* rib 
+                         mix? sd?)))))
                  ((begin)
                   (syntax-match e ()
                     ((_ x* ...)
                      (chi-body* (append x* (cdr e*))
-                        r mr lex* rhs* mod** kwd* exp* rib top?))))
+                        r mr lex* rhs* mod** kwd* exp* rib
+                        mix? sd?))))
                  ((global-macro global-macro!)
                   (chi-body*
                      (cons (add-subst rib (chi-global-macro value e)) 
                            (cdr e*))
-                     r mr lex* rhs* mod** kwd* exp* rib top?))
+                     r mr lex* rhs* mod** kwd* exp* rib 
+                     mix? sd?))
                  ((local-macro local-macro!)
                   (chi-body*
                      (cons (add-subst rib (chi-local-macro value e))
                            (cdr e*))
-                     r mr lex* rhs* mod** kwd* exp* rib top?))
+                     r mr lex* rhs* mod** kwd* exp* rib 
+                     mix? sd?))
                  ((macro macro!)
                   (chi-body*
                      (cons (add-subst rib (chi-macro value e))
                            (cdr e*))
-                     r mr lex* rhs* mod** kwd* exp* rib top?))
+                     r mr lex* rhs* mod** kwd* exp* rib mix?
+                     sd?))
                  ((module)
                   (let-values (((lex* rhs* m-exp-id* m-exp-lab* r mr mod** kwd*)
                                 (chi-internal-module e r mr lex* rhs* mod** kwd*)))
                     (vector-for-each
-                      (lambda (id lab) (extend-rib! rib id lab))
+                      (lambda (id lab) (extend-rib! rib id lab sd?))
                       m-exp-id* m-exp-lab*)
-                    (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* exp* rib top?)))
+                    (chi-body* (cdr e*) r mr lex* rhs* mod** kwd*
+                               exp* rib mix? sd?)))
                  ((library) 
                   (library-expander (stx->datum e))
-                  (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* exp* rib top?))
+                  (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* exp*
+                             rib mix? sd?))
                  ((export)
                   (syntax-match e ()
                     ((_ exp-decl* ...) 
                      (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* 
-                                (append exp-decl* exp*) rib top?))))
+                                (append exp-decl* exp*) rib
+                                mix? sd?))))
                  ((import)
                   (let ()
                     (define (module-import? e)
@@ -3125,15 +3131,16 @@
                                       (module-import e r)
                                       (library-import e))))
                       (vector-for-each
-                        (lambda (id lab) (extend-rib! rib id lab))
+                        (lambda (id lab) (extend-rib! rib id lab sd?))
                         id* lab*))
-                    (chi-body* (cdr e*) r mr lex* rhs* mod** kwd* exp* rib top?)))
+                    (chi-body* (cdr e*) r mr lex* rhs* mod** kwd*
+                               exp* rib mix? sd?)))
                  (else
-                  (if top?
+                  (if mix?
                       (chi-body* (cdr e*) r mr
                           (cons (gen-lexical 'dummy) lex*)
                           (cons (cons 'top-expr e) rhs*)
-                          mod** kwd* exp* rib top?)
+                          mod** kwd* exp* rib #t sd?)
                       (values e* r mr lex* rhs* mod** kwd* exp*)))))))))))
   
   (define (expand-transformer expr r)
@@ -3427,7 +3434,7 @@
         (lambda (name label)
           (unless (symbol? name) 
             (error 'make-top-rib "BUG: not a symbol" name))
-          (extend-rib! rib (make-stx name top-mark* '() '()) label))
+          (extend-rib! rib (make-stx name top-mark* '() '()) label #t))
         names labels)
       rib))
 
@@ -3465,9 +3472,9 @@
         x)))
 
   (define chi-library-internal
-    (lambda (e* rib top?)
+    (lambda (e* rib mix?)
       (let-values (((e* r mr lex* rhs* mod** _kwd* exp*)
-                    (chi-body* e* '() '() '() '() '() '() '() rib top?)))
+                    (chi-body* e* '() '() '() '() '() '() '() rib mix? #t)))
         (values (append (apply append (reverse mod**)) e*)
            r mr (reverse lex*) (reverse rhs*) exp*))))
   
@@ -3475,7 +3482,8 @@
   (define chi-interaction-expr
     (lambda (e rib r)
       (let-values (((e* r mr lex* rhs* mod** _kwd* _exp*)
-                    (chi-body* (list e) r r '() '() '() '() '() rib #t)))
+                    (chi-body* (list e) r r '() '() '() '() '() rib
+                               #t #f)))
         (let ((e* (expand-interaction-rhs*/init* 
                     (reverse lex*) (reverse rhs*) 
                     (append (apply append (reverse mod**)) e*)
@@ -3487,7 +3495,7 @@
              (values e r))))))
 
   (define library-body-expander
-    (lambda (main-exp* imp* b* top?)
+    (lambda (main-exp* imp* b* mix?)
       (define itc (make-collector))
       (parameterize ((imp-collector itc)
                      (top-level-context #f))
@@ -3502,7 +3510,7 @@
               (parameterize ((inv-collector rtc)
                              (vis-collector vtc))
                 (let-values (((init* r mr lex* rhs* internal-exp*)
-                              (chi-library-internal b* rib top?)))
+                              (chi-library-internal b* rib mix?)))
                   (let-values (((exp-name* exp-id*)
                                 (parse-exports (append main-exp* internal-exp*))))
                     (seal-rib! rib)
@@ -3527,7 +3535,8 @@
                                             errstr name))))))))
                             export-subst)
                           (let ((invoke-body
-                                 (build-library-letrec* no-source top?
+                                 (build-library-letrec* no-source 
+                                   mix?
                                    lex* loc* rhs* 
                                    (if (null? init*) 
                                        (build-void)
@@ -3935,21 +3944,21 @@
           (for-each invoke-library lib*)
           (eval-core (expanded->core invoke-code))))))
 
+  (define (new-interaction-environment)
+    (let ((lib (find-library-by-name
+                 (base-of-interaction-library)))
+          (rib (make-empty-rib)))
+      (let ((subst (library-subst lib))) 
+        (set-rib-sym*! rib (map car subst))
+        (set-rib-mark**! rib 
+          (map (lambda (x) top-mark*) subst))
+        (set-rib-label*! rib (map cdr subst)))
+      (make-interaction-env rib '() '())))
+
   (define interaction-environment
-    (let ((the-env #f))
+    (let ((e #f))
       (lambda ()
-        (or the-env 
-            (let ((lib (find-library-by-name
-                         (base-of-interaction-library)))
-                  (rib (make-empty-rib)))
-              (let ((subst (library-subst lib))) 
-                (set-rib-sym*! rib (map car subst))
-                (set-rib-mark**! rib 
-                  (map (lambda (x) top-mark*) subst))
-                (set-rib-label*! rib (map cdr subst)))
-              (let ((env (make-interaction-env rib '() '())))
-                (set! the-env env)
-                env))))))
+        (or e (begin (set! e (new-interaction-environment)) e)))))
 
   (define top-level-context (make-parameter #f))
 

@@ -22,7 +22,7 @@
   lists strings bytevectors hashtables fixnums bignums numerics
   bitwise enums pointers sorting io fasl reader case-folding
   parse-flonums string-to-number bignum-to-flonum div-and-mod
-  fldiv-and-mod unicode normalization))
+  fldiv-and-mod unicode normalization repl))
 
 (define (run-test-from-library x)
   (printf "[testing ~a] ..." x)

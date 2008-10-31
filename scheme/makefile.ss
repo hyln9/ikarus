@@ -1095,6 +1095,7 @@
     [quotient                                    i r5 se]
     [scheme-report-environment                   i r5 se]
     [interaction-environment                     i r5 se]
+    [new-interaction-environment                 i]
     [close-port                                  i r ip]
     [eol-style                                   i r ip]
     [error-handling-mode                         i r ip]
