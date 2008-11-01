@@ -37,6 +37,7 @@
     (test #f)
     (test '())
     (test "Hello")
+    (test "He\x3bb;\x3bb;o")
     (test 'hello)
     (test '(Hello There))
     (test 3498798327498723894789237489324)
@@ -46,6 +47,7 @@
     (test 127487384734.4)
     (test (make-rectangular 12 13))
     (test (make-rectangular 12.0 13.0))
+    (test (string #\a))
     (test (string #\x3bb))
     (test-cycle))
 

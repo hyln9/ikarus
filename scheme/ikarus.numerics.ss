@@ -1627,7 +1627,7 @@
       (cond
         [(eqv? x 1) "+"]
         [(eqv? x -1) "-"]
-        [(or (< x 0) (and (flonum? x) (not (flzero? (atan 0.0 x)))))
+        [(or (< x 0) (eqv? x -0.0))
          ($number->string x r)]
         [else (string-append "+" ($number->string x r))]))
     (define $number->string

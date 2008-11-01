@@ -258,7 +258,7 @@
              (let ([str (make-string n)])
                (let f ([i 0])
                  (unless (fx= i n)
-                   (let ([c (integer->char (read-int p))])
+                   (let ([c (integer->char (read-u32 p))])
                      (string-set! str i c)
                      (f (fxadd1 i)))))
                (when m (put-mark m str))
