@@ -75,6 +75,8 @@
   (export)
   (import (ikarus)
           (except (ikarus startup) host-info)
+          (only (psyntax library-manager) current-library-expander)
+          (only (ikarus.reader.annotated) read-source-file)
           (only (ikarus load) load-r6rs-top-level))
   (init-library-path)
   (let-values ([(files script script-type args)
@@ -124,8 +126,14 @@
           files)))
     (cond
       [(eq? script-type 'r6rs-script)
-       (assert-null files "--r6rs-script")
        (command-line-arguments (cons script args))
+       (for-each
+         (lambda (filename)
+           (for-each
+             (lambda (src)
+               ((current-library-expander) src))
+             (read-source-file filename)))
+         files)
        (load-r6rs-top-level script 'run)
        (exit 0)]
       [(eq? script-type 'compile)

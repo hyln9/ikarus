@@ -15,7 +15,7 @@
 
 
 (library (ikarus.reader.annotated)
-  (export read-library-source-file read-script-source-file)
+  (export read-source-file read-library-source-file read-script-source-file)
   (import
     (except (ikarus) read-annotated read-script-annotated)
     (only (ikarus.reader) read-annotated read-script-annotated)
@@ -31,6 +31,14 @@
 
   (define (read-library-source-file file-name)
     (read-annotated (annotated-port file-name)))
+
+  (define (read-source-file file-name)
+    (let ([p (annotated-port file-name)])
+      (let f ()
+        (let ([x (read-annotated p)])
+          (if (eof-object? x)
+              '()
+              (cons x (f)))))))
 
   (define (read-script-source-file file-name)
     (let ([p (annotated-port file-name)])

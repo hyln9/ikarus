@@ -24,7 +24,6 @@
     (only (psyntax expander) compile-r6rs-top-level)
     (only (ikarus.reader.annotated) read-script-source-file))
 
-
   (define-struct serialized-library (contents))
 
   (define fasl-extension ".ikarus-fasl")
