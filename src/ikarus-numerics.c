@@ -2122,3 +2122,14 @@ ikrt_exact_bignum_sqrt(ikptr bn, ikpcb* pcb){
 }
 
 
+ikptr
+ikrt_flonum_hash(ikptr x /*, ikpcb* pcb */) {
+  return fix(0);
+}
+ikptr
+ikrt_bignum_hash(ikptr x /*, ikpcb* pcb */) {
+  return fix(0);
+}
+
+
+

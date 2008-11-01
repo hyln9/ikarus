@@ -8,7 +8,7 @@
     open-file-input/output-port output-port-buffer-mode
     port-has-set-port-position!?
     set-port-position!  
-    make-eqv-hashtable equal-hash
+    equal-hash
     )
 
   (import (except (ikarus) 
@@ -19,7 +19,7 @@
     open-file-input/output-port output-port-buffer-mode
     port-has-set-port-position!?
     set-port-position! 
-    make-eqv-hashtable equal-hash
+    equal-hash
     ))
   
   (define-syntax not-yet
@@ -49,7 +49,7 @@
     bitwise-rotate-bit-field bitwise-reverse-bit-field
     fxreverse-bit-field 
     ;;; not top priority at the moment
-    make-eqv-hashtable equal-hash
+    equal-hash
     ;;; won't be implemented
     make-custom-binary-input/output-port
     make-custom-textual-input/output-port
