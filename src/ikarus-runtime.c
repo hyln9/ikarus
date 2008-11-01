@@ -246,13 +246,13 @@ ik_munmap(ikptr mem, unsigned long int size){
   assert(((-pagesize) & (int)mem) == (int)mem);
   total_allocated_pages -= pages;
 #ifndef __CYGWIN__
-  int err = munmap((char*)(long)mem, mapsize);
+  int err = munmap((char*)mem, mapsize);
   if(err != 0){
     fprintf(stderr, "ik_munmap failed: %s\n", strerror(errno));
     exit(-1);
   }
 #else 
-  win_munmap(mem, mapsize);
+  win_munmap((char*)mem, mapsize);
 #endif
 #ifndef NDEBUG
   fprintf(stderr, "UNMAP 0x%08x .. 0x%08x\n", (int)mem,

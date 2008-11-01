@@ -1256,6 +1256,7 @@
     [change-mode                                 i]
     [make-symbolic-link                          i]
     [file-ctime                                  i]
+    [file-mtime                                  i]
     [fork                                        i]
     [define-record-type                          i r rs]
     [fields                                      i r rs]

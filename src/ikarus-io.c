@@ -298,6 +298,19 @@ ikrt_file_ctime(ikptr filename, ikptr res){
   return fix(0);
 }
 
+ikptr
+ikrt_file_mtime(ikptr filename, ikptr res){
+  struct stat s;
+  int err = stat((char*)(filename + off_bytevector_data), &s);
+  if(err) {
+    return ik_errno_to_code();
+  }
+  
+  ref(res, off_car) = fix(s.st_mtime);
+  ref(res, off_cdr) = 0;
+  return fix(0);
+}
+
 
 
 

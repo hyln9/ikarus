@@ -16,7 +16,8 @@
 
 (library (ikarus.posix)
   (export posix-fork fork waitpid system file-exists? delete-file
-          nanosleep getenv env environ file-ctime current-directory
+          nanosleep getenv env environ file-ctime file-mtime
+          current-directory
           file-regular? file-directory? file-symbolic-link? make-symbolic-link
           directory-list make-directory delete-directory change-mode
           kill strerror 
@@ -26,7 +27,8 @@
     (except (ikarus)
        nanosleep
        posix-fork fork waitpid system file-exists? delete-file
-       getenv env environ file-ctime current-directory
+       getenv env environ file-ctime file-mtime 
+       current-directory
        file-regular? file-directory? file-symbolic-link? make-symbolic-link
        directory-list make-directory delete-directory change-mode
        kill strerror
@@ -237,16 +239,22 @@
         (unless (eq? r #t)
           (raise/strerror who r path)))))
 
-  (define (file-ctime x)
-    (define who 'file-ctime)
+  (define ($file-time x who proc)
     (unless (string? x) 
       (die who "not a string" x))
     (let ([p (cons #f #f)])
-      (let ([v (foreign-call "ikrt_file_ctime" (string->utf8 x) p)])
+      (let ([v (proc (string->utf8 x) p)])
         (case v
           [(0) (+ (* (car p) #e1e9) (cdr p))]
           [else (raise/strerror who v x)]))))
 
+  (define (file-ctime x)
+    ($file-time x 'file-ctime 
+      (lambda (u p) (foreign-call "ikrt_file_ctime" u p))))
+
+  (define (file-mtime x)
+    ($file-time x 'file-mtime 
+      (lambda (u p) (foreign-call "ikrt_file_mtime" u p))))
 
   (define ($getenv-bv key)
     (foreign-call "ikrt_getenv" key))

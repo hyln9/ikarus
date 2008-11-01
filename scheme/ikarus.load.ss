@@ -30,11 +30,10 @@
   (define fasl-extension ".ikarus-fasl")
 
   (define (load-serialized-library filename sk)
-    ;;; TODO: check file last-modified date
     (let ([ikfasl (string-append filename fasl-extension)])
       (cond
         [(not (file-exists? ikfasl)) #f]
-        [(<= (file-ctime ikfasl) (file-ctime filename))
+        [(< (file-mtime ikfasl) (file-mtime filename))
          (fprintf (current-error-port)
             "WARNING: not using fasl file ~s because it is older \
              than the source file ~s\n" 
