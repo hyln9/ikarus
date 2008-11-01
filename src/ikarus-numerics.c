@@ -2124,11 +2124,23 @@ ikrt_exact_bignum_sqrt(ikptr bn, ikpcb* pcb){
 
 ikptr
 ikrt_flonum_hash(ikptr x /*, ikpcb* pcb */) {
-  return fix(0);
+  short* buf = (short*)(x+off_flonum_data);
+  return fix(((long)buf[0]) ^ 
+             ((long)buf[1] << 3) ^
+             ((long)buf[3] << 7) ^
+             ((long)buf[2] << 11));
 }
 ikptr
-ikrt_bignum_hash(ikptr x /*, ikpcb* pcb */) {
-  return fix(0);
+ikrt_bignum_hash(ikptr bn /*, ikpcb* pcb */) {
+  ikptr fst = ref(bn, -vector_tag);
+  long int limb_count = bnfst_limb_count(fst);
+  long h = (long)fst;
+  mp_limb_t* dat = (mp_limb_t*)(bn+off_bignum_data);
+  long i;
+  for (i=0; i<limb_count; i++){
+    h = (h^dat[i]) << 3;
+  }
+  return fix(h);
 }
 
 
