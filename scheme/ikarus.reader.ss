@@ -113,7 +113,8 @@
         (cond
          [(eof-object? c) ls]
          [(subsequent? c)
-          (tokenize-identifier (cons (read-char p) ls) p)]
+          (read-char p)
+          (tokenize-identifier (cons c ls) p)]
          [(delimiter? c)
           ls]
          [(char=? c #\\)
