@@ -566,7 +566,7 @@
       [else (write-char* "#<procedure>" p)]))
   (define (write-port x p)
     (write-char* "#<" p)
-    (write-char* (if (output-port? p) "output" "input") p)
+    (write-char* (if (output-port? x) "output" "input") p)
     (write-char* "-port " p)
     (write-char* (if (binary-port? x) "(binary) " "(textual) ") p)
     (let ([i (wr (port-id x) p #t h i)])
