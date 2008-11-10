@@ -34,6 +34,7 @@ if test "$ac_cv_sizeof_void_p" = 4; then
      [use flat segment and dirty vectors (not used yet)])
 fi
 
+AC_SYS_LARGEFILE
 
 # Checks for libraries.
 AC_SEARCH_LIBS(dlsym, dl,, [AC_MSG_ERROR([Cannot find libdl])])
@@ -96,6 +97,7 @@ AC_C_RESTRICT
 AC_TYPE_SIZE_T
 AC_HEADER_TIME
 AC_STRUCT_TM
+
 
 # Checks for library functions.
 AC_FUNC_FORK

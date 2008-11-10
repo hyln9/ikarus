@@ -138,7 +138,7 @@
   \noindent Ikarus Scheme\\ User's Guide\\ }
   \noindent \rule{\textwidth}{6pt}
 {\fontsize{18}{18} \fstpagefont{}
-  \hfill{} (Preliminary Document) \hfill Version~0.0.3 }
+  \hfill{} (Preliminary Document) \hfill Version~0.0.4 }
 \vfill
 { \fontsize{24}{24} \fstpagefont{}
   \hfill{} Abdulaziz Ghuloum}
@@ -203,10 +203,8 @@ of the features found in the current standard, the
 Revised$^\mathrm{6}$ report on the algorithmic language
 Scheme\cite{r6rs} including full \rnrs{6} library and script syntax,
 syntax-case, unicode strings, bytevectors, user-defined record
-types, exception handling, conditions, and enumerations.  More than
-94\% of the \rnrs{6} procedures and keywords are currently
-implemented and subsequent releases will proceed towards brining
-Ikarus to full \rnrs{6} conformance.
+types, exception handling, conditions, and enumerations.
+
 
 The main purpose behind releasing Ikarus early is to give Scheme
 programmers the opportunity to experiment with the various new
@@ -258,11 +256,12 @@ GNU/Linux, FreeBSD, NetBSD, and Microsoft Windows.
 
 \subsection{Hardware}
 
-Ikarus Scheme runs on the IA-32 (\emph{x86}) architecture
-supporting SSE2 extensions.  This includes the Athlon 64,
-Sempron 64, and Turion 64 processors from AMD and the Pentium 4, Xeon,
-Celeron, Pentium M, Core, and Core2 processors from Intel.  The
-system does not run on Intel Pentium III or earlier
+Ikarus Scheme runs in 32-bit mode on the IA-32 (\emph{x86})
+architecture supporting SSE2 extensions.  It also runs in 64-bit
+mode on platforms supporing the AMD-64 architecture.  This includes
+the Athlon 64, Sempron 64, and Turion 64 processors from AMD and the
+Pentium 4, Xeon, Celeron, Pentium M, Core, and Core2 processors from
+Intel.  The system does not run on Intel Pentium III or earlier
 processors.
 
 The Ikarus compiler generates SSE2 instructions to handle Scheme's
@@ -292,10 +291,21 @@ available for most operating systems.  Alternatively, GMP can be
 downloaded from \\
 \url{http://gmplib.org/}.
 
-\BoxedText{Note:}{Ikarus runs in 32-bit mode only.  
-To run it in 64-bit environments, you will have to obtain the 32-bit
-version of GMP, or compile it yourself after adding \texttt{ABI=32}
-to its configuration options.}
+
+\item\textbf{FFI:} 
+ The \texttt{libffi} library (version \texttt{3.0.6}) can be utilized 
+to enable Scheme procedures to call and be called from native
+procedure (see Chapter~\ref{chapter:foreign} for details).  
+To enable
+\texttt{libffi} while building Ikarus, one must pass
+\texttt{--enable-ffi} to the \texttt{configure} script along with
+the paths to \texttt{libffi}'s include and lib directory.
+The \texttt{libffi} library can be obtained from
+\url{http://sourceware.org/libffi/}.
+FFI support is optional.  It is not required if all one needs is
+writing pure Scheme code.
+
+
 
 
 \item\textbf{GCC:} The GNU C Compiler is required to build the Ikarus
@@ -420,7 +430,7 @@ need to have administrator privileges (use the \texttt{sudo} or
 \item Test that Ikarus runs from the command line.
 \begin{verbatim}
   $ ikarus
-  Ikarus Scheme version 0.0.3
+  Ikarus Scheme version 0.0.4
   Copyright (c) 2006-2008 Abdulaziz Ghuloum
 
   > 
@@ -474,15 +484,17 @@ The rest of the command-line arguments are recognized by the
 standard Scheme run time system.   They are processed after the
 boot file is loaded.
 
-\item \texttt{ikarus --r6rs-script script-file-name [arguments ...]}
+\item \texttt{ikarus files ... --r6rs-script script-file arguments ...}
 
-\index{R6RS Script@\rnrs{6} Script} The \texttt{--r6rs-script} argument
-instructs Ikarus that the supplied file is an \rnrs{6} script.  See
-Section~\ref{sec:scripts} for a short introduction to writing \rnrs{6}
-scripts.  The script file name and any additional optional
-\texttt{arguments}
-can be obtained by calling the
-\idxtt{command-line} procedure.
+\index{R6RS Script@\rnrs{6} Script} The \texttt{--r6rs-script}
+argument instructs Ikarus that the supplied file is an \rnrs{6}
+script.  The optional list of \texttt{files} must be paths to files,
+each containing a set of libraries that Ikarus must load,
+sequentially, before running the \rnrs{6} script
+\texttt{script-file}.  See Section~\ref{sec:scripts} for a short
+introduction to writing \rnrs{6} scripts.  The script file name and
+any additional optional \texttt{arguments} can be obtained by
+calling the \idxtt{command-line} procedure.
 
 \begin{verbatim}
   $ cat test.ss 
@@ -512,10 +524,7 @@ string \texttt{"*interactive*"}, corresponding to the script name in
 \BoxedText{Note:}{The interactive mode is intended for quickly
 experimenting with the built-in features.  It is intended neither
 for developing applications nor for writing any substantial pieces
-of code.  The main reason for this is that the interaction between
-\rnrs{6} libraries and the interactive environment is not well
-understood.  We hope to achieve better interaction between the two
-subsystems in the future.}
+of code.}
 
 \end{itemize}
 
@@ -561,7 +570,6 @@ by double-clicking on it.  This brings up a terminal window in which
 the script is executed.  The \texttt{.command} extension can be
 hidden from the \emph{Get Info} item from the Finder's File menu.}
 
-\newpage
 
 \section{Mapping library names to file names}
 
@@ -688,6 +696,61 @@ of the package would look like:
   foo/compat.ikarus.ss    :              {\textrm{specific for Ikarus}}
   foo/compat.mzscheme.ss  :              {\textrm{specific for MzScheme}}
 \end{Code}
+
+
+By default, running the \texttt{configure} script
+installs a set of contributed libraries into the
+\verb|/usr/local/lib/ikarus| directory.  If a \verb|--prefix DIR|
+argument was supplied to \texttt{configure}, then the libraries are
+installed in the \verb|DIR/ikarus/lib| directory.  
+
+You may install additional libraries into the Ikarus library
+directory.  Doing so makes them available for \texttt{import} into
+other libraries and script regardless of where the importing code is
+located or the current directory in which it is executed.  
+
+\section{Defining \texttt{IKARUS\_LIBRARY\_PATH}}
+\index{ikarus library path@\texttt{IKARUS\_LIBRARY\_PATH}}
+
+There may be situations in which you may wish to install your own
+libraries into a different location.  For example, you may not have
+sufficient administrative privileges to write to the system
+directory, or you may wish to keep your own libraries separate from
+the standard libraries.  Whatever the reason is, your can store your
+library files in any location you want and set up the
+\verb|IKARUS_LIBRARY_PATH| environment variable to point to these
+locations.  The value of \verb|IKARUS_LIBRARY_PATH| is a
+colon-separated list of directories in which Ikarus will search.
+
+For example, suppose your script imports the
+\texttt{(streams~derived)} library.  First, Ikarus will map the
+library name to the file path \verb|streams/derived.ss|.  Suppose
+that Ikarus was installed using the \verb|--prefix /usr/local|
+configuration option, and suppose further that the value of
+\verb|IKARUS_LIBRARY_PATH| is set by the user to be 
+\verb|/home/john/ikarus-libraries:/home/john/srfis|.  Ikarus will
+search in the following locations in sequence until it finds the
+file it is looking for.
+
+\begin{verbatim}
+   ./streams/derived.ss
+   /home/john/ikarus-libraries/streams/derived.ss
+   /home/john/srfis/streams/derived.ss
+   /usr/local/lib/ikarus/streams/derived.ss
+\end{verbatim}
+
+
+The method in which the value of \verb|IKARUS_LIBRARY_PATH| is
+defined is typically shell dependant.  If you use GNU Bash, you
+typically set the values of environment variables in the
+\verb|~/.bash_profile| or \verb|~/.bashrc| file by adding the
+following lines:
+
+\begin{verbatim}
+   IKARUS_LIBRARY_PATH=/path/to/some/directory:/and/another
+   export IKARUS_LIBRARY_PATH
+\end{verbatim}
+
 
 \chapter{\rnrs{6} Crash Course}
 
@@ -2107,6 +2170,130 @@ displayed.
    12
 \end{verbatim}
 
+
+\defun{system}{procedure}
+\texttt{(system string)}
+
+The \texttt{system} procedure takes a string represeting an external
+shell command and arguments and invokes the shell (typically
+\texttt{sh} on Unix systems) on this command.  The returned value
+from \texttt{system} is the exit status of the external command.
+
+Ikarus's \texttt{system} procedure is a thin wrapper around the
+\texttt{system} procedure in the Standard C Library \texttt{libc}.
+
+\begin{verbatim}
+  > (system "ls M*")
+  Makefile        Makefile.am     Makefile.in
+  0
+\end{verbatim}
+
+
+\defun{process}{procedure}
+\texttt{(process program-name args ...)}
+
+The \texttt{process} procedure takes as input a string representing
+the path to an external program and a set of strings that are the
+arguments to the external program.  It invokes the program with the
+given arguments, and returns four values: (1) a process identifier
+(\texttt{pid}),
+(2) an output port which pipes to the process's \texttt{stdin}, (3)
+an input port wired to the process's \texttt{stdout}, and (4) an
+input port wired to the process's \texttt{stderr}.  All three ports
+are blocking: reading and writing to any one of them blocks Ikarus
+until the some bytes are available for reading or writing.
+Attempting to read from the process's \texttt{stdout} port may block
+indefinitely if the external program does not write anything
+(e.g.,~if it attempts to read from \texttt{stdin} instead).
+Communicating with an external process must therefore be done
+according to the protocol in which the external process
+communicates.
+
+
+\defun{waitpid}{procedure}
+\texttt{(waitpid)}\\
+\texttt{(waitpid pid)}\\
+\texttt{(waitpid pid block?)}\\
+\texttt{(waitpid pid block? want-error?)}
+
+The \texttt{waitpid} procedure waits for the process with the given
+\texttt{pid} to terminate and, if successful, returns a
+\texttt{wstatus} object encapsulating the wait status of the
+process.  Without arguments, \texttt{waitpid} defaults the
+\texttt{pid} to \texttt{-1} which allows one to wait for any child
+process to exit.  If the \texttt{block?} argument is true (the
+default), \texttt{waitpid} blocks indefinitely waiting for a child
+process to exit.  When \texttt{block?} is false, \texttt{waitpid}
+returns immediately regardless of whether or not a child process has
+exited.  The \texttt{want-error?} controls what happens if
+\texttt{block?} was specified to be \texttt{\#f} and no child had
+exited.  If \texttt{want-error?} is true (the default), an error is
+signaled.  Otherwise, \texttt{waitpid} returns \texttt{\#f} if no
+process has exited.  Operations on the wait status result are listed
+below.
+
+\defun{wstatus-pid}{procedure}
+\texttt{(wstatus-pid wstatus)}
+
+The \texttt{wstatus-pid} returns the \texttt{pid} of the process
+whose status is recorded in the \texttt{wstatus} object.  This
+\texttt{pid} is most useful when the default \texttt{pid} of
+\texttt{-1} is given to \texttt{waitpid} and thus the pid of the
+exiting process is not known beforehand.
+
+
+\defun{wstatus-exit-status}{procedure}
+\texttt{(wstatus-exit-status wstatus)}
+
+The procedure \texttt{wstatus-exit-status} returns the exit status
+of the child process.  It is typically \texttt{0} if the child
+exited normally and has other numeric values if the child process
+encountered an error.
+
+\defun{wstatus-received-signal}{procedure}
+\texttt{(wstatus-received-signal wstatus)}
+
+The procedure \texttt{wstatus-received-signal} returns the 
+name  of the signal (or the number of the signal if the name is not
+known) that caused the child process to exit.
+
+The signal name is one of the following symbols:
+\begin{verbatim}
+  SIGABRT  SIGALRM  SIGBUS   SIGCHLD  SIGCONT    SIGFPE   SIGHUP 
+  SIGILL   SIGINT   SIGKILL  SIGPIPE  SIGQUIT    SIGSEGV  SIGSTOP
+  SIGTERM  SIGTSTP  SIGTTIN  SIGTTOU  SIGUSR1    SIGUSR2  SIGPOLL 
+  SIGPROF  SIGSYS   SIGTRAP  SIGURG   SIGVTALRM  SIGXCPU  SIGXFSZ
+\end{verbatim}
+ 
+\defun{kill}{procedure}
+\texttt{(kill pid signal-name)}
+
+The \texttt{kill} procedure takes a \texttt{pid} and a signal name 
+(a symbol from the list above) and asks the operating system to send
+the signal to the given process.
+
+
+\defun{process-nonblocking}{procedure}
+\texttt{(process-nonblocking program-name args ...)}
+
+The procedure \texttt{process-nonblocking} is similar to the
+\texttt{process} procedure except that the three returned ports are
+put in nonblocking mode.  Attempting to perform a read or write
+operation on a nonblocking port in which bytes are not available for
+reading or writing causes Ikarus to enqueue the port with the
+continuation in which the read/write operation occurs and attempt to
+dispatch previously enqueued ports on which some bytes are ready for
+read or write.
+
+
+
+
+%    [kill                                        i]
+ 
+
+
+
+
 \chapter{\label{chapter:foreign}The \texttt{(ikarus foreign)} Library}
 
 This chapter describes the facilities through which Ikarus
@@ -2780,247 +2967,6 @@ procedure leaks a small amount of memory.  This is because the
 system cannot track such pointers that go into native code
 (which may retain such pointers indefinitely).  Use judiciously.}
 
-% \chapter{\label{chapter:objc}The \texttt{(ikarus~objc)} Library}
-% \newpage
-
-\chapter{\label{chapter:contributed}Contributed Libraries}
-
-We try to keep Ikarus Scheme small and its complexity manageable.
-Libraries that are not an essential part of Ikarus are not included
-in the Ikarus proper, instead, they are distributed with Ikarus in
-source form.  Such libraries may be written specifically
-for Ikarus, or they may be portable libraries that can be used in
-Ikarus.   SRFIs or other libraries contributed by members of the
-Scheme community belong to this section.
-
-Using contributed libraries is no different from using any of the
-built-in libraries---all one has to do is add the library name to
-the \texttt{import} clause and the rest is done by the system.
-
-If you have written a useful \rnrs{6} library and wish for it to be
-available for a wider audience, contact us and we would be delighted
-to include information about it in the next release of Ikarus.
-% High
-% quality SRFIs with \rnrs{6} reference implementations will be
-% distributed with Ikarus as they become available.
-
-\BoxedText{Note:}{Contributed libraries may have bugs on their own
-or may exhibit bugs in Ikarus itself.  If you have a problem using
-any of these libraries, please try to resolve the issue by
-contacting the library author first.  Do not hesitate to file a bug
-on Ikarus if you believe that Ikarus is at fault.}
-
-\newpage
-\section*{Library files}
-
-The contributed libraries are installed in your system when Ikarus
-was installed.   By default, running the \texttt{configure} script
-installs the contributed libraries into the
-\verb|/usr/local/lib/ikarus| directory.  If a \verb|--prefix DIR|
-argument was supplied to \texttt{configure}, then the libraries are
-installed in the \verb|DIR/ikarus/lib| directory.  
-
-You may install additional libraries into the Ikarus library
-directory.  Doing so makes them available for \texttt{import} into
-other libraries and script regardless of where the importing code is
-located or the current directory in which it is executed.  
-
-\section*{Defining \texttt{IKARUS\_LIBRARY\_PATH}}
-\index{ikarus library path@\texttt{IKARUS\_LIBRARY\_PATH}}
-
-There may be situations in which you may wish to install your own
-libraries into a different location.  For example, you may not have
-sufficient administrative privileges to write to the system
-directory, or you may wish to keep your own libraries separate from
-the standard libraries.  Whatever the reason is, your can store your
-library files in any location you want and set up the
-\verb|IKARUS_LIBRARY_PATH| environment variable to point to these
-locations.  The value of \verb|IKARUS_LIBRARY_PATH| is a
-colon-separated list of directories in which Ikarus will search.
-
-For example, suppose your script imports the
-\texttt{(streams~derived)} library.  First, Ikarus will map the
-library name to the file path \verb|streams/derived.ss|.  Suppose
-that Ikarus was installed using the \verb|--prefix /usr/local|
-configuration option, and suppose further that the value of
-\verb|IKARUS_LIBRARY_PATH| is set by the user to be 
-\verb|/home/john/ikarus-libraries:/home/john/srfis|.  Ikarus will
-search in the following locations in sequence until it finds the
-file it is looking for.
-
-\begin{verbatim}
-   ./streams/derived.ss
-   /home/john/ikarus-libraries/streams/derived.ss
-   /home/john/srfis/streams/derived.ss
-   /usr/local/lib/ikarus/streams/derived.ss
-\end{verbatim}
-
-\BoxedText{Warning:}{The current behavior of Ikarus regarding the
-\texttt{IKARUS\_LIBRARY\_PATH} is preliminary and is likely to change
-in future releases.}
-
-The method in which the value of \verb|IKARUS_LIBRARY_PATH| is
-defined is typically shell dependant.  If you use GNU Bash, you
-typically set the values of environment variables in the
-\verb|~/.bash_profile| or \verb|~/.bashrc| file by adding the
-following lines:
-
-\begin{verbatim}
-   IKARUS_LIBRARY_PATH=/path/to/some/directory:/and/another
-   export IKARUS_LIBRARY_PATH
-\end{verbatim}
-
-
-\newpage
-
-
-\section{\label{sec:aux-opengl}\texttt{(gl)} and \texttt{(glut)}}
-FIXME
-\newpage
-
-
-\section{\texttt{(srfi *)}}
-
-Ported by: Derick Eddington
-
-Scheme Requests For Implementation (SRFIs) for R6RS/Ikarus can be found
-at: 
-\url{https://code.launchpad.net/~ikarus-srfi-team/ikarus-libraries/srfi}
-
-Currently provided:
-\begin{itemize}
-\item  SRFI-0:  \verb|(srfi feature-expand)|
-\item  SRFI-1:  \verb|(srfi lists)|
-\item  SRFI-2:  \verb|(srfi and-let)|
-\item  SRFI-6:  \verb|(srfi string-ports)|
-\item  SRFI-8:  \verb|(srfi receive)|
-\item  SRFI-9:  \verb|(srfi records)|
-\item  SRFI-11: \verb|(srfi let-values)|
-\item  SRFI-13: \verb|(srfi strings)|
-\item  SRFI-14: \verb|(srfi char-set)|
-\item  SRFI-16: \verb|(srfi case-lambda)|
-\item  SRFI-19: \verb|(srfi time)|
-\item  SRFI-23: \verb|(srfi error-reporting)|
-\item  SRFI-26: \verb|(srfi specialize-procedures)|
-\item  SRFI-27: \verb|(srfi random)|
-\item  SRFI-31: \verb|(srfi rec)|
-\item  SRFI-37: \verb|(srfi args-fold)|
-\item  SRFI-39: \verb|(srfi parameters)|
-\item  SRFI-41: \verb|(srfi streams)| \hspace{.5in}by Phil Bewig
-\item  SRFI-42: \verb|(srfi eager-comprehensions)|
-\item  SRFI-43: \verb|(srfi vectors)|
-\item  SRFI-67: \verb|(srfi compare)|
-\item  SRFI-78: \verb|(srfi lightweight-testing)|
-\end{itemize}
-
-To install (you'll need a new version of the Bazaar revision
-control system):
-\begin{verbatim}
-$ bzr checkout --lightweight http://bazaar.launchpad.net/
-~ikarus-srfi-team/ikarus-libraries/srfi
-\end{verbatim}
-
-After you do the above, you'll get a new \verb|srfi/| directory in the
-directory you ran the checkout command, and that parent directory of the
-new srfi/ directory needs to be in your
-\verb|IKARUS_LIBRARY_PATH|, so that
-attempts to import \verb|(srfi ---)| will look in the directory containing the
-\verb|srfi/| directory.
-
-You can stay up-to-date by changing directory into your
-\verb|srfi/| and doing:
-\begin{verbatim}
-$ bzr update
-\end{verbatim}
-
-
-\newpage
-\section{\texttt{(math number-theory)}}
-Provided by: Jens Axel Søgaard
-
-URL: \url{https://code.launchpad.net/~soegaard/ikarus-libraries/soegaard}
-
-
-This library contains number theory code that I have written
-over a long period. The code began as an experiment.  I
-grabbed a book on number theory from the shelve (\emph{``Elementary
-Number Theory''} by Gareth A. Jones and J. Mary Jones) and began
-illustrating each definition and each theorem with Scheme
-code. The first half of the surce code is thus a well
-commented mix of definitions, theorems and code.
-
-The second half contains more sophisticated algorithms mostly
-of from the excellent book \emph{``Modern Computer Algebra''} by
-Joachim von zur Gathen and Jürgen Gerhard. The algorithms for
-factorizing large integers come from this book.
-
-Finally there are some definitions of special functions,
-mostly inspired by the problems of the Euler Project.
-
-\newpage
-\section{\texttt{(r6rs-clos)}}
-Provided by: Christian Sloma
-
-URL: \url{https://launchpad.net/r6rs-clos}
-
-
-\rnrs{6}-clos is a port of tiny-clos to the latest
-(6$^{\mathrm{th}}$) revision of the language standard for scheme. It
-uses the library system that is new in \rnrs{6} to structure the
-code based on functionality (bootstrap of core classes and generic
-functions, actual implementation of the standard protocols, class
-layout and slot access \ldots).
-
-The homepage for now is \url{https://launchpad.net/r6rs-clos}, where
-my current development branch can be found.
-
-% Currently the code in my repository will only work with the
-% 0.0.2 release of Ikarus and uses a private copy of two
-% SRFIs, but after the 0.0.3 release I intend to fix these so
-% that installing should be as simple as putting the r6rs-clos
-% files into the ikarus library load path and installing the
-% srfi's accordingly.
-
-
-\newpage
-\section{SRFI-41: \texttt{(streams)}}
-\index{SRFI-41: Streams}
-\index{SRFI-41: Streams!1@\texttt{(streams)}}
-\index{SRFI-41: Streams!2@\texttt{(streams primitive)}}
-\index{SRFI-41: Streams!3@\texttt{(streams derived)}}
-The \texttt{(streams)}, \texttt{(streams~primitive)}, and
-\texttt{(streams~derived)} libraries are written by Philip L.~Bewig 
-as the reference implementation for SRFI-41.  
-See \url{http://srfi.schemers.org/srfi-41/srfi-41.html} for more
-details.  The following abstract is excerpted from the SRFI document.
-\nocite{srfi41}
-
-\begin{center}
-\rule{\textwidth}{1pt}
-Abstract
-\end{center}
-
-Streams, sometimes called lazy lists, are a sequential data
-structure containing elements computed only on demand. A stream is
-either null or is a pair with a stream in its cdr. Since elements of
-a stream are computed only when accessed, streams can be infinite.
-Once computed, the value of a stream element is cached in case it is
-needed again.
-
-Streams without memoization were first described by Peter Landin in
-1965. Memoization became accepted as an essential feature of streams
-about a decade later. Today, streams are the signature data type of
-functional programming languages such as Haskell.
-
-This Scheme Request for Implementation describes two libraries for
-operating on streams: a canonical set of stream primitives and a set
-of procedures and syntax derived from those primitives that permits
-convenient expression of stream operations. They rely on facilities
-provided by \rnrs{6}, including libraries, records, and error reporting.
-To load both stream libraries, say:
-
-\texttt{(import (streams))}
-
 \chapter{Missing Features}
 
 Ikarus does not fully conform to \rnrs{6} yet.  Although it
@@ -3052,7 +2998,7 @@ fxreverse-bit-field   fxrotate-bit-field
 
 \item The following procedures are missing from \texttt{(rnrs hashtables)}:
 \begin{Verbatim}
-make-eqv-hashtable         equal-hash
+equal-hash
 \end{Verbatim}
 
 \item The following procedures are missing from \texttt{(rnrs io ports)}:
