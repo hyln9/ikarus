@@ -3,6 +3,7 @@
 #include <dlfcn.h>
 #include <string.h>
 #include <stdlib.h>
+#include <gmp.h>
 
 ikptr
 ikrt_isapointer(ikptr x, ikpcb* pcb){
@@ -260,6 +261,18 @@ u_to_number(unsigned long n, ikpcb* pcb) {
   ref(bn, 0) = (ikptr)(bignum_tag | (1 << bignum_length_shift)); 
   ref(bn, disp_bignum_data) = (ikptr)n;
   return bn+vector_tag;
+}
+
+
+ikptr
+ull_to_number(unsigned long long n, ikpcb* pcb) {
+  unsigned long long mxn = ((unsigned long)-1)>>(fx_shift+1);
+  if (n <= mxn) {
+    return fix(n);
+  }
+  ikptr bn = ik_safe_alloc(pcb, align(disp_bignum_data+sizeof(long long)));
+  bcopy((char*)(&n), (char*)(bn+disp_bignum_data), sizeof(long long));
+  return normalize_bignum(sizeof(long long)/sizeof(mp_limb_t), 0, bn);
 }
 
 ikptr

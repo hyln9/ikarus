@@ -1037,3 +1037,62 @@ ikrt_debug(ikptr x){
   fprintf(stderr, "DEBUG 0x%016lx\n", (long int)x);
   return 0;
 }
+
+ikptr
+ikrt_access(ikptr filename, ikptr how /*, ikpcb* pcb */){
+  char* fn = (char*)(filename + off_bytevector_data);
+  int r;
+  int ik_how;
+  int c_how;
+
+  ik_how = unfix(how);
+  if (ik_how == 0) {
+    c_how = F_OK;
+  } else {
+    c_how = 0;
+    if (ik_how & 1) c_how |= R_OK;
+    if (ik_how & 2) c_how |= W_OK;
+    if (ik_how & 4) c_how |= X_OK;
+  }
+  
+  r = access(fn, c_how);
+  if (r == 0) {
+    return true_object;
+  } else if ((errno == EACCES) ||
+             (errno == EROFS) ||
+             (errno == ETXTBSY)) {
+    return false_object;
+  } else {
+    return ik_errno_to_code();
+  }
+}
+
+ikptr
+ikrt_file_size(ikptr filename, ikpcb* pcb){
+  char* fn = (char*)(filename + off_bytevector_data);
+  struct stat s;
+  int r = stat(fn, &s);
+  if (r == 0) {
+    if (sizeof(off_t) == sizeof(long)) {
+      return u_to_number(s.st_size, pcb);
+    } else if (sizeof(off_t) == sizeof(long long)) {
+      return ull_to_number(s.st_size, pcb);
+    } else {
+      fprintf(stderr, "internal error in ikarus: invalid off_t size\n");
+      exit(-1);
+    }
+  } else {
+    return ik_errno_to_code();
+  }
+}
+
+ikptr
+ikrt_rename_file(ikptr src, ikptr dst /* ikpcb* pcb */){
+  int err = rename((char*)(src + off_bytevector_data),
+                   (char*)(dst + off_bytevector_data));
+  if (err == 0) {
+    return true_object;
+  } else {
+    return ik_errno_to_code();
+  }
+}

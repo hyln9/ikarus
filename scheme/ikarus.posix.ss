@@ -15,24 +15,27 @@
 
 
 (library (ikarus.posix)
-  (export posix-fork fork waitpid system file-exists? delete-file
-          nanosleep getenv env environ file-ctime file-mtime
-          current-directory
-          file-regular? file-directory? file-symbolic-link? make-symbolic-link
-          directory-list make-directory delete-directory change-mode
-          kill strerror 
-          wstatus-pid wstatus-exit-status wstatus-received-signal)
+
+  (export
+    posix-fork fork waitpid system file-exists? delete-file
+    nanosleep getenv env environ file-ctime file-mtime
+    current-directory file-regular? file-directory? file-readable?
+    file-writable? file-executable? file-size rename-file
+    file-symbolic-link? make-symbolic-link directory-list
+    make-directory delete-directory change-mode kill strerror
+    wstatus-pid wstatus-exit-status wstatus-received-signal)
+
   (import 
     (rnrs bytevectors)
     (except (ikarus)
-       nanosleep
-       posix-fork fork waitpid system file-exists? delete-file
-       getenv env environ file-ctime file-mtime 
-       current-directory
-       file-regular? file-directory? file-symbolic-link? make-symbolic-link
-       directory-list make-directory delete-directory change-mode
-       kill strerror
-       wstatus-pid wstatus-exit-status wstatus-received-signal))
+      nanosleep posix-fork fork waitpid system file-exists?
+      delete-file getenv env environ file-ctime file-mtime
+      current-directory file-regular? file-directory?
+      file-readable? file-writable? file-executable? file-size
+      rename-file file-symbolic-link? make-symbolic-link
+      directory-list make-directory delete-directory change-mode
+      kill strerror wstatus-pid wstatus-exit-status
+      wstatus-received-signal))
 
   (define posix-fork
     (lambda ()
@@ -151,6 +154,15 @@
           [(-45) #f]  ;; from ikarus-errno.c: ENOENT -- path does not exist
           [else (raise/strerror who r path)]))))
 
+
+  (define access
+    (lambda (path how who)
+      (unless (string? path)
+        (die who "not a string" path))
+      (let ([r (foreign-call "ikrt_access" (string->utf8 path) how)])
+        (unless (boolean? r) (raise/strerror who r path))
+        r)))
+
   (define file-exists?
     (case-lambda 
       [(path) (file-exists? path #t)]
@@ -173,6 +185,29 @@
     (lambda (path)
       (eq? 'symlink (stat path #f 'file-symbolic-link?))))
 
+
+  (define file-readable?
+    (lambda (path)
+      (access path 1 'file-readable?)))
+  
+  (define file-writable?
+    (lambda (path)
+      (access path 2 'file-writable?)))
+
+  (define file-executable?
+    (lambda (path)
+      (access path 4 'file-executable?)))
+
+  (define file-size
+    (lambda (path)
+      (define who 'file-size)
+      (unless (string? path)
+        (die who "filename is not a string" path))
+      (let* ([v (foreign-call "ikrt_file_size" (string->utf8 path))])
+        (if (>= v 0)
+            v
+            (raise/strerror who v path)))))
+
   (define delete-file
     (lambda (x)
       (define who 'delete-file)
@@ -183,6 +218,20 @@
         (unless (eq? v #t)
           (raise/strerror who v x)))))
   
+
+  (define rename-file
+    (lambda (src dst)
+      (define who 'rename-file)
+      (unless (string? src)
+        (die who "source file name is not a string" src))
+      (unless (string? dst)
+        (die who "destination file name is not a string" dst))
+      (let ([v (foreign-call "ikrt_rename_file"
+                             (string->utf8 src)
+                             (string->utf8 dst))])
+        (unless (eq? v #t)
+          (raise/strerror who v src)))))
+
   (define directory-list
     (lambda (path)
       (define who 'directory-list)

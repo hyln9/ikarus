@@ -220,6 +220,10 @@ ikptr ik_underflow_handler(ikpcb*);
 ikptr ik_unsafe_alloc(ikpcb* pcb, int size);
 ikptr ik_safe_alloc(ikpcb* pcb, int size);
 
+ikptr u_to_number(unsigned long, ikpcb*);
+ikptr ull_to_number(unsigned long long, ikpcb*);
+ikptr normalize_bignum(long int limbs, int sign, ikptr r);
+
 #define IK_HEAP_EXT_SIZE  (32 * 4096)
 #define IK_HEAPSIZE       (1024 * ((wordsize==4)?1:2) * 4096) /* 4/8 MB */
 
