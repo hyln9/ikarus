@@ -415,6 +415,7 @@
     [wstatus-received-signal                     i]
     [kill                                        i]
     [installed-libraries                         i]
+    [uninstall-library                           i]
     [library-path                                i]
     [library-extensions                          i]
     [current-primitive-locations                 $boot]

@@ -643,6 +643,7 @@
   (define label->binding
     (lambda (x r)
       (cond
+        ((not x) '(displaced-lexical))
         ((imported-label->binding x) =>
          (lambda (b) 
            (cond

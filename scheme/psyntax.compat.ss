@@ -22,7 +22,8 @@
           annotation-stripped
           read-library-source-file
           library-version-mismatch-warning
-          file-locator-resolution-error)
+          file-locator-resolution-error
+          label-binding set-label-binding!)
   (import 
     (only (ikarus.compiler) eval-core)
     (only (ikarus.reader.annotated) read-library-source-file)
@@ -59,5 +60,10 @@
             (set-rtd-printer! (type-descriptor name)
               printer)))]
       [(_ name (field* ...))
-       (define-struct name (field* ...))])))
+       (define-struct name (field* ...))]))
+  
+  (define (set-label-binding! label binding)
+    (set-symbol-value! label binding))
+  (define (label-binding label)
+    (and (symbol-bound? label) (symbol-value label))))
 
