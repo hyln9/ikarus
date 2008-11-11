@@ -28,14 +28,11 @@
         ($fx=      =))))
 
 
-
-  (define eq-hashtable-ref hashtable-ref)
-  (define eq-hashtable-set! hashtable-set!)
-
-  (define-struct box (content))
-
   (define (union-find ht x y)
     (import UNSAFE)
+    (define-struct box (content))
+    (define eq-hashtable-ref hashtable-ref)
+    (define eq-hashtable-set! hashtable-set!)
     (define (find b)
       (let ([n (box-content b)])
         (if (box? n)
