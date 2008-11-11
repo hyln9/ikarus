@@ -509,7 +509,7 @@
                 '()
                 (cons x (f)))))))))
   
-(define (file-size filename)
+(define (file-size-char-by-char filename)
   (with-input-from-file filename
     (lambda ()
       (let f ([i 0])
@@ -541,6 +541,7 @@
       (f (fx+ i 1)))))
 
 (define (test-input-files)
+  (assert (= (file-size-char-by-char "tests/SRFI-1.ss") 56573))
   (assert (= (file-size "tests/SRFI-1.ss") 56573))
   (let ([bv (file->bytevector "tests/SRFI-1.ss")])
     (let-values ([(p extract) (open-bytevector-output-port #f)])
@@ -666,11 +667,29 @@
     [(lambda (x) (equal? x "abcd"))
      (get-line (open-string-input-port "abcd\nefg"))])
 
-(define (run-tests)
-  (test-custom-binary-input-ports)
-  (test-custom-binary-output-ports)
-  (run-exhaustive-tests)
-  (test-input-files)
-  (test-partial-reads)
-  (test-input-ports))
+  (define (test-has-port-position)
+    (define-syntax check
+      (syntax-rules ()
+        [(_ e) 
+         (begin ;;; evaluating e twice
+           (assert (not (port-has-port-position? e)))
+           (assert
+             (guard (con
+                      [(assertion-violation? con) #t]
+                      [else                       #f])
+               (begin (port-position e) #f))))]))
+    (check (make-custom-binary-input-port "foo" (lambda a 0) #f #f #f))
+    (check (make-custom-binary-output-port "foo" (lambda a 0) #f #f #f))
+    (check (make-custom-textual-input-port "foo" (lambda a 0) #f #f #f))
+    (check (make-custom-textual-output-port "foo" (lambda a 0) #f #f #f)))
+
+  (define (run-tests)
+    (test-custom-binary-input-ports)
+    (test-custom-binary-output-ports)
+    (run-exhaustive-tests)
+    (test-input-files)
+    (test-partial-reads)
+    (test-input-ports)
+    (test-has-port-position))
+
 )

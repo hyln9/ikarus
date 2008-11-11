@@ -275,18 +275,16 @@
                        (- pos (- ($port-size p) index))
                        (+ pos index))
                    (die who "invalid returned value from get-position" p)))]
-            [(eqv? get-position #f)
+            [(eqv? get-position #t)
              (+ (vector-ref pos-vec 0) index)]
             [else 
-             (error who "port does not supprt port-position openration" p)]))
+             (die who "port does not support port-position operation" p)]))
         (die who "not a port" p)))
 
   (define (port-has-port-position? p)
     (define who 'port-has-port-position?)
     (if (port? p)
-        (let ([get-position ($port-get-position p)])
-          (or (procedure? get-position)
-              (not get-position)))
+        (and ($port-get-position p) #t)
         (die who "not a port" p)))
              
   (define guarded-port
@@ -448,8 +446,8 @@
           "*bytevector-input-port*" 
           (lambda (bv i c) 0) ;;; read!
           #f ;;; write!
-          #f 
-          #f
+          #t ;;; get-position
+          #f ;;; set-position!
           #f ;;; close
           #f
           (vector 0))]))
@@ -476,10 +474,10 @@
                          (bytevector-copy! bv i x 0 c)
                          (set! buf* (cons x buf*))))
                      c)
-                   #f
-                   #f
-                   #f
-                   #f
+                   #t ;;; get-position
+                   #f ;;; set-position!
+                   #f ;;; close
+                   #f ;;; cookie
                    (vector 0))])
            (values
              p
@@ -563,9 +561,9 @@
                (set-output-string-cookie-strings! cookie
                  (cons x (output-string-cookie-strings cookie)))))
            c)
-         #f
-         #f
-         #f
+         #t ;;; get-position
+         #f ;;; set-position!
+         #f ;;; close!
          cookie
          (vector 0))))
 
@@ -618,10 +616,10 @@
        id
        (lambda (str i c) 0) ;;; read!
        #f ;;; write!
-       #f
-       #f
+       #t ;;; get-position
+       #f ;;; set-position!
        #f ;;; close
-       #f
+       #f ;;; cookie
        (vector 0)))
 
   (define (open-string-input-port str)
@@ -1421,7 +1419,7 @@
                                    (make-i/o-read-error))])))])
                   refill)
                 #f ;;; write!
-                #f ;;; get-position
+                #t ;;; get-position
                 #f ;;; set-position!
                 (cond
                   [(procedure? close) close]
@@ -1460,7 +1458,7 @@
                                  (io-error 'write id bytes
                                     (make-i/o-write-error))])))])
                   refill)
-                #f ;;; get-position
+                #t ;;; get-position
                 #f ;;; set-position!
                 (cond
                   [(procedure? close) close]
