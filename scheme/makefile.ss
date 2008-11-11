@@ -58,6 +58,7 @@
     "ikarus.collect.ss"
     "ikarus.apply.ss"
     "ikarus.predicates.ss"
+    "ikarus.equal.ss"
     "ikarus.pairs.ss"
     "ikarus.lists.ss"
     "ikarus.fixnums.ss"
