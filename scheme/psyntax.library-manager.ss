@@ -280,7 +280,14 @@
                 (lambda (x) (equal? (library-name x) name)))])
          (when (and err? (not lib))
            (assertion-violation who "library not installed" name))
-         ((current-library-collection) lib #t))]
+         ((current-library-collection) lib #t)
+         (for-each
+           (lambda (x) 
+             (let ((label (car x)) (binding (cdr x)))
+               (remove-location label)
+               (when (memq (car binding) '(global global-macro global-macro!))
+                  (remove-location (cdr binding)))))
+           (library-env lib)))]
       [(name) (uninstall-library name #t)]))
 
   (define (library-exists? name)

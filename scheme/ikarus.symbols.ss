@@ -23,12 +23,12 @@
           $unintern-gensym
           reset-symbol-proc! system-value system-value-gensym)
   (import 
-    (ikarus system $symbols)
+    (except (ikarus system $symbols) $unintern-gensym)
     (ikarus system $pairs)
     (ikarus system $fx)
     (except (ikarus) gensym gensym? gensym->unique-string
       gensym-prefix gensym-count print-gensym system-value
-      $unintern-gensym string->symbol symbol->string
+      string->symbol symbol->string
       getprop putprop remprop property-list
       top-level-value top-level-bound? set-top-level-value!
       symbol-value symbol-bound? set-symbol-value! reset-symbol-proc!))

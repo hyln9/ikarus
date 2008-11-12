@@ -23,7 +23,7 @@
           read-library-source-file
           library-version-mismatch-warning
           file-locator-resolution-error
-          label-binding set-label-binding!)
+          label-binding set-label-binding! remove-location)
   (import 
     (only (ikarus.compiler) eval-core)
     (only (ikarus.reader.annotated) read-library-source-file)
@@ -64,6 +64,11 @@
   
   (define (set-label-binding! label binding)
     (set-symbol-value! label binding))
+
   (define (label-binding label)
-    (and (symbol-bound? label) (symbol-value label))))
+    (and (symbol-bound? label) (symbol-value label)))
+  
+  (define (remove-location x)
+    (import (ikarus system $symbols))
+    ($unintern-gensym x)))
 
