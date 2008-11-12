@@ -20,6 +20,7 @@
           getprop putprop remprop property-list
           top-level-value top-level-bound? set-top-level-value!
           symbol-value symbol-bound? set-symbol-value!
+          $unintern-gensym
           reset-symbol-proc! system-value system-value-gensym)
   (import 
     (ikarus system $symbols)
@@ -27,7 +28,7 @@
     (ikarus system $fx)
     (except (ikarus) gensym gensym? gensym->unique-string
       gensym-prefix gensym-count print-gensym system-value
-      string->symbol symbol->string
+      $unintern-gensym string->symbol symbol->string
       getprop putprop remprop property-list
       top-level-value top-level-bound? set-top-level-value!
       symbol-value symbol-bound? set-symbol-value! reset-symbol-proc!))
@@ -44,9 +45,14 @@
 
   (define gensym?
     (lambda (x)
-      (and (symbol? x) 
+      (and (symbol? x)
            (let ([s ($symbol-unique-string x)])
              (and s #t)))))
+
+  (define ($unintern-gensym x)
+    (if (symbol? x)
+        (begin (foreign-call "ikrt_unintern_gensym" x) (void))
+        (die 'unintern-gensym "not a symbol" x)))
 
   (define top-level-value
     (lambda (x)
