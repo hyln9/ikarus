@@ -173,6 +173,7 @@ ikrt_unintern_gensym(ikptr sym, ikpcb* pcb){
   while(bckt){
     if (ref(bckt, off_car) == sym) {
       /* found it */
+      ref(sym, off_symbol_record_ustring) = true_object;
       ref(loc, 0) = ref(bckt, off_cdr);
       return true_object;
     } else {
