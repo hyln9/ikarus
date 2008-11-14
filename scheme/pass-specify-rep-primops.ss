@@ -2004,9 +2004,11 @@
             [floff (- disp-flonum-data vector-tag)])
         (with-tmp ([x (prm 'alloc (K (align flonum-size)) (K vector-tag))])
           (prm 'mset x (K (- vector-tag)) (K flonum-tag))
-          (with-tmp ([x0 (prm 'mref (T bv) (K bvoff))])
-            (prm 'bswap! x0 x0)
-            (prm 'mset x (K floff) x0))
+          (with-tmp ([t (prm 'int+ (T bv) 
+                           (prm 'sra (T i) (K fx-shift)))])
+            (with-tmp ([x0 (prm 'mref t (K bvoff))])
+              (prm 'bswap! x0 x0)
+              (prm 'mset x (K floff) x0)))
           x))])])
 
 
