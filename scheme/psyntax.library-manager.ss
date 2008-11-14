@@ -285,7 +285,8 @@
            (lambda (x) 
              (let ((label (car x)) (binding (cdr x)))
                (remove-location label)
-               (when (memq (car binding) '(global global-macro global-macro!))
+               (when (memq (car binding) 
+                        '(global global-macro global-macro! global-ctv))
                   (remove-location (cdr binding)))))
            (library-env lib)))]
       [(name) (uninstall-library name #t)]))
@@ -316,6 +317,8 @@
                       (cons 'global-macro (cons lib (cdr binding))))
                      ((global-macro!)
                       (cons 'global-macro! (cons lib (cdr binding))))
+                     ((global-ctv)
+                      (cons 'global-ctv (cons lib (cdr binding))))
                      (else binding))))
               (set-label-binding! label binding))))
         exp-env))

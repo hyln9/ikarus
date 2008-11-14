@@ -24,7 +24,7 @@
           bound-identifier=? datum->syntax syntax-error
           syntax-violation
           syntax->datum 
-          make-variable-transformer
+          make-variable-transformer make-compile-time-value
           variable-transformer?
           variable-transformer-procedure
           compile-r6rs-top-level boot-library-expand 
@@ -688,7 +688,7 @@
                ((lexical core-prim macro macro! global local-macro
                  local-macro! global-macro global-macro!
                  displaced-lexical syntax import export $module
-                 $core-rtd library mutable)
+                 $core-rtd library mutable ctv local-ctv global-ctv)
                 (values type (binding-value b) id))
                (else (values 'other #f #f))))))
         ((syntax-pair? e)
@@ -703,7 +703,8 @@
                    ((define define-syntax core-macro begin macro
                       macro! local-macro local-macro! global-macro
                       global-macro! module library set! let-syntax 
-                      letrec-syntax import export $core-rtd)
+                      letrec-syntax import export $core-rtd 
+                      ctv local-ctv global-ctv)
                     (values type (binding-value b) id))
                    (else
                     (values 'call #f #f))))
@@ -727,6 +728,7 @@
   ;;; the output to one of:
   ;;;   (lacal-macro . procedure)
   ;;;   (local-macro! . procedure)
+  ;;;   (local-ctv . compile-time-value)
   ;;;   ($rtd . $rtd)
   ;;; and signals an assertion-violation otherwise.
   (define sanitize-binding
@@ -737,6 +739,8 @@
         ((and (pair? x) (eq? (car x) 'macro!) (procedure? (cdr x)))
          (cons* 'local-macro! (cdr x) src))
         ((and (pair? x) (eq? (car x) '$rtd)) x)
+        ((and (pair? x) (eq? (car x) 'ctv)) 
+         (cons* 'local-ctv (cdr x) src))
         (else (assertion-violation 'expand "invalid transformer" x)))))
   
   ;;; r6rs's make-variable-transformer:
@@ -746,6 +750,10 @@
           (cons 'macro! x)
           (assertion-violation 'make-variable-transformer
                  "not a procedure" x))))
+
+  (define make-compile-time-value
+    (lambda (x)
+      (cons 'ctv x)))
 
   (define (variable-transformer? x)
     (and (pair? x) (eq? (car x) 'macro!) (procedure? (cdr x))))
@@ -2648,9 +2656,9 @@
   (define (local-macro-transformer x)
     (car x))
 
-  (define (do-macro-call transformer expr)
-    (let ((out (transformer (add-mark anti-mark expr #f))))
-      (let f ((x out))
+  (define (do-macro-call transformer expr r)
+    (define (return x)
+      (let f ((x x))
         ;;; don't feed me cycles.
         (unless (stx? x)
           (cond
@@ -2660,16 +2668,33 @@
              (syntax-violation #f 
                "raw symbol encountered in output of macro"
                expr x)))))
-      (add-mark (gen-mark) out expr)))
+      (add-mark (gen-mark) x expr))
+    (let ((x (transformer (add-mark anti-mark expr #f))))
+      (if (procedure? x) 
+          (return 
+            (x (lambda (id)
+                 (unless (id? id) 
+                   (assertion-violation 'rho "not an identifier" id))
+                 (let ([label (id->label id)])
+                   (let ([binding (label->binding label r)])
+                     (case (car binding)
+                       [(local-ctv) (cadr binding)]
+                       [(global-ctv) 
+                        (let ([lib (cadr binding)]
+                              [loc (cddr binding)])
+                          (visit-library lib)
+                          (symbol-value loc))]
+                       [else #f]))))))
+          (return x))))
 
   ;;; chi procedures
   (define chi-macro
-    (lambda (p e) (do-macro-call (macro-transformer p) e)))
+    (lambda (p e r) (do-macro-call (macro-transformer p) e r)))
   
   (define chi-local-macro
-    (lambda (p e) (do-macro-call (local-macro-transformer p) e)))
+    (lambda (p e r) (do-macro-call (local-macro-transformer p) e r)))
   
-  (define (chi-global-macro p e)
+  (define (chi-global-macro p e r)
     ;;; FIXME: does not handle macro!?
     (let ((lib (car p))
           (loc (cdr p)))
@@ -2680,7 +2705,7 @@
                  ((procedure? x) x)
                  (else (assertion-violation 'chi-global-macro
                           "BUG: not a procedure" x)))))
-          (do-macro-call transformer e)))))
+          (do-macro-call transformer e r)))))
   
   (define chi-expr*
     (lambda (e* r mr)
@@ -2720,9 +2745,9 @@
            (let ((lex (lexical-var value)))
              (build-lexical-reference no-source lex)))
           ((global-macro global-macro!)
-           (chi-expr (chi-global-macro value e) r mr))
-          ((local-macro local-macro!) (chi-expr (chi-local-macro value e) r mr))
-          ((macro macro!) (chi-expr (chi-macro value e) r mr))
+           (chi-expr (chi-global-macro value e r) r mr))
+          ((local-macro local-macro!) (chi-expr (chi-local-macro value e r) r mr))
+          ((macro macro!) (chi-expr (chi-macro value e r) r mr))
           ((constant)
            (let ((datum value))
              (build-data no-source datum)))
@@ -2790,9 +2815,9 @@
              ((global)
               (stx-error e "attempt to modify imported binding"))
              ((global-macro!)
-              (chi-expr (chi-global-macro value e) r mr))
+              (chi-expr (chi-global-macro value e r) r mr))
              ((local-macro!)
-              (chi-expr (chi-local-macro value e) r mr))
+              (chi-expr (chi-local-macro value e r) r mr))
              ((mutable) 
               (stx-error e 
                 "attempt to assign to an unexportable variable"))
@@ -3062,19 +3087,19 @@
                         mix? sd?))))
                  ((global-macro global-macro!)
                   (chi-body*
-                     (cons (add-subst rib (chi-global-macro value e)) 
+                     (cons (add-subst rib (chi-global-macro value e r))
                            (cdr e*))
                      r mr lex* rhs* mod** kwd* exp* rib 
                      mix? sd?))
                  ((local-macro local-macro!)
                   (chi-body*
-                     (cons (add-subst rib (chi-local-macro value e))
+                     (cons (add-subst rib (chi-local-macro value e r))
                            (cdr e*))
                      r mr lex* rhs* mod** kwd* exp* rib 
                      mix? sd?))
                  ((macro macro!)
                   (chi-body*
-                     (cons (add-subst rib (chi-macro value e))
+                     (cons (add-subst rib (chi-macro value e r))
                            (cdr e*))
                      r mr lex* rhs* mod** kwd* exp* rib mix?
                      sd?))
@@ -3796,6 +3821,12 @@
                 (let ((loc (gensym)))
                   (f (cdr r)
                      (cons (cons* label 'global-macro! loc) env)
+                     global*
+                     (cons (cons loc (binding-value b)) macro*))))
+               ((local-ctv)
+                (let ((loc (gensym)))
+                  (f (cdr r)
+                     (cons (cons* label 'global-ctv loc) env)
                      global*
                      (cons (cons loc (binding-value b)) macro*))))
                (($rtd $module) (f (cdr r) (cons x env) global* macro*))

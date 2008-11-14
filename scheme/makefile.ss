@@ -1310,6 +1310,7 @@
     [make-variable-transformer                   i r sc]
     [variable-transformer?                       i]
     [variable-transformer-procedure              i]
+    [make-compile-time-value                     i]
     [char-alphabetic?                            i r uc se]
     [char-ci<=?                                  i r uc se]
     [char-ci<?                                   i r uc se]
