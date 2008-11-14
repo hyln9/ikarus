@@ -30,7 +30,7 @@
       read-annotated read-script-annotated annotation?
       annotation-expression annotation-source annotation-stripped))
 
-  (define (die/pos p off who msg arg*) 
+  (define (die/lex id pos who msg arg*)
     (define-condition-type &lexical-position &condition
         make-lexical-position-condition lexical-position?
         (file-name lexical-position-filename)
@@ -43,14 +43,19 @@
             (condition)
             (make-irritants-condition arg*))
         (make-lexical-position-condition 
-          (port-id p) 
-          (let ([pos (input-port-byte-position p)])
-            (and pos (+ pos off)))))))
-        
+          id pos))))
+  (define (die/pos p off who msg arg*) 
+    (die/lex (port-id p) 
+       (let ([pos (input-port-byte-position p)])
+         (and pos (+ pos off)))
+       who msg arg*))
   (define (die/p p who msg . arg*)
     (die/pos p 0 who msg arg*))
   (define (die/p-1 p who msg . arg*)
     (die/pos p -1 who msg arg*))
+  (define (die/ann ann who msg . arg*)
+    (let ([src (annotation-source ann)])
+      (die/lex (car src) (cdr src) who msg arg*)))
 
 
   (define (checked-integer->char n ac p) 
@@ -961,20 +966,6 @@
                 (fxsub1 i) 
                 (cdr ls)
                 (cdr ls^)))])))
-    (define bytevector-put
-      (lambda (v k i ls ls^)
-        (cond
-          [(null? ls) k]
-          [else
-           (let ([a (car ls)])
-             (cond
-               [(fixnum? a)
-                (unless (and (fx<= 0 a) (fx<= a 255))
-                  (die 'read ;;; FIXME: pos
-                    (format "invalid value ~s in a bytevector" a)))
-                (bytevector-u8-set! v i a)
-                (bytevector-put v k (fxsub1 i) (cdr ls) (cdr ls^))]
-               [else (die 'read "invalid value inside a bytevector" a)]))])))
     (define read-vector
       (lambda (p locs k count ls ls^)
         (let-values ([(t pos) (tokenize/1+pos p)])
@@ -994,23 +985,25 @@
                 (read-vector p locs k (fxadd1 count) 
                   (cons a ls) (cons a^ ls^)))]))))
     (define read-bytevector
-      (lambda (p locs k count ls ls^)
+      (lambda (p locs k count ls)
         (let-values ([(t pos) (tokenize/1+pos p)])
           (cond
             [(eof-object? t) 
              (die/p p 'read "end of file encountered while reading a bytevector")]
             [(eq? t 'rparen) 
-             (let ([v ($make-bytevector count)])
-               (let ([k (bytevector-put v k (fxsub1 count) ls ls^)])
-                 (values v v locs k)))]
+             (let ([v (u8-list->bytevector (reverse ls))])
+               (values v v locs k))]
             [(eq? t 'rbrack)
              (die/p-1 p 'read "unexpected ] while reading a bytevector")]
             [(eq? t 'dot)
              (die/p-1 p 'read "unexpected . while reading a bytevector")]
             [else
              (let-values ([(a a^ locs k) (parse-token p locs k t pos)])
+                (unless (and (fixnum? a) (fx<= 0 a) (fx<= a 255))
+                  (die/ann a^ 'read 
+                    "invalid value in a bytevector" a))
                 (read-bytevector p locs k (fxadd1 count) 
-                  (cons a ls) (cons a^ ls^)))]))))
+                  (cons a ls)))]))))
     (define parse-token
       (lambda (p locs k t pos)
         (cond
@@ -1031,7 +1024,7 @@
              (values v (annotate v v^ pos p) locs k))]
           [(eq? t 'vu8)
            (let-values ([(v v^ locs k) 
-                         (read-bytevector p locs k 0 '() '())])
+                         (read-bytevector p locs k 0 '())])
              (values v (annotate v v^ pos p) locs k))]
           [(pair? t)
            (cond
