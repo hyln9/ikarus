@@ -87,6 +87,7 @@
                                     (- k 1))])
                            (and k (f (+ i 1) k))))))))]
       [(string? x) (and (string? y) (string=? x y) k)]
+      [(bytevector? x) (and (bytevector? y) (bytevector=? x y) k)]
       [else (and (eqv? x y) k)]))
 
   (define (interleave? x y k)
@@ -122,6 +123,7 @@
                                               k)])
                                    (and k (f (+ i 1) k)))))))))]
           [(string? x) (and (string? y) (string=? x y) k)]
+          [(bytevector? x) (and (bytevector? y) (bytevector=? x y) k)]
           [else (and (eqv? x y) k)]))
       (define (fast? x y k)
         (let ([k (- k 1)])
@@ -143,6 +145,7 @@
                                             k)])
                                  (and k (f (+ i 1) k))))))))]
             [(string? x) (and (string? y) (string=? x y) k)]
+            [(bytevector? x) (and (bytevector? y) (bytevector=? x y) k)]
             [else (and (eqv? x y) k)])))
       (and (e? x y k) #t)))
 
