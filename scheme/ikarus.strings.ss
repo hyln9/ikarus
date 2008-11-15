@@ -206,7 +206,7 @@
                               (die who "not a string" 
                                 (car s*))])))
                      (die who "not a string" s2)))]))
-          (die who "not a string0" s1))))
+          (die who "not a string" s1))))
   
   (define ($string<? s1 s2)
     (let ([n1 ($string-length s1)]

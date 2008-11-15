@@ -265,11 +265,11 @@
         (when (annotation? expr) 
           (let ((src (annotation-source expr)))
             (when (pair? src)
-              (display " (char " p)
+              (display " [char " p)
               (display (cdr src) p)
               (display " of " p)
               (display (car src) p)
-              (display ")" p)))))
+              (display "]" p)))))
       (display ">" p)))
 
   ;;; First, let's look at identifiers, since they're the real 
