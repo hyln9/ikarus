@@ -526,7 +526,7 @@
     (unless (procedure? proc) 
       (die who "not a procedure" proc))
     (let-values ([(p extract) (open-string-output-port)])
-      (parameterize ([*the-output-port* p])
+      (parameterize ([current-output-port p])
         (proc))
       (extract)))
 
@@ -538,7 +538,7 @@
       (die who "not an output port" p))
     (unless (textual-port? p)
       (die who "not a textual port" p))
-    (parameterize ([*the-output-port* p])
+    (parameterize ([current-output-port p])
       (proc)))
 
   (define-struct output-string-cookie (strings))
@@ -714,7 +714,7 @@
 
   (define flush-output-port
     (case-lambda
-      [() (flush-output-port (*the-output-port*))] 
+      [() (flush-output-port (current-output-port))] 
       [(p)
        (import UNSAFE)
        (unless (output-port? p) 
@@ -1589,7 +1589,7 @@
         #t
         'with-output-to-file)
       (lambda (p)
-        (parameterize ([*the-output-port* p])
+        (parameterize ([current-output-port p])
           (proc)))))
 
   (define (call-with-output-file filename proc)
@@ -1637,7 +1637,7 @@
         #t
         'with-input-from-file)
       (lambda (p)
-        (parameterize ([*the-input-port* p])
+        (parameterize ([current-input-port p])
           (proc)))))
 
   (define (with-input-from-string string proc)
@@ -1645,7 +1645,7 @@
       (die 'with-input-from-string "not a string" string))
     (unless (procedure? proc)
       (die 'with-input-from-string "not a procedure" proc))
-    (parameterize ([*the-input-port*
+    (parameterize ([current-input-port
                     (open-string-input-port string)])
       (proc)))
 
@@ -1658,39 +1658,47 @@
   (define (standard-error-port)
     (fh->output-port 2 '*stderr* 256 #f #f 'standard-error-port))
 
-  (define *the-input-port* 
+  (define current-input-port
     (make-parameter
       (transcoded-port 
         (fh->input-port 0 '*stdin* input-file-buffer-size #f #f #f)
-        (native-transcoder))))
+        (native-transcoder))
+      (lambda (x)
+        (if (and (input-port? x) (textual-port? x))
+            x
+            (die 'current-input-port "not a textual input port" x)))))
 
-  (define *the-output-port* 
+  (define current-output-port 
     (make-parameter
       (transcoded-port
         (fh->output-port 1 '*stdout* output-file-buffer-size #f #f #f)
-        (native-transcoder))))
+        (native-transcoder))
+      (lambda (x)
+        (if (and (output-port? x) (textual-port? x))
+            x
+            (die 'current-output-port "not a textual output port" x)))))
   
-  (define *the-error-port* 
+  (define current-error-port 
     (make-parameter
       (transcoded-port 
         (fh->output-port 2 '*stderr* 1 #f #f #f)
-        (native-transcoder))))
+        (native-transcoder))
+      (lambda (x)
+        (if (and (output-port? x) (textual-port? x))
+            x
+            (die 'current-errorput-port "not a textual output port" x)))))
 
   (define console-output-port
-    (let ([p (*the-output-port*)])
+    (let ([p (current-output-port)])
       (lambda () p)))
 
   (define console-error-port
-    (let ([p (*the-error-port*)])
+    (let ([p (current-error-port)])
       (lambda () p)))
 
   (define console-input-port
-    (let ([p (*the-input-port*)])
+    (let ([p (current-input-port)])
       (lambda () p)))
-
-  (define (current-input-port) (*the-input-port*))
-  (define (current-output-port) (*the-output-port*))
-  (define (current-error-port) (*the-error-port*))
 
   (define (call-with-port p proc)
     (if (port? p) 
@@ -1706,7 +1714,7 @@
   ;;;
   (define peek-char
     (case-lambda
-      [() (lookahead-char (*the-input-port*))]
+      [() (lookahead-char (current-input-port))]
       [(p)
        (if (input-port? p)
            (if (textual-port? p)
@@ -1991,7 +1999,7 @@
     (define write-char
       (case-lambda
         [(c p) (do-put-char p c 'write-char)]
-        [(c) (do-put-char (*the-output-port*) c 'write-char)]))
+        [(c) (do-put-char (current-output-port) c 'write-char)]))
     (define (put-char p c) 
       (do-put-char p c 'put-char))
     (define (put-string p str)
@@ -2079,8 +2087,8 @@
   (define newline
     (case-lambda
       [() 
-       (put-char (*the-output-port*) #\newline)
-       (flush-output-port (*the-output-port*))]
+       (put-char (current-output-port) #\newline)
+       (flush-output-port (current-output-port))]
       [(p)
        (unless (output-port? p) 
          (die 'newline "not an output port" p))
