@@ -298,7 +298,7 @@ to enable Scheme procedures to call and be called from native
 procedure (see Chapter~\ref{chapter:foreign} for details).  
 To enable
 \texttt{libffi} while building Ikarus, one must pass
-\texttt{--enable-ffi} to the \texttt{configure} script along with
+\texttt{--enable-libffi} to the \texttt{configure} script along with
 the paths to \texttt{libffi}'s include and lib directory.
 The \texttt{libffi} library can be obtained from
 \url{http://sourceware.org/libffi/}.
@@ -645,7 +645,7 @@ implementations.
 
 Consider for example a program which would like to use the
 \verb|pretty-print| procedure to format some code, and suppose
-furthr that pretty printing is just a nice add-on (e.g., using
+further that pretty printing is just a nice add-on (e.g., using
 \verb|write| suffices, but pretty-printing is \emph{just prettier})
 Ikarus exports a good pretty-printing facility in its
 \verb|(ikarus)| library.  However, since \verb|pretty-print| is not
@@ -1230,7 +1230,7 @@ useful features.  The \texttt{(ikarus)} library is a composite
 library---it exports a superset of all the supported bindings of
 \rnrs{6}.  While not all of the exports of \texttt{(ikarus)} are
 documented at this time, this chapter attempts to describe a few of
-these useful extensions.  Extansions to Scheme's lexical syntax are
+these useful extensions.  Extensions to Scheme's lexical syntax are
 also documented.
 
 \idxlabeldefun{\#"!ikarus}{\#"!ikarus}{shebang-ikarus}{\#!ikarus}{reader syntax}
