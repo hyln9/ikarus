@@ -90,6 +90,32 @@ AC_DEFINE(ENABLE_LIBFFI, 1, [adds support for libffi])
 
 fi
 
+AC_CHECK_MEMBER([struct stat.st_mtimespec],
+   AC_DEFINE(HAVE_STAT_ST_MTIMESPEC, 1, 
+             [stat struct has st_mtimespec field]),
+   [], 
+   [[#include <sys/stat.h>]])
+
+AC_CHECK_MEMBER([struct stat.st_mtim],
+   AC_DEFINE(HAVE_STAT_ST_MTIM, 1, 
+             [stat struct has st_mtim field]),
+   [], 
+   [[#include <sys/stat.h>]])
+
+AC_CHECK_MEMBER([struct stat.st_ctimespec],
+   AC_DEFINE(HAVE_STAT_ST_CTIMESPEC, 1, 
+             [stat struct has st_ctimespec field]),
+   [], 
+   [[#include <sys/stat.h>]])
+
+AC_CHECK_MEMBER([struct stat.st_ctim],
+   AC_DEFINE(HAVE_STAT_ST_CTIM, 1, 
+             [stat struct has st_ctim field]),
+   [], 
+   [[#include <sys/stat.h>]])
+
+
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_C_INLINE

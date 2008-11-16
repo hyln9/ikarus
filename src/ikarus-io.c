@@ -297,6 +297,7 @@ timespec_bytevector(struct timespec* s, ikpcb* pcb) {
   return r + bytevector_tag;
 }
 
+
 ikptr
 ikrt_file_ctime2(ikptr filename, ikpcb* pcb){
   struct stat s;
@@ -304,7 +305,16 @@ ikrt_file_ctime2(ikptr filename, ikpcb* pcb){
   if(err) {
     return ik_errno_to_code();
   }
+#if HAVE_STAT_ST_CTIMESPEC
   return timespec_bytevector(&s.st_ctimespec, pcb);
+#elif HAVE_STAT_ST_CTIM
+  return timespec_bytevector(&s.st_ctim, pcb);
+#else
+  struct timespec ts;
+  ts.tv_sec = s.st_ctime;
+  ts.tv_nsec = 0;
+  return timespec_bytevector(&st, pcb);
+#endif
 }
 
 ikptr
@@ -314,7 +324,16 @@ ikrt_file_mtime2(ikptr filename, ikpcb* pcb){
   if(err) {
     return ik_errno_to_code();
   }
+#if HAVE_STAT_ST_MTIMESPEC
   return timespec_bytevector(&s.st_mtimespec, pcb);
+#elif HAVE_STAT_ST_MTIM
+  return timespec_bytevector(&s.st_mtim, pcb);
+#else
+  struct timespec ts;
+  ts.tv_sec = s.st_mtime;
+  ts.tv_nsec = 0;
+  return timespec_bytevector(&st, pcb);
+#endif
 }
 
 

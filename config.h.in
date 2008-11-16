@@ -83,6 +83,18 @@
    zero-length file name argument. */
 #undef HAVE_STAT_EMPTY_STRING_BUG
 
+/* stat struct has st_ctim field */
+#undef HAVE_STAT_ST_CTIM
+
+/* stat struct has st_ctimespec field */
+#undef HAVE_STAT_ST_CTIMESPEC
+
+/* stat struct has st_mtim field */
+#undef HAVE_STAT_ST_MTIM
+
+/* stat struct has st_mtimespec field */
+#undef HAVE_STAT_ST_MTIMESPEC
+
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 
