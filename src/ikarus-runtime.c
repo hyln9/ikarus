@@ -210,9 +210,9 @@ ik_mmap_mixed(unsigned long int size, ikpcb* pcb){
 
 ikptr
 ik_mmap(unsigned long int size){
-  int pages = (size + pagesize - 1) / pagesize;
+  unsigned long int pages = (size + pagesize - 1) / pagesize;
   total_allocated_pages += pages;
-  int mapsize = pages * pagesize;
+  unsigned long int mapsize = pages * pagesize;
   assert(size == mapsize);
 #ifndef __CYGWIN__
   char* mem = mmap(
@@ -255,8 +255,8 @@ ik_munmap(ikptr mem, unsigned long int size){
   win_munmap((char*)mem, mapsize);
 #endif
 #ifndef NDEBUG
-  fprintf(stderr, "UNMAP 0x%08x .. 0x%08x\n", (int)mem,
-      ((int)(mem))+mapsize-1);
+  fprintf(stderr, "UNMAP 0x%016lx .. 0x%016lx\n", (long int)mem,
+      ((long int)(mem))+mapsize-1);
 #endif
 }
 
