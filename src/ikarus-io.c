@@ -313,7 +313,7 @@ ikrt_file_ctime2(ikptr filename, ikpcb* pcb){
   struct timespec ts;
   ts.tv_sec = s.st_ctime;
   ts.tv_nsec = 0;
-  return timespec_bytevector(&st, pcb);
+  return timespec_bytevector(&ts, pcb);
 #endif
 }
 
@@ -332,7 +332,7 @@ ikrt_file_mtime2(ikptr filename, ikpcb* pcb){
   struct timespec ts;
   ts.tv_sec = s.st_mtime;
   ts.tv_nsec = 0;
-  return timespec_bytevector(&st, pcb);
+  return timespec_bytevector(&ts, pcb);
 #endif
 }
 
