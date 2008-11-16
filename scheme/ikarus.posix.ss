@@ -291,19 +291,23 @@
   (define ($file-time x who proc)
     (unless (string? x) 
       (die who "not a string" x))
-    (let ([p (cons #f #f)])
-      (let ([v (proc (string->utf8 x) p)])
-        (case v
-          [(0) (+ (* (car p) #e1e9) (cdr p))]
-          [else (raise/strerror who v x)]))))
+    (let ([v (proc (string->utf8 x))])
+      (cond
+        [(bytevector? v) 
+         (let ([n0 (bytevector-u8-ref v 0)]
+               [n1 (bytevector-u8-ref v 1)])
+           (+ (* (bytevector-uint-ref v 2 (native-endianness) n0)
+                 #e1e9)
+              (bytevector-uint-ref v (+ 2 n0) (native-endianness) n1)))]
+        [else (raise/strerror who v x)])))
 
   (define (file-ctime x)
     ($file-time x 'file-ctime 
-      (lambda (u p) (foreign-call "ikrt_file_ctime" u p))))
+      (lambda (u) (foreign-call "ikrt_file_ctime2" u))))
 
   (define (file-mtime x)
     ($file-time x 'file-mtime 
-      (lambda (u p) (foreign-call "ikrt_file_mtime" u p))))
+      (lambda (u) (foreign-call "ikrt_file_mtime2" u))))
 
   (define ($getenv-bv key)
     (foreign-call "ikrt_getenv" key))

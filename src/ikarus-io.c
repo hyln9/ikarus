@@ -285,6 +285,41 @@ ikrt_shutdown(ikptr s /*, ikpcb* pcb*/){
 }
 
 
+static ikptr 
+timespec_bytevector(struct timespec* s, ikpcb* pcb) {
+  int len = sizeof(struct timespec);
+  ikptr r = ik_safe_alloc(pcb, align(disp_bytevector_data+len+3));
+  ref(r, 0) = fix(len+2);
+  *((char*)(r+disp_bytevector_data+0)) = sizeof(s->tv_sec);
+  *((char*)(r+disp_bytevector_data+1)) = sizeof(s->tv_nsec);
+  memcpy((char*)(r+disp_bytevector_data+2), s, len);
+  *((char*)(r+disp_bytevector_data+len+2)) = 0;
+  return r + bytevector_tag;
+}
+
+ikptr
+ikrt_file_ctime2(ikptr filename, ikpcb* pcb){
+  struct stat s;
+  int err = stat((char*)(filename + off_bytevector_data), &s);
+  if(err) {
+    return ik_errno_to_code();
+  }
+  return timespec_bytevector(&s.st_ctimespec, pcb);
+}
+
+ikptr
+ikrt_file_mtime2(ikptr filename, ikpcb* pcb){
+  struct stat s;
+  int err = stat((char*)(filename + off_bytevector_data), &s);
+  if(err) {
+    return ik_errno_to_code();
+  }
+  return timespec_bytevector(&s.st_mtimespec, pcb);
+}
+
+
+
+
 ikptr
 ikrt_file_ctime(ikptr filename, ikptr res){
   struct stat s;
