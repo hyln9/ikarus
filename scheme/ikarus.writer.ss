@@ -619,7 +619,6 @@
       [(eq? x (void)) (write-char* "#<void>" p) i]
       [(eof-object? x) (write-char* "#!eof" p) i]
       [(bwp-object? x) (write-char* "#!bwp" p) i]
-      [(hashtable? x) (write-char* "#<hashtable>" p) i]
       [(transcoder? x) (write-char* "#<transcoder>" p) i]
       [(struct? x) (write-shared x p m h i write-struct)]
       [(code? x) (write-char* "#<code>" p) i]

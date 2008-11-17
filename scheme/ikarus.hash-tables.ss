@@ -528,4 +528,7 @@
          (number-hash (real-part x))
          (number-hash (imag-part x)))]))
 
+  (set-rtd-printer! (type-descriptor hasht)
+    (lambda (x p wr) 
+      (display "#<hashtable>" p)))
 )
