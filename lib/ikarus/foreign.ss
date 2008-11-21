@@ -1,6 +1,5 @@
 
 (library (ikarus foreign)
-
   (export 
           pointer-set-c-char!
           pointer-set-c-short!
@@ -25,7 +24,14 @@
           malloc free 
           pointer->integer integer->pointer pointer? dlopen dlsym
           dlclose dlerror
-          make-c-callout make-c-callback)
+          make-c-callout make-c-callback 
+          pointer-size)
 
-  (import (ikarus system $foreign)))
+  (import (ikarus system $foreign))
+
+  (define (pointer-size)
+    (cond
+      [(<= (fixnum-width) 32) 4]
+      [else 8]))
+)
 
