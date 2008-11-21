@@ -13,10 +13,12 @@
           pointer-ref-c-signed-short
           pointer-ref-c-signed-int
           pointer-ref-c-signed-long
+          pointer-ref-c-signed-long-long
           pointer-ref-c-unsigned-char 
           pointer-ref-c-unsigned-short
           pointer-ref-c-unsigned-int
           pointer-ref-c-unsigned-long
+          pointer-ref-c-unsigned-long-long
           pointer-ref-c-pointer
           pointer-ref-c-float 
           pointer-ref-c-double

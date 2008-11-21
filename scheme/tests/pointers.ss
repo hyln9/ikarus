@@ -60,9 +60,6 @@
           (list 0 (sub1 (sll 1 (- n 1))) (sub1 (sll 1 n))) 
           ls1 ls2 ls3))))
           
-
-
-
   (define (u* n)
     (let ([n (min n bits)])
       (combinations n)))
@@ -119,10 +116,18 @@
     (t-ref/set 'short  (s* 16) pointer-ref-c-signed-short   pointer-set-c-short!)
     (t-ref/set 'int    (s* 32) pointer-ref-c-signed-int     pointer-set-c-int!)
     (t-ref/set 'long   (s* 64) pointer-ref-c-signed-long    pointer-set-c-long!)
+    (t-ref/set 'long-long 
+               (s* 64) 
+               pointer-ref-c-signed-long-long
+               pointer-set-c-long-long!)
     (t-ref/set 'uchar  (u*  8) pointer-ref-c-unsigned-char  pointer-set-c-char!)
     (t-ref/set 'ushort (u* 16) pointer-ref-c-unsigned-short pointer-set-c-short!)
     (t-ref/set 'uint   (u* 32) pointer-ref-c-unsigned-int   pointer-set-c-int!)
     (t-ref/set 'ulong  (u* 64) pointer-ref-c-unsigned-long  pointer-set-c-long!)
+    (t-ref/set 'ulong-long 
+               (u* 64) 
+               pointer-ref-c-unsigned-long-long
+               pointer-set-c-long-long!)
     )
 
 

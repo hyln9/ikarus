@@ -6,10 +6,12 @@
           pointer-ref-c-signed-short
           pointer-ref-c-signed-int 
           pointer-ref-c-signed-long
+          pointer-ref-c-signed-long-long
           pointer-ref-c-unsigned-char
           pointer-ref-c-unsigned-short 
           pointer-ref-c-unsigned-int 
           pointer-ref-c-unsigned-long
+          pointer-ref-c-unsigned-long-long
           pointer-ref-c-float
           pointer-ref-c-double
           pointer-ref-c-pointer
@@ -17,6 +19,7 @@
           pointer-set-c-short!
           pointer-set-c-int!
           pointer-set-c-long!
+          pointer-set-c-long-long!
           pointer-set-c-pointer!
           pointer-set-c-float!
           pointer-set-c-double! 
@@ -126,25 +129,28 @@
 
   (define (int? x) (or (fixnum? x) (bignum? x)))
 
-  (define-getter pointer-ref-c-signed-char    "ikrt_ref_char")
-  (define-getter pointer-ref-c-signed-short   "ikrt_ref_short")
-  (define-getter pointer-ref-c-signed-int     "ikrt_ref_int")
-  (define-getter pointer-ref-c-signed-long    "ikrt_ref_long")
-  (define-getter pointer-ref-c-unsigned-char  "ikrt_ref_uchar")
-  (define-getter pointer-ref-c-unsigned-short "ikrt_ref_ushort")
-  (define-getter pointer-ref-c-unsigned-int   "ikrt_ref_uint")
-  (define-getter pointer-ref-c-unsigned-long  "ikrt_ref_ulong")
-  (define-getter pointer-ref-c-float          "ikrt_ref_float")
-  (define-getter pointer-ref-c-double         "ikrt_ref_double")
-  (define-getter pointer-ref-c-pointer        "ikrt_ref_pointer")
+  (define-getter pointer-ref-c-signed-char        "ikrt_ref_char")
+  (define-getter pointer-ref-c-signed-short       "ikrt_ref_short")
+  (define-getter pointer-ref-c-signed-int         "ikrt_ref_int")
+  (define-getter pointer-ref-c-signed-long        "ikrt_ref_long")
+  (define-getter pointer-ref-c-signed-long-long   "ikrt_ref_longlong")
+  (define-getter pointer-ref-c-unsigned-char      "ikrt_ref_uchar")
+  (define-getter pointer-ref-c-unsigned-short     "ikrt_ref_ushort")
+  (define-getter pointer-ref-c-unsigned-int       "ikrt_ref_uint")
+  (define-getter pointer-ref-c-unsigned-long      "ikrt_ref_ulong")
+  (define-getter pointer-ref-c-unsigned-long-long "ikrt_ref_ulonglong")
+  (define-getter pointer-ref-c-float              "ikrt_ref_float")
+  (define-getter pointer-ref-c-double             "ikrt_ref_double")
+  (define-getter pointer-ref-c-pointer            "ikrt_ref_pointer")
 
-  (define-setter pointer-set-c-char!    int?     "ikrt_set_char")
-  (define-setter pointer-set-c-short!   int?     "ikrt_set_short")
-  (define-setter pointer-set-c-int!     int?     "ikrt_set_int")
-  (define-setter pointer-set-c-long!    int?     "ikrt_set_long")
-  (define-setter pointer-set-c-float!   flonum?  "ikrt_set_float")
-  (define-setter pointer-set-c-double!  flonum?  "ikrt_set_double")
-  (define-setter pointer-set-c-pointer! pointer? "ikrt_set_pointer")
+  (define-setter pointer-set-c-char!      int?     "ikrt_set_char")
+  (define-setter pointer-set-c-short!     int?     "ikrt_set_short")
+  (define-setter pointer-set-c-int!       int?     "ikrt_set_int")
+  (define-setter pointer-set-c-long!      int?     "ikrt_set_long")
+  (define-setter pointer-set-c-long-long! int?     "ikrt_set_longlong")
+  (define-setter pointer-set-c-float!     flonum?  "ikrt_set_float")
+  (define-setter pointer-set-c-double!    flonum?  "ikrt_set_double")
+  (define-setter pointer-set-c-pointer!   pointer? "ikrt_set_pointer")
 
   ;;; libffi interface
 

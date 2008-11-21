@@ -251,6 +251,26 @@ s_to_number(signed long n, ikpcb* pcb) {
   return bn+vector_tag;
 }
   
+static ikptr
+sll_to_number(signed long long n, ikpcb* pcb) {
+  if (((signed long long)(signed long) n) == n) {
+    return s_to_number(n, pcb);
+  }
+  ikptr bn = ik_safe_alloc(pcb, align(sizeof(long long)+disp_bignum_data));
+  if (n > 0){
+    ref(bn, 0) = (ikptr)(bignum_tag | (1 << bignum_length_shift)); 
+    *((long long*)(bn+disp_bignum_data)) = n;
+  } else {
+    ref(bn, 0) = 
+      (ikptr)(bignum_tag | 
+            (1 << bignum_length_shift) | 
+            (1 << bignum_sign_shift));
+    *((long long*)(bn+disp_bignum_data)) = -n;
+  }
+  return bn+vector_tag;
+}
+
+
 ikptr
 u_to_number(unsigned long n, ikpcb* pcb) {
   unsigned long mxn = ((unsigned long)-1)>>(fx_shift+1);
@@ -266,9 +286,8 @@ u_to_number(unsigned long n, ikpcb* pcb) {
 
 ikptr
 ull_to_number(unsigned long long n, ikpcb* pcb) {
-  unsigned long long mxn = ((unsigned long)-1)>>(fx_shift+1);
-  if (n <= mxn) {
-    return fix(n);
+  if (((unsigned long long)(unsigned long) n) == n) {
+    return u_to_number(n, pcb);
   }
   ikptr bn = ik_safe_alloc(pcb, align(disp_bignum_data+sizeof(long long)));
   bcopy((char*)(&n), (char*)(bn+disp_bignum_data), sizeof(long long));
@@ -282,8 +301,6 @@ d_to_number(double n, ikpcb* pcb) {
   flonum_data(x) = n;
   return x;
 }
-
-
 
 ikptr
 ikrt_ref_int(ikptr p, ikptr off , ikpcb* pcb) {
@@ -321,6 +338,20 @@ ikrt_ref_ulong(ikptr p, ikptr off , ikpcb* pcb) {
   return u_to_number(r, pcb);
 }
 
+ikptr
+ikrt_ref_longlong(ikptr p, ikptr off , ikpcb* pcb) {
+  signed long long r = 
+    *((signed long long*)(((long)ref(p, off_pointer_data)) + unfix(off)));
+  return sll_to_number(r, pcb);
+}
+
+ikptr
+ikrt_ref_ulonglong(ikptr p, ikptr off , ikpcb* pcb) {
+  unsigned long long r = 
+    *((unsigned long long*)(((long)ref(p, off_pointer_data)) + unfix(off)));
+  return ull_to_number(r, pcb);
+}
+
 long
 extract_num(ikptr x) {
   if (is_fixnum(x)) {
@@ -336,32 +367,64 @@ extract_num(ikptr x) {
   }  
 }
 
+long long
+extract_num_longlong(ikptr x) {
+  if (is_fixnum(x)) {
+    return unfix(x);
+  } else if (x == void_object) {
+    return 0;
+  } else {
+    ikptr fst = ref(x, -vector_tag);
+    ikptr pos_one_limb_tag = 
+        (ikptr)(bignum_tag | (1 << bignum_length_shift));
+    ikptr neg_one_limb_tag = 
+        (ikptr)(pos_one_limb_tag | (1 << bignum_sign_shift));
+    if (fst == pos_one_limb_tag) {
+      return (unsigned long)ref(x, wordsize-vector_tag);
+    } else if (fst == neg_one_limb_tag) {
+      return -(signed long)ref(x, wordsize-vector_tag);
+    } else if (bnfst_negative(fst)) {
+      return -(*((long long*)(x+wordsize-vector_tag)));
+    } else {
+      return *((long long*)(x+wordsize-vector_tag));
+    }
+  }  
+}
+
+
 
 ikptr
 ikrt_set_char(ikptr p, ikptr off, ikptr v/*, ikpcb* pcb*/) {
-  *((signed char*)(((long)ref(p, off_pointer_data)) + unfix(off))) = 
+  *((char*)(((long)ref(p, off_pointer_data)) + unfix(off))) = 
     extract_num(v);
   return void_object;
 }
 
 ikptr
 ikrt_set_short(ikptr p, ikptr off, ikptr v/*, ikpcb* pcb*/) {
-  *((signed short*)(((long)ref(p, off_pointer_data)) + unfix(off))) = 
+  *((short*)(((long)ref(p, off_pointer_data)) + unfix(off))) = 
     extract_num(v);
   return void_object;
 }
 
 ikptr
 ikrt_set_int(ikptr p, ikptr off, ikptr v/*, ikpcb* pcb*/) {
-  *((signed int*)(((long)ref(p, off_pointer_data)) + unfix(off))) = 
+  *((int*)(((long)ref(p, off_pointer_data)) + unfix(off))) = 
     extract_num(v);
   return void_object;
 }
 
 ikptr
 ikrt_set_long(ikptr p, ikptr off, ikptr v/*, ikpcb* pcb*/) {
-  *((signed long*)(((long)ref(p, off_pointer_data)) + unfix(off))) = 
+  *((long*)(((long)ref(p, off_pointer_data)) + unfix(off))) = 
     extract_num(v);
+  return void_object;
+}
+
+ikptr
+ikrt_set_longlong(ikptr p, ikptr off, ikptr v/*, ikpcb* pcb*/) {
+  *((long long*)(((long)ref(p, off_pointer_data)) + unfix(off))) = 
+    extract_num_longlong(v);
   return void_object;
 }
 
