@@ -672,7 +672,6 @@
       [(and (mem? src) (reg? dst))      (CR* #x8D dst src ac)]
       [else (die who "invalid" instr)])]
    [(cmpl src dst)
-    (trace-ac ac `(cmpl ,src ,dst)
     (cond
       [(and (imm8? src) (reg? dst))       (CR*  #x83 '/7 dst (IMM8 src ac))]
       [(and (imm32? src) (eq? dst '%eax)) (C #x3D (IMM32 src ac))]
@@ -681,7 +680,7 @@
       [(and (mem? src) (reg? dst))        (CR*  #x3B dst src ac)]
       [(and (imm8? src) (mem? dst))       (CR*  #x83 '/7 dst (IMM8 src ac))]
       [(and (imm32? src) (mem? dst))      (CR*  #x81 '/7 dst (IMM32 src ac))]
-      [else (die who "invalid" instr)]))]
+      [else (die who "invalid" instr)])]
    [(imull src dst)
     (cond
       [(and (imm8? src) (reg? dst))     (CR*  #x6B dst dst (IMM8 src ac))]

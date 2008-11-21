@@ -213,7 +213,7 @@
         (let ((file-name ((file-locator) x)))
           (cond
             ((not file-name) 
-             (assertion-violation #f "cannot file library" x))
+             (assertion-violation #f "cannot find library" x))
             ((try-load-from-file file-name))
             (else 
              ((current-library-expander)

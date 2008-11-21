@@ -367,9 +367,9 @@
                      (display (vector-ref v i) p)
                      (display ": " p)
                      (write ((record-accessor rtd i) x) p)
-                     (newline)
+                     (newline p)
                      (f (+ i 1) rtd v))))
-               rf)])))          
+               rf)])))
       (define (print-condition x p)
         (cond
           [(condition? x) 
