@@ -759,6 +759,7 @@
       [(forcall) (VT x)]
       [(shortcut body handler)
        (make-shortcut (Tail body) (Tail handler))]
+      [(known x) (Tail x)]
       [else (error who "invalid tail" x)]))
   ;;;
   (define (formals-locations args)

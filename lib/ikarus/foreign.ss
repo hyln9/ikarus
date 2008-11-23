@@ -27,7 +27,7 @@
           make-c-callout make-c-callback 
           pointer-size)
 
-  (import (ikarus system $foreign))
+  (import (ikarus) (ikarus system $foreign))
 
   (define (pointer-size)
     (cond
