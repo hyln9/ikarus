@@ -95,6 +95,7 @@
 
 (library (match)
   (export match trace-match 
+          match+ trace-match+
           match/lexical-context trace-match/lexical-context
           match-equality-test
           guard ... quasiquote unquote unquote-splicing)
@@ -275,7 +276,7 @@
     (define (f syn vars guards cdecls depth)
       (define (andmap f ls)
         (cond
-          ((null? ls) #f)
+          ((null? ls) #t)
           ((null? (cdr ls)) (f (car ls)))
           (else (and (f (car ls)) (andmap f (cdr ls))))))
       (syntax-case syn (unquote)
