@@ -1096,3 +1096,8 @@ ikrt_rename_file(ikptr src, ikptr dst /* ikpcb* pcb */){
     return ik_errno_to_code();
   }
 }
+
+ikptr 
+ikrt_last_errno(ikpcb* pcb){
+  return s_to_number(pcb->last_errno, pcb);
+}

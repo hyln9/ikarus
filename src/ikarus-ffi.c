@@ -139,10 +139,6 @@ scheme_to_ffi_value_cast(ffi_type* t, ikptr nptr, ikptr p, void* r) {
 }
 
 
-extern ikptr u_to_number(unsigned long x, ikpcb* pcb);
-extern ikptr s_to_number(signed long x, ikpcb* pcb);
-extern ikptr d_to_number(double x, ikpcb* pcb);
-extern ikptr make_pointer(void* x, ikpcb* pcb);
 static ikptr
 ffi_to_scheme_value_cast(int n, void* p, ikpcb* pcb) {
   switch (n & 0xF) {
@@ -157,7 +153,7 @@ ffi_to_scheme_value_cast(int n, void* p, ikpcb* pcb) {
     case  9: return s_to_number(*((signed long*)p), pcb);
     case 10: return d_to_number(*((float*)p), pcb);
     case 11: return d_to_number(*((double*)p), pcb);
-    case 12: return make_pointer(*((void**)p), pcb);
+    case 12: return make_pointer((long)*((void**)p), pcb);
     default: 
       fprintf(stderr, "INVALID ARG %d", n);
       exit(-1);
@@ -362,10 +358,7 @@ ikrt_ffi_call(ikptr data, ikptr argsvec, ikpcb* pcb)  {
   return val;
 }
 
-ikptr 
-ikrt_last_errno(ikpcb* pcb){
-  return s_to_number(pcb->last_errno, pcb);
-}
+
 
 /*
 

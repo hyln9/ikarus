@@ -224,6 +224,9 @@ ikptr ik_safe_alloc(ikpcb* pcb, int size);
 ikptr u_to_number(unsigned long, ikpcb*);
 ikptr ull_to_number(unsigned long long, ikpcb*);
 ikptr normalize_bignum(long int limbs, int sign, ikptr r);
+ikptr s_to_number(signed long x, ikpcb* pcb);
+ikptr d_to_number(double x, ikpcb* pcb);
+ikptr make_pointer(long x, ikpcb* pcb);
 
 #define IK_HEAP_EXT_SIZE  (32 * 4096)
 #define IK_HEAPSIZE       (1024 * ((wordsize==4)?1:2) * 4096) /* 4/8 MB */

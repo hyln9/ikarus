@@ -37,7 +37,7 @@ ikrt_pointer_to_int(ikptr x, ikpcb* pcb) {
 }
 
 ikptr
-make_pointer(long int x, ikpcb* pcb) {
+make_pointer(long x, ikpcb* pcb) {
   ikptr r = ik_safe_alloc(pcb, pointer_size);
   ref(r, 0) = pointer_tag;
   ref(r, wordsize) = (ikptr)x;
