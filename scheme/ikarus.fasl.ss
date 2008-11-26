@@ -222,6 +222,18 @@
              (let ([code (read-code cm m)])
                (if m (vector-ref marks m) ($code->closure code))))]
           [else (die who "invalid code header" c)])))
+
+    (define (read-list len m)
+      (let ([ls (make-list (+ len 1))])
+        (when m (put-mark m ls))
+        (let f ([ls ls])
+          (set-car! ls (read))
+          (let ([d (cdr ls)])
+            (if (null? d)
+                (set-cdr! ls (read))
+                (f d))))
+        ls))
+ 
     (define (read/mark m)
       (define (nom)
         (when m (die who "unhandled mark")))
@@ -333,27 +345,9 @@
              (or (vector-ref marks m)
                  (error who "uninitialized mark" m)))]
           [(#\l) ;;; list of length <= 255
-           (let ([ls 
-                  (let ([n (read-u8 p)])
-                    (let f ([n n])
-                      (cond
-                        [(< n 0) (read)]
-                        [else 
-                         (let ([x (read)])
-                           (cons x (f (- n 1))))])))])
-             (when m (put-mark m ls))
-             ls)]
+           (read-list (read-u8 p) m)]
           [(#\L) ;;; list of length > 255
-           (let ([ls 
-                  (let ([n (read-int p)])
-                    (let f ([n n])
-                      (cond
-                        [(< n 0) (read)]
-                        [else 
-                         (let ([x (read)])
-                           (cons x (f (- n 1))))])))])
-             (when m (put-mark m ls))
-             ls)]
+           (read-list (read-int p) m)]
           [(#\W) ;;; r6rs record type descriptor
            (let* ([name    (read)]
                   [parent  (read)]

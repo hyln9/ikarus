@@ -49,7 +49,9 @@
     (test (make-rectangular 12.0 13.0))
     (test (string #\a))
     (test (string #\x3bb))
-    (test-cycle))
+    (test-cycle)
+    (test '#1=((x . #1#) (y . z)))
+    )
 
 )
 
