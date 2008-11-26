@@ -172,6 +172,7 @@ typedef struct ikpcb{
   struct timeval collect_utime;
   struct timeval collect_stime;
   struct timeval collect_rtime; 
+  int last_errno;
 } ikpcb;
 
 typedef struct {

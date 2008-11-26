@@ -25,7 +25,8 @@
           pointer->integer integer->pointer pointer? dlopen dlsym
           dlclose dlerror
           make-c-callout make-c-callback 
-          pointer-size)
+          pointer-size 
+          errno)
 
   (import (ikarus) (ikarus system $foreign))
 

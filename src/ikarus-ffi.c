@@ -1,6 +1,7 @@
 
 #include "ikarus-data.h"
 #include "config.h"
+#include <sys/errno.h>
 
 #if ENABLE_LIBFFI
 #include <ffi.h>
@@ -337,6 +338,7 @@ ikrt_ffi_call(ikptr data, ikptr argsvec, ikpcb* pcb)  {
   avalues[n] = NULL;
   void* rvalue = alloc_room_for_type(cif->rtype);
   ffi_call(cif, fn, rvalue, avalues);
+  pcb->last_errno = errno;
   ikptr val = ffi_to_scheme_value_cast(unfix(rtype), rvalue, pcb);
   for(i=0; i<n; i++){
     free(avalues[i]);
@@ -360,6 +362,10 @@ ikrt_ffi_call(ikptr data, ikptr argsvec, ikpcb* pcb)  {
   return val;
 }
 
+ikptr 
+ikrt_last_errno(ikpcb* pcb){
+  return s_to_number(pcb->last_errno, pcb);
+}
 
 /*
 

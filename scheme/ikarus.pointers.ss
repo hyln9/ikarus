@@ -2,6 +2,7 @@
 (library (ikarus.pointers)
   (export pointer? integer->pointer pointer->integer 
           dlopen dlerror dlclose dlsym malloc free
+          errno
           pointer-ref-c-signed-char 
           pointer-ref-c-signed-short
           pointer-ref-c-signed-int 
@@ -263,6 +264,9 @@
           (let ([data (vector cif proc argtypes-n rtype-n)])
             (or (foreign-call "ikrt_prepare_callback" data)
                 (die who "cannot prepare foreign callback")))))))
+
+  (define (errno)
+    (foreign-call "ikrt_last_errno"))
 
   )
 
