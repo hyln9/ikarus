@@ -69,14 +69,15 @@ description:
           (display-prompt 0)
           (let ([x (with-exception-handler
                      (lambda (ex)
-                       (cond [(lexical-violation? ex)
-                              (print-ex ex)
-                              (reset k)]
-                             [(interrupted-condition? ex)
-                              (flush-output-port (console-output-port))
-                              (newline (console-output-port))
-                              (reset k)]
-                             [else (raise-continuable ex)]))
+                       (cond 
+                         [(lexical-violation? ex)
+                          (print-ex ex)
+                          (reset k)]
+                         [(interrupted-condition? ex)
+                          (flush-output-port (console-output-port))
+                          (newline (console-output-port))
+                          (reset k)]
+                         [else (raise-continuable ex)]))
                      (lambda ()
                        (read (console-input-port))))])
             (cond
@@ -101,10 +102,19 @@ description:
                            (eval-proc x))))))
                  (lambda v*
                    (unless (andmap (lambda (v) (eq? v (void))) v*)
-                     (for-each
-                       (lambda (v)
-                         (pretty-print v (console-output-port)))
-                       v*))))]))))
+                     (with-exception-handler
+                       (lambda (ex)
+                         (cond 
+                           [(interrupted-condition? ex)
+                            (flush-output-port (console-output-port))
+                            (newline (console-output-port))
+                            (reset k)]
+                           [else (raise-continuable ex)]))
+                       (lambda ()
+                         (for-each
+                           (lambda (v)
+                             (pretty-print v (console-output-port)))
+                           v*))))))]))))
       (wait eval-proc escape-k)))
 
   (define do-new-cafe
