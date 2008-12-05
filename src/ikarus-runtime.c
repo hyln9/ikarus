@@ -908,12 +908,7 @@ ikrt_getenv(ikptr bv, ikpcb* pcb){
     return s;
   } 
   else {
-    /* empty bv */
-    ikptr s = ik_safe_alloc(pcb, align(disp_bytevector_data+1)) 
-          + bytevector_tag;
-    ref(s, -bytevector_tag) = fix(0);
-    ref(s, off_bytevector_data) = 0;
-    return s;
+    return false_object;
   }
 }
 

@@ -309,15 +309,18 @@
     ($file-time x 'file-mtime 
       (lambda (u) (foreign-call "ikrt_file_mtime2" u))))
 
-  (define ($getenv-bv key)
-    (foreign-call "ikrt_getenv" key))
-  (define ($getenv-str key) 
-    (utf8->string ($getenv-bv (string->utf8 key))))
+
 
   (define (getenv key)
+    (define who 'getenv)
+    (define ($getenv-str key) 
+      (define ($getenv-bv key)
+        (foreign-call "ikrt_getenv" key))
+      (let ([rv ($getenv-bv (string->utf8 key))])
+        (and rv (utf8->string rv))))
     (if (string? key)
         ($getenv-str key)
-        (die 'getenv "the key is not a string" key)))
+        (die who "key is not a string" key)))
 
   (define env
     (let ()
