@@ -5,6 +5,7 @@
           pointer-set-c-short!
           pointer-set-c-int!
           pointer-set-c-long!
+          pointer-set-c-long-long!
           pointer-set-c-pointer!
           pointer-set-c-float!
           pointer-set-c-double!
