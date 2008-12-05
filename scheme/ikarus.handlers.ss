@@ -23,6 +23,14 @@
         [(x guard) (make-parameter x guard)]
         [(x) (make-parameter x)]))))
 
+(library (ikarus.pointer-value)
+  (export pointer-value)
+  (import (only (ikarus) define import))
+  (define (pointer-value x)
+    (import (ikarus))
+    (pointer-value x)))
+
+
 (library (ikarus system handlers)
   (export
     interrupt-handler $apply-nonprocedure-error-handler
