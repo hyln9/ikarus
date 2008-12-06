@@ -16,7 +16,7 @@
 
 (library (ikarus.symbols)
   (export gensym gensym? gensym->unique-string gensym-prefix
-          gensym-count print-gensym string->symbol symbol->string
+          gensym-count print-gensym symbol->string
           getprop putprop remprop property-list
           top-level-value top-level-bound? set-top-level-value!
           symbol-value symbol-bound? set-symbol-value!
@@ -28,8 +28,7 @@
     (ikarus system $fx)
     (except (ikarus) gensym gensym? gensym->unique-string
       gensym-prefix gensym-count print-gensym system-value
-      string->symbol symbol->string
-      getprop putprop remprop property-list
+      symbol->string getprop putprop remprop property-list
       top-level-value top-level-bound? set-top-level-value!
       symbol-value symbol-bound? set-symbol-value! reset-symbol-proc!))
 
@@ -117,6 +116,7 @@
                 (die 'apply "not a procedure" 
                   (top-level-value x))))))))
 
+  #;
   (define string->symbol
     (lambda (x)
       (unless (string? x) 

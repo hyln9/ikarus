@@ -32,14 +32,18 @@ make_symbol_table(ikpcb* pcb){
   return st;
 }
 
+
+/* one-at-a-time from http://burtleburtle.net/bob/hash/doobs.html */
 static long int 
 compute_hash(ikptr str){
   long int len = unfix(ref(str, off_string_length));
-  char* data = (char*)(long) str + off_string_data;
-  long int h = len;
-  char* last = data + len * string_char_size;
+  int* data = (int*)(str + off_string_data);
+  int h = len;
+  int* last = data + len;
+
+  /* one-at-a-time */
   while(data < last){
-    char c = *data;
+    int c = (*data >> 8);
     h = h + c;
     h = h + (h << 10);
     h = h ^ (h >> 6);
@@ -184,11 +188,25 @@ ikrt_unintern_gensym(ikptr sym, ikpcb* pcb){
   return false_object;
 }
 
+ikptr
+ikrt_get_symbol_table(ikpcb* pcb){
+  ikptr st = pcb->symbol_table;
+  pcb->symbol_table = false_object;
+  if(st == false_object) {
+    fprintf(stderr, "bug in ikarus, attempt to access dead symbol table\n");
+    exit(-1);
+  }
+  return st;
+}
 
 
 ikptr 
 ikrt_string_to_symbol(ikptr str, ikpcb* pcb){
   ikptr st = pcb->symbol_table;
+  if(st == false_object) {
+    fprintf(stderr, "bug in ikarus, attempt to access dead symbol table\n");
+    exit(-1);
+  }
   if(st == 0){
     st = make_symbol_table(pcb);
     pcb->symbol_table = st;

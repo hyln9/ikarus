@@ -75,6 +75,7 @@
     "ikarus.numerics.ss"
     "ikarus.conditions.ss"
     "ikarus.guardians.ss"
+    "ikarus.symbol-table.ss"
     "ikarus.codecs.ss"
     "ikarus.bytevectors.ss"
     "ikarus.posix.ss"
@@ -1110,6 +1111,7 @@
     [get-char                                    i r ip]
     [get-datum                                   i r ip]
     [get-line                                    i r ip]
+    [read-line                                   i]
     [get-string-all                              i r ip]
     [get-string-n                                i r ip]
     [get-string-n!                               i r ip]

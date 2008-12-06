@@ -32,7 +32,7 @@
     close-port port-closed? close-input-port close-output-port
     port-eof?
     get-char lookahead-char read-char peek-char
-    get-string-n get-string-n! get-string-all get-line
+    get-string-n get-string-n! get-string-all get-line read-line
     get-u8 lookahead-u8 
     get-bytevector-n get-bytevector-n!
     get-bytevector-some get-bytevector-all 
@@ -92,7 +92,7 @@
       close-port port-closed? close-input-port close-output-port
       port-eof?
       get-char lookahead-char read-char peek-char
-      get-string-n get-string-n! get-string-all get-line
+      get-string-n get-string-n! get-string-all get-line read-line
       get-u8 lookahead-u8 
       get-bytevector-n get-bytevector-n!
       get-bytevector-some get-bytevector-all 
@@ -1918,7 +1918,7 @@
         [($fx= c 0) 0]
         [else (die 'get-string-n! "count is negative" c)])))
 
-  (define (get-line p)
+  (define ($get-line p who)
     (import UNSAFE)
     (define (get-it p)
       (let f ([p p] [n 0] [ac '()])
@@ -1939,8 +1939,14 @@
     (if (input-port? p)
         (if (textual-port? p)
             (get-it p)
-            (die 'get-line "not a textual port" p))
-        (die 'get-line "not an input port" p)))
+            (die who "not a textual port" p))
+        (die who "not an input port" p)))
+  (define (get-line p)
+    ($get-line p 'get-line))
+  (define read-line
+    (case-lambda
+      [() ($get-line (current-input-port) 'read-line)]
+      [(p) ($get-line p 'read-line)]))
 
 
   (define (get-string-all p)
