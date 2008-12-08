@@ -17,6 +17,7 @@
 
 
 
+#define _ISOC99_SOURCE
 #include "ikarus-data.h"
 #include <stdlib.h>
 #include <string.h>
