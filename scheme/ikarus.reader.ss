@@ -440,19 +440,19 @@
       (cond
         [(eof-object? c) (die/p p 'tokenize "invalid # near end of file")]
         [(memq c '(#\t #\T)) 
-         (let ([c (peek-char p)])
+         (let ([c1 (peek-char p)])
            (cond
-             [(eof-object? c) '(datum . #t)]
-             [(delimiter? c)  '(datum . #t)]
+             [(eof-object? c1) '(datum . #t)]
+             [(delimiter? c1)  '(datum . #t)]
              [else (die/p p 'tokenize 
-                     (format "invalid syntax near #~a" c))]))]
+                     (format "invalid syntax near #~a~a" c c1))]))]
         [(memq c '(#\f #\F)) 
-         (let ([c (peek-char p)])
+         (let ([c1 (peek-char p)])
            (cond
-             [(eof-object? c) '(datum . #f)]
-             [(delimiter? c)  '(datum . #f)]
+             [(eof-object? c1) '(datum . #f)]
+             [(delimiter? c1)  '(datum . #f)]
              [else (die/p p 'tokenize 
-                     (format "invalid syntax near #~a" c))]))]
+                     (format "invalid syntax near #~a~a" c c1))]))]
         [($char= #\\ c) (tokenize-char p)]
         [($char= #\( c) 'vparen]
         [($char= #\' c) '(macro . syntax)]
