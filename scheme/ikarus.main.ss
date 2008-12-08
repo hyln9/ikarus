@@ -58,7 +58,7 @@
     (library-path
       (cons "."
         (append 
-          (split (getenv "IKARUS_LIBRARY_PATH"))
+          (split (or (getenv "IKARUS_LIBRARY_PATH") ""))
           (list ikarus-lib-dir))))
     (let ([prefix
            (lambda (ext ls)
