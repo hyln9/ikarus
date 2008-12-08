@@ -62,60 +62,57 @@ description:
     (reset-input-port! (console-input-port))
     (k))
   
-  (define wait
-    (lambda (eval-proc escape-k)
-      (call/cc
-        (lambda (k)
-          (display-prompt 0)
-          (let ([x (with-exception-handler
-                     (lambda (ex)
-                       (cond 
-                         [(lexical-violation? ex)
-                          (print-ex ex)
-                          (reset k)]
-                         [(interrupted-condition? ex)
-                          (flush-output-port (console-output-port))
-                          (newline (console-output-port))
-                          (reset k)]
-                         [else (raise-continuable ex)]))
-                     (lambda ()
-                       (read (console-input-port))))])
-            (cond
-              [(eof-object? x) 
-               (newline (console-output-port))
-               (escape-k (void))]
-              [else
-               (call-with-values
-                 (lambda () 
+  (define wait1
+    (lambda (eval-proc k escape-k)
+      (display-prompt 0)
+      (let ([x (with-exception-handler
+                 (lambda (ex)
+                   (cond 
+                     [(lexical-violation? ex)
+                      (print-ex ex)
+                      (reset k)]
+                     [(interrupted-condition? ex)
+                      (flush-output-port (console-output-port))
+                      (newline (console-output-port))
+                      (reset k)]
+                     [else (raise-continuable ex)]))
+                 (lambda ()
+                   (read (console-input-port))))])
+        (cond
+          [(eof-object? x) 
+           (newline (console-output-port))
+           (escape-k (void))]
+          [else
+           (call-with-values
+             (lambda () 
+               (with-exception-handler
+                 (lambda (ex)
+                   (if (non-continuable-violation? ex)
+                       (reset k)
+                       (raise-continuable ex)))
+                 (lambda ()
                    (with-exception-handler
                      (lambda (ex)
-                       (if (non-continuable-violation? ex)
-                           (reset k)
-                           (raise-continuable ex)))
+                       (print-ex ex)
+                       (when (serious-condition? ex)
+                         (reset k)))
                      (lambda ()
-                       (with-exception-handler
-                         (lambda (ex)
-                           (print-ex ex)
-                           (when (serious-condition? ex)
-                             (reset k)))
-                         (lambda ()
-                           (eval-proc x))))))
-                 (lambda v*
-                   (unless (andmap (lambda (v) (eq? v (void))) v*)
-                     (with-exception-handler
-                       (lambda (ex)
-                         (cond 
-                           [(interrupted-condition? ex)
-                            (flush-output-port (console-output-port))
-                            (newline (console-output-port))
-                            (reset k)]
-                           [else (raise-continuable ex)]))
-                       (lambda ()
-                         (for-each
-                           (lambda (v)
-                             (pretty-print v (console-output-port)))
-                           v*))))))]))))
-      (wait eval-proc escape-k)))
+                       (eval-proc x))))))
+             (lambda v*
+               (unless (andmap (lambda (v) (eq? v (void))) v*)
+                 (with-exception-handler
+                   (lambda (ex)
+                     (cond 
+                       [(interrupted-condition? ex)
+                        (flush-output-port (console-output-port))
+                        (newline (console-output-port))
+                        (reset k)]
+                       [else (raise-continuable ex)]))
+                   (lambda ()
+                     (for-each
+                       (lambda (v)
+                         (pretty-print v (console-output-port)))
+                       v*))))))]))))
 
   (define do-new-cafe
     (lambda (eval-proc)
@@ -124,7 +121,18 @@ description:
         (lambda ()
           (call/cc 
             (lambda (k)
-              (wait eval-proc k))))
+              (let loop ()
+                (call/cc
+                  (lambda (k1)
+                    (with-exception-handler 
+                      (lambda (ex)
+                        (with-exception-handler k1
+                          (lambda () 
+                            (flush-output-port (console-output-port))
+                            (newline (console-output-port))
+                            (reset k1))))
+                      (lambda () (wait1 eval-proc k1 k)))))
+                (loop)))))
         (lambda () (set! eval-depth (fxsub1 eval-depth))))))
 
   (define default-cafe-eval
