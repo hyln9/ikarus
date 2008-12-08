@@ -587,7 +587,7 @@ is_live(ikptr x, gc_t* gc){
 
 static inline int 
 next_gen(int i){
-  return ((i == generation_count) ? generation_count : (i+1));
+  return ((i == (generation_count-1)) ? i : (i+1));
 }
 
  
