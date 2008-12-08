@@ -72,20 +72,6 @@ extern int hash_table_count;
 #define weak_pairs_mt   (weak_pairs_type | scannable_tag   | dealloc_tag_un)
 
 
-static int 
-inthash(int key) {
-  key += ~(key << 15);
-  key ^=  (key >> 10);
-  key +=  (key << 3);
-  key ^=  (key >> 6);
-  key += ~(key << 11);
-  key ^=  (key >> 16);
-  return key;
-  return inthash(key);
-}
-
-
-
 #define pagesize 4096
 #define generation_count 5  /* generations 0 (nursery), 1, 2, 3, 4 */
 
