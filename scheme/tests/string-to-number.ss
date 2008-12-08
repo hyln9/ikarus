@@ -244,6 +244,9 @@
     (test "-0.i" (make-rectangular 0.0 -0.0))
     (test "#d#e-0.0f-0-.0s-0i" 0)
 
+    (test "+.234e4i" (make-rectangular 0 0.234e4))
+    (test "+.234e-5i" (make-rectangular 0 0.234e-5))
+    (test "+.234i" (make-rectangular 0 0.234))
     )
 
   )

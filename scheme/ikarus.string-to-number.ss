@@ -170,7 +170,11 @@
        (let ([mag (do-dec-sn/ex sn ex (* ac (expt 10 (+ exp1 (* exp2 exp-sign)))))])
          (next polar r mag ex))]
       [(digit r) => d
-       (next exponent+digit r ex sn ac exp1 (+ (* exp2 r) d) exp-sign)])
+       (next exponent+digit r ex sn ac exp1 (+ (* exp2 r) d) exp-sign)]
+      [(#\i) 
+       (let ([n (do-dec-sn/ex sn ex 
+                  (* ac (expt 10 (+ exp1 (* exp2 exp-sign)))))])
+         (next im:done (make-rectangular 0 n)))])
 
     (polar (r mag ex)
       [(digit r) => d 
