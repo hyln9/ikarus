@@ -36,9 +36,8 @@
     get-u8 lookahead-u8 
     get-bytevector-n get-bytevector-n!
     get-bytevector-some get-bytevector-all 
-    port-has-port-position? 
-    port-position
-    ;port-has-set-port-position!? set-port-position!
+    port-position port-has-port-position? 
+    set-port-position! port-has-set-port-position!? 
     call-with-port
     flush-output-port
     put-u8 put-bytevector
@@ -96,9 +95,8 @@
       get-u8 lookahead-u8 
       get-bytevector-n get-bytevector-n!
       get-bytevector-some get-bytevector-all 
-      port-has-port-position? 
-      port-position
-      ;port-has-set-port-position!? set-port-position!
+      port-position port-has-port-position? 
+      set-port-position! port-has-set-port-position!? 
       call-with-port
       flush-output-port
       put-u8 put-bytevector
@@ -281,11 +279,39 @@
              (die who "port does not support port-position operation" p)]))
         (die who "not a port" p)))
 
+
+  (define (set-port-position! p pos)
+    (define who 'set-port-position!)
+    (define (set-input-port-position! p pos) (error who "not yet"))
+    (define (set-output-port-position! p pos)
+      (let ([setpos! ($port-set-position! p)])
+        (unless setpos! (die who "port does not support port position" p))
+        (flush-output-port p)
+        (setpos! pos) 
+        ($set-port-index! p 0)
+        ($set-port-size! p 0)
+        (let ([pos-vec ($port-position p)])
+          (vector-set! pos-vec 0 pos))))
+    (unless (and (or (fixnum? pos) (bignum? pos)) (>= pos 0))
+      (die who "position must be a nonnegative exact integer" pos))
+    (cond
+      [(output-port? p) (set-output-port-position! p pos)]
+      [(input-port? p) (set-input-port-position! p pos)]
+      [else (die who "not a port" p)]))
+
+
   (define (port-has-port-position? p)
     (define who 'port-has-port-position?)
     (if (port? p)
         (and ($port-get-position p) #t)
         (die who "not a port" p)))
+
+  (define (port-has-set-port-position!? p)
+    (define who 'port-has-set-port-position!?)
+    (if (port? p)
+        (and ($port-set-position! p) #t)
+        (die who "not a port" p)))
+
    
   (define guarded-port
     (let ([G (make-guardian)])
@@ -1463,7 +1489,11 @@
                                     (make-i/o-write-error))])))])
                   refill)
                 #t ;;; get-position
-                #f ;;; set-position!
+                (lambda (pos) ;;; set-position!
+                  (let ([err (foreign-call "ikrt_set_position" fd pos)])
+                    (when err
+                      (io-error 'set-position! id err 
+                         (make-i/o-invalid-position-error pos)))))
                 (cond
                   [(procedure? close) close]
                   [(eqv? close #t) (file-close-proc id fd)]

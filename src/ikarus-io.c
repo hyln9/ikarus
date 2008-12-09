@@ -42,6 +42,18 @@ ikrt_close_fd(ikptr fd /*, ikpcb* pcb */){
 }
 
 ikptr
+ikrt_set_position(ikptr fd, ikptr pos /*, ikpcb* pcb */){
+  off_t offset = extract_num_longlong(pos);
+  off_t err = lseek(unfix(fd), offset, SEEK_SET);
+  if(err == -1){
+    return ik_errno_to_code();
+  } else {
+    return false_object;;
+  }
+}
+
+
+ikptr
 ikrt_open_input_fd(ikptr fn /*, ikpcb* pcb */){
   int fh = open((char*)(long)(fn+off_bytevector_data), O_RDONLY, 0);
   if(fh >= 0){

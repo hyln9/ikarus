@@ -213,6 +213,7 @@ ikptr normalize_bignum(long int limbs, int sign, ikptr r);
 ikptr s_to_number(signed long x, ikpcb* pcb);
 ikptr d_to_number(double x, ikpcb* pcb);
 ikptr make_pointer(long x, ikpcb* pcb);
+long long extract_num_longlong(ikptr x);
 
 #define IK_HEAP_EXT_SIZE  (32 * 4096)
 #define IK_HEAPSIZE       (1024 * ((wordsize==4)?1:2) * 4096) /* 4/8 MB */

@@ -6,10 +6,7 @@
     make-custom-binary-input/output-port
     make-custom-textual-input/output-port
     open-file-input/output-port output-port-buffer-mode
-    port-has-set-port-position!?
-    set-port-position!  
-    equal-hash
-    )
+    equal-hash)
 
   (import (except (ikarus) 
     bitwise-reverse-bit-field
@@ -17,10 +14,7 @@
     make-custom-binary-input/output-port
     make-custom-textual-input/output-port
     open-file-input/output-port output-port-buffer-mode
-    port-has-set-port-position!?
-    set-port-position! 
-    equal-hash
-    ))
+    equal-hash))
   
   (define-syntax not-yet
     (syntax-rules ()
@@ -55,6 +49,6 @@
     make-custom-textual-input/output-port
     open-file-input/output-port
     output-port-buffer-mode
-    port-has-set-port-position!? set-port-position!  ))
+    ))
 
 
