@@ -286,13 +286,20 @@
     (define who 'set-port-position!)
     (define (set-position! p pos flush?)
       (let ([setpos! ($port-set-position! p)])
-        (unless setpos! (die who "port does not support port position" p))
-        (when flush? (flush-output-port p))
-        (setpos! pos) 
-        ($set-port-index! p 0)
-        ($set-port-size! p 0)
-        (let ([pos-vec ($port-position p)])
-          (vector-set! pos-vec 0 pos))))
+        (cond
+          [(procedure? setpos!)
+           (when flush? (flush-output-port p))
+           (setpos! pos)
+           ($set-port-index! p 0)
+           ($set-port-size! p 0)
+           (let ([pos-vec ($port-position p)])
+             (vector-set! pos-vec 0 pos))]
+          [(eqv? setpos! #t)
+           (if (<= pos ($port-size p))
+               ($set-port-index! p pos)
+               (die who "position out of range" pos))]
+          [else
+           (die who "port does not support port position" p)])))
     (unless (and (or (fixnum? pos) (bignum? pos)) (>= pos 0))
       (die who "position must be a nonnegative exact integer" pos))
     (cond
@@ -474,7 +481,7 @@
           (lambda (bv i c) 0) ;;; read!
           #f ;;; write!
           #t ;;; get-position
-          #f ;;; set-position!
+          #t ;;; set-position!
           #f ;;; close
           #f
           (vector 0))]))
@@ -644,7 +651,7 @@
        (lambda (str i c) 0) ;;; read!
        #f ;;; write!
        #t ;;; get-position
-       #f ;;; set-position!
+       #t ;;; set-position!
        #f ;;; close
        #f ;;; cookie
        (vector 0)))

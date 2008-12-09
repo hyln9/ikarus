@@ -47,7 +47,27 @@
       (close-input-port p))
     (delete-file fname))
 
+  (define (test-fixed-input-ports)
+    (assert (eof-object? 
+              (let ([p (open-string-input-port "Hello")])
+                (set-port-position! p 5) 
+                (get-char p))))
+    (assert (char=? #\o 
+              (let ([p (open-string-input-port "Hello")])
+                (set-port-position! p 4) 
+                (get-char p))))
+    (assert (eof-object? 
+               (let ([p (open-bytevector-input-port #vu8(1 2 3 4 5))])
+                 (set-port-position! p 5)
+                 (get-u8 p))))
+    (assert (= 5
+               (let ([p (open-bytevector-input-port #vu8(1 2 3 4 5))])
+                 (set-port-position! p 4)
+                 (get-u8 p)))))
+
+
   (define (run-tests)
     (test-setting-position-for-binary-output-files)
-    (test-setting-position-for-binary-input-files)))
+    (test-setting-position-for-binary-input-files)
+    (test-fixed-input-ports)))
 
