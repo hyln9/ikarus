@@ -286,7 +286,7 @@
     (if (port? p)
         (and ($port-get-position p) #t)
         (die who "not a port" p)))
-             
+   
   (define guarded-port
     (let ([G (make-guardian)])
       (define (clean-up)
@@ -1061,6 +1061,8 @@
             (die who "invalid return value from read!" n))
           (unless (<= 0 n (string-length str))
             (die who "return value from read! is out of range" n))
+          (let ([idx ($port-index p)] [pos-vec ($port-position p)])
+            (vector-set! pos-vec 0 (+ idx (vector-ref pos-vec 0))))
           ($set-port-index! p 0) 
           ($set-port-size! p n)
           (cond
@@ -1113,6 +1115,8 @@
             (die who "invalid return value from read!" n))
           (unless (<= 0 n (string-length str))
             (die who "return value from read! is out of range" n))
+          (let ([idx ($port-index p)] [pos-vec ($port-position p)])
+            (vector-set! pos-vec 0 (+ idx (vector-ref pos-vec 0))))
           ($set-port-size! p n)
           (cond
             [(fx= n 0)
