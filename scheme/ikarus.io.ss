@@ -282,11 +282,10 @@
 
   (define (set-port-position! p pos)
     (define who 'set-port-position!)
-    (define (set-input-port-position! p pos) (error who "not yet"))
-    (define (set-output-port-position! p pos)
+    (define (set-position! p pos flush?)
       (let ([setpos! ($port-set-position! p)])
         (unless setpos! (die who "port does not support port position" p))
-        (flush-output-port p)
+        (when flush? (flush-output-port p))
         (setpos! pos) 
         ($set-port-index! p 0)
         ($set-port-size! p 0)
@@ -295,8 +294,8 @@
     (unless (and (or (fixnum? pos) (bignum? pos)) (>= pos 0))
       (die who "position must be a nonnegative exact integer" pos))
     (cond
-      [(output-port? p) (set-output-port-position! p pos)]
-      [(input-port? p) (set-input-port-position! p pos)]
+      [(output-port? p) (set-position! p pos #t)]
+      [(input-port? p)  (set-position! p pos #f)]
       [else (die who "not a port" p)]))
 
 
@@ -1421,6 +1420,13 @@
               "buffer size should be a positive fixnum"
               x)))))
 
+  (define (make-file-set-position-handler fd id)
+    (lambda (pos) ;;; set-position!
+      (let ([err (foreign-call "ikrt_set_position" fd pos)])
+        (when err
+          (io-error 'set-position! id err
+             (make-i/o-invalid-position-error pos))))))
+
   (define (fh->input-port fd id size transcoder close who)
     (letrec ([port
               ($make-port 
@@ -1450,7 +1456,7 @@
                   refill)
                 #f ;;; write!
                 #t ;;; get-position
-                #f ;;; set-position!
+                (make-file-set-position-handler fd id)
                 (cond
                   [(procedure? close) close]
                   [(eqv? close #t) (file-close-proc id fd)]
@@ -1458,6 +1464,7 @@
                 fd
                 (vector 0))])
     (guarded-port port)))
+
 
   (define (fh->output-port fd id size transcoder close who)
     (letrec ([port
@@ -1489,11 +1496,7 @@
                                     (make-i/o-write-error))])))])
                   refill)
                 #t ;;; get-position
-                (lambda (pos) ;;; set-position!
-                  (let ([err (foreign-call "ikrt_set_position" fd pos)])
-                    (when err
-                      (io-error 'set-position! id err 
-                         (make-i/o-invalid-position-error pos)))))
+                (make-file-set-position-handler fd id)
                 (cond
                   [(procedure? close) close]
                   [(eqv? close #t) (file-close-proc id fd)]
