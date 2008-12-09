@@ -39,7 +39,7 @@
     port-position port-has-port-position? 
     set-port-position! port-has-set-port-position!? 
     call-with-port
-    flush-output-port
+    flush-output-port 
     put-u8 put-bytevector
     put-char write-char
     put-string
@@ -58,6 +58,7 @@
     console-input-port
     newline
     port-mode set-port-mode!
+    output-port-buffer-mode
     reset-input-port!
     reset-output-port!
     port-id
@@ -117,6 +118,7 @@
       console-error-port
       newline
       port-mode set-port-mode!
+      output-port-buffer-mode
       reset-input-port!
       reset-output-port!
       port-id
@@ -1586,6 +1588,16 @@
          (fh->output-port
            (open-output-file-handle filename file-options who)
            filename buffer-size transcoder #t who))]))
+
+  (define (output-port-buffer-mode p)
+    (unless (output-port? p)
+      (die 'output-port-buffer-mode "not an output port" p))
+    (let ([buff ($port-buffer p)])
+      (if (if (string? buff) 
+              (fx= 1 (string-length buff))
+              (fx= 1 (bytevector-length buff)))
+          'none
+          'block)))
 
   (define (open-output-file filename)
     (unless (string? filename)

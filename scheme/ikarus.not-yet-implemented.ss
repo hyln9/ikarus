@@ -5,7 +5,7 @@
     bitwise-rotate-bit-field fxreverse-bit-field
     make-custom-binary-input/output-port
     make-custom-textual-input/output-port
-    open-file-input/output-port output-port-buffer-mode
+    open-file-input/output-port 
     equal-hash)
 
   (import (except (ikarus) 
@@ -13,7 +13,7 @@
     bitwise-rotate-bit-field fxreverse-bit-field
     make-custom-binary-input/output-port
     make-custom-textual-input/output-port
-    open-file-input/output-port output-port-buffer-mode
+    open-file-input/output-port 
     equal-hash))
   
   (define-syntax not-yet
@@ -29,11 +29,11 @@
              (condition 
                (make-error)
                (make-who-condition 'ikarus)
-               (make-message-condition "primitive not supported yet")
+               (make-message-condition "primitive not supported")
                (make-message-condition
-                 "please file a bug report to help us prioritize our goals")
+                 "Please visit the Ikarus FAQs page for more information")
                (make-url-condition 
-                 "https://bugs.launchpad.net/ikarus/+filebug")
+                 "https://answers.launchpad.net/ikarus/+faqs")
                (make-irritants-condition (list op)))))
          (define (x* . args) (bug 'x*))
          ...)]))
@@ -48,7 +48,6 @@
     make-custom-binary-input/output-port
     make-custom-textual-input/output-port
     open-file-input/output-port
-    output-port-buffer-mode
     ))
 
 
