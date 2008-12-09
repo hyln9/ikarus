@@ -12,7 +12,9 @@
       (for-each
         (lambda (x)
           (set-port-position! p (car x))
-          (put-u8 p (cadr x)))
+          (assert (= (port-position p) (car x)))
+          (put-u8 p (cadr x))
+          (assert (= (port-position p) (add1 (car x)))))
         pos-list)
       (close-output-port p)))
 
@@ -25,8 +27,7 @@
   (define (test-setting-position-for-binary-output-files)
     (write-bytes)
     (let ([bv (get-bytes)])
-      (assert (= (bytevector-length bv)
-                 (add1 (apply max (map car pos-list)))))
+      (assert (= (bytevector-length bv) (add1 (apply max (map car pos-list)))))
       (for-each 
         (lambda (x)
           (assert (= (bytevector-u8-ref bv (car x)) (cadr x))))
@@ -38,7 +39,9 @@
     (let ([p (open-file-input-port fname)])
       (define (check-pos x)
         (set-port-position! p (car x))
-        (assert (= (get-u8 p) (cadr x))))
+        (assert (= (port-position p) (car x)))
+        (assert (= (get-u8 p) (cadr x)))
+        (assert (= (port-position p) (add1 (car x)))))
       (for-each check-pos pos-list)
       (for-each check-pos (reverse pos-list))
       (close-input-port p))
