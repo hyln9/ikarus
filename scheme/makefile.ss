@@ -524,6 +524,7 @@
     [$set-symbol-unique-string!                  $symbols]
     [$set-symbol-plist!                          $symbols]
     [$unintern-gensym                            $symbols]
+    [$symbol-table-size                          $symbols]
     [$init-symbol-value!                         ]
     [$unbound-object?                            $symbols]
     ;;;

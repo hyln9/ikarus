@@ -1,9 +1,9 @@
 
 (library (ikarus.symbol-table)
-  (export string->symbol initialize-symbol-table!)
+  (export string->symbol initialize-symbol-table! $symbol-table-size)
   (import 
     (except (ikarus) string->symbol)
-    (ikarus system $symbols))
+    (except (ikarus system $symbols) $symbol-table-size))
 
   (define-struct symbol-table (length mask vec guardian))
   
@@ -91,8 +91,10 @@
         (chain-lookup str idx st (vector-ref v idx)))))
   
   
-  (module (string->symbol initialize-symbol-table!)
+  (module (string->symbol initialize-symbol-table! $symbol-table-size)
     (define st (make-symbol-table 0 3 (make-vector 4 '()) (make-guardian)))
+    (define ($symbol-table-size)
+      (symbol-table-length st))
     (define (string->symbol x)
       (if (string? x)
           (lookup x (string-hash x) st)
