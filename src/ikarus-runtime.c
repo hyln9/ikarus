@@ -81,7 +81,7 @@ extend_table_maybe(ikptr p, unsigned long int size, ikpcb* pcb){
     pcb->segment_vector = (unsigned int*)(long)(s - new_lo * pagesize);
     pcb->memory_base = (new_lo * segment_size);
   } 
-  else if (q > pcb->memory_end){
+  else if (q >= pcb->memory_end){
     unsigned long int lo = segment_index(pcb->memory_base);
     unsigned long int old_hi = segment_index(pcb->memory_end);
     unsigned long int new_hi = segment_index(q+segment_size-1);
