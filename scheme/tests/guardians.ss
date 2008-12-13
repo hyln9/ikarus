@@ -25,6 +25,7 @@
         (cond
           [(g) =>
            (lambda (p)
+             (printf " [~s/~s]" i n)
              (assert (eq? (cdr p) ls))
              (set! ls (cdr ls))
              (f (+ i 1)))]
