@@ -58,8 +58,8 @@ scheme_to_ffi_type_cast(ikptr nptr){
       case  5: return &ffi_type_sint16;
       case  6: return &ffi_type_uint32;
       case  7: return &ffi_type_sint32;
-      case  8: return &ffi_type_uint64;
-      case  9: return &ffi_type_sint64;
+      case  8: return (sizeof(long)==4)?&ffi_type_uint32:&ffi_type_uint64;
+      case  9: return (sizeof(long)==4)?&ffi_type_sint32:&ffi_type_sint64;
       case 10: return &ffi_type_float;
       case 11: return &ffi_type_double;
       case 12: return &ffi_type_pointer;
