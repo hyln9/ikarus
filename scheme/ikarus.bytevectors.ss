@@ -735,6 +735,9 @@
 
   (define (bytevector-uint-set! bv i0 n endianness size)
     (define who 'bytevector-uint-set!)
+    (bytevector-uint-set!/who bv i0 n endianness size who))
+
+  (define (bytevector-uint-set!/who bv i0 n endianness size who)
     (unless (bytevector? bv)
       (die who "not a bytevector" bv))
     (unless (or (fixnum? n) (bignum? n))
@@ -752,7 +755,9 @@
         (die who "invalid size" size)))
     (let ([nsize (bitwise-length n)])
       (when (< (* size 8) nsize) 
-        (die who "number does not fit" n)))
+        (die who
+          (format "number does not fit in ~a byte~a" size (if (= size 1) "" "s"))
+          n)))
     (case endianness
       [(little) 
        (let f ([bv bv] [i0 i0] [i1 (fx+ i0 size)] [n n])
@@ -770,6 +775,9 @@
 
   (define (bytevector-sint-set! bv i0 n endianness size)
     (define who 'bytevector-sint-set!)
+    (bytevector-sint-set!/who bv i0 n endianness size who)) 
+
+  (define (bytevector-sint-set!/who bv i0 n endianness size who)
     (unless (bytevector? bv)
       (die who "not a bytevector" bv))
     (unless (or (fixnum? n) (bignum? n))
@@ -811,13 +819,13 @@
                        (let ([bv (race ($cdr h) ($cdr t) ls 
                                        ($fx+ idx ($fx+ size size))
                                        endianness size)])
-                         (bv-set! bv idx a endianness size)
-                         (bv-set! bv ($fx+ idx size) ($car h) endianness size)
+                         (bv-set! bv idx a endianness size who)
+                         (bv-set! bv ($fx+ idx size) ($car h) endianness size who)
                          bv)
                        (die who "circular list" ls))
                    (if (null? h)
                        (let ([bv (make-bytevector ($fx+ idx size))])
-                         (bv-set! bv idx a endianness size)
+                         (bv-set! bv idx a endianness size who)
                          bv)
                        (die who "not a proper list" ls))))
             (if (null? h)
@@ -827,10 +835,10 @@
         (race ls ls ls 0 endianness size)))
     (define uint-list->bytevector 
       (make-xint-list->bytevector 
-        'uint-list->bytevector bytevector-uint-set!))
+        'uint-list->bytevector bytevector-uint-set!/who))
     (define sint-list->bytevector 
       (make-xint-list->bytevector 
-        'sint-list->bytevector bytevector-sint-set!)))
+        'sint-list->bytevector bytevector-sint-set!/who)))
 
   (define (bytevector-ieee-double-native-ref bv i) 
     (if (bytevector? bv) 
