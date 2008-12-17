@@ -2233,8 +2233,7 @@
                  [(fx>= room c)
                   ;; hurray
                   (copy! bv ($port-buffer p) i idx c)
-                  (let ([idx (fx+ idx c)])
-                    ($set-port-index! p (fx+ idx c)))]
+                  ($set-port-index! p (fx+ idx c))]
                  [(fx> room 0)
                   ($set-port-index! p (fx+ idx room))
                   (copy! bv ($port-buffer p) i idx room)

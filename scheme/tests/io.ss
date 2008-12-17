@@ -683,6 +683,30 @@
     (check (make-custom-textual-input-port "foo" (lambda a 0) #f #f #f))
     (check (make-custom-textual-output-port "foo" (lambda a 0) #f #f #f)))
 
+
+  (define (test-put-bytevector)
+    (call-with-values open-bytevector-output-port 
+      (lambda (p e)
+         (do ((i 0 (+ i 1))) ((= i 86))
+           (put-bytevector p '#vu8(0))
+           (put-u8 p 0))
+         (assert (equal? (e) (make-bytevector (* 86 2) 0)))))
+    
+    (call-with-values open-bytevector-output-port 
+      (lambda (p e)
+         (do ((i 0 (+ i 1))) ((= i 86))
+           (put-u8 p 0)
+           (put-u8 p 0))
+         (assert (equal? (e) (make-bytevector (* 86 2) 0)))))
+    
+    (call-with-values open-bytevector-output-port 
+      (lambda (p e)
+         (do ((i 0 (+ i 1))) ((= i 86))
+           (put-bytevector p '#vu8(0))
+           (put-bytevector p '#vu8(0)))
+         (assert (equal? (e) (make-bytevector (* 86 2) 0))))))
+
+
   (define (run-tests)
     (test-custom-binary-input-ports)
     (test-custom-binary-output-ports)
@@ -690,6 +714,10 @@
     (test-input-files)
     (test-partial-reads)
     (test-input-ports)
-    (test-has-port-position))
+    (test-has-port-position)
+    (test-put-bytevector))
 
 )
+
+  
+  
