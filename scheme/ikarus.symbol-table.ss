@@ -60,29 +60,32 @@
                [(eq? (car ls) x)
                 (set-cdr! prev (cdr ls))]
                [else (f ls (cdr ls))]))]))))
-  
-  (define (guardian-lookup str idx st)
+
+   (define (dead? sym)
+    (and ($unbound-object? ($symbol-value sym))
+         (null? ($symbol-plist sym))))
+
+  (define (bleed-guardian sym st)
     (let ([g (symbol-table-guardian st)])
-      (let f ()
-        (let ([a (g)])
-          (cond
-            [(not a) (intern str idx st)]
-            [(string=? str (symbol->string a))
-             (begin (g a) a)]
-            [else
+      (cond
+        [(g) => 
+         (lambda (a)
+           (let loop ([a a])
              (cond
-               [(and ($unbound-object? ($symbol-value a))
-                     (null? ($symbol-plist a)))
-                (unintern a st)]
-               [else (g a)])
-             (f)])))))
+               [(eq? a sym) (g a)]
+               [(begin
+                  (if (dead? a) (unintern a st) (g a))
+                  (g)) => loop])))]))
+    sym)
   
   (define (chain-lookup str idx st ls)
     (if (null? ls)
-        (guardian-lookup str idx st)
+        (let ([sym (intern str idx st)])
+          ;;; doesn't need eq? check there
+          (bleed-guardian sym st))
         (let ([a (car ls)])
           (if (string=? str (symbol->string a))
-              a
+              (bleed-guardian a st)
               (chain-lookup str idx st (cdr ls))))))
   
   (define (lookup str ih st)
