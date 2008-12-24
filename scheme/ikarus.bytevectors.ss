@@ -832,7 +832,9 @@
                 (make-bytevector idx)
                 (die who "not a proper list" ls))))
       (lambda (ls endianness size)
-        (race ls ls ls 0 endianness size)))
+        (if (and (fixnum? size) (fx> size 0))
+            (race ls ls ls 0 endianness size)
+            (die who "size must be a positive integer" size))))
     (define uint-list->bytevector 
       (make-xint-list->bytevector 
         'uint-list->bytevector bytevector-uint-set!/who))
