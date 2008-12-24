@@ -404,6 +404,14 @@
              (let ([x (make-rectangular real imag)])
                (when m (put-mark m x))
                x))]
+          [(#\h #\H) 
+           (let ([x (if (eqv? h #\h) (make-eq-hashtable) (make-eqv-hashtable))])
+             (when m (put-mark m x))
+             (let* ([keys (read)] [vals (read)])
+               (vector-for-each
+                 (lambda (k v) (hashtable-set! x k v))
+                 keys vals))
+             x)]
           [else
            (die who "Unexpected char as a fasl object header" h p)])))
     (read))

@@ -198,6 +198,13 @@
                (write-byte (code-ref x i) p)
                (f (fxadd1 i) n)))
            (fasl-write-object (code-reloc-vector x) p h m))]
+        [(hashtable? x)
+         (let ([v (hashtable-ref h x #f)])
+           (if (eq? eq? (hashtable-equivalence-function x))
+               (put-tag #\h p)
+               (put-tag #\H p))
+           (fasl-write-object (vector-ref v 2) p h
+             (fasl-write-object (vector-ref v 1) p h m)))]
         [(struct? x)
          (cond
            [(record-type-descriptor? x)
@@ -295,21 +302,22 @@
       (cond
         [(immediate? x) (fasl-write-immediate x p) m]
         [(hashtable-ref h x #f) =>
-         (lambda (mark)
-           (unless (fixnum? mark)
-             (die 'fasl-write "BUG: invalid mark" mark))
-           (cond
-             [(fx= mark 0) ; singly referenced
-              (do-write x p h m)]
-             [(fx> mark 0) ; marked but not written
-              (hashtable-set! h x (fx- 0 m))
-              (put-tag #\> p)
-              (write-int32 m p)
-              (do-write x p h (fxadd1 m))]
-             [else
-              (put-tag #\< p)
-              (write-int32 (fx- 0 mark) p)
-              m]))]
+         (lambda (mk)
+           (let ([mark (if (fixnum? mk) mk (vector-ref mk 0))])
+             (cond
+               [(fx= mark 0) ; singly referenced
+                (do-write x p h m)]
+               [(fx> mark 0) ; marked but not written
+                (if (fixnum? mk)
+                    (hashtable-set! h x (fx- 0 m))
+                    (vector-set! mk 0 (fx- 0 m)))
+                (put-tag #\> p)
+                (write-int32 m p)
+                (do-write x p h (fxadd1 m))]
+               [else
+                (put-tag #\< p)
+                (write-int32 (fx- 0 mark) p)
+                m])))]
         [else (die 'fasl-write "BUG: not in hash table" x)]))) 
   (define make-graph
     (lambda (x h)
@@ -317,7 +325,9 @@
         (cond
           [(hashtable-ref h x #f) =>
            (lambda (i) 
-             (hashtable-set! h x (fxadd1 i)))]
+             (if (vector? i)
+                 (vector-set! i 0 (fxadd1 (vector-ref i 0)))
+                 (hashtable-set! h x (fxadd1 i))))]
           [else
            (hashtable-set! h x 0)
            (cond
@@ -336,6 +346,13 @@
              [(code? x) 
               (make-graph ($code-annotation x) h)
               (make-graph (code-reloc-vector x) h)]
+             [(hashtable? x) 
+              (when (hashtable-hash-function x) 
+                (die 'fasl-write "not fasl-writable" x))
+              (let-values ([(keys vals) (hashtable-entries x)])
+                (make-graph keys h)
+                (make-graph vals h)
+                (hashtable-set! h x (vector 0 keys vals)))]
              [(struct? x)
               (cond
                 [(eq? x (base-rtd))
