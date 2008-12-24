@@ -37,7 +37,7 @@ void ikarus_usage(){
   arguments ... as (command-line)\n\
   \n\
   Consult the Ikarus Scheme User's Guide for more details.\n\n";
-  fprintf(stderr, helpstring);
+  fprintf(stderr, "%s", helpstring);
 }
 
 int main(int argc, char** argv){

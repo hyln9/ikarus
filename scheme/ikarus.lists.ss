@@ -505,8 +505,7 @@
           [(pair? d)
            (if ($fxzero? n)
                (die who "list was altered!")
-               (cons (f a)
-                     (map1 f ($car d) ($cdr d) ($fxsub1 n))))]
+               (cons (f a) (map1 f ($car d) ($cdr d) ($fxsub1 n))))]
           [(null? d)
            (if ($fxzero? n)
                (cons (f a) '())
@@ -534,9 +533,8 @@
                   (cons (f a1 a2) '())
                   (die who "list was altered"))]
              [else
-              (die who (if (list? d2) 
-                           "length mismatch"
-                           "not a proper list"))])]
+              (die who
+                (if (list? d2) "length mismatch" "not a proper list"))])]
           [else (die who "list was altered")])))
     (define cars
       (lambda (ls*)
@@ -560,21 +558,26 @@
                 (cons (cdr a) (cdrs (cdr ls*)))]
                [else 
                 (die 'map "length mismatch")]))])))
+    (define (err-mutated all-lists)
+      (apply die 'map "some lists were mutated during operation" all-lists))
+    (define (err-mismatch all-lists)
+      (apply die 'map "length mismatch" all-lists))
+    (define (err-invalid all-lists)
+      (apply die 'map "invalid arguments" all-lists))
     (define mapm
-      (lambda (f ls ls* n)
+      (lambda (f ls ls* n all-lists)
         (cond
           [(null? ls)
            (if (andmap null? ls*)
                (if (fxzero? n)
                    '()
-                   (die 'map "lists were mutated during operation"))
-               (die 'map "length mismatch"))]
-          [(fxzero? n)
-           (die 'map "lists were mutated during operation")]
+                   (err-mutated all-lists))
+               (err-mismatch all-lists))]
+          [(fxzero? n) (err-mutated all-lists)]
           [else
            (cons
              (apply f (car ls) (cars ls*))
-             (mapm f (cdr ls) (cdrs ls*) (fxsub1 n)))])))
+             (mapm f (cdr ls) (cdrs ls*) (fxsub1 n) all-lists))])))
     (define map
        (case-lambda
          [(f ls) 
@@ -585,7 +588,7 @@
              (let ([d ($cdr ls)])
                (map1 f ($car ls) d (len d d 0)))]
             [(null? ls) '()]
-            [else (die who "improper list")])]
+            [else (err-invalid (list ls))])]
          [(f ls ls2)
           (unless (procedure? f)
             (die who "not a procedure" f))
@@ -594,30 +597,18 @@
              (if (pair? ls2)
                  (let ([d ($cdr ls)])
                    (map2 f ($car ls) ($car ls2) d ($cdr ls2) (len d d 0)))
-                 (die who 
-                    (if (list? ls2)
-                        "length mismatch"
-                        "not a proper list")))]
-            [(null? ls)
-             (if (null? ls2)
-                 '()
-                 (die who
-                   (if (list? ls2)
-                       "length mismatch"
-                       "not a proper list")))]
-            [else (die who "not a list")])]
+                 (err-invalid (list ls ls2)))]
+            [(and (null? ls) (null? ls2)) '()]
+            [else (err-invalid (list ls ls2))])]
          [(f ls . ls*)
           (unless (procedure? f)
             (die who "not a procedure" f))
           (cond
             [(pair? ls)
              (let ([n (len ls ls 0)])
-               (mapm f ls ls* n))]
-            [(null? ls)
-             (if (andmap null? ls*)
-                 '()
-                 (die who "invalid arguments"))]
-            [else (die who "not a list" ls)])])))
+               (mapm f ls ls* n (cons ls ls*)))]
+            [(and (null? ls) (andmap null? ls*)) '()]
+            [else (err-invalid (cons ls ls*))])])))
 
   (module (for-each)
     (define who 'for-each)
