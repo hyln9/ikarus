@@ -18,7 +18,7 @@
 
   (export
     posix-fork fork waitpid system file-exists? delete-file
-    nanosleep getenv env environ file-ctime file-mtime
+    nanosleep getenv setenv unsetenv env environ file-ctime file-mtime
     current-directory file-regular? file-directory? file-readable?
     file-writable? file-executable? file-size rename-file
     file-symbolic-link? make-symbolic-link directory-list
@@ -29,7 +29,7 @@
     (rnrs bytevectors)
     (except (ikarus)
       nanosleep posix-fork fork waitpid system file-exists?
-      delete-file getenv env environ file-ctime file-mtime
+      delete-file getenv setenv unsetenv env environ file-ctime file-mtime
       current-directory file-regular? file-directory?
       file-readable? file-writable? file-executable? file-size
       rename-file file-symbolic-link? make-symbolic-link
@@ -321,6 +321,28 @@
     (if (string? key)
         ($getenv-str key)
         (die who "key is not a string" key)))
+
+  (define ($setenv key val overwrite)
+    (foreign-call "ikrt_setenv" 
+       (string->utf8 key) (string->utf8 val) overwrite))
+
+  (define setenv
+    (case-lambda
+      [(key val overwrite)
+       (define who 'setenv)
+       (if (string? key)
+           (if (string? val)
+               (unless ($setenv key val overwrite) 
+                 (error who "cannot setenv"))
+               (die who "invalid value" val))
+           (die who "invalid key" key))]
+      [(key val) (setenv key val #t)]))
+
+  (define (unsetenv key)
+    (define who 'unsetenv)
+    (if (string? key) 
+        (foreign-call "ikrt_unsetenv" (string->utf8 key))
+        (die who "invalid key" key)))
 
   (define env
     (let ()

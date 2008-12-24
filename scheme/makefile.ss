@@ -1344,6 +1344,8 @@
     [string-titlecase                            i r uc]
     [string-upcase                               i r uc]
     [getenv                                      i]
+    [setenv                                      i]
+    [unsetenv                                    i]
     [nanosleep                                   i]
     [char-ready?                                 ]
     [load                                        i]

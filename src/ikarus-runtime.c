@@ -944,10 +944,8 @@ ikrt_make_vector2(ikptr len, ikptr obj, ikpcb* pcb){
 
 ikptr 
 ikrt_setenv(ikptr key, ikptr val, ikptr overwrite){
-  fprintf(stderr, "setenv busted!\n");
-  exit(-1);
-  int err = setenv((char*)(long)(key+off_bytevector_data), 
-                   (char*)(long)(val+off_bytevector_data),
+  int err = setenv((char*)(key+off_bytevector_data), 
+                   (char*)(val+off_bytevector_data),
                    overwrite!=false_object);
   if(err){
     return false_object;
@@ -955,6 +953,13 @@ ikrt_setenv(ikptr key, ikptr val, ikptr overwrite){
     return true_object;
   }
 }
+
+ikptr 
+ikrt_unsetenv(ikptr key){
+  unsetenv((char*)(key+off_bytevector_data));
+  return void_object;
+}
+
 
 
 ikptr 
