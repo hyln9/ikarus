@@ -32,7 +32,7 @@
           interaction-environment
           ellipsis-map assertion-error 
           environment environment? environment-symbols
-          new-interaction-environment)
+          new-interaction-environment syntax-transpose)
   (import
     (except (rnrs)
       environment environment? identifier?
@@ -2991,6 +2991,44 @@
               (make-stx (stx-expr x) (append diff (stx-mark* x)) '() '()))
             id-vec))))
 
+  (define (syntax-transpose object base-id new-id)
+    (define who 'syntax-transpose)
+    (define (err msg . args) (apply assertion-violation who msg args))
+    (define (split s*)
+      (cond
+        [(eq? (car s*) 'shift) 
+         (values (list 'shift) (cdr s*))]
+        [else
+         (let-values ([(s1* s2*) (split (cdr s*))])
+           (values (cons (car s*) s1*) s2*))]))
+    (define (final s*)
+      (cond
+        [(or (null? s*) (eq? (car s*) 'shift)) '()]
+        [else (cons (car s*) (final (cdr s*)))]))
+    (define (diff m m* s* ae*)
+      (if (null? m*)
+          (err "unmatched identifiers" base-id new-id)
+          (let ([m1 (car m*)])
+            (if (eq? m m1)
+                (values '() (final s*) '())
+                (let-values ([(s1* s2*) (split s*)])
+                (let-values ([(nm* ns* nae*)
+                              (diff m (cdr m*) s2* (cdr ae*))])
+                  (values (cons m1 nm*) 
+                          (append s1* ns*)
+                          (cons (car ae*) nae*))))))))
+    (unless (id? base-id) (err "not an identifier" base-id))
+    (unless (id? new-id) (err "not an identifier" new-id))
+    (unless (free-identifier=? base-id new-id)
+      (err "not the same identifier" base-id new-id))
+    (let-values ([(m* s* ae*)
+                  (diff (car (stx-mark* base-id))
+                    (stx-mark* new-id)
+                    (stx-subst* new-id)
+                    (stx-ae* new-id))])
+      (if (and (null? m*) (null? s*))
+          object
+          (mkstx object m* s* ae*))))
 
   (define chi-internal-module
     (lambda (e r mr lex* rhs* mod** kwd*)

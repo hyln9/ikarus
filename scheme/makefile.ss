@@ -1314,6 +1314,7 @@
     [variable-transformer?                       i]
     [variable-transformer-procedure              i]
     [make-compile-time-value                     i]
+    [syntax-transpose                            i]
     [char-alphabetic?                            i r uc se]
     [char-ci<=?                                  i r uc se]
     [char-ci<?                                   i r uc se]
