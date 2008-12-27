@@ -97,6 +97,7 @@
     "psyntax.config.ss"
     "psyntax.builders.ss"
     "psyntax.expander.ss"
+    "ikarus.apropos.ss"
     "ikarus.load.ss"
     "ikarus.pretty-print.ss"
     "ikarus.cafe.ss"
@@ -416,6 +417,7 @@
     [wstatus-exit-status                         i]
     [wstatus-received-signal                     i]
     [kill                                        i]
+    [apropos                                     i]
     [installed-libraries                         i]
     [uninstall-library                           i]
     [library-path                                i]

@@ -184,7 +184,7 @@ EXTRA_DIST = ikarus.boot.4.prebuilt ikarus.boot.8.prebuilt \
   ikarus.string-to-number.ss ikarus.compiler.source-optimizer.ss \
   ikarus.compiler.tag-annotation-analysis.ss ikarus.ontology.ss \
   ikarus.reader.annotated.ss ikarus.pointers.ss ikarus.equal.ss \
-  ikarus.symbol-table.ss
+  ikarus.symbol-table.ss ikarus.apropos.ss
 
 revno = "$(shell sed 's/ .*//' ../.bzr/branch/last-revision 2>/dev/null)"
 sizeofvoidp = $(shell grep SIZEOF_VOID_P ../config.h | sed "s/.*\(.\)/\1/g")
