@@ -28,28 +28,30 @@
              [(symbol? name) (symbol->string name)]
              [else
               (die who "not a string or symbol" name)])])
-      (let ([libs (installed-libraries)]
-            [matcher 
-             (compose (match-maker name) 
-               (compose symbol->string car))])
-        (fold-right 
-          (lambda (lib rest)
-            (let ([ls (filter matcher (library-subst lib))])
-              (if (null? ls) 
-                  rest
-                  (cons (cons (library-name lib) (map car ls)) rest))))
-          '()
-          (list-sort
-            (lambda (lib1 lib2)
-              (let f ([ls1 (library-name lib1)] [ls2 (library-name lib2)])
-                (and (pair? ls2)
-                     (or (null? ls1)
-                         (let ([s1 (symbol->string (car ls1))]
-                               [s2 (symbol->string (car ls2))])
-                           (or (string<? s1 s2)
-                               (and (string=? s1 s2)
-                                    (f (cdr ls1) (cdr ls2)))))))))
-            (installed-libraries))))))
+      (define matcher 
+        (compose (match-maker name) 
+          (compose symbol->string car)))
+      (fold-right 
+        (lambda (lib rest)
+          (define (symbol<? s1 s2) 
+            (string<? (symbol->string s1) (symbol->string s2)))
+          (let ([ls (filter matcher (library-subst lib))])
+            (if (null? ls) 
+                rest
+                (let ([ls (list-sort symbol<? (map car ls))])
+                  (cons (cons (library-name lib) ls) rest)))))
+        '()
+        (list-sort
+          (lambda (lib1 lib2)
+            (let f ([ls1 (library-name lib1)] [ls2 (library-name lib2)])
+              (and (pair? ls2)
+                   (or (null? ls1)
+                       (let ([s1 (symbol->string (car ls1))]
+                             [s2 (symbol->string (car ls2))])
+                         (or (string<? s1 s2)
+                             (and (string=? s1 s2)
+                                  (f (cdr ls1) (cdr ls2)))))))))
+          (installed-libraries)))))
 
   (define (apropos name)
     (for-each 
