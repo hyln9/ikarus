@@ -31,10 +31,6 @@
       annotation-expression annotation-source annotation-stripped))
 
   (define (die/lex id pos who msg arg*)
-    (define-condition-type &lexical-position &condition
-        make-lexical-position-condition lexical-position?
-        (file-name lexical-position-filename)
-        (character lexical-position-character))
     (raise 
       (condition
         (make-lexical-violation) 
@@ -42,7 +38,7 @@
         (if (null? arg*) 
             (condition)
             (make-irritants-condition arg*))
-        (make-lexical-position-condition 
+        (make-source-position-condition 
           id pos))))
   (define (die/pos p off who msg arg*) 
     (die/lex (port-id p) 

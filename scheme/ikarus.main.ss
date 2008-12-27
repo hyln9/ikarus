@@ -73,12 +73,12 @@
 
 (library (ikarus main)
   (export)
-  (import (ikarus)
+  (import (except (ikarus) load-r6rs-script)
           (except (ikarus startup) host-info)
           (only (psyntax library-manager) current-library-expander)
           (only (ikarus.reader.annotated) read-source-file)
           (only (ikarus.symbol-table) initialize-symbol-table!)
-          (only (ikarus load) load-r6rs-top-level))
+          (only (ikarus load) load-r6rs-script))
   (initialize-symbol-table!)
   (init-library-path)
   (let-values ([(files script script-type args)
@@ -136,12 +136,12 @@
                ((current-library-expander) src))
              (read-source-file filename)))
          files)
-       (load-r6rs-top-level script 'run)
+       (load-r6rs-script script #f #t)
        (exit 0)]
       [(eq? script-type 'compile)
        (assert-null files "--compile-dependencies")
        (command-line-arguments (cons script args))
-       (load-r6rs-top-level script 'compile)
+       (load-r6rs-script script #t #f)
        (exit 0)]
       [(eq? script-type 'script) ; no greeting, no cafe
        (command-line-arguments (cons script args))

@@ -3904,17 +3904,13 @@
               (assertion-violation 'bound-identifier=? "not an identifier" y))
           (assertion-violation 'bound-identifier=? "not an identifier" x))))
   
-  (define (make-source-condition x)
-    (define-condition-type &source-information &condition
-      make-source-condition source-condition?
-      (file-name source-filename)
-      (character source-character))
+  (define (position->condition x)
     (if (pair? x)
-        (make-source-condition (car x) (cdr x))
+        (make-source-position-condition (car x) (cdr x))
         (condition)))
 
   (define (extract-position-condition x)
-    (make-source-condition (expression-position x)))
+    (position->condition (expression-position x)))
 
   (define (expression-position x)
     (and (stx? x)
@@ -3929,7 +3925,7 @@
         (make-who-condition 'assert)
         (make-message-condition "assertion failed")
         (make-irritants-condition (list expr))
-        (make-source-condition pos))))
+        (position->condition pos))))
 
   (define syntax-error
     (lambda (x . args)

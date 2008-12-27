@@ -23,7 +23,8 @@
           read-library-source-file
           library-version-mismatch-warning
           file-locator-resolution-error
-          label-binding set-label-binding! remove-location)
+          label-binding set-label-binding! remove-location
+          make-source-position-condition)
   (import 
     (only (ikarus.compiler) eval-core)
     (only (ikarus.reader.annotated) read-library-source-file)

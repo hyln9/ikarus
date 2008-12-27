@@ -218,6 +218,7 @@
     [&no-infinities            ($core-rtd . (&no-infinities-rtd &no-infinities-rcd ))]
     [&no-nans                  ($core-rtd . (&no-nans-rtd &no-nans-rcd))]
     [&interrupted              ($core-rtd . (&interrupted-rtd &interrupted-rcd))]
+    [&source                   ($core-rtd . (&source-rtd &source-rcd))]
     ))
 
 (define library-legend
@@ -569,6 +570,12 @@
     [$swap-engine-counter!                       $interrupts]
     [interrupted-condition?                      i]
     [make-interrupted-condition                  i]
+
+    [source-position-condition?                  i]
+    [make-source-position-condition              i]
+    [source-position-file-name                   i]
+    [source-position-character                   i]
+
     [$apply-nonprocedure-error-handler           ]
     [$incorrect-args-error-handler               ]
     [$multiple-values-error                      ]
@@ -1350,6 +1357,7 @@
     [nanosleep                                   i]
     [char-ready?                                 ]
     [load                                        i]
+    [load-r6rs-script                            i]
     [void                                        i $boot]
     [gensym                                      i symbols $boot]
     [symbol-value                                i symbols $boot]
@@ -1453,6 +1461,8 @@
     [&no-nans-rcd]
     [&interrupted-rtd]
     [&interrupted-rcd]
+    [&source-rtd]
+    [&source-rcd]
     [tcp-connect                      i]
     [udp-connect                      i]
     [tcp-connect-nonblocking          i]

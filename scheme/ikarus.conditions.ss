@@ -51,6 +51,8 @@
           no-infinities-violation? make-no-infinities-violation
           no-nans-violation? make-no-nans-violation
           interrupted-condition? make-interrupted-condition 
+          make-source-position-condition source-position-condition?
+          source-position-file-name source-position-character
 
           &condition-rtd &condition-rcd &message-rtd &message-rcd
           &warning-rtd &warning-rcd &serious-rtd &serious-rcd
@@ -72,6 +74,7 @@
           &i/o-encoding-rcd &no-infinities-rtd &no-infinities-rcd
           &no-nans-rtd &no-nans-rcd
           &interrupted-rtd &interrupted-rcd 
+          &source-position-rtd &source-position-rcd
           )
   (import
     (rnrs records inspection)
@@ -126,6 +129,8 @@
           no-nans-violation? make-no-nans-violation
           
           interrupted-condition? make-interrupted-condition 
+          make-source-position-condition source-position-condition?
+          source-position-file-name source-position-character
           ))
   
   (define-record-type &condition 
@@ -334,6 +339,11 @@
   ;;; ikarus-specific conditions
   (define-condition-type &interrupted &serious
     make-interrupted-condition interrupted-condition?)
+
+  (define-condition-type &source-position &condition
+    make-source-position-condition source-position-condition?
+    (file-name source-position-file-name)
+    (character source-position-character))
 
   (define print-condition 
     (let ()

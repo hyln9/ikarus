@@ -15,9 +15,9 @@
 
 
 (library (ikarus load)
-  (export load load-r6rs-top-level)
+  (export load load-r6rs-script)
   (import 
-    (except (ikarus) load)
+    (except (ikarus) load load-r6rs-script)
     (only (ikarus.compiler) compile-core-expr)
     (only (psyntax library-manager) 
       serialize-all current-precompiled-library-loader)
@@ -86,19 +86,20 @@
                (set! ls (cdr ls))
                (eval-proc a))
              (f))))]))
-  (define load-r6rs-top-level
-    (lambda (x how)
-      (let ([prog (read-script-source-file x)])
+
+  (define load-r6rs-script
+    (lambda (filename serialize? run?)
+      (unless (string? filename) 
+        (die 'load-r6rs-script "file name is not a string" filename))
+      (let ([prog (read-script-source-file filename)])
         (let ([thunk (compile-r6rs-top-level prog)])
-          (case how
-            [(run) (thunk)]
-            [(compile) 
-             (serialize-all 
-               (lambda (file-name contents)
-                 (do-serialize-library file-name contents))
-               (lambda (core-expr) 
-                 (compile-core-expr core-expr)))]
-            [else (error 'load-r6rs-top-level "invali argument" how)])))))
+          (when serialize?
+            (serialize-all
+              (lambda (file-name contents)
+                (do-serialize-library file-name contents))
+              (lambda (core-expr) 
+                (compile-core-expr core-expr))))
+          (when run? (thunk))))))
 
   (current-precompiled-library-loader load-serialized-library)
   
