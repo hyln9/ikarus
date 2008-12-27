@@ -138,7 +138,7 @@
   \noindent Ikarus Scheme\\ User's Guide\\ }
   \noindent \rule{\textwidth}{6pt}
 {\fontsize{18}{18} \fstpagefont{}
-  \hfill{} (Preliminary Document) \hfill Version~0.0.4 }
+   \mbox{} \hfill Version~0.0.4 }
 \vfill
 { \fontsize{24}{24} \fstpagefont{}
   \hfill{} Abdulaziz Ghuloum}
@@ -151,8 +151,8 @@
 \vfill{}
 %\addcontentsline{toc}{section}{Copyrights}
 \noindent
-Ikarus Scheme User's Guide\\
-Copyright \copyright{} 2007,2008,  Abdulaziz Ghuloum\\
+Ikarus Scheme User's Guide \hfill{} (Version 0.0.4)\\
+Copyright \copyright{} 2007,2008  Abdulaziz Ghuloum\\
 
 {\small
 \noindent
@@ -204,20 +204,37 @@ Revised$^\mathrm{6}$ report on the algorithmic language
 Scheme\cite{r6rs} including full \rnrs{6} library and script syntax,
 syntax-case, unicode strings, bytevectors, user-defined record
 types, exception handling, conditions, and enumerations.
+User-define \rnrs{6} libraries can be compiled in-memory on the fly
+or compiled to disk and loaded in subsequent runs.
 
+In addition to supporting \rnrs{6} (and most of the features found
+in the the previous \rnrs{n} standards), Ikarus supports powerful
+interprocess communication facilities including support for
+communication with child processes via pipes and with remote
+processes via TCP and UDP sockets.  The facility also allows for
+both synchronous and asynchronous communication so that a Scheme
+program running in Ikarus can communicate with many processes
+concurrently.
 
-The main purpose behind releasing Ikarus early is to give Scheme
-programmers the opportunity to experiment with the various new
-features that were newly introduced in \rnrs{6}.  The most important
-of such features is the ability to structure large programs into
-libraries; where each library extends the language through
-procedural and syntactic abstractions.  Many useful libraries can be
-written using the currently supported set of \rnrs{6} features
-including text processing tools, symbolic logic systems,
-interpreters and compilers, and many mathematical and scientific
-packages.  It is my hope that this release will encourage the
-Scheme community to write and to share their most useful \rnrs{6}
-libraries.
+Ikarus also supports basic foreign function interface (FFI)
+facilities.  This allows the programmer to define accessors and
+mutators for native data structures.  It also allows for Scheme
+programs to dynamically load any library found on the host machine.
+Native procedures and Scheme procedures can call to each other by
+the call-out and call-back facilities of Ikarus.
+
+%The main purpose behind releasing Ikarus early is to give Scheme
+%programmers the opportunity to experiment with the various new
+%features that were newly introduced in \rnrs{6}.  The most important
+%of such features is the ability to structure large programs into
+%libraries; where each library extends the language through
+%procedural and syntactic abstractions.  Many useful libraries can be
+%written using the currently supported set of \rnrs{6} features
+%including text processing tools, symbolic logic systems,
+%interpreters and compilers, and many mathematical and scientific
+%packages.  It is my hope that this release will encourage the
+%Scheme community to write and to share their most useful \rnrs{6}
+%libraries.
 
 
 \newpage
@@ -246,6 +263,13 @@ the runtime system to expand its memory footprint as needed.  The
 entire 32-bit virtual address space could be used and unneeded
 memory is released back to the operating system.
 
+\textbf{32-bit and 64-bit computing:} Ikarus supports both the
+Intel-x86 and the AMD-64 architectures.  64-bit computing allows the
+programmer to utilize larger address space (larger than 4GB) and
+provides a greater range for fixnums (61-bit fixnums).  Running in
+32-bit mode, however, makes more efficient utilization of resources
+due to the smaller memory footprint for most data structures.
+
 \textbf{Supports many operating systems:} Ikarus runs on the most
 popular and widely used operating systems for servers and personal
 computers.  The supported systems include Mac~OS~X,
@@ -254,6 +278,9 @@ GNU/Linux, FreeBSD, NetBSD, and Microsoft Windows.
 
 \section{System requirements}
 
+This section provides an overview of the hardware and software
+requirements needed for running Ikarus.
+
 \subsection{Hardware}
 
 Ikarus Scheme runs in 32-bit mode on the IA-32 (\emph{x86})
@@ -261,7 +288,7 @@ architecture supporting SSE2 extensions.  It also runs in 64-bit
 mode on platforms supporing the AMD-64 architecture.  This includes
 the Athlon 64, Sempron 64, and Turion 64 processors from AMD and the
 Pentium 4, Xeon, Celeron, Pentium M, Core, and Core2 processors from
-Intel.  The system does not run on Intel Pentium III or earlier
+Intel.  Ikarus does not run on Intel Pentium III or earlier
 processors.
 
 The Ikarus compiler generates SSE2 instructions to handle Scheme's
@@ -406,6 +433,20 @@ two paths in the \texttt{CFLAGS} and \texttt{LDFLAGS} arguments:
 \begin{verbatim}
   $ ./configure CFLAGS=-I/path/to/include LDFLAGS=-L/path/to/lib
 \end{verbatim}
+
+
+If you wish to enable support for accessing and calling to/from
+foreign libraries, you need to configure Ikarus with the
+\texttt{--enable-libffi} option and supply the approriate
+\texttt{CFLAGS} and \texttt{LDFLAGS} as needed.
+
+\begin{verbatim}
+  $ ./configure --enable-libffi \
+       [CFLAGS=/path/to/ffi.h] \
+       [LDFLAGS=/path/to/libffi.so|.dylib|.dll]
+\end{verbatim}
+
+
 
 \item Build the system by running:
 \begin{verbatim}
@@ -610,9 +651,10 @@ directory, Ikarus tries to find it in the Ikarus library directory.
 The Ikarus library directory is determined when Ikarus is installed
 (based on the \texttt{--prefix} argument that was passed to the
 \texttt{configure} script).  If Ikarus failes to locate the library
-file, it raises an exception and exits.  See
-Chapter~\ref{chapter:contributed} for more details about the library
-locations.
+file, it raises an exception and exits. 
+%See
+%Chapter~\ref{chapter:contributed} for more details about the library
+%locations.
 
 
 \BoxedText{Tip:}{Use simple library names for the libraries that
@@ -2170,6 +2212,64 @@ displayed.
    12
 \end{verbatim}
 
+\chapter{The \texttt{(ikarus ipc)} library}
+
+\ref{sec:environment-variables}
+
+\newpage
+
+\section{\label{sec:environment-variables}Environment variables}
+
+When the operating system starts a process, it starts the process in
+some environment that maps environment variables to values.  Typical
+keys found in the environment are \texttt{HOME} (pointing to the
+home directory of the user), \texttt{PATH} (containing a
+colon-separated list of directories to be searched when running a
+command from the shell), \texttt{SHELL}, \texttt{EDITOR}, and
+\texttt{PAGER}.  This section describes the procedures provided by
+Ikarus for manipulating this environment. 
+
+The environment procedures are placed in the \texttt{(ikarus~ipc)}
+library because they provide a (limited) way for one process to
+communicate to a subprocess, akin to parameter passing.
+
+\defun{getenv}{procedure}
+\texttt{(getenv key)}
+
+The procedure \texttt{getenv} retrieves the value associated with
+\texttt{key} (which must be a string) in the environment.  The value
+returned is a (utf8-decoded) string, or \texttt{\#f} if there is no
+mapping for \texttt{key} in the environment.
+
+
+\defun{setenv}{procedure}
+\texttt{(setenv key value)}\\
+\texttt{(setenv key value overwrite?)}
+
+The procedure \texttt{setenv} sets the mapping of \texttt{key} to
+\texttt{value} in the environment.  Both \texttt{key} and
+\texttt{value} must be strings.  If the \texttt{overwrite?} argument
+is provided and is \texttt{\#f}, \texttt{setenv} does not overwrite 
+a value associated with \texttt{key} if one already exists.  The
+procedure \texttt{setenv} may raise an exception if the operating
+system cannot allocate enough memory to hold the new mapping.
+
+\defun{unsetenv}{procedure}
+\texttt{(unsetenv key)}
+
+The procedure \texttt{unsetenv} removes \texttt{key} and its
+associated value (if one exists) from the environment.
+
+
+\BoxedText{Caveat:}{The underlying system procedure \texttt{setenv}
+may leak some memory in some operating systems when passed some
+values.  Ikarus has no way of getting around this system limitation
+and thus may leak some memory for some calls to \texttt{setenv}.
+Use sparingly.}
+
+
+\section{Subprocess communication}
+
 
 \defun{system}{procedure}
 \texttt{(system string)}
@@ -2208,6 +2308,20 @@ indefinitely if the external program does not write anything
 Communicating with an external process must therefore be done
 according to the protocol in which the external process
 communicates.
+
+\defun{process-nonblocking}{procedure}
+\texttt{(process-nonblocking program-name args ...)}
+
+The procedure \texttt{process-nonblocking} is similar to the
+\texttt{process} procedure except that the three returned ports are
+put in nonblocking mode.  Attempting to perform a read or write
+operation on a nonblocking port in which bytes are not available for
+reading or writing causes Ikarus to enqueue the port with the
+continuation in which the read/write operation occurs and attempt to
+dispatch previously enqueued ports on which some bytes are ready for
+read or write.
+
+
 
 
 \defun{waitpid}{procedure}
@@ -2273,28 +2387,63 @@ The \texttt{kill} procedure takes a \texttt{pid} and a signal name
 the signal to the given process.
 
 
-\defun{process-nonblocking}{procedure}
-\texttt{(process-nonblocking program-name args ...)}
-
-The procedure \texttt{process-nonblocking} is similar to the
-\texttt{process} procedure except that the three returned ports are
-put in nonblocking mode.  Attempting to perform a read or write
-operation on a nonblocking port in which bytes are not available for
-reading or writing causes Ikarus to enqueue the port with the
-continuation in which the read/write operation occurs and attempt to
-dispatch previously enqueued ports on which some bytes are ready for
-read or write.
 
 
-
-
-%    [kill                                        i]
  
+\section{TCP and UDP sockets}
+
+TODO
+
+\defun{tcp-connect}{procedure}
+\texttt{(tcp-connect host-name service-name)}
+
+TODO
+
+\defun{tcp-connect-nonblocking}{procedure}
+\texttt{(tcp-connect-nonblocking host-name service-name)}
+
+TODO
+
+\defun{udp-connect}{procedure}
+\texttt{(udp-connect host-name service-name)}
+
+TODO
+
+\defun{udp-connect-nonblocking}{procedure}
+\texttt{(udp-connect-nonblocking host-name service-name)}
+
+TODO
+
+
+\defun{tcp-server-socket}{procedure}
+\texttt{(tcp-server-socket port-number)}
+
+TODO
+
+\defun{tcp-server-socket-nonblocking}{procedure}
+\texttt{(tcp-server-socket-nonblocking port-number)}
+
+TODO
+
+\defun{accept-connection}{procedure}
+\texttt{(accept-connection tcp-server)}
+
+TODO
+
+\defun{accept-connection-nonblocking}{procedure}
+\texttt{(accept-connection-nonblocking tcp-server)}
+
+TODO
+
+\defun{close-tcp-server-socket}{procedure}
+\texttt{(close-tcp-server-socket tcp-server)}
+
+TODO
 
 
 
+\chapter{\label{chapter:foreign}The \texttt{(ikarus foreign)} library}
 
-\chapter{\label{chapter:foreign}The \texttt{(ikarus foreign)} Library}
 
 This chapter describes the facilities through which Ikarus
 interfaces with the host operating system and other external
@@ -3001,8 +3150,6 @@ equal-hash
 
 \item The following procedures are missing from \texttt{(rnrs io ports)}:
 \begin{Verbatim}
-port-has-port-position?             port-position
-port-has-set-port-position!?        set-port-position!
 make-custom-binary-input/output-port    
 make-custom-textual-input/output-port 
 open-file-input/output-port
