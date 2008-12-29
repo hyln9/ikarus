@@ -4,15 +4,76 @@
 ;;; TODO: long options
 ;;;       multiple options in one go, e.g., -XYZ
 ;;;       concat value with option, e.g., -Xxvalue
-;;;       usage error message
-;;;       -h --help
+;;;       usage error message [ok?]
+;;;       -h --help should not be user-defined
+;;;       check duplicate options
 
 (import (ikarus))
 
 (define (dispatch-opts arguments data* proc*) 
   (define (print-usage) 
-    (error 'usage "TODO" arguments))
-        
+    (define-record-type f (fields id char type def))
+    (define (mkf x id)
+      (make-f id (car x) (cadr x) (cddr x)))
+    (define (get type ls)
+      (let-values ([(ls _) (partition (lambda (x) (eq? (f-type x) type)) ls)])
+        ls))
+    (define (fmt-req x) 
+      (format " -~a <~a>" (f-char x) (f-id x)))
+    (define (fmt-req-no-value x)
+      (format " -~a" (f-char x)))
+    (define (fmt-z c)
+      (lambda (x)
+        (format " [-~a <~a>]~a" (f-char x) (f-id x) c)))
+    (define (fmt-<> x)
+      (format " <~a>" x))
+    (define (print-usage-line help fields field-ids args args-rest dash-rest)
+      (let ([f* (map mkf fields field-ids)])
+        (let ([opt*   (get 'optional f*)]
+              [flag*  (get 'flag f*)]
+              [req0*   (get 'required0 f*)]
+              [req1*   (get 'required1 f*)]
+              [z0*    (get 'zero-plus f*)]
+              [z1*    (get 'one-plus f*)])
+          (display 
+            (string-append
+              "\n  "
+              (car arguments)
+              (apply string-append (map fmt-req-no-value req0*))
+              (if (null? flag*) 
+                  ""
+                  (format " [-~a]" 
+                    (list->string (map f-char flag*))))
+              (apply string-append (map (fmt-z "") opt*))
+              (apply string-append (map (fmt-z "*") z0*))
+              (apply string-append (map (fmt-z "+") z1*))
+              (apply string-append (map fmt-req req1*))
+              (apply string-append (map fmt-<> args))
+              (if args-rest
+                  (string-append (fmt-<> args-rest) " ...")
+                  "")
+              "\n"))
+          (unless (string=? help "")
+             (printf "\n    ~a\n" help))
+          (let ([def* (filter f-def opt*)])
+            (unless (null? def*)
+              (printf "\n")
+              (for-each
+                (lambda (x)
+                  (printf "     -~a defaults to ~a\n" (f-char x)
+                          (f-def x)))
+                def*)
+              )))))
+    (printf "\nUsage:")
+    (for-each (lambda (x) (apply print-usage-line x)) data*)
+    (print-usage-line "Display this help message" 
+        '([#\h required0 . #f])
+        '(dummy)
+        '()
+        #f
+        #f)
+    #f)
+
   (define (option? x) 
     (and (string? x) 
          (>= (string-length x) 2)
@@ -21,16 +82,17 @@
 
   (define (fill-char-opt c ls fields k)
     ;;; field = [c required    ] 
-    ;;;       | [c flag        ]
-    ;;;       | [c zero-plus   ]
-    ;;;       | [c optional . str] 
+    ;;;       | [c flag       . default]
+    ;;;       | [c zero-plus  . list]
+    ;;;       | [c one-plus   . list]
+    ;;;       | [c optional   . str]
     (let f ([fields fields] [k k])
       (and (pair? fields) 
            (let ([field (car fields)])
              (if (char=? c (car field))
                  (let ([t (cadr field)])
                    (case t
-                     [(required optional) 
+                     [(required1 optional) 
                       (and (not (null? ls)) 
                            (let ([val (car ls)] [ls (cdr ls)])
                              (k (cons 
@@ -39,7 +101,7 @@
                                 ls)))]
                      [(flag) 
                       (k (cons (cons* c 'ok #t) (cdr fields)) ls)]
-                     [(zero-plus)
+                     [(zero-plus one-plus)
                       (and (not (null? ls))
                            (let ([val (car ls)])
                              (k (cons (cons* c 'zero-plus
@@ -91,6 +153,7 @@
                               (k (cons a a*) ls))))))))
         (and (or (null? ls) (string=? (car ls) "--"))
              (k '() ls))))
+
   (define (match-dash-rest a/f ls k)
     (if a/f
         (if (null? ls) 
@@ -103,16 +166,16 @@
     (cond
       [(null? ls) (k '())]
       [else
-       (let ([a (car ls)] [k (lambda (a)
-                               (fix-fields (cdr ls) 
-                                  (lambda (ls) 
-                                    (k (cons a ls)))))])
+       (let ([a (car ls)]
+             [k (lambda (a)
+                  (fix-fields (cdr ls) 
+                     (lambda (ls) 
+                       (k (cons a ls)))))])
          (let ([type (cadr a)] [value (cddr a)])
            (case type
              [(ok flag optional) (k value)]
              [(zero-plus) (k (reverse value))]
              [else #f])))]))
-
 
   (define (match _help fields _field-ids args args-rest dash-rest)
     (let ([prog (car arguments)])
@@ -123,10 +186,10 @@
               (match-args args ls
                 (lambda (args ls)
                   (match-args-rest args-rest ls 
-                    (lambda (args-rest ls) 
+                    (lambda (args-rest ls)
                       (match-dash-rest dash-rest ls 
                         (lambda (dash-rest) 
-                          (cons prog 
+                          (cons prog
                             (append fields
                                     args args-rest
                                     dash-rest))))))))))))))
@@ -154,12 +217,12 @@
             (err "option string must start with a dash: -"))
           (cons (string-ref str 1)
             (cond
-               [(= n 2) #'(required)]
+               [(= n 2) #'(required1)]
                [else
                 (case (string-ref str 2)
                   [(#\?) #'(flag . #f)]
                   [(#\*) #'(zero-plus . ())]
-  ;                [(#\+) #'(one-plus)]
+                  [(#\+) #'(one-plus . ())]
                   [(#\=) 
                    (cons #'optional (substring str 3 n))]
                   [else (err "invalid option")])]))))
@@ -261,6 +324,7 @@
 (test command1 ("p" "p1")            (1 "p" "p1"))
 (test command1 ("p" "p1" "p2")       (2 "p" "p1" "p2"))
 (test command1 ("p" "p1" "p2" "p3")  (3 "p" "p1" "p2" "p3"))
+(test command1 ("./prog" "p1" "p2" "p3" "p4")  #f)
 
 (define (command2 ls)
   (parse-command-line ls
@@ -274,6 +338,7 @@
 (test command2 ("p" "a" "b")         (2 "p" "a" "b" ()))
 (test command2 ("p" "a" "b" "c")     (3 "p" "a" "b" "c"))
 (test command2 ("p" "a" "b" "c" "d") (2 "p" "a" "b" ("c" "d")))
+(test command2 ("./prog" "-h") #f)
 
 (define (command3 ls)
   (parse-command-line ls
@@ -285,6 +350,8 @@
 (test command3 ("p" "-Y" "yopt") (y "p" "yopt"))
 (test command3 ("p" "-X" "xopt" "-Y" "yopt") (xy "p" "xopt" "yopt"))
 (test command3 ("p" "-Y" "yopt" "-X" "xopt") (xy "p" "xopt" "yopt"))
+(test command3 ("./prog") #f)
+(test command3 ("./prog" "-h") #f)
 
 (define (command4 ls)
   (parse-command-line ls
@@ -298,6 +365,7 @@
 (test command4 ("p" "-Y" "-X") ("p" #t #t))
 (test command4 ("p" "-X" "a")  ("p" #t ("a")))
 (test command4 ("p" "a")       ("p" #f ("a")))
+(test command4 ("./prog" "-h")      #f)
 
 (define (command5 ls)
   (parse-command-line ls
@@ -305,6 +373,7 @@
 
 (test command5 ("p")              ("p" "default"))
 (test command5 ("p" "-X" "hello") ("p" "hello"))
+(test command5 ("./prog" "-h")         #f)
 
 (define (command6 ls)
   (parse-command-line ls
@@ -317,7 +386,31 @@
 (test command6 ("p" "-Y" "b") ("p" () ("b")))
 (test command6 ("p" "-X" "a" "-Y" "b" "-X" "c" "-Y" "d")
       ("p" ("a" "c") ("b" "d")))
+(test command6 ("./prog" "-Q" "12") #f)
+(test command6 ("./prog" "-h") #f)
 
+(define (command7 ls)
+  (parse-command-line ls
+    [(p "-X+" xopts) (list p xopts)]
+    [(p "-X*" xopts "-Y+" yopts) (list p xopts yopts)]))
+
+(test command7 ("p" "-X" "a") ("p" ("a")))
+(test command7 ("p" "-X" "a" "-X" "b") ("p" ("a" "b")))
+(test command7 ("p" "-X" "a" "-Y" "b") ("p" ("a") ("b")))
+(test command7 ("p" "-Y" "b") ("p" () ("b")))
+(test command7 ("p" "-X" "a" "-Y" "b" "-X" "c" "-Y" "d")
+      ("p" ("a" "c") ("b" "d")))
+(test command7 ("./prog") #f)
+(test command7 ("./prog" "-h") #f)
+
+(define (command8 ls)
+  (parse-command-line ls
+    [(p "-Q=foobar" q "-R=blabla" r "-X?" xopts "-Y?" yopt "-L*" libs "-f" file file* ...) 
+     "Does something nice" 
+     #t]))
+
+(test command8 ("./prog") #f)
+(test command8 ("./prog" "-h") #f)
 
 
 #!eof
