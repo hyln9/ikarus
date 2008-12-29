@@ -11,24 +11,13 @@
 (import (ikarus))
 
 (define (dispatch-opts arguments data* proc*) 
-  (define-condition-type &help &condition
-    make-help-condition help-condition?
-    (extended? help-extended?))
-  (define-condition-type &unmatched &condition
-    make-unmatched-condition unmatched-condition?)
-  (define (help x) 
-    (raise (make-help-condition x)))
-  (define (unmatched) 
-    (raise (make-unmatched-condition)))
-
   (define (print-usage detailed?) 
     (define-record-type f (fields id char type def))
     (define (mkf x id)
       (make-f id (car x) (cadr x) (cddr x)))
     (define (get type ls)
-      (let-values ([(ls _) (partition (lambda (x) (eq? (f-type x) type)) ls)])
-        ls))
-    (define (fmt-req x) 
+      (filter (lambda (x) (eq? (f-type x) type)) ls))
+    (define (fmt-req x)
       (format " -~a <~a>" (f-char x) (f-id x)))
     (define (fmt-req-no-value x)
       (format " -~a" (f-char x)))
@@ -74,7 +63,8 @@
                 (lambda (x)
                   (printf "     -~a defaults to ~a\n" (f-char x)
                           (f-def x)))
-                def*))))))
+                def*)))
+          (newline))))
     (printf "\nUsage:\n")
     (for-each (lambda (x) (apply print-usage-line x)) data*)
     (print-usage-line "Display this help message" 
@@ -84,124 +74,139 @@
         #f
         #f)
     #f)
-
-  (define (option? x) 
-    (and (string? x) 
-         (>= (string-length x) 2)
-         (char=? (string-ref x 0) #\-)
-         (not (char=? (string-ref x 1) #\-))))
-
-  (define (fill-char-opt c ls fields)
-    ;;; field = [c required    ] 
-    ;;;       | [c flag       . default]
-    ;;;       | [c zero-plus  . list]
-    ;;;       | [c one-plus   . list]
-    ;;;       | [c optional   . str]
-    (let f ([fields fields])
-      (when (null? fields) (unmatched))
-      (let ([field (car fields)])
-        (if (char=? c (car field))
-            (let ([t (cadr field)])
-              (case t
-                [(required1 optional) 
-                 (when (null? ls) (unmatched))
-                 (let ([val (car ls)] [ls (cdr ls)])
-                   (values (cons (cons* c 'ok val) (cdr fields)) ls))]
-                [(flag) 
-                 (values (cons (cons* c 'ok #t) (cdr fields)) ls)]
-                [(zero-plus one-plus)
-                 (when (null? ls) (unmatched))
-                 (let ([val (car ls)])
-                   (values
-                     (cons (cons* c 'zero-plus (cons val (cddr field)))
-                           (cdr fields))
-                     (cdr ls)))]
-                [else (unmatched)]))
-            (let-values ([(fields ls) (f (cdr fields))])
-              (values (cons field fields) ls))))))
-          
-  (define (fill-option a ls fields)
-    (if (= (string-length a) 2)
-        (let ([char (string-ref a 1)])
-          (when (char=? char #\h) (help #f))
-          (fill-char-opt char ls fields))
-        (error 'fill-option "not yet")))
-
-  (define (match-fields fields ls)
-    (if (null? ls) 
-        (values fields ls)
-        (let ([a (car ls)])
-          (if (option? a)
-              (let-values ([(fields ls) (fill-option a (cdr ls) fields)])
-                (match-fields fields ls))
-              (values fields ls)))))
-
-  (define (match-args args ls)
-    (cond
-      [(null? args) (values '() ls)]
-      [(null? ls)   (unmatched)]
-      [else
-       (let ([a (car ls)])
-         (when (option? a) (unmatched))
-         (let-values ([(a* ls) (match-args (cdr args) (cdr ls))])
-           (values (cons a a*) ls)))]))
-
-  (define (match-args-rest a/f ls)
-    (if a/f
-        (let-values ([(x ls) 
-                      (let f ([ls ls])
-                        (if (null? ls)
-                            (values '() ls)
-                            (let ([a (car ls)])
-                              (if (string=? a "--")
-                                  (values '() ls)
-                                  (if (option? a)
-                                      (unmatched)
-                                      (let-values ([(a* ls) (f (cdr ls))])
-                                        (values (cons a a*) ls)))))))])
-          (values (list x) ls))
-        (if (or (null? ls) (string=? (car ls) "--"))
-            (values '() ls)
-            (unmatched))))
-
-  (define (match-dash-rest a/f ls)
-    (if a/f
-        (if (null? ls) 
-            '(())
-            (if (string=? (car ls) "--")
-                (list (cdr ls))
-                (unmatched)))
-        (if (null? ls) '() (unmatched))))
-
-  (define (fix-field x)
-    (let ([type (cadr x)] [value (cddr x)])
-      (case type
-        [(ok flag optional) value]
-        [(zero-plus) (reverse value)]
-        [else (unmatched)])))
-
-  (define (match _help fields _field-ids args args-rest dash-rest)
-    (cons (car arguments)
-      (let*-values ([(fields ls)    (match-fields fields (cdr arguments))]
-                    [(fields)       (map fix-field fields)]
-                    [(args ls)      (match-args args ls)]
-                    [(args-rest ls) (match-args-rest args-rest ls)]
-                    [(dash-rest)    (match-dash-rest dash-rest ls)])
-        (append fields args args-rest dash-rest))))
+  (define (arguments-match)
+    (define-condition-type &help &condition
+      make-help-condition help-condition?
+      (extended? help-extended?))
+    (define-condition-type &unmatched &condition
+      make-unmatched-condition unmatched-condition?)
+    (define (help x) 
+      (raise (make-help-condition x)))
+    (define (unmatched) 
+      (raise (make-unmatched-condition)))
   
-  (guard (con
-           [(help-condition? con) 
-            (print-usage (help-extended? con))])
-    (let f ([data* data*] [proc* proc*])
-      (if (null? data*) 
-          (help #f)
-          (guard (con
-                   [(unmatched-condition? con) 
-                    (f (cdr data*) (cdr proc*))])
-             (apply (car proc*) (apply match (car data*))))))))
 
+    (define (option? x) 
+      (or (equal? x "--help") ;;; hack
+          (and (string? x) 
+               (>= (string-length x) 2)
+               (char=? (string-ref x 0) #\-)
+               (not (char=? (string-ref x 1) #\-)))))
+  
+    (define (fill-char-opt c ls fields)
+      ;;; field = [c required0   . _]      ; requires 0 args 
+      ;;;       | [c required1   . _]      ; requires 1 arg
+      ;;;       | [c flag       . default] ; toggles default to #t
+      ;;;       | [c zero-plus  . reversed-list]
+      ;;;       | [c one-plus   . reversed-list]
+      ;;;       | [c optional   . default] ; overridden by value
+      ;;;       | [c ok         . value]   ; already used,  not on input
+      (let f ([fields fields])
+        (when (null? fields) (unmatched))
+        (let ([field (car fields)])
+          (if (char=? c (car field))
+              (let ([t (cadr field)])
+                (case t
+                  [(required1 optional) 
+                   (when (null? ls) (unmatched))
+                   (let ([val (car ls)] [ls (cdr ls)])
+                     (values (cons (cons* c 'ok val) (cdr fields)) ls))]
+                  [(flag) 
+                   (values (cons (cons* c 'ok #t) (cdr fields)) ls)]
+                  [(zero-plus one-plus)
+                   (when (null? ls) (unmatched))
+                   (let ([val (car ls)])
+                     (values
+                       (cons (cons* c 'zero-plus (cons val (cddr field)))
+                             (cdr fields))
+                       (cdr ls)))]
+                  [else (unmatched)]))
+              (let-values ([(fields ls) (f (cdr fields))])
+                (values (cons field fields) ls))))))
+            
+    (define (fill-option a ls fields)
+      (when (string=? a "--help") (help #t))
+      (if (= (string-length a) 2)
+          (let ([char (string-ref a 1)])
+            (when (char=? char #\h) (help #f))
+            (fill-char-opt char ls fields))
+          (error 'fill-option "not yet")))
+  
+    (define (match-fields fields ls)
+      (if (null? ls) 
+          (values fields ls)
+          (let ([a (car ls)])
+            (if (option? a)
+                (let-values ([(fields ls) (fill-option a (cdr ls) fields)])
+                  (match-fields fields ls))
+                (values fields ls)))))
+  
+    (define (match-args args ls)
+      (cond
+        [(null? args) (values '() ls)]
+        [(null? ls)   (unmatched)]
+        [else
+         (let ([a (car ls)])
+           (when (option? a) (unmatched))
+           (let-values ([(a* ls) (match-args (cdr args) (cdr ls))])
+             (values (cons a a*) ls)))]))
+  
+    (define (match-args-rest a/f ls)
+      (if a/f
+          (let-values ([(x ls) 
+                        (let f ([ls ls])
+                          (if (null? ls)
+                              (values '() ls)
+                              (let ([a (car ls)])
+                                (if (string=? a "--")
+                                    (values '() ls)
+                                    (if (option? a)
+                                        (unmatched)
+                                        (let-values ([(a* ls) (f (cdr ls))])
+                                          (values (cons a a*) ls)))))))])
+            (values (list x) ls))
+          (if (or (null? ls) (string=? (car ls) "--"))
+              (values '() ls)
+              (unmatched))))
+  
+    (define (match-dash-rest a/f ls)
+      (if a/f
+          (if (null? ls) 
+              '(())
+              (if (string=? (car ls) "--")
+                  (list (cdr ls))
+                  (unmatched)))
+          (if (null? ls) '() (unmatched))))
+  
+    (define (fix-field x)
+      (let ([type (cadr x)] [value (cddr x)])
+        (case type
+          [(ok flag optional) value]
+          [(zero-plus) (reverse value)]
+          [else (unmatched)])))
+  
+    (define (match _help fields _field-ids args args-rest dash-rest)
+      (cons (car arguments)
+        (let*-values ([(fields ls)    (match-fields fields (cdr arguments))]
+                      [(fields)       (map fix-field fields)]
+                      [(args ls)      (match-args args ls)]
+                      [(args-rest ls) (match-args-rest args-rest ls)]
+                      [(dash-rest)    (match-dash-rest dash-rest ls)])
+          (append fields args args-rest dash-rest))))
+    
+    (guard (con
+             [(help-condition? con) 
+              (print-usage (help-extended? con))])
+      (let f ([data* data*] [proc* proc*])
+        (if (null? data*) 
+            (help #f)
+            (guard (con
+                     [(unmatched-condition? con)
+                      (f (cdr data*) (cdr proc*))])
+               (apply (car proc*) (apply match (car data*))))))))
+  (arguments-match))
 
-(define-syntax parse-command-line
+(define-syntax command-line-interface
   (lambda (stx)
     (define (parse-format stx)
       (define (err str x)
@@ -229,7 +234,7 @@
              (free-identifier=? x #'(... ...))))
       (define (id? x)
         (and (identifier? x) (not (dots? x))))
-      (define (parse-command-line ls)
+      (define (command-line-interface ls)
         (define (str? x) 
           (let ([d (syntax->datum x)])
             (and (string? d) (not (string=? d "--")))))
@@ -280,7 +285,7 @@
                   (f (car ls) (cdr ls)))))
           ls))
       (let-values ([(prog opt-strs opt-ids args args-rest dash-rest)
-                    (parse-command-line stx)])
+                    (command-line-interface stx)])
         (list (get-fmls prog opt-ids args args-rest dash-rest)
           opt-strs opt-ids args args-rest dash-rest)))
     (define (parse-clause stx)
@@ -312,7 +317,7 @@
          (printf "OK\n")))]))
 
 (define (command1 ls)
-  (parse-command-line ls
+  (command-line-interface ls
     [(p)          "Help0" (list 0 p)]
     [(p p1)       "Help1" (list 1 p p1)]
     [(p p1 p2)    "Help2" (list 2 p p1 p2)]
@@ -325,7 +330,7 @@
 (test command1 ("./prog" "p1" "p2" "p3" "p4")  #f)
 
 (define (command2 ls)
-  (parse-command-line ls
+  (command-line-interface ls
     [(p p1 p2 p3) "Help3" (list 3 p p1 p2 p3)]
     [(p p1 p2 ps ...) "Help2" (list 2 p p1 p2 ps)]
     [(p p1 ps ...) "Help1" (list 1 p p1 ps)]
@@ -339,7 +344,7 @@
 (test command2 ("./prog" "-h") #f)
 
 (define (command3 ls)
-  (parse-command-line ls
+  (command-line-interface ls
     [(p "-X" xopt "-Y" yopt) (list 'xy p xopt yopt)]
     [(p "-X" xopt) (list 'x p xopt)]
     [(p "-Y" yopt) (list 'y p yopt)]))
@@ -352,7 +357,7 @@
 (test command3 ("./prog" "-h") #f)
 
 (define (command4 ls)
-  (parse-command-line ls
+  (command-line-interface ls
     [(p "-X?" xopt "-Y?" yopt) (list p xopt yopt)]
     [(p "-X?" xopt rest ...)   (list p xopt rest)]))
 
@@ -366,7 +371,7 @@
 (test command4 ("./prog" "-h")      #f)
 
 (define (command5 ls)
-  (parse-command-line ls
+  (command-line-interface ls
     [(p "-X=default" xopt) (list p xopt)]))
 
 (test command5 ("p")              ("p" "default"))
@@ -374,7 +379,7 @@
 (test command5 ("./prog" "-h")         #f)
 
 (define (command6 ls)
-  (parse-command-line ls
+  (command-line-interface ls
     [(p "-X*" xopts) (list p xopts)]
     [(p "-X*" xopts "-Y*" yopts) (list p xopts yopts)]))
 
@@ -388,7 +393,7 @@
 (test command6 ("./prog" "-h") #f)
 
 (define (command7 ls)
-  (parse-command-line ls
+  (command-line-interface ls
     [(p "-X+" xopts) (list p xopts)]
     [(p "-X*" xopts "-Y+" yopts) (list p xopts yopts)]))
 
@@ -402,17 +407,18 @@
 (test command7 ("./prog" "-h") #f)
 
 (define (command8 ls)
-  (parse-command-line ls
+  (command-line-interface ls
     [(p "-Q=foobar" q "-R=blabla" r "-X?" xopts "-Y?" yopt "-L*" libs "-f" file file* ...) 
      "Does something nice" 
      #t]))
 
 (test command8 ("./prog") #f)
 (test command8 ("./prog" "-h") #f)
+(test command8 ("./prog" "--help") #f)
 
 
 (define (ls-command ls)
-  (parse-command-line ls
+  (command-line-interface ls
     [(ls "-A?" A "-B?" B "-C?" C "-F?" F "-G?" G "-H?" H "-L?" L
          "-P?" P "-R?" R "-S?" S "-T?" T "-W?" W "-Z?" Z "-a?" a
          "-b?" b "-c?" c "-d?" d "-e?" e "-f?" f "-g?" g "-i?" i
