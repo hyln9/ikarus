@@ -3,7 +3,7 @@
 ;;; WORK IN PROGRESS, NOT FOR CONSUMPTION
 ;;; TODO: long options
 ;;;       multiple options in one go, e.g., -XYZ
-;;;       concat value with option, e.g., -Xxvalue
+;;;       concat value with option, e.g., -Xxvalue  
 ;;;       usage error message [ok?]
 ;;;       -h --help should not be user-defined
 ;;;       check duplicate options
@@ -11,7 +11,17 @@
 (import (ikarus))
 
 (define (dispatch-opts arguments data* proc*) 
-  (define (print-usage) 
+  (define-condition-type &help &condition
+    make-help-condition help-condition?
+    (extended? help-extended?))
+  (define-condition-type &unmatched &condition
+    make-unmatched-condition unmatched-condition?)
+  (define (help x) 
+    (raise (make-help-condition x)))
+  (define (unmatched) 
+    (raise (make-unmatched-condition)))
+
+  (define (print-usage detailed?) 
     (define-record-type f (fields id char type def))
     (define (mkf x id)
       (make-f id (car x) (cadr x) (cddr x)))
@@ -27,44 +37,45 @@
         (format " [-~a <~a>]~a" (f-char x) (f-id x) c)))
     (define (fmt-<> x)
       (format " <~a>" x))
+    (define (synopsis f* args args-rest)
+      (let ([opt*   (get 'optional f*)]
+            [flag*  (get 'flag f*)]
+            [req0*   (get 'required0 f*)]
+            [req1*   (get 'required1 f*)]
+            [z0*    (get 'zero-plus f*)]
+            [z1*    (get 'one-plus f*)])
+        (let-values ([(p e) (open-string-output-port)])
+          (display (car arguments) p)
+          (display (apply string-append (map fmt-req-no-value req0*)) p)
+          (unless (null? flag*) 
+            (fprintf p " [-~a]" 
+              (list->string (map f-char flag*))))
+          (display (apply string-append (map (fmt-z "") opt*)) p)
+          (display (apply string-append (map (fmt-z "*") z0*)) p)
+          (display (apply string-append (map (fmt-z "+") z1*)) p)
+          (display (apply string-append (map fmt-req req1*)) p)
+          (display (apply string-append (map fmt-<> args)) p)
+          (when args-rest
+            (display (string-append (fmt-<> args-rest) " ...") p))
+          (e))))
     (define (print-usage-line help fields field-ids args args-rest dash-rest)
       (let ([f* (map mkf fields field-ids)])
-        (let ([opt*   (get 'optional f*)]
-              [flag*  (get 'flag f*)]
-              [req0*   (get 'required0 f*)]
-              [req1*   (get 'required1 f*)]
-              [z0*    (get 'zero-plus f*)]
-              [z1*    (get 'one-plus f*)])
-          (display 
-            (string-append
-              "\n  "
-              (car arguments)
-              (apply string-append (map fmt-req-no-value req0*))
-              (if (null? flag*) 
-                  ""
-                  (format " [-~a]" 
-                    (list->string (map f-char flag*))))
-              (apply string-append (map (fmt-z "") opt*))
-              (apply string-append (map (fmt-z "*") z0*))
-              (apply string-append (map (fmt-z "+") z1*))
-              (apply string-append (map fmt-req req1*))
-              (apply string-append (map fmt-<> args))
-              (if args-rest
-                  (string-append (fmt-<> args-rest) " ...")
-                  "")
-              "\n"))
-          (unless (string=? help "")
-             (printf "\n    ~a\n" help))
-          (let ([def* (filter f-def opt*)])
+        (display "  ")
+        (display (synopsis f* args args-rest))
+        (newline)
+        (unless (string=? help "")
+          (display "    ")
+          (display help)
+          (newline))
+        (when detailed?
+          (let ([def* (filter f-def (get 'optional f*))])
             (unless (null? def*)
-              (printf "\n")
               (for-each
                 (lambda (x)
                   (printf "     -~a defaults to ~a\n" (f-char x)
                           (f-def x)))
-                def*)
-              )))))
-    (printf "\nUsage:")
+                def*))))))
+    (printf "\nUsage:\n")
     (for-each (lambda (x) (apply print-usage-line x)) data*)
     (print-usage-line "Display this help message" 
         '([#\h required0 . #f])
@@ -80,127 +91,114 @@
          (char=? (string-ref x 0) #\-)
          (not (char=? (string-ref x 1) #\-))))
 
-  (define (fill-char-opt c ls fields k)
+  (define (fill-char-opt c ls fields)
     ;;; field = [c required    ] 
     ;;;       | [c flag       . default]
     ;;;       | [c zero-plus  . list]
     ;;;       | [c one-plus   . list]
     ;;;       | [c optional   . str]
-    (let f ([fields fields] [k k])
-      (and (pair? fields) 
-           (let ([field (car fields)])
-             (if (char=? c (car field))
-                 (let ([t (cadr field)])
-                   (case t
-                     [(required1 optional) 
-                      (and (not (null? ls)) 
-                           (let ([val (car ls)] [ls (cdr ls)])
-                             (k (cons 
-                                  (cons* c 'ok val)
-                                  (cdr fields))
-                                ls)))]
-                     [(flag) 
-                      (k (cons (cons* c 'ok #t) (cdr fields)) ls)]
-                     [(zero-plus one-plus)
-                      (and (not (null? ls))
-                           (let ([val (car ls)])
-                             (k (cons (cons* c 'zero-plus
-                                        (cons val (cddr field)))
-                                      (cdr fields))
-                                (cdr ls))))]
-                     [else #f]))
-                 (f (cdr fields)
-                    (lambda (fields ls) 
-                      (k (cons field fields) ls))))))))
+    (let f ([fields fields])
+      (when (null? fields) (unmatched))
+      (let ([field (car fields)])
+        (if (char=? c (car field))
+            (let ([t (cadr field)])
+              (case t
+                [(required1 optional) 
+                 (when (null? ls) (unmatched))
+                 (let ([val (car ls)] [ls (cdr ls)])
+                   (values (cons (cons* c 'ok val) (cdr fields)) ls))]
+                [(flag) 
+                 (values (cons (cons* c 'ok #t) (cdr fields)) ls)]
+                [(zero-plus one-plus)
+                 (when (null? ls) (unmatched))
+                 (let ([val (car ls)])
+                   (values
+                     (cons (cons* c 'zero-plus (cons val (cddr field)))
+                           (cdr fields))
+                     (cdr ls)))]
+                [else (unmatched)]))
+            (let-values ([(fields ls) (f (cdr fields))])
+              (values (cons field fields) ls))))))
           
-  (define (fill-option a ls fields k)
+  (define (fill-option a ls fields)
     (if (= (string-length a) 2)
         (let ([char (string-ref a 1)])
-          (fill-char-opt char ls fields 
-            (lambda (fields ls) 
-              (match-fields fields ls k))))
+          (when (char=? char #\h) (help #f))
+          (fill-char-opt char ls fields))
         (error 'fill-option "not yet")))
 
-  (define (match-fields fields ls k) 
+  (define (match-fields fields ls)
     (if (null? ls) 
-        (k fields ls)
+        (values fields ls)
         (let ([a (car ls)])
           (if (option? a)
-              (fill-option a (cdr ls) fields k)
-              (k fields ls)))))
+              (let-values ([(fields ls) (fill-option a (cdr ls) fields)])
+                (match-fields fields ls))
+              (values fields ls)))))
 
-  (define (match-args args ls k) 
-    (if (null? args)
-        (k '() ls)
-        (and (not (null? ls))
-             (let ([a (car ls)])
-               (and (not (option? a))
-                    (match-args (cdr args) (cdr ls)
-                      (lambda (a* ls)
-                        (k (cons a a*) ls))))))))
+  (define (match-args args ls)
+    (cond
+      [(null? args) (values '() ls)]
+      [(null? ls)   (unmatched)]
+      [else
+       (let ([a (car ls)])
+         (when (option? a) (unmatched))
+         (let-values ([(a* ls) (match-args (cdr args) (cdr ls))])
+           (values (cons a a*) ls)))]))
 
-  (define (match-args-rest a/f ls k)
+  (define (match-args-rest a/f ls)
     (if a/f
-        (let f ([ls ls] [k (lambda (a ls) (k (list a) ls))])
-          (if (null? ls)
-              (k '() ls)
-              (let ([a (car ls)])
-                (if (string=? a "--")
-                    (k '() ls)
-                    (and (not (option? a)) 
-                         (f (cdr ls)
-                            (lambda (a* ls) 
-                              (k (cons a a*) ls))))))))
-        (and (or (null? ls) (string=? (car ls) "--"))
-             (k '() ls))))
+        (let-values ([(x ls) 
+                      (let f ([ls ls])
+                        (if (null? ls)
+                            (values '() ls)
+                            (let ([a (car ls)])
+                              (if (string=? a "--")
+                                  (values '() ls)
+                                  (if (option? a)
+                                      (unmatched)
+                                      (let-values ([(a* ls) (f (cdr ls))])
+                                        (values (cons a a*) ls)))))))])
+          (values (list x) ls))
+        (if (or (null? ls) (string=? (car ls) "--"))
+            (values '() ls)
+            (unmatched))))
 
-  (define (match-dash-rest a/f ls k)
+  (define (match-dash-rest a/f ls)
     (if a/f
         (if (null? ls) 
-            (k '(()))
-            (and (string=? (car ls) "--")
-                 (k (list (cdr ls)))))
-        (and (null? ls) (k '()))))
+            '(())
+            (if (string=? (car ls) "--")
+                (list (cdr ls))
+                (unmatched)))
+        (if (null? ls) '() (unmatched))))
 
-  (define (fix-fields ls k)
-    (cond
-      [(null? ls) (k '())]
-      [else
-       (let ([a (car ls)]
-             [k (lambda (a)
-                  (fix-fields (cdr ls) 
-                     (lambda (ls) 
-                       (k (cons a ls)))))])
-         (let ([type (cadr a)] [value (cddr a)])
-           (case type
-             [(ok flag optional) (k value)]
-             [(zero-plus) (k (reverse value))]
-             [else #f])))]))
+  (define (fix-field x)
+    (let ([type (cadr x)] [value (cddr x)])
+      (case type
+        [(ok flag optional) value]
+        [(zero-plus) (reverse value)]
+        [else (unmatched)])))
 
   (define (match _help fields _field-ids args args-rest dash-rest)
-    (let ([prog (car arguments)])
-      (match-fields fields (cdr arguments)
-        (lambda (fields ls)
-          (fix-fields fields
-            (lambda (fields)
-              (match-args args ls
-                (lambda (args ls)
-                  (match-args-rest args-rest ls 
-                    (lambda (args-rest ls)
-                      (match-dash-rest dash-rest ls 
-                        (lambda (dash-rest) 
-                          (cons prog
-                            (append fields
-                                    args args-rest
-                                    dash-rest))))))))))))))
-
-  (let f ([data* data*] [proc* proc*])
-    (if (null? data*) 
-        (print-usage)
-        (let ([opts (apply match (car data*))])
-          (if opts 
-              (apply (car proc*) opts)
-              (f (cdr data*) (cdr proc*)))))))
+    (cons (car arguments)
+      (let*-values ([(fields ls)    (match-fields fields (cdr arguments))]
+                    [(fields)       (map fix-field fields)]
+                    [(args ls)      (match-args args ls)]
+                    [(args-rest ls) (match-args-rest args-rest ls)]
+                    [(dash-rest)    (match-dash-rest dash-rest ls)])
+        (append fields args args-rest dash-rest))))
+  
+  (guard (con
+           [(help-condition? con) 
+            (print-usage (help-extended? con))])
+    (let f ([data* data*] [proc* proc*])
+      (if (null? data*) 
+          (help #f)
+          (guard (con
+                   [(unmatched-condition? con) 
+                    (f (cdr data*) (cdr proc*))])
+             (apply (car proc*) (apply match (car data*))))))))
 
 
 (define-syntax parse-command-line
@@ -413,6 +411,19 @@
 (test command8 ("./prog" "-h") #f)
 
 
+(define (ls-command ls)
+  (parse-command-line ls
+    [(ls "-A?" A "-B?" B "-C?" C "-F?" F "-G?" G "-H?" H "-L?" L
+         "-P?" P "-R?" R "-S?" S "-T?" T "-W?" W "-Z?" Z "-a?" a
+         "-b?" b "-c?" c "-d?" d "-e?" e "-f?" f "-g?" g "-i?" i
+         "-k?" k "-l?" l "-m?" m "-n?" n "-o?" o "-p?" p "-q?" q
+         "-r?" r "-s?" s "-t?" t "-u?" u "-w?" w "-x?" x "-1?" o1 
+         files ...)
+     #t]))
+
+(test ls-command ("ls" "-h") #f)
+
+
 #!eof
 (define (real-test ls)
   (command-line-interface ls
@@ -438,14 +449,14 @@
      (list 2 program libdirs script-file)]
     [(program "-O0" "-L" libdirs ... "-l" library-files ...
               init-files ... "--script" script-file args ...)
-     "Run <script-file> in R5RS-script mode 
-      Each of <library-files> must contain a library and are 
-      installed before <init-files> are loaded and
-      <script-file> is run."
+     "Run <script-file> in R5RS-script mode"
+      "Each of <library-files> must contain a library and are"
+      "installed before <init-files> are loaded and"
+      "<script-file> is run."
      (list 3 program libdirs library-files init-files script-file args)]
     [(program "-O0" "-L" libdirs ... "-l" library-files init-files ... 
               "--" args ...)
-     "Run Ikarus in interactive mode.  Each of <library-files>
-     must contain a library and are installed before the
-     <init-files> are loaded"
+     "Run Ikarus in interactive mode."
+     "Each of <library-files> must contain a library and are"
+     "installed before the <init-files> are loaded"
      (list 4 program libdirs library-files init-files args)]))
