@@ -17,8 +17,9 @@
       (make-f id (car x) (cadr x) (cddr x)))
     (define (get type ls)
       (filter (lambda (x) (eq? (f-type x) type)) ls))
-    (define (fmt-req x)
-      (format " -~a <~a>" (f-char x) (f-id x)))
+    (define (fmt-req p)
+      (lambda (x)
+        (display* (list " -" (f-char x) " <" (f-id x) ">") p)))
     (define (fmt-req-no-value x)
       (format " -~a" (f-char x)))
     (define (fmt-z c)
@@ -26,26 +27,29 @@
         (format " [-~a <~a>]~a" (f-char x) (f-id x) c)))
     (define (fmt-<> x)
       (format " <~a>" x))
+    (define (display* ls p)
+      (for-each (lambda (x) (display x p)) ls))
     (define (synopsis f* args args-rest)
-      (let ([opt*   (get 'optional f*)]
-            [flag*  (get 'flag f*)]
-            [req0*   (get 'required0 f*)]
-            [req1*   (get 'required1 f*)]
-            [z0*    (get 'zero-plus f*)]
-            [z1*    (get 'one-plus f*)])
+      (let ([opt*  (get 'optional f*)]
+            [flag* (get 'flag f*)]
+            [req0* (get 'required0 f*)]
+            [req1* (get 'required1 f*)]
+            [z0*   (get 'zero-plus f*)]
+            [z1*   (get 'one-plus f*)])
         (let-values ([(p e) (open-string-output-port)])
           (display (car arguments) p)
-          (display (apply string-append (map fmt-req-no-value req0*)) p)
+          (display* (map fmt-req-no-value req0*) p)
           (unless (null? flag*) 
-            (fprintf p " [-~a]" 
-              (list->string (map f-char flag*))))
-          (display (apply string-append (map (fmt-z "") opt*)) p)
-          (display (apply string-append (map (fmt-z "*") z0*)) p)
-          (display (apply string-append (map (fmt-z "+") z1*)) p)
-          (display (apply string-append (map fmt-req req1*)) p)
-          (display (apply string-append (map fmt-<> args)) p)
+            (display " [-" p)
+            (display* (map f-char flag*) p)
+            (display "]" p))
+          (display* (map (fmt-z "") opt*) p)
+          (display* (map (fmt-z "*") z0*) p)
+          (display* (map (fmt-z "+") z1*) p)
+          (for-each (fmt-req p) req1*)
+          (display* (map fmt-<> args) p)
           (when args-rest
-            (display (string-append (fmt-<> args-rest) " ...") p))
+            (display* (list (fmt-<> args-rest) " ...") p))
           (e))))
     (define (print-usage-line help fields field-ids args args-rest dash-rest)
       (let ([f* (map mkf fields field-ids)])
@@ -61,11 +65,14 @@
             (unless (null? def*)
               (for-each
                 (lambda (x)
-                  (printf "     -~a defaults to ~a\n" (f-char x)
-                          (f-def x)))
+                  (display* 
+                    (list "     -" (f-char x) 
+                          " defaults to" (f-def x)
+                          "\n")
+                    (current-output-port)))
                 def*)))
           (newline))))
-    (printf "\nUsage:\n")
+    (display "\nUsage:\n")
     (for-each (lambda (x) (apply print-usage-line x)) data*)
     (print-usage-line "Display this help message" 
         '([#\h required0 . #f])
@@ -305,119 +312,140 @@
        #'(dispatch-opts expr '(data* ...) (list proc* ...)))])))
 
 
+(define-syntax define-command
+  (syntax-rules ()
+    [(_ (name arg) . body) 
+     (begin
+       (define (name arg) . body)
+       (display "================================================\n")
+       (pretty-print '(define (name arg) . body))
+       (newline))]))
+
 (define-syntax test 
   (syntax-rules ()
-    [(_ command ls expected) 
-     (begin
-       (printf "testing ~s => ~s ... " '(command ls) 'expected)
-       (let ([a1 (command 'ls)]
-             [a2 'expected])
-         (unless (equal? a1 a2)
-           (error #f "failed/got/expected" a1 'expected))
-         (printf "OK\n")))]))
+    [(_ command 
+        [ls* expected*] ...)
+     (for-each
+       (lambda (ls expected)
+         (printf "~s => " `(command ',ls))
+         (let ([a1 (command ls)]
+               [a2 expected])
+           (unless (equal? a1 a2)
+             (error #f "failed/got/expected" a1 expected))
+           (printf "~s OK\n" expected)))
+       '(ls* ...)
+       '(expected* ...))]))
 
-(define (command1 ls)
+(define-command (command1 ls)
   (command-line-interface ls
     [(p)          "Help0" (list 0 p)]
     [(p p1)       "Help1" (list 1 p p1)]
     [(p p1 p2)    "Help2" (list 2 p p1 p2)]
     [(p p1 p2 p3) "Help3" (list 3 p p1 p2 p3)]))
 
-(test command1 ("p")                 (0 "p"))
-(test command1 ("p" "p1")            (1 "p" "p1"))
-(test command1 ("p" "p1" "p2")       (2 "p" "p1" "p2"))
-(test command1 ("p" "p1" "p2" "p3")  (3 "p" "p1" "p2" "p3"))
-(test command1 ("./prog" "p1" "p2" "p3" "p4")  #f)
+(test command1
+  [("p")                 (0 "p")]
+  [("p" "p1")            (1 "p" "p1")]
+  [("p" "p1" "p2")       (2 "p" "p1" "p2")]
+  [("p" "p1" "p2" "p3")  (3 "p" "p1" "p2" "p3")]
+  [("./prog" "p1" "p2" "p3" "p4")  #f])
 
-(define (command2 ls)
+(define-command (command2 ls)
   (command-line-interface ls
     [(p p1 p2 p3) "Help3" (list 3 p p1 p2 p3)]
     [(p p1 p2 ps ...) "Help2" (list 2 p p1 p2 ps)]
     [(p p1 ps ...) "Help1" (list 1 p p1 ps)]
     [(p ps ...) "Help0" (list 0 p ps)]))
 
-(test command2 ("p")                 (0 "p" ()))
-(test command2 ("p" "a")             (1 "p" "a" ()))
-(test command2 ("p" "a" "b")         (2 "p" "a" "b" ()))
-(test command2 ("p" "a" "b" "c")     (3 "p" "a" "b" "c"))
-(test command2 ("p" "a" "b" "c" "d") (2 "p" "a" "b" ("c" "d")))
-(test command2 ("./prog" "-h") #f)
+(test command2
+  [("p")                 (0 "p" ())]
+  [("p" "a")             (1 "p" "a" ())]
+  [("p" "a" "b")         (2 "p" "a" "b" ())]
+  [("p" "a" "b" "c")     (3 "p" "a" "b" "c")]
+  [("p" "a" "b" "c" "d") (2 "p" "a" "b" ("c" "d"))]
+  [("./prog" "-h") #f])
 
-(define (command3 ls)
+(define-command (command3 ls)
   (command-line-interface ls
     [(p "-X" xopt "-Y" yopt) (list 'xy p xopt yopt)]
     [(p "-X" xopt) (list 'x p xopt)]
     [(p "-Y" yopt) (list 'y p yopt)]))
 
-(test command3 ("p" "-X" "xopt") (x "p" "xopt"))
-(test command3 ("p" "-Y" "yopt") (y "p" "yopt"))
-(test command3 ("p" "-X" "xopt" "-Y" "yopt") (xy "p" "xopt" "yopt"))
-(test command3 ("p" "-Y" "yopt" "-X" "xopt") (xy "p" "xopt" "yopt"))
-(test command3 ("./prog") #f)
-(test command3 ("./prog" "-h") #f)
+(test command3
+  [("p" "-X" "xopt") (x "p" "xopt")]
+  [("p" "-Y" "yopt") (y "p" "yopt")]
+  [("p" "-X" "xopt" "-Y" "yopt") (xy "p" "xopt" "yopt")]
+  [("p" "-Y" "yopt" "-X" "xopt") (xy "p" "xopt" "yopt")]
+  [("./prog") #f]
+  [("./prog" "-h") #f])
 
-(define (command4 ls)
+(define-command (command4 ls)
   (command-line-interface ls
     [(p "-X?" xopt "-Y?" yopt) (list p xopt yopt)]
     [(p "-X?" xopt rest ...)   (list p xopt rest)]))
 
-(test command4 ("p")           ("p" #f #f))
-(test command4 ("p" "-X")      ("p" #t #f))
-(test command4 ("p" "-Y")      ("p" #f #t))
-(test command4 ("p" "-X" "-Y") ("p" #t #t))
-(test command4 ("p" "-Y" "-X") ("p" #t #t))
-(test command4 ("p" "-X" "a")  ("p" #t ("a")))
-(test command4 ("p" "a")       ("p" #f ("a")))
-(test command4 ("./prog" "-h")      #f)
+(test command4
+  [("p")            ("p" #f #f)]
+  [("p" "-X")       ("p" #t #f)]
+  [("p" "-Y")       ("p" #f #t)]
+  [("p" "-X" "-Y")  ("p" #t #t)]
+  [("p" "-Y" "-X")  ("p" #t #t)]
+  [("p" "-X" "a")   ("p" #t ("a"))]
+  [("p" "a")        ("p" #f ("a"))]
+  [("./prog" "-h")  #f])
 
-(define (command5 ls)
+(define-command (command5 ls)
   (command-line-interface ls
     [(p "-X=default" xopt) (list p xopt)]))
 
-(test command5 ("p")              ("p" "default"))
-(test command5 ("p" "-X" "hello") ("p" "hello"))
-(test command5 ("./prog" "-h")         #f)
+(test command5
+  [("p")              ("p" "default")]
+  [("p" "-X" "hello") ("p" "hello")]
+  [("./prog" "-h")         #f])
 
-(define (command6 ls)
+(define-command (command6 ls)
   (command-line-interface ls
     [(p "-X*" xopts) (list p xopts)]
     [(p "-X*" xopts "-Y*" yopts) (list p xopts yopts)]))
 
-(test command6 ("p")              ("p" ()))
-(test command6 ("p" "-X" "a" "-X" "b") ("p" ("a" "b")))
-(test command6 ("p" "-X" "a" "-Y" "b") ("p" ("a") ("b")))
-(test command6 ("p" "-Y" "b") ("p" () ("b")))
-(test command6 ("p" "-X" "a" "-Y" "b" "-X" "c" "-Y" "d")
-      ("p" ("a" "c") ("b" "d")))
-(test command6 ("./prog" "-Q" "12") #f)
-(test command6 ("./prog" "-h") #f)
+(test command6
+  [("p")              ("p" ())]
+  [("p" "-X" "a" "-X" "b") ("p" ("a" "b"))]
+  [("p" "-X" "a" "-Y" "b") ("p" ("a") ("b"))]
+  [("p" "-Y" "b") ("p" () ("b"))]
+  [("p" "-X" "a" "-Y" "b" "-X" "c" "-Y" "d") ("p" ("a" "c") ("b" "d"))]
+  [("./prog" "-Q" "12") #f]
+  [("./prog" "-h") #f])
 
-(define (command7 ls)
+(define-command (command7 ls)
   (command-line-interface ls
     [(p "-X+" xopts) (list p xopts)]
     [(p "-X*" xopts "-Y+" yopts) (list p xopts yopts)]))
 
-(test command7 ("p" "-X" "a") ("p" ("a")))
-(test command7 ("p" "-X" "a" "-X" "b") ("p" ("a" "b")))
-(test command7 ("p" "-X" "a" "-Y" "b") ("p" ("a") ("b")))
-(test command7 ("p" "-Y" "b") ("p" () ("b")))
-(test command7 ("p" "-X" "a" "-Y" "b" "-X" "c" "-Y" "d")
-      ("p" ("a" "c") ("b" "d")))
-(test command7 ("./prog") #f)
-(test command7 ("./prog" "-h") #f)
+(test command7
+  [("p" "-X" "a") ("p" ("a"))]
+  [("p" "-X" "a" "-X" "b") ("p" ("a" "b"))]
+  [("p" "-X" "a" "-Y" "b") ("p" ("a") ("b"))]
+  [("p" "-Y" "b") ("p" () ("b"))]
+  [("p" "-X" "a" "-Y" "b" "-X" "c" "-Y" "d") ("p" ("a" "c") ("b" "d"))]
+  [("./prog") #f]
+  [("./prog" "-h") #f])
 
-(define (command8 ls)
+(define-command (command8 ls)
   (command-line-interface ls
-    [(p "-Q=foobar" q "-R=blabla" r "-X?" xopts "-Y?" yopt "-L*" libs "-f" file file* ...) 
+    [(p "-Q=foobar" q "-R=blabla" r "-X?" xopts "-Y?" yopt "-L*" libs 
+        "-f" file file* ...) 
      "Does something nice" 
      #t]))
 
-(test command8 ("./prog") #f)
-(test command8 ("./prog" "-h") #f)
-(test command8 ("./prog" "--help") #f)
+(test command8
+  [("./prog") #f]
+  [("./prog" "-h") #f]
+  [("./prog" "--help") #f])
 
 
-(define (ls-command ls)
+
+(define-command (ls-command ls)
   (command-line-interface ls
     [(ls "-A?" A "-B?" B "-C?" C "-F?" F "-G?" G "-H?" H "-L?" L
          "-P?" P "-R?" R "-S?" S "-T?" T "-W?" W "-Z?" Z "-a?" a
@@ -427,7 +455,8 @@
          files ...)
      #t]))
 
-(test ls-command ("ls" "-h") #f)
+(test ls-command
+  [("ls" "-h") #f])
 
 
 #!eof
@@ -466,3 +495,19 @@
      "Each of <library-files> must contain a library and are"
      "installed before the <init-files> are loaded"
      (list 4 program libdirs library-files init-files args)]))
+
+#!eof
+
+
+=head1 NAME
+
+gimp-request - send a request to GIMP's Script-Fu Server
+
+=head1 SYNOPSIS
+
+Syntax:
+
+    $ gimp-request \
+      [--server=HOST][--port=PORT] \
+      [SCHEME_FILE] [ARGS]...
+
