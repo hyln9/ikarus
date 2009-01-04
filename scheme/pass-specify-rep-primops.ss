@@ -479,7 +479,7 @@
           [(constant i)
            (if (and (fx? i) (>= i 0)) 
                (check-fx idx)
-               (check-? idx))]
+               (interrupt))]
           [(known idx idx-t)
            (case (T:fixnum? idx-t)
              [(yes) (check-fx idx)]
@@ -591,10 +591,11 @@
   [(E x i v)
    (struct-case i
      [(constant i) 
-      (unless (fx? i) (interrupt))
-      (mem-assign v (T x) 
-         (+ (* i wordsize)
-            (- disp-vector-data vector-tag)))]
+      (if (not (fx? i))
+          (interrupt)
+          (mem-assign v (T x) 
+             (+ (* i wordsize)
+                (- disp-vector-data vector-tag))))]
      [(known i t)
       (cogen-effect-$vector-set! x i v)]
      [else
