@@ -37,20 +37,24 @@
          source.\n"
        name depname filename))
 
-    (define (file-locator-resolution-error libname failed-list)
+    (define (file-locator-resolution-error libname failed-list pending-list)
       (define-condition-type &library-resolution &condition
          make-library-resolution-condition
          library-resolution-condition?
          (library condition-library)
          (files condition-files))
+      (define-condition-type &imported-from &condition
+         make-imported-from-condition imported-from-condition?
+         (importing-library importing-library))
+
       (raise 
-        (condition 
-          (make-error)
+        (apply condition (make-error)
           (make-who-condition 'expander)
           (make-message-condition
             "cannot locate library in library-path")
           (make-library-resolution-condition 
-            libname failed-list))))
+            libname failed-list)
+          (map make-imported-from-condition pending-list))))
 
   (define-syntax define-record
     (syntax-rules ()
