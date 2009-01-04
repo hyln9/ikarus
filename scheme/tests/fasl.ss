@@ -82,6 +82,7 @@
             (hashtable-set! h (gensym) 13)
             (collect)
             h))
+    (test '(#\x3000))
     )
 
 )

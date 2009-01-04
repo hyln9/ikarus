@@ -333,7 +333,7 @@
                      ($struct-set! x i (read))
                      (f (fxadd1 i))))
                  x)))]
-          [(#\C) (integer->char (read-int p))]
+          [(#\C) (integer->char (read-u32 p))]
           [(#\c) (read-u8-as-char p)]
           [(#\>)
            (let ([m (read-u32 p)])
