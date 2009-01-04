@@ -1514,8 +1514,8 @@
       [(flonum? x) x]
       [(compnum? x) 
        (make-rectangular 
-         (->inexact (real-part x))
-         (->inexact (imag-part x)))]
+         (->inexact (real-part x) who)
+         (->inexact (imag-part x) who))]
       [(cflonum? x) x]
       [else
        (die who "not a number" x)]))
