@@ -1273,6 +1273,7 @@
     [delete-directory                            i]
     [change-mode                                 i]
     [make-symbolic-link                          i]
+    [make-hard-link                              i]
     [file-ctime                                  i]
     [file-mtime                                  i]
     [file-size                                   i]

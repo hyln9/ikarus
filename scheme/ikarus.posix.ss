@@ -21,7 +21,7 @@
     nanosleep getenv setenv unsetenv env environ file-ctime file-mtime
     current-directory file-regular? file-directory? file-readable?
     file-writable? file-executable? file-size rename-file
-    file-symbolic-link? make-symbolic-link directory-list
+    file-symbolic-link? make-symbolic-link make-hard-link directory-list
     make-directory delete-directory change-mode kill strerror
     wstatus-pid wstatus-exit-status wstatus-received-signal)
 
@@ -32,7 +32,7 @@
       delete-file getenv setenv unsetenv env environ file-ctime file-mtime
       current-directory file-regular? file-directory?
       file-readable? file-writable? file-executable? file-size
-      rename-file file-symbolic-link? make-symbolic-link
+      rename-file file-symbolic-link? make-symbolic-link make-hard-link
       directory-list make-directory delete-directory change-mode
       kill strerror wstatus-pid wstatus-exit-status
       wstatus-received-signal))
@@ -278,16 +278,23 @@
         (unless (eq? r #t)
           (raise/strerror who r path)))))
   
-  (define make-symbolic-link
-    (lambda (to path)
-      (define who 'make-symbolic-link)
-      (unless (and (string? to) (string? path))
-        (die who "not a string" (if (string? to) path to)))
-      (let ([r (foreign-call "ikrt_symlink" 
-                 (string->utf8 to) (string->utf8 path))])
-        (unless (eq? r #t)
-          (raise/strerror who r path)))))
-
+  (define ($make-link to path who proc)
+    (unless (and (string? to) (string? path))
+      (die who "not a string" (if (string? to) path to)))
+    (let ([r (proc (string->utf8 to) (string->utf8 path))])
+      (unless (eq? r #t)
+        (raise/strerror who r path))))
+  
+  (define (make-symbolic-link to path)
+    ($make-link to path 'make-symbolic-link
+                (lambda (u-to u-path)
+                  (foreign-call "ikrt_symlink" u-to u-path))))
+  
+  (define (make-hard-link to path)
+    ($make-link to path 'make-hard-link
+                (lambda (u-to u-path)
+                  (foreign-call "ikrt_link" u-to u-path))))
+  
   (define ($file-time x who proc)
     (unless (string? x) 
       (die who "not a string" x))

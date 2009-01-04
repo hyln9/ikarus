@@ -679,6 +679,14 @@ ikrt_symlink(ikptr to, ikptr path /*, ikpcb* pcb */){
   return ik_errno_to_code();
 }
 
+ikptr
+ikrt_link(ikptr to, ikptr path /*, ikpcb* pcb */){
+  int r = link((char*)(to+off_bytevector_data), (char*)(path+off_bytevector_data));
+  if(r == 0){
+    return true_object;
+  }
+  return ik_errno_to_code();
+}
 
 ikptr 
 ik_system(ikptr str){
