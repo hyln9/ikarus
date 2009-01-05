@@ -211,6 +211,12 @@
       [(equal? (cdar ls) (cdr st)) (f (+ i 1) st (cdr ls) ac)]
       [else (f 1 (car ls) (cdr ls) (cons (cons i st) ac))])))
 
+(define (string-suffix? s1 s2) 
+  (let ([n1 (string-length s1)] [n2 (string-length s2)])
+    (and (>= n1 n2) (string=? (substring s1 (- n1 n2) n1) s2))))
+
+
+
 ; create table, placing all in category Cn until proven otherwise
 (let ([tbl (make-table (category/flags 'Cn))])
   (define (setprop n prop) (table-set! tbl n prop))
@@ -222,28 +228,28 @@
   ;;; field8: if set, then the char has the numeric property
   ;;; field12: if set, then the char has upper-case mapping and is thus cased
   ;;; field13: if set, then the char has lower-case mapping and is thus cased
-  (let f ([ls (map (lambda (x) 
-                     (let ([n (hex->num (list-ref x 0))]
-                           [cclass (string->number (list-ref x 3))]
-                           [cat/flags (category/flags (string->symbol (list-ref x 2)))]
-                           [num (if (string=? (list-ref x 8) "") 0 numeric-property)]
-                           [cased (if (and (string=? (list-ref x 12) "") (string=? (list-ref x 13) ""))
-                                      0 cased-property)])
-                       (cons n (fxior num cased
-                                 (fxsll cclass combining-class-shift)
-                                 cat/flags))))
-                (get-unicode-data "UNIDATA/UnicodeData.txt"))])
+  (let f ([ls (get-unicode-data "UNIDATA/UnicodeData.txt")])
     (unless (null? ls)
-      (cond
-        [(null? (cdr ls)) (setprop (caar ls) (cdar ls))]
-        [(or (= (+ 1 (caar ls)) (caadr ls))
-             (not (= (cdar ls) (cdadr ls))))
-         (setprop (caar ls) (cdar ls))
-         (f (cdr ls))]
-        [else
-         (let f ([n (caar ls)] [j (caadr ls)] [p (cdar ls)])
-           (unless (> n j) (setprop n p) (f (+ n 1) j p)))
-         (f (cddr ls))])))
+      (let ([x (car ls)] [ls (cdr ls)])
+        (let ([n (hex->num (list-ref x 0))]
+              [cclass (string->number (list-ref x 3))]
+              [cat/flags (category/flags (string->symbol (list-ref x 2)))]
+              [num (if (string=? (list-ref x 8) "") 0 numeric-property)]
+              [cased (if (and (string=? (list-ref x 12) "") (string=? (list-ref x 13) ""))
+                         0 cased-property)])
+          (let ([props (fxior num cased
+                         (fxsll cclass combining-class-shift)
+                         cat/flags)])
+            (if (string-suffix? (list-ref x 1) "First>")
+                (let ([y (car ls)] [ls (cdr ls)])
+                  (unless (string-suffix? (list-ref y 1) "Last>")
+                    (error #f "expected entry marked Last following entry marked First for ~x" n))
+                  (let ([m (hex->num (list-ref y 0))])
+                    (do ([n n (fx+ n 1)])
+                        ((fx> n m))
+                      (setprop n props)))
+                  (f ls))
+                (begin (setprop n props) (f ls))))))))
   ;;; interesting parts of each element in WordBreakProperty.txt are:
   ;;; field0: the character index, numeric
   ;;; field1: the word-break property
