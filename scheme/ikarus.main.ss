@@ -26,17 +26,18 @@
   (define (host-info) target)
   
   (define (print-greeting)
-    (printf "Ikarus Scheme version ~a\n" 
-      (if (zero? (string-length ikarus-revision))
-          ikarus-version
-          (format "~a+ (revision ~a, build ~a~a)"
-            ikarus-version
+    (printf "Ikarus Scheme version ~a~a~a~a\n" 
+      ikarus-version
+      (if (zero? (string-length ikarus-revision)) "" "+")
+      (if (= (fixnum-width) 30)
+          ""
+          ", 64-bit")
+      (if (zero? (string-length ikarus-revision)) 
+          ""
+          (format " (revision ~a, build ~a)"
             (+ 1 (string->number ikarus-revision))
             (let-syntax ([ds (lambda (x) (date-string))])
-              ds)
-            (if (= (fixnum-width) 30)
-                ""
-                ", 64-bit"))))
+              ds))))
     (display "Copyright (c) 2006-2008 Abdulaziz Ghuloum\n\n"))
 
   (define (init-library-path) 
