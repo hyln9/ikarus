@@ -2355,10 +2355,10 @@
           (unless block?
             (set-fd-nonblocking socket who id))
           (values 
-            (fh->output-port socket
-               id (output-socket-buffer-size) #f close who)
             (fh->input-port socket
-               id (input-socket-buffer-size) #f close who)))))
+               id (input-socket-buffer-size) #f close who)
+            (fh->output-port socket
+               id (output-socket-buffer-size) #f close who)))))
 
   (define-syntax define-connector 
     (syntax-rules ()

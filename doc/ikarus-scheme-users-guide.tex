@@ -268,7 +268,8 @@ Intel-x86 and the AMD-64 architectures.  64-bit computing allows the
 programmer to utilize larger address space (larger than 4GB) and
 provides a greater range for fixnums (61-bit fixnums).  Running in
 32-bit mode, however, makes more efficient utilization of resources
-due to the smaller memory footprint for most data structures.
+due to the smaller memory footprint for most data structures.\\
+(64-bit support is experimental at this stage of development.)
 
 \textbf{Supports many operating systems:} Ikarus runs on the most
 popular and widely used operating systems for servers and personal
@@ -2215,6 +2216,8 @@ displayed.
 \chapter{The \texttt{(ikarus ipc)} library}
 
 \ref{sec:environment-variables}
+\ref{sec:subprocess}
+\ref{sec:sockets}
 
 \newpage
 
@@ -2268,8 +2271,12 @@ and thus may leak some memory for some calls to \texttt{setenv}.
 Use sparingly.}
 
 
-\section{Subprocess communication}
+\newpage
+\section{\label{sec:subprocess}Subprocess communication}
 
+This section describes the facilities that Ikarus provides for
+starting subprocesses and sending and receiving data through the
+subprocesses' standard input, output, and error ports. 
 
 \defun{system}{procedure}
 \texttt{(system string)}
@@ -2287,7 +2294,6 @@ Ikarus's \texttt{system} procedure is a thin wrapper around the
   Makefile        Makefile.am     Makefile.in
   0
 \end{verbatim}
-
 
 \defun{process}{procedure}
 \texttt{(process program-name args ...)}
@@ -2319,7 +2325,8 @@ operation on a nonblocking port in which bytes are not available for
 reading or writing causes Ikarus to enqueue the port with the
 continuation in which the read/write operation occurs and attempt to
 dispatch previously enqueued ports on which some bytes are ready for
-read or write.
+read or write.  See Section~\ref{sec:sockets} for more details on
+blocking and nonblocking operations.
 
 
 
@@ -2389,56 +2396,175 @@ the signal to the given process.
 
 
 
- 
-\section{TCP and UDP sockets}
+\newpage 
+\section{\label{sec:sockets}TCP and UDP sockets}
 
-TODO
+Ikarus supports synchronous (blocking) and asynchronous
+(multiplexing) communication facilities over both TCP/IP and UDP/IP
+channels.  It facilitates writing client and server applications
+that serve a variety of purposes, e.g., web servers,
+char clients, mail, news, et cetera.
+
+The synchronous model is simple and is ideal for noninteractive
+command-line applications that communicate with a single host at a
+time.  FTP clients, HTTP spiders, and off-line netnews caching
+programs typically use synchronous communication.  The basic
+operations start with connecting (via \texttt{tcp-connect}) to an
+internet service (identified by a port number or a service name)
+located on some host (identified by its host name or IP number).  By
+connecting to a server, we obtain an input port and an output port
+forming bidirectional channel of communication.  Depending on the
+service protocol, the client exchanges information with the server
+by reading and writing to the designated ports.  Read and write
+operations in this model may block indefinitely until appropriate
+number of bytes are read/written, or until the operation times out.
+Communication ends when the client closes both ports.
+
+The asynchronous model allows for communicating with many hosts
+simultaneously.  Ikarus maintains a queue of pending ports, the
+blocking operation performed on these ports, and their respective
+continuations.  Whenever the operating system indicates that a
+read/write operation may block, Ikarus schedules the port and  a
+restarting continuation into the queue and then dispatches one of
+the \emph{ready} operations.   This is reminiscent of how
+multitasking operating systems schedule I/O-bound threads, except
+that in Ikarus, threads are lightweight, represented by ordinary
+continuations.  Thus, reading or writing to a nonblocking port
+causes Ikarus to transparently capture a continuation, enlist it in
+the queue, and dispatch another continuation captured earlier.
+Multiple read and write operations from multiple connections are
+fulfilled concurrently, dispatching whichever one is ready and
+without one operation blocking the rest.
+
+Because asynchronous scheduling and dispatching involves switching
+continuations, winders that maintain the dynamic environment
+(e.g.,~those established by \texttt{dynamic-wind},
+\texttt{parameterize}, \texttt{with-output-to-file},
+\texttt{with-exception-handler}, etc.) are properly invoked when
+leaving a dynamic context and entering another.  Care must be taken
+when using winders that perform externally-visible side effects upon
+entering/leaving a dynamic context.
+
 
 \defun{tcp-connect}{procedure}
-\texttt{(tcp-connect host-name service-name)}
+\texttt{(tcp-connect host service)}
 
-TODO
+The procedure \texttt{tcp-connect} attempts to connect to the
+\texttt{service} located on the remote \texttt{host} through the
+TCP/IP protocol.  The \texttt{host} argument is a string
+representing either the IP address (e.g., \texttt{"127.0.0.1"}) or a
+fully-qualified domain name (e.g., \texttt{"www.example.com"}), in
+which case name to address resolution is performed automatically.
+The \texttt{service} argument is also a string which can be either a
+port number (e.g., \texttt{"80"}) or a service name (e.g.,
+\texttt{"http"}) in which case the service name is mapped to the
+canonical port number for the service.
+
+Upon success, \texttt{tcp-connect} returns two values: a binary
+\emph{input} port and a binary \emph{output} port.  Writing and
+reading from the obtained ports may block indefinitely until an
+appropriate number of bytes is read/written.   Closing both ports
+closes the communication channel and frees the underlying
+operating-system resources.
+
 
 \defun{tcp-connect-nonblocking}{procedure}
-\texttt{(tcp-connect-nonblocking host-name service-name)}
+\texttt{(tcp-connect-nonblocking host service)}
 
-TODO
+The procedure \texttt{tcp-connect-nonblocking} is similar to
+\texttt{tcp-connect} except that the two returned ports are put in
+\emph{nonblocking} mode.  If an attempt to perform a read (write)
+operation on the input (output) port may block, a restart
+continuation is captured and scheduled in the I/O queue and a
+perviously blocked operation may be restarted (when its blocking
+operation can progress).
 
 \defun{udp-connect}{procedure}
-\texttt{(udp-connect host-name service-name)}
+\texttt{(udp-connect host service)}
 
-TODO
+The procedure \texttt{udp-connect} is similar to
+\texttt{tcp-connect} except that it connects to the remote server
+through the UDP protocol (as implied by the name).
 
 \defun{udp-connect-nonblocking}{procedure}
 \texttt{(udp-connect-nonblocking host-name service-name)}
 
-TODO
+The procedure \texttt{udp-connect-nonblocking} is similar to
+\texttt{tcp-connect-nonblocking} except that it connects to the
+remote server through the UDP protocol.
 
 
 \defun{tcp-server-socket}{procedure}
 \texttt{(tcp-server-socket port-number)}
 
-TODO
+The procedure \texttt{tcp-server-socket} attempts to \emph{listen}
+on the given port number for incoming connections.  On success,
+\texttt{tcp-server-socket} returns an abstract \emph{tcp-server}
+object encapsulating the underlying operating-system server socket.
+The server socket is placed in \emph{blocking} mode: an attempt to
+accept a connection on such server blocks indefinitely
+until a remote client attempts to establish a connection.
 
 \defun{tcp-server-socket-nonblocking}{procedure}
 \texttt{(tcp-server-socket-nonblocking port-number)}
 
-TODO
+This procedure is similar to \texttt{tcp-server-socket} except that
+the returned server socket is placed in \emph{nonblocking} mode.  An
+attempt to accept a connection from a nonblocking server socket does
+not block the entire process, instead, a restarting continuation is
+scheduled and is invoked when an incoming connection is available
+(and another I/O-bound operation blocks).
+
 
 \defun{accept-connection}{procedure}
 \texttt{(accept-connection tcp-server)}
 
-TODO
+The procedure \texttt{accept-connection} takes a tcp-server socket
+(e.g., one obtained from \texttt{tcp-server-socket}) and returns two
+values: a binary \emph{input} port and a binary \emph{output} port
+through which the server communicates with the connecting client.
+If the \texttt{tcp-server} object is in blocking mode,
+\texttt{accept-connection} may block the entire process until an
+incoming connection is obtained.  If the server is in nonblocking
+mode, an (otherwise) blocking operation would be rescheduled and
+invoked later when a connection occurs.
+
+The input and output ports that \texttt{accept-connection} returns
+are put in blocking mode. .
+
+\newpage
 
 \defun{accept-connection-nonblocking}{procedure}
 \texttt{(accept-connection-nonblocking tcp-server)}
 
-TODO
+The procedure \texttt{accept-connection-nonblocking} is similar to
+\texttt{accept-connection} except that the two returned ports are
+put in nonblocking mode.
 
 \defun{close-tcp-server-socket}{procedure}
 \texttt{(close-tcp-server-socket tcp-server)}
 
-TODO
+This procedure closing the server socket (so that no more incoming
+connections can be accepted) and frees the underlying
+operating-system resources associated with the socket.
+
+
+\defun{register-callback}{procedure}
+\texttt{(register-callback input-port thunk)}\\
+\texttt{(register-callback output-port thunk)}\\
+\texttt{(register-callback tcp-server thunk)}
+
+
+The procedure \texttt{register-callback} takes a nonblocking port or
+server socket and a callback procedure.  It enqueues the port/socket
+and the thunk into the event queue.  The given procedure is called
+when another I/O operation blocks and data is ready to be read (for
+an input port argument), written (for an output port argument), or
+an incoming connection is available (for a tcp-server argument).
+The \texttt{register-callback} procedure returns immediately.  It
+does not block and does not attempt to perform any read, write, or
+accept operation on the given argument.
+
 
 
 
@@ -3116,6 +3242,14 @@ procedure leaks a small amount of memory.  This is because the
 system cannot track such pointers that go into native code
 (which may retain such pointers indefinitely).  Use judiciously.}
 
+
+\nocite{ghuloum-implicit}
+\nocite{ghuloum-generation}
+
+
+
+
+\appendix
 \chapter{Missing Features}
 
 Ikarus does not fully conform to \rnrs{6} yet.  Although it
@@ -3157,14 +3291,10 @@ open-file-input/output-port
 
 \end{itemize}
 
-
-
-\nocite{ghuloum-implicit}
-\nocite{ghuloum-generation}
-
 \newpage
+
 \backmatter
-\appendix
+%\appendix
 \phantomsection
 %\addcontentsline{toc}{chapter}{Bibliogaraphy}
 \addcontentsline{toc}{chapter}{\bibname}
