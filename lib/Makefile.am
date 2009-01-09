@@ -1,7 +1,7 @@
 libstreamsdir=$(pkglibdir)/streams
 dist_libstreams_DATA=streams/primitive.ss streams/derived.ss
 libikarusdir=$(pkglibdir)/ikarus
-dist_libikarus_DATA=ikarus/foreign.ss 
+dist_libikarus_DATA=ikarus/foreign.ss ikarus/ipc.ss
 libCocoadir=$(pkglibdir)/Cocoa
 dist_libCocoa_DATA=Cocoa/helpers.ss
 
