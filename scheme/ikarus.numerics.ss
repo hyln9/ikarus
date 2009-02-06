@@ -92,11 +92,39 @@
               ($fx= ($flonum-u8-ref x 1) 0))]
         [($fx< be ($fx+ 1075 -52)) ;;; too small to be an integer
          #f]
-        [else ($fl= x ($flround x))])))
+        [else ($fl= x ($$flround x))])))
 
+
+  (define ($$flround x)
+    (foreign-call "ikrt_fl_round" x ($make-flonum)))
 
   (define ($flround x) 
-    (foreign-call "ikrt_fl_round" x ($make-flonum)))
+    ;;; optimize for integer flonums case
+    (define (ratnum-round n nbe)
+      (let ([d (sll 1 nbe)])
+        (let ([q (sra n nbe)]
+              [r (bitwise-and n (sub1 d))])
+          (let ([r2 (+ r r)])
+            (cond
+              [(< r2 d) q]
+              [(> r2 d) (+ q 1)]
+              [else (if (even? q) q (+ q 1))])))))
+    (let ([sbe ($flonum-sbe x)])
+      (let ([be ($fxlogand sbe #x7FF)])
+        (cond
+          ;;; nans/infs/magnitude large enough to be an integer
+          [($fx>= be 1075) x]
+          [else
+           ;;; this really needs to get optimized.
+           (let-values ([(pos? be m) (flonum-parts x)])
+             (cond
+               [(= be 0) ;;; denormalized
+                (if pos? +0.0 -0.0)]
+               [else ; normalized flonum
+                (let ([r 
+                       (inexact 
+                         (ratnum-round (+ m (expt 2 52)) (- 1075 be)))])
+                  (if pos? r ($fl* r -1.0)))]))]))))
 
   (define (flround x)
     (if (flonum? x)
