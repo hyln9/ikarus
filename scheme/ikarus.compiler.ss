@@ -256,15 +256,19 @@
         [(null? fmls) (null? args)]
         [(pair? fmls) (and (pair? args) (matching? (cdr fmls) (cdr args)))]
         [else #t]))
-    (cond
-      [(and (pair? x) (eq? (car x) 'case-lambda))
-       (let f ([cls* (cdr x)])
-         (cond
-           [(null? cls*) '()]
-           [(matching? (caar cls*) args) 
-            (caar cls*)]
-           [else (f (cdr cls*))]))]
-      [else '()]))
+    (define (get-cls* x)
+      (if (pair? x)
+          (case (car x)
+            [(case-lambda) (cdr x)]
+            [(annotated-case-lambda) (cddr x)]
+            [else '()])
+          '()))
+    (let f ([cls* (get-cls* x)])
+      (cond
+        [(null? cls*) '()]
+        [(matching? (caar cls*) args)
+         (caar cls*)]
+        [else (f (cdr cls*))])))
   (define (make-global-set! lhs rhs)
     (make-funcall (make-primref '$init-symbol-value!)
       (list (make-constant lhs) rhs)))
@@ -283,6 +287,22 @@
                                       (begin e e* ...)
                                       rest))]))])
             #'(let ([t val]) body))])))
+
+  (define (E-clambda-clause* cls* ctxt)
+    (map
+      (let ([ctxt (if (pair? ctxt) (car ctxt) #f)])
+        (lambda (cls)
+          (let ([fml* (car cls)] [body (cadr cls)])
+            (let ([nfml* (gen-fml* fml*)])
+              (let ([body (E body ctxt)])
+                (ungen-fml* fml*)
+                (make-clambda-case 
+                  (make-case-info
+                    (gensym)
+                    (properize nfml*) 
+                    (list? fml*)) 
+                  body))))))
+           cls*))
   (define (E x ctxt)
     (cond
       [(pair? x)
@@ -342,23 +362,18 @@
                   (ungen-fml* lhs*)
                   expr))))]
          [(case-lambda)
-          (let ([cls*
-                 (map
-                   (let ([ctxt (if (pair? ctxt) (car ctxt) #f)])
-                     (lambda (cls)
-                       (let ([fml* (car cls)] [body (cadr cls)])
-                         (let ([nfml* (gen-fml* fml*)])
-                           (let ([body (E body ctxt)])
-                             (ungen-fml* fml*)
-                             (make-clambda-case 
-                               (make-case-info
-                                 (gensym)
-                                 (properize nfml*) 
-                                 (list? fml*)) 
-                               body))))))
-                   (cdr x))])
+          (let ([cls* (E-clambda-clause* (cdr x) ctxt)])
             (make-clambda (gensym) cls* #f #f
               (and (symbol? ctxt) ctxt)))]
+         [(annotated-case-lambda)
+          (let ([ae (cadr x)])
+            (let ([cls* (E-clambda-clause* (cddr x) ctxt)])
+              (make-clambda (gensym) cls* #f #f
+                (cons 
+                  (and (symbol? ctxt) ctxt)
+                  (if (annotation? ae)
+                      (annotation-source ae)
+                      #f)))))]
          [(lambda) 
           (E `(case-lambda ,(cdr x)) ctxt)]
          [(foreign-call)
