@@ -1233,20 +1233,22 @@
                           (binary- 0 (fxquotient x g))
                           (binary- 0 (fxquotient y g)))])))])]
            [(bignum? y)
-            (let ([g (binary-gcd x y)])
-              (cond
-                [(= g y) (quotient x g)] ;;; should not happen
-                [($bignum-positive? y)
-                 (if ($fx= g 1) 
-                     ($make-ratnum x y)
-                     ($make-ratnum (fxquotient x g) (quotient y g)))]
-                [else
-                 (if ($fx= g 1)
-                     ($make-ratnum (binary- 0 x) (binary- 0 y))
-                     ($make-ratnum 
-                        (binary- 0 (fxquotient x g))
-                        (binary- 0 (quotient y g))))]))]
-           [(ratnum? y) 
+            (if ($fx= x 0)
+                0
+                (let ([g (binary-gcd x y)])
+                  (cond
+                    [(= g y) (quotient x g)]
+                    [($bignum-positive? y)
+                     (if ($fx= g 1) 
+                         ($make-ratnum x y)
+                         ($make-ratnum (fxquotient x g) (quotient y g)))]
+                    [else
+                     (if ($fx= g 1)
+                         ($make-ratnum (binary- 0 x) (binary- 0 y))
+                         ($make-ratnum 
+                            (binary- 0 (fxquotient x g))
+                            (binary- 0 (quotient y g))))])))]
+           [(ratnum? y)
             (/ (* x ($ratnum-d y)) ($ratnum-n y))]
            [(or (compnum? y) (cflonum? y)) (x/compy x y)]
            [else (err '/ y)])]
