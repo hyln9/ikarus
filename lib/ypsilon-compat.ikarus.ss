@@ -198,6 +198,20 @@
          (syntax-violation 'c-function "invalid argument type"
                            #'form #'arg-type)])))
 
+  (define (convert-out-byte* who s-val c-val)
+    (let ((n (bytevector-length s-val)))
+      (let loop ([i 0])
+        (unless (= i n)
+          (bytevector-u8-set! s-val i (pointer-ref-c-unsigned-char c-val i))
+          (loop (+ i 1))))))
+
+  (define-syntax convert-out-arg
+    (lambda (x)
+      (syntax-case x (int char* byte* c-callback float double void*)
+        ((_ form foreign-name s-val c-val byte*)
+         #'(convert-out-byte* 'foreign-name s-val c-val))
+        ((_ form foreign-name s-val c-val arg-ype)
+         #'(void)))))
 
   (define (char*->string who x)
     (define (strlen x)
@@ -222,7 +236,6 @@
          #'(char*->string 'foreign-name val)]
         [(_ form foreign-name val other) 
          #'val])))
-
 
   (define-syntax convert-type
     (lambda (x)
@@ -262,21 +275,23 @@
         (format "cannot find object ~a in library ~a" 
                 name (library-name lib)))))
 
-
   (define-syntax c-function
     (lambda (x)
       (syntax-case x ()
         [(_ lib lib-name return-type conv foreign-name (arg-type* ...))
          (with-syntax ([x x]
-                       [(t* ...) (generate-temporaries #'(arg-type* ...))])
+                       [(t* ...) (generate-temporaries #'(arg-type* ...))]
+                       [(u* ...) (generate-temporaries #'(arg-type* ...))])
          #'(let ([callout 
                    ((make-c-callout 
                       (convert-type return-type)
                       (list (convert-type arg-type*) ...))
                     (lookup-shared-object lib 'foreign-name))])
              (lambda (t* ...)
-               (let ([t* (convert-arg x foreign-name t* arg-type*)] ...)
-                 (let ([v (callout t* ...)])
+               (let ([u* (convert-arg x foreign-name t* arg-type*)] ...)
+                 (let ([v (callout u* ...)])
+                   (convert-out-arg x foreign-name t* u* arg-type*)
+                   ...
                    (convert-return x foreign-name v return-type))))))])))
 
   (define-syntax c-argument
