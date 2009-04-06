@@ -693,15 +693,12 @@
                       (when (null? args)
                         (die who "insufficient arguments"))
                       (let ([a (car args)])
-                        (cond
-                          [(or (fixnum? a) (bignum? a) (ratnum?  a)) 
-                           (void)]
-                          [(flonum? a)
-                           (unless (eqv? c #\d) 
-                             (die who 
-                               (format "flonums cannot be printed with ~~~a" c)))]
-                          [else 
-                           (die who "not a number" a)]))
+                        (unless (number? a) (die who "not a number" a))
+                        (unless (or (eqv? c #\d) (exact? a))
+                          (die who 
+                            (format "inexact numbers cannot be \
+                                     printed with ~~~a" c)
+                            a)))
                       (f (fxadd1 i) (cdr args))]
                      [else
                       (die who "invalid sequence character after ~" c)])))]
@@ -731,13 +728,7 @@
                      =>
                      (lambda (x)
                        (let ([a (car args)])
-                         (cond
-                           [(or (fixnum? a) (bignum? a) (ratnum? a))
-                            (display-to-port (number->string a (cdr x)) p)]
-                           [(flonum? a)
-                            (display-to-port (number->string a) p)]
-                           [else 
-                            (die who "BUG: not a number" a)]))
+                         (display-to-port (number->string a (cdr x)) p))
                        (f (fxadd1 i) (cdr args)))]
                     [else (die who "BUG" c)])))]
               [else 
