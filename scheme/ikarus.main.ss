@@ -38,7 +38,7 @@
             (+ 1 (string->number ikarus-revision))
             (let-syntax ([ds (lambda (x) (date-string))])
               ds))))
-    (display "Copyright (c) 2006-2008 Abdulaziz Ghuloum\n\n"))
+    (display "Copyright (c) 2006-2009 Abdulaziz Ghuloum\n\n"))
 
   (define (init-library-path) 
     (define (split s)
