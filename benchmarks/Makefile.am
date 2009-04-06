@@ -1,6 +1,6 @@
 
 EXTRA_DIST=README bench.ss benchall.ss rn100 parsing-data.ss \
-  summarize.pl rnrs-benchmarks.ss bib simplex.ss \
+  summarize.pl rnrs-benchmarks.ss bib \
   rnrs-benchmarks/slatex-data/test.tex \
   rnrs-benchmarks/slatex-data/slatex.sty \
   rnrs-benchmarks/ack.ss \
