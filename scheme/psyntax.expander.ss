@@ -1260,8 +1260,7 @@
                        (let ((v ,expr))
                          (if (procedure? v)
                              (make-traced-procedure ',who v)
-                             (assertion-violation 'trace-define
-                                "not a procedure" v)))))
+                             v))))
              (stx-error stx "invalid name"))))))
   
   (define trace-define-syntax-macro
