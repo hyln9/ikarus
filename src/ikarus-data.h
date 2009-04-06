@@ -249,7 +249,7 @@ long long extract_num_longlong(ikptr x);
 #define is_fixnum(x) ((((unsigned long)(x)) & fx_mask) == 0)
 
 #define ref(x,n) \
-  (((ikptr*)(((char*)(long int)(x)) + ((long int)(n))))[0])
+  (((ikptr*)(((long int)(x)) + ((long int)(n))))[0])
 
 #define tagof(x) (((int)(x)) & 7)
 
