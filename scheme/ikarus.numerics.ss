@@ -257,27 +257,23 @@
     (let ([b0 ($flonum-u8-ref x 0)])
       (fx> b0 127)))
 
-  
-
-
-
-  (define (inexact->exact x)
+  (define ($exact x who)
+    (import (ikarus system $compnums))
     (cond
       [(flonum? x)
        (or ($flonum->exact x)
-           (die 'inexact->exact "no real value" x))]
-      [(or (fixnum? x) (ratnum? x) (bignum? x)) x]
-      [else
-       (die 'inexact->exact "not an inexact number" x)]))
+           (die who "number has no real value" x))]
+      [(cflonum? x)
+       (make-rectangular 
+         (or ($flonum->exact ($cflonum-real x))
+             (die who "number has no real value" x))
+         (or ($flonum->exact ($cflonum-imag x))
+             (die who "number has no real value" x)))]
+      [(or (fixnum? x) (ratnum? x) (bignum? x) (compnum? x)) x]
+      [else (die who "not a number" x)]))
 
-  (define (exact x)
-    (cond
-      [(flonum? x)
-       (or ($flonum->exact x)
-           (die 'exact "no real value" x))]
-      [(or (fixnum? x) (ratnum? x) (bignum? x)) x]
-      [else
-       (die 'exact "not an inexact number" x)]))
+  (define (inexact->exact x) ($exact x 'inexact->exact))
+  (define (exact x) ($exact x 'exact))
 
 
   (define (flpositive? x)
