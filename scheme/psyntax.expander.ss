@@ -1102,7 +1102,7 @@
                `(let ,(map list t* expr*)
                   ,(let f ((pat* pat*) (t* t*))
                      (cond
-                       ((null? pat*) `(begin #f ,b . ,b*))
+                       ((null? pat*) `(begin ,b . ,b*))
                        (else
                         `(syntax-case ,(car t*) ()
                            (,(car pat*) ,(f (cdr pat*) (cdr t*)))
