@@ -1357,6 +1357,7 @@
     [getenv                                      i]
     [setenv                                      i]
     [unsetenv                                    i]
+    [environ                                     i]
     [nanosleep                                   i]
     [char-ready?                                 ]
     [load                                        i]

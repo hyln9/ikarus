@@ -371,22 +371,22 @@
       busted))
 
 
-  (define environ (lambda args (die 'environ "busted!")))
-  (define environ^
+  (define environ
     (lambda ()
       (map 
-        (lambda (s)
-          (define (loc= s i n)
-            (cond
-              [(fx= i n) i]
-              [(char=? (string-ref s i) #\=) i]
-              [else (loc= s (fx+ i 1) n)]))
-          (let ([n (string-length s)])
-            (let ([i (loc= s 0 n)])
-              (cons (substring s 0 i)
-                    (if (fx< (fxadd1 i) n)
-                        (substring s (fxadd1 i) n)
-                        "")))))
+        (lambda (bv)
+          (let ([s (utf8->string bv)])
+            (define (loc= s i n)
+              (cond
+                [(fx= i n) i]
+                [(char=? (string-ref s i) #\=) i]
+                [else (loc= s (fx+ i 1) n)]))
+            (let ([n (string-length s)])
+              (let ([i (loc= s 0 n)])
+                (cons (substring s 0 i)
+                      (if (fx< (fxadd1 i) n)
+                          (substring s (fxadd1 i) n)
+                          ""))))))
         (foreign-call "ikrt_environ"))))
 
   (define (nanosleep secs nsecs)

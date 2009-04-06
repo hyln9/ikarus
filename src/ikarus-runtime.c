@@ -972,21 +972,24 @@ ikrt_unsetenv(ikptr key){
 
 ikptr 
 ikrt_environ(ikpcb* pcb){
-  fprintf(stderr, "environ busted!\n");
-  exit(-1);
   char** es = environ;
   int i; char* e;
   ikptr ac = null_object;
+  pcb->root0 = &ac;
   for(i=0; (e=es[i]); i++){
     long int n = strlen(e);
-    ikptr s = ik_unsafe_alloc(pcb, align(n+disp_string_data+1)) + string_tag;
-    ref(s, -string_tag) = fix(n);
-    memcpy((char*)(long)(s+off_string_data), e, n+1);
-    ikptr p = ik_unsafe_alloc(pcb, pair_size) + pair_tag;
+    ikptr s = ik_safe_alloc(pcb, align(n+disp_bytevector_data+1))
+      + bytevector_tag;
+    ref(s, -bytevector_tag) = fix(n);
+    memcpy((char*)(long)(s+off_bytevector_data), e, n+1);
+    pcb->root1 = &s;
+    ikptr p = ik_safe_alloc(pcb, pair_size) + pair_tag;
+    pcb->root1 = 0;
     ref(p, off_cdr) = ac;
     ref(p, off_car) = s;
     ac = p;
   }
+  pcb->root0 = 0;
   return ac;
 }
 
