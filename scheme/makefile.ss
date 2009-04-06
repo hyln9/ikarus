@@ -1727,6 +1727,8 @@
     `([$init-symbol-value! . ,label])
     `([,label . (global . ,loc)])))
 
+(define src-dir (or (getenv "IKARUS_SRC_DIR") "."))
+
 (define (expand-all files)
   ;;; remove all re-exported identifiers (those with labels in
   ;;; subst but not binding in env).
@@ -1740,7 +1742,7 @@
     (for-each
       (lambda (file)
         (debugf " ~s" file)
-        (load file
+        (load (string-append src-dir "/" file)
           (lambda (x) 
             (let-values ([(name code export-subst export-env)
                           (boot-library-expand x)])

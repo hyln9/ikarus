@@ -541,16 +541,16 @@
       (f (fx+ i 1)))))
 
 (define (test-input-files)
-  (assert (= (file-size-char-by-char "tests/SRFI-1.ss") 56573))
-  (assert (= (file-size "tests/SRFI-1.ss") 56573))
-  (let ([bv (file->bytevector "tests/SRFI-1.ss")])
+  (assert (= (file-size-char-by-char (src-file "tests/SRFI-1.ss")) 56573))
+  (assert (= (file-size (src-file "tests/SRFI-1.ss")) 56573))
+  (let ([bv (file->bytevector (src-file "tests/SRFI-1.ss"))])
     (let-values ([(p extract) (open-bytevector-output-port #f)])
       (bytevector->binary-port bv p)
       (let ([bv2 (extract)])
         (assert (bytevector=? bv bv2))
         (assert (bytevector=? #vu8() (extract))))))
   
-  (let ([bv (file->bytevector "tests/SRFI-1.ss")])
+  (let ([bv (file->bytevector (src-file "tests/SRFI-1.ss"))])
     (let-values ([(p extract) (open-bytevector-output-port 
                                 (native-transcoder))])
       (bytevector->textual-port bv p)
@@ -558,7 +558,7 @@
         (assert (bytevector=? bv bv2))
         (assert (bytevector=? #vu8() (extract))))))
   
-  (let ([bv (file->bytevector "tests/SRFI-1.ss")])
+  (let ([bv (file->bytevector (src-file "tests/SRFI-1.ss"))])
     (let-values ([(p extract) (open-bytevector-output-port 
                                 (make-transcoder (latin-1-codec)))])
       (bytevector->textual-port bv p)
@@ -566,7 +566,7 @@
         (assert (bytevector=? bv bv2))
         (assert (bytevector=? #vu8() (extract))))))
   
-  (let ([bv (file->bytevector "tests/SRFI-1.ss")])
+  (let ([bv (file->bytevector (src-file "tests/SRFI-1.ss"))])
     (let-values ([(p extract) (open-string-output-port)]) 
       (bytevector->textual-port bv p)
       (let ([str (extract)])

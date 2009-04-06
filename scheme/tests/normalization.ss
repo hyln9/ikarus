@@ -1,7 +1,7 @@
 
 (library (tests normalization)
   (export run-tests)
-  (import (ikarus) (unicode-data))
+  (import (ikarus) (tests framework) (unicode-data))
 
 (define (reset) (error 'reset "yukk"))
 (define (enumerate ls)
@@ -33,7 +33,7 @@
   (let ([data (map (lambda (x) (map conv (list-head x 5)))
                    (filter (lambda (x) (>= (length x) 5))
                      (get-unicode-data
-                       "unicode/UNIDATA/NormalizationTest.txt")))])
+                       (src-file "unicode/UNIDATA/NormalizationTest.txt"))))])
     (define NFD string-normalize-nfd)
     (define NFKD string-normalize-nfkd)
     (define NFC string-normalize-nfc)

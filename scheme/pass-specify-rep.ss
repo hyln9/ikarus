@@ -550,4 +550,4 @@
     (let ([x (Program x)])
       x))
 
-  (include "pass-specify-rep-primops.ss"))
+  (include-src "pass-specify-rep-primops.ss"))

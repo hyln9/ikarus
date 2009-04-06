@@ -1,9 +1,9 @@
 
 (library (tests parse-flonums)
   (export run-tests)
-  (import (ikarus))
+  (import (ikarus) (tests framework))
   
-  (define file "tests/rn100")
+  (define file (src-file "tests/rn100"))
 
   (define (read-all)
     (with-input-from-file file

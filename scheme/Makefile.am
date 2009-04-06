@@ -29,7 +29,7 @@ EXTRA_DIST=ikarus.boot.4.prebuilt ikarus.boot.8.prebuilt \
   ikarus.string-to-number.ss ikarus.compiler.source-optimizer.ss \
   ikarus.compiler.tag-annotation-analysis.ss ikarus.ontology.ss \
   ikarus.reader.annotated.ss ikarus.pointers.ss ikarus.equal.ss \
-  ikarus.symbol-table.ss ikarus.apropos.ss
+  ikarus.symbol-table.ss ikarus.apropos.ss ikarus.include-src.ss
  
 all: $(nodist_pkglib_DATA)
 
@@ -41,7 +41,7 @@ sizeofvoidp = $(shell grep SIZEOF_VOID_P ../config.h | sed "s/.*\(.\)/\1/g")
 
 ikarus.config.ss: Makefile last-revision ../config.h
 	echo '(define ikarus-version "$(PACKAGE_VERSION)")' >$@
-	echo '(define ikarus-revision "$(shell cat last-revision)")' >>$@
+	echo '(define ikarus-revision "$(shell cat $(srcdir)/last-revision)")' >>$@
 	echo '(define ikarus-lib-dir "$(pkglibdir)")' >>$@
 	echo '(define target "$(target)")' >>$@
 	echo '(define wordsize $(sizeofvoidp))' >>$@
@@ -50,8 +50,14 @@ ikarus.config.ss: Makefile last-revision ../config.h
 CLEANFILES=$(nodist_pkglib_DATA) ikarus.config.ss
 MAINTAINERCLEANFILES=last-revision
 
-ikarus.boot: $(EXTRA_DIST) ikarus.config.ss
-	../src/ikarus -b ./ikarus.boot.$(sizeofvoidp).prebuilt --r6rs-script makefile.ss
+ikarus.boot: $(EXTRA_DIST) ikarus.config.ss 
+	IKARUS_SRC_DIR=$(srcdir) \
+  IKARUS_BUILD_DIR=$(builddir) \
+  IKARUS_LIBRARY_PATH=$(srcdir) \
+  ../src/ikarus -b $(srcdir)/ikarus.boot.$(sizeofvoidp).prebuilt \
+  --r6rs-script $(srcdir)/makefile.ss
 
 check: ikarus.boot
-	../src/ikarus -b ikarus.boot --r6rs-script run-tests.ss
+	IKARUS_SRC_DIR=$(srcdir) \
+  IKARUS_LIBRARY_PATH=$(srcdir) \
+  ../src/ikarus -b ikarus.boot --r6rs-script $(srcdir)/run-tests.ss
