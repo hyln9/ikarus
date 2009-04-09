@@ -27,6 +27,7 @@
 #include <netdb.h>
 #include <string.h>
 #include <netinet/in.h>
+#include <dirent.h>
 #include "ikarus-data.h"
 
 extern ikptr ik_errno_to_code();
@@ -378,5 +379,36 @@ ikrt_file_mtime(ikptr filename, ikptr res){
 }
 
 
+ikptr
+ikrt_opendir(ikptr dirname, ikpcb* pcb){
+  DIR* d = opendir((char*)(dirname+off_bytevector_data));
+  if(d == NULL){
+    return ik_errno_to_code();
+  }
+  return(make_pointer((long)d, pcb));
+}
 
+ikptr
+ikrt_readdir(ikptr ptr, ikpcb* pcb){
+  DIR* d = (DIR*) ref(ptr, off_pointer_data);
+  struct dirent* ent = readdir(d);
+  if (ent == NULL){
+    return 0;
+  }
+  int len = ent->d_namlen;
+  ikptr bv = ik_safe_alloc(pcb, align(disp_bytevector_data+len+1))
+             + bytevector_tag;
+  ref(bv, -bytevector_tag) = fix(len);
+  memcpy((char*)(bv+off_bytevector_data), ent->d_name, len+1);
+  return bv;
+}
 
+ikptr
+ikrt_closedir(ikptr ptr, ikpcb* pcb){
+  DIR* d = (DIR*) ref(ptr, off_pointer_data);
+  int rv = closedir(d);
+  if (rv == -1){
+    return ik_errno_to_code();
+  }
+  return 0;
+}

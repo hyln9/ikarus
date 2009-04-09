@@ -71,7 +71,10 @@
     accept-connection accept-connection-nonblocking
     close-tcp-server-socket 
     register-callback
-    input-socket-buffer-size output-socket-buffer-size)
+    input-socket-buffer-size output-socket-buffer-size
+    
+    open-directory-stream directory-stream?  
+    read-directory-stream close-directory-stream)
 
 
   
@@ -130,6 +133,9 @@
       close-tcp-server-socket 
       register-callback
       input-socket-buffer-size output-socket-buffer-size
+
+      open-directory-stream directory-stream?  
+      read-directory-stream close-directory-stream
       ))
 
   ;(define-syntax assert* (identifier-syntax assert))
@@ -2569,6 +2575,63 @@
       [else (die who "invalid argument" what)]))
 
 
+  (module (directory-stream? open-directory-stream
+           read-directory-stream close-directory-stream)
+
+    (define-struct directory-stream (filename pointer closed?))
+    
+    (define G (make-guardian))
+    
+    (define (clean-up)
+      (cond
+        [(G) =>
+         (lambda (x)
+           (close-directory-stream x #f)
+           (clean-up))]))
+
+    (define (open-directory-stream filename)
+      (define who 'open-directory-stream)
+      (unless (string? filename)
+        (die who "not a string" filename))
+      (clean-up)
+      (let ([rv (foreign-call "ikrt_opendir" (string->utf8 filename))])
+        (if (fixnum? rv)
+            (io-error who filename rv)
+            (let ([stream (make-directory-stream filename rv #f)])
+              (G stream)
+              stream))))
+
+    (define (read-directory-stream x)
+      (define who 'read-directory-stream)
+      (unless (directory-stream? x)
+        (die who "not a directory stream" x))
+      (when (directory-stream-closed? x)
+        (die who "directory stream is closed" x))
+      (let ([rv (foreign-call "ikrt_readdir" 
+                   (directory-stream-pointer x))])
+        (cond
+          [(eqv? rv 0) #f]
+          [else (utf8->string rv)])))
+
+    (define close-directory-stream
+      (case-lambda
+        [(x wanterror?)
+         (define who 'close-directory-stream)
+         (clean-up)
+         (unless (directory-stream? x)
+           (die who "not a directory stream" x))
+         (unless (directory-stream-closed? x)
+           (set-directory-stream-closed?! x #t)
+           (let ([rv (foreign-call "ikrt_closedir" 
+                       (directory-stream-pointer x))])
+             (when (and wanterror? (not (eqv? rv 0)))
+               (io-error who (directory-stream-filename x) rv))))]
+        [(x) (close-directory-stream x #t)]))
+
+    (set-rtd-printer! (type-descriptor directory-stream)
+      (lambda (x p wr) 
+        (fprintf p "#<directory-stream ~a>" 
+           (directory-stream-filename x)))))
 
 
   ;(set-fd-nonblocking 0 'init '*stdin*)
