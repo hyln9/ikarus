@@ -391,11 +391,12 @@ ikrt_opendir(ikptr dirname, ikpcb* pcb){
 ikptr
 ikrt_readdir(ikptr ptr, ikpcb* pcb){
   DIR* d = (DIR*) ref(ptr, off_pointer_data);
+  errno = 0;
   struct dirent* ent = readdir(d);
   if (ent == NULL){
-    return 0;
+    return (errno ? ik_errno_to_code() : false_object);
   }
-  int len = ent->d_namlen;
+  int len = strlen(ent->d_name);
   ikptr bv = ik_safe_alloc(pcb, align(disp_bytevector_data+len+1))
              + bytevector_tag;
   ref(bv, -bytevector_tag) = fix(len);

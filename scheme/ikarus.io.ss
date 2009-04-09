@@ -2610,7 +2610,10 @@
       (let ([rv (foreign-call "ikrt_readdir" 
                    (directory-stream-pointer x))])
         (cond
-          [(eqv? rv 0) #f]
+          [(fixnum? rv)
+           (close-directory-stream x #f)
+           (io-error who (directory-stream-filename x) rv)]
+          [(not rv) #f]
           [else (utf8->string rv)])))
 
     (define close-directory-stream
