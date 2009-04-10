@@ -251,7 +251,7 @@ s_to_number(signed long n, ikpcb* pcb) {
   return bn+vector_tag;
 }
   
-static ikptr
+ikptr
 sll_to_number(signed long long n, ikpcb* pcb) {
   if (((signed long long)(signed long) n) == n) {
     return s_to_number(n, pcb);

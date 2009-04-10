@@ -60,9 +60,11 @@ scheme_to_ffi_type_cast(ikptr nptr){
       case  7: return &ffi_type_sint32;
       case  8: return (sizeof(long)==4)?&ffi_type_uint32:&ffi_type_uint64;
       case  9: return (sizeof(long)==4)?&ffi_type_sint32:&ffi_type_sint64;
-      case 10: return &ffi_type_float;
-      case 11: return &ffi_type_double;
-      case 12: return &ffi_type_pointer;
+      case 10: return &ffi_type_uint64;
+      case 11: return &ffi_type_sint64;
+      case 12: return &ffi_type_float;
+      case 13: return &ffi_type_double;
+      case 14: return &ffi_type_pointer;
       default: 
         fprintf(stderr, "INVALID ARG %ld", n);
         exit(-1);
@@ -79,6 +81,9 @@ alloc_room_for_type(ffi_type* t){
 }
 
 extern long extract_num(ikptr x);
+extern long long extract_num_longlong(ikptr x);
+extern ikptr sll_to_number(signed long long n, ikpcb* pcb);
+extern ikptr ull_to_number(unsigned long long n, ikpcb* pcb);
 
 static void scheme_to_ffi_value_cast(ffi_type*, ikptr, ikptr, void*);
 
@@ -122,11 +127,14 @@ scheme_to_ffi_value_cast(ffi_type* t, ikptr nptr, ikptr p, void* r) {
       case  8: // ffi_type_uint64;
       case  9: 
        { *((long*)r) = extract_num(p); return; }
-      case 10: //return &ffi_type_float;
+      case 10:
+      case 11:
+       { *((long long*)r) = extract_num_longlong(p); return; }
+      case 12: //return &ffi_type_float;
        { *((float*)r) = flonum_data(p); return; }
-      case 11: //return &ffi_type_double;
+      case 13: //return &ffi_type_double;
        { *((double*)r) = flonum_data(p); return; }
-      case 12: //return &ffi_type_pointer;
+      case 14: //return &ffi_type_pointer;
        { *((void**)r) = (void*)ref(p, off_pointer_data); return; }
       default: 
         fprintf(stderr, "INVALID ARG %ld", n);
@@ -151,9 +159,11 @@ ffi_to_scheme_value_cast(int n, void* p, ikpcb* pcb) {
     case  7: return s_to_number(*((signed int*)p), pcb);
     case  8: return u_to_number(*((unsigned long*)p), pcb);
     case  9: return s_to_number(*((signed long*)p), pcb);
-    case 10: return d_to_number(*((float*)p), pcb);
-    case 11: return d_to_number(*((double*)p), pcb);
-    case 12: return make_pointer((long)*((void**)p), pcb);
+    case 10: return ull_to_number(*((unsigned long long*)p), pcb);
+    case 11: return sll_to_number(*((signed long long*)p), pcb);
+    case 12: return d_to_number(*((float*)p), pcb);
+    case 13: return d_to_number(*((double*)p), pcb);
+    case 14: return make_pointer((long)*((void**)p), pcb);
     default: 
       fprintf(stderr, "INVALID ARG %d", n);
       exit(-1);

@@ -186,17 +186,19 @@
                                     (f (+ i 1))))))))))]
         [else
          (case t
-           [(unsigned-char)   int?]
-           [(signed-char)     int?]
-           [(unsigned-short)  int?]
-           [(signed-short)    int?]
-           [(unsigned-int)    int?]
-           [(signed-int)      int?]
-           [(unsigned-long)   int?]
-           [(signed-long)     int?]
-           [(float)           flonum?]
-           [(double)          flonum?]
-           [(pointer)         pointer?]
+           [(unsigned-char)      int?]
+           [(signed-char)        int?]
+           [(unsigned-short)     int?]
+           [(signed-short)       int?]
+           [(unsigned-int)       int?]
+           [(signed-int)         int?]
+           [(unsigned-long)      int?]
+           [(signed-long)        int?]
+           [(unsigned-long-long) int?]
+           [(signed-long-long)   int?]
+           [(float)              flonum?]
+           [(double)             flonum?]
+           [(pointer)            pointer?]
            [else (die who "invalid type" t)])]))
     checker)
  
@@ -209,18 +211,20 @@
         [(vector? x) (vector-map convert x)]
         [else
          (case x 
-           [(void)            1]
-           [(unsigned-char)   2]
-           [(signed-char)     3]
-           [(unsigned-short)  4]
-           [(signed-short)    5]
-           [(unsigned-int)    6]
-           [(signed-int)      7]
-           [(unsigned-long)   8]
-           [(signed-long)     9]
-           [(float)          10]
-           [(double)         11]
-           [(pointer)        12]
+           [(void)                1]
+           [(unsigned-char)       2]
+           [(signed-char)         3]
+           [(unsigned-short)      4]
+           [(signed-short)        5]
+           [(unsigned-int)        6]
+           [(signed-int)          7]
+           [(unsigned-long)       8]
+           [(signed-long)         9]
+           [(unsigned-long-long) 10]
+           [(signed-long-long)   11]
+           [(float)              12]
+           [(double)             13]
+           [(pointer)            14]
            [else (die who "invalid type" x)])]))
     (unless (list? argtypes)
       (die who "arg types is not a list" argtypes))
