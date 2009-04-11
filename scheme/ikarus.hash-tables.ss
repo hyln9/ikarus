@@ -15,7 +15,7 @@
 
 
 (library (ikarus hash-tables)
-  (export make-eq-hashtable make-eqv-hashtable  make-hashtable
+  (export make-eq-hashtable make-eqv-hashtable make-hashtable
           hashtable-ref hashtable-set! hashtable?
           hashtable-size hashtable-delete! hashtable-contains?
           hashtable-update! hashtable-keys hashtable-mutable?
@@ -36,7 +36,7 @@
             hashtable-equivalence-function hashtable-hash-function
             string-hash string-ci-hash symbol-hash))
 
-  (define-struct hasht (vec count tc mutable? hashf equivf))
+  (define-struct hasht (vec count tc mutable? hashf equivf hashf0))
 
   ;;; directly from Dybvig's paper
   (define tc-pop
@@ -337,7 +337,8 @@
     (define (dup-hasht h mutable? n)
       (let* ([hashf (hasht-hashf h)]
              [tc (and (not hashf) (let ([x (cons #f #f)]) (cons x x)))])
-        (make-hasht (make-base-vec n) 0 tc mutable? hashf (hasht-equivf h))))
+        (make-hasht (make-base-vec n) 0 tc mutable? 
+                    hashf (hasht-equivf h) (hasht-hashf0 h))))
     (let ([v (hasht-vec h)] [n (hasht-count h)])
       (let ([r (dup-hasht h mutable? (vector-length v))])
         (let f ([i ($fxsub1 n)] [j ($fxsub1 (vector-length v))] [r r] [v v])
@@ -363,7 +364,7 @@
       [()
        (let ([x (cons #f #f)])
          (let ([tc (cons x x)])
-           (make-hasht (make-base-vec 32) 0 tc #t #f eq?)))]
+           (make-hasht (make-base-vec 32) 0 tc #t #f eq? #f)))]
       [(k)
        (if (and (or (fixnum? k) (bignum? k)) (>= k 0))
            (make-eq-hashtable)
@@ -374,7 +375,7 @@
       [()
        (let ([x (cons #f #f)])
          (let ([tc (cons x x)])
-           (make-hasht (make-base-vec 32) 0 tc #t #f eqv?)))]
+           (make-hasht (make-base-vec 32) 0 tc #t #f eqv? #f)))]
       [(k)
        (if (and (or (fixnum? k) (bignum? k)) (>= k 0))
            (make-eqv-hashtable)
@@ -402,7 +403,7 @@
        (unless (procedure? equivf)
          (die who "equivalence function is not a procedure" equivf))
        (if (and (or (fixnum? k) (bignum? k)) (>= k 0))
-           (make-hasht (make-base-vec 32) 0 #f #t (wrap hashf) equivf)
+           (make-hasht (make-base-vec 32) 0 #f #t (wrap hashf) equivf hashf)
            (die who "invalid initial capacity" k))]))
 
   (define hashtable-ref
@@ -495,7 +496,7 @@
 
   (define (hashtable-hash-function h)
     (if (hasht? h)
-        (hasht-hashf h)
+        (hasht-hashf0 h)
         (die 'hashtable-hash-function "not a hash table" h)))
 
   (define (string-hash s)

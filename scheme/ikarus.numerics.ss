@@ -3378,7 +3378,7 @@
     (cond
       [(and (fixnum? n) (fixnum? m)) 
        (cond
-         [(eq? m 0) (error 'div "division by 0")]
+         [(eq? m 0) (die 'div "division by 0")]
          [(eq? m -1) (- n)]
          [else 
           (let ([d0 ($fxquotient n m)])
@@ -3396,7 +3396,7 @@
     (cond
       [(and (fixnum? n) (fixnum? m)) 
        (cond
-         [(eq? m 0) (error 'mod "division by 0")]
+         [(eq? m 0) (die 'mod "division by 0")]
          [else
           (let ([d0 ($fxquotient n m)])
             (let ([m0 ($fx- n ($fx* d0 m))])
