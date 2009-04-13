@@ -120,8 +120,8 @@
              (cond
                [(= i n) p]
                [else
-                (pointer-set-c-int! p (* i pointer-size)
-                  (pointer->integer (check-char* who (vector-ref x i))))
+                (pointer-set-c-pointer! p (* i pointer-size)
+                  (check-char* who (vector-ref x i)))
                 (f (+ i 1))]))))]
       [else (die who "not a char**" x)]))
 
