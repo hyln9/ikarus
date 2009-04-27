@@ -507,7 +507,7 @@
   ;;; same label or if both are unbound and they have the same name.
   (define free-id=?
     (lambda (i j)
-      (let ((t0 (id->real-label i)) (t1 (id->real-label j)))
+      (let ((t0 (id->label i)) (t1 (id->label j)))
         (if (or t0 t1)
             (eq? t0 t1)
             (eq? (id->sym i) (id->sym j))))))
@@ -584,8 +584,8 @@
   ;;; id->label takes an id (that's a sym x marks x substs) and
   ;;; searches the substs for a label associated with the same sym
   ;;; and marks.
-  (define (id->label id)
-    (or (id->real-label id)
+  (define (id->label/intern id)
+    (or (id->label id)
         (cond
           ((top-level-context) =>
            (lambda (env)
@@ -596,7 +596,7 @@
                  lab))))
           (else #f))))
           
-  (define id->real-label
+  (define id->label
     (lambda (id)
       (let ((sym (id->sym id)))
         (let search ((subst* (stx-subst* id)) (mark* (stx-mark* id)))
@@ -679,7 +679,7 @@
       (cond
         ((id? e)
          (let ((id e))
-           (let* ((label (id->label id))
+           (let* ((label (id->label/intern id))
                   (b (label->binding label r))
                   (type (binding-type b)))
              (unless label ;;; fail early.
@@ -694,7 +694,7 @@
         ((syntax-pair? e)
          (let ((id (syntax-car e)))
            (if (id? id)
-               (let* ((label (id->label id))
+               (let* ((label (id->label/intern id))
                       (b (label->binding label r))
                       (type (binding-type b)))
                  (unless label ;;; fail early.

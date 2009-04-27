@@ -335,7 +335,7 @@
     (sign-inf. (r ex sn)
       [(#\0) (next sign-inf.0 r ex sn)])
     (sign-inf.0 (r ex sn)
-      [(eof) (* sn +inf.0)]
+      [(eof) (if (= sn 1) +inf.0 -inf.0)] ;(* sn +inf.0)
       [(#\+) (next im:sign r (* sn +inf.0) ex +1)]
       [(#\-) (next im:sign r (* sn +inf.0) ex -1)]
       [(#\@) (next polar r (* sn +inf.0) ex)]
