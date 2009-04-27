@@ -101,5 +101,42 @@
            x)
         e))
 
+    ;;; test from Michele Simionato, reported in
+    ;;; http://groups.google.com/group/ikarus-users/msg/218f85234ce82341
+    (let ([e (new-interaction-environment)])
+      (eval
+        '(library (test-sweet-x)
+           (export syntax-match def-syntax) 
+           (import (rnrs)) 
+           (define-syntax syntax-match 
+             (lambda (y) 
+               (syntax-case y (sub) 
+                 ((syntax-match x (literal ...) (sub patt skel) ...) 
+                  (for-all identifier? #'(literal ...)) 
+                  #'(syntax-case x (literal ...) 
+                      (patt skel) 
+                      ...)) 
+                 ))) 
+           (define-syntax def-syntax 
+             (lambda (y) 
+               (syntax-case y () 
+                ((def-syntax name transformer) 
+                     #'(define-syntax name 
+                         (lambda (x) 
+                           (syntax-case x (<source>) 
+                             ((name <source>) #''(... (... transformer))) 
+                             (x (transformer #'x))))))))))
+        e)
 
-    )))
+      (eval '(import (test-sweet-x)) e)
+
+      (eval '(def-syntax macro 
+               (lambda (y) (syntax-match y () (sub (ctx x) #'x))))
+            e)
+      (assert 
+        (equal? (eval '(macro <source>) e) 
+           '(lambda (y) (syntax-match y () (sub (ctx x) #'x))))))
+
+
+
+    ))
