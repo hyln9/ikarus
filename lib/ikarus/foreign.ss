@@ -37,7 +37,7 @@
           pointer-ref-c-pointer
           pointer-ref-c-float 
           pointer-ref-c-double
-          malloc free 
+          malloc free memcpy
           pointer->integer integer->pointer pointer? dlopen dlsym
           dlclose dlerror
           make-c-callout make-c-callback 

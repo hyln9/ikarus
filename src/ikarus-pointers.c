@@ -149,6 +149,27 @@ ikrt_free(ikptr x) {
   return void_object;
 }
 
+ikptr
+ikrt_memcpy_to_bv(ikptr dst, ikptr dst_off, ikptr src, ikptr count
+    /*, ikpcb* pcb */) {
+  void *src_ptr, *dst_ptr;
+  
+  src_ptr = (void *)ref(src, off_pointer_data);
+  dst_ptr = (void *)(dst + off_bytevector_data + unfix(dst_off));
+  memcpy(dst_ptr, src_ptr, unfix(count));
+  return void_object;
+}
+
+ikptr
+ikrt_memcpy_from_bv(ikptr dst, ikptr src, ikptr src_off, ikptr count
+    /*, ikpcb* pcb */) {
+  void *src_ptr, *dst_ptr;
+  
+  src_ptr = (void *)(src + off_bytevector_data + unfix(src_off));
+  dst_ptr = (void *)ref(dst, off_pointer_data);
+  memcpy(dst_ptr, src_ptr, unfix(count));
+  return void_object;
+}
 
 ikptr
 ikrt_ref_char(ikptr p, ikptr off /*, ikpcb* pcb*/) {

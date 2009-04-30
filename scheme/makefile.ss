@@ -1499,6 +1499,7 @@
     [dlsym                             $for]
     [malloc                            $for]
     [free                              $for]
+    [memcpy                            $for]
     [errno                             $for]
     [pointer-ref-c-signed-char         $for]
     [pointer-ref-c-signed-short        $for]

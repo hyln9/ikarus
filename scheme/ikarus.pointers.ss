@@ -17,7 +17,7 @@
 
 (library (ikarus.pointers)
   (export pointer? integer->pointer pointer->integer 
-          dlopen dlerror dlclose dlsym malloc free
+          dlopen dlerror dlclose dlsym malloc free memcpy
           errno
           pointer-ref-c-signed-char 
           pointer-ref-c-signed-short
@@ -45,7 +45,7 @@
     (except (ikarus) 
       pointer? 
       integer->pointer pointer->integer
-      dlopen dlerror dlclose dlsym malloc free))
+      dlopen dlerror dlclose dlsym malloc free memcpy))
 
   ;;; pointer manipulation procedures 
 
@@ -115,6 +115,34 @@
     (if (pointer? x)
         (foreign-call "ikrt_free" x)
         (die 'free "not a pointer" x)))
+
+  (define (pointer+ ptr off)
+    (integer->pointer (+ (pointer->integer ptr) off)))
+
+  
+  (define (memcpy dst dst-offset src src-offset count)
+    (define who 'memcpy)
+    (unless (and (fixnum? dst-offset) (fx>=? dst-offset 0))
+      (die who "not a positive fixnum" dst-offset))
+    (unless (and (fixnum? src-offset) (fx>=? src-offset 0))
+      (die who "not a positive fixnum" src-offset))
+    (unless (and (fixnum? count) (fx>=? count 0))
+      (die who "not a postive fixnum" count))
+    (cond ((and (pointer? dst) (bytevector? src))
+           (unless (fx<=? (fx+ src-offset count) (bytevector-length src))
+             (die who "source bytevector length exceeded"
+                  (bytevector-length src) src-offset count))
+           (foreign-call "ikrt_memcpy_from_bv"
+                         (pointer+ dst dst-offset) src src-offset count))
+          ((and (bytevector? dst) (pointer? src))
+           (unless (fx<=? (fx+ dst-offset count) (bytevector-length dst))
+             (die who "destination bytevector length exceeded"
+                  (bytevector-length dst) dst-offset count))
+           (foreign-call "ikrt_memcpy_to_bv"
+                         dst dst-offset (pointer+ src src-offset) count))
+          (else
+           (die who "destination and source not a bytevector/pointer pair"
+                dst dst))))
 
   ;;; getters and setters
 
