@@ -256,14 +256,15 @@ sll_to_number(signed long long n, ikpcb* pcb) {
   if (((signed long long)(signed long) n) == n) {
     return s_to_number(n, pcb);
   }
+  int len = sizeof(long long) / sizeof(mp_limb_t);
   ikptr bn = ik_safe_alloc(pcb, align(sizeof(long long)+disp_bignum_data));
   if (n > 0){
-    ref(bn, 0) = (ikptr)(bignum_tag | (1 << bignum_length_shift)); 
+    ref(bn, 0) = (ikptr)(bignum_tag | (len << bignum_length_shift)); 
     *((long long*)(bn+disp_bignum_data)) = n;
   } else {
     ref(bn, 0) = 
       (ikptr)(bignum_tag | 
-            (1 << bignum_length_shift) | 
+            (len << bignum_length_shift) | 
             (1 << bignum_sign_shift));
     *((long long*)(bn+disp_bignum_data)) = -n;
   }
