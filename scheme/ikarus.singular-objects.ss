@@ -14,7 +14,7 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-(library (ikarus singular-objects)
+(library (ikarus.singular-objects)
   (export base-rtd eof-object void fixnum-width least-fixnum
           greatest-fixnum)
   (import 

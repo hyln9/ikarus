@@ -561,10 +561,8 @@
                   (let ([ae (procedure-annotation x)])
                     (if (pair? ae)
                         (values (car ae) (cdr ae))
-                        (if (symbol? ae)
-                            (values ae #f)
-                            (values #f #f))))])
-      (when (symbol? name)
+                        (values ae #f)))])
+      (when name
         (write-char* " " p)
         (display name p))
       (when (pair? src)

@@ -17,6 +17,7 @@
 ;;; vim:syntax=scheme
 (import (only (ikarus) import))
 (import (except (ikarus) 
+          current-core-eval
           assembler-output optimize-cp optimize-level
           cp0-size-limit cp0-effort-limit expand/optimize
           optimizer-output tag-analysis-output perform-tag-analysis))
@@ -550,6 +551,8 @@
     [$code-set!                                  $codes]
     [$set-code-annotation!                       $codes]
     [procedure-annotation                        i]
+    [$make-annotated-procedure                   $codes]
+    [$annotated-procedure-annotation             $codes]
     [$make-tcbucket                              $tcbuckets]
     [$tcbucket-key                               $tcbuckets]
     [$tcbucket-val                               $tcbuckets]
@@ -1372,6 +1375,7 @@
     [system-value                                i]
     [set-symbol-value!                           i symbols $boot]
     [eval-core                                   $boot]
+    [current-core-eval                           i] ;;; temp
     [pretty-print                                i $boot]
     [pretty-format                               i]
     [pretty-width                                i]

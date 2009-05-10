@@ -19,6 +19,7 @@
     make-code code-reloc-vector code-freevars
     code-size code-ref code-set! set-code-reloc-vector!
     set-code-annotation! procedure-annotation
+    make-annotation-indirect annotation-indirect?
     code->thunk)
   (import
     (ikarus system $fx)
@@ -96,10 +97,14 @@
         (die 'code->thunk "has free variables" x))
       ($code->closure x)))
 
+  (define-struct annotation-indirect ())
   (define (procedure-annotation x)
     (if (procedure? x) 
-        ($code-annotation ($closure-code x))
+        (let ([ae ($code-annotation ($closure-code x))])
+          (if (annotation-indirect? ae)
+              ($annotated-procedure-annotation x)
+              ae))
         (die 'procedure-annotation "not a procedure" x)))
-
+  
   )
 

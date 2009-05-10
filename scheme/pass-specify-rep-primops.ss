@@ -2419,6 +2419,26 @@
   [(P) (interrupt)]
   [(E) (interrupt)])
 
+(define-primop $make-annotated-procedure unsafe
+  [(V annotation proc) 
+   (let ([off (- disp-closure-code closure-tag)])
+     (with-tmp ([t (prm 'alloc 
+                      (K (align (+ disp-closure-data (* 2 wordsize))))
+                      (K closure-tag))])
+       (prm 'mset t (K (- disp-closure-code closure-tag))
+            (K (make-code-loc (sl-annotated-procedure-label))))
+       (prm 'mset t (K (- disp-closure-data closure-tag))
+            (T annotation))
+       (prm 'mset t (K (- (+ disp-closure-data wordsize) closure-tag))
+            (T proc))
+       t))]
+  [(P) (interrupt)]
+  [(E) (interrupt)])
+  
+(define-primop $annotated-procedure-annotation unsafe
+  [(V proc) 
+   (prm 'mref (T proc) 
+     (K (- disp-closure-data closure-tag)))])
 
 
 /section)

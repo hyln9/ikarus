@@ -18,6 +18,7 @@
   (export compile-core-expr-to-port 
           assembler-output optimize-cp
           current-primitive-locations eval-core
+          current-core-eval
           compile-core-expr expand/optimize optimizer-output
           cp0-effort-limit cp0-size-limit optimize-level 
           perform-tag-analysis tag-analysis-output)
@@ -35,7 +36,8 @@
         current-primitive-locations eval-core
         cp0-size-limit cp0-effort-limit 
         expand/optimize optimizer-output
-        tag-analysis-output perform-tag-analysis)
+        tag-analysis-output perform-tag-analysis
+        current-core-eval)
     (ikarus.fasl.write)
     (ikarus.intel-assembler))
 
@@ -2122,6 +2124,7 @@
 
 (module ;assembly-labels
   (refresh-cached-labels!
+   sl-annotated-procedure-label
    sl-apply-label 
    sl-continuation-code-label 
    sl-invalid-args-label
@@ -2149,6 +2152,17 @@
                                  (lambda () label))] ...)
                    (void)))))])))
   (define-cached refresh-cached-labels!
+   [(sl-annotated-procedure-label)
+    (import (ikarus.code-objects))
+    (define SL_annotated (gensym "SL_annotated"))
+    (assemble-sources (lambda (x) #f)
+      (list
+        (list 2 
+          `(name ,(make-annotation-indirect))
+          (label SL_annotated)
+          (movl (mem (fx- (fx+ disp-closure-data wordsize) closure-tag) cpr) cpr)
+          (tail-indirect-cpr-call))))
+    SL_annotated]
    [(sl-apply-label)
     (let ([SL_apply (gensym "SL_apply")]
           [L_apply_done (gensym)]
@@ -2406,9 +2420,17 @@
 
 (define assembler-output (make-parameter #f))
 
+(define current-core-eval
+  (make-parameter
+    (lambda (x) ((compile-core-expr x)))
+    (lambda (x)
+      (if (procedure? x)
+          x
+          (die 'current-core-eval "not a procedure" x)))))
 
 (define eval-core
-  (lambda (x) ((compile-core-expr x))))
+  (lambda (x) 
+    ((current-core-eval) x)))
 
 (include-src "ikarus.compiler.altcogen.ss")
 
