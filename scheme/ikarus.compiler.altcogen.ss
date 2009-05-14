@@ -282,7 +282,7 @@
       [(conditional e0 e1 e2) (or (NonTail e0) (NonTail e1) (NonTail e2))]
       [(seq e0 e1)            (or (NonTail e0) (NonTail e1))]
       [(forcall op arg*)      (ormap NonTail arg*)]
-      [(known x t v) (NonTail x)]
+      [(known x t) (NonTail x)]
       [else (error who "invalid expr" x)]))
   (define (Tail x) 
     (struct-case x

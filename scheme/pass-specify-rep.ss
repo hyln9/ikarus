@@ -418,7 +418,7 @@
       [(funcall) (prm '!= (V x) (V (K #f)))]
       [(jmpcall) (prm '!= (V x) (V (K #f)))]
       [(forcall) (prm '!= (V x) (V (K #f)))]
-      [(known expr type val)
+      [(known expr type)
        ;;; FIXME: suboptimal
        (P expr)]
       [else (error 'cogen-P "invalid pred expr" x)])) 
@@ -446,7 +446,7 @@
        (make-funcall (Function rator) (map V arg*))]
       [(jmpcall label rator arg*)
        (make-jmpcall label (V rator) (map V arg*))]
-      [(known expr type val)
+      [(known expr type)
        ;;; FIXME: suboptimal
        (E expr)]
       [else (error 'cogen-E "invalid effect expr" x)]))
@@ -485,7 +485,7 @@
                     (K (- disp-symbol-record-proc symbol-ptag))))]
             [else (nonproc x check?)])]
          [(primref op) (V x)]
-         [(known x t v)
+         [(known x t)
           (cond
             [(eq? (T:procedure? t) 'yes)
              ;(record-optimization 'procedure x)
