@@ -21,7 +21,8 @@
           current-core-eval
           compile-core-expr expand/optimize optimizer-output
           cp0-effort-limit cp0-size-limit optimize-level 
-          perform-tag-analysis tag-analysis-output)
+          perform-tag-analysis tag-analysis-output
+          strip-source-info)
   (import 
     (rnrs hashtables)
     (ikarus system $fx)
@@ -42,6 +43,7 @@
     (ikarus.intel-assembler))
 
 
+(define strip-source-info (make-parameter #f))
 
 (define-syntax struct-case
   (lambda (x)
@@ -307,6 +309,18 @@
                     (list? fml*)) 
                   body))))))
            cls*))
+  (define (E-app rator arg* ctxt)
+    (let ([names (get-fmls rator arg*)])
+      (make-funcall 
+        (E rator (list ctxt))
+        (let f ([arg* arg*] [names names])
+          (cond
+            [(pair? names)
+             (cons 
+               (E (car arg*) (car names))
+               (f (cdr arg*) (cdr names)))]
+            [else
+             (map (lambda (x) (E x #f)) arg*)])))))
   (define (E x ctxt)
     (cond
       [(pair? x)
@@ -375,9 +389,9 @@
               (make-clambda (gensym) cls* #f #f
                 (cons 
                   (and (symbol? ctxt) ctxt)
-                  (if (annotation? ae)
-                      (annotation-source ae)
-                      #f)))))]
+                  (and (not (strip-source-info))
+                       (annotation? ae)
+                       (annotation-source ae))))))]
          [(lambda) 
           (E `(case-lambda ,(cdr x)) ctxt)]
          [(foreign-call)
@@ -425,18 +439,7 @@
              (make-funcall 
                (make-primref 'make-parameter)
                (map (lambda (x) (E x #f)) (cdr x)))])]
-         [else
-          (let ([names (get-fmls (car x) (cdr x))])
-            (make-funcall 
-              (E (car x) (list ctxt))
-              (let f ([arg* (cdr x)] [names names])
-                (cond
-                  [(pair? names)
-                   (cons 
-                     (E (car arg*) (car names))
-                     (f (cdr arg*) (cdr names)))]
-                  [else
-                   (map (lambda (x) (E x #f)) arg*)]))))])]
+         [else (E-app (car x) (cdr x) ctxt)])]
       [(symbol? x)
        (cond
          [(lexical x) =>

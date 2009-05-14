@@ -31,6 +31,7 @@
 (perform-tag-analysis #t)
 (pretty-width 160)
 ((pretty-format 'fix) ((pretty-format 'letrec)))
+(strip-source-info #t)
 
 (define scheme-library-files
   ;;; Listed in the order in which they're loaded.
@@ -404,6 +405,7 @@
     [struct-field-accessor                       i]
     [struct-length                               i]
     [struct-ref                                  i]
+    [struct-set!                                 i]
     [struct-printer                              i]
     [struct-name                                 i]
     [struct-type-descriptor                      i]
