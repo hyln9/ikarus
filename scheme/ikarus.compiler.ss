@@ -309,18 +309,60 @@
                     (list? fml*)) 
                   body))))))
            cls*))
-  (define (E-app rator arg* ctxt)
-    (let ([names (get-fmls rator arg*)])
-      (make-funcall 
-        (E rator (list ctxt))
-        (let f ([arg* arg*] [names names])
-          (cond
-            [(pair? names)
-             (cons 
-               (E (car arg*) (car names))
-               (f (cdr arg*) (cdr names)))]
-            [else
-             (map (lambda (x) (E x #f)) arg*)])))))
+  (define (E-make-parameter args ctxt)
+    (case (length args)
+      [(1)
+       (let ([val-expr (car args)]
+             [t (gensym 't)]
+             [x (gensym 'x)])
+         (E `((lambda (,t) 
+                (case-lambda
+                  [() ,t]
+                  [(,x) (set! ,t ,x)]))
+              ,val-expr)
+            ctxt))]
+      [(2)
+       (let ([val-expr (car args)]
+             [guard-expr (cadr args)]
+             [f (gensym 'f)]
+             [t (gensym 't)]
+             [t0 (gensym 't)]
+             [x (gensym 'x)])
+         (E `((case-lambda 
+                [(,t ,f)
+                 (if ((primitive procedure?) ,f)
+                     ((case-lambda
+                        [(,t0)
+                         (case-lambda
+                           [() ,t0]
+                           [(,x) (set! ,t0 (,f ,x))])])
+                      (,f ,t))
+                     ((primitive die)
+                        'make-parameter 
+                        '"not a procedure"
+                        ,f))])
+              ,val-expr
+              ,guard-expr)
+            ctxt))]
+      [else 
+       (make-funcall 
+         (make-primref 'make-parameter)
+         (map (lambda (x) (E x #f)) args))]))
+  (define (E-app rator args ctxt)
+    (equal-case rator
+      [((primitive make-parameter)) (E-make-parameter args ctxt)]
+      [else
+       (let ([names (get-fmls rator args)])
+         (make-funcall 
+           (E rator (list ctxt))
+           (let f ([args args] [names names])
+             (cond
+               [(pair? names)
+                (cons 
+                  (E (car args) (car names))
+                  (f (cdr args) (cdr names)))]
+               [else
+                (map (lambda (x) (E x #f)) args)]))))]))
   (define (E x ctxt)
     (cond
       [(pair? x)
@@ -400,45 +442,8 @@
          [(primitive)
           (let ([var (cadr x)])
             (make-primref var))]
-         [((primitive make-parameter)) 
-          (case (length x)
-            [(2) 
-             (let ([val-expr (cadr x)]
-                   [t (gensym 't)]
-                   [x (gensym 'x)])
-               (E `((lambda (,t) 
-                      (case-lambda
-                        [() ,t]
-                        [(,x) (set! ,t ,x)]))
-                    ,val-expr)
-                  ctxt))]
-            [(3)
-             (let ([val-expr (cadr x)]
-                   [guard-expr (caddr x)]
-                   [f (gensym 'f)]
-                   [t (gensym 't)]
-                   [t0 (gensym 't)]
-                   [x (gensym 'x)])
-               (E `((case-lambda 
-                      [(,t ,f)
-                       (if ((primitive procedure?) ,f)
-                           ((case-lambda
-                              [(,t0)
-                               (case-lambda
-                                 [() ,t0]
-                                 [(,x) (set! ,t0 (,f ,x))])])
-                            (,f ,t))
-                           ((primitive die)
-                              'make-parameter 
-                              '"not a procedure"
-                              ,f))])
-                    ,val-expr
-                    ,guard-expr)
-                  ctxt))]
-            [else 
-             (make-funcall 
-               (make-primref 'make-parameter)
-               (map (lambda (x) (E x #f)) (cdr x)))])]
+         [(annotated-call) 
+          (E-app (caddr x) (cdddr x) ctxt)]
          [else (E-app (car x) (cdr x) ctxt)])]
       [(symbol? x)
        (cond

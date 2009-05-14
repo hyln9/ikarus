@@ -2720,7 +2720,7 @@
       (syntax-match e  ()
         ((rator rands ...)
          (let ((rator (chi-expr rator r mr)))
-           (build-application no-source
+           (build-application (syntax-annotation e)
              rator
              (chi-expr* rands r mr)))))))
 

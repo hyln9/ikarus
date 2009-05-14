@@ -31,10 +31,11 @@
     (if-wants-global-defines
       `(define ,x '#f)
       (build-void)))
-  (define-syntax build-application
-    (syntax-rules ()
-      ((_ ae fun-exp arg-exps)
-       `(,fun-exp . ,arg-exps))))
+  (define build-application
+    (lambda (ae fun-exp arg-exps)
+      (if ae
+          `(annotated-call ,ae ,fun-exp . ,arg-exps)
+          (cons fun-exp arg-exps))))
   (define-syntax build-conditional
     (syntax-rules ()
       ((_ ae test-exp then-exp else-exp)
