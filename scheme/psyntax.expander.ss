@@ -3921,6 +3921,14 @@
   (define (syntax-annotation x)
     (if (stx? x) (stx-expr x) x))
 
+;  (define (syntax-annotation x)
+;    (if (stx? x)
+;        (let ([expr (stx-expr x)])
+;          (if (annotation? x)
+;              x
+;              (stx->datum x)))
+;        (stx->datum x)))
+
   (define (assertion-error expr pos)
     (raise
       (condition
