@@ -5,26 +5,31 @@
   (import (ikarus system $codes))
   ($make-annotated-procedure ann proc))
 
+(define id
+  (let ([id -1])
+    (lambda () 
+      (set! id (+ id 1))
+      id)))
 
-(module (click-ring unclick-ring get-traces mark-reduction!
-                    last-trace reset-ring) 
+(module (with-click get-traces mark-reduction!
+                    reset-ring) 
 
-  (define outer-ring-size 5)
-  (define inner-ring-size 5)
+  (define outer-ring-size 20)
+  (define inner-ring-size 20)
 
-  (define-struct cell (prev next content))
+  (define-struct cell (prev next num content))
   
   (define (make-ring n f)
     (cond
       [(= n 1) 
-       (let ([cell (make-cell #f #f (f))])
+       (let ([cell (make-cell #f #f -1 (f))])
          (set-cell-prev! cell cell)
          (set-cell-next! cell cell)
          cell)]
       [else 
        (let ([ring (make-ring (- n 1) f)])
          (let ([next (cell-next ring)])
-           (let ([cell (make-cell ring next (f))])
+           (let ([cell (make-cell ring next -1 (f))])
              (set-cell-prev! next cell)
              (set-cell-next! ring cell)
              cell)))]))
@@ -32,39 +37,49 @@
   (define (make-double-ring n m)
     (make-ring n (lambda () (make-ring m (lambda () #f)))))
 
-  (define (ring->list x0)
-    (let f ([x x0])
-      (cons (cell-content x)
-        (let ([x (cell-prev x)])
-          (if (eq? x x0)
-              '()
-              (f x))))))
+  (define (ring->list x)
+    (let f ([x x] [orig #f])
+      (if (or (eq? x orig) (eqv? (cell-num x) -1))
+          '()
+           (cons (cons (cell-num x) (cell-content x))
+             (f (cell-prev x) (or orig x))))))
    
   (define (get-traces)
-    (map ring->list (ring->list step-ring)))
+    (map (lambda (x) 
+           (cons (car x) (ring->list (cdr x))))
+         (ring->list step-ring)))
 
   (define step-ring #f)
 
   (define (reset-ring)
-    (set! step-ring (make-double-ring outer-ring-size inner-ring-size)))
+    (printf "RESET!\n")
+    (set! step-ring (make-double-ring outer-ring-size inner-ring-size))
+    (set-cell-num! step-ring 0))
 
-  (define (last-trace)
-    (cell-content (cell-content step-ring)))
-
-  (define (click-ring)
-    (let ([x (cell-next step-ring)])
-      (set! step-ring x)
-      (let ([y (cell-content x)])
-        (set-cell-content! y #f))))
-
-  (define (unclick-ring)
-    (set-cell-content! (cell-content step-ring) #f)
-    (set! step-ring (cell-prev step-ring)))
+  (define (with-click p)
+    (dynamic-wind
+      (lambda () 
+        (let ([prev step-ring])
+          (let ([next (cell-next prev)])
+            (set-cell-num! next (+ (cell-num prev) 1))
+            (set-cell-num! (cell-content next) -1)
+            (set! step-ring next))))
+      p
+      (lambda ()
+        (let ([next step-ring])
+          (let ([prev (cell-prev next)])
+            (set-cell-num! prev (- (cell-num next) 1))
+            (set-cell-num! next -1)
+            (set-cell-num! (cell-content next) -1)
+            (set! step-ring prev))))))
 
   (define (mark-reduction! x)
-    (let ([y (cell-next (cell-content step-ring))])
-      (set-cell-content! y x)
-      (set-cell-content! step-ring y)))
+    (let ([prev (cell-content step-ring)])
+      (let ([next (cell-next prev)])
+        (set-cell-content! next x)
+        (set-cell-num! next (+ (cell-num prev) 1))
+        (set-cell-content! step-ring next))))
+
 )
 
 (define (primitive-value x)
@@ -306,50 +321,46 @@
           (values #f (syntax->datum ae))))
     (define (compile-tail-call ae e e* env ctxt)
       (let ([e (compile-expr e env (list ctxt) #f)]
-            [fmls (get-fmls e e*)])
-        (let ([e* 
-               (let f ([e* e*] [fmls fmls])
-                 (cond
-                   [(pair? fmls)
-                    (cons
-                      (compile-expr (car e*) env (car fmls) #f)
-                      (f (cdr e*) (cdr fmls)))]
-                   [else
-                    (map (lambda (x) (compile-expr x env #f #f)) e*)]))])
-          (if (or #t ae)
-              (let-values ([(src expr) (get-src/expr ae)])
-                (lambda (env)
-                  (let ([e (e env)] [e* (map (lambda (e) (e env)) e*)])
-                    (let ([tr (last-trace)])
-                      (mark-reduction!
-                        (make-trace src expr env e e* 
-                          (if tr (+ 1 (trace-depth tr)) 0))))
-                    (apply e e*))))
+            [e* (map (lambda (x) (compile-expr x env #f #f)) e*)])
+        (if ae
+            (let-values ([(src expr) (get-src/expr ae)])
               (lambda (env)
                 (let ([e (e env)] [e* (map (lambda (e) (e env)) e*)])
-                  (apply e e*)))))))
+                  (mark-reduction! (make-trace src expr env e e* (id)))
+                  (apply e e*))))
+            (lambda (env)
+              (let ([e (e env)] [e* (map (lambda (e) (e env)) e*)])
+                (mark-reduction! (make-trace #f #f env e e* (id)))
+                (apply e e*))))))
     (define (compile-nontail-call ae e e* env ctxt)
       (let ([proc (compile-tail-call ae e e* env ctxt)])
         (lambda (env)
-          (dynamic-wind
-            click-ring
-            (lambda () (proc env))
-            unclick-ring))))
+          (with-click (lambda () (proc env))))))
+    (define (compile-let e e* env ctxt tail?)
+      (define (build-let fmls e* body)
+        (let ([e*
+               (list->vector
+                 (map (lambda (x e) (compile-expr e env x #f))
+                      fmls e*))])
+          (let-values ([(env _) (extend-env fmls env)])
+            (let ([body (compile-expr body env ctxt tail?)])
+              (lambda (env)
+                (body (cons (vector-map (lambda (x) (x env)) e*) env)))))))
+      (define (dispatch cls*)
+        (define (try cls)
+          (let ([fmls (car cls)] [body (cadr cls)])
+            (and (list? fmls)
+                 (= (length fmls) (length e*))
+                 (build-let fmls e* body))))
+        (and (pair? cls*) (or (try (car cls*)) (dispatch (cdr cls*)))))
+      (and (pair? e)
+           (case (car e)
+             [(lambda) (dispatch (list (cdr e)))]
+             [(case-lambda) (dispatch (cdr e))]
+             [(annotated-case-lambda) (dispatch (cddr e))]
+             [else #f])))
     (define (compile-call ae e e* env ctxt tail?)
-      (define (let-pattern? e e*)
-        (let ([ls (get-fmls e e*)])
-          (and (list? ls) (= (length ls) (length e*)))))
-      (define (compile-let e e* env ctxt tail?)
-        (let ([ls (get-fmls e e*)])
-          (let ([e (compile-expr e env ctxt env)]
-                [e* (map (lambda (x e) 
-                           (compile-expr e env x env))
-                         ls e*)])
-            (lambda (env)
-              (apply (e env)
-                (map (lambda (e) (e env)) e*))))))
-      (if (let-pattern? e e*)
-          (compile-let e e* env ctxt tail?)
+      (or (compile-let e e* env ctxt tail?)
           (if tail?
               (compile-tail-call ae e e* env ctxt)
               (compile-nontail-call ae e e* env ctxt))))
@@ -394,49 +405,70 @@
     (lambda (expr)
       ((compile-expr expr '() #f #t) '()))))
 
-(define-struct trace (src expr env v v* depth))
+(define-struct trace (src expr env v v* id))
 
 (define (print-trace x)
-  (printf "  [~a] ~s\n" (trace-depth x) (trace-expr x))
-  (let ([src (trace-src x)])
-    (when (pair? src)
-      (printf "     source: char ~a of ~a\n" (cdr src) (car src))))
-  (printf "     operator: ~s\n" (trace-v x))
-  (printf "     operands: ~s\n" (trace-v* x)))
+  (define (chop x)
+    (if (> (string-length x) 60)
+        (format "~a#..." (substring x 0 56))
+        x))
+  (let ([n (car x)] [x (cdr x)])
+    (printf " [~a] ~s\n" n (trace-expr x))
+    (let ([src (trace-src x)])
+      (when (pair? src)
+        (printf "     source: char ~a of ~a\n" (cdr src) (car src))))
+    (printf "     operator: ~s\n" (trace-v x))
+    (printf "     operands: ")
+    (let ([ls (map (lambda (x) (format "~s" x)) (trace-v* x))])
+      (if (< (apply + 1 (length ls) (map string-length ls)) 60)
+          (write (trace-v* x))
+          (begin
+            (display "(")
+            (let f ([a (car ls)] [ls (cdr ls)])
+              (display (chop a))
+              (if (null? ls)
+                  (display ")")
+                  (begin 
+                    (display "\n                ") 
+                    (f (car ls) (cdr ls))))))))
+    (newline)))
 
-(define (print-step ls)
-  (let ([ls (let f ([ls ls])
-              (if (or (null? ls) (not (car ls)))
-                  '()
-                  (cons (car ls) (f (cdr ls)))))])
+(define (print-step x)
+  (let ([n (car x)] [ls (cdr x)])
     (unless (null? ls)
-     (printf "FRAME:\n")
-     (for-each print-trace (reverse ls)))))
+      (printf "FRAME ~s:\n" n)
+      (for-each print-trace (reverse ls)))))
 
 (define (print-all-traces)
-  (for-each print-step (get-traces)))
+  (newline)
+  (for-each print-step (reverse (get-traces))))
 
+(define (guarded-start proc)
+  (with-exception-handler
+    (lambda (con)
+      (print-all-traces)
+      (let f ()
+        (printf "continue? (y/n) ")
+        (case (read)
+          [(y) (void)]
+          [(n) (raise-continuable con)]
+          [else (f)])))
+    (lambda () 
+      (reset-ring)
+      (proc))))
 
 (define (start-repl)
   (display "Ikarus Interpreter\n\n")
   (new-cafe
     (lambda (x)
-      (with-exception-handler
-        (lambda (con)
-          (print-all-traces)
-          (raise-continuable con))
+      (guarded-start
         (lambda ()
-          (reset-ring)
           (eval x (interaction-environment)))))))
 
 (define (start-script script-name args)
   (command-line-arguments (cons script-name args))
-  (with-exception-handler
-    (lambda (con)
-      (print-all-traces)
-      (raise-continuable con))
+  (guarded-start
     (lambda ()
-      (reset-ring)
       (load-r6rs-script script-name #f #t))))
  
 (define original-eval (current-core-eval))
