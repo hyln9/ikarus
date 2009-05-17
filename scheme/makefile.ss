@@ -111,6 +111,7 @@
     "ikarus.command-line.ss"
     "ikarus.pointers.ss"
     "ikarus.not-yet-implemented.ss"
+    "ikarus.debugger.ss"
     "ikarus.main.ss"
     ))
 
@@ -1530,7 +1531,8 @@
     [pointer-set-c-double!             $for]
     [make-c-callout                    $for]
     [make-c-callback                   $for]
-    [host-info                       i]
+    [host-info                         i]
+    [debug-call                        ]
 
   ))
 

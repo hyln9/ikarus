@@ -22,7 +22,7 @@
           compile-core-expr expand/optimize optimizer-output
           cp0-effort-limit cp0-size-limit optimize-level 
           perform-tag-analysis tag-analysis-output
-          strip-source-info)
+          strip-source-info generate-debug-calls)
   (import 
     (rnrs hashtables)
     (ikarus system $fx)
@@ -44,6 +44,7 @@
 
 
 (define strip-source-info (make-parameter #f))
+(define generate-debug-calls (make-parameter #f))
 
 (define-syntax struct-case
   (lambda (x)
@@ -309,7 +310,7 @@
                     (list? fml*)) 
                   body))))))
            cls*))
-  (define (E-make-parameter args ctxt)
+  (define (E-make-parameter mk-call args ctxt)
     (case (length args)
       [(1)
        (let ([val-expr (car args)]
@@ -345,15 +346,15 @@
               ,guard-expr)
             ctxt))]
       [else 
-       (make-funcall 
+       (mk-call 
          (make-primref 'make-parameter)
          (map (lambda (x) (E x #f)) args))]))
-  (define (E-app rator args ctxt)
+  (define (E-app mk-call rator args ctxt)
     (equal-case rator
-      [((primitive make-parameter)) (E-make-parameter args ctxt)]
+      [((primitive make-parameter)) (E-make-parameter mk-call args ctxt)]
       [else
        (let ([names (get-fmls rator args)])
-         (make-funcall 
+         (mk-call 
            (E rator (list ctxt))
            (let f ([args args] [names names])
              (cond
@@ -443,8 +444,29 @@
           (let ([var (cadr x)])
             (make-primref var))]
          [(annotated-call) 
-          (E-app (caddr x) (cdddr x) ctxt)]
-         [else (E-app (car x) (cdr x) ctxt)])]
+          (E-app
+            (if (generate-debug-calls)
+                (lambda (op rands)
+                  (define (operator? x)
+                    (struct-case x
+                      [(primref x) 
+                       (guard (con [(assertion-violation? con) #t])
+                         (system-value x)
+                         #f)]
+                      [else #f]))
+                  (define (get-src/expr ae)
+                    (if (annotation? ae)
+                        (cons (annotation-source ae) (annotation-stripped ae))
+                        (cons #f (syntax->datum ae))))
+                  (define src/expr 
+                    (make-constant (get-src/expr (cadr x))))
+                  (if (operator? op)
+                      (make-funcall op rands)
+                      (make-funcall (make-primref 'debug-call)
+                        (cons* src/expr op rands))))
+                make-funcall)
+            (caddr x) (cdddr x) ctxt)]
+         [else (E-app make-funcall (car x) (cdr x) ctxt)])]
       [(symbol? x)
        (cond
          [(lexical x) =>
@@ -684,7 +706,7 @@
       [(null? cls*) default]
       [(inline-case (car cls*) rand*)]
       [else (try-inline (cdr cls*) rand* default)]))
-  (define (inline rator rand*)
+  (define (inline mk rator rand*)
     (define (valid-mv-consumer? x)
       (struct-case x
         [(clambda L cases F)
@@ -714,7 +736,7 @@
     (struct-case rator
       [(clambda g cls*)
        (try-inline cls* rand*
-          (make-funcall rator rand*))]
+          (mk rator rand*))]
       [(primref op)
        (case op
          ;;; FIXME HERE
@@ -732,36 +754,42 @@
                  [else 
                   (make-funcall rator rand*)]))]
             [else
-             (make-funcall rator rand*)])]
+             (mk rator rand*)])]
+         [(debug-call)
+          (inline 
+            (lambda (op^ rand*^) 
+              (mk rator (cons* (car rand*) op^ rand*^)))
+            (cadr rand*)
+            (cddr rand*))]
          [else
-          (make-funcall rator rand*)])]
+          (mk rator rand*)])]
       [(bind lhs* rhs* body)
        (if (null? lhs*)
-           (inline body rand*)
+           (inline mk body rand*)
            (make-bind lhs* rhs* 
-             (call-expr body rand*)))]
+             (call-expr mk body rand*)))]
       [(recbind lhs* rhs* body)
        (if (null? lhs*)
-           (inline body rand*)
+           (inline mk body rand*)
            (make-recbind lhs* rhs* 
-             (call-expr body rand*)))]
+             (call-expr mk body rand*)))]
       [(rec*bind lhs* rhs* body)
        (if (null? lhs*)
-           (inline body rand*)
+           (inline mk body rand*)
            (make-rec*bind lhs* rhs* 
-             (call-expr body rand*)))] 
-      [else (make-funcall rator rand*)]))
-  (define (call-expr x rand*)
+             (call-expr mk body rand*)))] 
+      [else (mk rator rand*)]))
+  (define (call-expr mk x rand*)
     (cond
-      [(clambda? x) (inline x rand*)]
+      [(clambda? x) (inline mk x rand*)]
       [(and (prelex? x) (not (prelex-source-assigned? x))) 
        ;;; FIXME: did we do the analysis yet?
-       (make-funcall x rand*)]
+       (mk x rand*)]
       [else
        (let ([t (make-prelex 'tmp #f)])
          (set-prelex-source-referenced?! t #t)
          (make-bind (list t) (list x)
-           (make-funcall t rand*)))]))
+           (mk t rand*)))]))
   (define (Expr x)
     (struct-case x
       [(constant) x]
@@ -789,7 +817,7 @@
               cls*)
          cp free name)]
       [(funcall rator rand*)
-       (inline (Expr rator) (map Expr rand*))]
+       (inline make-funcall (Expr rator) (map Expr rand*))]
       [(forcall rator rand*) 
        (make-forcall rator (map Expr rand*))]
       [(assign lhs rhs)

@@ -76,6 +76,8 @@
   (export)
   (import (except (ikarus) load-r6rs-script)
           (except (ikarus startup) host-info)
+          (only (ikarus.compiler) generate-debug-calls)
+          (ikarus.debugger)
           (only (psyntax library-manager) current-library-expander)
           (only (ikarus.reader.annotated) read-source-file)
           (only (ikarus.symbol-table) initialize-symbol-table!)
@@ -86,6 +88,12 @@
                 (let f ([args (command-line-arguments)])
                   (cond
                     [(null? args) (values '() #f #f '())]
+                    [(member (car args) '("-d" "--debug"))
+                     (generate-debug-calls #t)
+                     (f (cdr args))]
+                    [(member (car args) '("-nd" "--no-debug"))
+                     (generate-debug-calls #f)
+                     (f (cdr args))]
                     [(string=? (car args) "-O2")
                      (optimize-level 2)
                      (f (cdr args))]
@@ -127,31 +135,44 @@
         (apply die 'ikarus
           (format "load files not allowed for ~a" who)
           files)))
+
+    (define (start proc)
+      (if (generate-debug-calls)
+          (guarded-start proc)
+          (proc)))
+    (define-syntax doit
+      (syntax-rules ()
+        [(_ e e* ...)
+         (start (lambda () e e* ...))]))
+    
     (cond
       [(eq? script-type 'r6rs-script)
-       (command-line-arguments (cons script args))
-       (for-each
-         (lambda (filename)
-           (for-each
-             (lambda (src)
-               ((current-library-expander) src))
-             (read-source-file filename)))
-         files)
-       (load-r6rs-script script #f #t)
-       (exit 0)]
+       (doit
+         (command-line-arguments (cons script args))
+         (for-each
+           (lambda (filename)
+             (for-each
+               (lambda (src)
+                 ((current-library-expander) src))
+               (read-source-file filename)))
+           files)
+         (load-r6rs-script script #f #t))]
       [(eq? script-type 'compile)
        (assert-null files "--compile-dependencies")
-       (command-line-arguments (cons script args))
-       (load-r6rs-script script #t #f)
-       (exit 0)]
+       (doit
+         (command-line-arguments (cons script args))
+         (load-r6rs-script script #t #f))]
       [(eq? script-type 'script) ; no greeting, no cafe
        (command-line-arguments (cons script args))
-       (for-each load files)
-       (load script)
-       (exit 0)]
+       (doit
+         (for-each load files)
+         (load script))]
       [else
        (print-greeting)
        (command-line-arguments (cons "*interactive*" args))
-       (for-each load files)
-       (new-cafe)
-       (exit 0)])))
+       (doit (for-each load files))
+       (new-cafe
+         (lambda (x)
+           (doit (eval x (interaction-environment)))))])
+
+    (exit 0)))
