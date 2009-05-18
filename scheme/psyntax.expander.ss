@@ -1141,6 +1141,15 @@
              (bless `((letrec ((,f (lambda ,lhs* ,b . ,b*))) ,f) . ,rhs*))
              (invalid-fmls-error stx lhs*))))))
   
+  (define trace-let-macro
+    (lambda (stx)
+      (syntax-match stx ()
+        ((_ f ((lhs* rhs*) ...) b b* ...) (id? f)
+         (if (valid-bound-ids? lhs*)
+             (bless 
+               `((letrec ((,f (trace-lambda ,f ,lhs* ,b . ,b*))) ,f) . ,rhs*))
+             (invalid-fmls-error stx lhs*))))))
+
   (define let-values-macro
     (lambda (stx)
       (define (rename x old* new*)
@@ -2626,6 +2635,7 @@
            ((define-enumeration)    define-enumeration-macro)
            ((trace-lambda)          trace-lambda-macro)
            ((trace-define)          trace-define-macro)
+           ((trace-let)             trace-let-macro)
            ((trace-define-syntax)   trace-define-syntax-macro)
            ((trace-let-syntax)      trace-let-syntax-macro)
            ((trace-letrec-syntax)   trace-letrec-syntax-macro)
