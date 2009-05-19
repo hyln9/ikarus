@@ -27,6 +27,41 @@
           (flush-output-port p))
         (substring str 0 n))))
 
+  (define-struct scell (cf ocell prev))
+
+  (define (mkcell prev)
+    (make-scell #f #f prev))
+
+  (define *scell* (mkcell #f))
+
+  (define (stacked-call pre thunk post)
+    (call/cf
+      (lambda (cf)
+        (if (eq? cf (scell-cf *scell*))
+            (thunk)
+            (dynamic-wind
+              (let ([scell (mkcell *scell*)])
+                (lambda () 
+                  (set! *scell* scell)
+                  (pre)))
+              (lambda ()
+                (call-with-values
+                  (lambda ()
+                    (call/cf
+                      (lambda (cf)
+                        (set-scell-cf! *scell* cf)
+                        (thunk))))
+                  return-handler))
+              (lambda ()
+                (post)
+                (set! *scell* (scell-prev *scell*))))))))
+
+  (define return-handler
+    (lambda v*
+      (set-scell-ocell! *scell* #f)
+      (apply values v*)))
+
+
   (define-struct trace (src/expr rator rands))
 
   (define (trace-src x) 
@@ -44,7 +79,7 @@
     (define end-marker -1)
 
     (define-struct icell (prev next num content))
-    (define-struct ocell (prev next num cf icell))
+    (define-struct ocell (prev next num icell))
 
     (define (make-ring n cell-prev cell-next cell-prev-set! cell-next-set! make-cell)
       (let ([ring (make-cell)])
@@ -64,7 +99,7 @@
       (make-ring n
         ocell-prev ocell-next set-ocell-prev! set-ocell-next!
         (lambda ()
-          (make-ocell #f #f end-marker #f
+          (make-ocell #f #f end-marker
             (make-ring m
               icell-prev icell-next set-icell-prev! set-icell-next!
               (lambda () (make-icell #f #f end-marker (lambda () #f))))))))
@@ -85,44 +120,31 @@
       (make-double-ring outer-ring-size inner-ring-size))
 
     (define (debug-call src/expr rator . rands)
-      (call/cf
-        (lambda (cf)
-          (if (eq? cf (ocell-cf step-ring))
-              (reduce src/expr rator rands)
-              (let ([cf #f] [pcf #f])
-                (dynamic-wind
-                  (lambda ()
-                    (let ([prev step-ring])
-                      (let ([next (ocell-next prev)])
-                        (set! pcf (ocell-cf prev))
-                        (set-ocell-num! next (+ (ocell-num prev) 1))
-                        (set-icell-num! (ocell-icell next) end-marker)
-                        (set! step-ring next)
-                        (set-ocell-cf! step-ring cf))))
-                  (lambda ()
-                    (call/cf
-                      (lambda (cf2)
-                        (set! cf cf2)
-                        (set-ocell-cf! step-ring cf)
-                        (reduce src/expr rator rands))))
-                  (lambda ()
-                    (let ([next step-ring])
-                      (let ([prev (ocell-prev next)])
-                        (set-ocell-num! prev (- (ocell-num next) 1))
-                        (set-ocell-num! next end-marker)
-                        (set-icell-num! (ocell-icell next) end-marker)
-                        (set-ocell-cf! prev pcf)
-                        (set! step-ring prev))))))))))
+      (stacked-call
+        (lambda ()
+          (let ([prev step-ring])
+            (let ([next (ocell-next prev)])
+              (set-ocell-num! next (+ (ocell-num prev) 1))
+              (set-icell-num! (ocell-icell next) end-marker)
+              (set! step-ring next))))
+        (lambda ()
+          (set-scell-ocell! *scell* step-ring)
+          (let ([trace (make-trace src/expr rator rands)])
+            (let ([prev (ocell-icell step-ring)])
+              (let ([next (icell-next prev)])
+                (set-icell-content! next trace)
+                (set-icell-num! next (+ (icell-num prev) 1))
+                (set-ocell-icell! step-ring next))))
+          (apply rator rands))
+        (lambda ()
+          (let ([next step-ring])
+            (let ([prev (ocell-prev next)])
+              (set-ocell-num! prev (- (ocell-num next) 1))
+              (set-ocell-num! next end-marker)
+              (set-icell-num! (ocell-icell next) end-marker)
+              (set! step-ring prev))))))
 
-    (define (reduce src/expr rator rands)
-      (define (mark-reduction! x)
-        (let ([prev (ocell-icell step-ring)])
-          (let ([next (icell-next prev)])
-            (set-icell-content! next x)
-            (set-icell-num! next (+ (icell-num prev) 1))
-            (set-ocell-icell! step-ring next))))
-      (mark-reduction! (make-trace src/expr rator rands))
-      (apply rator rands)))
+  )
 
   (define (print-trace x)
     (define (chop x)
