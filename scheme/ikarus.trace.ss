@@ -18,59 +18,92 @@
   (export make-traced-procedure make-traced-macro) 
   (import (except (ikarus) make-traced-procedure make-traced-macro))
 
-  (define k* '())
-  
+
+  (define-struct scell (cf trace filter prev))
+
+  (define (mkcell prev)
+    (make-scell #f #f #f prev))
+
+  (define *scell* (mkcell #f))
+
+  (define *trace-depth* 0)
+
   (define display-prefix
-    (lambda (ls t)
-      (unless (null? ls)
-        (display (if t "|" " "))
-        (display-prefix (cdr ls) (not t)))))
-  
+    (lambda (n)
+      (let f ([i 0])
+        (unless (= i n)
+          (display (if (even? i) "|" " "))
+          (f (+ i 1))))))
+
   (define display-trace
     (lambda (k* v)
       (display-prefix k* #t)
       (write v)
       (newline)))
 
+  (define (display-return-trace n ls)
+    (display-prefix n)
+    (unless (null? ls)
+      (write (car ls))
+      (let f ([ls (cdr ls)])
+        (unless (null? ls)
+          (write-char #\space)
+          (write (car ls))
+          (f (cdr ls)))))
+    (newline))
+
+  (define (display-call-trace n ls)
+    (display-prefix n)
+    (write ls)
+    (newline))
+ 
+  (define (stacked-call pre thunk post)
+    (call/cf
+      (lambda (cf)
+        (if (eq? cf (scell-cf *scell*))
+            (thunk)
+            (dynamic-wind
+              (let ([scell (mkcell *scell*)])
+                (lambda () 
+                  (set! *scell* scell)
+                  (pre)))
+              (lambda ()
+                (call-with-values
+                  (lambda ()
+                    (call/cf
+                      (lambda (cf)
+                        (set-scell-cf! *scell* cf)
+                        (thunk))))
+                  return-handler))
+              (lambda ()
+                (post)
+                (set! *scell* (scell-prev *scell*))))))))
+
+  (define return-handler
+    (lambda v*
+      (cond
+        [(scell-trace *scell*) =>
+         (lambda (n)
+           (display-return-trace n ((scell-filter *scell*) v*)))])
+      (apply values v*)))
 
   (define make-traced-procedure
     (case-lambda
       [(name proc) (make-traced-procedure name proc (lambda (x) x))]
       [(name proc filter)
        (lambda args
-         (call/cf
-           (lambda (f)
-             (cond
-               [(memq f k*) => 
-                (lambda (ls)
-                  (display-trace ls (filter (cons name args)))
-                  (apply proc args))]
-               [else
-                (display-trace (cons 1 k*) (filter (cons name args)))
-                (dynamic-wind
-                  (lambda () (set! k* (cons f k*)))
-                  (lambda () 
-                    (call-with-values
-                      (lambda ()
-                        (call/cf
-                          (lambda (nf)
-                            (set! f nf)
-                            (set-car! k* nf)
-                            (apply proc args))))
-                      (lambda v*
-                        (display-prefix k* #t)
-                        (unless (null? v*)
-                          (let ([v* (filter v*)])
-                            (write (car v*))
-                            (let f ([v* (cdr v*)])
-                              (unless (null? v*)
-                                (write-char #\space)
-                                (write (car v*))
-                                (f (cdr v*))))))
-                        (newline)
-                        (apply values v*))))
-                  (lambda () (set! k* (cdr k*))))]))))]))
-  
+         (stacked-call 
+           (lambda ()
+             (set! *trace-depth* (add1 *trace-depth*)))
+           (lambda ()
+             (set-scell-trace! *scell* *trace-depth*)
+             (set-scell-filter! *scell* filter)
+             (display-call-trace *trace-depth* (filter (cons name args)))
+             (apply proc args))
+           (lambda ()
+             (set! *trace-depth* (sub1 *trace-depth*)))))]))
+
+
   (define make-traced-macro
     (lambda (name x)
       (cond
