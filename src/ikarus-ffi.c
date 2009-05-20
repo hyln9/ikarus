@@ -369,6 +369,9 @@ ikrt_ffi_call(ikptr data, ikptr argsvec, ikpcb* pcb)  {
 }
 
 
+ikptr ikrt_has_ffi(/*ikpcb* pcb*/){
+  return true_object;
+}
 
 /*
 
@@ -557,9 +560,12 @@ void hello_world(int n) {
 }
 
 #else
-ikptr ikrt_ffi_prep_cif()    { return false_object; }
-ikptr ikrt_ffi_call()              { return false_object; }
+ikptr ikrt_ffi_prep_cif()     { return false_object; }
+ikptr ikrt_ffi_call()         { return false_object; }
 ikptr ikrt_prepare_callback() { return false_object; }
+ikptr ikrt_has_ffi()         { return false_object; }
+
+
 #endif
 
 

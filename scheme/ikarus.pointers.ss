@@ -232,8 +232,7 @@
  
 
 
-  (define (ffi-prep-cif rtype argtypes)
-    (define who 'ffi-prep-cif)
+  (define (ffi-prep-cif who rtype argtypes)
     (define (convert x)
       (cond
         [(vector? x) (vector-map convert x)]
@@ -259,14 +258,20 @@
     (let ([argtypes-n (vector-map convert (list->vector argtypes))]
           [rtype-n (convert rtype)])
       (values (or (foreign-call "ikrt_ffi_prep_cif" rtype-n argtypes-n)
-                  (die who "failed to initialize" rtype argtypes))
+                  (if (ffi-enabled?)
+                      (die who "failed to initialize" rtype argtypes)
+                      (die who "FFI support is not enabled.  \
+                                You need to recompile ikarus with \
+                                --enable-ffi option set in order to \
+                                make use of the (ikarus foreign) \
+                                library.")))
               argtypes-n
               rtype-n)))
 
   (define (make-c-callout rtype argtypes)
     (define who 'make-c-callout)
     (let-values ([(cif argtypes-n rtype-n)
-                  (ffi-prep-cif rtype argtypes)])
+                  (ffi-prep-cif who rtype argtypes)])
       (let* ([argtypes-vec (list->vector argtypes)]
              [checkers (vector-map (checker who) argtypes-vec)])
         (lambda (cfun)
@@ -290,10 +295,10 @@
               (foreign-call "ikrt_ffi_call" data argsvec)))))))
 
   (define (make-c-callback rtype argtypes)
+    (define who 'make-c-callback)
     (let-values ([(cif argtypes-n rtype-n)
-                  (ffi-prep-cif rtype argtypes)])
+                  (ffi-prep-cif who rtype argtypes)])
       (lambda (proc)
-        (define who 'make-c-callback)
         (unless (procedure? proc)
           (die who "not a procedure"))
         (let ([proc 
@@ -312,6 +317,9 @@
           (let ([data (vector cif proc argtypes-n rtype-n)])
             (or (foreign-call "ikrt_prepare_callback" data)
                 (die who "cannot prepare foreign callback")))))))
+  
+  (define (ffi-enabled?) 
+    (foreign-call "ikrt_has_ffi"))
 
   (define (errno)
     (foreign-call "ikrt_last_errno"))
