@@ -110,7 +110,7 @@
     "ikarus.command-line.ss"
     "ikarus.pointers.ss"
     "ikarus.not-yet-implemented.ss"
-    "ikarus.trace.ss"
+    ;"ikarus.trace.ss"
     "ikarus.debugger.ss"
     "ikarus.main.ss"
     ))

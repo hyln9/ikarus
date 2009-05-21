@@ -262,8 +262,8 @@
                       (die who "failed to initialize" rtype argtypes)
                       (die who "FFI support is not enabled.  \
                                 You need to recompile ikarus with \
-                                --enable-ffi option set in order to \
-                                make use of the (ikarus foreign) \
+                                --enable-libffi option set in order \
+                                to make use of the (ikarus foreign) \
                                 library.")))
               argtypes-n
               rtype-n)))

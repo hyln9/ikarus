@@ -18,7 +18,7 @@ EXTRA_DIST=ikarus.boot.4.prebuilt ikarus.boot.8.prebuilt last-revision \
   ikarus.promises.ss ikarus.reader.ss \
   ikarus.records.procedural.ss ikarus.conditions.ss \
   ikarus.singular-objects.ss ikarus.sort.ss ikarus.strings.ss \
-  ikarus.structs.ss ikarus.symbols.ss ikarus.timer.ss ikarus.trace.ss \
+  ikarus.structs.ss ikarus.symbols.ss ikarus.timer.ss \
   ikarus.unicode-conversion.ss ikarus.unicode.ss \
   ikarus.vectors.ss ikarus.writer.ss makefile.ss \
   pass-specify-rep-primops.ss pass-specify-rep.ss psyntax.builders.ss \

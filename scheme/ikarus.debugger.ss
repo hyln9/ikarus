@@ -1,7 +1,9 @@
 
 (library (ikarus.debugger)
-  (export debug-call guarded-start)
-  (import (ikarus))
+  (export debug-call guarded-start
+          make-traced-procedure make-traced-macro) 
+  (import (except (ikarus) make-traced-procedure make-traced-macro))
+
 
   (define (with-output-to-string/limit x len)
     (define n 0)
@@ -27,12 +29,13 @@
           (flush-output-port p))
         (substring str 0 n))))
 
-  (define-struct scell (cf ocell prev))
+  (define-struct scell (cf ocell trace filter prev))
 
   (define (mkcell prev)
-    (make-scell #f #f prev))
+    (make-scell #f #f #f #f prev))
 
   (define *scell* (mkcell #f))
+
 
   (define (stacked-call pre thunk post)
     (call/cf
@@ -59,8 +62,66 @@
   (define return-handler
     (lambda v*
       (set-scell-ocell! *scell* #f)
+      (cond
+        [(scell-trace *scell*) =>
+         (lambda (n)
+           (display-return-trace n ((scell-filter *scell*) v*)))])
       (apply values v*)))
 
+
+  (module (display-return-trace make-traced-procedure make-traced-macro)
+    (define *trace-depth* 0)
+    
+    (define display-prefix
+      (lambda (n)
+        (let f ([i 0])
+          (unless (= i n)
+            (display (if (even? i) "|" " "))
+            (f (+ i 1))))))
+  
+    (define (display-call-trace n ls)
+      (display-prefix n)
+      (write ls)
+      (newline))
+ 
+    (define (display-return-trace n ls)
+      (display-prefix n)
+      (unless (null? ls)
+        (write (car ls))
+        (let f ([ls (cdr ls)])
+          (unless (null? ls)
+            (write-char #\space)
+            (write (car ls))
+            (f (cdr ls)))))
+      (newline))
+
+    (define make-traced-procedure
+      (case-lambda
+        [(name proc) (make-traced-procedure name proc (lambda (x) x))]
+        [(name proc filter)
+         (lambda args
+           (stacked-call 
+             (lambda ()
+               (set! *trace-depth* (add1 *trace-depth*)))
+             (lambda ()
+               (set-scell-trace! *scell* *trace-depth*)
+               (set-scell-filter! *scell* filter)
+               (display-call-trace *trace-depth* (filter (cons name args)))
+               (apply proc args))
+             (lambda ()
+               (set! *trace-depth* (sub1 *trace-depth*)))))]))
+  
+    (define make-traced-macro
+      (lambda (name x)
+        (cond
+          [(procedure? x) 
+           (make-traced-procedure name x syntax->datum)]
+          [(variable-transformer? x)
+           (make-variable-transformer
+             (make-traced-procedure name 
+               (variable-transformer-procedure x)
+               syntax->datum))]
+          [else x]))))
 
   (define-struct trace (src/expr rator rands))
 

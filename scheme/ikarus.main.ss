@@ -77,7 +77,7 @@
   (import (except (ikarus) load-r6rs-script)
           (except (ikarus startup) host-info)
           (only (ikarus.compiler) generate-debug-calls)
-          (ikarus.debugger)
+          (only (ikarus.debugger) guarded-start)
           (only (psyntax library-manager) current-library-expander)
           (only (ikarus.reader.annotated) read-source-file)
           (only (ikarus.symbol-table) initialize-symbol-table!)
