@@ -510,6 +510,30 @@
                 (map (lambda (x) (score-value-visit-operand! x sc))
                      rand*)))))))
   ;;;
+  (define (E-debug-call ctxt ec sc)
+    (let ([rand* (app-rand* ctxt)])
+      (cond
+        [(< (length rand*) 2)
+         (decrement sc 1)
+         (make-primref 'debug-call)]
+        [else
+         (let ([src/expr (car rand*)]
+               [rator (cadr rand*)]
+               [rands (cddr rand*)])
+           (let ([ctxt2 (make-app rands (app-ctxt ctxt))])
+             (let ([rator (E (operand-expr rator) 
+                             ctxt2 
+                             (operand-env rator)
+                             (operand-ec rator) 
+                             sc)])
+               (if (app-inlined ctxt2)
+                   (begin
+                     (set-app-inlined! ctxt #t)
+                     (residualize-operands rator (cons src/expr rands) sc))
+                   (begin
+                     (decrement sc 1)
+                     (make-primref 'debug-call))))))])))
+  ;;;
   (define (E-var x ctxt env ec sc)
     (ctxt-case ctxt
       [(e) (make-constant (void))]
@@ -768,7 +792,10 @@
        (make-forcall name (map (lambda (x) (E x 'v env ec sc)) rand*))]
       [(primref name)
        (ctxt-case ctxt
-         [(app) (fold-prim name ctxt ec sc)]
+         [(app) 
+          (case name
+            [(debug-call) (E-debug-call ctxt ec sc)]
+            [else (fold-prim name ctxt ec sc)])]
          [(v) (decrement sc 1) x]
          [else (make-constant #t)])]
       [(clambda g cases cp free name) 
