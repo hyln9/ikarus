@@ -65,7 +65,9 @@
       [else (error who "invalid closure" x)]))
   ;;;
   (define (mkfuncall op arg*)
-    (import primops)
+    (define (primop? x)
+      (import primops)
+      (or (eq? x 'debug-call) (primop? x)))
     (struct-case op
       [(known x t)
        (struct-case x
