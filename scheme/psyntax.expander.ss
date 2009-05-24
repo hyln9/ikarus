@@ -2884,10 +2884,10 @@
 
   (define (chi-defun x r mr)
     (syntax-match x ()
-      [(_ (_ . fmls) . body*)
+      [(_ (ctxt . fmls) . body*)
        (let-values (((fmls body)
                      (chi-lambda-clause fmls fmls body* r mr)))
-         (build-lambda (syntax-annotation x) fmls body))]))
+          (build-lambda (syntax-annotation ctxt) fmls body))]))
 
   (define chi-rhs
     (lambda (rhs r mr)
