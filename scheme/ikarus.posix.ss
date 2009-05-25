@@ -18,25 +18,26 @@
 
   (export 
     posix-fork fork waitpid system file-exists? delete-file
-    nanosleep getenv setenv unsetenv env environ file-ctime
-    file-mtime file-real-path current-directory file-regular?
-    file-directory? file-readable?  file-writable?  file-executable?
-    file-size rename-file file-symbolic-link?  make-symbolic-link
-    make-hard-link directory-list make-directory delete-directory
-    change-mode kill strerror wstatus-pid wstatus-exit-status
-    wstatus-received-signal)
+    nanosleep getenv setenv unsetenv env environ split-file-name
+    file-ctime file-mtime file-real-path current-directory
+    file-regular? file-directory? file-readable? file-writable?
+    file-executable? file-size rename-file file-symbolic-link?
+    make-symbolic-link make-hard-link directory-list make-directory
+    make-directory* delete-directory change-mode kill strerror
+    wstatus-pid wstatus-exit-status wstatus-received-signal)
 
   (import 
     (rnrs bytevectors)
     (except (ikarus)
       nanosleep posix-fork fork waitpid system file-exists?
-      delete-file getenv setenv unsetenv env environ file-ctime
-      file-mtime file-real-path current-directory file-regular?
-      file-directory?  file-readable? file-writable?
+      delete-file getenv setenv unsetenv env environ split-file-name
+      file-ctime file-mtime file-real-path current-directory
+      file-regular? file-directory? file-readable? file-writable?
       file-executable? file-size rename-file file-symbolic-link?
       make-symbolic-link make-hard-link directory-list
-      make-directory delete-directory change-mode kill strerror
-      wstatus-pid wstatus-exit-status wstatus-received-signal))
+      make-directory make-directory* delete-directory change-mode
+      kill strerror wstatus-pid wstatus-exit-status
+      wstatus-received-signal))
 
   (define posix-fork
     (lambda ()
@@ -153,8 +154,29 @@
           [(2) 'directory]
           [(3) 'symlink]
           [(-45) #f]  ;; from ikarus-errno.c: ENOENT -- path does not exist
+          [(-57) #f]  ;; from ikarus-errno.c: ENOTDIR -- path does not exist
           [else (raise/strerror who r path)]))))
 
+  (define (split-file-name str)
+    (define who 'split-file-name)
+    (define path-sep #\/)
+    (define (find-last c str)
+      (let f ([i (string-length str)])
+        (if (fx=? i 0)
+            #f
+            (let ([i (fx- i 1)])
+              (if (char=? (string-ref str i) c)
+                  i
+                  (f i))))))
+    (unless (string? str) (die who "not a string" str))
+    (cond
+      [(find-last path-sep str) =>
+       (lambda (i) 
+         (values
+           (substring str 0 i)
+           (let ([i (fx+ i 1)])
+             (substring str i (string-length str) ))))]
+      [else (values "" str)]))
 
   (define access
     (lambda (path how who)
@@ -218,7 +240,6 @@
         (unless (eq? v #t)
           (raise/strerror who v x)))))
   
-
   (define rename-file
     (lambda (src dst)
       (define who 'rename-file)
@@ -242,19 +263,44 @@
             (raise/strerror who r path)
             (map utf8->string (reverse r))))))
   
+  (define ($make-directory path mode who)
+    (unless (string? path)
+      (die who "not a string" path))
+    (unless (fixnum? mode)
+      (die who "not a fixnum" mode))
+    (let ([r (foreign-call "ikrt_mkdir" (string->utf8 path) mode)])
+      (unless (eq? r #t)
+        (raise/strerror who r path))))
+
+  (define default-dir-mode #o755) 
+
   (define make-directory
     (case-lambda 
-      [(path) (make-directory path #o755)]
-      [(path mode)
-       (define who 'make-directory)
-       (unless (string? path)
-         (die who "not a string" path))
-       (unless (fixnum? mode)
-         (die who "not a fixnum" mode))
-       (let ([r (foreign-call "ikrt_mkdir" (string->utf8 path) mode)])
-         (unless (eq? r #t)
-           (raise/strerror who r path)))]))
-  
+      [(path) (make-directory path default-dir-mode)]
+      [(path mode) ($make-directory path mode 'make-directory)]))
+
+  (module (make-directory*)
+    (define who 'make-directory*)
+    (define (mkdir* dirname0 mode)
+      (unless (string? dirname0)
+        (die who "not a string" dirname0))
+      (let f ([dirname dirname0])
+        (cond
+          [(file-exists? dirname)
+           (unless (file-directory? dirname)
+             (die who 
+               (format "path component ~a is not a directory" dirname)
+               dirname0))]
+          [else
+           (let-values ([(base suffix) (split-file-name dirname)])
+             (unless (string=? base "") (f base))
+             (unless (string=? suffix "") 
+               ($make-directory dirname mode who)))])))
+    (define make-directory*
+      (case-lambda
+        [(name) (mkdir* name default-dir-mode)]
+        [(name mode) (mkdir* name mode)])))
+
   (define delete-directory
     (case-lambda
       [(path) (delete-directory path #f)]
