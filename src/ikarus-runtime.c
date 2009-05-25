@@ -688,6 +688,20 @@ ikrt_link(ikptr to, ikptr path /*, ikpcb* pcb */){
   return ik_errno_to_code();
 }
 
+ikptr
+ikrt_realpath(ikptr bv, ikpcb* pcb){
+  char buff[PATH_MAX];
+  char* p = realpath((char*)(bv+off_bytevector_data), buff);
+  if(p == NULL){
+    return ik_errno_to_code();
+  }
+  int n = strlen(p);
+  ikptr r = ik_safe_alloc(pcb, align(disp_bytevector_data+n+1));
+  ref(r, 0) = fix(n);
+  memcpy((char*)(r+disp_bytevector_data), p, n+1);
+  return r+bytevector_tag;
+}
+
 ikptr 
 ik_system(ikptr str){
   if(tagof(str) == bytevector_tag){
@@ -708,7 +722,7 @@ mtname(unsigned int n){
   if(n == mainheap_type)  { return "HEAP_T"; }
   if(n == mainstack_type) { return "STAK_T"; }
   if(n == pointers_type)  { return "PTER_T"; }
-  if(n == dat_type)      { return "DATA_T"; }
+  if(n == dat_type)       { return "DATA_T"; }
   if(n == code_type)      { return "CODE_T"; }
   if(n == hole_type)      { return "      "; }
   return "WHAT_T";

@@ -16,26 +16,27 @@
 
 (library (ikarus.posix)
 
-  (export
+  (export 
     posix-fork fork waitpid system file-exists? delete-file
-    nanosleep getenv setenv unsetenv env environ file-ctime file-mtime
-    current-directory file-regular? file-directory? file-readable?
-    file-writable? file-executable? file-size rename-file
-    file-symbolic-link? make-symbolic-link make-hard-link directory-list
-    make-directory delete-directory change-mode kill strerror
-    wstatus-pid wstatus-exit-status wstatus-received-signal)
+    nanosleep getenv setenv unsetenv env environ file-ctime
+    file-mtime file-real-path current-directory file-regular?
+    file-directory? file-readable?  file-writable?  file-executable?
+    file-size rename-file file-symbolic-link?  make-symbolic-link
+    make-hard-link directory-list make-directory delete-directory
+    change-mode kill strerror wstatus-pid wstatus-exit-status
+    wstatus-received-signal)
 
   (import 
     (rnrs bytevectors)
     (except (ikarus)
       nanosleep posix-fork fork waitpid system file-exists?
-      delete-file getenv setenv unsetenv env environ file-ctime file-mtime
-      current-directory file-regular? file-directory?
-      file-readable? file-writable? file-executable? file-size
-      rename-file file-symbolic-link? make-symbolic-link make-hard-link
-      directory-list make-directory delete-directory change-mode
-      kill strerror wstatus-pid wstatus-exit-status
-      wstatus-received-signal))
+      delete-file getenv setenv unsetenv env environ file-ctime
+      file-mtime file-real-path current-directory file-regular?
+      file-directory?  file-readable? file-writable?
+      file-executable? file-size rename-file file-symbolic-link?
+      make-symbolic-link make-hard-link directory-list
+      make-directory delete-directory change-mode kill strerror
+      wstatus-pid wstatus-exit-status wstatus-received-signal))
 
   (define posix-fork
     (lambda ()
@@ -185,7 +186,6 @@
     (lambda (path)
       (eq? 'symlink (stat path #f 'file-symbolic-link?))))
 
-
   (define file-readable?
     (lambda (path)
       (access path 1 'file-readable?)))
@@ -316,7 +316,14 @@
     ($file-time x 'file-mtime 
       (lambda (u) (foreign-call "ikrt_file_mtime2" u))))
 
-
+  (define (file-real-path x)
+    (define who 'file-real-path)
+    (unless (string? x) 
+      (die who "not a string" x))
+    (let ([v (foreign-call "ikrt_realpath" (string->utf8 x))])
+      (cond
+        [(bytevector? v) (utf8->string v)]
+        [else (raise/strerror who v x)])))
 
   (define (getenv key)
     (define who 'getenv)

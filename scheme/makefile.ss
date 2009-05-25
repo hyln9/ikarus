@@ -1289,6 +1289,7 @@
     [file-ctime                                  i]
     [file-mtime                                  i]
     [file-size                                   i]
+    [file-real-path                              i]
     [fork                                        i]
     [define-record-type                          i r rs]
     [fields                                      i r rs]
