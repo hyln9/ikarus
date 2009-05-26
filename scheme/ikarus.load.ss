@@ -31,8 +31,11 @@
       [(<= (fixnum-width) 32) ".ikarus-32bit-fasl"]
       [else                   ".ikarus-64bit-fasl"]))
 
+  (define (fasl-path filename)
+    (string-append filename fasl-extension))
+
   (define (load-serialized-library filename sk)
-    (let ([ikfasl (string-append filename fasl-extension)])
+    (let ([ikfasl (fasl-path filename)])
       (cond
         [(not (file-exists? ikfasl)) #f]
         [(< (file-mtime ikfasl) (file-mtime filename))
@@ -58,7 +61,7 @@
                  #f)))])))
 
   (define (do-serialize-library filename contents)
-    (let ([ikfasl (string-append filename fasl-extension)])
+    (let ([ikfasl (fasl-path filename)])
       (fprintf (current-error-port) "Serializing ~s ...\n" ikfasl)
       (let ([p (open-file-output-port ikfasl (file-options no-fail))])
         (fasl-write (make-serialized-library contents) p)
