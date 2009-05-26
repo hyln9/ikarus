@@ -620,6 +620,7 @@
     [error@fxsub1                                ]
     [fasl-write                                  i]
     [fasl-read                                   i]
+    [fasl-directory                              i]
     [lambda                                      i r ba se ne]
     [and                                         i r ba se ne]
     [begin                                       i r ba se ne]

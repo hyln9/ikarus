@@ -368,7 +368,12 @@
       (die who "not a string" x))
     (let ([v (foreign-call "ikrt_realpath" (string->utf8 x))])
       (cond
-        [(bytevector? v) (utf8->string v)]
+        [(bytevector? v) 
+         (let ([s (utf8->string v)])
+           (when (or (string=? s "")
+                     (not (char=? (string-ref s 0) #\/)))
+             (error who "unexpected value returned from OS" s x))
+           s)]
         [else (raise/strerror who v x)])))
 
   (define (getenv key)

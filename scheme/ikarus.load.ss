@@ -15,11 +15,11 @@
 
 
 (library (ikarus load)
-  (export load load-r6rs-script)
+  (export load load-r6rs-script fasl-directory)
   (import 
-    (except (ikarus) load load-r6rs-script)
+    (except (ikarus) fasl-directory load load-r6rs-script)
     (only (ikarus.compiler) compile-core-expr)
-    (only (psyntax library-manager) 
+    (only (psyntax library-manager)
       serialize-all current-precompiled-library-loader)
     (only (psyntax expander) compile-r6rs-top-level)
     (only (ikarus.reader.annotated) read-script-source-file))
@@ -31,13 +31,28 @@
       [(<= (fixnum-width) 32) ".ikarus-32bit-fasl"]
       [else                   ".ikarus-64bit-fasl"]))
 
+  (define fasl-directory 
+    (make-parameter 
+      (cond
+        [(getenv "IKARUS_FASL_DIRECTORY")]
+        [(getenv "HOME") =>
+         (lambda (s)
+           (string-append s "/.ikarus/precompiled"))]
+        [else ""])
+      (lambda (s)
+        (if (string? s)
+            s
+            (die 'fasl-directory "not a string" s)))))
+      
   (define (fasl-path filename)
-    (string-append filename fasl-extension))
+    (let ([d (fasl-directory)])
+      (and (not (string=? d ""))
+        (string-append d (file-real-path filename) fasl-extension))))
 
   (define (load-serialized-library filename sk)
     (let ([ikfasl (fasl-path filename)])
       (cond
-        [(not (file-exists? ikfasl)) #f]
+        [(or (not ikfasl) (not (file-exists? ikfasl))) #f]
         [(< (file-mtime ikfasl) (file-mtime filename))
          (fprintf (current-error-port)
             "WARNING: not using fasl file ~s because it is older \
@@ -62,10 +77,15 @@
 
   (define (do-serialize-library filename contents)
     (let ([ikfasl (fasl-path filename)])
-      (fprintf (current-error-port) "Serializing ~s ...\n" ikfasl)
-      (let ([p (open-file-output-port ikfasl (file-options no-fail))])
-        (fasl-write (make-serialized-library contents) p)
-        (close-output-port p))))
+      (cond
+        [(not ikfasl) (void)]
+        [else
+         (fprintf (current-error-port) "Serializing ~s ...\n" ikfasl)
+         (let-values ([(dir name) (split-file-name ikfasl)])
+           (make-directory* dir))
+         (let ([p (open-file-output-port ikfasl (file-options no-fail))])
+           (fasl-write (make-serialized-library contents) p)
+           (close-output-port p))])))
 
   (define load-handler
     (lambda (x)
