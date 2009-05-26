@@ -26,7 +26,10 @@
 
   (define-struct serialized-library (contents))
 
-  (define fasl-extension ".ikarus-fasl")
+  (define fasl-extension 
+    (cond
+      [(<= (fixnum-width) 32) ".ikarus-32bit-fasl"]
+      [else                   ".ikarus-64bit-fasl"]))
 
   (define (load-serialized-library filename sk)
     (let ([ikfasl (string-append filename fasl-extension)])
