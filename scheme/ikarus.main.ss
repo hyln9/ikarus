@@ -19,12 +19,29 @@
 ;;; libraries within the compiler itself.
 
 (library (ikarus startup)
-  (export print-greeting init-library-path host-info)
+  (export print-greeting init-library-path host-info split-path)
   (import (except (ikarus) host-info))
   (include "ikarus.config.ss")
 
   (define (host-info) target)
   
+  (define (split-path s)
+    (define (nodata i s ls)
+      (cond
+        [(= i (string-length s)) ls]
+        [(char=? (string-ref s i) #\:) (nodata (+ i 1) s ls)]
+        [else (data (+ i 1) s ls (list (string-ref s i)))]))
+    (define (data i s ls ac)
+      (cond
+        [(= i (string-length s)) 
+         (cons (list->string (reverse ac)) ls)]
+        [(char=? (string-ref s i) #\:) 
+         (nodata (+ i 1) s
+           (cons (list->string (reverse ac)) ls))]
+        [else (data (+ i 1) s ls (cons (string-ref s i) ac))]))
+    (reverse (nodata 0 s '())))
+
+
   (define (print-greeting)
     (printf "Ikarus Scheme version ~a~a~a~a\n" 
       ikarus-version
@@ -41,25 +58,10 @@
     (display "Copyright (c) 2006-2009 Abdulaziz Ghuloum\n\n"))
 
   (define (init-library-path) 
-    (define (split s)
-      (define (nodata i s ls)
-        (cond
-          [(= i (string-length s)) ls]
-          [(char=? (string-ref s i) #\:) (nodata (+ i 1) s ls)]
-          [else (data (+ i 1) s ls (list (string-ref s i)))]))
-      (define (data i s ls ac)
-        (cond
-          [(= i (string-length s)) 
-           (cons (list->string (reverse ac)) ls)]
-          [(char=? (string-ref s i) #\:) 
-           (nodata (+ i 1) s
-             (cons (list->string (reverse ac)) ls))]
-          [else (data (+ i 1) s ls (cons (string-ref s i) ac))]))
-      (reverse (nodata 0 s '())))
     (library-path
       (cons "."
         (append 
-          (split (or (getenv "IKARUS_LIBRARY_PATH") ""))
+          (split-path (or (getenv "IKARUS_LIBRARY_PATH") ""))
           (list ikarus-lib-dir))))
     (let ([prefix
            (lambda (ext ls)
@@ -82,43 +84,63 @@
           (only (ikarus.reader.annotated) read-source-file)
           (only (ikarus.symbol-table) initialize-symbol-table!)
           (only (ikarus load) load-r6rs-script))
+
+  (define rcfiles #t) ;; #f for no rcfile, list for specific list
+
   (initialize-symbol-table!)
   (init-library-path)
-  (let-values ([(files script script-type args)
-                (let f ([args (command-line-arguments)])
+  (let-values ([(files script script-type args init-command-line-args)
+                (let f ([args (command-line-arguments)] [k void])
+                  (define (invalid-rc-error)
+                    (die 'ikarus "--no-rcfile is invalid with --rcfile"))
                   (cond
-                    [(null? args) (values '() #f #f '())]
+                    [(null? args) (values '() #f #f '() k)]
                     [(member (car args) '("-d" "--debug"))
-                     (generate-debug-calls #t)
-                     (f (cdr args))]
+                     (f (cdr args) 
+                        (lambda () (k) (generate-debug-calls #t)))]
                     [(member (car args) '("-nd" "--no-debug"))
-                     (generate-debug-calls #f)
-                     (f (cdr args))]
+                     (f (cdr args)
+                        (lambda () (k) (generate-debug-calls #f)))]
                     [(string=? (car args) "-O2")
-                     (optimize-level 2)
-                     (f (cdr args))]
+                     (f (cdr args)
+                        (lambda () (k) (optimize-level 2)))]
                     [(string=? (car args) "-O1")
-                     (optimize-level 1)
-                     (f (cdr args))]
+                     (f (cdr args)
+                        (lambda () (k) (optimize-level 1)))] 
                     [(string=? (car args) "-O0")
-                     (optimize-level 0)
-                     (f (cdr args))]
+                     (f (cdr args)
+                        (lambda () (k) (optimize-level 0)))]
+                    [(string=? (car args) "--no-rcfile")
+                     (unless (boolean? rcfiles) (invalid-rc-error))
+                     (set! rcfiles #f)
+                     (f (cdr args) k)]
+                    [(string=? (car args) "--rcfile")
+                     (let ([d (cdr args)])
+                       (when (null? d)
+                         (die 'ikarus "--rcfile requires a script name"))
+                       (set! rcfiles 
+                         (cons (car d) 
+                           (case rcfiles
+                             [(#t) '()]
+                             [(#f) (invalid-rc-error)]
+                             [else rcfiles])))
+                       (f (cdr d) k))]
                     [(string=? (car args) "--")
-                     (values '() #f #f (cdr args))]
+                     (values '() #f #f (cdr args) k)]
                     [(string=? (car args) "--script")
                      (let ([d (cdr args)])
                        (cond
                          [(null? d)
                           (die 'ikarus "--script requires a script name")]
                          [else
-                          (values '() (car d) 'script (cdr d))]))]
+                          (values '() (car d) 'script (cdr d) k)]))]
                     [(string=? (car args) "--r6rs-script")
                      (let ([d (cdr args)])
                        (cond
                          [(null? d)
                           (die 'ikarus "--r6rs-script requires a script name")]
                          [else
-                          (values '() (car d) 'r6rs-script (cdr d))]))]
+                          (values '() (car d) 'r6rs-script (cdr d) k)]))]
                     [(string=? (car args) "--compile-dependencies")
                      (let ([d (cdr args)])
                        (cond
@@ -126,10 +148,12 @@
                           (die 'ikarus
                             "--compile-dependencies requires a script name")]
                          [else
-                          (values '() (car d) 'compile (cdr d))]))]
+                          (values '() (car d) 'compile (cdr d) k)]))]
                     [else
-                     (let-values ([(f* script script-type a*) (f (cdr args))])
-                       (values (cons (car args) f*) script script-type a*))]))])
+                     (let-values ([(f* script script-type a* k) 
+                                   (f (cdr args) k)])
+                       (values (cons (car args) f*) script script-type a* k))]))])
+
     (define (assert-null files who)
       (unless (null? files)
         (apply die 'ikarus
@@ -140,11 +164,42 @@
       (if (generate-debug-calls)
           (guarded-start proc)
           (proc)))
+
     (define-syntax doit
       (syntax-rules ()
         [(_ e e* ...)
          (start (lambda () e e* ...))]))
-    
+
+    (define (default-rc-files)
+      (cond
+        [(getenv "IKARUS_RC_FILES") => split-path]
+        [(getenv "HOME") =>
+         (lambda (home)
+           (let ([f (string-append home "/.ikarusrc")])
+             (if (file-exists? f) 
+                 (list f)
+                 '())))]
+        [else '()]))
+
+    (for-each
+      (lambda (filename)
+        (with-exception-handler
+          (lambda (con)
+            (raise-continuable 
+              (condition 
+                (make-who-condition 'ikarus)
+                (make-message-condition 
+                  (format "loading rc file ~a failed" filename))
+                con)))
+          (lambda ()
+            (load-r6rs-script filename #f #t))))
+      (case rcfiles
+        [(#t) (default-rc-files)]
+        [(#f) '()]
+        [else (reverse rcfiles)]))
+
+    (init-command-line-args)
+
     (cond
       [(eq? script-type 'r6rs-script)
        (doit
