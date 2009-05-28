@@ -126,6 +126,7 @@
     [set!                (set!)]
     [let-syntax          (let-syntax)]
     [letrec-syntax       (letrec-syntax)]
+    [stale-when          (stale-when)]
     [foreign-call        (core-macro . foreign-call)]
     [quote               (core-macro . quote)]
     [syntax-case         (core-macro . syntax-case)]
@@ -296,6 +297,7 @@
     [define-struct                               i]
     [include                                     i]
     [include-into                                i]
+    [stale-when                                  i]
     [time                                        i]
     [trace-lambda                                i]
     [trace-let                                   i]
@@ -1691,7 +1693,7 @@
                             '()))])
           `(install-library 
              ',id ',name ',version ',import-libs ',visit-libs ',invoke-libs
-             ',subst ',env void void '#f '#f ',visible? '#f)))))
+             ',subst ',env void void '#f '#f '#f '() ',visible? '#f)))))
   (let ([code `(library (ikarus primlocs)
                   (export) ;;; must be empty
                   (import 
