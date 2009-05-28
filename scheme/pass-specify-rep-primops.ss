@@ -495,7 +495,7 @@
         [else (check-non-vector x idx)]))
     /section)
 
-(define-primop vector? unsafe
+(define-primop vector? safe
   [(P x) (sec-tag-test (T x) vector-mask vector-tag fx-mask fx-tag)]
   [(E x) (nop)])
 
