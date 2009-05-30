@@ -17,37 +17,48 @@
 
 (library (ikarus include)
   (export include include/lexical-context)
-  (import (except (ikarus) include))
+  (import (ikarus))
 
   (define-syntax include/lexical-context/form
     (lambda (x)
       (syntax-case x ()
         [(_ filename id form who)
-         (let* ([filename^ 
+         (let* ([filename
                  (let ([x (syntax->datum #'filename)])
-                   (if (string? x)
-                       x
-                       (syntax-violation #f "file name is not a string"
+                   (if (and (string? x) (not (string=? x "")))
+                       (if (char=? (string-ref x 0) #\/)
+                           x
+                           (let f ([ls (library-path)])
+                             (if (null? ls)
+                                 (syntax-violation #f 
+                                    "file does not exist in library path"
+                                    #'form #'filename)
+                                 (let ([x (string-append (car ls) "/" x)])
+                                   (if (file-exists? x)
+                                       (file-real-path x)
+                                       (f (cdr ls)))))))
+                       (syntax-violation #f 
+                          "file name must be a nonempty string"
                           #'form #'filename)))]
                 [content 
                  (with-exception-handler
                    (lambda (x)
                      (raise-continuable 
                        (condition 
-                         (make-who-condition #'who)
+                         (make-who-condition (syntax->datum #'who))
                          x)))
                    (lambda () 
-                     (with-input-from-file filename^
+                     (with-input-from-file filename
                        (lambda ()
                          (let loop ()
-                           (let ([x (read)])
+                           (let ([x (read-annotated)])
                              (if (eof-object? x)
                                  '()
                                  (cons (datum->syntax #'id x)
                                    (loop)))))))))])
            #`(stale-when
-               (or (not (file-exists? filename))
-                   (> (file-mtime filename) #,(file-mtime filename^)))
+                (or (not (file-exists? #,filename))
+                    (> (file-mtime #,filename) #,(file-mtime filename)))
                #,@content))])))
   
   (define-syntax include/lexical-context
