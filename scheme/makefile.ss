@@ -1420,8 +1420,6 @@
     [$set-port-size!      $io]
     [$port-attrs          $io]
     [$set-port-attrs!     $io]
-    [$port-position       $io]
-    [$set-port-position!  $io]
     ;;;
     [&condition-rtd]
     [&condition-rcd]

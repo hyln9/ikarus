@@ -2011,8 +2011,8 @@
   (define disp-port-set-position!   (* 9 wordsize))
   (define disp-port-close           (* 10 wordsize))
   (define disp-port-cookie          (* 11 wordsize))
-  (define disp-port-position        (* 12 wordsize))
-  (define disp-port-unused          (* 13 wordsize))
+  (define disp-port-unused1         (* 12 wordsize))
+  (define disp-port-unused2         (* 13 wordsize))
   (define port-size                 (* 14 wordsize))
 
   (define disp-tcbucket-tconc 0)

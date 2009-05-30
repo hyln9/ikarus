@@ -256,10 +256,9 @@
         (import (ikarus system $fx))
         ($fxlogand ($port-tag x) fast-attrs-mask))))
 
+  (define-struct cookie (dest mode pos reader))
 
-  (define-struct cookie (dest mode reader))
-
-  (define (default-cookie fd) (make-cookie fd 'ikarus-mode #f))
+  (define (default-cookie fd) (make-cookie fd 'ikarus-mode 0 #f))
 
   (define (port-id p)
     (if (port? p) 
@@ -268,14 +267,14 @@
 
   (define (input-port-byte-position p)
     (if (input-port? p) 
-        (let ([pos-vec ($port-position p)])
-           (+ (vector-ref pos-vec 0) (fx+ ($port-index p) 1)))
+        (let ([cookie ($port-cookie p)])
+           (+ (cookie-pos cookie) (fx+ ($port-index p) 1)))
         (error 'input-port-byte-position "not an input port" p)))
 
   (define (port-position p)
     (define who 'port-position)
     (if (port? p)
-        (let ([pos-vec      ($port-position p)]
+        (let ([cookie       ($port-cookie p)]
               [index        ($port-index p)]
               [get-position ($port-get-position p)])
           (cond
@@ -287,7 +286,7 @@
                        (+ pos index))
                    (die who "invalid returned value from get-position" p)))]
             [(eqv? get-position #t)
-             (+ (vector-ref pos-vec 0) index)]
+             (+ (cookie-pos cookie) index)]
             [else 
              (die who "port does not support port-position operation" p)]))
         (die who "not a port" p)))
@@ -303,8 +302,8 @@
            (setpos! pos)
            ($set-port-index! p 0)
            ($set-port-size! p 0)
-           (let ([pos-vec ($port-position p)])
-             (vector-set! pos-vec 0 pos))]
+           (let ([cookie ($port-cookie p)])
+             (set-cookie-pos! cookie pos))]
           [(eqv? setpos! #t)
            (if (<= pos ($port-size p))
                ($set-port-index! p pos)
@@ -350,14 +349,14 @@
     (let ([bv (make-bytevector buffer-size)])
       ($make-port attrs 0 init-size bv #f id read! write! 
                   get-position set-position! close 
-                  (default-cookie #f) (vector 0))))
+                  (default-cookie #f))))
 
   (define ($make-custom-textual-port attrs init-size id 
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-string buffer-size)])
       ($make-port attrs 0 init-size bv #t id read! write! 
                   get-position set-position! close 
-                  (default-cookie #f) (vector 0))))
+                  (default-cookie #f))))
 
   (define (make-custom-binary-input-port id 
             read! get-position set-position! close)
@@ -495,8 +494,7 @@
           #t ;;; get-position
           #t ;;; set-position!
           #f ;;; close
-          (default-cookie #f)
-          (vector 0))]))
+          (default-cookie #f))]))
 
   (define open-bytevector-output-port
     (case-lambda
@@ -523,8 +521,7 @@
                    #t ;;; get-position
                    #f ;;; set-position!
                    #f ;;; close
-                   (default-cookie #f) ;;; cookie
-                   (vector 0))])
+                   (default-cookie #f))])
            (values
              p
              (lambda () 
@@ -606,8 +603,7 @@
          #t ;;; get-position
          #f ;;; set-position!
          #f ;;; close!
-         cookie
-         (vector 0))))
+         cookie)))
 
   (define (open-string-output-port)
     (let ([p (open-output-string)])
@@ -663,8 +659,7 @@
        #t ;;; get-position
        #t ;;; set-position!
        #f ;;; close
-       (default-cookie #f) ;;; cookie
-       (vector 0)))
+       (default-cookie #f)))
 
   (define (open-string-input-port str)
     (open-string-input-port/id str "*string-input-port*"))
@@ -699,8 +694,7 @@
           ($port-get-position p)
           ($port-set-position! p)
           ($port-close p)
-          ($port-cookie p)
-          (vector 0)))))
+          ($port-cookie p)))))
 
   (define (reset-input-port! p)
     (if (input-port? p) 
@@ -757,8 +751,8 @@
       (let ([bytes (($port-write! p) bv 0 1)])
         (cond
           [(eq? bytes 1) 
-           (let ([pos-vec ($port-position p)])
-             (vector-set! pos-vec 0 (+ (vector-ref pos-vec 0) 1)))]
+           (let ([cookie ($port-cookie p)])
+             (set-cookie-pos! cookie (+ (cookie-pos cookie) 1)))]
           [(eq? bytes 0)
            ($mark-port-closed! p)
            (die who "could not write bytes to sink")]
@@ -771,8 +765,8 @@
       (let ([bytes (($port-write! p) str 0 1)])
         (cond
           [(eq? bytes 1) 
-           (let ([pos-vec ($port-position p)])
-             (vector-set! pos-vec 0 (+ (vector-ref pos-vec 0) 1)))]
+           (let ([cookie ($port-cookie p)])
+             (set-cookie-pos! cookie (+ (cookie-pos cookie) 1)))]
           [(eq? bytes 0)
            ($mark-port-closed! p)
            (die who "could not write char to sink")]
@@ -796,8 +790,8 @@
                (die 'flush-output-port 
                       "write! returned an invalid value" 
                       bytes))
-             (let ([pos-vec ($port-position p)])
-               (vector-set! pos-vec 0 (+ (vector-ref pos-vec 0) bytes)))
+             (let ([cookie ($port-cookie p)])
+               (set-cookie-pos! cookie (+ (cookie-pos cookie) bytes)))
              (cond
                [(fx= bytes idx) 
                 ($set-port-index! p 0)]
@@ -840,8 +834,8 @@
     (let ([bv ($port-buffer p)] [i ($port-index p)] [j ($port-size p)])
       (let ([c0 (fx- j i)])
         (unless (fx= c0 0) (bytevector-copy! bv i bv 0 c0))
-        (let ([pos-vec ($port-position p)])
-          (vector-set! pos-vec 0 (+ (vector-ref pos-vec 0) i)))
+        (let ([cookie ($port-cookie p)])
+          (set-cookie-pos! cookie (+ (cookie-pos cookie) i)))
         (let* ([max (fx- (bytevector-length bv) c0)]
                [c1 (($port-read! p) bv c0 max)])
           (unless (fixnum? c1)
@@ -1128,8 +1122,8 @@
             (die who "invalid return value from read!" n))
           (unless (<= 0 n (string-length str))
             (die who "return value from read! is out of range" n))
-          (let ([idx ($port-index p)] [pos-vec ($port-position p)])
-            (vector-set! pos-vec 0 (+ idx (vector-ref pos-vec 0))))
+          (let ([idx ($port-index p)] [cookie ($port-cookie p)])
+            (set-cookie-pos! cookie (+ idx (cookie-pos cookie))))
           ($set-port-index! p 0) 
           ($set-port-size! p n)
           (cond
@@ -1182,8 +1176,8 @@
             (die who "invalid return value from read!" n))
           (unless (<= 0 n (string-length str))
             (die who "return value from read! is out of range" n))
-          (let ([idx ($port-index p)] [pos-vec ($port-position p)])
-            (vector-set! pos-vec 0 (+ idx (vector-ref pos-vec 0))))
+          (let ([idx ($port-index p)] [cookie ($port-cookie p)])
+            (set-cookie-pos! cookie (+ idx (cookie-pos cookie))))
           ($set-port-size! p n)
           (cond
             [(fx= n 0)
@@ -1503,8 +1497,7 @@
                   [(procedure? close) close]
                   [(eqv? close #t) (file-close-proc id fd)]
                   [else #f])
-                (default-cookie fd)
-                (vector 0))])
+                (default-cookie fd))])
     (guarded-port port)))
 
 
@@ -1543,8 +1536,7 @@
                   [(procedure? close) close]
                   [(eqv? close #t) (file-close-proc id fd)]
                   [else #f])
-                (default-cookie fd)
-                (vector 0))])
+                (default-cookie fd))])
       (guarded-port port)))
 
   (define (file-close-proc id fd)
