@@ -650,6 +650,18 @@
               [body (E body)])
          (import (only (ikarus) map))
          (list 'letrec (map list lhs* rhs*) body))]
+      [(recbind lhs* rhs* body)
+       (let* ([lhs* (map Var lhs*)]
+              [rhs* (map E rhs*)]
+              [body (E body)])
+         (import (only (ikarus) map))
+         (list 'letrec (map list lhs* rhs*) body))] 
+      [(rec*bind lhs* rhs* body)
+       (let* ([lhs* (map Var lhs*)]
+              [rhs* (map E rhs*)]
+              [body (E body)])
+         (import (only (ikarus) map))
+         (list 'letrec* (map list lhs* rhs*) body))] 
       [(seq e0 e1) 
        (cons 'begin
           (let f ([e0 e0] [e* (list e1)])

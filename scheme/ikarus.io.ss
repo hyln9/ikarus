@@ -225,7 +225,7 @@
   (define fast-u16be-text-tag      #b00000010000000)
   (define fast-u16le-text-tag      #b00000100000000)
   (define init-u16-text-tag        #b00000110000000)
-  (define r6rs-mode-tag            #b01000000000000)
+;  (define r6rs-mode-tag            #b01000000000000)
   (define closed-port-tag          #b10000000000000)
 
   (define port-type-mask           #b00000000001111)
@@ -255,6 +255,11 @@
       (lambda (x) 
         (import (ikarus system $fx))
         ($fxlogand ($port-tag x) fast-attrs-mask))))
+
+
+  (define-struct cookie (dest mode reader))
+
+  (define (default-cookie fd) (make-cookie fd 'ikarus-mode #f))
 
   (define (port-id p)
     (if (port? p) 
@@ -326,7 +331,6 @@
         (and ($port-set-position! p) #t)
         (die who "not a port" p)))
 
-   
   (define guarded-port
     (let ([G (make-guardian)])
       (define (clean-up)
@@ -337,7 +341,7 @@
              (clean-up))]))
       (lambda (p)
         (clean-up)
-        (when (fixnum? ($port-cookie p))
+        (when (fixnum? (cookie-dest ($port-cookie p)))
           (G p))
         p)))
 
@@ -345,13 +349,15 @@
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-bytevector buffer-size)])
       ($make-port attrs 0 init-size bv #f id read! write! 
-                  get-position set-position! close #f (vector 0))))
+                  get-position set-position! close 
+                  (default-cookie #f) (vector 0))))
 
   (define ($make-custom-textual-port attrs init-size id 
             read! write! get-position set-position! close buffer-size)
     (let ([bv (make-string buffer-size)])
       ($make-port attrs 0 init-size bv #t id read! write! 
-                  get-position set-position! close #f (vector 0))))
+                  get-position set-position! close 
+                  (default-cookie #f) (vector 0))))
 
   (define (make-custom-binary-input-port id 
             read! get-position set-position! close)
@@ -489,7 +495,7 @@
           #t ;;; get-position
           #t ;;; set-position!
           #f ;;; close
-          #f
+          (default-cookie #f)
           (vector 0))]))
 
   (define open-bytevector-output-port
@@ -517,7 +523,7 @@
                    #t ;;; get-position
                    #f ;;; set-position!
                    #f ;;; close
-                   #f ;;; cookie
+                   (default-cookie #f) ;;; cookie
                    (vector 0))])
            (values
              p
@@ -581,12 +587,9 @@
     (parameterize ([current-output-port p])
       (proc)))
 
-  (define-struct output-string-cookie (strings))
-
-
   (define (open-output-string)
     (define who 'open-output-string)
-    (let ([cookie (make-output-string-cookie '())]
+    (let ([cookie (default-cookie '())]
           [buffer-size 256])
       ($make-port
          (fxior textual-output-port-bits fast-char-text-tag)
@@ -598,8 +601,7 @@
            (unless (= c 0) 
              (let ([x (make-string c)])
                (string-copy! str i x 0 c)
-               (set-output-string-cookie-strings! cookie
-                 (cons x (output-string-cookie-strings cookie)))))
+               (set-cookie-dest! cookie (cons x (cookie-dest cookie)))))
            c)
          #t ;;; get-position
          #f ;;; set-position!
@@ -613,7 +615,7 @@
         p
         (lambda ()
           (let ([str (get-output-string p)])
-            (set-output-string-cookie-strings!  ($port-cookie p) '())
+            (set-cookie-dest! ($port-cookie p) '())
             str)))))
 
   (define (get-output-string-cookie-data cookie)
@@ -628,7 +630,7 @@
              (let-values ([(bv i) (f (cdr ls) (fx+ i n))])
                (string-copy! a 0 bv i n)
                (values bv (fx+ i n))))])))
-      (let ([buf* (output-string-cookie-strings cookie)])
+      (let ([buf* (cookie-dest cookie)])
         (let-values ([(bv len) (append-str-buf* buf*)])
           bv)))
 
@@ -636,7 +638,9 @@
     (if (port? p) 
         (let ([cookie ($port-cookie p)])
           (cond
-            [(output-string-cookie? cookie)
+            [(and (cookie? cookie)
+                  (let ([x (cookie-dest cookie)])
+                    (or (null? x) (pair? x))))
              (unless ($port-closed? p)
                (flush-output-port p))
              (get-output-string-cookie-data cookie)]
@@ -659,7 +663,7 @@
        #t ;;; get-position
        #t ;;; set-position!
        #f ;;; close
-       #f ;;; cookie
+       (default-cookie #f) ;;; cookie
        (vector 0)))
 
   (define (open-string-input-port str)
@@ -735,20 +739,14 @@
 
   (define (port-mode p)
     (if (port? p) 
-        (if (fxzero? (fxand ($port-attrs p) r6rs-mode-tag))
-            'ikarus-mode
-            'r6rs-mode)
+        (cookie-mode ($port-cookie p))
         (die 'port-mode "not a port" p)))
 
   (define (set-port-mode! p mode)
     (if (port? p) 
         (case mode
-          [(r6rs-mode) 
-           ($set-port-attrs! p
-             (fxior ($port-attrs p) r6rs-mode-tag))]
-          [(ikarus-mode)
-           ($set-port-attrs! p
-             (fxand ($port-attrs p) (fxnot r6rs-mode-tag)))]
+          [(r6rs-mode ikarus-mode)
+           (set-cookie-mode! ($port-cookie p) mode)]
           [else (die 'set-port-mode! "invalid mode" mode)])
         (die 'set-port-mode! "not a port" p)))
 
@@ -1505,7 +1503,7 @@
                   [(procedure? close) close]
                   [(eqv? close #t) (file-close-proc id fd)]
                   [else #f])
-                fd
+                (default-cookie fd)
                 (vector 0))])
     (guarded-port port)))
 
@@ -1545,7 +1543,7 @@
                   [(procedure? close) close]
                   [(eqv? close #t) (file-close-proc id fd)]
                   [else #f])
-                fd
+                (default-cookie fd)
                 (vector 0))])
       (guarded-port port)))
 
@@ -2546,11 +2544,11 @@
     (define who 'unregister-callback)
     (cond
       [(output-port? what)
-       (let ([c ($port-cookie what)])
+       (let ([c (cookie-dest ($port-cookie what))])
          (unless (fixnum? c) (die who "not a file-based port" what))
          (rem-io-event c))]
       [(input-port? what)
-       (let ([c ($port-cookie what)])
+       (let ([c (cookie-dest ($port-cookie what))])
          (unless (fixnum? c) (die who "not a file-based port" what))
          (rem-io-event c))]
       [(tcp-server? what)
@@ -2563,11 +2561,11 @@
       (die who "not a procedure" proc))
     (cond
       [(output-port? what) 
-       (let ([c ($port-cookie what)])
+       (let ([c (cookie-dest ($port-cookie what))])
          (unless (fixnum? c) (die who "not a file-based port" what))
          (add-io-event c proc 'w))]
       [(input-port? what) 
-       (let ([c ($port-cookie what)])
+       (let ([c (cookie-dest ($port-cookie what))])
          (unless (fixnum? c) (die who "not a file-based port" what))
          (add-io-event c proc 'r))]
       [(tcp-server? what)
