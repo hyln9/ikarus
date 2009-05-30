@@ -20,7 +20,8 @@
 
 (library (psyntax expander)
   (export identifier? syntax-dispatch 
-          eval expand generate-temporaries free-identifier=?
+          eval core-expand 
+          generate-temporaries free-identifier=?
           bound-identifier=? datum->syntax syntax-error
           syntax-violation
           syntax->datum 
@@ -3752,7 +3753,7 @@
   ;;; expander (chi-expr).   It takes an expression and an environment.
   ;;; It returns two values: The resulting core-expression and a list of
   ;;; libraries that must be invoked before evaluating the core expr.
-  (define expand
+  (define core-expand
     (lambda (x env)
       (cond
         ((env? env)
@@ -3785,6 +3786,7 @@
         (else
          (assertion-violation 'expand "not an environment" env)))))
 
+
   ;;; This is R6RS's eval.  It takes an expression and an environment,
   ;;; expands the expression, invokes its invoke-required libraries and
   ;;; evaluates its expanded core form.
@@ -3792,7 +3794,7 @@
     (lambda (x env)
       (unless (environment? env)
         (error 'eval "not an environment" env))
-      (let-values (((x invoke-req*) (expand x env)))
+      (let-values (((x invoke-req*) (core-expand x env)))
         (for-each invoke-library invoke-req*)
         (eval-core (expanded->core x)))))
 

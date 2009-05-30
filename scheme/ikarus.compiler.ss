@@ -18,8 +18,8 @@
   (export compile-core-expr-to-port 
           assembler-output optimize-cp
           current-primitive-locations eval-core
-          current-core-eval
-          compile-core-expr expand/optimize optimizer-output
+          current-core-eval compile-core-expr 
+          expand expand/optimize optimizer-output
           cp0-effort-limit cp0-size-limit optimize-level 
           perform-tag-analysis tag-analysis-output
           strip-source-info generate-debug-calls)
@@ -36,7 +36,7 @@
         compile-core-expr-to-port assembler-output
         current-primitive-locations eval-core
         cp0-size-limit cp0-effort-limit 
-        expand/optimize optimizer-output
+        expand/optimize expand optimizer-output
         tag-analysis-output perform-tag-analysis
         current-core-eval)
     (ikarus.fasl.write)
@@ -2481,19 +2481,30 @@
              (refresh-cached-labels!))
            (error 'current-primitive-locations "not a procedure" p))])))
 
+(define (expand/pretty x env who . passes)
+  (unless (environment? env)
+    (die who "not an environment" env))
+  (let-values ([(x libs) (core-expand x env)])
+    (let f ([x (recordize x)] [passes passes])
+      (if (null? passes)
+          (unparse-pretty x)
+          (f ((car passes) x) (cdr passes))))))
+
 (define expand/optimize
   (case-lambda
-    [(p) (expand/optimize p (interaction-environment))]
-    [(p env)
-     (unless (environment? env)
-       (env 'expand/optimize "not an environment" env))
-     (let-values ([(p lib*) (expand p env)])
-       (let* ([p (recordize p)]
-              [p (parameterize ([open-mvcalls #f])
-                   (optimize-direct-calls p))]
-              [p (optimize-letrec/scc p)]
-              [p (source-optimize p)])
-         (unparse-pretty p)))]))
+    [(x) (expand/optimize x (interaction-environment))]
+    [(x env)
+     (expand/pretty x env 'expand/optimize
+       (lambda (x) 
+         (parameterize ([open-mvcalls #f])
+            (optimize-direct-calls x)))
+       optimize-letrec/scc
+       source-optimize)]))
+
+(define expand
+  (case-lambda
+    [(x) (expand x (interaction-environment))]
+    [(x env) (expand/pretty x env 'expand)]))
 
 )
 
