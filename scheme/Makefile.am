@@ -119,7 +119,7 @@ MAINTAINERCLEANFILES=last-revision
 ikarus.boot: $(EXTRA_DIST) ikarus.config.ss 
 	IKARUS_SRC_DIR=$(srcdir) \
   IKARUS_BUILD_DIR=$(builddir) \
-  IKARUS_LIBRARY_PATH=$(srcdir) \
+  IKARUS_LIBRARY_PATH=$(srcdir):$(srcdir)/../lib \
   ../src/ikarus -b $(srcdir)/ikarus.boot.$(sizeofvoidp).prebuilt \
   --r6rs-script $(srcdir)/makefile.ss
 

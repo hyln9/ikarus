@@ -20,7 +20,7 @@
 
 (library (ikarus startup)
   (export print-greeting init-library-path host-info split-path)
-  (import (except (ikarus) host-info))
+  (import (except (ikarus) host-info) (ikarus include))
   (include "ikarus.config.ss")
 
   (define (host-info) target)

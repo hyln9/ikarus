@@ -15,7 +15,7 @@
 
 (library (ikarus.include-src)
   (export include-src)
-  (import (ikarus))
+  (import (ikarus) (ikarus include))
   (define-syntax include-src
     (lambda (x)
       (syntax-case x ()
@@ -25,4 +25,4 @@
                           (or (getenv "IKARUS_SRC_DIR") ".") 
                           "/"
                           (syntax->datum #'filename))])
-           #'(include-into ctxt filename))]))))
+           #'(include/lexical-context filename ctxt))]))))

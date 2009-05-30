@@ -31,6 +31,7 @@
     (except (ikarus) fasl-write write-byte))
  
   (module (wordsize)
+    (import (ikarus include))
     (include "ikarus.config.ss"))
 
   ;;; (define-syntax fxshift 

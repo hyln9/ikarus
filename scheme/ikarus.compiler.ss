@@ -1846,6 +1846,7 @@
 
 (begin ;;; DEFINITIONS
   (module (wordsize)
+    (import (ikarus include))
     (include "ikarus.config.ss"))
   (define wordshift
     (case wordsize
