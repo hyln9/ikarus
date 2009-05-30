@@ -37,7 +37,7 @@ EXTRA_DIST=ikarus.boot.4.prebuilt ikarus.boot.8.prebuilt last-revision \
   ikarus.string-to-number.ss ikarus.compiler.source-optimizer.ss \
   ikarus.compiler.tag-annotation-analysis.ss ikarus.ontology.ss \
   ikarus.reader.annotated.ss ikarus.pointers.ss ikarus.equal.ss \
-  ikarus.symbol-table.ss ikarus.apropos.ss ikarus.include-src.ss \
+  ikarus.symbol-table.ss ikarus.apropos.ss \
   ikarus.debugger.ss \
   tests/SRFI-1.ss \
   tests/bignum-to-flonum.ss \

@@ -321,7 +321,7 @@
        (make-codes (map Clambda code*) (Main body))]))
   (Program x))
 
-(include-src "pass-specify-rep.ss")
+(include "pass-specify-rep.ss")
 
 (define parameter-registers '(%edi)) 
 (define return-value-register '%eax)

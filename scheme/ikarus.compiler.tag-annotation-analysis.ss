@@ -16,7 +16,7 @@
 
 
 ;;; THIS IS WIP
-(include-src "ikarus.ontology.ss")
+(include "ikarus.ontology.ss")
 
 (define tag-analysis-output (make-parameter #f))
 

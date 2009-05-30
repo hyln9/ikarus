@@ -31,7 +31,7 @@
     string-ci=? string-ci>? string-ci>=? string-normalize-nfd
     string-normalize-nfkd string-normalize-nfc string-normalize-nfkc )
   (import 
-    (ikarus.include-src)
+    (ikarus include)
     (except (ikarus) 
       unicode-printable-char?
       char-upcase char-downcase char-titlecase char-foldcase
@@ -100,8 +100,8 @@
 (define (char- x y)
   (fx- (char->integer x) (char->integer y)))
 
-(include-src "unicode/unicode-char-cases.ss")
-(include-src "unicode/unicode-charinfo.ss")
+(include "unicode/unicode-char-cases.ss")
+(include "unicode/unicode-charinfo.ss")
 
 (define-syntax define-char-op
   (syntax-rules ()

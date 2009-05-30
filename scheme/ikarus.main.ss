@@ -59,10 +59,11 @@
 
   (define (init-library-path) 
     (library-path
-      (cons "."
-        (append 
-          (split-path (or (getenv "IKARUS_LIBRARY_PATH") ""))
-          (list ikarus-lib-dir))))
+      (append
+        (cond
+          [(getenv "IKARUS_LIBRARY_PATH") => split-path]
+          [else '(".")])
+        (list ikarus-lib-dir)))
     (let ([prefix
            (lambda (ext ls)
              (append (map (lambda (x) (string-append ext x)) ls) ls))])

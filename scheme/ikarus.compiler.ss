@@ -29,7 +29,6 @@
     (ikarus system $pairs)
     (only (ikarus system $codes) $code->closure)
     (only (ikarus system $structs) $struct-ref $struct/rtd?)
-    (ikarus.include-src)
     (except (ikarus)
         optimize-level debug-optimizer
         fasl-write scc-letrec optimize-cp
@@ -39,6 +38,7 @@
         expand/optimize expand optimizer-output
         tag-analysis-output perform-tag-analysis
         current-core-eval)
+    (ikarus include)
     (ikarus.fasl.write)
     (ikarus.intel-assembler))
 
@@ -1092,7 +1092,7 @@
     ;(pretty-print (unparse x)) 
     x))
 
-(include-src "ikarus.compiler.source-optimizer.ss")
+(include "ikarus.compiler.source-optimizer.ss")
 
 (define (rewrite-assignments x)
   (define who 'rewrite-assignments)
@@ -1180,7 +1180,7 @@
       [else (error who "invalid expression" (unparse x))]))
   (Expr x))
 
-(include-src "ikarus.compiler.tag-annotation-analysis.ss")
+(include "ikarus.compiler.tag-annotation-analysis.ss")
 
 (define (introduce-vars x)
   (define who 'introduce-vars)
@@ -2469,7 +2469,7 @@
   (lambda (x) 
     ((current-core-eval) x)))
 
-(include-src "ikarus.compiler.altcogen.ss")
+(include "ikarus.compiler.altcogen.ss")
 
 (define current-primitive-locations
   (let ([plocs (lambda (x) #f)])
