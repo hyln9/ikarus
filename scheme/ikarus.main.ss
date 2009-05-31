@@ -142,6 +142,13 @@
                           (die 'ikarus "--r6rs-script requires a script name")]
                          [else
                           (values '() (car d) 'r6rs-script (cdr d) k)]))]
+                    [(string=? (car args) "--r6rs-repl")
+                     (let ([d (cdr args)])
+                       (cond
+                         [(null? d)
+                          (die 'ikarus "--r6rs-repl requires a script name")]
+                         [else
+                          (values '() (car d) 'r6rs-repl (cdr d) k)]))]
                     [(string=? (car args) "--compile-dependencies")
                      (let ([d (cdr args)])
                        (cond
@@ -202,17 +209,27 @@
     (init-command-line-args)
 
     (cond
-      [(eq? script-type 'r6rs-script)
-       (doit
-         (command-line-arguments (cons script args))
-         (for-each
-           (lambda (filename)
-             (for-each
-               (lambda (src)
-                 ((current-library-expander) src))
-               (read-source-file filename)))
-           files)
-         (load-r6rs-script script #f #t))]
+      [(memq script-type '(r6rs-script r6rs-repl))
+       (let ([f (lambda ()
+                  (doit
+                    (command-line-arguments (cons script args))
+                    (for-each
+                      (lambda (filename)
+                        (for-each
+                          (lambda (src)
+                            ((current-library-expander) src))
+                          (read-source-file filename)))
+                      files)
+                    (load-r6rs-script script #f #t)))])
+         (cond
+           [(eq? script-type 'r6rs-script) (f)]
+           [else
+            (print-greeting)
+            (let ([env (f)])
+              (interaction-environment env)
+              (new-cafe
+                (lambda (x)
+                  (doit (eval x env)))))]))]
       [(eq? script-type 'compile)
        (assert-null files "--compile-dependencies")
        (doit

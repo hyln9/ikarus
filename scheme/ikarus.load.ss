@@ -118,7 +118,7 @@
       (unless (string? filename) 
         (die 'load-r6rs-script "file name is not a string" filename))
       (let ([prog (read-script-source-file filename)])
-        (let ([thunk (compile-r6rs-top-level prog)])
+        (let([thunk (compile-r6rs-top-level prog)])
           (when serialize?
             (serialize-all
               (lambda (file-name contents)
