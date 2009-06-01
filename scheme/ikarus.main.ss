@@ -88,79 +88,68 @@
 
   (define rcfiles #t) ;; #f for no rcfile, list for specific list
 
+  (define (parse-command-line-arguments)
+    (let f ([args (command-line-arguments)] [k void])
+      (define (invalid-rc-error)
+        (die 'ikarus "--no-rcfile is invalid with --rcfile"))
+      (cond
+        [(null? args) (values '() #f #f '() k)]
+        [(member (car args) '("-d" "--debug"))
+         (f (cdr args) (lambda () (k) (generate-debug-calls #t)))]
+        [(member (car args) '("-nd" "--no-debug"))
+         (f (cdr args) (lambda () (k) (generate-debug-calls #f)))]
+        [(string=? (car args) "-O2")
+         (f (cdr args) (lambda () (k) (optimize-level 2)))]
+        [(string=? (car args) "-O1")
+         (f (cdr args) (lambda () (k) (optimize-level 1)))] 
+        [(string=? (car args) "-O0")
+         (f (cdr args) (lambda () (k) (optimize-level 0)))]
+        [(string=? (car args) "--no-rcfile")
+         (unless (boolean? rcfiles) (invalid-rc-error))
+         (set! rcfiles #f)
+         (f (cdr args) k)]
+        [(string=? (car args) "--rcfile")
+         (let ([d (cdr args)])
+           (when (null? d) (die 'ikarus "--rcfile requires a script name"))
+           (set! rcfiles 
+             (cons (car d) 
+               (case rcfiles
+                 [(#t) '()]
+                 [(#f) (invalid-rc-error)]
+                 [else rcfiles])))
+           (f (cdr d) k))]
+        [(string=? (car args) "--")
+         (values '() #f #f (cdr args) k)]
+        [(string=? (car args) "--script")
+         (let ([d (cdr args)])
+           (cond
+             [(null? d) (die 'ikarus "--script requires a script name")]
+             [else (values '() (car d) 'script (cdr d) k)]))]
+        [(string=? (car args) "--r6rs-script")
+         (let ([d (cdr args)])
+           (cond
+             [(null? d) (die 'ikarus "--r6rs-script requires a script name")]
+             [else (values '() (car d) 'r6rs-script (cdr d) k)]))]
+        [(string=? (car args) "--r6rs-repl")
+         (let ([d (cdr args)])
+           (cond
+             [(null? d) (die 'ikarus "--r6rs-repl requires a script name")]
+             [else (values '() (car d) 'r6rs-repl (cdr d) k)]))]
+        [(string=? (car args) "--compile-dependencies")
+         (let ([d (cdr args)])
+           (cond
+             [(null? d)
+              (die 'ikarus "--compile-dependencies requires a script name")]
+             [else
+              (values '() (car d) 'compile (cdr d) k)]))]
+        [else
+         (let-values ([(f* script script-type a* k) (f (cdr args) k)])
+           (values (cons (car args) f*) script script-type a* k))])))
+
   (initialize-symbol-table!)
   (init-library-path)
   (let-values ([(files script script-type args init-command-line-args)
-                (let f ([args (command-line-arguments)] [k void])
-                  (define (invalid-rc-error)
-                    (die 'ikarus "--no-rcfile is invalid with --rcfile"))
-                  (cond
-                    [(null? args) (values '() #f #f '() k)]
-                    [(member (car args) '("-d" "--debug"))
-                     (f (cdr args) 
-                        (lambda () (k) (generate-debug-calls #t)))]
-                    [(member (car args) '("-nd" "--no-debug"))
-                     (f (cdr args)
-                        (lambda () (k) (generate-debug-calls #f)))]
-                    [(string=? (car args) "-O2")
-                     (f (cdr args)
-                        (lambda () (k) (optimize-level 2)))]
-                    [(string=? (car args) "-O1")
-                     (f (cdr args)
-                        (lambda () (k) (optimize-level 1)))] 
-                    [(string=? (car args) "-O0")
-                     (f (cdr args)
-                        (lambda () (k) (optimize-level 0)))]
-                    [(string=? (car args) "--no-rcfile")
-                     (unless (boolean? rcfiles) (invalid-rc-error))
-                     (set! rcfiles #f)
-                     (f (cdr args) k)]
-                    [(string=? (car args) "--rcfile")
-                     (let ([d (cdr args)])
-                       (when (null? d)
-                         (die 'ikarus "--rcfile requires a script name"))
-                       (set! rcfiles 
-                         (cons (car d) 
-                           (case rcfiles
-                             [(#t) '()]
-                             [(#f) (invalid-rc-error)]
-                             [else rcfiles])))
-                       (f (cdr d) k))]
-                    [(string=? (car args) "--")
-                     (values '() #f #f (cdr args) k)]
-                    [(string=? (car args) "--script")
-                     (let ([d (cdr args)])
-                       (cond
-                         [(null? d)
-                          (die 'ikarus "--script requires a script name")]
-                         [else
-                          (values '() (car d) 'script (cdr d) k)]))]
-                    [(string=? (car args) "--r6rs-script")
-                     (let ([d (cdr args)])
-                       (cond
-                         [(null? d)
-                          (die 'ikarus "--r6rs-script requires a script name")]
-                         [else
-                          (values '() (car d) 'r6rs-script (cdr d) k)]))]
-                    [(string=? (car args) "--r6rs-repl")
-                     (let ([d (cdr args)])
-                       (cond
-                         [(null? d)
-                          (die 'ikarus "--r6rs-repl requires a script name")]
-                         [else
-                          (values '() (car d) 'r6rs-repl (cdr d) k)]))]
-                    [(string=? (car args) "--compile-dependencies")
-                     (let ([d (cdr args)])
-                       (cond
-                         [(null? d)
-                          (die 'ikarus
-                            "--compile-dependencies requires a script name")]
-                         [else
-                          (values '() (car d) 'compile (cdr d) k)]))]
-                    [else
-                     (let-values ([(f* script script-type a* k) 
-                                   (f (cdr args) k)])
-                       (values (cons (car args) f*) script script-type a* k))]))])
+                (parse-command-line-arguments)])
 
     (define (assert-null files who)
       (unless (null? files)
