@@ -19,7 +19,7 @@
           assembler-output optimize-cp
           current-primitive-locations eval-core
           current-core-eval compile-core-expr 
-          expand expand/optimize optimizer-output
+          expand expand/optimize expand/scc-letrec optimizer-output
           cp0-effort-limit cp0-size-limit optimize-level 
           perform-tag-analysis tag-analysis-output
           strip-source-info generate-debug-calls)
@@ -31,11 +31,11 @@
     (only (ikarus system $structs) $struct-ref $struct/rtd?)
     (except (ikarus)
         optimize-level debug-optimizer
-        fasl-write scc-letrec optimize-cp
+        fasl-write optimize-cp
         compile-core-expr-to-port assembler-output
         current-primitive-locations eval-core
         cp0-size-limit cp0-effort-limit 
-        expand/optimize expand optimizer-output
+        expand/optimize expand/scc-letrec expand optimizer-output
         tag-analysis-output perform-tag-analysis
         current-core-eval)
     (ikarus include)
@@ -853,6 +853,7 @@
   body)
 |#
 
+(define debug-scc (make-parameter #f))
 
 (define (optimize-letrec/scc x)
   (define who 'optimize-letrec/scc)
@@ -932,7 +933,8 @@
            (let* ([b (car b*)]
                   [lhs (binding-lhs b)])
              (unless (prelex-source-assigned? lhs) 
-               ;(printf "MADE COMPLEX ~s\n" (unparse lhs))
+               (when (debug-scc)
+                 (printf "MADE COMPLEX ~s\n" (unparse lhs)))
                (set-prelex-source-assigned?! lhs 
                   (or (prelex-global-location lhs) #t)))
              (make-seq
@@ -1011,12 +1013,13 @@
       (let ([body (E body bc)]) 
         (when ordered? (insert-order-edges b*))
         (let ([scc* (get-sccs-in-order b* (map binding-free* b*) b*)])
-          ;(printf "SCCS:\n")
-          ;(for-each 
-          ;  (lambda (scc) 
-          ;    (printf "  ~s\n" 
-          ;      (map unparse (map binding-lhs scc))))
-          ;  scc*)
+          (when (debug-scc)
+            (printf "SCCS:\n")
+            (for-each 
+              (lambda (scc) 
+                (printf "  ~s\n" 
+                  (map unparse (map binding-lhs scc))))
+              scc*))
           (gen-letrecs scc* ordered? body)))))
   (define (sort-bindings ls)
     (list-sort
@@ -2502,6 +2505,19 @@
       (if (null? passes)
           (unparse-pretty x)
           (f ((car passes) x) (cdr passes))))))
+
+
+(define expand/scc-letrec
+  (case-lambda
+    [(x) (expand/scc-letrec x (interaction-environment))]
+    [(x env)
+     (expand/pretty x env 'expand/scc-letrec
+       (lambda (x) 
+         (parameterize ([open-mvcalls #f])
+            (optimize-direct-calls x)))
+       (lambda (x)
+         (parameterize ([debug-scc #t])
+            (optimize-letrec/scc x))))]))
 
 (define expand/optimize
   (case-lambda

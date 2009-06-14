@@ -19,7 +19,8 @@
 (import (except (ikarus) 
           current-core-eval
           assembler-output optimize-cp optimize-level
-          cp0-size-limit cp0-effort-limit expand/optimize expand
+          cp0-size-limit cp0-effort-limit expand/optimize
+          expand/scc-letrec expand
           optimizer-output tag-analysis-output perform-tag-analysis))
 (import (ikarus.compiler))
 (import (except (psyntax system $bootstrap)
@@ -388,6 +389,7 @@
     [expand                                      i]
     [core-expand                                 i]
     [expand/optimize                             i]
+    [expand/scc-letrec                           i]
     [environment?                                i]
     [environment-symbols                         i]
     [time-it                                     i]
