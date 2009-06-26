@@ -6,7 +6,7 @@
 ;;; and print everything that it returns.
 
 (define (chargen host)
-  (let-values ([(op ip) (tcp-connect host "chargen")])
+  (let-values ([(ip op) (tcp-connect host "chargen")])
     (let ([ip (transcoded-port ip (native-transcoder))])
       (close-output-port op)
       (call/cc

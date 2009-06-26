@@ -12,7 +12,7 @@
 ;;; it succeeds.  Pretty lame at this point, but it works.
 
 (define (http-cat host)
-  (let-values ([(op ip) (tcp-connect-nonblocking host "http")])
+  (let-values ([(ip op) (tcp-connect-nonblocking host "http")])
     (let ([op (transcoded-port op (native-transcoder))]
           [ip (transcoded-port ip (native-transcoder))])
       (display "GET /\n" op)

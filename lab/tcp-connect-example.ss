@@ -6,7 +6,7 @@
 ;;; send a request and receive a response.
 
 (define (http-cat host)
-  (let-values ([(op ip) (tcp-connect host "http")])
+  (let-values ([(ip op) (tcp-connect host "http")])
     (let ([op (transcoded-port op (native-transcoder))]
           [ip (transcoded-port ip (native-transcoder))])
       (display "GET /\n" op)

@@ -12,7 +12,7 @@
 
 (define (echo host)
   (printf "Connecting\n")
-  (let-values ([(op ip) (tcp-connect host "echo")])
+  (let-values ([(ip op) (tcp-connect host "echo")])
     (printf "Connected\n")
     (let f ([bytes 0])
       (printf "~s " bytes)
