@@ -76,18 +76,19 @@
             [else
              ($string-set! s i c)
              (fill! s ($fx+ i 1) n c)])))
+      (define (make-string* n c)
+        (unless (fixnum? n)
+         (die 'make-string "length is not a fixnum" n))
+        (unless (eqv? 0 (fxsra n (fx- (fixnum-width) 2)))
+          (die 'make-string "length is out of range" n))
+        (fill! ($make-string n) 0 n c))
       (define make-string
         (case-lambda
-          [(n) 
-           (unless (and (fixnum? n) (fx>= n 0))
-             (die 'make-string "not a valid length" n))
-           (fill! ($make-string n) 0 n (integer->char 0))]
+          [(n) (make-string* n (integer->char 0))]
           [(n c)
-           (unless (and (fixnum? n) (fx>= n 0))
-             (die 'make-string "not a valid length" n))
-           (unless (char? c)
-             (die 'make-string "not a character" c))
-           (fill! ($make-string n) 0 n c)]))
+           (if (char? c)
+               (make-string* n c)
+               (die 'make-string "not a character" c))]))
         make-string))
 
 
