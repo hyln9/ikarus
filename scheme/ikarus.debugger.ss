@@ -250,12 +250,12 @@
     (with-exception-handler
       (lambda (con)
         (define (help)
-          (printf "Condition trapped by debugger.\n")
+          (printf "Exception trapped by debugger.\n")
           (print-condition con)
           (printf "~a\n"
             (string-append
               "[t] Trace. "
-              "[r] Reraise condition. "
+              "[r] Reraise exception. "
               "[c] Continue. "
               "[q] Quit. "
               "[?] Help. ")))
