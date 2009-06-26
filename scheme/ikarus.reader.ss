@@ -74,7 +74,7 @@
   (define delimiter?
     (lambda (c)
       (or (char-whitespace? c)
-          (memq c '(#\( #\) #\[ #\] #\" #\# #\;)))))
+          (memq c '(#\( #\) #\[ #\] #\" #\# #\; #\{ #\})))))
   (define digit?
     (lambda (c)
       (and ($char<= #\0 c) ($char<= c #\9))))
@@ -131,9 +131,12 @@
         [(eof-object? c) 
          (die/p p 'tokenize "invalid eof inside string")]
         [else (tokenize-string-char ls p c)])))
+  (define LF1 '(#\xA #\x85 #\x2028)) ;;; these are considered newlines 
+  (define LF2 '(#\xA #\x85))         ;;; these are not newlines if they
+                                     ;;; appear after CR
   (define (tokenize-string-char ls p c)
     (define (intraline-whitespace? c)
-      (or (eqv? c #\x9) 
+      (or (eqv? c #\x9)
           (eq? (char-general-category c) 'Zs)))
     (define (tokenize-string-continue ls p c)
       (cond
@@ -195,44 +198,41 @@
                  [(eof-object? c) 
                   (die/p p 'tokenize "invalid eof inside string")]
                  [(intraline-whitespace? c) (f)]
-                 [(memv c '(#\xA #\x85 #\x2028)) 
+                 [(memv c LF1)
                   (tokenize-string-continue ls p (read-char p))]
-                 [(memv c '(#\xD)) 
+                 [(eqv? c #\return)
                   (let ([c (read-char p)])
                     (cond
-                      [(memv c '(#\xA #\x85))
+                      [(memv c LF2)
                        (tokenize-string-continue ls p (read-char p))]
                       [else 
                        (tokenize-string-continue ls p c)]))]
                  [else
                   (die/p-1 p 'tokenize 
                     "non-whitespace character after escape")])))]
-          [(memv c '(#\xA #\x85 #\x2028))
+          [(memv c LF1)
            (tokenize-string-continue ls p (read-char p))]
-          [(memv c '(#\xD)) 
+          [(eqv? c #\return)
            (let ([c (read-char p)])
              (cond
-               [(memv c '(#\xA #\x85))
+               [(memv c LF2)
                 (tokenize-string-continue ls p (read-char p))]
-               [else 
+               [else
                 (tokenize-string-continue ls p c)]))]
           [else (die/p-1 p 'tokenize "invalid string escape" c)]))]
-     [(memv c '(#\xA #\x85 #\x2028))
+     [(memv c LF1)
       (tokenize-string (cons #\linefeed ls) p)]
-     [(memv c '(#\xD))
+     [(eqv? c #\return)
       (let ([c (peek-char p)])
-        (when (memv c '(#\xA #\x85))
-          (read-char p))
+        (when (memv c LF2) (read-char p))
         (tokenize-string (cons #\linefeed ls) p))]
      [else
       (tokenize-string (cons c ls) p)]))
   (define skip-comment
     (lambda (p)
       (let ([c (read-char p)])
-        (unless (eof-object? c)
-          (let ([i ($char->fixnum c)])
-            (unless (or (fx= i 10) (fx= i 13))
-              (skip-comment p)))))))
+        (unless (or (eof-object? c) (memv c LF1) (eqv? c #\return))
+          (skip-comment p)))))
   (define tokenize-dot
     (lambda (p)
       (let ([c (peek-char p)])
@@ -268,13 +268,15 @@
           (cond
            [(eof-object? c) d]
            [(delimiter? c)  d]
-           [else (die/p p 'tokenize "invalid character after sequence"
-                    (string-append str (string c)))]))]
+           [else 
+            (die/p p 'tokenize "invalid character after sequence"
+              (string-append str (string c)))]))]
        [else
         (let ([c (read-char p)])
           (cond
             [(eof-object? c) 
-             (die/p p 'tokenize "invalid eof in the middle of expected sequence" str)]
+             (die/p p 'tokenize
+               "invalid eof in the middle of expected sequence" str)]
             [($char= c (string-ref str i))
              (tokenize-char* (fxadd1 i) str p d)]
             [else 
@@ -290,15 +292,16 @@
           [($char= (string-ref str 1) c) 
            (read-char p)
            (tokenize-char*  2 str p d)]
-          [else (die/p p 'tokenize "invalid syntax" 
-                  (string-ref str 0) c)]))))
+          [else 
+           (die/p p 'tokenize "invalid syntax" 
+             (string-ref str 0) c)]))))
   (define tokenize-char
     (lambda (p)
       (let ([c (read-char p)])
         (cond
           [(eof-object? c)
            (die/p p 'tokenize "invalid #\\ near end of file")]
-          [(eqv? #\n c) 
+          [(eqv? #\n c)
            (let ([c (peek-char p)])
              (cond
                [(eof-object? c)
@@ -580,12 +583,15 @@
          (cons 'datum (parse-string p (list c #\#) 8 8 #f))]
         [(memq c '(#\d #\D)) 
          (cons 'datum (parse-string p (list c #\#) 10 10 #f))]
-        [($char= #\@ c)
-         (when (eq? (port-mode p) 'r6rs-mode)
-           (die/p-1 p 'tokenize "fasl syntax is invalid in #!r6rs mode"
-              (format "#~a" c)))
-         (die/p-1 p 'read "FIXME: fasl read disabled")
-         '(cons 'datum ($fasl-read p))]
+        ;[($char= #\@ c) DEAD: Unfixable due to port encoding
+        ;                 that does not allow mixing binary and
+        ;                 textual data in the same port.
+        ;                Left here for historical value
+        ; (when (eq? (port-mode p) 'r6rs-mode)
+        ;   (die/p-1 p 'tokenize "fasl syntax is invalid in #!r6rs mode"
+        ;      (format "#~a" c)))
+        ; (die/p-1 p 'read "FIXME: fasl read disabled")
+        ; '(cons 'datum ($fasl-read p))]
         [else 
          (die/p-1 p 'tokenize 
             (format "invalid syntax #~a" c))])))
