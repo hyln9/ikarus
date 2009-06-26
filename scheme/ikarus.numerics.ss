@@ -1737,7 +1737,9 @@
         [(bignum? n)
          (cond
            [(fixnum? m) 
-            (foreign-call "ikrt_bnfx_modulo" n m)]
+            (if (eqv? m 0)
+                (die 'modulo "division by zero" n m)
+                (foreign-call "ikrt_bnfx_modulo" n m))]
            [(bignum? m) 
             (if ($bignum-positive? n) 
                 (if ($bignum-positive? m) 

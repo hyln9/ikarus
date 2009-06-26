@@ -1797,7 +1797,7 @@ ikrt_bnfxdivrem(ikptr x, ikptr y, ikpcb* pcb){
 
 ikptr
 ikrt_bnfx_modulo(ikptr x, ikptr y /*, ikpcb* pcb */){
-  int yint = unfix(y);
+  long int yint = unfix(y);
   mp_limb_t* s2p = (mp_limb_t*)(long)(x+off_bignum_data);
   ikptr fst = ref(x, -vector_tag);
   mp_size_t s2n = bnfst_limb_count(fst);
