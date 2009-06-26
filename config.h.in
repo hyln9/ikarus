@@ -21,9 +21,6 @@
 /* Define to 1 if you have the <fcntl.h> header file. */
 #undef HAVE_FCNTL_H
 
-/* Define to 1 if you have the <ffi.h> header file. */
-#undef HAVE_FFI_H
-
 /* Define to 1 if you have the `fork' function. */
 #undef HAVE_FORK
 
@@ -41,9 +38,6 @@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
-
-/* Define to 1 if you have the `ffi' library (-lffi). */
-#undef HAVE_LIBFFI
 
 /* Define to 1 if you have the `gmp' library (-lgmp). */
 #undef HAVE_LIBGMP

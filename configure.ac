@@ -70,25 +70,37 @@ ERROR: libgmp.so) if libgmp is installed in a non-standard location.
 ERROR: libgmp can be obtained from <http://gmplib.org>. ])])
 
 AC_ARG_ENABLE(libffi,
-  [  --enable-libffi     enable support for libffi.])
+  AS_HELP_STRING([--enable-libffi], [enable support for libffi (default is check)]),
+  [true], [enable_libffi=check])
 
-if test "$enable_libffi" = "yes"; then
+# Check for libffi (optional)
 
-AC_CHECK_HEADERS([ffi.h],,
-    AC_MSG_ERROR([ffi.h cannot be found.
+libffi_val=0
+if test "$enable_libffi" != no; then
+  AC_CHECK_HEADER([ffi.h], [have_ffi_h=yes], [have_ffi_h=no])
+  AC_CHECK_LIB(ffi,ffi_call, [have_libffi=yes], [have_libffi=no])
+  if test "$have_libffi" = yes && test "$have_ffi_h" = yes; then
+    libffi_val=1
+    LIBS="$LIBS -lffi"
+  elif test "$enable_libffi" = yes; then
+    if test "$have_ffi_h" = no; then
+      AC_MSG_ERROR([ffi.h cannot be found.
 Please specify the location of the header file using
   ./configure CFLAGS=-I<path/to/ffi.h>   <other-options ...>
-]))
-
-AC_CHECK_LIB(ffi,ffi_call,,
-    AC_MSG_ERROR([libffi cannot be found.
+])
+    fi
+    if test "$have_libffi" = no; then
+      AC_MSG_ERROR([libffi cannot be found.
 Please specify the location of the library file using
   ./configure LDFLAGS=-L<path/to/libffi.ld|dylib|so|etc.>  <other-options ...>
-]))
+])
+    fi
+  else
+    AC_MSG_WARN([libffi not found -- FFI disabled])
+  fi
+fi # "$enable_ffi" != no
 
-AC_DEFINE(ENABLE_LIBFFI, 1, [adds support for libffi])
-
-fi
+AC_DEFINE_UNQUOTED(ENABLE_LIBFFI, [$libffi_val], [adds support for libffi])
 
 AC_CHECK_MEMBER([struct stat.st_mtimespec],
    AC_DEFINE(HAVE_STAT_ST_MTIMESPEC, 1, 
