@@ -249,29 +249,33 @@
   (define (guarded-start proc)
     (with-exception-handler
       (lambda (con)
-        (define (help)
-          (printf "Exception trapped by debugger.\n")
-          (print-condition con)
-          (printf "~a\n"
-            (string-append
-              "[t] Trace. "
-              "[r] Reraise exception. "
-              "[c] Continue. "
-              "[q] Quit. "
-              "[?] Help. ")))
-        (help)
-        ((call/cc
-           (lambda (k)
-             (new-cafe
-               (lambda (x)
-                 (case x
-                  [(R r) (k (lambda () (raise-continuable con)))]
-                  [(Q q) (exit 0)]
-                  [(T t) (print-all-traces)]
-                  [(C c) (k void)]
-                  [(?)   (help)]
-                  [else (printf "invalid option\n")])))
-             void))))
+        (define (enter-debugger con)
+          (define (help)
+            (printf "Exception trapped by debugger.\n")
+            (print-condition con)
+            (printf "~a\n"
+              (string-append
+                "[t] Trace. "
+                "[r] Reraise exception. "
+                "[c] Continue. "
+                "[q] Quit. "
+                "[?] Help. ")))
+          (help)
+          ((call/cc
+             (lambda (k)
+               (new-cafe
+                 (lambda (x)
+                   (case x
+                    [(R r) (k (lambda () (raise-continuable con)))]
+                    [(Q q) (exit 0)]
+                    [(T t) (print-all-traces)]
+                    [(C c) (k void)]
+                    [(?)   (help)]
+                    [else (printf "invalid option\n")])))
+               void))))
+        (if (serious-condition? con)
+            (enter-debugger con)
+            (raise-continuable con)))
       proc))
 
 )
