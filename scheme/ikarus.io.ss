@@ -2052,6 +2052,38 @@
 
   ;;; ----------------------------------------------------------
   
+  (define-syntax put-string/bv
+    (syntax-rules ()
+      [(_ who not-a-what pred? len $put)
+       (case-lambda
+         [(p bv) 
+          (if (pred? bv) 
+              ($put p bv 0 (len bv))
+              (die who not-a-what bv))]
+         [(p bv i) 
+          (if (pred? bv) 
+              (if (fixnum? i) 
+                  (let ([n (len bv)])
+                    (if (and (fx<= i n) (fx>= i 0))
+                        ($put p bv i (fx- n i))
+                        (die who "index out of range" i)))
+                  (die who "invalid index" i))
+              (die who not-a-what bv))]
+         [(p bv i c) 
+          (if (pred? bv) 
+              (if (fixnum? i) 
+                  (let ([n (len bv)])
+                    (if (and (fx<= i n) (fx>= i 0))
+                        (if (fixnum? c) 
+                            (if (and (fx>= c 0) (fx>= (fx- n c) i))
+                                ($put p bv i c)
+                                (die who "count out of range" c))
+                            (die who "invalid count" c))
+                        (die who "index out of range" i)))
+                  (die who "invalid index" i))
+              (die who not-a-what bv))])]))
+
+
   (module (put-char write-char put-string)
     (import UNSAFE)
     (define (put-byte! p b who)
@@ -2088,16 +2120,18 @@
         [(c) (do-put-char (current-output-port) c 'write-char)]))
     (define (put-char p c) 
       (do-put-char p c 'put-char))
-    (define (put-string p str)
-      (unless (string? str) (die 'put-string "not a string" str))
+    (define ($put-string p str start count)
       (unless (output-port? p)
         (die 'put-string "not an output port" p))
       (unless (textual-port? p)
         (die 'put-string "not a textual port" p))
-      (let f ([i 0] [n (string-length str)])
-        (unless (fx= i n)
+      (let f ([i start] [j (fx+ start count)])
+        (unless (fx= i j)
           (do-put-char p (string-ref str i) 'put-string)
-          (f (fx+ i 1) n))))
+          (f (fx+ i 1) j))))
+    (define put-string
+      (put-string/bv 'put-string "not a string" 
+        string? string-length $put-string))
     (define (do-put-char p c who)
       (unless (char? c) (die who "not a char" c))
       (let ([m ($port-fast-attrs p)])
@@ -2247,34 +2281,11 @@
            (if (output-port? p)
                (die who "not a binary port" p)
                (die who "not an output port" p))])))
+
     (define put-bytevector
-      (case-lambda
-        [(p bv) 
-         (if (bytevector? bv) 
-             ($put-bytevector p bv 0 (bytevector-length bv))
-             (die 'put-bytevector "not a bytevector" bv))]
-        [(p bv i) 
-         (if (bytevector? bv) 
-             (if (fixnum? i) 
-                 (let ([n (bytevector-length bv)])
-                   (if (and (fx<= i n) (fx>= i 0))
-                       ($put-bytevector p bv i (fx- n i))
-                       (die 'put-bytevector "index out of range" i)))
-                 (die 'put-bytevector "invalid index" i))
-             (die 'put-bytevector "not a bytevector" bv))]
-        [(p bv i c) 
-         (if (bytevector? bv) 
-             (if (fixnum? i) 
-                 (let ([n (bytevector-length bv)])
-                   (if (and (fx<= i n) (fx>= i 0))
-                       (if (fixnum? c) 
-                           (if (and (fx>= c 0) (fx>= (fx- n c) i))
-                               ($put-bytevector p bv i c)
-                               (die 'put-bytevector "count out of range" c))
-                           (die 'put-bytevector "invalid count" c))
-                       (die 'put-bytevector "index out of range" i)))
-                 (die 'put-bytevector "invalid index" i))
-             (die 'put-bytevector "not a bytevector" bv))]))
+      (put-string/bv 'put-bytevector "not a bytevector" 
+        bytevector? bytevector-length $put-bytevector))
+
     ;;; module 
     )
 
