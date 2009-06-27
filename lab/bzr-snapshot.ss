@@ -17,6 +17,7 @@
          (read (open-string-input-port (shell "bzr" "revno" repo)))])
     (let ([file (string-append dest-dir "/" (format file-template revno))])
       (unless (file-exists? file)
+        (printf "extracting revision ~s to ~s\n" revno file)
         (shell "bzr" "export"
                "-r" (number->string revno) 
                file repo)))))
