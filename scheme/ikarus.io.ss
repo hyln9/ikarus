@@ -1863,15 +1863,15 @@
                [else
                 ($bytevector-set! s i x)
                 (let f ([p p] [s s] [start i] [i 1] [c c])
-                  (let ([x (get-u8 p)])
-                    (cond
-                      [(eof-object? x) i]
-                      [else
-                       ($bytevector-set! s ($fx+ start i) x)
-                       (let ([i ($fxadd1 i)])
-                         (if ($fx= i c)
-                             i
-                             (f p s start i c)))])))])))]
+                  (cond
+                    [($fx= i c) i]
+                    [else
+                     (let ([x (get-u8 p)])
+                       (cond
+                         [(eof-object? x) i]
+                         [else
+                          ($bytevector-set! s ($fx+ start i) x)
+                          (f p s start ($fx+ i 1) c)]))]))])))]
         [($fx= c 0) 0]
         [else (die 'get-bytevector-n! "count is negative" c)])))
 

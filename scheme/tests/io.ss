@@ -706,8 +706,21 @@
            (put-bytevector p '#vu8(0)))
          (assert (equal? (e) (make-bytevector (* 86 2) 0))))))
 
+  (define (test-get-bytevector-n)
+    (let ((p (open-bytevector-input-port '#vu8(1 2 3 4 5 6 7 8 9)))
+          (buf (make-bytevector 10 #xff)))
+      (let ([buf1 
+             (begin
+               (printf "going to read 5 bytes: ~s\n" (get-bytevector-n! p buf 0 5))
+               (printf "result: ~s\n" buf)
+               (bytevector-copy buf))])
+          (printf "going to read 1 byte: ~s\n" (get-bytevector-n! p buf 5 1))
+          (printf "result: ~s\n" buf)
+          (unless (bytevector=? buf '#vu8(1 2 3 4 5 6 #xff #xff #xff #xff))
+           (error 'test "the data is not correct" buf1 buf)))))
 
   (define (run-tests)
+    (test-get-bytevector-n) 
     (test-custom-binary-input-ports)
     (test-custom-binary-output-ports)
     (run-exhaustive-tests)
