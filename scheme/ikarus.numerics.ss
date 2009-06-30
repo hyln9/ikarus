@@ -1716,7 +1716,10 @@
       (cond
         [(fixnum? n)
          (cond
-           [(fixnum? m) ($fxmodulo n m)]
+           [(fixnum? m)
+            (if (eqv? m 0)
+                (die 'modulo "division by zero" n m)
+                ($fxmodulo n m))]
            [(bignum? m) 
             (if ($fx< n 0)
                 (if ($bignum-positive? m) 
