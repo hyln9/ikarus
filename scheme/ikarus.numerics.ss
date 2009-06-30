@@ -468,23 +468,50 @@
   ;;;               (inexact q)
   ;;;               (+ q (f r d)))))))
 
+  ;;; (define (ratnum->flonum num)
+  ;;;   (define (rat n m)
+  ;;;     (let-values ([(q r) (quotient+remainder n m)])
+  ;;;        (if (= r 0) 
+  ;;;            (inexact q)
+  ;;;            (fl+ (inexact q) (fl/ 1.0 (rat  m r))))))
+  ;;;   (define (pos n d)
+  ;;;     (cond
+  ;;;       [(even? n)
+  ;;;        (* (pos (sra n 1) d) 2.0)]
+  ;;;       [(even? d) 
+  ;;;        (/ (pos n (sra d 1)) 2.0)]
+  ;;;       [(> n d) (rat n d)]
+  ;;;       [else 
+  ;;;        (/ (rat d n))]))
+  ;;;   (let ([n ($ratnum-n num)] [d ($ratnum-d num)])
+  ;;;     (if (> n 0) 
+  ;;;         (pos n d)
+  ;;;         (- (pos (- n) d)))))
+
   (define (ratnum->flonum num)
-    (define (rat n m)
-      (let-values ([(q r) (quotient+remainder n m)])
-         (if (= r 0) 
-             (inexact q)
-             (fl+ (inexact q) (fl/ 1.0 (rat  m r))))))
+    (define *precision* 53)
+    (define (long-div1 n d)
+      (let-values ([(q r) (quotient+remainder n d)])
+        (cond
+          [(< (* r 2) d) (inexact q)]
+          [else (inexact (+ q 1))]
+          ;[else (error #f "invalid" n d q r)]
+          )))
+    (define (long-div2 n d bits)
+      (let f ([bits bits] [ac (long-div1 n d)])
+        (cond
+          [(= bits 0) ac]
+          [else (f (- bits 1) (/ ac 2.0))])))
     (define (pos n d)
-      (cond
-        [(> n d) (rat n d)]
-        [(even? n)
-         (* (pos (sra n 1) d) 2.0)]
-        [(even? d) 
-         (/ (pos n (sra d 1)) 2.0)]
-        [else 
-         (/ (rat d n))]))
+      (let ([nbits (bitwise-length n)]
+            [dbits (bitwise-length d)])
+        (let ([diff-bits (- nbits dbits)])
+          (if (>= diff-bits *precision*)
+              (long-div1 n d)
+              (let ([extra-bits (- *precision* diff-bits)])
+                (long-div2 (sll n extra-bits) d extra-bits))))))
     (let ([n ($ratnum-n num)] [d ($ratnum-d num)])
-      (if (> n 0) 
+      (if (> n 0)
           (pos n d)
           (- (pos (- n) d)))))
 
@@ -790,6 +817,10 @@
             ($make-rectangular 
               (binary- ($compnum-real x) ($compnum-real y))
               (binary- ($compnum-imag x) ($compnum-imag y)))]
+           [(flonum? y)
+            ($make-cflonum
+              (binary- ($compnum-real x) y)
+              (binary- ($compnum-imag x) 0.0))]
            [(cflonum? y)
             ($make-cflonum 
               (binary- ($compnum-real x) ($cflonum-real y))
