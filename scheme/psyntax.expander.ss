@@ -3077,6 +3077,24 @@
                               (cons (cons lab (cons '$module iface)) mr)
                               mod** kwd*)))))))))
 
+  (define (copy-rib-contents! from-rib to-rib sd?)
+    (for-each
+      (lambda (sym mark* label)
+        (let ([id (make-stx sym mark* '() '())])
+          (extend-rib! to-rib id label sd?)))
+      (rib-sym* from-rib) (rib-mark** from-rib) (rib-label* from-rib)))
+
+  (define chi-body*-macro
+    (lambda (e* r mr lex* rhs* mod** kwd* exp* rib mix? sd? e)
+      (let ([rib2 (make-empty-rib)])
+        (let-values ([(e1* r mr lex* rhs* mod** kwd* exp*)
+                      (chi-body* (list (add-subst rib2 e)) 
+                        r mr lex* rhs* mod** kwd* exp* rib2 mix? sd?)])
+          (copy-rib-contents! rib2 rib sd?)
+          (if (null? e1*)
+              (chi-body* e* r mr lex* rhs* mod** kwd* exp* rib mix? sd?)
+              (values (append e1* e*) r mr lex* rhs* mod** kwd* exp*))))))
+
   (define chi-body*
     (lambda (e* r mr lex* rhs* mod** kwd* exp* rib mix? sd?)
       (cond
@@ -3144,23 +3162,17 @@
                           r mr lex* rhs* mod** kwd* exp* rib
                           mix? sd?)))))
                  ((global-macro global-macro!)
-                  (chi-body*
-                     (cons (add-subst rib (chi-global-macro value e r))
-                           (cdr e*))
-                     r mr lex* rhs* mod** kwd* exp* rib 
-                     mix? sd?))
+                  (chi-body*-macro (cdr e*)
+                     r mr lex* rhs* mod** kwd* exp* rib mix? sd?
+                     (chi-global-macro value e r)))
                  ((local-macro local-macro!)
-                  (chi-body*
-                     (cons (add-subst rib (chi-local-macro value e r))
-                           (cdr e*))
-                     r mr lex* rhs* mod** kwd* exp* rib 
-                     mix? sd?))
+                  (chi-body*-macro (cdr e*)
+                     r mr lex* rhs* mod** kwd* exp* rib mix? sd?
+                     (chi-local-macro value e r))) 
                  ((macro macro!)
-                  (chi-body*
-                     (cons (add-subst rib (chi-macro value e r))
-                           (cdr e*))
-                     r mr lex* rhs* mod** kwd* exp* rib mix?
-                     sd?))
+                  (chi-body*-macro (cdr e*)
+                     r mr lex* rhs* mod** kwd* exp* rib mix? sd?
+                     (chi-macro value e r)))
                  ((module)
                   (let-values (((lex* rhs* m-exp-id* m-exp-lab* r mr mod** kwd*)
                                 (chi-internal-module e r mr lex* rhs* mod** kwd*)))
