@@ -22,7 +22,7 @@
           expand expand/optimize expand/scc-letrec optimizer-output
           cp0-effort-limit cp0-size-limit optimize-level 
           perform-tag-analysis tag-analysis-output
-          strip-source-info generate-debug-calls)
+          strip-source-info generate-debug-calls current-letrec-pass)
   (import 
     (rnrs hashtables)
     (ikarus system $fx)
@@ -37,7 +37,7 @@
         cp0-size-limit cp0-effort-limit 
         expand/optimize expand/scc-letrec expand optimizer-output
         tag-analysis-output perform-tag-analysis
-        current-core-eval)
+        current-core-eval current-letrec-pass)
     (ikarus include)
     (ikarus.fasl.write)
     (ikarus.intel-assembler))

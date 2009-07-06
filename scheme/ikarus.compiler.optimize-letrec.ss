@@ -1,6 +1,6 @@
 
 
-(module (debug-scc optimize-letrec)
+(module (debug-scc optimize-letrec current-letrec-pass)
 
 
   (define (unique-prelex x) 
@@ -467,11 +467,21 @@
 
   (define debug-scc (make-parameter #f))
 
-  (define current-letrec-pass 
-    (make-parameter optimize-letrec/scc))
+  (define current-letrec-pass
+    (make-parameter 'scc
+      (lambda (x)
+        (if (memq x '(scc waddell basic))
+            x
+            (die 'current-letrec-pass "invalid" x)))))
+      
 
   (define (optimize-letrec x)
-    ((current-letrec-pass) x)))
+    (case (current-letrec-pass)
+      [(scc)     (optimize-letrec/scc x)]
+      [(waddell) (optimize-letrec/waddell x)]
+      [(basic)   (optimize-letrec/basic x)]
+      [else (die 'optimize-letrec "invalid" (current-letrec-pass))]))
+)
 
 
 

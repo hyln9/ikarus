@@ -17,6 +17,7 @@
 ;;; vim:syntax=scheme
 (import (only (ikarus) import))
 (import (except (ikarus) 
+          current-letrec-pass
           current-core-eval
           assembler-output optimize-cp optimize-level
           cp0-size-limit cp0-effort-limit expand/optimize
@@ -1502,6 +1503,7 @@
     [cp0-effort-limit i]
     [tag-analysis-output i]
     [perform-tag-analysis i]
+    [current-letrec-pass i]
     [pointer?                          $for]
     [pointer->integer                  $for]
     [integer->pointer                  $for]
