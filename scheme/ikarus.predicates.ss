@@ -253,11 +253,13 @@
         [(eq? x y) #t]
         [(flonum? x) 
          (and (flonum? y)
-              (if ($fl= x 0.0)
-                  (and ($fl= y 0.0) 
-                       ($fl= ($fl/ 1.0 x)
-                             ($fl/ 1.0 y)))
-                  (fl=? x y)))]
+              (if ($fl< x y)
+                  #f
+                  (if ($fl> x y)
+                      #f
+                      (if ($fl= x 0.0)
+                          ($fl= ($fl/ 1.0 x) ($fl/ 1.0 y))
+                          #t))))]
         [(bignum? x) (and (bignum? y) (= x y))]
         [(ratnum? x) (and (ratnum? y) (= x y))]
         [(compnum? x)

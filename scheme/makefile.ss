@@ -35,6 +35,7 @@
 ((pretty-format 'fix) ((pretty-format 'letrec)))
 (strip-source-info #t)
 
+(current-letrec-pass 'scc)
 (define scheme-library-files
   ;;; Listed in the order in which they're loaded.
   ;;;

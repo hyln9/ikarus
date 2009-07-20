@@ -78,7 +78,11 @@
     (test-eqv 0.0 0.0 #t)
     (test-eqv 0.0 -0.0 #f)
     (test-eqv -0.0 0.0 #f)
-    (test-eqv -0.0 -0.0 #t))
+    (test-eqv -0.0 -0.0 #t)
+    ;;; ikarus extensions, not guaranteed by R6RS
+    (test-eqv +nan.0 +nan.0 #t)
+    (test-eqv (/ +inf.0 +inf.0) (/ -inf.0 +inf.0) #t)
+    (test-eqv +nan.0 (string->number "+nan.0") #t))
 
   (define (test-exact-integer-sqrt)
     (define (f i j inc)
