@@ -63,6 +63,7 @@
     reset-output-port!
     port-id
     input-port-byte-position
+    input-port-column-number input-port-row-number
     process process-nonblocking
     
     tcp-connect tcp-connect-nonblocking
@@ -133,6 +134,7 @@
       close-tcp-server-socket 
       register-callback
       input-socket-buffer-size output-socket-buffer-size
+      input-port-column-number input-port-row-number
 
       open-directory-stream directory-stream?  
       read-directory-stream close-directory-stream
@@ -256,9 +258,9 @@
         (import (ikarus system $fx))
         ($fxlogand ($port-tag x) fast-attrs-mask))))
 
-  (define-struct cookie (dest mode pos reader))
+  (define-struct cookie (dest mode pos row-num newline-pos))
 
-  (define (default-cookie fd) (make-cookie fd 'ikarus-mode 0 #f))
+  (define (default-cookie fd) (make-cookie fd 'ikarus-mode 0 0 0))
 
   (define (port-id p)
     (if (port? p) 
@@ -270,6 +272,25 @@
         (let ([cookie ($port-cookie p)])
            (+ (cookie-pos cookie) (fx+ ($port-index p) 1)))
         (error 'input-port-byte-position "not an input port" p)))
+
+  (define (mark/return-newline p)
+    (let ([cookie ($port-cookie p)])
+      (set-cookie-row-num! cookie (+ (cookie-row-num cookie) 1))
+      (set-cookie-newline-pos! cookie 
+        (+ (cookie-pos cookie) ($port-index p))))
+    #\newline)
+
+  (define (input-port-column-number p)
+    (if (input-port? p)
+        (let ([cookie ($port-cookie p)])
+          (- (+ (cookie-pos cookie) ($port-index p))
+             (cookie-newline-pos cookie)))
+        (die 'input-port-column-number "not an input port" p)))
+
+  (define (input-port-row-number p)
+    (if (input-port? p)
+        (cookie-row-num ($port-cookie p))
+        (die 'input-port-row-number "not an input port" p)))
 
   (define (port-position p)
     (define who 'port-position)
@@ -1310,7 +1331,9 @@
                   (cond
                     [(fx< b 128) 
                      ($set-port-index! p (fx+ i 1))
-                     (integer->char b)]
+                     (if (eqv? b (char->integer #\newline))
+                         (mark/return-newline p)
+                         (integer->char b))]
                     [else (get-char-utf8-mode p who)]))]
                [else
                 (get-char-utf8-mode p who)]))]
@@ -1319,15 +1342,20 @@
              (cond
                [(fx< i ($port-size p))
                 ($set-port-index! p (fx+ i 1))
-                (string-ref ($port-buffer p) i)]
+                (let ([c (string-ref ($port-buffer p) i)])
+                  (if (eqv? c #\newline)
+                      (mark/return-newline p)
+                      c))]
                [else (get-char-char-mode p who)]))]
           [(eq? m fast-get-latin-tag)
            (let ([i ($port-index p)])
              (cond
                [(fx< i ($port-size p))
                 ($set-port-index! p (fx+ i 1))
-                (integer->char 
-                  (bytevector-u8-ref ($port-buffer p) i))]
+                (let ([b (bytevector-u8-ref ($port-buffer p) i)])
+                  (if (eqv? b (char->integer #\newline))
+                      (mark/return-newline p)
+                      (integer->char b)))]
                [else
                 (get-char-latin-mode p who 1)]))]
          [(eq? m fast-get-utf16le-tag) (get-utf16 p who 'little)]
@@ -1336,6 +1364,7 @@
            (if (speedup-input-port p who)
                (eof-object)
                (do-get-char p who))]))))
+
 
   ;;; ----------------------------------------------------------
   (define (assert-binary-input-port p who)

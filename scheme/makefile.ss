@@ -1204,6 +1204,8 @@
     [port-has-port-position?                     i r ip]
     [port-has-set-port-position!?                i r ip]
     [port-position                               i r ip]
+    [input-port-column-number                    i]
+    [input-port-row-number                       i]
     [port-transcoder                             i r ip]
     [port?                                       i r ip]
     [put-bytevector                              i r ip]
