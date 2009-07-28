@@ -121,6 +121,7 @@
 (define ikarus-system-macros
   '([define              (define)]
     [define-syntax       (define-syntax)]
+    [define-fluid-syntax (define-fluid-syntax)]
     [module              (module)]
     [library             (library)]
     [begin               (begin)]
@@ -631,6 +632,7 @@
     [cond                                        i r ba se ne]
     [define                                      i r ba se ne]
     [define-syntax                               i r ba se ne]
+    [define-fluid-syntax                         i]
     [identifier-syntax                           i r ba]
     [if                                          i r ba se ne]
     [let                                         i r ba se ne]

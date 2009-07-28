@@ -654,7 +654,8 @@
   ;;; (uses a hash table) while the lexical environment is an alist.
   ;;; If we don't find the binding of a label, we return the binding
   ;;; (displaced-lexical . #f) to indicate such.
-  (define label->binding
+
+  (define label->binding-no-fluids
     (lambda (x r)
       (cond
         ((not x) '(displaced-lexical))
@@ -676,6 +677,18 @@
                 (cons* 'lexical (cdr p) #f)))
              (else '(displaced-lexical . #f)))))
         (else '(displaced-lexical . #f)))))
+
+  (define label->binding
+    (lambda (x r)
+      (let ([b (label->binding-no-fluids x r)])
+        (if (and (pair? b) (eq? (car b) '$fluid))
+            ;;; fluids require reversed logic.  We have to look them
+            ;;; up in the local environment first before the global.
+            (let ([x (cdr b)])
+              (cond
+                [(assq x r) => cdr]
+                [else (label->binding-no-fluids x '())]))
+            b))))
 
   (define make-binding cons)
   (define binding-type car)
@@ -718,7 +731,8 @@
                       macro! local-macro local-macro! global-macro
                       global-macro! module library set! let-syntax 
                       letrec-syntax import export $core-rtd 
-                      ctv local-ctv global-ctv stale-when)
+                      ctv local-ctv global-ctv stale-when
+                      define-fluid-syntax)
                     (values type (binding-value b) id))
                    (else
                     (values 'call #f #f))))
@@ -964,8 +978,13 @@
   (define fluid-let-syntax-transformer
     (lambda (e r mr)
       (define (lookup x)
-        (or (id->label x)
-            (syntax-violation #f "unbound identifier" e x)))
+        (let ([label 
+               (or (id->label x)
+                   (syntax-violation #f "unbound identifier" e x))])
+          (let ([b (label->binding-no-fluids label r)])
+            (cond
+              [(and (pair? b) (eq? (car b) '$fluid)) (cdr b)]
+              [else (syntax-violation #f "not a fluid identifier" e x)]))))
       (syntax-match e ()
         ((_ ((lhs* rhs*) ...) b b* ...)
          (if (not (valid-bound-ids? lhs*))
@@ -2783,17 +2802,18 @@
           ((displaced-lexical)
            (stx-error e "identifier out of context"))
           ((syntax) (stx-error e "reference to pattern variable outside a syntax form"))
-          ((define define-syntax module import library)
+          ((define define-syntax define-fluid-syntax module import library)
            (stx-error e 
              (string-append 
                (case type
-                 ((define)        "a definition")
-                 ((define-syntax) "a define-syntax")
-                 ((module)        "a module definition")
-                 ((library)       "a library definition")
-                 ((import)        "an import declaration")
-                 ((export)        "an export declaration")
-                 (else            "a non-expression"))
+                 ((define)              "a definition")
+                 ((define-syntax)       "a define-syntax")
+                 ((define-fluid-syntax) "a define-fluid-syntax")
+                 ((module)              "a module definition")
+                 ((library)             "a library definition")
+                 ((import)              "an import declaration")
+                 ((export)              "an export declaration")
+                 (else                  "a non-expression"))
                " was found where an expression was expected")))
           ((mutable) 
            (let* ((lib (car value))
@@ -3126,6 +3146,21 @@
                              (cons (cons lab b) r) (cons (cons lab b) mr)
                              lex* rhs* mod** kwd* exp* rib
                              mix? sd?)))))
+                 ((define-fluid-syntax)
+                  (let-values (((id rhs) (parse-define-syntax e)))
+                    (when (bound-id-member? id kwd*)
+                      (stx-error e "cannot redefine keyword"))
+                    (let* ((lab (gen-define-label id rib sd?))
+                           (flab (gen-define-label id rib sd?))
+                           (expanded-rhs (expand-transformer rhs mr)))
+                        (extend-rib! rib id lab sd?)
+                        (let ((b (make-eval-transformer expanded-rhs)))
+                          (let ([t1 (cons lab (cons '$fluid flab))]
+                                [t2 (cons flab b)])
+                            (chi-body* (cdr e*)
+                               (cons* t1 t2 r) (cons* t1 t2 mr)
+                               lex* rhs* mod** kwd* exp* rib
+                               mix? sd?))))))
                  ((let-syntax letrec-syntax)
                   (syntax-match e ()
                     ((_ ((xlhs* xrhs*) ...) xbody* ...)
@@ -3934,7 +3969,8 @@
                      (cons (cons* label 'global-ctv loc) env)
                      global*
                      (cons (cons loc (binding-value b)) macro*))))
-               (($rtd $module) (f (cdr r) (cons x env) global* macro*))
+               (($rtd $module $fluid) 
+                (f (cdr r) (cons x env) global* macro*))
                (else
                 (assertion-violation 'expander "BUG: do not know how to export"
                        (binding-type b) (binding-value b))))))))))
