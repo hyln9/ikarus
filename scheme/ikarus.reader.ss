@@ -25,7 +25,8 @@
     (ikarus system $fx)
     (ikarus system $pairs)
     (ikarus system $bytevectors)
-    (only (ikarus.io) input-port-byte-position)
+    (only (ikarus.io) input-port-byte-position
+          input-port-column-number)
     (except (ikarus) read-char read read-token comment-handler get-datum
       read-annotated read-script-annotated annotation?
       annotation-expression annotation-source annotation-stripped))
@@ -74,7 +75,7 @@
   (define delimiter?
     (lambda (c)
       (or (char-whitespace? c)
-          (memq c '(#\( #\) #\[ #\] #\" #\# #\; #\{ #\})))))
+          (memq c '(#\( #\) #\[ #\] #\" #\# #\; #\{ #\} #\|)))))
   (define digit?
     (lambda (c)
       (and ($char<= #\0 c) ($char<= c #\9))))
@@ -121,10 +122,10 @@
          [(char=? c #\\)
           (read-char p)
           (tokenize-backslash ls p)]
-         [(char=? c #\}) ls]
-         [else
+         [(eq? (port-mode p) 'r6rs-mode)
           (die/p p 'tokenize "invalid identifier syntax" 
-            (list->string (reverse (cons c ls))))]))))
+            (list->string (reverse (cons c ls))))]
+         [else ls]))))
   (define (tokenize-string ls p)
     (let ([c (read-char p)])
       (cond
@@ -781,6 +782,11 @@
             (string->symbol
               (list->string
                 (reverse (tokenize-backslash '() p)))))]
+        ;[($char= #\{ c) 'lbrace]
+        [($char= #\@ c) 
+         (when (eq? (port-mode p) 'r6rs-mode)
+           (die 'tokenize "@-expr syntax is invalid in #!r6rs mode"))
+         'at-expr]
         [else
          (die/p-1 p 'tokenize "invalid syntax" c)])))
 
@@ -1006,6 +1012,378 @@
                     "invalid value in a bytevector" a))
                 (read-bytevector p locs k (fxadd1 count) 
                   (cons a ls)))]))))
+    (define read-at-expr
+      (lambda (p locs k at-pos)
+        (define-struct nested (a a^))
+        (define-struct nested* (a* a*^))
+        (define (get-chars chars pos p a* a*^)
+          (if (null? chars)
+              (values a* a*^)
+              (let ([str (list->string chars)])
+                (let ([str^ (annotate-simple str pos p)])
+                  (values (cons str a*) (cons str^ a*^))))))
+        (define (return start-pos start-col c*** p)
+          (let ([indent 
+                 (apply min start-col
+                   (map
+                     (lambda (c**)
+                       (define (st00 c* c** n)
+                         (if (null? c*)
+                             (st0 c** n)
+                             (if (char=? (car c*) #\space)
+                                 (st00 (cdr c*) c** (+ n 1))
+                                 n)))
+                       (define (st0 c** n)
+                         (if (null? c**)
+                             start-col
+                             (let ([c* (car c**)])
+                               (if (or (nested? c*) (nested*? c*))
+                                   start-col
+                                   (st00 (car c*) (cdr c**) n)))))
+                       (st0 c** 0))
+                     (cdr c***)))])
+            (define (convert c*)
+              (if (or (nested? c*) (nested*? c*))
+                  c*
+                  (let ([str (list->string (car c*))])
+                    (let ([str^ (annotate-simple str (cdr c*) p)])
+                      (make-nested str str^)))))
+            (define (trim/convert c**)
+              (define (mk n pos)
+                (let ([str (make-string (- n indent) #\space)])
+                  (let ([str^ (annotate-simple str pos p)])
+                    (make-nested str str^))))
+              (define (s1 c* pos c** n)
+                (if (null? c*)
+                    (let ([c* (car c**)])
+                      (if (or (nested? c*) (nested*? c*))
+                          (cons (mk n pos) (map convert c**))
+                          (s1 c* pos (cdr c**) n)))
+                    (if (char=? (car c*) #\space)
+                        (s1 (cdr c*) pos c** (+ n 1))
+                        (cons* 
+                          (mk n pos)
+                          (map convert (cons (cons c* pos) c**))))))
+              (define (s00 c* pos c** n)
+                (if (null? c*)
+                    (s0 c** n)
+                    (if (char=? #\space (car c*))
+                        (if (< n indent)
+                            (s00 (cdr c*) pos c** (+ n 1))
+                            (s1 (cdr c*) pos c** (+ n 1)))
+                        (map convert (cons (cons c* pos) c**)))))
+              (define (s0 c** n)
+                (if (null? c**)
+                    '()
+                    (let ([c* (car c**)])
+                      (if (or (nested? c*) (nested*? c*))
+                          (map convert c**)
+                          (s00 (car c*) (cdr c*) (cdr c**) n)))))
+              (s0 c** 0))
+            (define (cons-initial c** c***)
+              (define (all-white? c**)
+                (andmap (lambda (c*) 
+                          (and (not (nested? c*))
+                               (not (nested*? c*))
+                               (andmap 
+                                 (lambda (c) (char=? c #\space))
+                                 (car c*))))
+                        c**))
+              (define (nl)
+                (let ([str "\n"])
+                  (list (make-nested str str))))
+              (define (S1 c*** n)
+                (if (null? c***)
+                    (make-list n (nl))
+                    (let ([c** (car c***)] [c*** (cdr c***)])
+                      (if (all-white? c**)
+                          (S1 c*** (+ n 1))
+                          (append
+                            (make-list n (nl))
+                            (cons (trim/convert c**)
+                                  (S2 c*** 0 0)))))))
+              (define (S2 c*** n m)
+                (if (null? c***)
+                    (make-list (+ n m) (nl))
+                    (let ([c** (car c***)] [c*** (cdr c***)])
+                      (if (all-white? c**)
+                          (S2 c*** (+ n 1) -1)
+                          (append
+                            (make-list (+ n 1) (nl))
+                            (cons (trim/convert c**)
+                                  (S2 c*** 0 0)))))))
+              (define (S0 c** c***)
+                (if (all-white? c**)
+                    (S1 c*** 0)
+                    (cons
+                      (map convert c**)
+                      (S2 c*** 0 0))))
+              (S0 c** c***))
+            (let ([c** (cons-initial (car c***) (cdr c***))])
+              (let ([n* (apply append c**)])
+                (define (extract p p* ls)
+                  (let f ([ls ls])
+                    (cond
+                      [(null? ls) '()]
+                      [(nested? (car ls)) (cons (p (car ls)) (f (cdr ls)))]
+                      [else (append (p* (car ls)) (f (cdr ls)))])))
+                (let ([c* (extract nested-a nested*-a* n*)]
+                      [c*^ (extract nested-a^ nested*-a*^ n*)])
+                  (values c* (annotate c* c*^ start-pos p) locs k))))))
+        (define (read-text p locs k pref*)
+          (let ([start-pos (port-position p)]
+                [start-col (input-port-column-number p)])
+            (let f ([c* '()] [pos start-pos]
+                    [c** '()] [c*** '()]
+                    [depth 0] [locs locs] [k k])
+              (define (match-prefix c* pref*)
+                (cond
+                  [(and (pair? c*) (pair? pref*))
+                   (and (char=? (car c*) (car pref*)) 
+                        (match-prefix (cdr c*) (cdr pref*)))]
+                  [else (and (null? pref*) c*)]))
+              (let ([c (read-char p)])
+                (cond
+                  [(eof-object? c)
+                   (die/p p 'read "end of file while reading @-expr text")]
+                  [(char=? c #\})
+                   (let g ([x* (cons #\} c*)] [p* pref*])
+                     (if (null? p*)
+                         (if (= depth 0)
+                             (let ([c** 
+                                    (reverse
+                                      (if (null? c*)
+                                          c**
+                                          (cons (cons (reverse c*) pos) c**)))])
+                               (let ([c*** (reverse (cons c** c***))])
+                                 (return start-pos start-col c*** p)))
+                             (f x* pos c** c*** (- depth 1) locs k))
+                         (let ([c (peek-char p)])
+                           (cond
+                             [(eof-object? c) 
+                              (die/p p 'read "invalid eof inside @-expression")]
+                             [(char=? c (rev-punc (car p*)))
+                              (read-char p)
+                              (g (cons c x*) (cdr p*))]
+                             [else
+                              (f x* pos c** c*** depth locs k)]))))]
+                  [(char=? c #\{)
+                   (f (cons c c*) pos c** c*** 
+                      (if (match-prefix c* pref*) (+ depth 1) depth)
+                      locs k)]
+                  [(char=? c #\newline)
+                   (f '()
+                      (port-position p)
+                      '()
+                      (cons (reverse 
+                              (if (null? c*)
+                                  c**
+                                  (cons (cons (reverse c*) pos) c**)))
+                            c***)
+                      depth locs k)]
+                  [(and (char=? c #\@) (match-prefix c* pref*)) =>
+                   (lambda (c*)
+                     (let ([c (peek-char p)])
+                       (cond
+                         [(eof-object? c) 
+                          (die/p p 'read "invalid eof inside nested @-expr")]
+                         [(char=? c #\") 
+                          (read-char p)
+                          (let ([c* (tokenize-string c* p)])
+                            (f c* pos c** c*** depth locs k))]
+                         [else
+                          (let-values ([(a* a*^ locs k)
+                                        (read-at-text-mode p locs k)])
+                            (f '()
+                               (port-position p)
+                               (cons (make-nested* a* a*^)
+                                 (if (null? c*)
+                                     c**
+                                     (cons (cons (reverse c*) pos) c**)))
+                               c*** depth locs k))])))]
+                  [else
+                   (f (cons c c*) pos c** c*** depth locs k)])))))
+        (define (read-brackets p locs k)
+          (let-values ([(a* a*^ locs k)
+                        (read-list p locs k 'rbrack 'rparen #t)])
+            (unless (list? a*) 
+              (die/ann a*^ 'read "not a proper list"))
+            (let ([c (peek-char p)])
+              (cond
+                [(eof-object? c) ;;; @<cmd>[...]
+                 (values a* a*^ locs k)]
+                [(char=? c #\{)
+                 (read-char p)
+                 (let-values ([(b* b*^ locs k)
+                               (read-text p locs k '())])
+                   (values (append a* b*)
+                           (append a*^ b*^)
+                           locs k))]
+                [(char=? c #\|) 
+                 (read-char p)
+                 (let-values ([(b* b*^ locs k)
+                               (read-at-bar p locs k #t)])
+                   (values (append a* b*) 
+                           (append a*^ b*^)
+                           locs k))]
+                [else (values a* a*^ locs k)]))))
+        (define puncs 
+          '([#\| . #\|]
+            [#\< . #\>]
+            [#\[ . #\]]
+            [#\( . #\)]
+            [#\! . #\!]
+            [#\- . #\-]))
+        (define (left-punc? c)
+          (and (assv c (cdr puncs)) #t))
+        (define (rev-punc c) (cdr (assv c puncs)))
+        (define (read-at-bar p locs k text-mode?)
+          (let ([c (peek-char p)])
+            (cond
+              [(eof-object? c)
+               (die/p p 'read "eof inside @|-expression")]
+              [(and (char=? c #\|) text-mode?) ;;; @||
+               (read-char p)
+               (values '() '() locs k)]
+              [(char=? c #\{) ;;; @|{
+               (read-char p)
+               (read-text p locs k '(#\|))]
+              [(left-punc? c) ;;; @|<({
+               (read-char p)
+               (let ([pos (port-position p)])
+                 (let f ([ls (list c)])
+                   (let ([c (peek-char p)])
+                     (cond
+                       [(eof-object? c) 
+                        (die/p p 'read "eof inside @|< mode")]
+                       [(left-punc? c)
+                        (read-char p)
+                        (f (cons c ls))]
+                       [(char=? c #\{)
+                        (read-char p)
+                        (read-text p locs k (append ls '(#\|)))]
+                       [else 
+                        (read-at-bar-others ls p locs k)]))))]
+              [text-mode? ;;; @|5 6 7|
+               (read-at-bar-datum p locs k)]
+              [else 
+               (die/p p 'read "invalid char in @| mode" c)])))
+        (define (read-at-bar-others ls p locs k)
+          (define (split ls)
+            (cond
+              [(null? ls) (values '() '())]
+              [(initial? (car ls)) 
+               (let-values ([(a d) (split (cdr ls))])
+                 (values (cons (car ls) a) d))]
+              [else 
+               (values '() ls)]))
+          (define (mksymbol ls)
+            (let ([s (string->symbol
+                       (list->string
+                         (reverse ls)))])
+              (values s s)))
+          (let-values ([(inits rest) (split ls)])
+            (let ([ls (tokenize-identifier inits p)])
+              (let-values ([(s s^) (mksymbol ls)])
+                (let g ([rest rest]
+                        [a* (list s)]
+                        [a*^ (list s^)]
+                        [locs locs]
+                        [k k])
+                  (if (null? rest)
+                      (let-values ([(b* b*^ locs k)
+                                    (read-at-bar-datum p locs k)])
+                        (values (append a* b*) (append a*^ b*^) locs k))
+                      (let ([x (car rest)])
+                        (case x
+                          [(#\() #\) ;;; vim paren-matching sucks
+                           (let-values ([(b* b*^ locs k)
+                                         (read-list p locs k 'rparen 'rbrack #t)])
+                             (g (cdr rest)
+                                (list (append a* b*))
+                                (list (append a*^ b*^))
+                                locs k))]
+                          [(#\[) #\] ;;;  vim paren-matching sucks
+                           (let-values ([(b* b*^ locs k)
+                                         (read-list p locs k 'rbrack 'rparen #t)])
+                             (g (cdr rest) 
+                                (list (append a* b*))
+                                (list (append a*^ b*^))
+                                locs k))]
+                          [else
+                           (let-values ([(inits rest) (split rest)])
+                             (let-values ([(s s^) (mksymbol inits)])
+                               (g rest
+                                  (cons s a*)
+                                  (cons s^ a*^)
+                                  locs k)))]))))))))
+        (define (read-at-bar-datum p locs k)
+          (let ([c (peek-char p)])
+            (cond
+              [(eof-object? c) (die/p p 'read "eof inside @|datum mode")]
+              [(char-whitespace? c)
+               (read-char p)
+               (read-at-bar-datum p locs k)]
+              [(char=? c #\|)
+               (read-char p)
+               (values '() '() locs k)]
+              [else 
+               (let-values ([(a a^ locs k) (read-expr p locs k)])
+                 (let-values ([(a* a*^ locs k) (read-at-bar-datum p locs k)])
+                   (values (cons a a*) (cons a^ a*^) locs k)))])))  
+        (define (read-at-text-mode p locs k)
+          (let ([c (peek-char p)])
+            (cond
+              [(eof-object? c) 
+               (die/p p 'read "eof encountered inside @-expression")]
+              [(char=? c #\|) 
+               (read-char p)
+               (read-at-bar p locs k #t)]
+              [else
+               (let-values ([(a a^ locs k)
+                             (read-at-sexpr-mode p locs k)])
+                 (values (list a) (list a^) locs k))])))
+        (define (read-at-sexpr-mode p locs k)
+          (let ([c (peek-char p)])
+            (cond
+              [(eof-object? c)
+               (die/p p 'read "eof encountered inside @-expression")]
+              [(eqv? c '#\[) ;;;   @[ ...
+               (read-char p)
+               (read-brackets p locs k)]
+              [(eqv? c #\{) ;;;   @{ ...
+               (read-char p)
+               (read-text p locs k '())]
+              [(char=? c #\|)
+               (read-char p)
+               (read-at-bar p locs k #f)]
+              [else            ;;;   @<cmd> ...
+               (let-values ([(a a^ locs k) (read-expr p locs k)])
+                 (let ([c (peek-char p)])
+                   (cond
+                     [(eof-object? c)  ;;; @<cmd><eof>
+                      (values a a^ locs k)]
+                     [(eqv? c #\[)
+                      (read-char p)
+                      (let-values ([(a* a*^ locs k)
+                                    (read-brackets p locs k)])
+                        (let ([v (cons a a*)] [v^ (cons a^ a*^)])
+                          (values v (annotate v v^ at-pos p) locs k)))]
+                     [(eqv? c #\{) ;;; @<cmd>{ ...
+                      (read-char p)
+                      (let-values ([(a* a*^ locs k)
+                                    (read-text p locs k '())])
+                        (let ([v (cons a a*)] [v^ (cons a^ a*^)])
+                          (values v (annotate v v^ at-pos p) locs k)))]
+                     [(eqv? c #\|) ;;; @<cmd>| ...
+                      (read-char p)
+                      (let-values ([(a* a*^ locs k)
+                                    (read-at-bar p locs k #f)])
+                        (let ([v (cons a a*)] [v^ (cons a^ a*^)])
+                          (values v (annotate v v^ at-pos p) locs k)))]
+                     [else 
+                      (values a a^ locs k)])))])))
+        (read-at-sexpr-mode p locs k)))
     (define parse-token
       (lambda (p locs k t pos)
         (cond
@@ -1028,6 +1406,8 @@
            (let-values ([(v v^ locs k) 
                          (read-bytevector p locs k 0 '())])
              (values v (annotate v v^ pos p) locs k))]
+          [(eq? t 'at-expr) 
+           (read-at-expr p locs k pos)]
           [(pair? t)
            (cond
              [(eq? (car t) 'datum) 

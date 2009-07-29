@@ -69,6 +69,7 @@ EXTRA_DIST=ikarus.boot.4.prebuilt ikarus.boot.8.prebuilt last-revision \
   tests/sorting.ss \
   tests/string-to-number.ss \
   tests/strings.ss \
+  tests/scribble.ss \
   tests/symbol-table.ss \
   tests/tests-1.1-req.scm \
   tests/tests-1.2-req.scm \

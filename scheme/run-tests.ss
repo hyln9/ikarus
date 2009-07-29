@@ -23,7 +23,7 @@
   bitwise enums pointers sorting io fasl reader case-folding
   parse-flonums string-to-number bignum-to-flonum div-and-mod
   fldiv-and-mod unicode normalization repl set-position guardians
-  symbol-table))
+  symbol-table scribble))
 
 (define (run-test-from-library x)
   (printf "[testing ~a] ..." x)
