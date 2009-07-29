@@ -1227,16 +1227,19 @@
                            (append a*^ b*^)
                            locs k))]
                 [else (values a* a*^ locs k)]))))
-        (define puncs 
-          '([#\| . #\|]
-            [#\< . #\>]
-            [#\[ . #\]]
-            [#\( . #\)]
-            [#\! . #\!]
-            [#\- . #\-]))
         (define (left-punc? c)
-          (and (assv c (cdr puncs)) #t))
-        (define (rev-punc c) (cdr (assv c puncs)))
+          (define chars "([<!?~$%^&*-_+=:")
+          (let f ([i 0])
+            (cond
+              [(= i (string-length chars)) #f]
+              [(char=? c (string-ref chars i)) #t]
+              [else (f (+ i 1))])))
+        (define (rev-punc c) 
+          (cond
+            [(char=? c #\() #\)]
+            [(char=? c #\[) #\]]
+            [(char=? c #\<) #\>]
+            [else c]))
         (define (read-at-bar p locs k text-mode?)
           (let ([c (peek-char p)])
             (cond
