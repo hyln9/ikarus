@@ -774,7 +774,7 @@
          (tokenize-dot p)]
         [($char= #\| c)
          (when (eq? (port-mode p) 'r6rs-mode)
-           (die 'tokenize "|symbol| syntax is invalid in #!r6rs mode"))
+           (die/p p 'tokenize "|symbol| syntax is invalid in #!r6rs mode"))
          (let ([ls (reverse (tokenize-bar p '()))])
            (cons 'datum (string->symbol (list->string ls))))]
         [($char= #\\ c)
@@ -785,7 +785,7 @@
         ;[($char= #\{ c) 'lbrace]
         [($char= #\@ c) 
          (when (eq? (port-mode p) 'r6rs-mode)
-           (die 'tokenize "@-expr syntax is invalid in #!r6rs mode"))
+           (die/p p 'tokenize "@-expr syntax is invalid in #!r6rs mode"))
          'at-expr]
         [else
          (die/p-1 p 'tokenize "invalid syntax" c)])))
@@ -1441,7 +1441,7 @@
                      (lambda (x)
                        (let ([loc (cdr x)])
                          (when (loc-set? loc) ;;; FIXME: pos
-                           (die 'read "duplicate mark" n))
+                           (die/p p 'read "duplicate mark" n))
                          (set-loc-value! loc expr)
                          (set-loc-value^! loc expr^)
                          (set-loc-set?! loc #t)
@@ -1460,7 +1460,7 @@
                    (let ([loc (make-loc #f 'unused #f)])
                      (let ([locs (cons (cons n loc) locs)])
                        (values loc 'unused locs k)))]))]
-             [else (die 'read "invalid token" t)])]
+             [else (die/p p 'read "invalid token" t)])]
           [else
            (die/p-1 p 'read 
              (format "unexpected ~s found" t))])))
@@ -1474,11 +1474,11 @@
           (parse-token p locs k t pos)))))
 
 
-  (define reduce-loc!
+  (define (reduce-loc! p)
     (lambda (x)
        (let ([loc (cdr x)])
          (unless (loc-set? loc)
-           (die 'read "referenced mark is not set" (car x)))
+           (die/p p 'read "referenced mark is not set" (car x)))
          (when (loc? (loc-value loc))
            (let f ([h loc] [t loc])
              (if (loc? h)
@@ -1486,7 +1486,7 @@
                    (if (loc? h1)
                        (begin
                          (when (eq? h1 t)
-                           (die 'read "circular marks"))
+                           (die/p p 'read "circular marks"))
                          (let ([v (f (loc-value h1) (loc-value t))])
                            (set-loc-value! h1 v)
                            (set-loc-value! h v)
@@ -1511,7 +1511,7 @@
         (cond
           [(null? locs) expr]
           [else
-           (for-each reduce-loc! locs)
+           (for-each (reduce-loc! p) locs)
            (k)
            (if (loc? expr)
                (loc-value expr)
@@ -1523,7 +1523,7 @@
         (cond
           [(null? locs) expr]
           [else
-           (for-each reduce-loc! locs)
+           (for-each (reduce-loc! p) locs)
            (k)
            (if (loc? expr)
                (loc-value expr)
@@ -1538,7 +1538,7 @@
          (cond
            [(null? locs) (return-annotated expr^)]
            [else
-            (for-each reduce-loc! locs)
+            (for-each (reduce-loc! p) locs)
             (k)
             (if (loc? expr)
                 (loc-value^ expr)
@@ -1551,7 +1551,7 @@
         (cond
           [(null? locs) (return-annotated expr^)]
           [else
-           (for-each reduce-loc! locs)
+           (for-each (reduce-loc! p) locs)
            (k)
            (if (loc? expr)
                (loc-value^ expr)
