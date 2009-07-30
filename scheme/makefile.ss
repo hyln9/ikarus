@@ -610,6 +610,7 @@
     [do-vararg-overflow                          ]
     [collect                                     i]
     [collect-key                                 i]
+    [post-gc-hooks                               i]
     [do-stack-overflow                           ]
     [make-promise                                ]
     [make-traced-procedure                       i]

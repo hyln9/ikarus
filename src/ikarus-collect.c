@@ -350,6 +350,7 @@ static void gc_add_tconcs(gc_t*);
  */
 
 
+
 ikpcb* ik_collect_vararg(int req, ikpcb* pcb){
   return ik_collect(req, pcb);
 }
@@ -372,6 +373,16 @@ static void fix_new_pages(gc_t* gc);
 
 extern void verify_integrity(ikpcb* pcb, char*);
 
+ikptr ik_collect_check(unsigned long int req, ikpcb* pcb){
+  long int bytes = ((long int)pcb->allocation_redline) -
+                   ((long int)pcb->allocation_pointer);
+  if (bytes >= req) {
+    return true_object;
+  } else {
+    ik_collect(req, pcb);
+    return false_object;
+  }
+}
 
 ikpcb* 
 ik_collect(unsigned long int mem_req, ikpcb* pcb){

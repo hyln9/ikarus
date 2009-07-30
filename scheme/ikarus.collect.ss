@@ -16,26 +16,49 @@
 
 (library (ikarus collect)
   (export do-overflow do-overflow-words do-vararg-overflow collect
-          do-stack-overflow collect-key)
+          do-stack-overflow collect-key post-gc-hooks)
   (import 
-    (except (ikarus) collect collect-key)
+    (except (ikarus) collect collect-key post-gc-hooks)
     (ikarus system $fx)
     (ikarus system $arg-list))
+
+ 
+(define post-gc-hooks 
+  (make-parameter '()
+    (lambda (ls)
+      ;;; null? check so that we don't reference list? and andmap
+      ;;; at this stage of booting.
+      (if (or (null? ls) (and (list? ls) (andmap procedure? ls)))
+          ls
+          (die 'post-gc-hooks "not a list of procedures" ls)))))
+
+(define (do-post-gc ls n)
+  (let ([k0 (collect-key)])
+    (parameterize ([post-gc-hooks '()])
+      (for-each (lambda (x) (x)) ls))
+    (if (eq? k0 (collect-key)) 
+        (let ([was-enough? (foreign-call "ik_collect_check" n)])
+          ;;; handlers ran without GC but there is was not enough 
+          ;;; space in the nursery for the pending allocation, 
+          (unless was-enough? (do-post-gc ls n)))
+        (let ()
+          ;;; handlers did cause a GC, so, do the handlers again.
+          (do-post-gc ls n)))))
 
 (define do-overflow
   (lambda (n)
     (foreign-call "ik_collect" n)
-    (void)))
+    (let ([ls (post-gc-hooks)])
+      (unless (null? ls) (do-post-gc ls n)))))
 
 (define do-overflow-words
   (lambda (n)
-    (foreign-call "ik_collect" ($fxsll n 2))
-    (void)))
+    (let ([n ($fxsll n 2)])
+      (foreign-call "ik_collect" n)
+      (let ([ls (post-gc-hooks)])
+        (unless (null? ls) (do-post-gc ls n))))))
 
-(define do-vararg-overflow
-  (lambda (n)
-    (foreign-call "ik_collect_vararg" n)
-    (void)))
+(define do-vararg-overflow do-overflow)
 
 (define collect
   (lambda ()
