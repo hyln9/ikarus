@@ -701,6 +701,12 @@
   (define (raise-unbound-error id) 
     (syntax-violation* #f "unbound identifier" id 
       (make-undefined-violation)))
+  #;
+  (define (syntax-type e r)
+    (let-values ([(t0 t1 t2) (syntax-type^ e r)])
+      (printf "T ~s ~s => ~s ~s ~s\n" e r t0 t1 t2)
+      (values t0 t1 t2)))
+
   (define syntax-type
     (lambda (e r)
       (cond
@@ -2816,12 +2822,9 @@
                  (else                  "a non-expression"))
                " was found where an expression was expected")))
           ((mutable) 
-           (let* ((lib (car value))
-                  (loc (cdr value)))
-             (if (eq? lib '*interaction*)
-                 (build-global-reference no-source loc) 
-                 (stx-error e 
-                   "attempt to reference an unexportable variable"))))
+           (if (and (pair? value) (let ((lib (car value))) (eq? lib '*interaction*)))
+               (let ((loc (cdr value))) (build-global-reference no-source loc))
+               (stx-error e "attempt to reference an unexportable variable")))
           (else
            ;(assertion-violation 'chi-expr "invalid type " type (strip e '()))
            (stx-error e "invalid expression"))))))
@@ -2846,12 +2849,11 @@
              ((local-macro!)
               (chi-expr (chi-local-macro value e r) r mr))
              ((mutable) 
-              (let ([lib (car value)] [loc (cdr value)])
-                (if (eq? lib '*interaction*)
+              (if (and (pair? value) (let ((lib (car value))) (eq? lib '*interaction*)))
+                  (let ([loc (cdr value)])
                     (build-global-assignment no-source loc 
-                      (chi-expr v r mr))
-                    (stx-error e 
-                      "attempt to modify an unexportable variable"))))
+                      (chi-expr v r mr)))
+                  (stx-error e "attempt to modify an unexportable variable")))
              (else (stx-error e))))))))
   
   (define (verify-formals fmls stx)
