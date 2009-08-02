@@ -1058,8 +1058,8 @@
             (die who "not a flonum" x))
         (die who "not a bytevector" bv)))
 
-  (define ($bytevector-ref/64 bv i who decoder endianness)
-    (if (bytevector? bv) 
+  (define ($bytevector-ref/64/aligned bv i who decoder endianness)
+    (if (bytevector? bv)
         (if (and (fixnum? i) 
                  ($fx>= i 0)
                  ($fxzero? ($fxlogand i 7))
@@ -1071,17 +1071,29 @@
             (die who "invalid index" i))
         (die who "not a bytevector" bv)))
 
+  (define ($bytevector-ref/64 bv i who decoder endianness)
+    (if (bytevector? bv) 
+        (if (and (fixnum? i)
+                 ($fx>= i 0)
+                 ($fx< i ($fx- ($bytevector-length bv) 7)))
+            (case endianness
+              [(little big)
+               (decoder bv i endianness 8)]
+              [else (die who "invalid endianness" endianness)])
+            (die who "invalid index" i))
+        (die who "not a bytevector" bv)))
+
   (define (bytevector-u64-native-ref bv i) 
-    ($bytevector-ref/64 bv i 'bytevector-u64-native-ref 
+    ($bytevector-ref/64/aligned bv i 'bytevector-u64-native-ref 
        bytevector-uint-ref 'little))
   (define (bytevector-s64-native-ref bv i) 
-    ($bytevector-ref/64 bv i 'bytevector-s64-native-ref 
+    ($bytevector-ref/64/aligned bv i 'bytevector-s64-native-ref 
        bytevector-sint-ref 'little))
   (define (bytevector-u64-ref bv i endianness)
-    ($bytevector-ref/64 bv i 'bytevector-u64-native-ref 
+    ($bytevector-ref/64 bv i 'bytevector-u64-ref 
        bytevector-uint-ref endianness))
   (define (bytevector-s64-ref bv i endianness)
-    ($bytevector-ref/64 bv i 'bytevector-s64-native-ref 
+    ($bytevector-ref/64 bv i 'bytevector-s64-ref 
        bytevector-sint-ref endianness))
 
   (define ($bytevector-set/64 bv i n lo hi who setter endianness)
