@@ -335,8 +335,8 @@
         reads as  
       (foo "foo" 3.0)
         
-      "@foo{foo@|3|.}"
-        reads as  
+      "@foo{foo@| 3 |.}"
+        reads as
       (foo "foo" 3 ".")
         
       "@foo{foo@|(f 1)|{bar}}"
@@ -355,7 +355,7 @@
         reads as  
       (foo "x" "y" "z")
         
-      "@foo{x@|1 (+ 2 3) 4|y}"
+      "@foo{x@| 1 (+ 2 3) 4 |y}"
         reads as  
       (foo "x" 1 (+ 2 3) 4 "y")
         

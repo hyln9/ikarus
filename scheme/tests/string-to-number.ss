@@ -25,7 +25,7 @@
          (and (== (real-part x) (real-part y))
               (== (imag-part x) (imag-part y)))]
         [else (equal? x y)]))
-    (printf "testing ~a -> ~s\n" string expected)
+    ;(printf "testing ~a -> ~s\n" string expected)
     (let ([result (string->number string)])
       (if expected
           (unless (number? result)
@@ -264,38 +264,33 @@
     (define (gensa ls1 ls2 comp)
       (gen ls1 ls2 string-append comp))
 
-    (define ureal
+    (define suffixed-int
       '(["0" . 0]
         ["1" . 1]
         ["1." . 1.0]
         ["1.0" . 1.0]
         [".5" . 0.5]
-        ["0.5" . 0.5]
-        ;["1e1" . 10.0]
-        ["1e0" . 1.0]
-        ;["1e+1" . 10.0]
-        ["1e+0" . 1.0]
-        ["1e-1" . 0.1]
-        ;["1.e1" . 10.0]
-        ["1.e0" . 1.0]
-        ;["1.e+1" . 10.0]
-        ["1.e+0" . 1.0]
-        ["1.e-1" . 0.1]
-        ;["1.0e1" . 10.0]
-        ["1.0e0" . 1.0]
-        ;["1.0e+1" . 10.0]
-        ["1.0e+0" . 1.0]
-        ["1.0e-1" . 0.1]
-        ;[".5e1" . 5.0]
-        [".5e0" . 0.5]
-        ;[".5e+1" . 5.0]
-        [".5e+0" . 0.5]
-        [".5e-1" . 0.05]
-        ))
+        ["0.5" . 0.5]))
+
+    (define exponents
+      '(["e0" . 1.0]
+        ["e+0" . 1.0]
+        ["e-0" . 1.0]
+        ["e-1" . 0.1]))
+
+    (define decimal10
+      (append
+        suffixed-int
+        (gensa suffixed-int exponents *)))
 
     (define naninf
       '(["nan.0" . +nan.0]
         ["inf.0" . +inf.0]))
+
+    (define ureal
+      (append
+        decimal10
+        (gensa decimal10 '(["|53" . #f]) (lambda (x _) (inexact x)))))
 
     (define sign
       '(["+" . +1]
@@ -309,6 +304,7 @@
       (append 
         (gensa sign ureal *)
         (gensa sign naninf *)))
+
     (define real
       (append ureal sreal))
 
@@ -320,16 +316,20 @@
     ;;;         | +i
     ;;;         | -i
 
-    (define creal
+
+    (define comps
       (append
-        (gensa sreal '(["i" . #f]) (lambda (x f) (make-rectangular 0 x)))
-        `(["+i" . ,(make-rectangular 0 1)]
-          ["-i" . ,(make-rectangular 0 -1)])))
+        (gensa sreal '(["i" . #f]) (lambda (x f) x))
+        '(["+i" . 1]
+          ["-i" . -1])))
+
+    (define creal
+      (map (lambda (x) (cons (car x) (make-rectangular 0 (cdr x)))) comps))
 
     (define complex
       (append
         real creal
-        (gensa real creal +)
+        (gensa real comps make-rectangular)
         (gen real real (lambda (x y) (string-append x "@" y)) make-polar)
         ))
 

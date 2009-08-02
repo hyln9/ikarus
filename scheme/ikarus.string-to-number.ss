@@ -201,7 +201,11 @@
       [(#\i)
        (let ([n1 (do-dec-sn/ex sn ex 
                    (* ac (expt 10 (+ exp1 (* exp2 exp-sign)))))])
-         (next u:done (mkrec0 n0 n1)))])
+         (next u:done (mkrec0 n0 n1)))]
+      [(#\|)
+       (let ([n1 (do-dec-sn/ex sn ex 
+                   (* ac (expt 10 (+ exp1 (* exp2 exp-sign)))))])
+         (next u:mant r n0 n1 ex))])
 
     (u:exponent+sign (r n0 ex sn ac exp1 exp-sign)
       [(digit r) => d
@@ -233,7 +237,11 @@
       [(#\e #\E #\s #\S #\f #\F #\d #\D #\l #\L)
        (if (fx=? r 10)
            (next u:exponent r n0 ex sn ac exp)
-           (fail))])
+           (fail))]
+      [(#\|)
+       (let ([n1 (do-dec-sn/ex sn ex (* ac (expt 10 exp)))])
+         (next u:mant r n0 n1 ex))]
+      )
 
 
     (u:digit+ (r n0 ex sn ac)
@@ -261,7 +269,22 @@
       [(#\e #\E #\s #\S #\f #\F #\d #\D #\l #\L)
        (if (fx=? r 10)
            (next u:exponent r n0 ex sn ac 0)
-           (fail))])
+           (fail))]
+      [(#\|)
+       (next u:mant r n0 (do-sn/ex sn 'i ac) ex)])
+
+    (u:mant (r n0 n1 ex)
+      [(digit r) => d_
+       (next u:mant+ r n0 n1 ex)])
+
+    (u:mant+ (r n0 n1 ex)
+      [(eof) (mkrec1 n0 n1)]
+      [(digit r) => d_
+       (next u:mant+ r n0 n1 ex)]
+      [(sign) => sn2
+       (if n0 (fail) (next u:sign r n1 ex sn2))]
+      [(#\@) (if n0 (fail) (next u:polar r n1 ex))]
+      [(#\i) (if (pair? n0) (fail) (next u:done (mkrec0 n0 n1)))])
 
     (u:sign-i (r n0 ex sn)
       [(eof) (mkrec0 n0 (do-sn/ex sn ex 1))]
