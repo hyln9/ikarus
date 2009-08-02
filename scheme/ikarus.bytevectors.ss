@@ -1096,7 +1096,7 @@
     ($bytevector-ref/64 bv i 'bytevector-s64-ref 
        bytevector-sint-ref endianness))
 
-  (define ($bytevector-set/64 bv i n lo hi who setter endianness)
+  (define ($bytevector-set/64/align bv i n lo hi who setter endianness)
     (if (bytevector? bv)
         (if (and (fixnum? i) 
                  ($fx>= i 0)
@@ -1105,11 +1105,7 @@
             (case endianness
               [(little big) 
                (unless (or (fixnum? n) (bignum? n))
-                 (die who 
-                   (if (number? n) 
-                       "number is not exact" 
-                       "not a number")
-                   n))
+                 (die who "number is not an exact number" n))
                (unless (and (<= lo n) (< n hi))
                  (die who "number out of range" n))
                (setter bv i n endianness 8)]
@@ -1117,18 +1113,35 @@
             (die who "invalid index" i))
         (die who "not a bytevector" bv)))
 
-  (define (bytevector-u64-native-set! bv i n) 
+  (define ($bytevector-set/64 bv i n lo hi who setter endianness)
+    (if (bytevector? bv)
+        (if (and (fixnum? i) 
+                 ($fx>= i 0)
+                 ($fx< i ($fx- ($bytevector-length bv) 7)))
+            (case endianness
+              [(little big) 
+               (unless (or (fixnum? n) (bignum? n))
+                 (die who "number is not exact number" n))
+               (unless (and (<= lo n) (< n hi))
+                 (die who "number out of range" n))
+               (setter bv i n endianness 8)]
+              [else (die who "invalid endianness" endianness)])
+            (die who "invalid index" i))
+        (die who "not a bytevector" bv)))
+
+
+  (define (bytevector-u64-native-set! bv i n)
+    ($bytevector-set/64/align bv i n 0 (expt 2 64)
+       'bytevector-u64-native-set! bytevector-uint-set! 'little))
+  (define (bytevector-s64-native-set! bv i n)
+    ($bytevector-set/64/align bv i n (- (expt 2 63)) (expt 2 63)
+       'bytevector-s64-native-set! bytevector-sint-set! 'little))
+  (define (bytevector-u64-set! bv i n endianness)
     ($bytevector-set/64 bv i n 0 (expt 2 64)
-       'bytevector-u64-native-ref bytevector-uint-set! 'little))
-  (define (bytevector-s64-native-set! bv i n) 
+       'bytevector-u64-set! bytevector-uint-set! endianness))
+  (define (bytevector-s64-set! bv i n endianness)
     ($bytevector-set/64 bv i n (- (expt 2 63)) (expt 2 63)
-       'bytevector-s64-native-ref bytevector-sint-set! 'little))
-  (define (bytevector-u64-set! bv i n endianness) 
-    ($bytevector-set/64 bv i n 0 (expt 2 64)
-       'bytevector-u64-ref bytevector-uint-set! endianness))
-  (define (bytevector-s64-set! bv i n endianness) 
-    ($bytevector-set/64 bv i n (- (expt 2 63)) (expt 2 63) 
-       'bytevector-s64-ref bytevector-sint-set! endianness))
+       'bytevector-s64-set! bytevector-sint-set! endianness))
 
   )
 
