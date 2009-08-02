@@ -886,7 +886,7 @@
             (die 'bytevector-ieee-single-native-set! "invalid index" i))
         (die 'bytevector-ieee-single-native-set! "not a bytevector" bv)))
 
-  (define ($bytevector-ieee-double-ref/little x i)
+  (define ($bytevector-ieee-double-ref/big x i)
     (import (ikarus system $flonums))
     (let ([y ($make-flonum)])
       ($flonum-set! y 0 ($bytevector-u8-ref x i))
@@ -899,7 +899,7 @@
       ($flonum-set! y 7 ($bytevector-u8-ref x ($fx+ i 7)))
       y))
 
-  (define ($bytevector-ieee-double-set!/little x i y)
+  (define ($bytevector-ieee-double-set!/big x i y)
     (import (ikarus system $flonums))
     ($bytevector-set! x i          ($flonum-u8-ref y 0))
     ($bytevector-set! x ($fx+ i 1) ($flonum-u8-ref y 1))
@@ -910,7 +910,7 @@
     ($bytevector-set! x ($fx+ i 6) ($flonum-u8-ref y 6))
     ($bytevector-set! x ($fx+ i 7) ($flonum-u8-ref y 7)))
 
-  (define ($bytevector-ieee-double-ref/big x i)
+  (define ($bytevector-ieee-double-ref/little x i)
     (import (ikarus system $flonums))
     (let ([y ($make-flonum)])
       ($flonum-set! y 7 ($bytevector-u8-ref x i))
@@ -923,7 +923,7 @@
       ($flonum-set! y 0 ($bytevector-u8-ref x ($fx+ i 7)))
       y))
 
-  (define ($bytevector-ieee-double-set!/big x i y)
+  (define ($bytevector-ieee-double-set!/little x i y)
     (import (ikarus system $flonums))
     ($bytevector-set! x i          ($flonum-u8-ref y 7))
     ($bytevector-set! x ($fx+ i 1) ($flonum-u8-ref y 6))
