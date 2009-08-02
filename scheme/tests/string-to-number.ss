@@ -7,7 +7,8 @@
   (import (ikarus) (tests framework))
 
   (define (run-tests)
-    (test-string-to-number))
+    (test-string-to-number)
+    (generated-tests))
 
   (define (test string expected)
     (define (equal-results? x y)
@@ -248,6 +249,90 @@
     (test "+.234e-5i" (make-rectangular 0 0.234e-5))
     (test "+.234i" (make-rectangular 0 0.234))
     )
+
+  (define (generated-tests)
+    
+    (define (gen ls1 ls2 comp1 comp2)
+      (apply append
+        (map (lambda (x1)
+               (map (lambda (x2)
+                      (cons (comp1 (car x1) (car x2))
+                            (comp2 (cdr x1) (cdr x2))))
+                    ls2))
+             ls1)))
+
+    (define (gensa ls1 ls2 comp)
+      (gen ls1 ls2 string-append comp))
+
+    (define ureal
+      '(["0" . 0]
+        ["1" . 1]
+        ["1." . 1.0]
+        ["1.0" . 1.0]
+        [".5" . 0.5]
+        ["0.5" . 0.5]
+        ["1e1" . 10.0]
+        ["1e+1" . 10.0]
+        ["1e-1" . 0.1]
+        ["1.e1" . 10.0]
+        ["1.e+1" . 10.0]
+        ["1.e-1" . 0.1]
+        ["1.0e1" . 10.0]
+        ["1.0e+1" . 10.0]
+        ["1.0e-1" . 0.1]
+        [".5e1" . 5.0]
+        [".5e+1" . 5.0]
+        [".5e-1" . 0.05]
+        ))
+
+    (define naninf
+      '(["nan.0" . +nan.0]
+        ["inf.0" . +inf.0]))
+
+    (define sign
+      '(["+" . +1]
+        ["-" . -1]))
+
+    ;;; <real> = <sign> <ureal>
+    ;;;        | + <naninf>
+    ;;;        | - <naninf>
+
+    (define sreal
+      (append 
+        (gensa sign ureal *)
+        (gensa sign naninf *)))
+    (define real
+      (append ureal sreal))
+
+    ;;;<complex> = <real>
+    ;;;          | <real> @ <real>
+    ;;;          | <real> <creal>
+    ;;;          | <creal>
+    ;;; <creal> = <seal> i
+    ;;;         | +i
+    ;;;         | -i
+
+    (define creal
+      (append
+        (gensa sreal '(["i" . #f]) (lambda (x f) (make-rectangular 0 x)))
+        `(["+i" . ,(make-rectangular 0 1)]
+          ["-i" . ,(make-rectangular 0 -1)])))
+
+    (define complex
+      (append
+        real creal
+        (gensa real creal +)
+        ;(gen real real (lambda (x y) (string-append x "@" y)) make-polar)
+        ))
+
+    (printf "TESTING ~s tests\n" (length complex))
+    (for-each
+      (lambda (x)
+        (test (car x) (cdr x)))
+      complex)
+
+    )
+
 
   )
     

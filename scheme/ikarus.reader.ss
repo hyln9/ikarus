@@ -260,7 +260,7 @@
                   (string-append ".." (string c)))]))]
           [else 
            (cons 'datum
-             (dot p '(#\.) 10 #f +1))]))))
+             (u:dot p '(#\.) 10 #f #f +1))]))))
   (define tokenize-char* 
     (lambda (i str p d)
       (cond
@@ -633,7 +633,7 @@
                char-case)))]))
 
   (define-string->number-parser port-config
-    (parse-string digit+ sign dot))
+    (parse-string u:digit+ u:sign u:dot))
 
   (define (read-char* p ls str who ci? delimited?)
     (let f ([i 0] [ls ls])
@@ -742,7 +742,7 @@
         [(char<=? #\0 c #\9) 
          (let ([d (fx- (char->integer c) (char->integer #\0))])
            (cons 'datum
-             (digit+ p (list c) 10 #f +1 d)))]
+             (u:digit+ p (list c) 10 #f #f +1 d)))]
         [(initial? c)
          (let ([ls (reverse (tokenize-identifier (cons c '()) p))])
            (cons 'datum (string->symbol (list->string ls))))]
@@ -756,7 +756,7 @@
              [(delimiter? c)  '(datum . +)]
              [else
               (cons 'datum
-                (sign p '(#\+) 10 #f +1))]))]
+                (u:sign p '(#\+) 10 #f #f +1))]))]
         [(memq c '(#\-))
          (let ([c (peek-char p)])
            (cond
@@ -769,7 +769,7 @@
                   (cons 'datum (string->symbol str))))]
              [else
               (cons 'datum
-                (sign p '(#\-) 10 #f -1))]))]
+                (u:sign p '(#\-) 10 #f #f -1))]))]
         [($char= #\. c)
          (tokenize-dot p)]
         [($char= #\| c)

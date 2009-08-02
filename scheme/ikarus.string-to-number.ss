@@ -120,77 +120,44 @@
                       orig*
                       [name* (arg** ...) clause** ...] ...)])))]))))
 
-
+  (define (mkrec n0 n1)
+    (if n0 (make-rectangular n0 n1) (make-rectangular 0 n1)))
 
   (define-parser define-string->number-parser next fail
 
-    (ratio+ (r ex sn num ac)
-      [(eof)
-       (if (= ac 0)
-           (fail)
-           (do-sn/ex sn ex (/ num ac)))]
+    (u:ratio+ (r n0 ex sn num ac)
+     [(eof)
+      (if (or n0 (= ac 0))
+          (fail)
+          (do-sn/ex sn ex (/ num ac)))]
       [(digit r) => d
-       (next ratio+ r ex sn num (+ (* ac r) d))]
+       (next u:ratio+ r n0 ex sn num (+ (* ac r) d))]
       [(#\+)
-       (if (= ac 0)
+       (if (or n0 (= ac 0))
            (fail)
            (let ([real (do-sn/ex sn ex (/ num ac))])
-             (next im:sign r real ex +1)))]
+             (next u:sign r real ex +1)))]
       [(#\-)
-       (if (= ac 0)
+       (if (or n0 (= ac 0))
            (fail)
            (let ([real (do-sn/ex sn ex (/ num ac))])
-             (next im:sign r real ex -1)))]
+             (next u:sign r real ex -1)))]
       [(#\@)
-       (if (= ac 0)
+       (if (or n0 (= ac 0))
            (fail)
            (let ([mag (do-sn/ex sn ex (/ num ac))])
              (next polar r mag ex)))]
-      [(#\i)
-       (if (= ac 0)
-           (fail)
-           (next im:done
-             (make-rectangular 0 (do-sn/ex sn ex (/ num ac)))))])
-
-    (im:ratio+ (r real ex sn num ac)
-      [(digit r) => d
-       (next im:ratio+ r real ex sn num (+ (* ac r) d))]
       [(#\i) 
        (if (= ac 0)
            (fail)
-           (next im:done 
-             (make-rectangular real (do-sn/ex sn ex (/ num ac)))))])
+           (next u:done (mkrec n0 (do-sn/ex sn ex (/ num ac)))))])
 
-    (im:done (n)
+    (u:ratio (r n0 ex sn num)
+      [(digit r) => d
+       (next u:ratio+ r n0 ex sn num d)])
+
+    (u:done (n)
       [(eof) n])
-
-    (ratio (r ex sn num)
-      [(digit r) => d
-       (next ratio+ r ex sn num d)])
-
-    (im:ratio (r real ex sn num)
-      [(digit r) => d
-       (next im:ratio+ r real ex sn num d)])
-
-    (exponent+digit (r ex sn ac exp1 exp2 exp-sign)
-      [(eof)
-       (do-dec-sn/ex sn ex (* ac (expt 10 (+ exp1 (* exp2 exp-sign)))))]
-      [(#\+) 
-       (let ([real (do-dec-sn/ex sn ex (* ac (expt 10 (+ exp1 (* exp2 exp-sign)))))])
-         (next im:sign r real ex +1))]
-      [(#\-) 
-       (let ([real (do-dec-sn/ex sn ex (* ac (expt 10 (+ exp1 (* exp2 exp-sign)))))])
-         (next im:sign r real ex -1))]
-
-      [(#\@) 
-       (let ([mag (do-dec-sn/ex sn ex (* ac (expt 10 (+ exp1 (* exp2 exp-sign)))))])
-         (next polar r mag ex))]
-      [(digit r) => d
-       (next exponent+digit r ex sn ac exp1 (+ (* exp2 r) d) exp-sign)]
-      [(#\i) 
-       (let ([n (do-dec-sn/ex sn ex 
-                  (* ac (expt 10 (+ exp1 (* exp2 exp-sign)))))])
-         (next im:done (make-rectangular 0 n)))])
 
     (polar (r mag ex)
       [(digit r) => d 
@@ -198,8 +165,34 @@
       [(#\.) 
        (if (= r 10)
            (next polar+dot r mag ex +1)
-           (fail))])
+           (fail))]
+      [(#\+) 
+       (next polar+sign r mag ex +1)]
+      [(#\-) 
+       (next polar+sign r mag ex -1)])
+
+    (polar+sign (r mag ex sn)
+      [(digit r) => d 
+       (next polar+digit r mag ex d sn)]
+      [(#\.)
+       (if (= r 10)
+           (next polar+dot r mag ex sn)
+           (fail))]
+      [(#\n)
+       (next pol:sign-n (make-polar mag +nan.0))]
+      [(#\i)
+       (next pol:sign-i (make-polar mag (* +inf.0 sn)))])
     
+     (pol:sign-n (n) [(#\a) (next pol:sign-na n)])
+     (pol:sign-na (n) [(#\n) (next pol:sign-nan n)])
+     (pol:sign-nan (n) [(#\.) (next pol:sign-nan. n)])
+     (pol:sign-nan. (n) [(#\0) (next u:done n)])
+
+     (pol:sign-i (n) [(#\n) (next pol:sign-in n)])
+     (pol:sign-in (n) [(#\f) (next pol:sign-inf n)])
+     (pol:sign-inf (n) [(#\.) (next pol:sign-inf. n)])
+     (pol:sign-inf. (n) [(#\0) (next u:done n)])
+
     (polar+dot (r mag ex sn)
       [(digit r) => d 
        (next polar+digit+dot r mag ex d sn -1)])
@@ -220,189 +213,157 @@
       [(digit r) => d
        (next polar+digit+dot r mag ex (+ (* r ang) d) sn (- exp 1))])
 
-    (im:exponent+digit (r real ex sn ac exp1 exp2 exp-sign)
+
+
+    (u:exponent+digit (r n0 ex sn ac exp1 exp2 exp-sign)
+      [(eof)
+       (if n0
+           (fail)
+           (do-dec-sn/ex sn ex (* ac (expt 10 (+ exp1 (* exp2 exp-sign))))))]
       [(digit r) => d
-       (next im:exponent+digit r real ex sn ac exp1 (+ (* exp2 r) d) exp-sign)]
+       (next u:exponent+digit r n0 ex sn ac exp1 (+ (* exp2 r) d) exp-sign)]
+      [(#\+) 
+       (if n0
+           (fail)
+           (let ([real (do-dec-sn/ex sn ex (* ac (expt 10 (+ exp1 (* exp2 exp-sign)))))])
+             (next u:sign r real ex +1)))]
+      [(#\-) 
+       (if n0
+           (fail)
+           (let ([real (do-dec-sn/ex sn ex (* ac (expt 10 (+ exp1 (* exp2 exp-sign)))))])
+             (next u:sign r real ex -1)))]
+      [(#\@) 
+       (if n0
+           (fail)
+           (let ([mag (do-dec-sn/ex sn ex (* ac (expt 10 (+ exp1 (* exp2 exp-sign)))))])
+             (next polar r mag ex)))]
       [(#\i)
-       (let ([imag (do-dec-sn/ex sn ex
-                     (* ac (expt 10 (+ exp1 (* exp2 exp-sign)))))])
-         (next im:done (make-rectangular real imag)))])
+       (let ([n1 (do-dec-sn/ex sn ex 
+                   (* ac (expt 10 (+ exp1 (* exp2 exp-sign)))))])
+         (next u:done (mkrec n0 n1)))])
 
-    (exponent+sign (r ex sn ac exp1 exp-sign)
+    (u:exponent+sign (r n0 ex sn ac exp1 exp-sign)
       [(digit r) => d
-       (next exponent+digit r ex sn ac exp1 d exp-sign)])
+       (next u:exponent+digit r n0 ex sn ac exp1 d exp-sign)])
 
-    (im:exponent+sign (r real ex sn ac exp1 exp-sign)
+    (u:exponent (r n0 ex sn ac exp1)
       [(digit r) => d
-       (next im:exponent+digit r real ex sn ac exp1 d exp-sign)])
+       (next u:exponent+digit r n0 ex sn ac exp1 d +1)]
+      [(#\+) (next u:exponent+sign r n0 ex sn ac exp1 +1)]
+      [(#\-) (next u:exponent+sign r n0 ex sn ac exp1 -1)])
 
-    (exponent (r ex sn ac exp1)
-      [(digit r) => d
-       (next exponent+digit r ex sn ac exp1 d +1)]
-      [(#\+) (next exponent+sign r ex sn ac exp1 +1)]
-      [(#\-) (next exponent+sign r ex sn ac exp1 -1)])
-
-    (im:exponent (r real ex sn ac exp1)
-      [(digit r) => d
-       (next im:exponent+digit r real ex sn ac exp1 d +1)]
-      [(#\+) (next im:exponent+sign r real ex sn ac exp1 +1)]
-      [(#\-) (next im:exponent+sign r real ex sn ac exp1 -1)])
-
-    (digit+dot (r ex sn ac exp)
+    (u:digit+dot (r n0 ex sn ac exp)
       [(eof)
        (do-dec-sn/ex sn ex (* ac (expt 10 exp)))]
       [(digit r) => d
-       (next digit+dot r ex sn (+ (* ac r) d) (- exp 1))]
+       (next u:digit+dot r n0 ex sn (+ (* ac r) d) (- exp 1))]
+      [(#\i)
+       (let ([n1 (do-dec-sn/ex sn ex (* ac (expt 10 exp)))])
+         (next u:done (mkrec n0 n1)))]
       [(#\+)
-       (let ([real (do-dec-sn/ex sn ex (* ac (expt 10 exp)))])
-         (next im:sign r real ex +1))]
+       (if n0
+           (fail)
+           (let ([real (do-dec-sn/ex sn ex (* ac (expt 10 exp)))])
+             (next u:sign r real ex +1)))]
       [(#\-)
-       (let ([real (do-dec-sn/ex sn ex (* ac (expt 10 exp)))])
-         (next im:sign r real ex -1))]
+       (if n0
+           (fail)
+           (let ([real (do-dec-sn/ex sn ex (* ac (expt 10 exp)))])
+             (next u:sign r real ex -1)))]
       [(#\@)
-       (let ([mag (do-dec-sn/ex sn ex (* ac (expt 10 exp)))])
-         (next polar r mag ex))]
-      [(#\i)
-       (let ([real (do-dec-sn/ex sn ex (* ac (expt 10 exp)))])
-         (next im:done (make-rectangular 0.0 real)))]
+       (if n0 
+           (fail)
+           (let ([mag (do-dec-sn/ex sn ex (* ac (expt 10 exp)))])
+             (next polar r mag ex)))]
       [(#\e #\E #\s #\S #\f #\F #\d #\D #\l #\L)
        (if (fx=? r 10)
-           (next exponent r ex sn ac exp)
+           (next u:exponent r n0 ex sn ac exp)
            (fail))])
 
-    (im:digit+dot (r real ex sn ac exp)
-      [(eof)
-       (do-dec-sn/ex sn ex (* ac (expt 10 exp)))]
-      [(digit r) => d
-       (next im:digit+dot r real ex sn (+ (* ac r) d) (- exp 1))]
-      [(#\i)
-       (let ([imag (do-dec-sn/ex sn ex (* ac (expt 10 exp)))])
-         (next im:done (make-rectangular real imag)))]
-      [(#\e #\E #\s #\S #\f #\F #\d #\D #\l #\L)
-       (next im:exponent r real ex sn ac exp)])
 
-    (digit+ (r ex sn ac)
-      [(eof) (do-sn/ex sn ex ac)]
+    (u:digit+ (r n0 ex sn ac)
+      [(eof) 
+       (let ([n1 (do-sn/ex sn ex ac)])
+         (if n0 
+             (make-rectangular n0 n1)
+             n1))]
       [(digit r) => d
-       (next digit+ r ex sn (+ (* ac r) d))]
-      [(#\/) (next ratio r ex sn ac)]
+       (next u:digit+ r n0 ex sn (+ (* ac r) d))]
       [(#\.)
-       (if (fx=? r 10) 
-           (next digit+dot r ex sn ac 0)
+       (if (fx=? r 10)
+           (next u:digit+dot r n0 ex sn ac 0)
            (fail))]
+      [(#\/) (next u:ratio r n0 ex sn ac)]
       [(#\+)
-       (let ([real (do-sn/ex sn ex ac)])
-         (next im:sign r real ex +1))]
+       (if n0 
+           (fail)
+           (let ([real (do-sn/ex sn ex ac)])
+             (next u:sign r real ex +1)))]
       [(#\-)
-       (let ([real (do-sn/ex sn ex ac)])
-         (next im:sign r real ex -1))]
+       (if n0 
+           (fail)
+           (let ([real (do-sn/ex sn ex ac)])
+             (next u:sign r real ex -1)))]
+      [(#\i)
+       (next u:done (mkrec n0 (do-sn/ex sn ex ac)))]
       [(#\@)
-       (let ([mag (do-sn/ex sn ex ac)])
-         (next polar r mag ex))]
-      [(#\i)
-       (next im:done (make-rectangular 0 (do-sn/ex sn ex ac)))]
-      [(#\e #\E #\s #\S #\f #\F #\d #\D #\l #\L)
-       (if (fx=? r 10) 
-           (next exponent r ex sn ac 0)
-           (fail))])
-
-    (im:digit+ (r real ex sn ac)
-      [(digit r) => d
-       (next im:digit+ r real ex sn (+ (* ac r) d))]
-      [(#\.)
-       (if (fx=? r 10)
-           (next im:digit+dot r real ex sn ac 0)
-           (fail))]
-      [(#\/)
-       (next im:ratio r real ex sn ac)]
-      [(#\i)
-       (next im:done (make-rectangular real (do-sn/ex sn ex ac)))]
+       (if n0
+           (fail)
+           (let ([mag (do-sn/ex sn ex ac)])
+             (next polar r mag ex)))]
       [(#\e #\E #\s #\S #\f #\F #\d #\D #\l #\L)
        (if (fx=? r 10)
-           (next im:exponent r real ex sn ac 0)
+           (next u:exponent r n0 ex sn ac 0)
            (fail))])
 
-    (sign-i (r ex sn)
-      [(eof)
-       (make-rectangular 
-         (if (eq? ex 'i) 0.0 0)
-         sn)]
-      [(#\n) (next sign-in r ex sn)])
-    (sign-in (r ex sn)
-      [(#\f) (next sign-inf r ex sn)])
-    (sign-inf (r ex sn)
-      [(#\.) (next sign-inf. r ex sn)])
-    (sign-inf. (r ex sn)
-      [(#\0) (next sign-inf.0 r ex sn)])
-    (sign-inf.0 (r ex sn)
-      [(eof) (if (= sn 1) +inf.0 -inf.0)] ;(* sn +inf.0)
-      [(#\+) (next im:sign r (* sn +inf.0) ex +1)]
-      [(#\-) (next im:sign r (* sn +inf.0) ex -1)]
-      [(#\@) (next polar r (* sn +inf.0) ex)]
+
+    (u:sign-i (r n0 ex sn)
+      [(eof) (mkrec n0 (do-sn/ex sn ex 1))]
+      [(#\n) 
+       (if n0
+           (next u:sign-in r n0 (* sn +inf.0) ex)
+           (next u:sign-in r (* sn +inf.0) #f ex))])
+    (u:sign-in (r n0 n1 ex)
+      [(#\f) (next u:sign-inf r n0 n1 ex)])
+    (u:sign-inf (r n0 n1 ex)
+      [(#\.) (next u:sign-inf. r n0 n1 ex)])
+    (u:sign-inf. (r n0 n1 ex)
+      [(#\0) (next u:sign-inf.0 r n0 n1 ex)])
+    (u:sign-inf.0 (r n0 n1 ex)
+      [(eof) (if n1 (make-rectangular n0 n1) n0)]
+      [(#\+) (if n1 (fail) (next u:sign r n0 ex +1))]
+      [(#\-) (if n1 (fail) (next u:sign r n0 ex -1))]
+      [(#\@) (if n1 (fail) (next polar r n0 ex))]
       [(#\i) 
-       (next im:done (make-rectangular 0.0 (* sn +inf.0)))])
+       (next u:done
+         (if n1 
+             (make-rectangular n0 n1)
+             (make-rectangular 0.0 n0)))])
 
-    (im:sign-i (real ex sn)
-      [(eof) (make-rectangular real (do-sn/ex sn ex 1))]
-      [(#\n) (next im:sign-in (make-rectangular real (* sn +inf.0)))])
-    (im:sign-in (n)
-      [(#\f) (next im:sign-inf n)])
-    (im:sign-inf (n)
-      [(#\.) (next im:sign-inf. n)])
-    (im:sign-inf. (n)
-      [(#\0) (next im:sign-inf.0 n)])
-    (im:sign-inf.0 (n)
-      [(#\i) (next im:done n)])
-
-    (im:sign-n (n) [(#\a) (next im:sign-na n)])
-    (im:sign-na (n) [(#\n) (next im:sign-nan n)])
-    (im:sign-nan (n) [(#\.) (next im:sign-nan. n)])
-    (im:sign-nan. (n) [(#\0) (next im:sign-nan.0 n)])
-    (im:sign-nan.0 (n) [(#\i) (next im:done n)])
-
-    (dot (r ex sn)
+    (u:dot (r n0 ex sn)
       [(digit r) => d
-       (next digit+dot r ex sn d -1)])
-    
-    (im:dot (r real ex sn)
-      [(digit r) => d
-       (next im:digit+dot r real ex sn d -1)])
+       (next u:digit+dot r n0 ex sn d -1)])
 
-    (im:sign (r real ex sn)
+    (u:sign (r n0 ex sn)
       [(digit r) => d
-       (next im:digit+ r real ex sn d)]
-      [(#\i) 
-       (next im:sign-i real ex sn)]
-      [(#\n)
-       (next im:sign-n (make-rectangular real +nan.0))]
-      [(#\.)
-       (if (fx=? r 10)
-           (next im:dot r real ex sn)
+       (next u:digit+ r n0 ex sn d)]
+      [(#\i) (next u:sign-i r n0 ex sn)]
+      [(#\n) (next u:sign-n r n0 ex)]
+      [(#\.) 
+       (if (= r 10)
+           (next u:dot r n0 ex sn)
            (fail))])
 
-    (sign (r ex sn)
-      [(digit r) => d
-       (next digit+ r ex sn d)]
-      [(#\i)
-       (next sign-i r ex sn)]
-      [(#\.)
-       (if (fx=? r 10)
-           (next dot r ex sn)
-           (fail))]
-      [(#\n)
-       (next sign-n r ex)])
-    (sign-n (r ex) [(#\a) (next sign-na r ex)])
-    (sign-na (r ex) [(#\n) (next sign-nan r ex)])
-    (sign-nan (r ex) [(#\.) (next sign-nan. r ex)])
-    (sign-nan. (r ex) [(#\0) (next sign-nan.0 r ex)])
-    (sign-nan.0 (r ex)
-      [(eof) +nan.0]
-      [(#\+) (next im:sign r +nan.0 ex +1)]
-      [(#\-) (next im:sign r +nan.0 ex -1)]
-      [(#\@) (next polar r +nan.0 ex)]
-      [(#\i) (next sign-nan.0i r ex)])
-    (sign-nan.0i (r ex)
-      [(eof) (make-rectangular 0.0 +nan.0)])
+    (u:sign-n (r n0 ex) [(#\a) (next u:sign-na r n0 ex)])
+    (u:sign-na (r n0 ex) [(#\n) (next u:sign-nan r n0 ex)])
+    (u:sign-nan (r n0 ex) [(#\.) (next u:sign-nan. r n0 ex)])
+    (u:sign-nan. (r n0 ex) [(#\0) (next u:sign-nan.0 r n0 ex)])
+    (u:sign-nan.0 (r n0 ex)
+      [(eof) (if n0 (make-rectangular n0 +nan.0) +nan.0)]
+      [(#\+) (if n0 (fail) (next u:sign r +nan.0 ex +1))]
+      [(#\-) (if n0 (fail) (next u:sign r +nan.0 ex -1))]
+      [(#\@) (if n0 (fail) (next polar r +nan.0 ex))]
+      [(#\i) (next u:done (mkrec n0 +nan.0))])
 
     (parse-string-h (dr r ex)
       [(#\x #\X)
@@ -420,14 +381,14 @@
 
     (parse-string (dr r ex)
       [(#\#) (next parse-string-h dr r ex)]
-      [(#\+) (next sign dr ex +1)]
-      [(#\-) (next sign dr ex -1)]
+      [(#\+) (next u:sign dr #f ex +1)]
+      [(#\-) (next u:sign dr #f ex -1)]
       [(#\.)
-       (if (fx=? dr 10) 
-           (next dot dr ex +1)
+       (if (fx=? dr 10)
+           (next u:dot dr #f ex +1)
            (fail))]
       [(digit dr) => d
-       (next digit+ dr ex +1 d)])
+       (next u:digit+ dr #f ex +1 d)])
   )
 
   (define-syntax string-config
@@ -479,7 +440,7 @@
 ;;;                     | <real R> "+" <naninf> "i"
 ;;;                     | <real R> "-" <naninf> "i"
 ;;;                     | <real R> "+" "i"
-;;;                     | <real R> "-"  "i"
+;;;                     | <real R> "-" "i"
 ;;;                     | "+" <ureal R> "i"
 ;;;                     | "-" <ureal R> "i"
 ;;;                     | "+" <naninf> "i"
