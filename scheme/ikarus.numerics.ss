@@ -1542,7 +1542,7 @@
          (if (< n 0) 
              ($make-ratnum (- n) ($ratnum-d x))
              x))]
-      [else (die 'abs "not a number" x)]))
+      [else (die 'abs "not a real number" x)]))
 
   (define flmin
     (case-lambda
@@ -2433,7 +2433,7 @@
                    (values (inexact q) (inexact r)))]
                 [else
                  (die 'quotient+remainder "not an integer" y)]))]
-           [else (die 'quotient+remainder "not a number" y)])]
+           [else (die 'quotient+remainder "not an integer" y)])]
         [(bignum? x)
          (cond
            [(fixnum? y)
@@ -2450,7 +2450,7 @@
                    (values (inexact q) (inexact r)))]
                 [else
                  (die 'quotient+remainder "not an integer" y)]))] 
-           [else (die 'quotient+remainder "not a number" y)])]
+           [else (die 'quotient+remainder "not an integer" y)])]
         [(flonum? x) 
          (let ([v ($flonum->exact x)])
            (cond
@@ -2458,7 +2458,7 @@
               (let-values ([(q r) (quotient+remainder v y)])
                 (values (inexact q) (inexact r)))]
              [else (die 'quotient+remainder "not an integer" x)]))]
-        [else (die 'quotient+remainder "not a number" x)])))
+        [else (die 'quotient+remainder "not an integer" x)])))
 
   (define positive?
     (lambda (x)
@@ -2467,7 +2467,7 @@
         [(flonum? x) ($fl> x 0.0)]
         [(bignum? x) (positive-bignum? x)]
         [(ratnum? x) (positive? ($ratnum-n x))]
-        [else (die 'positive? "not a number" x)])))
+        [else (die 'positive? "not a real number" x)])))
 
   (define negative?
     (lambda (x)
@@ -2476,7 +2476,7 @@
         [(flonum? x) ($fl< x 0.0)]
         [(bignum? x) (not (positive-bignum? x))]
         [(ratnum? x) (negative? ($ratnum-n x))]
-        [else (die 'negative? "not a number" x)])))
+        [else (die 'negative? "not a real number" x)])))
 
   (define sinh
     (lambda (x)
