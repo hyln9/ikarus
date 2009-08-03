@@ -790,10 +790,6 @@
     (lambda (who fmt . args)
       (display-error "Error" who fmt args)))
 
-  (define warning 
-    (lambda (who fmt . args)
-      (display-error "Warning" who fmt args)))
-
   (define (assert-open-textual-output-port p who)
     (unless (output-port? p) 
       (die who "not an output port" p))

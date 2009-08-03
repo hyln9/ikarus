@@ -29,7 +29,8 @@
           input-port-column-number)
     (except (ikarus) read-char read read-token comment-handler get-datum
       read-annotated read-script-annotated annotation?
-      annotation-expression annotation-source annotation-stripped))
+      annotation-expression annotation-source annotation-stripped
+      input-port-column-number))
 
   (define (die/lex id pos who msg arg*)
     (raise 

@@ -735,6 +735,7 @@
     [equal?                                      i r ba se]
     [eqv?                                        i r ba se]
     [error                                       i r ba]
+    [warning                                     i]
     [die                                         i]
     [even?                                       i r ba se]
     [exact                                       i r ba]
