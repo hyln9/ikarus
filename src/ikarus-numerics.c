@@ -1623,8 +1623,9 @@ ikrt_bignum_shift_left(ikptr x, ikptr y, ikpcb* pcb){
     pcb->root0 = 0;
     unsigned int* s = (unsigned int*)(long)(r+disp_bignum_data);
     bzero(s, whole_limb_shift*wordsize);
-    memcpy((char*)(long)s+whole_limb_shift, 
-           (char*)(long)x+off_bignum_data, n*wordsize);
+    memcpy(((char*)s) + whole_limb_shift*wordsize, 
+           ((char*)x) + off_bignum_data, 
+           n*wordsize);
     return normalize_bignum(limb_count, bnfst_negative(fst), r);
   } else {
     int limb_count = n + whole_limb_shift + 1;
