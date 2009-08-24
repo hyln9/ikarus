@@ -368,19 +368,26 @@
              (die 'fxmax "not a fixnum" z)))]
       [(x) (if (fixnum? x) x (die 'fxmax "not a fixnum" x))]))
 
-  (define (fx*/carry fx1 fx2 fx3)
+  (define-syntax define-fx
+    (syntax-rules ()
+      [(_ (name arg* ...) body)
+       (define (name arg* ...)
+         (unless (fixnum? arg*) (die 'name "not a fixnum" arg*)) ...
+         body)]))
+
+  (define-fx (fx*/carry fx1 fx2 fx3)
     (let ([s0 ($fx+ ($fx* fx1 fx2) fx3)])
       (values 
         s0
         (sra (+ (* fx1 fx2) (- fx3 s0)) (fixnum-width)))))
   
-  (define (fx+/carry fx1 fx2 fx3)
+  (define-fx (fx+/carry fx1 fx2 fx3)
     (let ([s0 ($fx+ ($fx+ fx1 fx2) fx3)])
       (values 
         s0
         (sra (+ (+ fx1 fx2) (- fx3 s0)) (fixnum-width)))))
   
-  (define (fx-/carry fx1 fx2 fx3)
+  (define-fx (fx-/carry fx1 fx2 fx3)
     (let ([s0 ($fx- ($fx- fx1 fx2) fx3)])
       (values 
         s0
