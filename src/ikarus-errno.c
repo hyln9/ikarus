@@ -31,6 +31,22 @@ typedef struct errno_info {
 #define ECANCELED 140
 #endif
 
+#ifndef ENODATA
+#define ENODATA 96
+#endif
+
+#ifndef ENOSR
+#define ENOSR 98
+#endif
+
+#ifndef ENOSTR
+#define ENOSTR 99
+#endif
+
+#ifndef ETIME
+#define ETIME 101
+#endif
+
 static errno_info errno_table[] = {
   /* errnos from POSIX IEEE Std 1003.1 2004 Edition */
   {E2BIG,            "E2BIG",            fix(-1)},
