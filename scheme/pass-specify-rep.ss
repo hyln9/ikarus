@@ -212,14 +212,15 @@
   (module (cogen-primop cogen-debug-primop)
     (define (primop-interrupt-handler x)
       (case x
-        [(fx+)                     'error@fx+]
-        [(fx-)                     'error@fx-]
-        [(fx*)                     'error@fx*]
-        [(add1)                    'error@add1]
-        [(sub1)                    'error@sub1]
-        [(fxadd1)                  'error@fxadd1]
-        [(fxsub1)                  'error@fxsub1]
-        [(fxarithmetic-shift-left) 'error@fxarithmetic-shift-left]
+        [(fx+)                      'error@fx+]
+        [(fx-)                      'error@fx-]
+        [(fx*)                      'error@fx*]
+        [(add1)                     'error@add1]
+        [(sub1)                     'error@sub1]
+        [(fxadd1)                   'error@fxadd1]
+        [(fxsub1)                   'error@fxsub1]
+        [(fxarithmetic-shift-left)  'error@fxarithmetic-shift-left]
+        [(fxarithmetic-shift-right) 'error@fxarithmetic-shift-right]
         [else                      x]))
     (define (make-interrupt-call op args)
       (make-funcall 

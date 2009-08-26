@@ -617,6 +617,7 @@
     [make-traced-macro                           i]
     [error@fx+                                   ]
     [error@fxarithmetic-shift-left               ]
+    [error@fxarithmetic-shift-right              ]
     [error@fx*                                   ]
     [error@fx-                                   ]
     [error@add1                                  ]

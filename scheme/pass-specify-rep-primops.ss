@@ -1592,6 +1592,33 @@
             x2)))])])
 
 
+
+(define-primop fxarithmetic-shift-right safe
+  [(V x n) 
+   (struct-case n 
+     [(constant i)
+      (cond
+        [(and (fx? i)
+              (>= i 0)
+              (< i (- (* wordsize 8) fx-shift)))
+         (prm 'sll
+              (prm 'sra (T x) (K (+ i fx-shift)))
+              (K fx-shift))]
+        [else
+         (interrupt)])]
+     [else 
+      (with-tmp ([x (T x)] [n (T n)])
+        (assert-fixnums x (list n))
+        (with-tmp ([n (prm 'sra n (K fx-shift))])
+          (interrupt-when 
+            (prm '< n (K 0)))
+          (interrupt-when 
+            (prm '>= n (K (- (* wordsize 8) fx-shift))))
+          (prm 'sll 
+               (prm 'sra x n)
+               (K fx-shift))))])])
+
+
 (define (log2 n) 
   (let f ([n n] [i 0])
     (cond
