@@ -395,7 +395,7 @@
            [else 
             (lambda (k)
               (let ([i (f k)])
-                (if (and (or (fixnum? i) (bignum? i)) (>= i 0))
+                (if (or (fixnum? i) (bignum? i))
                     i
                     (die #f "invalid return value from hash function" i))))]))
        (unless (procedure? hashf)
