@@ -52,7 +52,7 @@ compute_hash(ikptr str){
   h = h + (h << 3);
   h = h ^ (h >> 11);
   h = h + (h << 15);
-  return h;
+  return (h >= 0) ? h : (1 - h);
 }
 
 ikptr 
