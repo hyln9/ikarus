@@ -4,6 +4,7 @@
 .gdb_history
 .vimview
 .DS_Store
+autom4te.cache
 benchmarks/sys/*
 benchmarks/results.AWK-r6rs
 benchmarks/results.Chicken-r6rs

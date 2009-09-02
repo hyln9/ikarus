@@ -1,9 +1,8 @@
 #!/usr/bin/env sh
 
 ./configure --prefix=/Users/ikarus/.opt \
-  --enable-libffi \
-  CFLAGS="-m64 -I/Users/ikarus/.opt64/include -I/Users/ikarus/.opt64/lib/libffi-3.0.6/include" \
-  LDFLAGS="-m64 -L/Users/ikarus/.opt64/lib" \
+  CFLAGS="-m64 -I $HOME/.opt64/include -I $HOME/.opt64/lib/libffi-3.0.6/include" \
+  LDFLAGS="-m64 -L$HOME/.opt64/lib" \
 && make clean \
 && make
 
