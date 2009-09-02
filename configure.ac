@@ -54,6 +54,8 @@ AC_CHECK_HEADERS([assert.h dlfcn.h errno.h fcntl.h signal.h \
                   sys/time.h sys/types.h sys/wait.h time.h \
                   unistd.h])
 
+AC_CHECK_LIB(pthread, main)
+
 AC_CHECK_HEADERS([gmp.h],,[AC_MSG_ERROR([
 ERROR: Cannot find libgmp. 
 ERROR: You might want to supply CFLAGS=-I</path/to/include> (containing
