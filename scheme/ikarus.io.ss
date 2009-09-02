@@ -65,7 +65,8 @@
     input-port-byte-position
     input-port-column-number input-port-row-number
     process process-nonblocking
-    
+    process*
+
     tcp-connect tcp-connect-nonblocking
     udp-connect udp-connect-nonblocking
     tcp-server-socket tcp-server-socket-nonblocking
@@ -2320,59 +2321,74 @@
 
 
 
+  (define (pair->env-utf8 pair)
+    (let* ((key-utf8 (string->utf8 (car pair)))
+           (val-utf8 (string->utf8 (cdr pair)))
+           (key-len (bytevector-length key-utf8))
+           (val-len (bytevector-length val-utf8))
+           (result (make-bytevector (+ key-len val-len 2))))
+      (bytevector-copy! key-utf8 0 result 0 key-len)
+      (bytevector-u8-set! result key-len (char->integer #\=))
+      (bytevector-copy! val-utf8 0 result (+ key-len 1) val-len)
+      (bytevector-u8-set! result (+ key-len val-len 1) 0)
+      result))
+  
+  (define (spawn-process who search? blocking? env stdin stdout stderr cmd args)
+    (define (port->fd port port-pred arg-name port-type)
+      (cond ((eqv? port #f) -1)
+            ((port-pred port)
+             (let ((fd (cookie-dest ($port-cookie port))))
+               (unless (fixnum? fd)
+                 (die who
+                      (string-append arg-name " is not a file-based port")
+                      stdin))
+               fd))
+            (else
+             (die who
+                  (string-append arg-name " is neither false nor an " port-type)
+                  stdin))))
+    (let ((stdin-fd (port->fd stdin input-port? "stdin" "input port"))
+          (stdout-fd (port->fd stdout output-port? "stdout" "output port"))
+          (stderr-fd (port->fd stderr output-port? "stderr" "output port")))
+      (unless (string? cmd)
+        (die who "command is not a string" cmd))
+      (unless (andmap string? args) 
+        (die who "all command arguments must be strings"))
+      (let ([r (foreign-call "ikrt_process"
+                             (vector search? stdin-fd stdout-fd stderr-fd)
+                             (and env (map pair->env-utf8 env))
+                             (string->utf8 cmd)
+                             (map string->utf8 (cons cmd args)))])
+        (cond ((fixnum? r)
+               (io-error who cmd r))
+              (else
+               (unless blocking?
+                 (or stdin (set-fd-nonblocking (vector-ref r 1) who cmd))
+                 (or stdout (set-fd-nonblocking (vector-ref r 2) who cmd))
+                 (or stderr (set-fd-nonblocking (vector-ref r 3) who cmd)))
+               (values
+                (vector-ref r 0)        ; pid
+                (and (not stdin)
+                     (fh->output-port (vector-ref r 1) 
+                                      cmd output-file-buffer-size #f #t
+                                      'process))
+                (and (not stdout)
+                     (fh->input-port (vector-ref r 2) 
+                                     cmd input-file-buffer-size #f #t
+                                     'process))
+                (and (not stderr)
+                     (fh->input-port (vector-ref r 3) 
+                                     cmd input-file-buffer-size #f #t
+                                     'process))))))))
+  
   (define (process cmd . args)
-    (define who 'process)
-    (unless (string? cmd)
-      (die who "command is not a string" cmd))
-    (unless (andmap string? args) 
-      (die who "all arguments must be strings"))
-    (let ([r (foreign-call "ikrt_process" 
-                (make-vector 4)
-                (string->utf8 cmd)
-                (map string->utf8 (cons cmd args)))])
-      (if (fixnum? r) 
-          (io-error who cmd r)
-          (values
-            (vector-ref r 0) ; pid
-            (fh->output-port (vector-ref r 1) 
-                cmd output-file-buffer-size #f #t
-                'process)
-            (fh->input-port (vector-ref r 2) 
-                cmd input-file-buffer-size #f #t
-                'process)
-            (fh->input-port (vector-ref r 3) 
-                cmd input-file-buffer-size #f #t
-                'process)))))
+    (spawn-process 'process #t #t #f #f #f #f cmd args))
 
+  (define (process* search? env stdin stdout stderr cmd . args)
+    (spawn-process 'process* search? #t env stdin stdout stderr cmd args))
 
   (define (process-nonblocking cmd . args)
-    (define who 'process-nonblocking)
-    (unless (string? cmd)
-      (die who "command is not a string" cmd))
-    (unless (andmap string? args) 
-      (die who "all arguments must be strings"))
-    (let ([r (foreign-call "ikrt_process" 
-                (make-vector 4)
-                (string->utf8 cmd)
-                (map string->utf8 (cons cmd args)))])
-      (if (fixnum? r) 
-          (io-error who cmd r)
-          (begin 
-            (set-fd-nonblocking (vector-ref r 1) who cmd)
-            (set-fd-nonblocking (vector-ref r 2) who cmd)
-            (set-fd-nonblocking (vector-ref r 3) who cmd)
-            (values
-              (vector-ref r 0) ; pid
-              (fh->output-port (vector-ref r 1) 
-                  cmd output-file-buffer-size #f #t
-                  'process)
-              (fh->input-port (vector-ref r 2) 
-                  cmd input-file-buffer-size #f #t
-                  'process)
-              (fh->input-port (vector-ref r 3) 
-                  cmd input-file-buffer-size #f #t
-                  'process))))))
-
+    (spawn-process 'process-nonblocking #t #f #f #f #f cmd args))
 
   (define (set-fd-nonblocking fd who id)
     (let ([rv (foreign-call "ikrt_make_fd_nonblocking" fd)])

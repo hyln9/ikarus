@@ -421,6 +421,7 @@
     [pointer-value                               i]
     [system                                      i]
     [process                                     i]
+    [process*                                    i]
     [process-nonblocking                         i]
     [waitpid                                     i]
     [wstatus-pid                                 i]
