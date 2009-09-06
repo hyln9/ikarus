@@ -4,7 +4,7 @@
 AC_PREREQ(2.59)
 AC_INIT(ikarus, 0.0.4-rc1, aghuloum@cs.indiana.edu)
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(ikarus, 0.0.4-rc1)
+AM_INIT_AUTOMAKE(ikarus, 0.0.4-rc1, gnu)
 AC_CONFIG_SRCDIR([src/])
 
 
@@ -25,6 +25,13 @@ case "$target_os" in
     ;;
   *cygwin*)
     LDFLAGS="-Wl,-E -Wl,--export-all-symbols $LDFLAGS"
+    ;;
+  *darwin*)
+    AC_DEFINE(HACK_FFI, 1, 
+              [Mark code returned by libffi executable because
+               libffi does not do that yet.  This so far is only
+               important on Snow Leopard in 64-bit mode but we
+               mark it on all darwins anyways.])
     ;;
   esac
 

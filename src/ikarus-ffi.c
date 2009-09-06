@@ -10,6 +10,10 @@
 
 #undef DEBUG_FFI
 
+#ifdef HACK_FFI
+#include <sys/mman.h>
+#endif
+
 static void*
 alloc(size_t n, int m) {
   void* x = calloc(n, m);
@@ -435,6 +439,20 @@ ikrt_prepare_callback(ikptr data, ikpcb* pcb){
   ikptr cifptr = ref(data, off_vector_data + 0 * wordsize);
   void* codeloc;
   ffi_closure* closure = ffi_closure_alloc(sizeof(ffi_closure), &codeloc);
+
+#ifdef HACK_FFI
+  {
+    long code_start = align_to_prev_page(codeloc);
+    long code_end =
+      align_to_next_page(FFI_TRAMPOLINE_SIZE+(-1)+(long)codeloc);
+    int rv = mprotect((void*)code_start, code_end - code_start,
+        PROT_READ|PROT_WRITE|PROT_EXEC);
+    if(rv) {
+      fprintf(stderr, "Error mprotecting code page!\n");
+    }
+  }
+#endif
+
   ffi_cif* cif = (ffi_cif*) ref(cifptr, off_pointer_data);
   
   callback_locative* loc = malloc(sizeof(callback_locative));
