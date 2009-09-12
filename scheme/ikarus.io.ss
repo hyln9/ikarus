@@ -139,6 +139,7 @@
 
       open-directory-stream directory-stream?  
       read-directory-stream close-directory-stream
+      process*
       ))
 
   ;(define-syntax assert* (identifier-syntax assert))

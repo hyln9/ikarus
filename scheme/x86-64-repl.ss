@@ -50,7 +50,7 @@
         (put-u8 p b))
       (append stub1 (mkstub2 (length ls)) stub3 ls))
     (close-output-port p))
-  (system "otool64 -tv tmp.o"))
+  (system "otool -tv tmp.o"))
 
 (printf "Trying a simple sequence ...\n")
 

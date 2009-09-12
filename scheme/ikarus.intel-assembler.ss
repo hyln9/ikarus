@@ -554,8 +554,8 @@
   (CODE c0 (CODE c1 (IMM32 i32 ac))))
 
 
-(define (dotrace orig ls)
-  (printf "TRACE: ~s\n" 
+(define (dotrace instr orig ls)
+  (printf "TRACE: ~s ~s\n" instr 
     (let f ([ls ls])
       (if (eq? ls orig)
           '()

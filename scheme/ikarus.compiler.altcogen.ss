@@ -2337,28 +2337,20 @@
                    (E (make-asm-instr 'move u b))
                    (E (make-asm-instr op a u))))]
               [else
-               (let ([s1 (disp-s0 a)] [s2 (disp-s1 a)])
-                 (cond
-                   [(and (mem? s1) (mem? s2))
-                    (let ([u (mku)])
-                      (make-seq
-                        (make-seq
-                          (E (make-asm-instr 'move u s1))
-                          (E (make-asm-instr 'int+ u s2)))
-                        (make-asm-instr op 
-                           (make-disp u (make-constant 0))
-                           b)))]
-                   [(mem? s1)
-                    (let ([u (mku)])
-                      (make-seq
-                        (E (make-asm-instr 'move u s1))
-                        (E (make-asm-instr op (make-disp u s2) b))))]
-                   [(mem? s2)
-                    (let ([u (mku)])
-                      (make-seq
-                        (E (make-asm-instr 'move u s2))
-                        (E (make-asm-instr op (make-disp u s1) b))))]
-                   [else x]))])]
+               (check-disp a
+                 (lambda (a)
+                   (let ([s0 (disp-s0 a)] [s1 (disp-s1 a)])
+                     (cond
+                       [(and (constant? s0) (constant? s1))
+                        (let ([u (mku)])
+                          (make-seq
+                            (make-seq
+                              (E (make-asm-instr 'move u s0))
+                              (E (make-asm-instr 'int+ u s1)))
+                            (make-asm-instr op 
+                               (make-disp u (make-constant 0))
+                               b)))]
+                       [else (make-asm-instr op a b)]))))])]
            [(fl:load fl:store fl:add! fl:sub! fl:mul! fl:div!
              fl:load-single fl:store-single) 
             (check-disp-arg a
