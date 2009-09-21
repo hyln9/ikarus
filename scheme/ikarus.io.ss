@@ -143,6 +143,12 @@
       ))
 
   ;(define-syntax assert* (identifier-syntax assert))
+
+  ;;; all-data-in-buffer is used in place of the read!
+  ;;; procedure to mark ports whose buffer is all the
+  ;;; data there is.
+  (define all-data-in-buffer 'all-data-in-buffer)
+
   (define-syntax assert* (syntax-rules () [(_ . x) (void)]))
 
   (module UNSAFE  
@@ -512,7 +518,7 @@
           0 (bytevector-length bv) bv 
           maybe-transcoder 
           "*bytevector-input-port*" 
-          (lambda (bv i c) 0) ;;; read!
+          all-data-in-buffer ;;; read!
           #f ;;; write!
           #t ;;; get-position
           #t ;;; set-position!
@@ -677,7 +683,7 @@
        0 (string-length str) str
        #t ;;; transcoder
        id
-       (lambda (str i c) 0) ;;; read!
+       all-data-in-buffer ;;; read!
        #f ;;; write!
        #t ;;; get-position
        #t ;;; set-position!
@@ -854,24 +860,27 @@
 
   (define (refill-bv-buffer p who)
     (when ($port-closed? p) (die who "port is closed" p))
-    (let ([bv ($port-buffer p)] [i ($port-index p)] [j ($port-size p)])
-      (let ([c0 (fx- j i)])
-        (unless (fx= c0 0) (bytevector-copy! bv i bv 0 c0))
-        (let ([cookie ($port-cookie p)])
-          (set-cookie-pos! cookie (+ (cookie-pos cookie) i)))
-        (let* ([max (fx- (bytevector-length bv) c0)]
-               [c1 (($port-read! p) bv c0 max)])
-          (unless (fixnum? c1)
-            (die who "invalid return value from read! procedure" c1))
-          (cond
-            [(fx>= c1 0)
-             (unless (fx<= c1 max)
-               (die who "read! returned a value out of range" c1))
-             ($set-port-index! p 0)
-             ($set-port-size! p (fx+ c1 c0))
-             c1]
-            [else 
-             (die who "read! returned a value out of range" c1)])))))
+    (let ([read! ($port-read! p)])
+      (if (eq? read! all-data-in-buffer)
+          0
+          (let ([bv ($port-buffer p)] [i ($port-index p)] [j ($port-size p)])
+            (let ([c0 (fx- j i)])
+              (unless (fx= c0 0) (bytevector-copy! bv i bv 0 c0))
+              (let ([cookie ($port-cookie p)])
+                (set-cookie-pos! cookie (+ (cookie-pos cookie) i)))
+              (let* ([max (fx- (bytevector-length bv) c0)]
+                     [c1 (read! bv c0 max)])
+                (unless (fixnum? c1)
+                  (die who "invalid return value from read! procedure" c1))
+                (cond
+                  [(fx>= c1 0)
+                   (unless (fx<= c1 max)
+                     (die who "read! returned a value out of range" c1))
+                   ($set-port-index! p 0)
+                   ($set-port-size! p (fx+ c1 c0))
+                   c1]
+                  [else 
+                   (die who "read! returned a value out of range" c1)])))))))
 
   ;;; ----------------------------------------------------------
   (module (read-char get-char lookahead-char)
@@ -1140,20 +1149,22 @@
     (define (lookahead-char-char-mode p who)
       (let ([str ($port-buffer p)]
             [read! ($port-read! p)])
-        (let ([n (read! str 0 (string-length str))])
-          (unless (fixnum? n) 
-            (die who "invalid return value from read!" n))
-          (unless (<= 0 n (string-length str))
-            (die who "return value from read! is out of range" n))
-          (let ([idx ($port-index p)] [cookie ($port-cookie p)])
-            (set-cookie-pos! cookie (+ idx (cookie-pos cookie))))
-          ($set-port-index! p 0) 
-          ($set-port-size! p n)
-          (cond
-            [(fx= n 0)
-             (eof-object)]
-            [else
-             (string-ref str 0)]))))
+        (if (eq? read! all-data-in-buffer)
+            (eof-object)
+            (let ([n (read! str 0 (string-length str))])
+              (unless (fixnum? n) 
+                (die who "invalid return value from read!" n))
+              (unless (<= 0 n (string-length str))
+                (die who "return value from read! is out of range" n))
+              (let ([idx ($port-index p)] [cookie ($port-cookie p)])
+                (set-cookie-pos! cookie (+ idx (cookie-pos cookie))))
+              ($set-port-index! p 0) 
+              ($set-port-size! p n)
+              (cond
+                [(fx= n 0)
+                 (eof-object)]
+                [else
+                 (string-ref str 0)])))))
     ;;;
     (define (lookahead-char p)
       (define who 'lookahead-char)
@@ -1194,21 +1205,23 @@
     (define (get-char-char-mode p who)
       (let ([str ($port-buffer p)]
             [read! ($port-read! p)])
-        (let ([n (read! str 0 (string-length str))])
-          (unless (fixnum? n) 
-            (die who "invalid return value from read!" n))
-          (unless (<= 0 n (string-length str))
-            (die who "return value from read! is out of range" n))
-          (let ([idx ($port-index p)] [cookie ($port-cookie p)])
-            (set-cookie-pos! cookie (+ idx (cookie-pos cookie))))
-          ($set-port-size! p n)
-          (cond
-            [(fx= n 0)
-             ($set-port-index! p 0)
-             (eof-object)]
-            [else
-             ($set-port-index! p 1) 
-             (string-ref str 0)]))))
+        (if (eq? read! all-data-in-buffer)
+            (eof-object)
+            (let ([n (read! str 0 (string-length str))])
+              (unless (fixnum? n) 
+                (die who "invalid return value from read!" n))
+              (unless (<= 0 n (string-length str))
+                (die who "return value from read! is out of range" n))
+              (let ([idx ($port-index p)] [cookie ($port-cookie p)])
+                (set-cookie-pos! cookie (+ idx (cookie-pos cookie))))
+              ($set-port-size! p n)
+              (cond
+                [(fx= n 0)
+                 ($set-port-index! p 0)
+                 (eof-object)]
+                [else
+                 ($set-port-index! p 1) 
+                 (string-ref str 0)])))))
     (define (peek-utf16 p who endianness)
       (define integer->char/invalid
         (lambda (n)
