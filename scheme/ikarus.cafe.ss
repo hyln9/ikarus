@@ -38,19 +38,26 @@ description:
   Be specific about what the error-port is |#
 
 (library (ikarus cafe)
-  (export new-cafe)
+  (export new-cafe waiter-prompt-string)
   (import 
     (only (rnrs) with-exception-handler)
-    (except (ikarus) new-cafe))
+    (except (ikarus) new-cafe waiter-prompt-string))
 
   (define eval-depth 0)
+
+  (define waiter-prompt-string
+    (make-parameter ">"
+      (lambda (x)
+        (if (string? x)
+            x
+            (die 'waiter-prompt-string "not a string" x)))))
 
   (define display-prompt
     (lambda (i)
       (if (fx= i eval-depth)
           (display " " (console-output-port))
           (begin
-            (display ">" (console-output-port))
+            (display (waiter-prompt-string) (console-output-port))
             (display-prompt (fx+ i 1))))))
 
   (define (print-ex ex)

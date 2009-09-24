@@ -389,6 +389,7 @@
     [assembler-output                            i]
     [optimizer-output                            i]
     [new-cafe                                    i]
+    [waiter-prompt-string                        i]
     [expand                                      i]
     [core-expand                                 i]
     [expand/optimize                             i]
