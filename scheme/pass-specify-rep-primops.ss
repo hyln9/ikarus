@@ -1596,6 +1596,7 @@
 (define-primop fxarithmetic-shift-right safe
   [(V x n) 
    (struct-case n 
+     ;;; FIXME: check for known types
      [(constant i)
       (cond
         [(and (fx? i)
@@ -1615,7 +1616,7 @@
           (interrupt-when 
             (prm '>= n (K (- (* wordsize 8) fx-shift))))
           (prm 'sll 
-               (prm 'sra x n)
+               (prm 'sra (prm 'sra x n) (K fx-shift))
                (K fx-shift))))])])
 
 
