@@ -1924,8 +1924,8 @@ ikrt_bignum_to_bytevector(ikptr x, ikpcb* pcb){
 
 ikptr 
 ikrt_fxrandom(ikptr x){
-  int mask = 1; 
-  int n = unfix(x); 
+  long int mask = 1; 
+  long int n = unfix(x); 
   {
     while(mask < n){
       mask = (mask << 1) | 1;
