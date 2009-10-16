@@ -101,9 +101,19 @@
 
 
   (define (run-tests)
+    (define (rw? x1)
+      (let ([str (let-values ([(p e) (open-string-output-port)])
+                   (write x1 p)
+                   (e))])
+        (let ([x2 (read (open-string-input-port str))])
+          (equal? x1 x2))))
+    (assert (rw? "  \x85;  "))
+    (assert (rw? "  \x2028;  "))
+
     (test-char-syntax)
     (test-reader))
 
 
   )
+
 

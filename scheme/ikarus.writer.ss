@@ -324,7 +324,9 @@
                (write-char c p)]
               [(fx< b 127)
                (write-char c p)]
-              [(print-unicode) 
+              [(or (fx= b #x85) (fx= b #x2028))
+               (write-inline-hex b p)]
+              [(print-unicode)
                (write-char c p)]
               [else
                (write-inline-hex b p)]))
