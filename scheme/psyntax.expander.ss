@@ -380,6 +380,11 @@
   ;;; Notice that both sx and sy would be shift marks.
   (define join-wraps
     (lambda (m1* s1* ae1* e)
+      (define merge-ae*
+        (lambda (ls1 ls2)
+          (if (and (pair? ls1) (pair? ls2) (not (car ls2)))
+              (cancel ls1 ls2)
+              (append ls1 ls2))))
       (define cancel
         (lambda (ls1 ls2)
           (let f ((x (car ls1)) (ls1 (cdr ls1)))
@@ -393,15 +398,15 @@
                  (not (null? m2*))
                  (anti-mark? (car m2*)))
             ; cancel mark, anti-mark, and corresponding shifts
-            (values (cancel m1* m2*) (cancel s1* s2*) (cancel ae1* ae2*))
-            (values (append m1* m2*) (append s1* s2*) (append ae1* ae2*))))))
+            (values (cancel m1* m2*) (cancel s1* s2*) (merge-ae* ae1* ae2*))
+            (values (append m1* m2*) (append s1* s2*) (merge-ae* ae1* ae2*))))))
 
   ;;; The procedure mkstx is then the proper constructor for
   ;;; wrapped syntax objects.  It takes a syntax object, a list
   ;;; of marks, and a list of substs.  It joins the two wraps 
   ;;; making sure that marks and anti-marks and corresponding 
   ;;; shifts cancel properly.
-  (define mkstx ;;; QUEUE
+  (define mkstx 
     (lambda (e m* s* ae*)
       (if (and (stx? e) (not (top-marked? m*)))
           (let-values (((m* s* ae*) (join-wraps m* s* ae* e)))
@@ -4075,7 +4080,6 @@
         ((annotation? x)
          (make-trace (make-stx x '() '() '())))
         (else (condition)))))
-
     
   (define syntax-violation* 
     (lambda (who msg form condition-object)
