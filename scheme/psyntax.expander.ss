@@ -1649,7 +1649,7 @@
   (define quasiquote-macro
     (let ()
       (define (datum x)
-        (list (scheme-stx 'quote) (mkstx x '() '() '())))
+        (list (scheme-stx 'quote) (mkstx x top-mark* '() '())))
       (define-syntax app
         (syntax-rules (quote)
           ((_ 'x arg* ...)
