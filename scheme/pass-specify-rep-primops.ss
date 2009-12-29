@@ -1226,7 +1226,7 @@
   [(V x) 
    (prm 'sll 
      (prm 'srl 
-       (prm 'mref (T x)
+       (prm 'mref32 (T x)
           (K (- (+ disp-flonum-data 4) vector-tag)))
        (K 20))
      (K fx-shift))])
