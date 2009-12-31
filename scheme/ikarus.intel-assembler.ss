@@ -35,9 +35,11 @@
       [else
        (f (car ls) (fold f init (cdr ls)))])))
 
+
 (define convert-instructions
   (lambda (ls)
-    (fold convert-instruction '() ls)))
+    (parameterize ([local-labels (uncover-local-labels ls)])
+      (fold convert-instruction '() ls))))
 
 (define register-mapping
   ;;; reg  cls  idx  REX.R
@@ -216,7 +218,11 @@
          (byte (sra n 24))
          ac)]
       [(label? n)
-       (cons (cons 'relative (label-name n)) ac)]
+       (cond 
+         [(local-label? (label-name n))
+          (cons (cons 'local-relative (label-name n)) ac)]
+         [else
+          (cons (cons 'relative (label-name n)) ac)])]
       [else (die 'IMM32 "invalid" n)])))
 
 (define IMM
@@ -255,7 +261,12 @@
       [(foreign? n)
        (cons (cons 'foreign-label (label-name n)) ac)]
       [(label? n)
-       (cons (cons 'relative (label-name n)) ac)]
+       (cond 
+         [(local-label? (label-name n))
+          (cons (cons 'local-relative (label-name n)) ac)]
+         [else
+          (cons (cons 'relative (label-name n)) ac)])]
+       ;(cons (cons 'relative (label-name n)) ac)]
       [else (die 'IMM "invalid" n)])))
 
 
@@ -375,6 +386,7 @@
     [(_ instr ac [(name* arg** ...) b* b** ...] ...)
      (begin
        (add-instruction (name* instr ac arg** ...) b* b** ...) ...)]))
+
 
 (define (convert-instruction a ac)
   (cond
@@ -747,18 +759,20 @@
     (cond
       [(reg? dst)                     (CR* #xF7 '/3 dst ac)]
       [else (die who "invalid" instr)])]
-   [(local-jmp dst) (CODE #xE9 (IMM32 dst ac))]
    [(jmp dst)
     (cond
+      [(and (label? dst) (local-label? (label-name dst)))
+       (CODE #xE9 (cons `(local-relative . ,(label-name dst)) ac))]
       [(imm? dst)
-       (if (= wordsize 4)
+       (if (= wordsize 4) 
            (CODE #xE9 (IMM32 dst ac))
            (jmp-pc-relative #xFF #x25 dst ac))]
       [(mem? dst)                     (CR*  #xFF '/4 dst ac)]
       [else (die who "invalid jmp target" dst)])]
-   [(local-call dst) (CODE #xE8 (IMM32 dst ac))]
    [(call dst)
     (cond
+      [(and (label? dst) (local-label? (label-name dst)))
+       (CODE #xE8 (cons `(local-relative . ,(label-name dst)) ac))]
       [(imm? dst)
        (if (= wordsize 4)
            (CODE #xE8 (IMM32 dst ac))
@@ -904,37 +918,21 @@
           (code-set! code (fx+ idx 7) (fxlogand (fxsra x 53) #xFF))])]
       [else (die 'set-code-word! "unhandled" x)])))
  
-(define (preoptimize-local-jumps ls)
-  (define locals '())
-  (define g (gensym))
-  (define mark
-    (lambda (x)
-      (when (pair? x)
-        (case (car x)
-          [(label) 
-           (let ([name (label-name x)])
-             (putprop name g 'local)
-             (set! locals (cons name locals)))]
-          [(seq pad)
-           (for-each mark (cdr x))]))))
-  (define (local-label? x)
-    (and (label? x) (eq? (getprop (label-name x) g) 'local)))
-  (define opt
-    (lambda (x)
-      (when (pair? x)
-        (case (car x)
-          [(call) 
-           (when (local-label? (cadr x))
-             (set-car! x 'local-call))]
-          [(jmp) 
-           (when (local-label? (cadr x))
-             (set-car! x 'local-jmp))]
-          [(seq pad)
-           (for-each opt (cdr x))]))))
-  (for-each mark ls)
-  (for-each opt ls)
-  (for-each (lambda (x) (remprop x g)) locals))
+(define local-labels (make-parameter '()))
+(define (local-label? x) (and (memq x (local-labels)) #t))
 
+(define (uncover-local-labels ls)
+  (define locals '())
+  (define find
+    (lambda (x)
+      (when (pair? x)
+        (case (car x)
+          [(label)
+           (set! locals (cons (label-name x) locals))]
+          [(seq pad)
+           (for-each find (cdr x))]))))
+  (for-each find ls)
+  locals)
 
 (define (optimize-local-jumps ls)
   (define locals '())
@@ -1124,8 +1122,6 @@
       (let ([closure-size* (map car ls*)]
             [code-name* (map code-name ls*)]
             [ls* (map code-list ls*)])
-        (when (= wordsize 8)
-          (for-each preoptimize-local-jumps ls*))
         (let* ([ls* (map convert-instructions ls*)]
                [ls* (map optimize-local-jumps ls*)])
           (let ([n* (map compute-code-size ls*)]

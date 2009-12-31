@@ -2104,18 +2104,20 @@
         (let ([L_cwv_done (gensym)]
               [L_cwv_loop (gensym)]
               [L_cwv_multi_rp (gensym)]
-              [L_cwv_call (gensym)])
+              [L_cwv_call (gensym)]
+              [SL_nonprocedure (gensym "SL_nonprocedure")]
+              [SL_invalid_args (gensym "SL_invalid_args")])
           (list 
               0 ; no free vars
               '(name call-with-values)
               (label SL_call_with_values)
               (cmpl (int (argc-convention 2)) eax)
-              (jne (label (sl-invalid-args-label)))
+              (jne (label SL_invalid_args))
               (movl (mem (fx- 0 wordsize) fpr) ebx) ; producer
               (movl ebx cpr)
               (andl (int closure-mask) ebx)
               (cmpl (int closure-tag) ebx)
-              (jne (label (sl-nonprocedure-error-label)))
+              (jne (label SL_nonprocedure))
               (movl (int (argc-convention 0)) eax)
               (compile-call-frame
                  3
@@ -2129,7 +2131,7 @@
               (movl (int (argc-convention 1)) eax)
               (andl (int closure-mask) ebx)
               (cmpl (int closure-tag) ebx)
-              (jne (label (sl-nonprocedure-error-label)))
+              (jne (label SL_nonprocedure))
               (tail-indirect-cpr-call)
               ;;; multiple values returned
               (label L_cwv_multi_rp)
@@ -2153,8 +2155,27 @@
               (movl cpr ebx)
               (andl (int closure-mask) ebx)
               (cmpl (int closure-tag) ebx)
-              (jne (label (sl-nonprocedure-error-label)))
-              (tail-indirect-cpr-call)))))
+              (jne (label SL_nonprocedure))
+              (tail-indirect-cpr-call)
+
+              (label SL_nonprocedure)
+              (movl cpr (mem (fx- 0 wordsize) fpr)) ; first arg
+              (movl (obj (primref->symbol '$apply-nonprocedure-error-handler)) cpr)
+              (movl (mem (- disp-symbol-record-proc record-tag) cpr) cpr)
+              (movl (int (argc-convention 1)) eax)
+              (tail-indirect-cpr-call)
+
+              (label SL_invalid_args)
+              ;;;
+              (movl cpr (mem (fx- 0 wordsize) fpr)) ; first arg
+              (negl eax)
+              (movl eax (mem (fx- 0 (fx* 2 wordsize)) fpr))
+              (movl (obj (primref->symbol '$incorrect-args-error-handler)) cpr)
+              (movl (mem (- disp-symbol-record-proc record-tag) cpr) cpr)
+              (movl (int (argc-convention 2)) eax)
+              (tail-indirect-cpr-call)
+
+              ))))
     SL_call_with_values]
    ))
 
