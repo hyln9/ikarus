@@ -16,7 +16,7 @@
 
 
 (library (ikarus.intel-assembler)
-  (export instruction-size assemble-sources code-entry-adjustment)
+  (export assemble-sources code-entry-adjustment)
   (import 
     (ikarus)
     (rnrs bytevectors)
@@ -400,6 +400,21 @@
                 (die 'convert-instruction "incorrect args" a))])))]
     [(eq? (car a) 'seq) 
      (fold convert-instruction ac (cdr a))]
+    [(eq? (car a) 'pad)
+     (let ()
+       (define (find-prefix x ls)
+         (let f ([ls ls])
+           (cond
+             [(eq? ls x) '()]
+             [else 
+              (let ([a (car ls)])
+                (if (and (pair? a) (eq? (car a) 'bottom-code))
+                    (f (cdr ls))
+                    (cons a (f (cdr ls)))))])))
+       (let ([n (cadr a)] [code (cddr a)])
+         (let ([ls (fold convert-instruction ac code)])
+           (let ([m (compute-code-size (find-prefix ac ls))])
+             (append (make-list (- n m) 0) ls)))))]
     [else (die 'convert-instruction "unknown instruction" a)]))
 
 (define (RM /d dst ac)
@@ -562,6 +577,19 @@
           (cons (car ls) (f (cdr ls))))))
   ls)
 
+(define (jmp-pc-relative code0 code1 dst ac)
+  (when (= wordsize 4)
+    (error 'intel-assembler "no pc-relative jumps in 32-bit mode"))
+  (let ([g (gensym)])
+    (CODE code0
+      (CODE code1
+        (cons*
+          `(local-relative . ,g)
+          `(bottom-code
+             (label . ,g)
+             (label-addr . ,(label-name dst)))
+          ac)))))
+
 (add-instructions instr ac
    [(ret)                                 (CODE #xC3 ac)]
    [(cltd)                                (C #x99 ac)]
@@ -719,14 +747,22 @@
     (cond
       [(reg? dst)                     (CR* #xF7 '/3 dst ac)]
       [else (die who "invalid" instr)])]
+   [(local-jmp dst) (CODE #xE9 (IMM32 dst ac))]
    [(jmp dst)
     (cond
-      [(imm? dst)                     (CODE #xE9 (IMM32 dst ac))]
+      [(imm? dst)
+       (if (= wordsize 4)
+           (CODE #xE9 (IMM32 dst ac))
+           (jmp-pc-relative #xFF #x25 dst ac))]
       [(mem? dst)                     (CR*  #xFF '/4 dst ac)]
       [else (die who "invalid jmp target" dst)])]
+   [(local-call dst) (CODE #xE8 (IMM32 dst ac))]
    [(call dst)
     (cond
-      [(imm? dst)                     (CODE #xE8 (IMM32 dst ac))]
+      [(imm? dst)
+       (if (= wordsize 4)
+           (CODE #xE8 (IMM32 dst ac))
+           (jmp-pc-relative #xFF #x15 dst ac))]
       [(mem? dst)                     (CR* #xFF '/2 dst ac)]
       [(reg? dst)                     (CR* #xFF '/2 dst ac)]
       [else (die who "invalid jmp target" dst)])]
@@ -812,7 +848,7 @@
 ))
 
 
-(define compute-code-size 
+(define compute-code-size
   (lambda (ls)
     (fold (lambda (x ac)
             (if (fixnum? x)
@@ -824,11 +860,12 @@
                   [(label) ac]
                   [(word reloc-word reloc-word+ label-addr 
                     current-frame-offset foreign-label)
-                   (+ ac wordsize)]
+                   (fx+ ac wordsize)]
+                  [(bottom-code) 
+                   (fx+ ac (compute-code-size (cdr x)))]
                   [else (die 'compute-code-size "unknown instr" x)])))
           0 
           ls)))
-
 
 (define set-label-loc!
   (lambda (x loc)
@@ -840,7 +877,6 @@
   (lambda (x)
     (or (getprop x '*label-loc*)
         (die 'compile "undefined label" x))))
-
 
 (define unset-label-loc!
   (lambda (x)
@@ -868,22 +904,57 @@
           (code-set! code (fx+ idx 7) (fxlogand (fxsra x 53) #xFF))])]
       [else (die 'set-code-word! "unhandled" x)])))
  
+(define (preoptimize-local-jumps ls)
+  (define locals '())
+  (define g (gensym))
+  (define mark
+    (lambda (x)
+      (when (pair? x)
+        (case (car x)
+          [(label) 
+           (let ([name (label-name x)])
+             (putprop name g 'local)
+             (set! locals (cons name locals)))]
+          [(seq pad)
+           (for-each mark (cdr x))]))))
+  (define (local-label? x)
+    (and (label? x) (eq? (getprop (label-name x) g) 'local)))
+  (define opt
+    (lambda (x)
+      (when (pair? x)
+        (case (car x)
+          [(call) 
+           (when (local-label? (cadr x))
+             (set-car! x 'local-call))]
+          [(jmp) 
+           (when (local-label? (cadr x))
+             (set-car! x 'local-jmp))]
+          [(seq pad)
+           (for-each opt (cdr x))]))))
+  (for-each mark ls)
+  (for-each opt ls)
+  (for-each (lambda (x) (remprop x g)) locals))
+
+
 (define (optimize-local-jumps ls)
   (define locals '())
   (define g (gensym))
-  (for-each
-    (lambda (x)
-      (when (and (pair? x) (eq? (car x) 'label))
-        (putprop (cdr x) g 'local)
-        (set! locals (cons (cdr x) locals))))
-    ls)
-  (for-each
-    (lambda (x)
-      (when (and (pair? x)
-                 (eq? (car x) 'relative)
-                 (eq? (getprop (cdr x) g) 'local))
-        (set-car! x 'local-relative)))
-    ls)
+  (define (mark x)
+    (when (pair? x)
+      (case (car x)
+        [(label) 
+         (putprop (cdr x) g 'local)
+         (set! locals (cons (cdr x) locals))]
+        [(bottom-code) (for-each mark (cdr x))])))
+  (define (opt x)
+    (when (pair? x)
+      (case (car x)
+        [(relative) 
+         (when (eq? (getprop (cdr x) g) 'local)
+           (set-car! x 'local-relative))]
+        [(bottom-code) (for-each opt (cdr x))])))
+  (for-each mark ls)
+  (for-each opt ls)
   (for-each (lambda (x) (remprop x g)) locals)
   ls)
 
@@ -892,47 +963,52 @@
 (define whack-instructions
   (lambda (x ls)
     (define f
-      (lambda (ls idx reloc)
+      (lambda (ls idx reloc bot*)
         (cond
-          [(null? ls) reloc]
+          [(null? ls) 
+           (if (null? bot*) 
+               reloc
+               (f (car bot*) idx reloc (cdr bot*)))]
           [else
            (let ([a (car ls)])
              (if (fixnum? a)
                  (begin
                    (code-set! x idx a)
-                   (f (cdr ls) (fxadd1 idx) reloc))
+                   (f (cdr ls) (fxadd1 idx) reloc bot*))
                  (case (car a)
                   [(byte) 
                    (code-set! x idx (cdr a))
-                   (f (cdr ls) (fx+ idx 1) reloc)]
+                   (f (cdr ls) (fx+ idx 1) reloc bot*)]
                   [(relative local-relative)
-                   (f (cdr ls) (fx+ idx 4) (cons (cons idx a) reloc))]
+                   (f (cdr ls) (fx+ idx 4) (cons (cons idx a) reloc) bot*)]
                   [(reloc-word reloc-word+ label-addr foreign-label)
-                   (f (cdr ls) (fx+ idx wordsize) (cons (cons idx a) reloc))]
+                   (f (cdr ls) (fx+ idx wordsize) (cons (cons idx a) reloc) bot*)]
                   [(word)
                    (let ([v (cdr a)])
                       (set-code-word! x idx v)
-                      (f (cdr ls) (fx+ idx wordsize) reloc))]
+                      (f (cdr ls) (fx+ idx wordsize) reloc bot*))]
                   [(current-frame-offset)
                    (set-code-word! x idx idx) ;;; FIXME 64bit
-                   (f (cdr ls) (fx+ idx wordsize) reloc)]
+                   (f (cdr ls) (fx+ idx wordsize) reloc bot*)]
                   [(label)
                    (set-label-loc! (cdr a) (list x idx))
-                   (f (cdr ls) idx reloc)]
+                   (f (cdr ls) idx reloc bot*)]
+                  [(bottom-code)
+                   (f (cdr ls) idx reloc (cons (cdr a) bot*))]
                   [else
                    (die 'whack-instructions "unknown instr" a)])))])))
-    (f ls 0 '())))
+    (f ls 0 '() '())))
 
-
-(define compute-reloc-size 
+(define compute-reloc-size
   (lambda (ls)
     (fold (lambda (x ac)
             (if (fixnum? x)
                 ac
                 (case (car x)
+                  [(word byte label current-frame-offset local-relative) ac]
                   [(reloc-word foreign-label)        (fx+ ac 2)]
                   [(relative reloc-word+ label-addr) (fx+ ac 3)]
-                  [(word byte label current-frame-offset local-relative) ac]
+                  [(bottom-code) (fx+ ac (compute-reloc-size (cdr x)))]
                   [else (die 'compute-reloc-size "unknown instr" x)])))
           0 
           ls)))
@@ -1031,14 +1107,6 @@
           [else (die 'whack-reloc "invalid reloc type" type)]))
       )))
 
-  (define (instruction-size x)
-    (unless (and (pair? x) (getprop (car x) *cogen*))
-      (die 'instruction-size "not an instruction" x))
-    ;;; limitations: does not work if the instruction contains 
-    ;;; a jump to a local label, and the jump is later optimized
-    ;;; to a short jump.
-    (compute-code-size
-      (convert-instruction x '())))
 
 
   (define assemble-sources
@@ -1056,6 +1124,8 @@
       (let ([closure-size* (map car ls*)]
             [code-name* (map code-name ls*)]
             [ls* (map code-list ls*)])
+        (when (= wordsize 8)
+          (for-each preoptimize-local-jumps ls*))
         (let* ([ls* (map convert-instructions ls*)]
                [ls* (map optimize-local-jumps ls*)])
           (let ([n* (map compute-code-size ls*)]

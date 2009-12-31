@@ -2480,12 +2480,7 @@
 
            
 (define (compile-call-frame framesize livemask-vec multiarg-rp call-sequence)
-  (let ([L_CALL (label (gensym))]
-        [padding 
-         (- call-instruction-size
-            (instruction-size call-sequence))])
-    (when (< padding 0) 
-      (error 'compile-call-frame "call sequence too long" call-sequence))
+  (let ([L_CALL (label (gensym))])
     (list 'seq
       (if (or (= framesize 0) (= framesize 1))
           '(seq) 
@@ -2495,9 +2490,9 @@
       `(int ,(* framesize wordsize))
       '(current-frame-offset)
       multiarg-rp
-      `(byte-vector ,(make-vector padding 0))
-      L_CALL
-      call-sequence
+      `(pad ,call-instruction-size
+            ,L_CALL
+            ,call-sequence)
       (if (or (= framesize 0) (= framesize 1))
           '(seq) 
           `(addl ,(* (fxsub1 framesize) wordsize) ,fpr)))))
