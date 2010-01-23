@@ -2084,19 +2084,6 @@
               (movl (mem (fx- 0 wordsize) fpr) eax)
               (ret)))))
     SL_values]
-   [(sl-nonprocedure-error-label)
-    (define SL_nonprocedure (gensym "SL_nonprocedure"))
-    (assemble-sources (lambda (x) #f)
-      (list
-        (list 0
-          (label SL_nonprocedure)
-          (movl cpr (mem (fx- 0 wordsize) fpr)) ; first arg
-          (movl (obj (primref->symbol '$apply-nonprocedure-error-handler)) cpr)
-          (movl (mem (- disp-symbol-record-proc record-tag) cpr) cpr)
-          ;(movl (primref-loc '$apply-nonprocedure-error-handler) cpr)
-          (movl (int (argc-convention 1)) eax)
-          (tail-indirect-cpr-call))))
-    SL_nonprocedure]
    [(sl-cwv-label)
     (define SL_call_with_values (gensym "SL_call_with_values"))
     (assemble-sources (lambda (x) #f)

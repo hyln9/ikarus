@@ -2227,6 +2227,23 @@
         [else (error 'small-operand? "huh?")]))
     (define (mem? x)
       (or (disp? x) (fvar? x)))
+    (define (fix-address x k)
+      (cond
+        [(disp? x) 
+         (let ([s0 (disp-s0 x)] [s1 (disp-s1 x)])
+           (cond
+             [(not (small-operand? s0))
+              (let ([u (mku)])
+                (make-seq
+                  (E (make-asm-instr 'move u s0))
+                  (fix-address (make-disp u s1) k)))]
+             [(not (small-operand? s1))
+              (let ([u (mku)])
+                (make-seq
+                  (E (make-asm-instr 'move u s1))
+                  (fix-address (make-disp s0 u) k)))]
+             [else (k x)]))]
+        [else (k x)]))
     ;;; unspillable effect
     (define (E x)
       (struct-case x
@@ -2235,9 +2252,19 @@
          (make-conditional (P e0) (E e1) (E e2))]
         [(asm-instr op a b) 
          (case op
+           [(load8 load32)
+            (fix-address b
+              (lambda (b)
+                (cond
+                  [(or (register? a) (var? a)) 
+                   (make-asm-instr op a b)]
+                  [else 
+                   (let ([u (mku)])
+                     (make-seq
+                       (make-asm-instr op u b)
+                       (E (make-asm-instr 'move a u))))])))]
            [(logor logxor logand int+ int- int* move 
-                   load8 load32 
-                   int-/overflow int+/overflow int*/overflow)
+             int-/overflow int+/overflow int*/overflow)
             (cond
               [(and (eq? op 'move) (eq? a b)) 
                (make-primcall 'nop '())]
@@ -2256,17 +2283,10 @@
                      (E (make-asm-instr op u b)))
                    (E (make-asm-instr 'move a u))))]
               [(and (mem? a) (not (small-operand? b))) 
-               (case op
-                 [(load32)
-                  (let ([u (mku)])
-                    (make-seq
-                      (E (make-asm-instr 'load32 u b))
-                      (E (make-asm-instr 'move a u))))]
-                 [else
-                  (let ([u (mku)])
-                    (make-seq
-                      (E (make-asm-instr 'move u b))
-                      (E (make-asm-instr op a u))))])]
+               (let ([u (mku)])
+                 (make-seq
+                   (E (make-asm-instr 'move u b))
+                   (E (make-asm-instr op a u))))]
               [(disp? a) 
                (let ([s0 (disp-s0 a)] [s1 (disp-s1 a)])
                  (cond
