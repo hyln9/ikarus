@@ -40,6 +40,9 @@ ikptr ik_exec_code(ikpcb* pcb, ikptr code_ptr, ikptr argcount, ikptr cp){
     fprintf(stderr, "exec framesize=0x%016lx  ksize=%ld  rp=0x%016lx\n", 
         framesize, k->size, rp);
 #endif
+    if(framesize == 0){
+      framesize = ref(top, wordsize);
+    }
     if(framesize <= 0){
       fprintf(stderr, "invalid framesize %ld\n", framesize);
       exit(-10);
