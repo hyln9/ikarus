@@ -39,16 +39,17 @@
     cdr-error fxadd1-error fxsub1-error cadr-error fx+-type-error
     fx+-types-error fx+-overflow-error $do-event engine-handler)
   (import (except (ikarus) interrupt-handler engine-handler)
-          (only (ikarus system $interrupts) $interrupted? $unset-interrupted!))
+          (only (ikarus system $interrupts) $interrupted? $unset-interrupted!)
+          (only (ikarus.posix) signal-code->signal-name))
 
   (define interrupt-handler
     (make-parameter
-      (lambda ()
+      (lambda (signal)
         ; FIXME
         ;(set-port-output-index! (console-output-port) 0)
         (raise-continuable
           (condition
-            (make-interrupted-condition)
+            (make-interrupted-condition signal)
             (make-message-condition "received an interrupt signal"))))
       (lambda (x)
         (if (procedure? x)
@@ -136,8 +137,10 @@
     (lambda ()
       (cond
         [($interrupted?)
-         ($unset-interrupted!)
-         ((interrupt-handler))]
+         (let ((signal (signal-code->signal-name
+                        (foreign-call "ikrt_interrupted_signal"))))
+           ($unset-interrupted!)
+           ((interrupt-handler) signal))]
         [else
          ((engine-handler))])))
 

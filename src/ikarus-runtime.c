@@ -41,6 +41,7 @@
 
 
 extern ikptr ik_errno_to_code();
+extern ikptr ik_signal_num_to_code(int);
 
 int total_allocated_pages = 0;
          
@@ -1126,4 +1127,9 @@ ikrt_rename_file(ikptr src, ikptr dst /* ikpcb* pcb */){
 ikptr 
 ikrt_last_errno(ikpcb* pcb){
   return s_to_number(pcb->last_errno, pcb);
+}
+
+ikptr
+ikrt_interrupted_signal(ikpcb* pcb){
+  return ik_signal_num_to_code(pcb->interrupted);
 }

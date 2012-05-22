@@ -24,7 +24,8 @@
     file-executable? file-size rename-file file-symbolic-link?
     make-symbolic-link make-hard-link directory-list make-directory
     make-directory* delete-directory change-mode kill strerror
-    wstatus-pid wstatus-exit-status wstatus-received-signal)
+    wstatus-pid wstatus-exit-status wstatus-received-signal
+    signal-code->signal-name signal-name->signal-code)
 
   (import 
     (rnrs bytevectors)

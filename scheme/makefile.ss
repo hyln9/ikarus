@@ -56,6 +56,7 @@
   '(
     
     "ikarus.singular-objects.ss"
+    "ikarus.posix.ss"
     "ikarus.handlers.ss"
     "ikarus.multiple-values.ss"
     "ikarus.control.ss"
@@ -83,7 +84,6 @@
     "ikarus.symbol-table.ss"
     "ikarus.codecs.ss"
     "ikarus.bytevectors.ss"
-    "ikarus.posix.ss"
     "ikarus.io.ss"
     "ikarus.hash-tables.ss"
     "ikarus.pretty-formats.ss"
@@ -587,6 +587,7 @@
     [$swap-engine-counter!                       $interrupts]
     [interrupted-condition?                      i]
     [make-interrupted-condition                  i]
+    [interrupted-signal                          i]
 
     [source-position-condition?                  i]
     [make-source-position-condition              i]

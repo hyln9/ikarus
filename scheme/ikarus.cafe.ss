@@ -69,6 +69,10 @@ description:
     (reset-input-port! (console-input-port))
     (k))
   
+  (define (sigint-interrupt? ex)
+    (and (interrupted-condition? ex)
+         (eq? 'SIGINT (interrupted-signal ex))))
+
   (define wait1
     (lambda (eval-proc k escape-k)
       (display-prompt 0)
@@ -78,7 +82,7 @@ description:
                      [(lexical-violation? ex)
                       (print-ex ex)
                       (reset k)]
-                     [(interrupted-condition? ex)
+                     [(sigint-interrupt? ex)
                       (flush-output-port (console-output-port))
                       (newline (console-output-port))
                       (reset k)]
@@ -110,7 +114,7 @@ description:
                  (with-exception-handler
                    (lambda (ex)
                      (cond 
-                       [(interrupted-condition? ex)
+                       [(sigint-interrupt? ex)
                         (flush-output-port (console-output-port))
                         (newline (console-output-port))
                         (reset k)]

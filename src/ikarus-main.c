@@ -122,11 +122,22 @@ Notice how the bsd manpages have incorrect type for the handler.
 void handler(int signo, siginfo_t* info, void* uap){
   signo=signo; info=info; uap=uap; /* no warning */
   the_pcb->engine_counter = fix(-1);
-  the_pcb->interrupted = 1;
+  /* This must be set to non-zero.  Signal numbers are positive, according to
+     Posix, so using them is alright. */
+  the_pcb->interrupted = signo;
 }
 
 void
 register_handlers(){
+  /* The signals whose default action is process termination.  FPE, ILL, and
+     SEGV are excluded because they're low-level and the Scheme side shouldn't
+     try to handle.  PIPE is excluded so it can be ignored below.  KILL is
+     excluded because it's not possible to catch it. */
+  static int signals[] = {SIGABRT, SIGALRM, SIGBUS, /*SIGFPE,*/ SIGHUP,
+                          /*SIGILL,*/ SIGINT, /*SIGKILL,*/ /*SIGPIPE,*/ SIGQUIT,
+                          /*SIGSEGV,*/ SIGTERM, SIGUSR1, SIGUSR2, SIGPOLL,
+                          SIGPROF, SIGSYS, SIGTRAP, SIGVTALRM, SIGXCPU, SIGXFSZ,
+                          0};
   struct sigaction sa;
   sa.sa_sigaction = handler;
 #ifdef __CYGWIN__
@@ -135,10 +146,13 @@ register_handlers(){
   sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
 #endif
   sigemptyset(&sa.sa_mask);
-  int err = sigaction(SIGINT, &sa, 0);
-  if(err){
-    fprintf(stderr, "Sigaction Failed: %s\n", strerror(errno));
-    exit(-1);
+  int i;
+  for (i=0; signals[i]; i++){
+    int err = sigaction(signals[i], &sa, 0);
+    if(err){
+      fprintf(stderr, "Sigaction Failed: %s\n", strerror(errno));
+      exit(-1);
+    }
   }
 
   /* ignore sigpipes */

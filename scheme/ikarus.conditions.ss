@@ -51,6 +51,7 @@
           no-infinities-violation? make-no-infinities-violation
           no-nans-violation? make-no-nans-violation
           interrupted-condition? make-interrupted-condition 
+          interrupted-signal
           make-source-position-condition source-position-condition?
           source-position-file-name source-position-character
 
@@ -129,6 +130,7 @@
           no-nans-violation? make-no-nans-violation
           
           interrupted-condition? make-interrupted-condition 
+          interrupted-signal
           make-source-position-condition source-position-condition?
           source-position-file-name source-position-character
           ))
@@ -338,7 +340,8 @@
 
   ;;; ikarus-specific conditions
   (define-condition-type &interrupted &serious
-    make-interrupted-condition interrupted-condition?)
+    make-interrupted-condition interrupted-condition?
+    (signal interrupted-signal))
 
   (define-condition-type &source-position &condition
     make-source-position-condition source-position-condition?
