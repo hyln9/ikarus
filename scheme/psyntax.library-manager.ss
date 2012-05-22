@@ -99,7 +99,7 @@
     (let-values (((p extract) (open-string-output-port)))
       (define (display-hex n)
         (cond
-          ((<= 0 n 9) (display n p))
+          ((<= 0 n 9) (display (number->string n) p))
           (else (write-char
                   (integer->char 
                     (+ (char->integer #\a)

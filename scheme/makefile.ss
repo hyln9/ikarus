@@ -377,6 +377,7 @@
     [print-gensym                                i symbols]
     [print-graph                                 i]
     [print-unicode                               i]
+    [print-radix                                 i]
     [unicode-printable-char?                     i]
     [gensym-count                                i symbols]
     [gensym-prefix                               i symbols]

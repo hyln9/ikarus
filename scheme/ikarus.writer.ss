@@ -18,6 +18,7 @@
 
   (export write display format printf fprintf print-error
           print-unicode print-graph put-datum traverse
+          print-radix radix-prefix
           traversal-helpers)
 
   (import 
@@ -34,10 +35,21 @@
     (only (ikarus.pretty-formats) get-fmt)
     (except (ikarus) 
       write display format printf fprintf print-error print-unicode print-graph
+      print-radix
       put-datum))
 
   (define print-unicode
     (make-parameter #t))
+
+  (define print-radix
+    (make-parameter 10
+      (lambda (x)
+        (unless (memv x '(2 8 10 16)) (die 'print-radix "invalid" x))
+        x)))
+
+  (define (radix-prefix s)
+    (define (a p) (string-append p s))
+    (case (print-radix) ((10) s) ((16) (a "#x")) ((2) (a "#b")) ((8) (a "#o"))))
 
 
 (module traversal-helpers
@@ -166,20 +178,8 @@
 
 (define (wr x p m h i)
   (define (write-fixnum x p)
-    (define loop
-      (lambda (x p)
-        (unless (fxzero? x)
-          (loop (fxquotient x 10) p)
-          (write-char 
-             (integer->char
-                (fx+ (fxremainder x 10)
-                     (char->integer #\0)))
-             p))))
-    (cond
-      [(fxzero? x) (write-char #\0 p)]
-      [(fx< x 0)
-       (write-char* (fixnum->string x) p)]
-      [else (loop x p)]))
+    (write-char* (radix-prefix (fixnum->string x (print-radix)))
+                 p))
   (define (write-pair x p m h i)
     (define (macro x h)
       (and 
@@ -622,7 +622,12 @@
        i]
       [(char? x) (write-character x p m) i]
       [(null? x) (write-char #\( p) (write-char #\) p) i]
-      [(number? x) (write-char* (number->string x) p) i]
+      [(number? x)
+       (write-char* (if (exact? x)
+                        (radix-prefix (number->string x (print-radix)))
+                        (number->string x))
+                    p)
+       i]
       [(vector? x) (write-shared x p m h i write-vector)]
       [(bytevector? x) (write-shared x p m h i write-bytevector)]
       [(procedure? x) (write-procedure x p) i]

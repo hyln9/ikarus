@@ -18,7 +18,7 @@
   (export pretty-print pretty-width)
   (import 
     (rnrs hashtables)
-    (only (ikarus writer) traverse traversal-helpers)
+    (only (ikarus writer) traverse traversal-helpers radix-prefix)
     (only (ikarus.pretty-formats) get-fmt)
     (except (ikarus) pretty-print pretty-width))
   (define (map1ltr f ls)
@@ -228,7 +228,7 @@
           (make-vbox (fx+ (fx+ n 2) (vector-length x)) "#" ls))))
     (define (boxify-bytevector x)
       (define prefix "#vu8")
-      (let ([ls (map (lambda (x) (number->string x))
+      (let ([ls (map (lambda (x) (radix-prefix (number->string x (print-radix))))
                        (bytevector->u8-list x))])
         (let ([len (fold-left (lambda (ac s) (+ 1 ac (string-length s))) 
                               (+ 1 (string-length prefix))

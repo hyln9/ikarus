@@ -391,7 +391,8 @@
                    (let f ([ls ls] [i 1])
                      (unless (null? ls)
                        (display "   " p)
-                       (display i p)
+                       (parameterize ((print-radix 10))
+                         (display i p))
                        (display ". " p)
                        (print-simple-condition (car ls) p)
                        (f (cdr ls) (+ i 1)))))))]
