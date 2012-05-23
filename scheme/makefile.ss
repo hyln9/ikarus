@@ -1119,6 +1119,8 @@
     [string-fill!                                i ms se]
     [command-line                                i r pr]
     [exit                                        i r pr]
+    [push-exit-handler!                          i]
+    [pop-exit-handler!                           i]
     [delay                                       i r5 se ne]
     [exact->inexact                              i r5 se]
     [force                                       i r5 se]

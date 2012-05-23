@@ -16,11 +16,12 @@
 
 
 (library (ikarus control)
-  (export call/cf call/cc call-with-current-continuation dynamic-wind exit)
+  (export call/cf call/cc call-with-current-continuation dynamic-wind exit
+          push-exit-handler! pop-exit-handler!)
   (import 
     (ikarus system $stack)
     (except (ikarus) call/cf call/cc call-with-current-continuation
-            dynamic-wind exit list-tail))
+            dynamic-wind exit list-tail push-exit-handler! pop-exit-handler!))
 
   (define primitive-call/cf
     (lambda (f)
@@ -130,8 +131,41 @@
            (out)
            (apply values v1 v2 v*)]))))
   
+
+  (define exit-handlers
+    (make-parameter '()))
+
+  (define push-exit-handler!
+    (lambda (proc)
+      (unless (procedure? proc)
+        (die 'push-exit-handler! "not a procedure" proc))
+      (exit-handlers (cons proc (exit-handlers)))))
+
+  (define pop-exit-handler!
+    (lambda ()
+      (let ((x (exit-handlers)))
+        (cond ((null? x) #F)
+              (else (exit-handlers (cdr x))
+                    (car x))))))
+
   (define exit
     (case-lambda
       [() (exit 0)]
-      [(status) (foreign-call "ikrt_exit" status)]))
+      [(status)
+       (define (ikrt_exit n) (foreign-call "ikrt_exit" n))
+       (with-exception-handler
+         (lambda (ex)
+           (with-exception-handler  ; Just in case.
+             (lambda (_) (ikrt_exit -4))
+             (lambda ()
+               (display "Exit-handler exception:\n" (console-error-port))
+               (print-condition ex (console-error-port))))
+           (ikrt_exit -3))
+         (lambda ()
+           (let loop ()
+             (let ((h (pop-exit-handler!)))
+               (when h
+                 (h)
+                 (loop))))))
+       (ikrt_exit status)]))
   )

@@ -33,7 +33,7 @@
           (print-condition x (console-error-port))
           (when (serious-condition? x)
             (exit -1)))
-        (lambda args (exit -1)))))
+        (lambda args (foreign-call "ikrt_exit" -2)))))
   
   (define (with-exception-handler handler proc2)
     (unless (procedure? handler)
