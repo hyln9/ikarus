@@ -25,6 +25,7 @@
     make-symbolic-link make-hard-link directory-list make-directory
     make-directory* delete-directory change-mode kill strerror
     wstatus-pid wstatus-exit-status wstatus-received-signal
+    sigprocmask sigpending
     signal-code->signal-name signal-name->signal-code)
 
   (import 
@@ -37,6 +38,7 @@
       file-executable? file-size rename-file file-symbolic-link?
       make-symbolic-link make-hard-link directory-list
       make-directory make-directory* delete-directory change-mode
+      sigprocmask sigpending
       kill strerror wstatus-pid wstatus-exit-status
       wstatus-received-signal))
 
@@ -98,6 +100,36 @@
           [else #f])))
   )
   
+  (define sigprocmask
+    (case-lambda
+      ((how signals get-old?)
+       (define (oops . a) (apply die 'sigprocmask a))
+       (cond ((and how signals)
+              (unless (list? signals)
+                (oops "not a list" signals)))
+             ((or how signals)
+              (oops "both must be false" how signals)))
+       (let ((r (foreign-call "ik_sigprocmask"
+                  (case how ((add) 1) ((set) 2) ((remove) 3) ((#F) #F)
+                            (else (oops "invalid how" how)))
+                  (and signals (map (lambda (s)
+                                      (or (signal-name->signal-code s)
+                                          (oops "invalid signal name" s)))
+                                    signals))
+                  get-old?)))
+         (cond ((fixnum? r)
+                (raise/strerror 'sigprocmask r))
+               (get-old?
+                (map signal-code->signal-name r)))))
+      ((how signals)
+       (sigprocmask how signals #F))
+      (()
+       (sigprocmask #F #F #T))))
+
+  (define sigpending
+    (lambda ()
+      (map signal-code->signal-name (foreign-call "ik_sigpending"))))
+
   (define kill
     (lambda (pid signame)
       (define who 'kill)

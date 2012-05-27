@@ -430,6 +430,8 @@
     [wstatus-exit-status                         i]
     [wstatus-received-signal                     i]
     [kill                                        i]
+    [sigprocmask                                 i]
+    [sigpending                                  i]
     [apropos                                     i]
     [installed-libraries                         i]
     [uninstall-library                           i]

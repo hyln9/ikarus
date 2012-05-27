@@ -261,6 +261,71 @@ ik_signal_code_to_num(ikptr sigcode){
   return 0;
 }
 
+static
+void
+ik_sigset(sigset_t* s, ikptr sigcodes){
+  while(tagof(sigcodes) == pair_tag){
+    sigaddset(s, ik_signal_code_to_num(ref(sigcodes, off_car)));
+    sigcodes = ref(sigcodes, off_cdr);
+  }
+}
+
+static
+ikptr
+ik_sigmembers(sigset_t* s, ikpcb* pcb){
+  int i;
+  signal_info* p;
+  ikptr accum = null_object;
+  pcb->root0 = &accum;
+  for(i = signal_info_table_len - 1; i >= 0; i--){
+    p = &signal_info_table[i];
+    if (sigismember(s, p->n)) {
+      ikptr x = ik_safe_alloc(pcb, pair_size) + pair_tag;
+      ref(x, off_car) = p->c;
+      ref(x, off_cdr) = accum;
+      accum = x;
+    }
+  }
+  pcb->root0 = NULL;
+  return accum;
+}
+
+ikptr
+ik_sigprocmask(ikptr how, ikptr sigcodes, ikptr get_old, ikpcb* pcb){
+  int h = 0;
+  sigset_t s, o;
+  sigset_t* ps, * po;
+  if (sigcodes != false_object){
+    int u = unfix(how);
+    if      (1==u) h = SIG_BLOCK;
+    else if (2==u) h = SIG_SETMASK;
+    else if (3==u) h = SIG_UNBLOCK;
+    ps = &s;
+    sigemptyset(ps);
+    ik_sigset(ps, sigcodes);
+  } else 
+    ps = NULL;
+  if (get_old != false_object){
+    po = &o;
+    sigemptyset(po);
+  } else 
+    po = NULL;
+  if (sigprocmask(h, ps, po))
+    return ik_errno_to_code();
+  else if (po)
+    return ik_sigmembers(po, pcb);
+  else 
+    return true_object;
+}
+
+ikptr
+ik_sigpending(ikpcb* pcb){
+  sigset_t s;
+  sigemptyset(&s);
+  sigpending(&s);
+  return ik_sigmembers(&s, pcb);
+}
+
 ikptr
 ikrt_kill(ikptr pid, ikptr sigcode /*, ikpcb* pcb */){
   int r = kill((pid_t)unfix(pid), ik_signal_code_to_num(sigcode));
