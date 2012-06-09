@@ -137,11 +137,13 @@ description:
                   (lambda (k1)
                     (with-exception-handler 
                       (lambda (ex)
-                        (with-exception-handler k1
-                          (lambda () 
-                            (flush-output-port (console-output-port))
-                            (newline (console-output-port))
-                            (reset k1))))
+                        (if (interrupted-condition? ex)
+                            (raise-continuable ex)
+                            (with-exception-handler k1
+                              (lambda () 
+                                (flush-output-port (console-output-port))
+                                (newline (console-output-port))
+                                (reset k1)))))
                       (lambda () (wait1 eval-proc k1 k)))))
                 (loop)))))
         (lambda () (set! eval-depth (fxsub1 eval-depth))))))
