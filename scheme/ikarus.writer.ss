@@ -594,7 +594,8 @@
         (cond
           [(mark-set? b)
            (write-char #\# p)
-           (write-fixnum (fxsra b mark-shift) p)
+           (parameterize ((print-radix 10))
+             (write-fixnum (fxsra b mark-shift) p))
            (write-char #\# p)
            i]
           [(or (cyclic-set? b)
@@ -602,7 +603,8 @@
            (let ([n i])
              (set-mark! x h n)
              (write-char #\# p)
-             (write-fixnum n p)
+             (parameterize ((print-radix 10))
+               (write-fixnum n p))
              (write-char #\= p)
              (k x p m h (+ i 1)))]
           [else
