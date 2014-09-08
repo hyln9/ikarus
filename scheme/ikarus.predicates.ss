@@ -268,8 +268,8 @@
               (= (imag-part x) (imag-part y)))]
         [(cflonum? x)
          (and (cflonum? y)
-              (= (real-part x) (real-part y))
-              (= (imag-part x) (imag-part y)))]
+              (eqv? (real-part x) (real-part y))
+              (eqv? (imag-part x) (imag-part y)))]
         [else #f])))
 
   

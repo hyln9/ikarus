@@ -18,7 +18,7 @@
 (library (ikarus not-yet-implemented)
   (export 
     bitwise-reverse-bit-field
-    bitwise-rotate-bit-field fxreverse-bit-field
+    bitwise-rotate-bit-field
     make-custom-binary-input/output-port
     make-custom-textual-input/output-port
     open-file-input/output-port 
@@ -26,7 +26,7 @@
 
   (import (except (ikarus) 
     bitwise-reverse-bit-field
-    bitwise-rotate-bit-field fxreverse-bit-field
+    bitwise-rotate-bit-field
     make-custom-binary-input/output-port
     make-custom-textual-input/output-port
     open-file-input/output-port 
@@ -57,7 +57,6 @@
   (not-yet 
     ;;; should be implemented
     bitwise-rotate-bit-field bitwise-reverse-bit-field
-    fxreverse-bit-field 
     ;;; not top priority at the moment
     equal-hash
     ;;; won't be implemented

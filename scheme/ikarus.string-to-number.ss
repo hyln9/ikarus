@@ -218,7 +218,11 @@
 
     (u:digit+dot (r n0 ex sn ac exp)
       [(eof)
-       (mkrec1 n0 (do-dec-sn/ex sn ex (* ac (expt 10 exp))))]
+       (if (and n0 (not (pair? n0)))
+       	   (fail)
+	 (mkrec1 n0 (do-dec-sn/ex sn ex (* ac (expt 10 exp)))))
+;;;       (mkrec1 n0 (do-dec-sn/ex sn ex (* ac (expt 10 exp))))
+       ]
       [(digit r) => d
        (next u:digit+dot r n0 ex sn (+ (* ac r) d) (- exp 1))]
       [(#\i)
@@ -246,7 +250,11 @@
 
     (u:digit+ (r n0 ex sn ac)
       [(eof) 
-       (mkrec1 n0 (do-sn/ex sn ex ac))]
+       (if (and n0 (not (pair? n0)))
+       	   (fail)
+       	 (mkrec1 n0 (do-sn/ex sn ex ac)))
+;;;       (mkrec1 n0 (do-sn/ex sn ex ac))
+       ]
       [(digit r) => d
        (next u:digit+ r n0 ex sn (+ (* ac r) d))]
       [(#\.)

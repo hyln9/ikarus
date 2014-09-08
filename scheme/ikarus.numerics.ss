@@ -541,7 +541,7 @@
            [(cflonum? y)
             ($make-cflonum
               (binary+ x ($cflonum-real y))
-              ($cflonum-imag y))]
+              ($fl+ 0.0 ($cflonum-imag y)))]
            [else (err '+ y)])]
         [(bignum? x)
          (cond
@@ -1370,8 +1370,12 @@
             (cond
               [($fx= n 1) d]
               [($fx= n -1) (- d)]
-              [else ($make-ratnum d n)]))]
+              [else
+               (if (> 0 n)
+                   ($make-ratnum (- d) (- n))
+                   ($make-ratnum d n))]))]
          [(compnum? x) (binary/ 1 x)]
+         [(cflonum? x) (binary/ 1 x)]
          [else (die '/ "not a number" x)])]
       [(x y z . ls)
        (let f ([a (binary/ x y)] [b z] [ls ls])
@@ -2107,7 +2111,7 @@
       [(x) 
        (if (flonum? x) 
            ($fl* -1.0 x)
-           (die 'fl+ "not a flonum" x))]))
+           (die 'fl- "not a flonum" x))]))
 
   (define fl*
     (case-lambda
@@ -2357,50 +2361,176 @@
         [else 
          (die 'zero? "not a number" x)])))
 
-  (define expt
-    (lambda (n m)
-      (define fxexpt
-        (lambda (n m)
-          (cond
-            [($fxzero? m) 1]
-            [($fxzero? ($fxlogand m 1))
-             (fxexpt (binary* n n) ($fxsra m 1))]
-            [else
-             (binary* n (fxexpt (binary* n n) ($fxsra m 1)))])))
+(define (expt n m)
+  ;;Return N raised to the power  M.  For non--zero N, this is:
+  ;;
+  ;;    (expt N M) === (exp (log (expt N M)))
+  ;;               === (exp (* M (log N)))
+  ;;
+  ;;for N equal to zero:
+  ;;
+  ;;    (expt 0.0 Z) = 1.0 if Z = 0.0
+  ;;                 = 0.0 if (real-part Z) is positive
+  ;;
+  ;;for  other cases  in which  the first  argument is  zero,  either an
+  ;;exception       is       raised       with      condition       type
+  ;;"&implementation-restriction",  or an  unspecified number  object is
+  ;;returned.
+  ;;
+  ;;For an  exact real number  object N and  an exact integer  object M,
+  ;;(expt N M)  must return an exact result.  For all  other values of N
+  ;;and M, (expt N M) may return an inexact result, even when both N and
+  ;;M are exact.
+  ;;
+  ;;Notice that this definition can  lead to unintuitive results; from a
+  ;;discussion with Kent Dybvig: It does seem like:
+  ;;
+  ;;   (expt +inf.0+2.i 2)
+  ;;
+  ;;would be equivalent to:
+  ;;
+  ;;   (* +inf.0+2.i +inf.0+2.i)
+  ;;
+  ;;which evaluates  to +inf.0+inf.0i.   Nevertheless, I'm not  sure the
+  ;;R6RS supports this interpretation.   According to the description of
+  ;;expt, when z1 is not zero,
+  ;;
+  ;;   (expt z1 z2) => e^{z2 log z1}
+  ;;
+  ;;so,
+  ;;
+  ;;   (expt +inf.0+2.i 2) => (exp (* 2 (log +inf.0+2.i)))
+  ;;
+  ;;Meanwhile, the Section 11.7.3 subsection on transcendental functions
+  ;;defines log as follows:
+  ;;
+  ;;   (log z) => log |z| + (angle z)i
+  ;;
+  ;;so,
+  ;;
+  ;;   (log +inf.0+2.i) =>
+  ;;     (make-rectangular
+  ;;       (log (magnitude +inf.0+2.0i))
+  ;;       (angle +inf.0+2.0i))
+  ;;
+  ;;Since:
+  ;;
+  ;;   (magnitude +inf.0+2.i) => +inf.0,
+  ;;   (log +inf.0) => +inf.0, and
+  ;;   (angle +inf.0+2.i) => 0.0,
+  ;;
+  ;;we have:
+  ;;
+  ;;   (log +inf.0+2.i) => +inf.0+0.0i
+  ;;
+  ;;and finally:
+  ;;
+  ;;   (expt +inf.0+2.i 2) => (exp (* 2 +inf.0+0.0i))
+  ;;                       => (exp +inf.0+0.0i)
+  ;;                       => (* (exp +inf.0) (exp 0.0i))
+  ;;                       => (* +inf.0 1.0+0.0i)
+  ;;                       => +inf.0+nan.0i
+  ;;
+  ;;because:
+  ;;
+  ;;   (* +inf.0 0.0i) => +nan.0
+  ;;
+
+  (define (%expt-fx n m)
+    ;;Recursive function computing N^M when M is a fixnum and N is:
+    ;;
+    ;;* A real number, infinite included, NaN excluded.
+    ;;
+    ;;* A finite complex number.
+    ;;
+    ;;This function recurses a number of  times equal to the bits in the
+    ;;representation of M.
+    ;;
+    ;;Notes about used procedures:
+    ;;
+    ;;* ($fxlogand  m 1) is 1  for even m and  0 for odd m,  or in other
+    ;;words: the return value is the rightmost bit of M.
+    ;;
+    ;;* $fxsra means "fixnum shift right arithmetic".
+    ;;
+    ;;* binary* is the multiplication with two arguments.
+    ;;
+    (cond (($fxzero? m)
+	   1)
+	  (($fxzero? ($fxlogand m 1)) ;the rightmost bit in M is zero
+	   (%expt-fx (binary* n n) ($fxsra m 1)))
+	  (else ;the rightmost bit in M is one
+	   (binary* n (%expt-fx (binary* n n) ($fxsra m 1))))))
       (unless (number? n)
         (die 'expt "not a numebr" n))
-      (cond
-        [(fixnum? m)
-         (if ($fx>= m 0)
-             (cond
-               [(ratnum? n) 
-                ($make-ratnum (expt ($ratnum-n n) m) (expt ($ratnum-d n) m))]
-               [else (fxexpt n m)])
-             (let ([v (expt n (- m))])
+  (cond ((fixnum? m)
+	 (cond (($fxzero? m)
+		(cond ((nan? n)		+nan.0)
+		      ((exact? n)	1)
+		      (else		1.)))
+	       (($fx> m 0)
+		(cond ((integer? n)
+		       (%expt-fx n m))
+		      ((ratnum? n)
+		       ($make-ratnum (%expt-fx ($ratnum-n n) m)
+				     (%expt-fx ($ratnum-d n) m)))
+		      ((real? n) ;this includes the real infinite +inf.0
+		       (if (nan? n)
+			   +nan.0
+			 (%expt-fx n m)))
+		      ;;In the following clauses N is a non-real.
+		      ((or (nan? (real-part n))
+			   (nan? (imag-part n)))
+		       +nan.0+nan.0i)
+		      ((infinite? n) ;this handles correctly some special cases
+		       (exp (* m (log n))))
+		      (else
+		       (%expt-fx n m))))
+	       (else ;M is negative
+		(let ((v (expt n (- m))))
                (if (eq? v 0)
                    0
-                   (/ 1 v))))]
-        [(bignum? m) 
-         (cond
-           [(eq? n 0) 0]
-           [(eq? n 1) 1]
-           [(eq? n -1)
-            (if (positive-bignum? m)
-                (if (even-bignum? m)
-                    1
-                    -1)
-                (/ 1 (expt n (- m))))]
-           [else 
-            (die 'expt "result is too big to compute" n m)])]
-        [(flonum? m) (flexpt (inexact n) m)]
-        [(ratnum? m) (flexpt (inexact n) (inexact m))]
-        [(or (compnum? m) (cflonum? m))
-         (if (eq? n 0)
-             0
-             (let ([e 2.718281828459045])
-               (define (ln x) (/ (log x) (log e)))
-               (exp (* m (ln n)))))]
-        [else (die 'expt "not a number" m)])))
+		    (/ 1 v))))))
+	((bignum? m)
+	 (cond ((eq? n 0)	0)
+	       ((eq? n 1)	1)
+	       ((eq? n -1)	(if (even-bignum? m) 1 -1))
+	       ((nan? n)	+nan.0)
+	       (else
+		(die 'expt "result is too big to compute" n m))))
+	((flonum? m)
+	 (cond ((real? n)
+		(cond ((nan? n)
+		       +nan.0)
+		      ((integer? m)
+		       ;;N^M  when M  is an  integer always  has  a real
+		       ;;number as result.
+		       (flexpt (inexact n) m))
+		      ((negative? n)
+		       (exp (* m (log n))))
+		      (else
+		       (flexpt (inexact n) m))))
+	       ((or (nan? (real-part n))
+		    (nan? (imag-part n)))
+		+nan.0+nan.0i)
+	       (else
+		(exp (* m (log n))))))
+	((ratnum? m)
+;;; (expt (expt n ($ratnum-n m))
+;;;       (inexact ($make-ratnum 1 ($ratnum-d m))))
+	 (expt n (inexact m)))
+	((or (compnum? m) (cflonum? m))
+	 (cond ((eq? n 0)
+		0)
+	       ((or (nan? (real-part n))
+		    (nan? (imag-part n)))
+		+nan.0+nan.0i)
+	       ((zero? n)
+		(if (flonum? n) 0.0 0.0+0.0i))
+	       (else
+		(exp (* m (log n))))))
+	(else
+	 (die 'expt "not a number" m))))
 
   (define quotient
     (lambda (x y)
@@ -2698,7 +2828,19 @@
        (cond
          [(flonum? x) (foreign-call "ikrt_fl_atan" x)]
          [(fixnum? x) (foreign-call "ikrt_fx_atan" x)]
-         [(or (ratnum? x) (bignum? x)) (atan (inexact x))]
+         [(or (ratnum? x) (bignum? x) (compnum? x))
+	  (atan (inexact x))]
+	 ((cflonum? x)
+	  ;;Formula from Wikipedia section "Logarithmic forms":
+	  ;;
+	  ;;	<http://en.wikipedia.org/wiki/Arc_tangent>
+	  ;;
+	  (if (let ((I (imag-part x)))
+		(and (exact? I) (zero? I)))
+	      (flatan (real-part x))
+	    (* +0.5i
+	       (- (log (- 1 (* +1i x)))
+		  (log (+ 1 (* +1i x)))))))
          [else (die 'atan "not a number" x)])]
       [(y x)
        (unless (real? x) (die 'atan "not a real number" x))
@@ -2899,6 +3041,7 @@
             [else (make-rectangular (log (- x)) (acos -1))])]
          [(flonum? x)
           (cond
+            ((nan? x) +nan.0)
             [(fl>=? x 0.0) (foreign-call "ikrt_fl_log" x)]
             [else 
              (make-rectangular 
@@ -2915,15 +3058,12 @@
                   [else v]))
               (make-rectangular (log (- x)) (acos -1)))]
          [(ratnum? x) 
-          ;;; FIXME: incorrect as per bug 180170
           (- (log (numerator x)) (log (denominator x)))]
          [(or (compnum? x) (cflonum? x))
-          (let ([e 2.718281828459045])
-            (define (ln x) (/ (log x) (log e)))
             (let ([xr (real-part x)] [xi (imag-part x)])
               (make-rectangular 
-                (/ (ln (+ (* xr xr) (* xi xi))) 2)
-                (atan xi xr))))]
+	     (/ (log (+ (* xr xr) (* xi xi))) 2)
+	     (atan xi xr)))]
          [else (die 'log "not a number" x)])]
       [(x y)
        (let ([ly (log y)])
@@ -3026,8 +3166,19 @@
       [(bignum? x) (flexp (bignum->flonum x))]
       [(ratnum? x) (flexp (ratnum->flonum x))]
       [(or (compnum? x) (cflonum? x))
+       ;;In general:
+       ;;
        ;; e^x = e^(xr + xi i)
        ;;     = e^xr cos(xi) + e^xr sin(xi) i
+       ;;
+       ;;and:
+       ;;
+       ;;   e^(xr+0.0i) = e^xr * e^(0.0 i) = e^xr * 1.0+0.0i
+       ;;
+       ;;so, in the special case xr=+inf.0, the imaginary part becomes:
+       ;;
+       ;;   e^xr * sin(xi) * i = +inf.0 * 0.0 * i = +nan.0 * i
+       ;;
        (let ([xr (real-part x)] [xi (imag-part x)])
          (let ([e^xr (exp xr)])
            (make-rectangular 
@@ -3603,7 +3754,7 @@
           fxlength
           fxbit-set?
           fxcopy-bit
-          fxcopy-bit-field fxrotate-bit-field
+          fxcopy-bit-field fxrotate-bit-field fxreverse-bit-field
           fxbit-field)
   (import 
     (ikarus system $fx)
@@ -3615,7 +3766,7 @@
       fxlength
       fxbit-set?
       fxcopy-bit
-      fxcopy-bit-field fxrotate-bit-field
+      fxcopy-bit-field fxrotate-bit-field fxreverse-bit-field
       fxbit-field))
 
   (module (bitwise-first-bit-set fxfirst-bit-set)
@@ -3853,6 +4004,56 @@
             (die who "start index is not a fixnum" i))
         (die who "not a fixnum" x)))
 
+  (define (fxreverse-bit-field v start end)
+
+    (define (%fxreverse-bit-field30 v)
+      (assert (= (fixnum-width) 30))
+      (let* ( ;; Swap pairs of bits
+	     (tmp1     (fxarithmetic-shift-right (fxand v #b10000000000000000000000000000) 28))
+	     (v (fxior (fxarithmetic-shift-right (fxand v #b01010101010101010101010101010) 1)
+		       (fxarithmetic-shift-left  (fxand v #b00101010101010101010101010101) 1)))
+	     ;; Swap 2-bit fields
+	     (v (fxior (fxarithmetic-shift-right (fxand v #b01100110011001100110011001100) 2)
+		       (fxarithmetic-shift-left  (fxand v #b10011001100110011001100110011) 2)))
+	     ;; Swap 4-bit fields
+	     (tmp2     (fxarithmetic-shift-right (fxand v #b01111000000000000000000000000) 23))
+	     (v (fxior (fxarithmetic-shift-right (fxand v #b10000111100001111000011110000) 4)
+		       (fxarithmetic-shift-left  (fxand v #b00000000011110000111100001111) 4)))
+	     ;; Swap bytes
+	     (tmp3     (fxarithmetic-shift-right (fxand v #b00000111111110000000000000000) 11))
+	     (v (fxior (fxarithmetic-shift-right (fxand v #b11111000000001111111100000000) 8)
+		       (fxarithmetic-shift-left  (fxand v #b00000000000000000000011111111) 8))))
+	;; Put together the pieces
+	(fxior (fxarithmetic-shift-left v 13)
+	       tmp1 tmp2 tmp3)))
+
+    (define who 'fxreverse-bit-field)
+    (unless (fixnum? v)
+      (assertion-violation who "expected fixnum as first argument" v))
+    (unless (and (integer? start) (exact? start))
+      (assertion-violation who "expected exact integer as second argument" start))
+    (unless (and (integer? end) (exact? end))
+      (assertion-violation who "expected exact integer as third argument" end))
+    (unless (< -1 start (fixnum-width))
+      (assertion-violation who
+	(string-append "expected second argument between zero (included) and fixnum width "
+		       (number->string (fixnum-width)))
+	start))
+    (unless (< -1 end (fixnum-width))
+      (assertion-violation who
+	(string-append "expected third argument between zero (included) and fixnum width "
+		       (number->string (fixnum-width)))
+	end))
+    (unless (<= 0 start end)
+      (assertion-violation who
+	"expected second argument between zero (included) and third argument"
+	start end))
+
+    ;;We have FIXNUM-WIDTH equal to 30.
+    (fxior (fxarithmetic-shift-right
+	    (%fxreverse-bit-field30 (fxbit-field v start end))
+	    (fx- 29 end))
+	   (fxcopy-bit-field v start end 0)))
                     
 
   (define (fxbit-field x i j)

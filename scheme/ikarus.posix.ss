@@ -17,7 +17,7 @@
 (library (ikarus.posix)
 
   (export 
-    posix-fork fork waitpid system file-exists? delete-file
+    posix-fork fork waitpid getpid getppid system file-exists? delete-file
     nanosleep getenv setenv unsetenv env environ split-file-name
     file-ctime file-mtime file-real-path current-directory
     file-regular? file-directory? file-readable? file-writable?
@@ -31,7 +31,7 @@
   (import 
     (rnrs bytevectors)
     (except (ikarus)
-      nanosleep posix-fork fork waitpid system file-exists?
+      nanosleep posix-fork fork waitpid getpid getppid system file-exists?
       delete-file getenv setenv unsetenv env environ split-file-name
       file-ctime file-mtime file-real-path current-directory
       file-regular? file-directory? file-readable? file-writable?
@@ -165,6 +165,13 @@
            [(and want-error? (not (eqv? r 0)))
             (error who (strerror r) pid)]
            [else #f]))]))
+  (define getpid
+    (lambda ()
+      (foreign-call "ikrt_getpid")))
+
+  (define getppid
+    (lambda ()
+      (foreign-call "ikrt_getppid")))
 
   (define system
     (lambda (x)

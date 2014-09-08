@@ -360,3 +360,14 @@ ikrt_waitpid(ikptr rvec, ikptr pid, ikptr block /*, ikpcb* pcb */){
   }
 }
 
+ikptr
+ikrt_getpid(void)
+{
+  return fix(getpid());
+}
+
+ikptr
+ikrt_getppid(void)
+{
+  return fix(getppid());
+}

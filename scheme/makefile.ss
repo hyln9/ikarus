@@ -430,6 +430,8 @@
     [wstatus-exit-status                         i]
     [wstatus-received-signal                     i]
     [kill                                        i]
+    [getpid                                      i]
+    [getppid                                     i]
     [sigprocmask                                 i]
     [sigpending                                  i]
     [apropos                                     i]

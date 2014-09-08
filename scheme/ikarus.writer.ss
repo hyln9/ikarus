@@ -198,10 +198,16 @@
     (define (f d i)
       (cond
         [(null? d) i]
-        [(or (not (pair? d)) (shared? d h))
+        [(not (pair? d))
          (write-char #\space p)
          (write-char #\. p)
          (write-char #\space p)
+         (wr d p m h i)]
+        [(shared? d h)
+         (write-char #\space p)
+	 (when (print-graph)
+	   (write-char #\. p)
+	   (write-char #\space p))
          (wr d p m h i)]
         [else
          (write-char #\space p)
@@ -307,29 +313,33 @@
       ;;; commonize with write-symbol-bar-escape
       (define (loop x i n p)
         (unless (fx= i n)
-          (let* ([c (string-ref x i)]
-                 [b (char->integer c)])
+          (let* ([ch   (string-ref x i)]
+                 [byte (char->integer ch)])
             (cond
-              [(fx< b 32) 
+              [(fx< byte 32)
                (cond
-                 [(fx< b 7) 
-                  (write-inline-hex b p)]
-                 [(fx< b 14)
+                 [(fx< byte 7)
+                  (write-inline-hex byte p)]
+                 [(fx< byte 14)
                   (write-char #\\ p)
-                  (write-char (string-ref "abtnvfr" (fx- b 7)) p)]
+                  (write-char (string-ref "abtnvfr" (fx- byte 7)) p)]
                  [else 
-                  (write-inline-hex b p)])]
-              [(or (char=? #\" c) (char=? #\\ c))
+                  (write-inline-hex byte p)])]
+              [(or (char=? #\" ch) (char=? #\\ ch))
                (write-char #\\ p)
-               (write-char c p)]
-              [(fx< b 127)
-               (write-char c p)]
-              [(or (fx= b #x85) (fx= b #x2028))
-               (write-inline-hex b p)]
+               (write-char ch p)]
+              [(fx< byte 127)
+               (write-char ch p)]
+              [(or (fx= byte 127)	;this is the #\delete char
+		   (fx= byte #x85)
+		   (fx= byte #x2028))
+               (write-inline-hex byte p)]
               [(print-unicode)
-               (write-char c p)]
+		;PRINT-UNICODE  is  a parameter,  #t  if  we must  write
+		;unicode chars
+               (write-char ch p)]
               [else
-               (write-inline-hex b p)]))
+               (write-inline-hex byte p)]))
           (loop x (fxadd1 i) n p)))
       (write-char #\" p)
       (loop x 0 (string-length x) p)
